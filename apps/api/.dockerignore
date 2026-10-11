@@ -1,0 +1,25 @@
+# The build needs global.json, the Directory.*.props files, .editorconfig and src/.
+# Everything else stays out of the build context.
+**/bin/
+**/obj/
+tests/
+src/**/*.UnitTests/
+src/**/*.IntegrationTests/
+spikes/
+openapi/
+db/
+docs/
+*.md
+.vs/
+.idea/
+.vscode/
+*.user
+**/appsettings.Development.json
+**/appsettings.*.local.json
+appsettings.Example.json
+Api.slnx
+dotnet-tools.json
+package.json
+turbo.json
+Dockerfile
+.dockerignore

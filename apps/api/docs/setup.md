@@ -31,3 +31,9 @@ On Clerk:
 
 - `ControlPlane:InvitationEmailTimeout` must be longer than the `Notifications:InvitationEmailRetryDelays` together. Otherwise the onboarding gives up on an email that is still being tried, cancels the invitation and raises the alarm.
 - Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
+
+## Container platform
+
+- The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead. On Railway, the health check path is `/health/ready`. On Kubernetes, the liveness probe is `/health/live` and the readiness probe is `/health/ready`.
+- Set `runAsNonRoot: true`. Both images run as a numeric non-root user.
+- The process listens on port 8080. Route the platform's traffic to that port.

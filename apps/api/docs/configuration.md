@@ -41,7 +41,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Serilog:MinimumLevel:Override:<category>` | Optional | `Warning` for `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`, `Wolverine` and `JasperFx` (`appsettings.json`) | The lowest level for one log category. Each handled message is logged at `Information` under the message type's name |
 | `AllowedHosts` | Optional | `*` (`appsettings.json`) | The host names the API answers to |
 | `ASPNETCORE_ENVIRONMENT` | Optional | `Production` | The environment. `Development` relaxes the settings marked above |
-| `ASPNETCORE_URLS` | Optional | `http://localhost:5000` | The address and port the process listens on. Each process on one machine needs its own port |
+| `ASPNETCORE_URLS` | Optional | `http://localhost:5000`. In the container image: port 8080 on all interfaces (the base image sets `ASPNETCORE_HTTP_PORTS=8080`) | The address and port the process listens on. Each process on one machine needs its own port |
 
 ## What Development relaxes
 
