@@ -4,8 +4,9 @@ using System.Xml.Linq;
 namespace Architecture.Tests;
 
 // Fixed rule 4: no commercially licensed package. docs/licenses.md lists every package of every project in the solution, direct and
-// transitive, with the license the package declares. A package that is not listed, or whose license is not permitted, fails here
-// before it reaches a release.
+// transitive, once by name, with the license the package declares. A license can change at a new version, so every version in use
+// must declare the license of its row. A package that is not listed, or whose license is not permitted, fails here before it
+// reaches a release.
 public sealed class LicenseTests
 {
     private const string LicensesFile = "docs/licenses.md";
@@ -14,43 +15,54 @@ public sealed class LicenseTests
     private static readonly string[] Permitted = ["MIT", "Apache-2.0", "BSD-3-Clause", "PostgreSQL"];
 
     [Fact]
-    public void ListPackages_EveryProjectOfTheSolution_HasExactlyTheRowsOfItsPackages()
+    public void ListPackages_EveryProjectOfTheSolution_HasExactlyOneRowPerPackage()
     {
-        var used = Solution.SolutionProjects.SelectMany(PackagesOf).Distinct();
+        var used = UsedPackages().Select(package => package.Package).Distinct();
 
-        var listed = Listed().Select(row => (row.Package, row.Version));
+        var listed = Listed().Select(row => row.Package);
 
         listed.ShouldBe(used, ignoreOrder: true);
     }
 
     [Fact]
-    public void ReadLicenses_EveryListedPackage_IsTheLicenseItsPackageDeclares()
+    public void ReadLicenses_EveryVersionOfEveryPackageInUse_DeclaresTheLicenseOfItsRow()
     {
-        var declared = Solution.SolutionProjects.SelectMany(DeclaredLicensesOf).Distinct();
-
         var listed = Listed();
 
-        listed.ShouldBe(declared, ignoreOrder: true);
+        // A package whose versions declare any license other than the one of its row is named with each of its versions,
+        // so two versions that declare different licenses are both named.
+        var differing = Solution.SolutionProjects.SelectMany(DeclaredLicensesOf).Distinct()
+            .GroupBy(package => package.Package)
+            .Where(versions => !versions.Select(version => version.License).Distinct()
+                .SequenceEqual(listed.Where(row => row.Package == versions.Key).Select(row => row.License)))
+            .SelectMany(versions => versions);
+
+        differing.ShouldBeEmpty();
     }
 
     [Fact]
-    public void ReadLicenses_EveryListedPackage_IsPermittedAndNotNamedByFixedRule4()
+    public void ReadLicenses_EveryPackageInUse_IsPermittedAndNotNamedByFixedRule4()
     {
         var listed = Listed();
+        var used = UsedPackages();
 
         listed.Where(row => !Permitted.Contains(row.License)).ShouldBeEmpty();
-        listed.Where(row => IsNamedByFixedRule4(row.Package, row.Version)).ShouldBeEmpty();
+        used.Where(package => IsNamedByFixedRule4(package.Package, package.Version)).ShouldBeEmpty();
     }
 
-    // The rows of the table in the file, after its header and separator: package, version and license.
-    private static List<(string Package, string Version, string License)> Listed() =>
+    // The rows of the table in the file, after its header and separator: package and license.
+    private static List<(string Package, string License)> Listed() =>
     [
         .. File.ReadLines(Path.Combine(Solution.Root, LicensesFile))
             .Where(line => line.StartsWith("| ", StringComparison.Ordinal))
             .Skip(2)
             .Select(line => line.Split('|', StringSplitOptions.TrimEntries))
-            .Select(cells => (cells[1], cells[2], cells[3])),
+            .Select(cells => (cells[1], cells[2])),
     ];
+
+    // Every package and version that NuGet restored for any project of the solution.
+    private static List<(string Package, string Version)> UsedPackages() =>
+        [.. Solution.SolutionProjects.SelectMany(PackagesOf).Distinct()];
 
     private static IEnumerable<(string Package, string Version)> PackagesOf(string project)
     {

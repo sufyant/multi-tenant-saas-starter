@@ -1,207 +1,178 @@
 # Package licenses
 
-Every NuGet package of every project in `Api.slnx`, direct and transitive, with the license its package declares (its SPDX license expression). Sorted by package; a package used in two versions has a row for each.
+Every NuGet package of every project in `Api.slnx`, direct and transitive, with the license its package declares (its SPDX license expression). Sorted by package. A package has one row, whatever versions are in use. The table names no version. A version update changes this file only when it adds or removes a package, or changes a license.
 
 Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under another license needs a decision first (fixed rule 4).
 
-`LicenseTests` in `Architecture.Tests` fails when a package in use has no row here, when a row names a package that is no longer used, when a row's license is not the one its package declares, when a license is not permitted, and on the packages fixed rule 4 names.
+`LicenseTests` in `Architecture.Tests` fails in these cases:
 
-| Package | Version | License |
-| --- | --- | --- |
-| BouncyCastle.Cryptography | 2.7.0 | MIT |
-| Cronos | 0.11.0 | MIT |
-| DiffEngine | 11.3.0 | MIT |
-| Docker.DotNet.Enhanced | 4.3.3 | MIT |
-| Docker.DotNet.Enhanced.Handler.Abstractions | 4.3.3 | MIT |
-| Docker.DotNet.Enhanced.LegacyHttp | 4.3.3 | MIT |
-| Docker.DotNet.Enhanced.NativeHttp | 4.3.3 | MIT |
-| Docker.DotNet.Enhanced.NPipe | 4.3.3 | MIT |
-| Docker.DotNet.Enhanced.Unix | 4.3.3 | MIT |
-| Docker.DotNet.Enhanced.X509 | 4.3.3 | MIT |
-| EFCore.NamingConventions | 10.0.1 | Apache-2.0 |
-| EmptyFiles | 4.4.0 | MIT |
-| FastExpressionCompiler | 5.4.1 | MIT |
-| FluentValidation | 12.0.0 | Apache-2.0 |
-| Humanizer.Core | 2.14.1 | MIT |
-| ImTools | 4.0.0 | MIT |
-| JasperFx | 2.79.1 | MIT |
-| JasperFx.Events | 2.79.1 | MIT |
-| JasperFx.RuntimeCompiler | 5.0.0 | MIT |
-| JasperFx.SourceGenerator | 2.79.1 | MIT |
-| Microsoft.ApplicationInsights | 2.23.0 | MIT |
-| Microsoft.AspNetCore.Authentication.JwtBearer | 10.0.12 | MIT |
-| Microsoft.AspNetCore.Mvc.Testing | 10.0.12 | MIT |
-| Microsoft.AspNetCore.OpenApi | 10.0.12 | MIT |
-| Microsoft.AspNetCore.TestHost | 10.0.12 | MIT |
-| Microsoft.Bcl.AsyncInterfaces | 6.0.0 | MIT |
-| Microsoft.Bcl.AsyncInterfaces | 9.0.0 | MIT |
-| Microsoft.Bcl.Cryptography | 10.0.2 | MIT |
-| Microsoft.Bcl.TimeProvider | 10.0.0 | MIT |
-| Microsoft.Build.Framework | 18.0.2 | MIT |
-| Microsoft.CodeAnalysis | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.Analyzers | 3.11.0 | MIT |
-| Microsoft.CodeAnalysis.Common | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.CSharp | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.CSharp.Scripting | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.CSharp.Workspaces | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.Scripting | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.Scripting.Common | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.VisualBasic | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.VisualBasic.Workspaces | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.Workspaces.Common | 5.0.0 | MIT |
-| Microsoft.CodeAnalysis.Workspaces.MSBuild | 5.0.0 | MIT |
-| Microsoft.EntityFrameworkCore | 10.0.12 | MIT |
-| Microsoft.EntityFrameworkCore.Abstractions | 10.0.12 | MIT |
-| Microsoft.EntityFrameworkCore.Analyzers | 10.0.12 | MIT |
-| Microsoft.EntityFrameworkCore.Design | 10.0.4 | MIT |
-| Microsoft.EntityFrameworkCore.Design | 10.0.12 | MIT |
-| Microsoft.EntityFrameworkCore.Relational | 10.0.12 | MIT |
-| Microsoft.Extensions.ApiDescription.Server | 10.0.12 | MIT |
-| Microsoft.Extensions.Caching.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.Caching.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.Caching.Memory | 10.0.0 | MIT |
-| Microsoft.Extensions.Caching.Memory | 10.0.12 | MIT |
-| Microsoft.Extensions.Compliance.Abstractions | 10.10.0 | MIT |
-| Microsoft.Extensions.Configuration | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.Binder | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.Binder | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.CommandLine | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.CommandLine | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.EnvironmentVariables | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.EnvironmentVariables | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.FileExtensions | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.FileExtensions | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.Json | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.Json | 10.0.12 | MIT |
-| Microsoft.Extensions.Configuration.UserSecrets | 10.0.0 | MIT |
-| Microsoft.Extensions.Configuration.UserSecrets | 10.0.12 | MIT |
-| Microsoft.Extensions.DependencyInjection | 10.0.0 | MIT |
-| Microsoft.Extensions.DependencyInjection | 10.0.12 | MIT |
-| Microsoft.Extensions.DependencyInjection.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.DependencyInjection.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.DependencyModel | 10.0.4 | MIT |
-| Microsoft.Extensions.DependencyModel | 10.0.12 | MIT |
-| Microsoft.Extensions.Diagnostics | 10.0.0 | MIT |
-| Microsoft.Extensions.Diagnostics | 10.0.12 | MIT |
-| Microsoft.Extensions.Diagnostics.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.Diagnostics.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.Diagnostics.Testing | 10.10.0 | MIT |
-| Microsoft.Extensions.FileProviders.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.FileProviders.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.FileProviders.Physical | 10.0.0 | MIT |
-| Microsoft.Extensions.FileProviders.Physical | 10.0.12 | MIT |
-| Microsoft.Extensions.FileSystemGlobbing | 10.0.0 | MIT |
-| Microsoft.Extensions.FileSystemGlobbing | 10.0.12 | MIT |
-| Microsoft.Extensions.Hosting | 10.0.0 | MIT |
-| Microsoft.Extensions.Hosting | 10.0.12 | MIT |
-| Microsoft.Extensions.Hosting.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.Hosting.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.Http | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging.Abstractions | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging.Abstractions | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging.Configuration | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging.Configuration | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging.Console | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging.Console | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging.Debug | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging.Debug | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging.EventLog | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging.EventLog | 10.0.12 | MIT |
-| Microsoft.Extensions.Logging.EventSource | 10.0.0 | MIT |
-| Microsoft.Extensions.Logging.EventSource | 10.0.12 | MIT |
-| Microsoft.Extensions.ObjectPool | 10.0.2 | MIT |
-| Microsoft.Extensions.ObjectPool | 10.0.12 | MIT |
-| Microsoft.Extensions.Options | 10.0.0 | MIT |
-| Microsoft.Extensions.Options | 10.0.12 | MIT |
-| Microsoft.Extensions.Options.ConfigurationExtensions | 10.0.0 | MIT |
-| Microsoft.Extensions.Options.ConfigurationExtensions | 10.0.12 | MIT |
-| Microsoft.Extensions.Primitives | 10.0.0 | MIT |
-| Microsoft.Extensions.Primitives | 10.0.12 | MIT |
-| Microsoft.Extensions.Telemetry.Abstractions | 10.10.0 | MIT |
-| Microsoft.Extensions.TimeProvider.Testing | 10.10.0 | MIT |
-| Microsoft.IdentityModel.Abstractions | 8.19.2 | MIT |
-| Microsoft.IdentityModel.JsonWebTokens | 8.19.2 | MIT |
-| Microsoft.IdentityModel.Logging | 8.19.2 | MIT |
-| Microsoft.IdentityModel.Protocols | 8.19.2 | MIT |
-| Microsoft.IdentityModel.Protocols.OpenIdConnect | 8.19.2 | MIT |
-| Microsoft.IdentityModel.Tokens | 8.19.2 | MIT |
-| Microsoft.OpenApi | 2.12.0 | MIT |
-| Microsoft.Testing.Extensions.Telemetry | 2.4.0 | MIT |
-| Microsoft.Testing.Extensions.TrxReport.Abstractions | 2.4.0 | MIT |
-| Microsoft.Testing.Platform | 2.4.0 | MIT |
-| Microsoft.Testing.Platform.MSBuild | 2.4.0 | MIT |
-| Microsoft.VisualStudio.SolutionPersistence | 1.0.52 | MIT |
-| Microsoft.Win32.Registry | 5.0.0 | MIT |
-| Mono.Cecil | 0.11.6 | MIT |
-| Mono.TextTemplating | 3.0.0 | MIT |
-| NetArchTest.eNhancedEdition | 1.4.5 | MIT |
-| NetTopologySuite | 2.5.0 | BSD-3-Clause |
-| NetTopologySuite.IO.PostGis | 2.1.0 | BSD-3-Clause |
-| NewId | 4.0.1 | Apache-2.0 |
-| Newtonsoft.Json | 13.0.3 | MIT |
-| Newtonsoft.Json | 13.0.4 | MIT |
-| Npgsql | 10.0.3 | PostgreSQL |
-| Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 | PostgreSQL |
-| Npgsql.NetTopologySuite | 9.0.4 | PostgreSQL |
-| OpenTelemetry | 1.19.1 | Apache-2.0 |
-| OpenTelemetry.Api | 1.19.1 | Apache-2.0 |
-| OpenTelemetry.Api.ProviderBuilderExtensions | 1.19.1 | Apache-2.0 |
-| OpenTelemetry.Exporter.OpenTelemetryProtocol | 1.19.1 | Apache-2.0 |
-| OpenTelemetry.Extensions.Hosting | 1.19.1 | Apache-2.0 |
-| OpenTelemetry.Instrumentation.AspNetCore | 1.19.0 | Apache-2.0 |
-| Patched.DistributedLock.Core | 1.0.11 | MIT |
-| Patched.DistributedLock.Postgres | 1.3.3 | MIT |
-| Polly.Core | 8.6.5 | BSD-3-Clause |
-| Scalar.AspNetCore | 2.17.13 | MIT |
-| Serilog | 4.3.0 | Apache-2.0 |
-| Serilog.AspNetCore | 10.0.0 | Apache-2.0 |
-| Serilog.Extensions.Hosting | 10.0.0 | Apache-2.0 |
-| Serilog.Extensions.Logging | 10.0.0 | Apache-2.0 |
-| Serilog.Formatting.Compact | 3.0.0 | Apache-2.0 |
-| Serilog.Settings.Configuration | 10.0.0 | Apache-2.0 |
-| Serilog.Sinks.Console | 6.1.1 | Apache-2.0 |
-| Serilog.Sinks.Debug | 3.0.0 | Apache-2.0 |
-| Serilog.Sinks.File | 7.0.0 | Apache-2.0 |
-| SharpZipLib | 1.4.2 | MIT |
-| Shouldly | 4.3.0 | BSD-3-Clause |
-| Spectre.Console | 0.55.0 | MIT |
-| Spectre.Console.Ansi | 0.55.0 | MIT |
-| SSH.NET | 2026.0.0 | MIT |
-| System.CodeDom | 6.0.0 | MIT |
-| System.Composition | 9.0.0 | MIT |
-| System.Composition.AttributedModel | 9.0.0 | MIT |
-| System.Composition.Convention | 9.0.0 | MIT |
-| System.Composition.Hosting | 9.0.0 | MIT |
-| System.Composition.Runtime | 9.0.0 | MIT |
-| System.Composition.TypedParts | 9.0.0 | MIT |
-| System.Diagnostics.EventLog | 10.0.0 | MIT |
-| System.Diagnostics.EventLog | 10.0.12 | MIT |
-| System.IdentityModel.Tokens.Jwt | 8.19.2 | MIT |
-| System.Management | 6.0.1 | MIT |
-| System.Security.AccessControl | 6.0.1 | MIT |
-| Testcontainers | 4.15.0 | MIT |
-| Testcontainers.PostgreSql | 4.15.0 | MIT |
-| Weasel.Core | 9.38.0 | MIT |
-| Weasel.EntityFrameworkCore | 9.38.0 | MIT |
-| Weasel.Postgresql | 9.38.0 | MIT |
-| WolverineFx | 6.45.0 | MIT |
-| WolverineFx.EntityFrameworkCore | 6.45.0 | MIT |
-| WolverineFx.FluentValidation | 6.45.0 | MIT |
-| WolverineFx.Postgresql | 6.45.0 | MIT |
-| WolverineFx.RDBMS | 6.45.0 | MIT |
-| WolverineFx.RuntimeCompilation | 6.45.0 | MIT |
-| xunit.analyzers | 2.1.0 | Apache-2.0 |
-| xunit.v3 | 4.0.1 | Apache-2.0 |
-| xunit.v3.assert | 4.0.1 | Apache-2.0 |
-| xunit.v3.common | 4.0.1 | Apache-2.0 |
-| xunit.v3.core.mtp-v2 | 4.0.1 | Apache-2.0 |
-| xunit.v3.extensibility.core | 4.0.1 | Apache-2.0 |
-| xunit.v3.mtp-v2 | 4.0.1 | Apache-2.0 |
-| xunit.v3.runner.common | 4.0.1 | Apache-2.0 |
-| xunit.v3.runner.inproc.console | 4.0.1 | Apache-2.0 |
+- A package in use has no row here, or has more than one row.
+- A row names a package that is no longer used.
+- A version of a package in use declares a license that is not the license of its row. A license can change at a new version. If two versions of one package declare different licenses, the test names both.
+- A license here is not permitted.
+- A package in use is one that fixed rule 4 names. For MassTransit, the test checks the versions in use.
+
+| Package | License |
+| --- | --- |
+| BouncyCastle.Cryptography | MIT |
+| Cronos | MIT |
+| DiffEngine | MIT |
+| Docker.DotNet.Enhanced | MIT |
+| Docker.DotNet.Enhanced.Handler.Abstractions | MIT |
+| Docker.DotNet.Enhanced.LegacyHttp | MIT |
+| Docker.DotNet.Enhanced.NativeHttp | MIT |
+| Docker.DotNet.Enhanced.NPipe | MIT |
+| Docker.DotNet.Enhanced.Unix | MIT |
+| Docker.DotNet.Enhanced.X509 | MIT |
+| EFCore.NamingConventions | Apache-2.0 |
+| EmptyFiles | MIT |
+| FastExpressionCompiler | MIT |
+| FluentValidation | Apache-2.0 |
+| Humanizer.Core | MIT |
+| ImTools | MIT |
+| JasperFx | MIT |
+| JasperFx.Events | MIT |
+| JasperFx.RuntimeCompiler | MIT |
+| JasperFx.SourceGenerator | MIT |
+| Microsoft.ApplicationInsights | MIT |
+| Microsoft.AspNetCore.Authentication.JwtBearer | MIT |
+| Microsoft.AspNetCore.Mvc.Testing | MIT |
+| Microsoft.AspNetCore.OpenApi | MIT |
+| Microsoft.AspNetCore.TestHost | MIT |
+| Microsoft.Bcl.AsyncInterfaces | MIT |
+| Microsoft.Bcl.Cryptography | MIT |
+| Microsoft.Bcl.TimeProvider | MIT |
+| Microsoft.Build.Framework | MIT |
+| Microsoft.CodeAnalysis | MIT |
+| Microsoft.CodeAnalysis.Analyzers | MIT |
+| Microsoft.CodeAnalysis.Common | MIT |
+| Microsoft.CodeAnalysis.CSharp | MIT |
+| Microsoft.CodeAnalysis.CSharp.Scripting | MIT |
+| Microsoft.CodeAnalysis.CSharp.Workspaces | MIT |
+| Microsoft.CodeAnalysis.Scripting | MIT |
+| Microsoft.CodeAnalysis.Scripting.Common | MIT |
+| Microsoft.CodeAnalysis.VisualBasic | MIT |
+| Microsoft.CodeAnalysis.VisualBasic.Workspaces | MIT |
+| Microsoft.CodeAnalysis.Workspaces.Common | MIT |
+| Microsoft.CodeAnalysis.Workspaces.MSBuild | MIT |
+| Microsoft.EntityFrameworkCore | MIT |
+| Microsoft.EntityFrameworkCore.Abstractions | MIT |
+| Microsoft.EntityFrameworkCore.Analyzers | MIT |
+| Microsoft.EntityFrameworkCore.Design | MIT |
+| Microsoft.EntityFrameworkCore.Relational | MIT |
+| Microsoft.Extensions.ApiDescription.Server | MIT |
+| Microsoft.Extensions.Caching.Abstractions | MIT |
+| Microsoft.Extensions.Caching.Memory | MIT |
+| Microsoft.Extensions.Compliance.Abstractions | MIT |
+| Microsoft.Extensions.Configuration | MIT |
+| Microsoft.Extensions.Configuration.Abstractions | MIT |
+| Microsoft.Extensions.Configuration.Binder | MIT |
+| Microsoft.Extensions.Configuration.CommandLine | MIT |
+| Microsoft.Extensions.Configuration.EnvironmentVariables | MIT |
+| Microsoft.Extensions.Configuration.FileExtensions | MIT |
+| Microsoft.Extensions.Configuration.Json | MIT |
+| Microsoft.Extensions.Configuration.UserSecrets | MIT |
+| Microsoft.Extensions.DependencyInjection | MIT |
+| Microsoft.Extensions.DependencyInjection.Abstractions | MIT |
+| Microsoft.Extensions.DependencyModel | MIT |
+| Microsoft.Extensions.Diagnostics | MIT |
+| Microsoft.Extensions.Diagnostics.Abstractions | MIT |
+| Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions | MIT |
+| Microsoft.Extensions.Diagnostics.Testing | MIT |
+| Microsoft.Extensions.FileProviders.Abstractions | MIT |
+| Microsoft.Extensions.FileProviders.Physical | MIT |
+| Microsoft.Extensions.FileSystemGlobbing | MIT |
+| Microsoft.Extensions.Hosting | MIT |
+| Microsoft.Extensions.Hosting.Abstractions | MIT |
+| Microsoft.Extensions.Http | MIT |
+| Microsoft.Extensions.Logging | MIT |
+| Microsoft.Extensions.Logging.Abstractions | MIT |
+| Microsoft.Extensions.Logging.Configuration | MIT |
+| Microsoft.Extensions.Logging.Console | MIT |
+| Microsoft.Extensions.Logging.Debug | MIT |
+| Microsoft.Extensions.Logging.EventLog | MIT |
+| Microsoft.Extensions.Logging.EventSource | MIT |
+| Microsoft.Extensions.ObjectPool | MIT |
+| Microsoft.Extensions.Options | MIT |
+| Microsoft.Extensions.Options.ConfigurationExtensions | MIT |
+| Microsoft.Extensions.Primitives | MIT |
+| Microsoft.Extensions.Telemetry.Abstractions | MIT |
+| Microsoft.Extensions.TimeProvider.Testing | MIT |
+| Microsoft.IdentityModel.Abstractions | MIT |
+| Microsoft.IdentityModel.JsonWebTokens | MIT |
+| Microsoft.IdentityModel.Logging | MIT |
+| Microsoft.IdentityModel.Protocols | MIT |
+| Microsoft.IdentityModel.Protocols.OpenIdConnect | MIT |
+| Microsoft.IdentityModel.Tokens | MIT |
+| Microsoft.OpenApi | MIT |
+| Microsoft.Testing.Extensions.Telemetry | MIT |
+| Microsoft.Testing.Extensions.TrxReport.Abstractions | MIT |
+| Microsoft.Testing.Platform | MIT |
+| Microsoft.Testing.Platform.MSBuild | MIT |
+| Microsoft.VisualStudio.SolutionPersistence | MIT |
+| Microsoft.Win32.Registry | MIT |
+| Mono.Cecil | MIT |
+| Mono.TextTemplating | MIT |
+| NetArchTest.eNhancedEdition | MIT |
+| NetTopologySuite | BSD-3-Clause |
+| NetTopologySuite.IO.PostGis | BSD-3-Clause |
+| NewId | Apache-2.0 |
+| Newtonsoft.Json | MIT |
+| Npgsql | PostgreSQL |
+| Npgsql.EntityFrameworkCore.PostgreSQL | PostgreSQL |
+| Npgsql.NetTopologySuite | PostgreSQL |
+| OpenTelemetry | Apache-2.0 |
+| OpenTelemetry.Api | Apache-2.0 |
+| OpenTelemetry.Api.ProviderBuilderExtensions | Apache-2.0 |
+| OpenTelemetry.Exporter.OpenTelemetryProtocol | Apache-2.0 |
+| OpenTelemetry.Extensions.Hosting | Apache-2.0 |
+| OpenTelemetry.Instrumentation.AspNetCore | Apache-2.0 |
+| Patched.DistributedLock.Core | MIT |
+| Patched.DistributedLock.Postgres | MIT |
+| Polly.Core | BSD-3-Clause |
+| Scalar.AspNetCore | MIT |
+| Serilog | Apache-2.0 |
+| Serilog.AspNetCore | Apache-2.0 |
+| Serilog.Extensions.Hosting | Apache-2.0 |
+| Serilog.Extensions.Logging | Apache-2.0 |
+| Serilog.Formatting.Compact | Apache-2.0 |
+| Serilog.Settings.Configuration | Apache-2.0 |
+| Serilog.Sinks.Console | Apache-2.0 |
+| Serilog.Sinks.Debug | Apache-2.0 |
+| Serilog.Sinks.File | Apache-2.0 |
+| SharpZipLib | MIT |
+| Shouldly | BSD-3-Clause |
+| Spectre.Console | MIT |
+| Spectre.Console.Ansi | MIT |
+| SSH.NET | MIT |
+| System.CodeDom | MIT |
+| System.Composition | MIT |
+| System.Composition.AttributedModel | MIT |
+| System.Composition.Convention | MIT |
+| System.Composition.Hosting | MIT |
+| System.Composition.Runtime | MIT |
+| System.Composition.TypedParts | MIT |
+| System.Diagnostics.EventLog | MIT |
+| System.IdentityModel.Tokens.Jwt | MIT |
+| System.Management | MIT |
+| System.Security.AccessControl | MIT |
+| Testcontainers | MIT |
+| Testcontainers.PostgreSql | MIT |
+| Weasel.Core | MIT |
+| Weasel.EntityFrameworkCore | MIT |
+| Weasel.Postgresql | MIT |
+| WolverineFx | MIT |
+| WolverineFx.EntityFrameworkCore | MIT |
+| WolverineFx.FluentValidation | MIT |
+| WolverineFx.Postgresql | MIT |
+| WolverineFx.RDBMS | MIT |
+| WolverineFx.RuntimeCompilation | MIT |
+| xunit.analyzers | Apache-2.0 |
+| xunit.v3 | Apache-2.0 |
+| xunit.v3.assert | Apache-2.0 |
+| xunit.v3.common | Apache-2.0 |
+| xunit.v3.core.mtp-v2 | Apache-2.0 |
+| xunit.v3.extensibility.core | Apache-2.0 |
+| xunit.v3.mtp-v2 | Apache-2.0 |
+| xunit.v3.runner.common | Apache-2.0 |
+| xunit.v3.runner.inproc.console | Apache-2.0 |
