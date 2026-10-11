@@ -20,9 +20,11 @@
 import { defineRailway, project, service } from "railway/iac";
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
-// Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3). Messaging is
-// added because the Database connection goes through Neon's pooler. The `__` form is the
-// environment variable form of a key.
+// Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3). Two optional
+// keys are added: ConnectionStrings:Messaging, because the Database connection goes through
+// Neon's pooler, and Host:Cors:AllowedOrigins:0, for the web app's origin. Each shared variable
+// must exist: a reference to a missing one gives an empty value (docs/deployment.md, section 5).
+// The `__` form is the environment variable form of a key.
 const sharedVariables = [
   "ConnectionStrings__Database",
   "ConnectionStrings__Messaging",

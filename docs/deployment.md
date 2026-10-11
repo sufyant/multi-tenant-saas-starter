@@ -103,7 +103,7 @@ Do these steps in this order. The deploy stays switched off until step 9, so `ma
    gh run rerun <run id>
    ```
 
-`deploy-api` then migrates the database and deploys the image. Check that `https://<the generated domain>/health/ready` answers `Healthy`.
+`deploy-api` then migrates the database and deploys the image. Check that `https://<the generated domain>/health/live` answers `Healthy`.
 
 ## 5. Railway settings
 
@@ -123,7 +123,10 @@ Rules:
 - Change a setting of the two services in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
 - The file has no `source`, because CI sets the image. Railway CLI 5.63.1 compares the image that CI set with the missing `source` in the file, so a plan after a deploy can show a change to `source`. It is not known whether such an apply removes the image. Do not apply a plan that changes the `source` of a service. Report it instead.
-- A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. The API then stops at start and names the missing key, so Railway marks the deployment as failed. Set the shared variables first (step 1 of section 4). Source: Railway Central Station answers; the Railway docs do not describe this case.
+- A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 1 of section 4).
+- For most keys, an empty value stops the API at start, and the API names the key. Railway then marks the deployment as failed.
+- An empty `ConnectionStrings__Messaging` does not stop the API. Wolverine then uses `ConnectionStrings__Database`, which goes through the pooler, and fails later at run time (`apps/api/docs/setup.md`). Always set it.
+- An empty `Host__Cors__AllowedOrigins__0` is not a valid origin, so the API stops. Set it to the web app's origin, also before the web app exists.
 
 ## 6. The migrations connection
 
@@ -163,7 +166,11 @@ Make a breaking change in two releases:
 
 Sources: Humble and Farley, *Continuous Delivery*, chapter 12 ("Managing Data"). Ambler and Sadalage, *Refactoring Databases*, the transition period.
 
-## 9. When `deploy-api` fails
+## 9. Known gap: the readiness endpoint is public
+
+Section 8 of `apps/api/docs/ARCHITECTURE.md` says that the readiness endpoint is not routed from outside. On Railway, the generated domain of `api-web` routes every path, so `/health/ready` is public too. Railway's health check needs this path. The deviations table of `ARCHITECTURE.md` does not record this yet. The maintainer decides how to close the gap.
+
+## 10. When `deploy-api` fails
 
 - "The secret ... is empty": set the secret (section 4, step 4).
 - The migration fails: the step prints the error of the `migrate` command. Nothing was deployed.
