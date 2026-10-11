@@ -5,11 +5,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/github/apply-settings.sh <owner/repo> [--template] [--check]
+Usage: scripts/github/apply-settings.sh [owner/repo] [--template] [--check]
 
 Applies the settings in docs/github-settings.md to a GitHub repository,
 then checks them. A second run changes nothing.
 
+  owner/repo  The repository. Without it, the script uses the repository
+              of the current folder.
   --template  Set is_template to true. Without it, the value is false.
   --check     Change nothing. Print one line per setting (OK or DIFF)
               and exit with 1 if any line is DIFF or FAIL.
@@ -28,6 +30,8 @@ while [[ $# -gt 0 ]]; do
     -h | --help) usage; exit 0 ;;
     --template) template=true ;;
     --check) check_only=true ;;
+    # pnpm passes "--" to the script, so the script ignores it.
+    --) ;;
     -*) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
     *)
       if [[ -n "$repo" ]]; then echo "Only one repository is allowed." >&2; exit 2; fi
@@ -37,10 +41,16 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+if [[ -z "$repo" ]]; then
+  repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
+fi
+
 if [[ ! "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
   usage >&2
   exit 2
 fi
+
+echo "Repository: $repo"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ruleset_file="$script_dir/../../.github/rulesets/main.json"

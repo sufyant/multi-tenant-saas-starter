@@ -8,15 +8,15 @@ GitHub does not copy repository settings to a new repository from a template. Th
 
 The script `scripts/github/apply-settings.sh` is the source of truth. The ruleset is in `.github/rulesets/main.json`.
 
-To change a setting, open a pull request. The pull request changes this document and the script or the JSON. After the merge, run the script.
+To change a setting, open a pull request. The pull request changes this document and the script or the JSON. After the merge, run `pnpm github:apply`.
 
-Do not change a setting only in the GitHub interface. A change that is only in the interface is configuration drift. The next run of the script removes it.
+Do not change a setting only in the GitHub interface. A change that is only in the interface is configuration drift. The next run of `pnpm github:apply` removes it.
 
 Source: Kief Morris, *Infrastructure as Code* (2nd ed.), chapter 2: "Define everything as code" and "Configuration drift".
 
 ## 2. How to apply
 
-You must be an admin of the repository.
+You must be an admin of the repository. Run the commands from the repository root.
 
 1. Log in with the GitHub CLI:
 
@@ -24,17 +24,33 @@ You must be an admin of the repository.
    gh auth login
    ```
 
-2. Apply the settings. Use `--template` only for this template repository:
+2. Apply the settings to a product repository:
 
    ```bash
-   scripts/github/apply-settings.sh <owner/repo>
+   pnpm github:apply
+   ```
+
+   For this template repository, add `--template`:
+
+   ```bash
+   pnpm github:apply -- --template
    ```
 
 3. Check the settings. This command changes nothing:
 
    ```bash
-   scripts/github/apply-settings.sh <owner/repo> --check
+   pnpm github:check
    ```
+
+   For this template repository, add `--template`:
+
+   ```bash
+   pnpm github:check -- --template
+   ```
+
+Without a repository name, the script uses the repository of the current folder. To use a different repository, give its name. For example: `pnpm github:check -- <owner/repo>`. The script prints the repository name before it reads or changes anything.
+
+The two commands run `scripts/github/apply-settings.sh`. Run `pnpm github:check -- --help` to see all options.
 
 The script prints one line per setting:
 
