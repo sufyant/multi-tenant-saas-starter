@@ -30,22 +30,10 @@ You must be an admin of the repository. Run the commands from the repository roo
    pnpm github:apply
    ```
 
-   For this template repository, add `--template`:
-
-   ```bash
-   pnpm github:apply -- --template
-   ```
-
 3. Check the settings. This command changes nothing:
 
    ```bash
    pnpm github:check
-   ```
-
-   For this template repository, add `--template`:
-
-   ```bash
-   pnpm github:check -- --template
    ```
 
 Without a repository name, the script uses the repository of the current folder. To use a different repository, give its name. For example: `pnpm github:check -- <owner/repo>`. The script prints the repository name before it reads or changes anything.
@@ -70,7 +58,6 @@ The script sets these values with `PATCH /repos/{owner}/{repo}`.
 
 | Setting | Value | Reason | Source |
 | --- | --- | --- | --- |
-| `is_template` | `true` for this repository only. `false` for product repositories. | This repository is the template. A product repository is not a template. | GitHub Docs: "Creating a template repository" |
 | `has_wiki` | `false` | Documents live in the repository, in `docs/` and in `apps/*/docs/`. A wiki is a second place that nobody reviews. | GitHub Docs: "Disabling wikis" |
 | `has_projects` | `false` | The repository does not use GitHub Projects. | GitHub Docs: "Disabling projects in a repository" |
 | `has_discussions` | `false` | Issues are the only place for questions and reports. The REST API cannot set this value. See section 5. | GitHub Docs: "Enabling or disabling GitHub Discussions for a repository" |
@@ -154,6 +141,7 @@ Source: GitHub Docs: "Configuring two-factor authentication", "About passkeys", 
 - Webhooks: the list is empty.
 - Installed GitHub Apps: each app has only the permissions it needs.
 - The About description and the topics are set.
+- Template repository: set only in the template repository, once. Settings, General, "Template repository". A repository created from the template is not a template by default, so a product repository needs no action.
 
 ### 5.3 Settings without a REST API endpoint
 

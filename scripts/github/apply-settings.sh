@@ -5,14 +5,13 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/github/apply-settings.sh [owner/repo] [--template] [--check]
+Usage: scripts/github/apply-settings.sh [owner/repo] [--check]
 
 Applies the settings in docs/github-settings.md to a GitHub repository,
 then checks them. A second run changes nothing.
 
   owner/repo  The repository. Without it, the script uses the repository
               of the current folder.
-  --template  Set is_template to true. Without it, the value is false.
   --check     Change nothing. Print one line per setting (OK or DIFF)
               and exit with 1 if any line is DIFF or FAIL.
   -h, --help  Print this help.
@@ -22,13 +21,11 @@ EOF
 }
 
 repo=""
-template=false
 check_only=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h | --help) usage; exit 0 ;;
-    --template) template=true ;;
     --check) check_only=true ;;
     # pnpm passes "--" to the script, so the script ignores it.
     --) ;;
@@ -170,7 +167,6 @@ check_ruleset() {
 check_all() {
   echo "== General"
   check_fields "repos/$repo" \
-    "is_template|.is_template|$template" \
     "has_wiki|.has_wiki|false" \
     "has_projects|.has_projects|false" \
     "has_discussions|.has_discussions|false" \
@@ -245,7 +241,6 @@ apply_ruleset() {
 apply_all() {
   echo "== Applying settings to $repo"
   apply_step "general settings" PATCH "repos/$repo" "{
-    \"is_template\": $template,
     \"has_wiki\": false,
     \"has_projects\": false,
     \"has_issues\": true,
