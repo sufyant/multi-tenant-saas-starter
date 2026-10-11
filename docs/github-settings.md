@@ -158,6 +158,7 @@ Source: GitHub Docs: "Configuring two-factor authentication", "About passkeys", 
 | Environment `dev` with the migrations secret | Deploy step | There is no deployment yet. |
 | Required signed commits | After commit signing works for cloud agents | Cloud agents cannot sign commits yet. The rule would block their pull requests. |
 | Playwright end-to-end tests in CI | When a Clerk development instance and its keys exist as CI secrets | The tests need a real Clerk instance. |
-| Docker in `dependabot.yml`, and an image build job | With the Dockerfile step | There is no Dockerfile yet. |
+| Push the API image to GHCR, with an SBOM and a build provenance attestation (`actions/attest-build-provenance`) | With the deploy step | There is no deployment yet. |
+| Keep the Grype and PostgreSQL image digests in `ci.yml` current. Proposal: write both images as `FROM` lines in a file that Dependabot's `docker` ecosystem watches, for example `.github/images/Dockerfile`. The image jobs read the references from that file. Dependabot then opens the pull requests | A later CI step | Dependabot's `github-actions` ecosystem does not update an image in a `run` step. Until then, the maintainer updates the two digests by hand. |
 | NuGet lock files (`packages.lock.json`) and restore in locked mode | Later; check first that Dependabot updates them | A lock file that Dependabot does not update would block its pull requests. `setup-dotnet` caches NuGet packages only with lock files. |
 | Required code scanning results in the ruleset | After CodeQL has run on a few pull requests | A new rule must not block pull requests before the CodeQL results are known. |

@@ -165,3 +165,20 @@ curl http://127.0.0.1:5080/v1/tenants/<tenantId>/members -H "Authorization: Bear
 ## 9. Stop
 
 Send SIGTERM (Ctrl+C) to each process. It stops taking messages and finishes the ones it has within `Host:ShutdownTimeout`.
+
+## 10. Run in containers
+
+The image `apps/api/Dockerfile` runs every process, as section 1 of `ARCHITECTURE.md` describes. The database and the roles come from section 2.
+
+Put the settings of section 5 in a file, `api.env`, one per line. Leave out the comments: Docker keeps a comment as part of the value. Leave out `ASPNETCORE_URLS`: the image listens on port 8080. Write `host.docker.internal` in place of `localhost` in the connection strings, so a container reaches the database on your machine.
+
+```sh
+docker build -t api apps/api
+docker run --rm --add-host=host.docker.internal:host-gateway \
+  -e ConnectionStrings__Migrations="Host=host.docker.internal;Port=5432;Database=app;Username=api_owner;Password=<owner password>" \
+  api migrate
+docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env -e Host__Role=web -p 5080:8080 api
+docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env -e Host__Role=worker -p 5081:8080 api
+```
+
+`-e Host__Role` overrides the role in `api.env`. The checks of section 6 work on the same ports.
