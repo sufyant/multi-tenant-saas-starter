@@ -79,6 +79,8 @@ The script sets these values with `PATCH /repos/{owner}/{repo}`.
 | Dependabot security updates | enabled | Dependabot opens a pull request that fixes a vulnerable dependency. | GitHub Docs: "About Dependabot security updates". OpenSSF Scorecard: Vulnerabilities |
 | Private vulnerability reporting | enabled | A researcher can report a vulnerability privately. The report is not a public issue. | GitHub Docs: "Configuring private vulnerability reporting for a repository" |
 | CodeQL code scanning | default setup, state `configured` | CodeQL finds security problems in the code on each push and pull request. | GitHub Docs: "Configuring default setup for code scanning". OpenSSF Scorecard: SAST |
+| Security policy | `SECURITY.md` at the repository root | It tells a researcher to use private vulnerability reporting and not a public issue. | GitHub Docs: "Adding a security policy to your repository". OpenSSF Scorecard: Security-Policy |
+| Dependabot version updates | `.github/dependabot.yml`: NuGet, npm (for pnpm) and GitHub Actions, weekly, minor and patch updates grouped per ecosystem, security updates grouped, cooldown 7 days | Dependencies stay current in few pull requests. A new release waits 7 days, because a compromised release is often pulled within days. | GitHub Docs: "Dependabot options reference". OpenSSF Scorecard: Dependency-Update-Tool |
 
 ### 3.3 Actions
 
@@ -106,7 +108,8 @@ The file `.github/rulesets/main.json` holds the ruleset. It uses the format that
 | Dismiss stale reviews, code owner review, last push approval | `false` | These rules need a second reviewer. The project has one maintainer. | GitHub Docs: "Available rules for rulesets" |
 | Required review thread resolution | `true` | A pull request cannot merge while a review comment is open. | GitHub Docs: "Available rules for rulesets" |
 | Allowed merge methods | `merge` | This matches the general settings in section 3.1. | GitHub Docs: "Available rules for rulesets" |
-| Required status checks | none yet | There is no CI workflow yet. The CI step adds the checks. See section 6. | GitHub Docs: "Available rules for rulesets" |
+| Required status checks | `CI` from GitHub Actions (`integration_id` 15368) | `CI` is the last job of `.github/workflows/ci.yml`. It fails when a job in its `needs` list did not pass. A new job is added to `needs` in the workflow, not here. | GitHub Docs: "Available rules for rulesets". Humble and Farley, *Continuous Delivery*, chapter 3 |
+| Require branches to be up to date (`strict_required_status_checks_policy`) | `true` | CI tests the code that will be on `main` after the merge, not an old base. | GitHub Docs: "Available rules for rulesets" |
 
 ## 4. Plan limits
 
@@ -151,9 +154,10 @@ Source: GitHub Docs: "Configuring two-factor authentication", "About passkeys", 
 
 | What | When | Why not now |
 | --- | --- | --- |
-| Required status checks in the ruleset, and "require branches to be up to date" | After the CI workflow runs once | A required check must exist before GitHub can require it. |
-| `.github/dependabot.yml` for NuGet, npm, GitHub Actions and Docker | CI step | The CI step adds the workflows and the Docker files that Dependabot updates. |
-| `SECURITY.md` | CI step | It belongs with the CI and Dependabot work. |
 | `LICENSE` | After the maintainer decides the licence | The maintainer has not decided the licence. |
 | Environment `dev` with the migrations secret | Deploy step | There is no deployment yet. |
 | Required signed commits | After commit signing works for cloud agents | Cloud agents cannot sign commits yet. The rule would block their pull requests. |
+| Playwright end-to-end tests in CI | When a Clerk development instance and its keys exist as CI secrets | The tests need a real Clerk instance. |
+| Docker in `dependabot.yml`, and an image build job | With the Dockerfile step | There is no Dockerfile yet. |
+| NuGet lock files (`packages.lock.json`) and restore in locked mode | Later; check first that Dependabot updates them | A lock file that Dependabot does not update would block its pull requests. `setup-dotnet` caches NuGet packages only with lock files. |
+| Required code scanning results in the ruleset | After CodeQL has run on a few pull requests | A new rule must not block pull requests before the CodeQL results are known. |

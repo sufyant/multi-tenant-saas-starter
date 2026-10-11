@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!.turbo",
-      "!.claude"
+      "!.claude",
+      "!apps/api"
     ]
   },
   "formatter": {
