@@ -15,11 +15,13 @@ concurrency:
 permissions:
   contents: read
 
+# Each timeout is about twice the time the job took on the first run:
+# node 42 s, api 2 min 51 s, ci 3 s.
 jobs:
   node:
     name: "Node: lint, types, tests, build"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -55,7 +57,7 @@ jobs:
   api:
     name: "API: build and test"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 6
     defaults:
       run:
         working-directory: apps/api
@@ -80,7 +82,7 @@ jobs:
     needs: [node, api]
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 1
     steps:
       - name: Check that every needed job passed
         env:
