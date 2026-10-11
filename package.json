@@ -13,7 +13,9 @@
     "test": "turbo test",
     "test:e2e": "turbo test:e2e",
     "lint": "biome check",
-    "format": "biome check --write"
+    "format": "biome check --write",
+    "github:apply": "scripts/github/apply-settings.sh",
+    "github:check": "scripts/github/apply-settings.sh --check"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
