@@ -111,12 +111,14 @@ jobs:
           fi
 
           # The newest production deployment that reached success. This job's own deployment has
-          # no success yet.
+          # no success yet. An API error stops the step: each call is an assignment, which fails.
+          set -o pipefail
+          deployments=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments?environment=production&per_page=100" |
+            jq -r 'add // [] | sort_by(.id) | reverse | .[] | "\(.id):\(.sha)"')
           latest=""
-          for deployment in $(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments?environment=production&per_page=100" |
-            jq -r 'add // [] | sort_by(.id) | reverse | .[] | "\(.id):\(.sha)"'); do
-            if gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments/${deployment%%:*}/statuses" |
-              jq -e 'add // [] | any(.state == "success")' > /dev/null; then
+          for deployment in $deployments; do
+            statuses=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments/${deployment%%:*}/statuses")
+            if jq -e 'add // [] | any(.state == "success")' > /dev/null <<<"$statuses"; then
               latest="${deployment#*:}"
               break
             fi
