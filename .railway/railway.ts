@@ -12,18 +12,22 @@
 // Apply deletes a service variable that is not in this file. Add every variable of the two
 // services here, not in the Railway dashboard.
 //
-// Apply it by hand from the repository root, after `railway login` and `railway link`:
+// The same file serves the environments staging and production. No setting differs today; a
+// setting that must differ can read `ctx.environment`.
+//
+// Apply it by hand to each environment, from the repository root, after `railway login` and
+// `railway link` to that environment:
 //   pnpm railway:plan     shows the changes and changes nothing
 //   pnpm railway:apply    applies the changes
 // Read the plan first. Do not apply a plan that changes the `source` of a service
-// (docs/deployment.md, "Railway settings").
+// (docs/deployment.md, section 7).
 import { defineRailway, project, service } from "railway/iac";
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
 // Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3). Two optional
 // keys are added: ConnectionStrings:Messaging, because the Database connection goes through
 // Neon's pooler, and Host:Cors:AllowedOrigins:0, for the web app's origin. Each shared variable
-// must exist: a reference to a missing one gives an empty value (docs/deployment.md, section 5).
+// must exist: a reference to a missing one gives an empty value (docs/deployment.md, section 7).
 // The `__` form is the environment variable form of a key.
 const sharedVariables = [
   "ConnectionStrings__Database",
