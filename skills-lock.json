@@ -181,6 +181,12 @@
       "skillPath": "skills/theme-factory/SKILL.md",
       "computedHash": "598ddfa9784ae2a8c55be5dbb047b98564d875dea6f4669168a87ae1ea1a4ed3"
     },
+    "use-railway": {
+      "source": "railwayapp/railway-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/railway/skills/use-railway/SKILL.md",
+      "computedHash": "9e8bf61b5389f3f93ebe30ab75321c045f2f75686a129898ef15dd4e3e04fc46"
+    },
     "webapp-testing": {
       "source": "anthropics/skills",
       "sourceType": "github",
