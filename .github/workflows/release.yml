@@ -1,0 +1,149 @@
+name: Release
+
+# A release is a SemVer tag vX.Y.Z on a commit of main (semver.org 2.0.0). This workflow builds
+# nothing. It finds the image that CI published for the tagged commit, checks it, and deploys it to
+# production with deploy.yml. Production gets only a digest that staging ran with success
+# (Humble and Farley, Continuous Delivery, chapter 5).
+# A rollback runs it on an earlier tag: gh workflow run release.yml --ref v1.1.0
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: "Promote the staging image"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # check out the history, to find the tagged commit on main
+      packages: write # read the image and add the version tag in GHCR
+      attestations: read # verify the build provenance of the image
+      deployments: read # find the staging deployment of the commit
+    outputs:
+      image: ${{ steps.tag.outputs.image }}
+    steps:
+      - name: Check that the ref is a release tag
+        run: |
+          if [[ ! "$GITHUB_REF" =~ ^refs/tags/v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::$GITHUB_REF is not a release tag vX.Y.Z. Pre-release tags are not supported yet."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # An annotated tag is an object of its own, so the step reads the commit that the tag names.
+      - name: Check that the commit is on main
+        id: commit
+        run: |
+          commit=$(git rev-parse "$GITHUB_REF^{commit}")
+          if ! git merge-base --is-ancestor "$commit" origin/main; then
+            echo "::error::The commit $commit of $GITHUB_REF_NAME is not on main. Tag a commit of main."
+            exit 1
+          fi
+          echo "Commit: $commit"
+          echo "sha=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
+
+      # publish-api in ci.yml tags each image with the full commit SHA.
+      - name: Find the image of the commit
+        id: image
+        env:
+          COMMIT: ${{ steps.commit.outputs.sha }}
+        run: |
+          name="ghcr.io/${GITHUB_REPOSITORY,,}/api"
+          digest=$(docker buildx imagetools inspect "$name:$COMMIT" --format '{{json .Manifest}}' | jq -r .digest) || true
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::CI on main did not publish an image for this commit."
+            exit 1
+          fi
+          echo "Image: $name@$digest"
+          {
+            echo "name=$name"
+            echo "digest=$digest"
+          } >> "$GITHUB_OUTPUT"
+
+      # The provenance must come from ci.yml, run on main, in this repository.
+      - name: Check where the image came from
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAME: ${{ steps.image.outputs.name }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          gh attestation verify "oci://$NAME@$DIGEST" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml" \
+            --source-ref refs/heads/main
+
+      # GitHub records a deployment for each job that runs in an environment. When a newer
+      # deployment to staging succeeds, GitHub adds an `inactive` status to the older ones, and only
+      # to deployments that had `success`. So the step skips `inactive` and needs `success` as the
+      # latest other status. An earlier tag, for a rollback, then passes too.
+      - name: Check that staging ran this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT: ${{ steps.commit.outputs.sha }}
+        run: |
+          passed=false
+          for id in $(gh api --paginate "repos/$GITHUB_REPOSITORY/deployments?environment=staging&sha=$COMMIT" --jq '.[].id'); do
+            state=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments/$id/statuses" |
+              jq -r 'add // [] | map(select(.state != "inactive")) | max_by(.id) | .state // "none"')
+            echo "Staging deployment $id: $state"
+            if [[ "$state" == success ]]; then
+              passed=true
+            fi
+          done
+          if [[ "$passed" != true ]]; then
+            echo "::error::Staging has not deployed this commit with success. Wait for the staging deploy, then re-run this workflow."
+            exit 1
+          fi
+
+      # The version tag names the same digest. --prefer-index=false copies the manifest as it is;
+      # by default buildx wraps a single manifest in a new index, which has a new digest.
+      - name: Name the version in the registry
+        id: tag
+        env:
+          NAME: ${{ steps.image.outputs.name }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          docker buildx imagetools create --prefer-index=false --tag "$NAME:$GITHUB_REF_NAME" "$NAME@$DIGEST"
+          tagged=$(docker buildx imagetools inspect "$NAME:$GITHUB_REF_NAME" --format '{{json .Manifest}}' | jq -r .digest)
+          if [[ "$tagged" != "$DIGEST" ]]; then
+            echo "::error::$NAME:$GITHUB_REF_NAME names $tagged, not $DIGEST."
+            exit 1
+          fi
+          echo "image=$NAME@$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
+
+  deploy-production:
+    name: "API: deploy to production"
+    needs: [promote]
+    permissions:
+      contents: read
+      packages: read # deploy.yml pulls the image from GHCR
+    uses: $/.github/workflows/deploy.yml
+    with:
+      environment: production
+      image: ${{ needs.promote.outputs.image }}
+    # GitHub passes an environment secret only by name. The called job sets
+    # `environment: production`, so it gets the production values (GitHub Docs, "Reuse workflows").
+    secrets:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
