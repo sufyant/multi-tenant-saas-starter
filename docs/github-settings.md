@@ -8,6 +8,8 @@ GitHub does not copy repository settings to a new repository from a template. Th
 
 The script `scripts/github/apply-settings.sh` is the source of truth. The ruleset is in `.github/rulesets/main.json`.
 
+The Railway settings are code too, in `.railway/railway.ts`. `docs/deployment.md` describes them.
+
 To change a setting, open a pull request. The pull request changes this document and the script or the JSON. After the merge, run `pnpm github:apply`.
 
 Do not change a setting only in the GitHub interface. A change that is only in the interface is configuration drift. The next run of `pnpm github:apply` removes it.
@@ -112,15 +114,36 @@ The file `.github/rulesets/main.json` holds the ruleset. It uses the format that
 | Required status checks | `CI` from GitHub Actions (`integration_id` 15368) | `CI` is the last job of `.github/workflows/ci.yml`. It fails when a job in its `needs` list did not pass. A new job is added to `needs` in the workflow, not here. | GitHub Docs: "Available rules for rulesets". Humble and Farley, *Continuous Delivery*, chapter 3 |
 | Require branches to be up to date (`strict_required_status_checks_policy`) | `true` | CI tests the code that will be on `main` after the merge, not an old base. | GitHub Docs: "Available rules for rulesets" |
 
+### 3.5 Environment `production`
+
+The job `deploy-api` in `.github/workflows/ci.yml` runs in this environment. The script creates the environment with `PUT /repos/{owner}/{repo}/environments/production` and sets its deployment branches with `/deployment-branch-policies`.
+
+| Setting | Value | Reason | Source |
+| --- | --- | --- | --- |
+| Deployment branches | custom policy: the branch `main` only. The script removes any other policy | Only a run on `main` can read the secrets and deploy. A run on a pull request branch cannot. | GitHub Docs: "Managing environments for deployment", "Deployment branches and tags" |
+| Required reviewers | none | Merging the pull request is the approval. The ruleset of section 3.4 already requires a pull request and a passing `CI` check for every change to `main`. A second approval would come from the same single maintainer. | GitHub Docs: "Managing environments for deployment", "Required reviewers" |
+| Wait timer | `0` | The deploy starts when `publish-api` passes. A wait gives nobody a chance to act, because there is no reviewer. | GitHub Docs: "Managing environments for deployment", "Wait timer" |
+
+The environment holds two secrets. The script never sets or reads a secret value.
+
+| Secret | What it holds | Who sets it |
+| --- | --- | --- |
+| `RAILWAY_TOKEN` | A Railway project token for the `production` environment of the product's Railway project | The maintainer, with `gh secret set RAILWAY_TOKEN --env production` |
+| `MIGRATIONS_CONNECTION_STRING` | The owner role's direct connection, for the `migrate` command only (R3 in `apps/api/docs/ARCHITECTURE.md`) | The maintainer, with `gh secret set MIGRATIONS_CONNECTION_STRING --env production` |
+
+`docs/deployment.md` gives the order of the first deployment and the format of each value.
+
 ## 4. Plan limits
 
-Rulesets and environment secrets are enforced on private repositories only with GitHub Pro, Team or Enterprise.
+Rulesets and environment secrets are enforced on private repositories only with GitHub Pro, Team or Enterprise. The same is true for environments and their deployment branches.
+
+Artifact attestations work on public repositories on every current plan. A private repository needs GitHub Enterprise Cloud. `publish-api` then fails at its attestation step.
 
 On GitHub Free, they work only on public repositories.
 
 A private product repository on GitHub Free is not protected. The script prints `FAIL` for each setting that the plan does not allow. It continues with the other settings and exits with 1.
 
-Source: GitHub Docs: "About rulesets" and "GitHub's plans".
+Source: GitHub Docs: "About rulesets", "Managing environments for deployment", "Using artifact attestations to establish provenance for builds" and "GitHub's plans".
 
 ## 5. Manual steps
 
@@ -151,16 +174,24 @@ Source: GitHub Docs: "Configuring two-factor authentication", "About passkeys", 
 
 - `has_discussions` = `false`. The `PATCH /repos/{owner}/{repo}` endpoint does not accept `has_discussions`. Go to Settings, General, Features, and clear "Discussions". The script still reads the value and prints `OK` or `DIFF`.
 
+### 5.4 Deployment
+
+Do these steps in the order of `docs/deployment.md`, section "First deployment".
+
+- Make the GHCR package public after its first push. A new package is private, also when it comes from a public repository. A package that is linked to its repository gets the repository's access permissions, but not its visibility. Railway pulls the image without credentials, so the package must be public. Go to the package's settings, "Danger Zone", "Change visibility", and choose "Public". You cannot make a public package private again.
+- Set the repository variable `DEPLOY_TO_RAILWAY` to `true` with `gh variable set DEPLOY_TO_RAILWAY --body true`. Without it, the job `deploy-api` is skipped and `main` stays green. To stop the deploys, delete the variable with `gh variable delete DEPLOY_TO_RAILWAY`.
+
+Source: GitHub Docs: "Configuring a package's access control and visibility" and "Store information in variables".
+
 ## 6. Planned changes
 
 | What | When | Why not now |
 | --- | --- | --- |
 | `LICENSE` | After the maintainer decides the licence | The maintainer has not decided the licence. |
-| Environment `dev` with the migrations secret | Deploy step | There is no deployment yet. |
 | Required signed commits | After commit signing works for cloud agents | Cloud agents cannot sign commits yet. The rule would block their pull requests. |
 | Playwright end-to-end tests in CI | When a Clerk development instance and its keys exist as CI secrets | The tests need a real Clerk instance. |
-| Push the API image to GHCR, with an SBOM and a build provenance attestation (`actions/attest-build-provenance`) | With the deploy step | There is no deployment yet. |
-| Keep the Grype and PostgreSQL image digests in `ci.yml` current. Proposal: write both images as `FROM` lines in a file that Dependabot's `docker` ecosystem watches, for example `.github/images/Dockerfile`. The image jobs read the references from that file. Dependabot then opens the pull requests | A later CI step | Dependabot's `github-actions` ecosystem does not update an image in a `run` step. Until then, the maintainer updates the two digests by hand. |
+| Keep the Grype, Syft, Railway CLI and PostgreSQL image digests in `ci.yml` current. Proposal: write the images as `FROM` lines in a file that Dependabot's `docker` ecosystem watches, for example `.github/images/Dockerfile`. The jobs read the references from that file. Dependabot then opens the pull requests | A later CI step | Dependabot's `github-actions` ecosystem does not update an image in a `run` step. Until then, the maintainer updates the digests by hand. |
 | NuGet lock files (`packages.lock.json`) and restore in locked mode | Later; check first that Dependabot updates them | A lock file that Dependabot does not update would block its pull requests. `setup-dotnet` caches NuGet packages only with lock files. |
 | Upgrade Node to the next LTS line (`.nvmrc`, the build image and the distroless runtime image together) | Before Node 22 reaches end of life (April 2027) | A major upgrade needs its own tested pull request. |
 | Required code scanning results in the ruleset | After CodeQL has run on a few pull requests | A new rule must not block pull requests before the CodeQL results are known. |
+| Plan `.railway/railway.ts` on pull requests and apply it on merge | When the plan output is known to be stable | The maintainer applies by hand until then. |

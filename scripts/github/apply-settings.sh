@@ -207,6 +207,16 @@ check_all() {
 
   echo "== Ruleset"
   check_ruleset
+
+  echo "== Environment production"
+  check_fields "repos/$repo/environments/production" \
+    "production: required reviewers|[.protection_rules[]?.reviewers[]?]|[]" \
+    "production: wait timer|.protection_rules[]?.wait_timer // 0|0" \
+    "production: protected branches only|.deployment_branch_policy.protected_branches|false" \
+    "production: custom branch policies|.deployment_branch_policy.custom_branch_policies|true"
+  check_fields "repos/$repo/environments/production/deployment-branch-policies" \
+    "production: deployment branch names|[.branch_policies[]?.name]|[\"main\"]" \
+    "production: deployment branch types|[.branch_policies[]?.type]|[\"branch\"]"
 }
 
 # Sends one write request with a JSON body (or no body when the body is empty).
@@ -235,6 +245,29 @@ apply_ruleset() {
     apply_step "ruleset main" PUT "repos/$repo/rulesets/$out" "$ruleset_json"
   else
     apply_step "ruleset main" POST "repos/$repo/rulesets" "$ruleset_json"
+  fi
+}
+
+# The script never sets or reads a secret value. docs/deployment.md says who sets the secrets.
+apply_environment() {
+  local policies="repos/$repo/environments/production/deployment-branch-policies"
+  local id type name has_main=false
+  apply_step "environment production" PUT "repos/$repo/environments/production" \
+    '{"wait_timer":0,"reviewers":[],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
+  if ! api --paginate "$policies" --jq '.branch_policies[] | "\(.id) \(.type) \(.name)"'; then
+    fail "production: deployment branches" "$err"
+    return 0
+  fi
+  while read -r id type name; do
+    [[ -z "$id" ]] && continue
+    if [[ "$type" == branch && "$name" == main ]]; then
+      has_main=true
+    else
+      apply_step "production: remove deployment $type $name" DELETE "$policies/$id"
+    fi
+  done <<<"$out"
+  if [[ "$has_main" == false ]]; then
+    apply_step "production: deployment branch main" POST "$policies" '{"name":"main","type":"branch"}'
   fi
 }
 
@@ -268,6 +301,7 @@ apply_all() {
   apply_step "fork pull request approval" PUT "repos/$repo/actions/permissions/fork-pr-contributor-approval" \
     '{"approval_policy":"all_external_contributors"}'
   apply_ruleset
+  apply_environment
 }
 
 if [[ "$check_only" == false ]]; then
