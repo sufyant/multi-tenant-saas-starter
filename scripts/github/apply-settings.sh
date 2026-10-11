@@ -50,8 +50,7 @@ fi
 echo "Repository: $repo"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ruleset_file="$script_dir/../../.github/rulesets/main.json"
-ruleset_json="$(<"$ruleset_file")"
+rulesets_dir="$script_dir/../../.github/rulesets"
 
 failed=0
 out=""
@@ -126,20 +125,22 @@ check_enabled_by_status() {
   fi
 }
 
-# Prints the id of the repository ruleset named "main", or nothing.
+# Prints the id of the repository ruleset with the given name, or nothing.
 find_ruleset_id() {
   api --paginate "repos/$repo/rulesets?includes_parents=false" \
-    --jq '.[] | select(.name == "main" and .source_type == "Repository") | .id'
+    --jq ".[] | select(.name == \"$1\" and .source_type == \"Repository\") | .id"
 }
 
-# Compares .github/rulesets/main.json with the live ruleset. The JSON file is also a
-# valid jq literal, so gh's built-in jq does the comparison. Arrays compare without order.
+# Compares .github/rulesets/<name>.json with the live ruleset of that name. The JSON file is
+# also a valid jq literal, so gh's built-in jq does the comparison. Arrays compare without order.
 check_ruleset() {
-  local id state key want have
-  if ! find_ruleset_id; then fail "ruleset main" "$err"; return 0; fi
+  local name="$1" id state key want have
+  local ruleset_json
+  ruleset_json="$(<"$rulesets_dir/$name.json")"
+  if ! find_ruleset_id "$name"; then fail "ruleset $name" "$err"; return 0; fi
   id="$out"
   if [[ -z "$id" ]]; then
-    compare "ruleset main" present absent
+    compare "ruleset $name" present absent
     return 0
   fi
   local filter="
@@ -154,14 +155,29 @@ check_ruleset() {
     | \$want | keys[] as \$k
     | if sub(\$want[\$k]; \$have[\$k]) then \"OK|\(\$k)\"
       else \"DIFF|\(\$k)|\(\$want[\$k] | tojson)|\(\$have[\$k] | tojson)\" end"
-  if ! api "repos/$repo/rulesets/$id" --jq "$filter"; then fail "ruleset main" "$err"; return 0; fi
+  if ! api "repos/$repo/rulesets/$id" --jq "$filter"; then fail "ruleset $name" "$err"; return 0; fi
   while IFS='|' read -r state key want have; do
     if [[ "$state" == OK ]]; then
-      compare "ruleset main: $key" x x
+      compare "ruleset $name: $key" x x
     else
-      compare "ruleset main: $key" "$want" "$have"
+      compare "ruleset $name: $key" "$want" "$have"
     fi
   done <<<"$out"
+}
+
+# Checks one environment. $2 and $3 are the type and the name pattern of its only deployment
+# branch or tag policy.
+check_environment() {
+  local env="$1" type="$2" pattern="$3"
+  check_fields "repos/$repo/environments/$env" \
+    "$env: required reviewers|[.protection_rules[]?.reviewers[]?]|[]" \
+    "$env: wait timer|.protection_rules[]?.wait_timer // 0|0" \
+    "$env: admins can bypass|.can_admins_bypass|false" \
+    "$env: protected branches only|.deployment_branch_policy.protected_branches|false" \
+    "$env: custom branch and tag policies|.deployment_branch_policy.custom_branch_policies|true"
+  check_fields "repos/$repo/environments/$env/deployment-branch-policies" \
+    "$env: deployment policy names|[.branch_policies[]?.name]|[\"$pattern\"]" \
+    "$env: deployment policy types|[.branch_policies[]?.type]|[\"$type\"]"
 }
 
 check_all() {
@@ -205,18 +221,13 @@ check_all() {
   check_fields "repos/$repo/actions/permissions/fork-pr-contributor-approval" \
     "fork pull request approval|.approval_policy|all_external_contributors"
 
-  echo "== Ruleset"
-  check_ruleset
+  echo "== Rulesets"
+  check_ruleset main
+  check_ruleset release-tags
 
-  echo "== Environment production"
-  check_fields "repos/$repo/environments/production" \
-    "production: required reviewers|[.protection_rules[]?.reviewers[]?]|[]" \
-    "production: wait timer|.protection_rules[]?.wait_timer // 0|0" \
-    "production: protected branches only|.deployment_branch_policy.protected_branches|false" \
-    "production: custom branch policies|.deployment_branch_policy.custom_branch_policies|true"
-  check_fields "repos/$repo/environments/production/deployment-branch-policies" \
-    "production: deployment branch names|[.branch_policies[]?.name]|[\"main\"]" \
-    "production: deployment branch types|[.branch_policies[]?.type]|[\"branch\"]"
+  echo "== Environments"
+  check_environment staging branch main
+  check_environment production tag 'v*'
 }
 
 # Sends one write request with a JSON body (or no body when the body is empty).
@@ -239,35 +250,42 @@ apply_code_scanning() {
   fi
 }
 
+# Creates or updates the ruleset in .github/rulesets/<name>.json, found by its name.
 apply_ruleset() {
-  if ! find_ruleset_id; then fail "ruleset main" "$err"; return 0; fi
+  local name="$1" ruleset_json
+  ruleset_json="$(<"$rulesets_dir/$name.json")"
+  if ! find_ruleset_id "$name"; then fail "ruleset $name" "$err"; return 0; fi
   if [[ -n "$out" ]]; then
-    apply_step "ruleset main" PUT "repos/$repo/rulesets/$out" "$ruleset_json"
+    apply_step "ruleset $name" PUT "repos/$repo/rulesets/$out" "$ruleset_json"
   else
-    apply_step "ruleset main" POST "repos/$repo/rulesets" "$ruleset_json"
+    apply_step "ruleset $name" POST "repos/$repo/rulesets" "$ruleset_json"
   fi
 }
 
-# The script never sets or reads a secret value. docs/deployment.md says who sets the secrets.
+# Creates or updates one environment with one deployment branch or tag policy ($2 is its type,
+# branch or tag, and $3 its name pattern), and removes any other policy.
+# The script never sets or reads a secret or a variable. docs/deployment.md says who sets them.
 apply_environment() {
-  local policies="repos/$repo/environments/production/deployment-branch-policies"
-  local id type name has_main=false
-  apply_step "environment production" PUT "repos/$repo/environments/production" \
-    '{"wait_timer":0,"reviewers":[],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
+  local env="$1" want_type="$2" want_name="$3"
+  local policies="repos/$repo/environments/$env/deployment-branch-policies"
+  local id type name has_policy=false
+  apply_step "environment $env" PUT "repos/$repo/environments/$env" \
+    '{"wait_timer":0,"reviewers":[],"can_admins_bypass":false,"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
   if ! api --paginate "$policies" --jq '.branch_policies[] | "\(.id) \(.type) \(.name)"'; then
-    fail "production: deployment branches" "$err"
+    fail "$env: deployment policies" "$err"
     return 0
   fi
   while read -r id type name; do
     [[ -z "$id" ]] && continue
-    if [[ "$type" == branch && "$name" == main ]]; then
-      has_main=true
+    if [[ "$type" == "$want_type" && "$name" == "$want_name" ]]; then
+      has_policy=true
     else
-      apply_step "production: remove deployment $type $name" DELETE "$policies/$id"
+      apply_step "$env: remove deployment $type $name" DELETE "$policies/$id"
     fi
   done <<<"$out"
-  if [[ "$has_main" == false ]]; then
-    apply_step "production: deployment branch main" POST "$policies" '{"name":"main","type":"branch"}'
+  if [[ "$has_policy" == false ]]; then
+    apply_step "$env: deployment $want_type $want_name" POST "$policies" \
+      "{\"name\":\"$want_name\",\"type\":\"$want_type\"}"
   fi
 }
 
@@ -300,8 +318,10 @@ apply_all() {
     '{"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}'
   apply_step "fork pull request approval" PUT "repos/$repo/actions/permissions/fork-pr-contributor-approval" \
     '{"approval_policy":"all_external_contributors"}'
-  apply_ruleset
-  apply_environment
+  apply_ruleset main
+  apply_ruleset release-tags
+  apply_environment staging branch main
+  apply_environment production tag 'v*'
 }
 
 if [[ "$check_only" == false ]]; then
