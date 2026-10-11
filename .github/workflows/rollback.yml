@@ -1,0 +1,106 @@
+name: Rollback
+
+# Deploys the image of an earlier release to production. A release tag vYYYY.0M.0D.N exists only
+# after a successful production deploy (tag-release in ci.yml), so its commit passed staging and
+# production before. This workflow builds nothing.
+# Run it on the tag: gh workflow run rollback.yml --ref v2026.10.11.1
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: rollback
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: "Check the release"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # check out the history, to find the tagged commit on main
+      packages: read # read the image in GHCR
+      attestations: read # verify the build provenance of the image
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - name: Check that the ref is a release tag
+        run: |
+          if [[ ! "$GITHUB_REF" =~ ^refs/tags/v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[1-9][0-9]*$ ]]; then
+            echo "::error::$GITHUB_REF is not a release tag vYYYY.0M.0D.N. Run the workflow on a release tag."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # An annotated tag is an object of its own, so the step reads the commit that the tag names.
+      - name: Check that the commit is on main
+        id: commit
+        run: |
+          commit=$(git rev-parse "$GITHUB_REF^{commit}")
+          if ! git merge-base --is-ancestor "$commit" origin/main; then
+            echo "::error::The commit $commit of $GITHUB_REF_NAME is not on main."
+            exit 1
+          fi
+          echo "Commit: $commit"
+          echo "sha=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
+
+      # publish-api in ci.yml tags each image with the full commit SHA.
+      - name: Find the image of the commit
+        id: image
+        env:
+          COMMIT: ${{ steps.commit.outputs.sha }}
+        run: |
+          name="ghcr.io/${GITHUB_REPOSITORY,,}/api"
+          digest=$(docker buildx imagetools inspect "$name:$COMMIT" --format '{{json .Manifest}}' | jq -r .digest) || true
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::CI on main did not publish an image for this commit."
+            exit 1
+          fi
+          echo "Image: $name@$digest"
+          echo "image=$name@$digest" >> "$GITHUB_OUTPUT"
+
+      # The provenance must come from ci.yml, run on main, in this repository.
+      - name: Check where the image came from
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          gh attestation verify "oci://$IMAGE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml" \
+            --source-ref refs/heads/main
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
+
+  # The production environment requires the maintainer's approval here too. rollback: true lets
+  # deploy.yml deploy a commit older than the one production runs.
+  deploy-production:
+    name: "API: roll back production"
+    needs: [check]
+    permissions:
+      contents: read
+      packages: read # deploy.yml pulls the image from GHCR
+      deployments: read # deploy.yml reads deployments; a caller must grant it
+    uses: $/.github/workflows/deploy.yml
+    with:
+      environment: production
+      image: ${{ needs.check.outputs.image }}
+      rollback: true
+    # GitHub passes an environment secret only by name. The called job sets
+    # `environment: production`, so it gets the production values (GitHub Docs, "Reuse workflows").
+    secrets:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
