@@ -96,8 +96,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # The labels name the repository and the commit that the image comes from (OCI image spec,
+      # "Pre-Defined Annotation Keys").
       - name: Build the image
-        run: docker build -t api apps/api
+        run: |
+          docker build -t api \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            apps/api
 
       - name: Check that the image runs as a non-root user
         run: |
@@ -208,6 +214,17 @@ jobs:
               "http://localhost:$port/health/ready"
             echo " on port $port"
           done
+
+      # publish-api pushes this tested archive. It does not build the image again
+      # (Humble and Farley, Continuous Delivery, chapter 5: "Only build your binaries once").
+      - name: Keep the tested image for publish-api
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-image
+          path: ${{ runner.temp }}/api.tar
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Print the container logs
         if: failure()
