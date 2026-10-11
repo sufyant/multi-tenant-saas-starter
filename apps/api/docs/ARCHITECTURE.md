@@ -361,6 +361,8 @@ Unit test standard:
 
 An architecture test enforces the trait, the name pattern and the rule against branches and loops. The branch check does not see loops written with LINQ. Use a theory for several cases.
 
+An architecture test fails when a module DbContext has model changes without a migration (`PendingModelChangesTests`). Source: Microsoft, "Managing Migrations" (EF Core), check for pending model changes.
+
 Module integration tests call a handler with the module's DbContext on real PostgreSQL, inside a transaction the test opens. The Wolverine pipeline is tested in Api.IntegrationTests. The spike in apps/api/spikes is outside the test standard.
 
 The order for a fix is: first a red test that checks the rule, then the fix.
