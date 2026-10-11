@@ -50,3 +50,19 @@ updates:
       github-actions-security:
         applies-to: security-updates
         patterns: ["*"]
+
+  # The base images in the Dockerfiles, pinned by digest. Dependabot updates the tag and the digest.
+  - package-ecosystem: docker
+    directories: [/apps/api, /apps/web]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      docker-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      docker-security:
+        applies-to: security-updates
+        patterns: ["*"]
