@@ -41,6 +41,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - A scheduled retry on a message with several handlers can run in a web host. Use inline retries there. (W5, `ScheduledRetryTests`)
 - The tenant is declared per transaction with `set_config(..., true)`. A transaction declares one tenant or one user, never both, and never a second tenant. (R4)
 - A model change without a migration fails `PendingModelChangesTests`. Run `dotnet ef migrations add`.
+- A package update changes no document unless its license changed. `LicenseTests` fails then.
 
 ## How we design
 
