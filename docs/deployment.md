@@ -82,6 +82,8 @@ The table holds names only. A value never goes into the repository.
 
 One Railway project has the two environments `staging` and `production`. Each environment has its own project token, its own shared variables and its own database. Two environments never share a database or a database role.
 
+A PostgreSQL role belongs to the whole server, not to one database (PostgreSQL docs, "Database Roles"). The API's roles have fixed names, `api_owner` and `api_application`. So each environment needs its own PostgreSQL server. On Neon, use a separate project or a separate branch. Two databases on one server would share the roles: `db/bootstrap.sql` for the second environment would reset the first environment's passwords, and the staging owner connection could change the production database.
+
 ## 4. First deployment of an environment
 
 Set up `staging` first. Set up `production` later, when the product has users. Until then, a release tag fails at the secrets check of `deploy.yml`. That is expected.
@@ -89,7 +91,7 @@ Set up `staging` first. Set up `production` later, when the product has users. U
 Do these steps in this order for one environment. In the commands, `<environment>` is `staging` or `production`.
 
 1. Create the Railway project once, if it does not exist. A new project has the environment `production`. Add the environment `staging` as an empty environment.
-2. Create the database of the environment, with its own owner and application roles. `apps/api/docs/setup.md` describes `db/bootstrap.sql`, which creates the roles.
+2. Create the database of the environment on its own PostgreSQL server (section 3), with its own owner and application roles. `apps/api/docs/setup.md` describes `db/bootstrap.sql`, which creates the roles.
 3. In the Railway dashboard, open the shared variables of `<environment>`. Set each Railway shared variable of section 3. Set a secret as a sealed variable. Set a value in the Railway dashboard only, never in a file or a chat.
 4. In the Railway project settings, create a project token for `<environment>`.
 5. Apply the GitHub settings. This creates both GitHub environments and the ruleset for release tags. One run is enough for both environments:
@@ -241,6 +243,7 @@ Only the `migrate` command gets this connection (R3). It is a GitHub environment
 ## 10. Deviations and known gaps
 
 - **Staging runs no automated acceptance tests yet.** It runs only the smoke test of `deploy.yml`. *Continuous Delivery*, chapter 5, puts an automated acceptance test stage before a release. The row "Playwright end-to-end tests in CI" in `docs/github-settings.md`, section 6, closes this.
+- **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway.
 - **The readiness endpoint is public.** Section 8 of `apps/api/docs/ARCHITECTURE.md` says that the readiness endpoint is not routed from outside. On Railway, the generated domain of `api-web` routes every path, so `/health/ready` is public too. Railway's health check needs this path. The deviations table of `ARCHITECTURE.md` does not record this yet. The maintainer decides how to close the gap.
 
 ## 11. When a deploy or a release fails
@@ -251,7 +254,7 @@ Only the `migrate` command gets this connection (R3). It is a GitHub environment
 - A deployment ends as `FAILED`, `CRASHED` or `REMOVED`: the step prints its ID. Read its logs in Railway. A missing shared variable or a private GHCR package are common causes.
 - "Not healthy after 10 minutes" with "no new deployment yet": Railway started no deployment. This can happen when the services already run this digest.
 - "The variable API_URL ... is empty": set it (section 4, step 8).
-- The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role.
+- The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role. A 429 means the anonymous rate limit is used up (section 10).
 - "... is not a release tag vX.Y.Z" or "... is not on main": tag a commit of `main` with `vX.Y.Z`.
 - "CI on main did not publish an image for this commit": the commit's CI run on `main` failed or has not finished.
 - "Staging has not deployed this commit with success": wait for the staging deploy, then re-run the release.

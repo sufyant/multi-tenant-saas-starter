@@ -167,8 +167,8 @@ jobs:
           done
 
       # Checks the public route, not only Railway's health check (Continuous Delivery, chapter 5:
-      # "Smoke-test your deployments"). GET /v1/me/tenants needs a signed-in user and changes
-      # nothing. Without a token it answers 401. A worker answers 404 for it (HostRoleTests), so
+      # "Smoke-test your deployments"). GET /v1/me/tenants needs a signed-in user and changes no
+      # data. Without a token it answers 401. A worker answers 404 for it (HostRoleTests), so
       # a 401 shows that the route reaches the web process and its authentication.
       # The step prints the status codes only.
       - name: Smoke test the public route
