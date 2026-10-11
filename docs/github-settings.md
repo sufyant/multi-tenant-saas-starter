@@ -118,26 +118,28 @@ The file `.github/rulesets/main.json` holds the ruleset. It uses the format that
 
 The file `.github/rulesets/release-tags.json` holds the ruleset, in the same format as `main.json`. The script finds the repository ruleset named `release-tags`, and updates or creates it like `main`.
 
-A release is a tag `vX.Y.Z` on a commit of `main` (`docs/deployment.md`, section "Releasing").
+A release tag `vYYYY.0M.0D.N` names a version that ran in production. The job `tag-release` in `.github/workflows/ci.yml` creates it with `GITHUB_TOKEN` after a successful production deploy (`docs/deployment.md`, section "Versions"). The ruleset does not restrict creation ("Restrict creations" is off), so the job can create the tag without a bypass. `deletion` and `update` stop a delete and a push to an existing tag; a new tag is neither.
 
 | Rule | Value | Reason | Source |
 | --- | --- | --- | --- |
 | Target | tags, include `refs/tags/v*` | The rules apply to release tags only. | GitHub Docs: "Creating rulesets for a repository" |
 | Bypass actors | none | Nobody can skip the rules, including admins. This matches section 3.4. | GitHub Docs: "About rulesets" |
 | `deletion` | on | Nobody can delete a release tag. A release stays traceable to its commit. | GitHub Docs: "Available rules for rulesets" |
-| `update` | on | Nobody can move a release tag to another commit. A version always names the same commit, and so the same image. | GitHub Docs: "Available rules for rulesets". semver.org 2.0.0, item 3: "Once a versioned package has been released, the contents of that version MUST NOT be modified" |
+| `update` | on | Nobody can move a release tag to another commit. A version always names the same commit, and so the same image. | GitHub Docs: "Available rules for rulesets", "Restrict updates" |
 
 ### 3.6 Environments `staging` and `production`
 
-`.github/workflows/deploy.yml` runs in one of these environments. `ci.yml` calls it for `staging` on a push to `main`. `release.yml` calls it for `production` on a release tag. The script creates each environment with `PUT /repos/{owner}/{repo}/environments/{name}` and sets its deployment branches and tags with `/deployment-branch-policies`.
+`.github/workflows/deploy.yml` runs in one of these environments. On a push to `main`, `ci.yml` calls it for `staging`, and then for `production` after the maintainer's approval. `rollback.yml` calls it for `production` on a release tag. The script creates each environment with `PUT /repos/{owner}/{repo}/environments/{name}` and sets its deployment branches and tags with `/deployment-branch-policies`.
 
 | Setting | Value | Reason | Source |
 | --- | --- | --- | --- |
 | Deployment branches and tags of `staging` | custom policy: the branch `main` only. The script removes any other policy | Only a run on `main` can read the staging secrets and deploy. A run on a pull request branch cannot. | GitHub Docs: "Managing environments for deployment", "Deployment branches and tags" |
-| Deployment branches and tags of `production` | custom policy: the tag pattern `v*` only (type `tag`). The script removes any other policy | Only a run on a release tag can deploy to production. The tag is the release decision. A push to `main` cannot reach production. | GitHub Docs: "Managing environments for deployment", "Deployment branches and tags". Humble and Farley, *Continuous Delivery*, chapter 5 |
-| Required reviewers | none, on both | For `staging`, merging the pull request is the approval. For `production`, pushing the release tag is the approval. A reviewer would be the same single maintainer. | GitHub Docs: "Managing environments for deployment", "Required reviewers" |
-| Wait timer | `0`, on both | A wait gives nobody a chance to act, because there is no reviewer. | GitHub Docs: "Managing environments for deployment", "Wait timer" |
-| `can_admins_bypass` | `false`, on both | The setting lets an admin start a job that waits for a deployment protection rule: a required reviewer, a wait timer or a custom rule ("Start all waiting jobs"). These environments have no rule that makes a job wait, so today it changes nothing. It stays `false` if a rule is added later, and it matches section 3.4, which allows no bypass. | GitHub Docs: "Deployments and environments", "Allow administrators to bypass configured protection rules". GitHub Docs: "Reviewing deployments", "Bypassing deployment protection rules" |
+| Deployment branches and tags of `production` | custom policy: the branch `main` (the CI run) and the tag pattern `v*` (the rollback). The script removes any other policy | Only a run on `main` or on a release tag can deploy to production. A run on a pull request branch cannot. | GitHub Docs: "Managing environments for deployment", "Deployment branches and tags" |
+| Required reviewers of `staging` | none | Merging the pull request is the approval. | GitHub Docs: "Managing environments for deployment", "Required reviewers" |
+| Required reviewers of `production` | the repository owner, when the owner is a user. The script reads the owner's id with `gh api users/<owner>`. For an organisation owner, the script prints `FAIL`: set a team as the reviewer by hand, in the environment's settings | The approval is the release decision ("push-button release", Humble and Farley, *Continuous Delivery*, chapter 5). Every production job, also a rollback, waits for it. | GitHub Docs: "Managing environments for deployment", "Required reviewers" |
+| `prevent_self_review` | `false` | The project has one maintainer, who approves their own deploys. `true` would block every deploy. | GitHub Docs: "Deployments and environments", "Required reviewers" |
+| Wait timer | `0`, on both | The approval is the only wait. | GitHub Docs: "Managing environments for deployment", "Wait timer" |
+| `can_admins_bypass` | `false`, on both | The setting lets an admin start a job that waits for a deployment protection rule, without the rule ("Start all waiting jobs"). With `false`, nobody skips the production approval. It matches section 3.4, which allows no bypass. | GitHub Docs: "Deployments and environments", "Allow administrators to bypass configured protection rules". GitHub Docs: "Reviewing deployments", "Bypassing deployment protection rules" |
 
 Each environment holds two secrets and one variable. Each value is different per environment. The script never sets or reads them.
 
@@ -155,13 +157,15 @@ A caller passes the two secrets to `deploy.yml` by name. The called job sets `en
 
 Rulesets, including tag rulesets, and environment secrets are enforced on private repositories only with GitHub Pro, Team or Enterprise. The same is true for environments and their deployment branches and tags.
 
+Required reviewers work on public repositories only, on GitHub Free, Pro and Team. On a private product repository on these plans, the script prints `FAIL` for the production reviewer, and production would deploy without an approval. Do not set `DEPLOY_PRODUCTION` there.
+
 Artifact attestations work on public repositories on every current plan. A private repository needs GitHub Enterprise Cloud. `publish-api` then fails at its attestation step.
 
 On GitHub Free, they work only on public repositories.
 
 A private product repository on GitHub Free is not protected. The script prints `FAIL` for each setting that the plan does not allow. It continues with the other settings and exits with 1.
 
-Source: GitHub Docs: "About rulesets", "Managing environments for deployment", "Using artifact attestations to establish provenance for builds" and "GitHub's plans".
+Source: GitHub Docs: "About rulesets", "Managing environments for deployment", "Deployments and environments" ("Required reviewers"), "Using artifact attestations to establish provenance for builds" and "GitHub's plans".
 
 ## 5. Manual steps
 
@@ -199,7 +203,7 @@ Do these steps in the order of `docs/deployment.md`, section "First deployment".
 - Make the GHCR package public after its first push. A new package is private, also when it comes from a public repository. A package that is linked to its repository gets the repository's access permissions, but not its visibility. Railway pulls the image without credentials, so the package must be public. Go to the package's settings, "Danger Zone", "Change visibility", and choose "Public". You cannot make a public package private again.
 - For each environment, set its variable `API_URL` to the public URL of `api-web` in that environment: `gh variable set API_URL --env <environment> --body <URL>`. Without it, the smoke test of `deploy.yml` fails.
 - Set the repository variable `DEPLOY_STAGING` to `true` with `gh variable set DEPLOY_STAGING --body true`, after staging is set up. Without it, the job `deploy-staging` is skipped and `main` stays green. To stop the staging deploys, delete the variable with `gh variable delete DEPLOY_STAGING`.
-- Production needs no switch. A release tag starts it. Until the production environment has its secrets, a release fails at the secrets check.
+- Set the repository variable `DEPLOY_PRODUCTION` to `true` with `gh variable set DEPLOY_PRODUCTION --body true`, after production is set up and when the product has users. Without it, the jobs `deploy-production` and `tag-release` are skipped and `main` stays green. To stop the production deploys, delete the variable with `gh variable delete DEPLOY_PRODUCTION`.
 
 Source: GitHub Docs: "Configuring a package's access control and visibility" and "Store information in variables".
 

@@ -165,19 +165,40 @@ check_ruleset() {
   done <<<"$out"
 }
 
-# Checks one environment. $2 and $3 are the type and the name pattern of its only deployment
-# branch or tag policy.
+# Sets $out to the user id of the repository owner, the reviewer of production. An organisation
+# owner has no single user, so a team must be set instead (docs/github-settings.md, section 3.6).
+owner_reviewer_id() {
+  local owner="${repo%%/*}" type id
+  api "users/$owner" --jq '"\(.type) \(.id)"' || return 1
+  read -r type id <<<"$out"
+  if [[ "$type" != User ]]; then
+    err="the owner $owner is an organisation; set a team as the reviewer of production by hand (docs/github-settings.md, section 3.6)"
+    return 1
+  fi
+  out="$id"
+}
+
+# Checks one environment. $2 is the JSON list of its reviewer ids. The other arguments are its
+# deployment branch and tag policies, each as type:name.
 check_environment() {
-  local env="$1" type="$2" pattern="$3"
+  local env="$1" reviewer_ids="$2" policies
+  shift 2
+  policies="$(printf '%s\n' "$@" | sort | paste -sd, -)"
   check_fields "repos/$repo/environments/$env" \
-    "$env: required reviewers|[.protection_rules[]?.reviewers[]?]|[]" \
+    "$env: required reviewers|[.protection_rules[]?.reviewers[]?.reviewer.id]|$reviewer_ids" \
+    "$env: prevent self review|any(.protection_rules[]?; .prevent_self_review == true)|false" \
     "$env: wait timer|.protection_rules[]?.wait_timer // 0|0" \
     "$env: admins can bypass|.can_admins_bypass|false" \
     "$env: protected branches only|.deployment_branch_policy.protected_branches|false" \
     "$env: custom branch and tag policies|.deployment_branch_policy.custom_branch_policies|true"
-  check_fields "repos/$repo/environments/$env/deployment-branch-policies" \
-    "$env: deployment policy names|[.branch_policies[]?.name]|[\"$pattern\"]" \
-    "$env: deployment policy types|[.branch_policies[]?.type]|[\"$type\"]"
+  if api --paginate "repos/$repo/environments/$env/deployment-branch-policies" \
+    --jq '.branch_policies[] | "\(.type):\(.name)"'; then
+    compare "$env: deployment branches and tags" "$policies" "$(sort <<<"$out" | paste -sd, -)"
+  elif [[ "$err" == *"HTTP 404"* ]]; then
+    compare "$env: deployment branches and tags" "$policies" "not-found"
+  else
+    fail "$env: deployment branches and tags" "$err"
+  fi
 }
 
 check_all() {
@@ -226,8 +247,12 @@ check_all() {
   check_ruleset release-tags
 
   echo "== Environments"
-  check_environment staging branch main
-  check_environment production tag 'v*'
+  check_environment staging "[]" branch:main
+  if owner_reviewer_id; then
+    check_environment production "[$out]" branch:main 'tag:v*'
+  else
+    fail "production: required reviewers" "$err"
+  fi
 }
 
 # Sends one write request with a JSON body (or no body when the body is empty).
@@ -262,31 +287,35 @@ apply_ruleset() {
   fi
 }
 
-# Creates or updates one environment with one deployment branch or tag policy ($2 is its type,
-# branch or tag, and $3 its name pattern), and removes any other policy.
+# Creates or updates one environment. $2 is the JSON list of its required reviewers. The other
+# arguments are its deployment branch and tag policies, each as type:name; the script removes any
+# other policy.
 # The script never sets or reads a secret or a variable. docs/deployment.md says who sets them.
 apply_environment() {
-  local env="$1" want_type="$2" want_name="$3"
+  local env="$1" reviewers="$2"
+  shift 2
   local policies="repos/$repo/environments/$env/deployment-branch-policies"
-  local id type name has_policy=false
+  local id type name wanted present=()
   apply_step "environment $env" PUT "repos/$repo/environments/$env" \
-    '{"wait_timer":0,"reviewers":[],"can_admins_bypass":false,"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
+    "{\"wait_timer\":0,\"prevent_self_review\":false,\"reviewers\":$reviewers,\"can_admins_bypass\":false,\"deployment_branch_policy\":{\"protected_branches\":false,\"custom_branch_policies\":true}}"
   if ! api --paginate "$policies" --jq '.branch_policies[] | "\(.id) \(.type) \(.name)"'; then
     fail "$env: deployment policies" "$err"
     return 0
   fi
   while read -r id type name; do
     [[ -z "$id" ]] && continue
-    if [[ "$type" == "$want_type" && "$name" == "$want_name" ]]; then
-      has_policy=true
+    if printf '%s\n' "$@" | grep -qxF "$type:$name"; then
+      present+=("$type:$name")
     else
       apply_step "$env: remove deployment $type $name" DELETE "$policies/$id"
     fi
   done <<<"$out"
-  if [[ "$has_policy" == false ]]; then
-    apply_step "$env: deployment $want_type $want_name" POST "$policies" \
-      "{\"name\":\"$want_name\",\"type\":\"$want_type\"}"
-  fi
+  for wanted in "$@"; do
+    if ! printf '%s\n' ${present[@]+"${present[@]}"} | grep -qxF "$wanted"; then
+      apply_step "$env: deployment ${wanted%%:*} ${wanted#*:}" POST "$policies" \
+        "{\"name\":\"${wanted#*:}\",\"type\":\"${wanted%%:*}\"}"
+    fi
+  done
 }
 
 apply_all() {
@@ -320,8 +349,13 @@ apply_all() {
     '{"approval_policy":"all_external_contributors"}'
   apply_ruleset main
   apply_ruleset release-tags
-  apply_environment staging branch main
-  apply_environment production tag 'v*'
+  apply_environment staging "[]" branch:main
+  # The maintainer's approval is the release decision for production (docs/github-settings.md).
+  if owner_reviewer_id; then
+    apply_environment production "[{\"type\":\"User\",\"id\":$out}]" branch:main 'tag:v*'
+  else
+    fail "production: required reviewers" "$err"
+  fi
 }
 
 if [[ "$check_only" == false ]]; then
