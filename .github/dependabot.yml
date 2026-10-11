@@ -1,0 +1,52 @@
+# Dependabot version updates. Security updates are enabled in the
+# repository settings (docs/github-settings.md) and use the groups below.
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: /apps/api
+    schedule:
+      interval: weekly
+    # A new release waits 7 days. A compromised release is often pulled
+    # within days. Cooldown applies to version updates only.
+    cooldown:
+      default-days: 7
+    groups:
+      nuget-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      nuget-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # Dependabot updates pnpm projects through the npm ecosystem.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      github-actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
