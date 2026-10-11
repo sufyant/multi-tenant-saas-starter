@@ -63,3 +63,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Repository settings
+
+- GitHub settings are code. They live in `docs/github-settings.md`, `.github/rulesets/` and `scripts/github/apply-settings.sh`.
+- Never change a setting only in the GitHub interface. Change the document and the script or the JSON in a pull request. The maintainer then runs `pnpm github:apply`.
+- Never run `pnpm github:apply` yourself. You may run `pnpm github:check`.
