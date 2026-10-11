@@ -5,7 +5,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 First, run the development server:
 
 ```bash
-pnpm --filter @st/web dev
+pnpm --filter @repo/web dev
 # or, from the repo root (via Turborepo):
 pnpm dev
 ```

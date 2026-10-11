@@ -13,10 +13,10 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@st/ui/lib/utils",
-    "ui": "@st/ui/components/ui",
+    "utils": "@repo/ui/lib/utils",
+    "ui": "@repo/ui/components/ui",
     "lib": "@/lib",
-    "hooks": "@st/ui/hooks"
+    "hooks": "@repo/ui/hooks"
   },
   "registries": {}
 }

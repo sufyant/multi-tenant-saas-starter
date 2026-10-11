@@ -8,7 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@st/ui/components/ui/sidebar";
+} from "@repo/ui/components/ui/sidebar";
 import {
   BookOpen,
   Bot,
