@@ -2,14 +2,17 @@ name: CI
 
 on:
   pull_request:
-  # On a push to main, publish-api publishes the tested API image and deploy-staging deploys it.
+  # On a push to main, publish-api publishes the tested API image, deploy-staging deploys it,
+  # deploy-production deploys it after the maintainer's approval, and tag-release names the version.
   push:
     branches: [main]
 
-# A cancelled run on main would skip the publish and the deploy of its commit,
-# so only pull request runs cancel the run before them.
+# Runs of one pull request share a group, and a newer run cancels the older one. Each run on main
+# gets a group of its own. A run whose production job waits for an approval holds its group, and
+# GitHub does not cancel it, so a shared group would stop every newer push to main until the approval
+# is answered (community discussion 135220). The deploy jobs keep their own groups in deploy.yml.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -446,7 +449,7 @@ jobs:
 
   # Deploys the published digest to staging with the steps in deploy.yml. The repository variable
   # DEPLOY_STAGING switches the job on. Without it the job is skipped, and main stays green before
-  # a product has a Railway project. Production gets a digest only through release.yml.
+  # a product has a Railway project.
   deploy-staging:
     name: "API: deploy to staging"
     needs: [publish-api]
@@ -454,12 +457,34 @@ jobs:
     permissions:
       contents: read
       packages: read # deploy.yml pulls the image from GHCR
+      deployments: read # deploy.yml's production check reads deployments; a caller must grant it
     uses: $/.github/workflows/deploy.yml
     with:
       environment: staging
       image: ${{ needs.publish-api.outputs.image }}
     # GitHub passes an environment secret only by name. The called job sets `environment: staging`,
     # so it gets the staging values (GitHub Docs, "Reuse workflows").
+    secrets:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+
+  # Deploys the digest that staging ran to production, after the maintainer approves the waiting
+  # job: the environment production requires a reviewer ("push-button release", Continuous Delivery,
+  # chapter 5). The repository variable DEPLOY_PRODUCTION switches the job on. deploy.yml refuses a
+  # commit that is older than the one production runs.
+  deploy-production:
+    name: "API: deploy to production"
+    needs: [publish-api, deploy-staging]
+    if: vars.DEPLOY_PRODUCTION == 'true'
+    permissions:
+      contents: read
+      packages: read # deploy.yml pulls the image from GHCR
+      deployments: read # deploy.yml reads the latest successful production deployment
+    uses: $/.github/workflows/deploy.yml
+    with:
+      environment: production
+      image: ${{ needs.publish-api.outputs.image }}
+    # The called job sets `environment: production`, so it gets the production values.
     secrets:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}

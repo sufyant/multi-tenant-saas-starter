@@ -1,6 +1,7 @@
 name: Deploy
 
-# The only copy of the deploy steps. ci.yml calls it for staging, release.yml for production
+# The only copy of the deploy steps. ci.yml calls it for staging and production, rollback.yml for
+# production
 # (Humble and Farley, Continuous Delivery, chapter 5: "Deploy the same way to every environment").
 # The job reads the secrets and the variable API_URL of its GitHub environment. A caller passes
 # the two secrets by name; the job that sets `environment` gets the environment's value
@@ -16,6 +17,11 @@ on:
         description: "The API image with its digest: ghcr.io/<owner>/<repo>/api@sha256:<digest>"
         required: true
         type: string
+      rollback:
+        description: "true for a rollback, which may deploy a commit older than the one production runs"
+        required: false
+        type: boolean
+        default: false
     secrets:
       RAILWAY_TOKEN:
         required: true
@@ -60,8 +66,9 @@ jobs:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
     permissions:
-      contents: read
+      contents: read # check out the history for the production check
       packages: read # pull the image from GHCR while the package is still private
+      deployments: read # read the latest successful production deployment
     env:
       ENVIRONMENT: ${{ inputs.environment }}
       IMAGE: ${{ inputs.image }}
@@ -80,6 +87,59 @@ jobs:
             fi
           done
           exit "$missing"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Each push to main makes a run whose production job waits for an approval. Approving an
+      # older run must not take production back to older code. The check runs after the approval,
+      # before the migration. A rollback skips it on purpose.
+      - name: Check that production does not go back to an older commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ROLLBACK: ${{ inputs.rollback }}
+        run: |
+          if [[ "$ENVIRONMENT" != production ]]; then
+            echo "The check is for production only."
+            exit 0
+          fi
+          if [[ "$ROLLBACK" == true ]]; then
+            echo "Rollback: the check is skipped."
+            exit 0
+          fi
+
+          # The newest production deployment that reached success. This job's own deployment has
+          # no success yet.
+          latest=""
+          for deployment in $(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments?environment=production&per_page=100" |
+            jq -r 'add // [] | sort_by(.id) | reverse | .[] | "\(.id):\(.sha)"'); do
+            if gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/deployments/${deployment%%:*}/statuses" |
+              jq -e 'add // [] | any(.state == "success")' > /dev/null; then
+              latest="${deployment#*:}"
+              break
+            fi
+          done
+
+          if [[ -z "$latest" ]]; then
+            echo "Production has no successful deployment yet."
+            exit 0
+          fi
+          echo "Production runs $latest. This run deploys $GITHUB_SHA."
+          if [[ "$latest" == "$GITHUB_SHA" ]]; then
+            exit 0
+          fi
+          status=0
+          git merge-base --is-ancestor "$GITHUB_SHA" "$latest" || status=$?
+          if (( status == 0 )); then
+            echo "::error::Production already runs a newer commit. Approve the newest waiting run instead, or use the rollback workflow (docs/deployment.md)."
+            exit 1
+          fi
+          if (( status != 1 )); then
+            echo "::error::git could not compare $GITHUB_SHA with $latest."
+            exit 1
+          fi
 
       - name: Log in to GHCR
         env:

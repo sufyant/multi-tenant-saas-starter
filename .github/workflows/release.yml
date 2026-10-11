@@ -138,6 +138,7 @@ jobs:
     permissions:
       contents: read
       packages: read # deploy.yml pulls the image from GHCR
+      deployments: read # deploy.yml reads the latest successful production deployment
     uses: $/.github/workflows/deploy.yml
     with:
       environment: production
