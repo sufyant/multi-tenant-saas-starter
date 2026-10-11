@@ -1,23 +1,23 @@
 "use client";
 
-import { Button } from "@st/ui/components/ui/button";
-import { Input } from "@st/ui/components/ui/input";
-import { Separator } from "@st/ui/components/ui/separator";
+import { Button } from "@repo/ui/components/ui/button";
+import { Input } from "@repo/ui/components/ui/input";
+import { Separator } from "@repo/ui/components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@st/ui/components/ui/sheet";
-import { Skeleton } from "@st/ui/components/ui/skeleton";
+} from "@repo/ui/components/ui/sheet";
+import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@st/ui/components/ui/tooltip";
-import { useIsMobile } from "@st/ui/hooks/use-mobile";
+} from "@repo/ui/components/ui/tooltip";
+import { useIsMobile } from "@repo/ui/hooks/use-mobile";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import { PanelLeftIcon } from "lucide-react";

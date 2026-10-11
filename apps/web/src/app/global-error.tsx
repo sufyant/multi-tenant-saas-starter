@@ -27,7 +27,7 @@ export default function GlobalError({
           textAlign: "center",
         }}
       >
-        <title>Something went wrong | ST</title>
+        <title>Something went wrong | multi-tenant-saas-starter</title>
         <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>
           Something went wrong
         </h1>

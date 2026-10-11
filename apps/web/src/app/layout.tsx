@@ -17,10 +17,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ST",
-    template: "%s | ST",
+    default: "multi-tenant-saas-starter",
+    template: "%s | multi-tenant-saas-starter",
   },
-  description: "ST application",
+  description: "multi-tenant-saas-starter application",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -7,7 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@st/ui/components/ui/breadcrumb";
+} from "@repo/ui/components/ui/breadcrumb";
 import Link from "next/link";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { Fragment } from "react";

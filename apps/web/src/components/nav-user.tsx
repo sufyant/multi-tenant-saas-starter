@@ -5,7 +5,7 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@st/ui/components/ui/avatar";
+} from "@repo/ui/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,14 +20,14 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@st/ui/components/ui/dropdown-menu";
+} from "@repo/ui/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@st/ui/components/ui/sidebar";
-import { Skeleton } from "@st/ui/components/ui/skeleton";
+} from "@repo/ui/components/ui/sidebar";
+import { Skeleton } from "@repo/ui/components/ui/skeleton";
 import {
   BadgeCheck,
   Bell,

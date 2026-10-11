@@ -1,10 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
-import { Separator } from "@st/ui/components/ui/separator";
+import { Separator } from "@repo/ui/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@st/ui/components/ui/sidebar";
+} from "@repo/ui/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DynamicBreadcrumb } from "@/components/dynamic-breadcrumb";
 
