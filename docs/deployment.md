@@ -1,6 +1,6 @@
 # Deployment
 
-This document describes how the API goes from `main` to staging, and from a release tag to production, on Railway. The web app goes to Vercel in a later step.
+This document describes how the API goes from `main` to staging, and after the maintainer's approval to production, on Railway. The web app goes to Vercel in a later step.
 
 ## 1. Purpose and sources
 
@@ -8,47 +8,60 @@ CI builds the API image once, tests it, scans it and publishes that same image. 
 
 Sources:
 
-- Humble and Farley, *Continuous Delivery*, chapter 5: "Only build your binaries once", "Deploy the same way to every environment", "Smoke-test your deployments", "Deploy into a copy of production".
+- Humble and Farley, *Continuous Delivery*, chapter 5: "Only build your binaries once", "Deploy the same way to every environment", "Smoke-test your deployments", "Deploy into a copy of production", and the push-button release.
 - The Twelve-Factor App, factor V ("Build, release, run") and factor III ("Config").
 - SLSA v1.0, Build Level 2: provenance from a hosted build platform.
 - Kief Morris, *Infrastructure as Code* (2nd ed.), chapter 2.
-- Semantic Versioning 2.0.0 (semver.org).
+- Calendar Versioning (calver.org).
 
 ## 2. The flow
 
 | Trigger | Workflow | Result |
 | --- | --- | --- |
 | Pull request | `ci.yml` | Test, build, scan. Nothing is published or deployed. |
-| Push to `main` | `ci.yml` | Test, build, scan, publish to GHCR, then deploy to **staging** through `deploy.yml` |
-| Tag `vX.Y.Z` | `release.yml` | No build. Find the image of the tagged commit, check it, then deploy it to **production** through `deploy.yml` |
+| Push to `main` | `ci.yml` | Test, build, scan, publish to GHCR, deploy to **staging**, then wait for the maintainer's approval, deploy to **production** and create the release tag |
+| A run by hand on a release tag | `rollback.yml` | No build. Deploy the image of that release to **production**, after the approval |
 
-On a push to `main`:
+On a push to `main`, after the jobs `node`, `api`, `api-image`, `web-image` and `CI` pass:
 
-1. The jobs `node`, `api`, `api-image` and `web-image` run. `api-image` builds the API image, scans it with Grype and runs it against PostgreSQL. It keeps the tested image as a workflow artifact for one day.
-2. The job `CI` passes when every job before it passed.
-3. `publish-api` pushes the tested image to GHCR as `ghcr.io/<owner>/<repo>/api`, with the tags `<commit SHA>` and `main`. It reads the digest from the registry. It attests the build provenance and an SPDX SBOM to that digest, and verifies both attestations.
-4. `deploy-staging` calls `deploy.yml` for `staging`, only when the repository variable `DEPLOY_STAGING` is `true`.
-
-On a tag `vX.Y.Z`, the job `promote` of `release.yml`:
-
-1. Checks that the ref is a release tag `vX.Y.Z`. Pre-release tags, such as `v1.2.3-rc.1`, are not supported yet.
-2. Checks that the tagged commit is on `main`.
-3. Finds the image that `publish-api` tagged with the commit SHA. It builds nothing.
-4. Verifies that the image's build provenance comes from `ci.yml`, run on `main`, in this repository.
-5. Checks that staging deployed this commit with success. Production gets only a digest that staging ran.
-6. Adds the tag `vX.Y.Z` to the same digest in GHCR. The digest does not change.
-
-Then `deploy-production` calls `deploy.yml` for `production`.
+1. `publish-api` pushes the tested image to GHCR as `ghcr.io/<owner>/<repo>/api`, with the tags `<commit SHA>` and `main`. It reads the digest from the registry. It attests the build provenance and an SPDX SBOM to that digest, and verifies both attestations.
+2. `deploy-staging` calls `deploy.yml` for `staging`, when the repository variable `DEPLOY_STAGING` is `true`.
+3. `deploy-production` waits for the maintainer's approval, then calls `deploy.yml` for `production` with the same digest. It runs only when `deploy-staging` passed and the repository variable `DEPLOY_PRODUCTION` is `true`.
+4. `tag-release` runs only when `deploy-production` passed. It creates the release tag on the commit and on the image digest in GHCR (section 5).
 
 `deploy.yml` holds the only copy of the deploy steps. In the GitHub environment that it gets:
 
 1. It checks that the two secrets are set.
-2. It runs `migrate` with the image digest.
-3. It sets the digest as the image of `api-web` and `api-worker` in one Railway commit.
-4. It waits until the new deployment of each service is `SUCCESS`.
-5. It smoke-tests the public route: `GET /health/live` must answer 200, and `GET /v1/me/tenants` without a token must answer 401. The 401 shows that the route reaches the web process and its authentication.
+2. For `production`, it checks that the commit is not older than the commit that production runs (section 6). A rollback skips this check.
+3. It runs `migrate` with the image digest.
+4. It sets the digest as the image of `api-web` and `api-worker` in one Railway commit.
+5. It waits until the new deployment of each service is `SUCCESS`.
+6. It smoke-tests the public route: `GET /health/live` must answer 200, and `GET /v1/me/tenants` without a token must answer 401. The 401 shows that the route reaches the web process and its authentication.
 
-Only one deploy to an environment runs at a time. GitHub never cancels a running deploy. When several deploys to one environment wait, GitHub keeps the newest one and cancels the older waiting ones. Only one release runs at a time.
+### Approve a production deploy
+
+The approval is the release decision. Only the maintainer approves.
+
+1. Open the repository on GitHub, then Actions, then the run of the commit.
+2. Click "Review deployments".
+3. Select `production` and click "Approve and deploy". "Reject" ends the run without a deploy.
+
+`gh` has no command for this (cli/cli issue 5773, open). The REST endpoint `POST /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments` exists, but this document uses the web page. Source: GitHub Docs, "Reviewing deployments".
+
+### Runs that wait
+
+Only one deploy to an environment runs at a time (`concurrency` in `deploy.yml`). GitHub never cancels a running deploy. Each push run on `main` has a concurrency group of its own, so a newer push tests and deploys to staging while an older run waits for its approval.
+
+A production job that waits for its approval holds the group `deploy-production`. GitHub does not cancel it when a newer run arrives. The newer run's production job is `pending` behind it, and a still newer one replaces that pending job. So:
+
+- Approve or reject the waiting run before the next production deploy can wait for its own approval.
+- To deploy the newest commit, reject the older waiting run. The newest pending run then waits for its approval.
+
+Sources: GitHub Docs, "Control the concurrency of workflows and jobs" (one running and one pending job per group). GitHub community discussion 135220 (a waiting run holds the group; GitHub staff confirmed it in August 2024). The GitHub docs do not describe this case.
+
+If the maintainer approves an old run after a newer commit reached production, the check in `deploy.yml` stops the deploy before the migration. The message says to approve the newest run, or to use the rollback.
+
+On a pull request, no deploy job and no tag job runs.
 
 ## 3. What lives where
 
@@ -60,11 +73,11 @@ The table holds names only. A value never goes into the repository.
 | The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts` | same | same |
 | `Host__Role`, `ASPNETCORE_ENVIRONMENT`, `PORT` | Repository: `.railway/railway.ts`, as literal values | same | same |
 | The names of the shared variables that each service uses | Repository: `.railway/railway.ts` | same | same |
-| The environments, their deployment branches and tags, the ruleset for release tags | Repository: `scripts/github/apply-settings.sh`, `.github/rulesets/` and `docs/github-settings.md` | branch `main` | tags `v*` |
+| The environments, their reviewers, their deployment branches and tags, the ruleset for release tags | Repository: `scripts/github/apply-settings.sh`, `.github/rulesets/` and `docs/github-settings.md` | branch `main`, no reviewer | branch `main` and tags `v*`, the owner as reviewer |
 | `RAILWAY_TOKEN` | GitHub environment secret | the staging project token | the production project token |
 | `MIGRATIONS_CONNECTION_STRING` | GitHub environment secret | the staging database | the production database |
 | `API_URL` | GitHub environment variable | the staging URL of `api-web` | the production URL of `api-web` |
-| `DEPLOY_STAGING` | GitHub repository variable | `true` switches the staging deploy on | not used: a release tag starts the deploy |
+| `DEPLOY_STAGING`, `DEPLOY_PRODUCTION` | GitHub repository variables | `DEPLOY_STAGING=true` switches the staging deploy on | `DEPLOY_PRODUCTION=true` switches the production deploy and the release tag on |
 | `ConnectionStrings__Database` | Railway shared variable, sealed | the staging database | the production database |
 | `ConnectionStrings__Messaging` | Railway shared variable, sealed | the staging database | the production database |
 | `Authentication__Clerk__Issuer` | Railway shared variable | own value | own value |
@@ -75,7 +88,7 @@ The table holds names only. A value never goes into the repository.
 | `Notifications__Resend__ApiKey` | Railway shared variable, sealed | own value | own value |
 | `Notifications__Resend__From` | Railway shared variable | own value | own value |
 | `Host__Cors__AllowedOrigins__0` | Railway shared variable | own value | own value |
-| The image digest that each service runs | Railway service settings. `deploy.yml` sets it | the latest commit on `main` | the latest release |
+| The image digest that each service runs | Railway service settings. `deploy.yml` sets it | the latest commit on `main` | the latest approved commit, or a rolled back release |
 | The generated domain of `api-web` | Railway service settings. It is not part of `.railway/railway.ts` | own domain | own domain |
 
 `apps/api/docs/configuration.md` describes each setting. The shared variables have the same names as the service variables, in the `__` form.
@@ -86,7 +99,7 @@ A PostgreSQL role belongs to the whole server, not to one database (PostgreSQL d
 
 ## 4. First deployment of an environment
 
-Set up `staging` first. Set up `production` later, when the product has users. Until then, a release tag fails at the secrets check of `deploy.yml`. That is expected.
+Set up `staging` first. Set up `production` later, when the product has users. Until then, leave `DEPLOY_PRODUCTION` unset, so the production jobs are skipped and `main` stays green.
 
 Do these steps in this order for one environment. In the commands, `<environment>` is `staging` or `production`.
 
@@ -94,7 +107,7 @@ Do these steps in this order for one environment. In the commands, `<environment
 2. Create the database of the environment on its own PostgreSQL server (section 3), with its own owner and application roles. `apps/api/docs/setup.md` describes `db/bootstrap.sql`, which creates the roles.
 3. In the Railway dashboard, open the shared variables of `<environment>`. Set each Railway shared variable of section 3. Set a secret as a sealed variable. Set a value in the Railway dashboard only, never in a file or a chat.
 4. In the Railway project settings, create a project token for `<environment>`.
-5. Apply the GitHub settings. This creates both GitHub environments and the ruleset for release tags. One run is enough for both environments:
+5. Apply the GitHub settings. This creates both GitHub environments, the production reviewer and the ruleset for release tags. One run is enough for both environments:
 
    ```bash
    pnpm github:apply
@@ -140,41 +153,43 @@ Do these steps in this order for one environment. In the commands, `<environment
       gh run rerun <run id>
       ```
 
-    - For `production`, release a commit that staging deployed with success (section 5).
+    - For `production`, switch the deploy on. The next push to `main` deploys to staging, then waits for the approval (section 2, "Approve a production deploy"):
 
-`deploy.yml` then migrates the database, deploys the image and runs the smoke test.
+      ```bash
+      gh variable set DEPLOY_PRODUCTION --body true
+      ```
 
-## 5. Releasing
+`deploy.yml` then migrates the database, deploys the image and runs the smoke test. After the first production deploy, `tag-release` creates the first release tag.
 
-A release is the maintainer's decision. Only the maintainer creates and pushes a release tag.
+### Switches
 
-1. Choose the version by Semantic Versioning: MAJOR for a change that breaks a client, MINOR for a new feature that keeps compatibility, PATCH for a fix.
-2. Choose a commit on `main` that staging deployed with success. The environment `staging` on the repository's GitHub page lists its deployments.
-3. Create an annotated tag on that commit and push it:
+- `DEPLOY_STAGING`: `true` turns the staging deploy on. Without it, no deploy job and no tag job runs.
+- `DEPLOY_PRODUCTION`: `true` turns the production deploy and the release tag on. Set it only after production is set up, when the product has users. To stop the production deploys, delete it with `gh variable delete DEPLOY_PRODUCTION`.
 
-   ```bash
-   git tag -a vX.Y.Z -m "<summary>" <commit SHA on main>
-   ```
+## 5. Versions
 
-   ```bash
-   git push origin vX.Y.Z
-   ```
+Each successful production deploy gets a release tag in Calendar Versioning: `vYYYY.0M.0D.N`, for example `v2026.10.11.1` (calver.org). The date is the UTC date of the deploy. `N` starts at 1 each day and counts the production deploys of that day.
 
-   The GitHub page "Draft a new release" works too. Choose the tag `vX.Y.Z` and the target commit there.
+- The job `tag-release` creates the tag after the production deploy passed. So a tag always names a version that ran in production.
+- The tag is an annotated tag on the commit. Its message names the image digest. The same tag names the digest in GHCR.
+- A release tag cannot be deleted or moved to another commit (`docs/github-settings.md`, section 3.5).
+- Nobody creates or pushes a `v*` tag by hand.
 
-`release.yml` then promotes the image and deploys it to production. A release tag cannot be deleted or moved to another commit (`docs/github-settings.md`, section 3.5).
+Why CalVer and not Semantic Versioning: SemVer describes the compatibility of a public API that other software depends on (semver.org). A deployed service's version is a label for a deploy. The contract with clients is the `/v1` path, not the version number.
 
 ## 6. Roll back
 
 ### Production
 
-Run `release.yml` again on an earlier release tag:
+Run `rollback.yml` on an earlier release tag:
 
 ```bash
-gh workflow run release.yml --ref <earlier tag>
+gh workflow run rollback.yml --ref <release tag>
 ```
 
-The run uses `release.yml` and `deploy.yml` as they were at that tag. So a tag that is older than `release.yml` cannot be used for a rollback. The staging check passes for an earlier tag: GitHub marks an older staging deployment `inactive` after a newer one succeeds, and the check skips `inactive`.
+The workflow checks that the tag is a release tag, that its commit is on `main`, that the image of the commit exists in GHCR, and that its provenance comes from `ci.yml` on `main`. Then the production job waits for the maintainer's approval, like any production deploy. It skips the check for an older commit, because a rollback deploys one on purpose.
+
+The run uses `rollback.yml` and `deploy.yml` as they were at that tag.
 
 ### Staging
 
@@ -246,15 +261,16 @@ Only the `migrate` command gets this connection (R3). It is a GitHub environment
 - **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway.
 - **The readiness endpoint is public.** Section 8 of `apps/api/docs/ARCHITECTURE.md` says that the readiness endpoint is not routed from outside. On Railway, the generated domain of `api-web` routes every path, so `/health/ready` is public too. Railway's health check needs this path. The deviations table of `ARCHITECTURE.md` does not record this yet. The maintainer decides how to close the gap.
 
-## 11. When a deploy or a release fails
+## 11. When a deploy, a tag or a rollback fails
 
-- "The secret ... of the environment ... is empty": set the secret (section 4, step 6). For `production` before the product has users, this is expected.
+- "The secret ... of the environment ... is empty": set the secret (section 4, step 6).
+- "Production already runs a newer commit": the approved run is older than the commit that production runs. Reject it, and approve the newest waiting run. To go back on purpose, use the rollback (section 6).
 - The migration fails: the step prints the error of the `migrate` command. Nothing was deployed.
 - The Railway step fails: the step prints the Railway CLI's own message. Check `RAILWAY_TOKEN` and the service names.
 - A deployment ends as `FAILED`, `CRASHED` or `REMOVED`: the step prints its ID. Read its logs in Railway. A missing shared variable or a private GHCR package are common causes.
 - "Not healthy after 10 minutes" with "no new deployment yet": Railway started no deployment. This can happen when the services already run this digest.
 - "The variable API_URL ... is empty": set it (section 4, step 8).
 - The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role. A 429 means the anonymous rate limit is used up (section 10).
-- "... is not a release tag vX.Y.Z" or "... is not on main": tag a commit of `main` with `vX.Y.Z`.
-- "CI on main did not publish an image for this commit": the commit's CI run on `main` failed or has not finished.
-- "Staging has not deployed this commit with success": wait for the staging deploy, then re-run the release.
+- `tag-release` fails: production runs the new version, but it has no tag yet. Re-run the job. If the tag was created and only the GHCR step failed, the re-run creates the next `N` for the same commit.
+- "... is not a release tag vYYYY.0M.0D.N" or "... is not on main": run `rollback.yml` on a release tag that `tag-release` created.
+- "CI on main did not publish an image for this commit": the tag does not name a commit that CI published.
