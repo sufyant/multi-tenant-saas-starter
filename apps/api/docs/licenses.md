@@ -1,6 +1,6 @@
 # Package licenses
 
-Every NuGet package of every project in `Api.slnx`, direct and transitive, with the license its package declares (its SPDX license expression). Sorted by package. A package has one row, whatever versions are in use. The table names no version, so a version update changes nothing here unless the license changes.
+Every NuGet package of every project in `Api.slnx`, direct and transitive, with the license its package declares (its SPDX license expression). Sorted by package. A package has one row, whatever versions are in use. The table names no version. A version update changes this file only when it adds or removes a package, or changes a license.
 
 Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under another license needs a decision first (fixed rule 4).
 
