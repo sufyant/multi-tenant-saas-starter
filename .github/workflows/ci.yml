@@ -2,11 +2,11 @@ name: CI
 
 on:
   pull_request:
-  # Railway's "Wait for CI" needs a workflow that runs on push to main.
+  # On a push to main, publish-api publishes the tested API image and deploy-api deploys it.
   push:
     branches: [main]
 
-# A cancelled run on main would make Railway skip a deployment,
+# A cancelled run on main would skip the publish and the deploy of its commit,
 # so only pull request runs cancel the run before them.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
