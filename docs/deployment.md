@@ -82,7 +82,7 @@ The table holds names only. A value never goes into the repository.
 
 One Railway project has the two environments `staging` and `production`. Each environment has its own project token, its own shared variables and its own database. Two environments never share a database or a database role.
 
-A PostgreSQL role belongs to the whole server, not to one database (PostgreSQL docs, "Database Roles"). The API's roles have fixed names, `api_owner` and `api_application`. So each environment needs its own PostgreSQL server. On Neon, use a separate project or a separate branch. Two databases on one server would share the roles: `db/bootstrap.sql` for the second environment would reset the first environment's passwords, and the staging owner connection could change the production database.
+A PostgreSQL role belongs to the whole server, not to one database (PostgreSQL docs, "Database Roles"). The API's roles have fixed names, `api_owner` and `api_application`. So each environment needs its own PostgreSQL server. On Neon, use a separate project or a separate branch. A Neon branch starts as a copy of its parent, with the parent's data and role passwords. So do not branch staging from a production branch that holds data, and run `db/bootstrap.sql` on the new branch with new passwords. Two databases on one server would share the roles: `db/bootstrap.sql` for the second environment would reset the first environment's passwords, and the staging owner connection could change the production database.
 
 ## 4. First deployment of an environment
 
