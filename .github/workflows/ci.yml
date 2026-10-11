@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  pull_request:
+  # Railway's "Wait for CI" needs a workflow that runs on push to main.
+  push:
+    branches: [main]
+
+# A cancelled run on main would make Railway skip a deployment,
+# so only pull request runs cancel the run before them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: "Node: lint, types, tests, build"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # packageManager in package.json fixes the pnpm version.
+      - run: corepack enable
+
+      - name: Find the pnpm store
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      # setup-node can cache pnpm only when pnpm is installed before setup-node runs.
+      # Here corepack from the Node that setup-node installs provides pnpm, so the
+      # store is cached with actions/cache.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      # The api job builds and tests .NET.
+      - run: pnpm turbo run check-types test build '--filter=!@repo/api'
+
+  api:
+    name: "API: build and test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: apps/api/global.json
+
+      - run: dotnet build Api.slnx
+
+      # The tests start PostgreSQL 18 in Docker. The runner has Docker.
+      - run: dotnet test --solution Api.slnx --no-build
+
+  # This is the only required status check. A new job is added to `needs` here,
+  # in the diff, not in the repository settings.
+  ci:
+    name: CI
+    needs: [node, api]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check that every needed job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            if [[ "$result" != "success" ]]; then
+              exit 1
+            fi
+          done
