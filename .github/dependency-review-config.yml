@@ -1,0 +1,26 @@
+# Configuration of actions/dependency-review-action, read by the dependency-review job in
+# .github/workflows/ci.yml. The action checks only the dependencies that a pull request adds
+# or changes, in every ecosystem of the dependency graph.
+# Option names: the action's README, "Configuration options".
+
+# A dependency under any other license fails the job. A license that the action cannot detect
+# gives a warning only. LicenseTests in apps/api still checks every NuGet package against the
+# shorter list of fixed rule 4.
+allow-licenses:
+  - MIT
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - 0BSD
+  - PostgreSQL
+  - BlueOak-1.0.0
+  - Python-2.0
+  - CC0-1.0
+  - Unlicense
+
+# A known vulnerability of high or critical severity fails the job.
+fail-on-severity: high
+
+# The job's token is read-only, so the summary goes to the job log and not to a comment.
+comment-summary-in-pr: never
