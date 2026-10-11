@@ -23,10 +23,14 @@ RUN dotnet publish src/Api/Api.csproj --configuration Release --no-restore --out
 # Chiseled: no shell, no package manager. It runs in invariant globalization mode, and the code needs no ICU or time zone data.
 # 10.0.12 when pinned. Dependabot updates the digest, not this note.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:48e51f2f6798897be7ac4e775c049ed8fe60d3190f637e1f9c9dc7513efa659c
+# The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
+USER 0:0
 WORKDIR /app
 COPY --from=build /app .
 
 # The base image's non-root user `app` (CIS Docker Benchmark 4.1).
+# The build resolves APP_UID to the number 1654, which CI checks. hadolint cannot read the variable.
+# hadolint ignore=DL3066
 USER $APP_UID
 
 # The base image sets ASPNETCORE_HTTP_PORTS=8080: the process listens on port 8080 on all interfaces.
