@@ -51,7 +51,8 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
 
-  # The base images in the Dockerfiles, pinned by digest. Dependabot updates the tag and the digest.
+  # The base images in the Dockerfiles, pinned by digest. Dependabot updates the digest,
+  # and the tag too where the tag names a full version.
   - package-ecosystem: docker
     directories: [/apps/api, /apps/web]
     schedule:

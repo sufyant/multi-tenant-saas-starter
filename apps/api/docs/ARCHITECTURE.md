@@ -299,13 +299,13 @@ The build writes the OpenAPI document to openapi/v1.json, and the file is commit
 3. A value that changes between environments comes from an environment variable.
 4. Passwords and keys are not written in `appsettings.json`.
 
+Source: Twelve-Factor, Factor III. Nygard, Chapter 5 (Fail Fast).
+
 ### Container image
 
-The API has one container image, built from `apps/api/Dockerfile`. Every process runs from it, and only the configuration and the command change. `Host:Role` selects the web or the worker role. The migration is a command of the same image: `docker run <image> migrate`. The process listens on port 8080 on all interfaces. It runs as the base image's non-root user. The image holds no secret, no connection string and no `appsettings.Development.json`. The runtime base image is chiseled: it has no shell and no package manager. It runs in invariant globalization mode, because the code needs no ICU and no time zone data. CI builds the image, scans it and runs every role against PostgreSQL.
+The API has one container image, built from `apps/api/Dockerfile`. Every process runs from it, and only the configuration and the command change. `Host:Role` selects the web or the worker role. The migration is a command of the same image: `docker run <image> migrate`. The process listens on port 8080 on all interfaces. It runs as the base image's non-root user. The image holds no secret, no connection string and no `appsettings.Development.json`. The runtime base image is chiseled: it has no shell and no package manager. It runs in invariant globalization mode, because the code needs no ICU and no time zone data. CI builds the image and scans it. Then it runs the migration, the web and the worker against PostgreSQL and checks that each process is ready.
 
 Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Humble and Farley, *Continuous Delivery*, Chapter 5.
-
-Source: Twelve-Factor, Factor III. Nygard, Chapter 5 (Fail Fast).
 
 ## 8. Resilience and security
 
@@ -381,7 +381,7 @@ These deviations were discussed openly and approved.
 | The invitation link goes to Notifications inside the message | OWASP, Forgot Password Cheat Sheet: a token is stored only as a hash | The link cannot be produced again later. The secret travels in ActivateTenant and OwnerInvitationReady and stays in the messaging tables until Wolverine removes handled messages. Protection: the verified email of the person who accepts must be the same as the invited address, the link is single use and expires, and an invitation whose email does not go out is cancelled. If a strict audit requires it, change to a signed token |
 | The rate limit is kept in each pod | OWASP API4: a limit for each user | A shared store (Redis or the database) is infrastructure the first template does not need. The real limit is the setting times the number of pods |
 | In Development, email without an email service is written to the log, link included | OWASP Logging Cheat Sheet: secrets are not logged | Local development and the smoke run need the link without an email account. Outside Development the application does not start without the email service |
-| The API image has no `HEALTHCHECK` | CIS Docker Benchmark 4.6: add a `HEALTHCHECK` instruction to the image | The chiseled image has no shell and no `curl` to run a check. The platform checks `/health/live` and `/health/ready` over HTTP: Railway's health check path or Kubernetes probes. Docker ignores `HEALTHCHECK` under Kubernetes |
+| The API image has no `HEALTHCHECK` | CIS Docker Benchmark 4.6: add a `HEALTHCHECK` instruction to the image | The chiseled image has no shell and no `curl` to run a check. The platform checks `/health/live` and `/health/ready` over HTTP: its own HTTP health check or Kubernetes probes (`setup.md`). Docker ignores `HEALTHCHECK` under Kubernetes |
 
 ## Deferred
 

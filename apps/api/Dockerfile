@@ -5,7 +5,7 @@
 #
 #   docker build -t api apps/api
 
-# 10.0.401
+# 10.0.401 when pinned. Dependabot updates the digest, not this note.
 FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS build
 WORKDIR /src
 
@@ -21,7 +21,7 @@ RUN dotnet publish src/Api/Api.csproj --configuration Release --no-restore --out
     -p:UseAppHost=false -p:OpenApiGenerateDocuments=false
 
 # Chiseled: no shell, no package manager. It runs in invariant globalization mode, and the code needs no ICU or time zone data.
-# 10.0.12
+# 10.0.12 when pinned. Dependabot updates the digest, not this note.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:48e51f2f6798897be7ac4e775c049ed8fe60d3190f637e1f9c9dc7513efa659c
 WORKDIR /app
 COPY --from=build /app .
