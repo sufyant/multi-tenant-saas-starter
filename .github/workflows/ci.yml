@@ -488,3 +488,65 @@ jobs:
     secrets:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+
+  # Names the version that production now runs: a CalVer tag vYYYY.0M.0D.N in UTC (calver.org),
+  # with N from 1 each day. A tag therefore always names a version that ran in production. The tag
+  # goes on the commit and on the image digest in GHCR. A tag that GITHUB_TOKEN creates starts no
+  # workflow. Only this job may write to the repository.
+  tag-release:
+    name: "Tag the release"
+    needs: [publish-api, deploy-production]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # create the release tag
+      packages: write # add the release tag to the image in GHCR
+    env:
+      IMAGE: ${{ needs.publish-api.outputs.image }}
+    steps:
+      - name: Compute the tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          today=$(date -u +%Y.%m.%d)
+          highest=$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/v$today." --jq '.[].ref' |
+            sed -n -E "s/^refs\/tags\/v${today//./\\.}\.([1-9][0-9]*)$/\1/p" | sort -n | tail -n 1)
+          tag="v$today.$(( ${highest:-0} + 1 ))"
+          echo "Tag: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # An annotated tag: first the tag object, then the ref that names it.
+      - name: Create the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          object=$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags" \
+            -f tag="$TAG" -f message="Release $TAG of $IMAGE" -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$object" --silent
+
+      - name: Log in to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
+
+      # --prefer-index=false copies the manifest as it is; by default buildx wraps a single
+      # manifest in a new index, which has a new digest.
+      - name: Name the version in the registry
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          name="${IMAGE%@*}"
+          digest="${IMAGE#*@}"
+          docker buildx imagetools create --prefer-index=false --tag "$name:$TAG" "$IMAGE"
+          tagged=$(docker buildx imagetools inspect "$name:$TAG" --format '{{json .Manifest}}' | jq -r .digest)
+          if [[ "$tagged" != "$digest" ]]; then
+            echo "::error::$name:$TAG names $tagged, not $digest."
+            exit 1
+          fi
+          echo "Released $TAG: $IMAGE"
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
