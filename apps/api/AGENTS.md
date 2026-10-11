@@ -14,6 +14,7 @@ Run from `apps/api/`.
 
 - Build: `dotnet build Api.slnx`. No new warnings.
 - Test: `dotnet test --solution Api.slnx`. Needs Docker: tests run on PostgreSQL 18 in a container.
+- Format C#: `dotnet format whitespace Api.slnx`.
 - Add a migration to module X: `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/X/X.Infrastructure`.
 - Run the system: follow `docs/local-run.md`. One build output; `Host:Role` is `web`, `worker` or `all`.
 
@@ -39,6 +40,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - Handler, saga, message and DbContext types are public, because Wolverine generates code in another assembly. (W9)
 - A scheduled retry on a message with several handlers can run in a web host. Use inline retries there. (W5, `ScheduledRetryTests`)
 - The tenant is declared per transaction with `set_config(..., true)`. A transaction declares one tenant or one user, never both, and never a second tenant. (R4)
+- A model change without a migration fails `PendingModelChangesTests`. Run `dotnet ef migrations add`.
 
 ## How we design
 
