@@ -99,9 +99,12 @@ jobs:
         run: |
           user=$(docker image inspect api --format '{{.Config.User}}')
           echo "User: ${user:-<none>}"
-          case "${user%%:*}" in
-            "" | root | 0) echo "The image runs as root." >&2; exit 1 ;;
-          esac
+          # Kubernetes verifies runAsNonRoot only for a numeric user.
+          uid=${user%%:*}
+          if [[ ! "$uid" =~ ^[0-9]+$ ]] || (( 10#$uid == 0 )); then
+            echo "The image must run as a numeric user other than 0." >&2
+            exit 1
+          fi
 
       # Grype reads a saved archive, so it needs no access to the Docker socket.
       # The first run prints every vulnerability. The second fails on a high or critical one with a fix.
@@ -204,9 +207,12 @@ jobs:
         run: |
           user=$(docker image inspect web --format '{{.Config.User}}')
           echo "User: ${user:-<none>}"
-          case "${user%%:*}" in
-            "" | root | 0) echo "The image runs as root." >&2; exit 1 ;;
-          esac
+          # Kubernetes verifies runAsNonRoot only for a numeric user.
+          uid=${user%%:*}
+          if [[ ! "$uid" =~ ^[0-9]+$ ]] || (( 10#$uid == 0 )); then
+            echo "The image must run as a numeric user other than 0." >&2
+            exit 1
+          fi
 
       - name: Scan the image
         run: |
