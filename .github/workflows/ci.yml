@@ -15,13 +15,14 @@ concurrency:
 permissions:
   contents: read
 
-# Each timeout is about twice the time the job took on the first run:
-# node 42 s, api 2 min 51 s, ci 3 s.
+# A timeout stops a job that hangs. It is not a performance target.
+# The commit stage should finish in under 10 minutes (Continuous Delivery, ch. 3).
+# Typical times: node about 45 s, api about 3 min.
 jobs:
   node:
     name: "Node: lint, types, tests, build"
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,7 +58,7 @@ jobs:
   api:
     name: "API: build and test"
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: apps/api
