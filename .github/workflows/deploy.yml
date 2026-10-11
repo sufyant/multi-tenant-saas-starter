@@ -1,0 +1,205 @@
+name: Deploy
+
+# The only copy of the deploy steps. ci.yml calls it for staging, release.yml for production
+# (Humble and Farley, Continuous Delivery, chapter 5: "Deploy the same way to every environment").
+# The job reads the secrets and the variable API_URL of its GitHub environment. A caller passes
+# the two secrets by name; the job that sets `environment` gets the environment's value
+# (GitHub Docs, "Reuse workflows").
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "The GitHub environment and the Railway environment: staging or production"
+        required: true
+        type: string
+      image:
+        description: "The API image with its digest: ghcr.io/<owner>/<repo>/api@sha256:<digest>"
+        required: true
+        type: string
+    secrets:
+      RAILWAY_TOKEN:
+        required: true
+      MIGRATIONS_CONNECTION_STRING:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # The deploy job opens its environment when it starts, so the inputs are checked before it.
+  check-inputs:
+    name: Check the inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - name: Check the environment and the image
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          IMAGE: ${{ inputs.image }}
+        run: |
+          if [[ "$ENVIRONMENT" != staging && "$ENVIRONMENT" != production ]]; then
+            echo "::error::The environment must be staging or production, not '$ENVIRONMENT'."
+            exit 1
+          fi
+          if [[ ! "$IMAGE" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::The image must be ghcr.io/<name>@sha256:<digest>, not '$IMAGE'."
+            exit 1
+          fi
+
+  # Migrates the database, then deploys the digest to both Railway services of the environment.
+  # The Railway CLI is pinned by digest, like Grype in ci.yml.
+  deploy:
+    name: "Migrate, deploy, smoke test"
+    needs: [check-inputs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    # Two deploys to one environment never run at the same time, and a running migration is never cancelled.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read # pull the image from GHCR while the package is still private
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      IMAGE: ${{ inputs.image }}
+      RAILWAY_CLI_IMAGE: ghcr.io/railwayapp/cli:5.63.1@sha256:cc60c48f7bec8f6c658b7aa496362ec81f9373631424fe132767363ffe6b8fe2
+    steps:
+      - name: Check the secrets
+        env:
+          MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          missing=0
+          for name in MIGRATIONS_CONNECTION_STRING RAILWAY_TOKEN; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::The secret $name of the environment $ENVIRONMENT is empty. See docs/deployment.md."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Log in to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
+
+      # Only the migrate command gets the owner role's connection (R3). It never goes to Railway.
+      # `docker run -e NAME` copies the variable from the step, so the value is not on the command line.
+      - name: Migrate the database
+        env:
+          ConnectionStrings__Migrations: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+        run: docker run --rm -e ConnectionStrings__Migrations "$IMAGE" migrate
+
+      # One commit sets the image of both services. The project token selects the project and the
+      # environment, and the CLI finds the services by name. CI=true turns off the CLI's self-update.
+      # The CLI reads a JSON patch from stdin when stdin is not a terminal, and then ignores
+      # --service-config. So `environment edit` gets a terminal (-t), and the step checks that the
+      # CLI committed the change.
+      - name: Deploy the image to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway() { docker run --rm -e RAILWAY_TOKEN -e CI "$RAILWAY_CLI_IMAGE" railway "$@"; }
+
+          # The next step waits for a deployment that is not in these lists.
+          for service in api-web api-worker; do
+            railway deployment list --service "$service" --limit 50 --json | jq -c '[.[].id]' \
+              > "$RUNNER_TEMP/deployments-before-$service.json"
+          done
+
+          # With a terminal, Docker sends the CLI's errors to stdout too, so the step prints the output first.
+          status=0
+          output=$(docker run --rm -t -e RAILWAY_TOKEN -e CI "$RAILWAY_CLI_IMAGE" railway environment edit \
+            --service-config api-web source.image "$IMAGE" \
+            --service-config api-worker source.image "$IMAGE" \
+            --message "Deploy ${GITHUB_SHA::7}") || status=$?
+          echo "$output"
+          if (( status != 0 )); then
+            exit "$status"
+          fi
+          if ! grep -q "Configuration committed" <<<"$output"; then
+            echo "::error::The Railway CLI did not commit the new image."
+            exit 1
+          fi
+
+      # Railway keeps the old deployment serving when the new one fails its health check,
+      # so the job does not roll back. It prints IDs and statuses only, never a variable.
+      - name: Wait until both services are healthy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway() { docker run --rm -e RAILWAY_TOKEN -e CI "$RAILWAY_CLI_IMAGE" railway "$@"; }
+
+          declare -A state
+          pending=(api-web api-worker)
+          deadline=$((SECONDS + 600))
+          while (( ${#pending[@]} > 0 )); do
+            waiting=()
+            for service in "${pending[@]}"; do
+              deployment=$(railway deployment list --service "$service" --limit 50 --json |
+                jq -r --slurpfile before "$RUNNER_TEMP/deployments-before-$service.json" \
+                  '[.[] | select(.id | IN($before[0][]) | not)] | sort_by(.createdAt) | last
+                   | if . == null then empty else "\(.id) \(.status)" end')
+              state[$service]="${deployment:-no new deployment yet}"
+              echo "$service: ${state[$service]}"
+              case "${deployment#* }" in
+                SUCCESS) ;;
+                FAILED | CRASHED | REMOVED)
+                  echo "::error::$service: deployment ${deployment% *} ended as ${deployment#* }. Its Railway logs give the reason."
+                  exit 1
+                  ;;
+                *) waiting+=("$service") ;;
+              esac
+            done
+            pending=("${waiting[@]}")
+            if (( ${#pending[@]} > 0 )); then
+              if (( SECONDS >= deadline )); then
+                for service in "${pending[@]}"; do
+                  echo "::error::$service: not healthy after 10 minutes: ${state[$service]}"
+                done
+                exit 1
+              fi
+              sleep 15
+            fi
+          done
+
+      # Checks the public route, not only Railway's health check (Continuous Delivery, chapter 5:
+      # "Smoke-test your deployments"). GET /v1/me/tenants needs a signed-in user and changes
+      # nothing. Without a token it answers 401. A worker answers 404 for it (HostRoleTests), so
+      # a 401 shows that the route reaches the web process and its authentication.
+      # The step prints the status codes only.
+      - name: Smoke test the public route
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [[ -z "$API_URL" ]]; then
+            echo "::error::The variable API_URL of the environment $ENVIRONMENT is empty. See docs/deployment.md."
+            exit 1
+          fi
+
+          deadline=$((SECONDS + 60))
+          expect() {
+            local path="$1" expected="$2" status
+            while true; do
+              status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 \
+                "${API_URL%/}$path" || true)
+              echo "GET $path: $status"
+              if [[ "$status" == "$expected" ]]; then
+                return 0
+              fi
+              if (( SECONDS >= deadline )); then
+                echo "::error::GET $path answered $status, not $expected, within 60 seconds."
+                return 1
+              fi
+              sleep 5
+            done
+          }
+          expect /health/live 200
+          expect /v1/me/tenants 401
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
