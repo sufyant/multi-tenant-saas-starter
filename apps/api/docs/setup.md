@@ -6,7 +6,9 @@ What the API needs from the providers it runs on, and how to set them up. The ar
 
 The API needs PostgreSQL 18 and the two roles of R2 and R7: an owner role for the migrations and an application role for running code. `db/bootstrap.sql` creates both.
 
-- `db/bootstrap.sql` runs once, before the first migration, against the API's own database, as a role that may create roles. Locally that is the superuser. On Neon it is a member of `neon_superuser`, such as the role Neon creates with the project; the application account is created with this SQL, not in the console.
+- `db/bootstrap.sql` runs before the first migration, against the API's own database. It runs as the owner of that database, and that role needs `CREATEROLE`. A superuser is not needed, but a superuser works too. On Neon, use the owner role that Neon created with the project, such as `neondb_owner`.
+- Create the application role with this SQL, not in the Neon console. A role that the console creates is a member of `neon_superuser`, which can bypass RLS. R10 then stops the application.
+- The script is safe to run again. A rerun sets the passwords given and changes nothing else. If either role is a superuser, can bypass RLS, can create databases or can create roles, the script stops and names the role and the attribute.
 - `ConnectionStrings:Messaging` is needed when `ConnectionStrings:Database` goes through a pooler in transaction mode, such as Neon's pooled endpoint. Wolverine's message store holds session-level advisory locks, so the setting then names a direct or session-mode connection of the application role.
 - `ConnectionStrings:Migrations` names a direct connection of the owner role. Only the `migrate` command gets it (R3).
 

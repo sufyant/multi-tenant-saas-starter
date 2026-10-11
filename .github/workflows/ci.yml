@@ -126,6 +126,7 @@ jobs:
       - name: Run the migration, the web and the worker against PostgreSQL
         run: |
           superuser_password=$(openssl rand -hex 24)
+          provider_password=$(openssl rand -hex 24)
           owner_password=$(openssl rand -hex 24)
           application_password=$(openssl rand -hex 24)
 
@@ -140,10 +141,40 @@ jobs:
           done
           docker exec api-db pg_isready -h 127.0.0.1 -U postgres -d app
 
-          # The two roles, as in apps/api/docs/local-run.md section 2.
-          docker exec -i api-db psql -U postgres -d app \
-            -v owner_password="$owner_password" -v application_password="$application_password" \
-            -f - < apps/api/db/bootstrap.sql
+          # A managed provider gives no superuser. Its most privileged role has CREATEROLE, CREATEDB and
+          # BYPASSRLS and owns the database, like neondb_owner on Neon (apps/api/docs/setup.md).
+          docker exec api-db psql -U postgres -d app -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE provider_admin LOGIN CREATEROLE CREATEDB BYPASSRLS PASSWORD '$provider_password'" \
+            -c "ALTER DATABASE app OWNER TO provider_admin"
+
+          # The two roles, as in apps/api/docs/local-run.md section 2, as the provider's role over the network.
+          bootstrap() {
+            docker run --rm -i --network api-image -e PGPASSWORD="$provider_password" "$POSTGRES_IMAGE" \
+              psql -h api-db -U provider_admin -d app \
+              -v owner_password="$1" -v application_password="$2" -f - < apps/api/db/bootstrap.sql
+          }
+          roles() {
+            docker exec api-db psql -U postgres -d app -At \
+              -c "SELECT * FROM pg_roles WHERE rolname IN ('api_owner', 'api_application') ORDER BY rolname"
+          }
+
+          # A rerun changes only the passwords: the steps below log in with the second run's passwords.
+          bootstrap "$(openssl rand -hex 24)" "$(openssl rand -hex 24)"
+          roles > "$RUNNER_TEMP/roles-first.txt"
+          bootstrap "$owner_password" "$application_password"
+          roles > "$RUNNER_TEMP/roles-second.txt"
+          cat "$RUNNER_TEMP/roles-second.txt"
+          diff "$RUNNER_TEMP/roles-first.txt" "$RUNNER_TEMP/roles-second.txt"
+
+          # A role that someone changed by hand stops a rerun, which names the role and the attribute.
+          docker exec api-db psql -U postgres -d app -c "ALTER ROLE api_application BYPASSRLS"
+          if bootstrap "$owner_password" "$application_password" 2> "$RUNNER_TEMP/changed-role.txt"; then
+            echo "The script ran on although api_application can bypass RLS." >&2
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/changed-role.txt"
+          grep -q "api_application has BYPASSRLS" "$RUNNER_TEMP/changed-role.txt"
+          docker exec api-db psql -U postgres -d app -c "ALTER ROLE api_application NOBYPASSRLS"
 
           # Only the owner role's connection (R3).
           docker run --rm --network api-image \
