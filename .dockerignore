@@ -1,0 +1,25 @@
+# The build context of apps/web/Dockerfile. The web build needs the root manifests,
+# the lockfile, tsconfig.base.json, apps/web and packages/ui. The rest stays out.
+**/node_modules
+**/.next
+**/.turbo
+.git
+.github
+.claude
+docs
+scripts
+apps/api
+apps/admin
+apps/marketing
+apps/mobile
+apps/web/e2e
+apps/web/test-results
+apps/web/playwright-report
+apps/web/blob-report
+**/.env*
+!**/.env.example
+**/*.tsbuildinfo
+**/Dockerfile
+**/.dockerignore
+.vscode
+.idea
