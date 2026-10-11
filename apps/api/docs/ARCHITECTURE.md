@@ -241,6 +241,8 @@ Source: Golding, Chapter 2 (control plane). Khononov, Chapter 3 (when you are no
 
 The process is a saga. Three steps run in order.
 
+The saga is part of the template, and the onboarding is its reference use. A product built on the template keeps it and adds its own steps to it.
+
 1. ControlPlane writes the tenant ("provisioning"), the Owner invitation and the saga record in one transaction. The invitation code and its link are created here. Compensatable.
 2. The tenant becomes "active". Pivot.
 3. Notifications sends the invitation email. It is tried a limited number of times, with growing pauses.
