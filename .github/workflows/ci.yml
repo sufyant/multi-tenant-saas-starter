@@ -71,6 +71,10 @@ jobs:
         with:
           global-json-file: apps/api/global.json
 
+      # Whitespace only: the build enforces style and analyzers. It needs no build, so it fails fast.
+      # .editorconfig marks the migrations as generated code, so the check skips them.
+      - run: dotnet format whitespace Api.slnx --verify-no-changes
+
       - run: dotnet build Api.slnx
 
       # The tests start PostgreSQL 18 in Docker. The runner has Docker.
