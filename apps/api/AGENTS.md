@@ -21,7 +21,7 @@ Run from `apps/api/`.
 
 These were decided with the maintainer, with their sources. Do not reopen one, and do not propose to, unless the maintainer asks or you have new information. Then say what the new information is.
 
-- The onboarding saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6, S1 to S13)
+- The onboarding saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6; rules S1 to S13 in section 3)
 - The tenant id is in the API path and is proven by membership. It never comes from the token, the body, the query or a header. (T1, T2, Deviations)
 - The identity provider only authenticates. Tenants, roles and permissions live in our tables. (T6, A1 to A6)
 - The Owner signs up with the identity provider like any user. The onboarding creates nothing in the identity provider. (Section 6)
@@ -34,7 +34,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 ## Known traps
 
 - Wolverine runs a saga alone at the endpoint its message arrives on. If another handler shares that message, it never runs in the web and worker layout. A saga hears its steps through replies sent to it. (S13, `SagaMessageTests`)
-- A test that passes with `Host:Role=all` can fail with web and worker. Defect D1 hid this way. Test message flows in the web and worker layout. (`HostRoleTests`)
+- A test that passes with `Host:Role=all` can fail with web and worker. Once, the Audit handler never ran in production layout while every test in the role `all` passed. Test message flows in the web and worker layout. (`HostRoleTests`)
 - Wolverine commits a handler that returns a failed `Result`. Reject before any change. (W7)
 - Handler, saga, message and DbContext types are public, because Wolverine generates code in another assembly. (W9)
 - A scheduled retry on a message with several handlers can run in a web host. Use inline retries there. (W5, `ScheduledRetryTests`)
