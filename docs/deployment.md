@@ -451,3 +451,62 @@ After a restore, the private host, the proxy and the root certificate are new. U
 - `tag-release` fails: production runs the new version, but it has no tag yet. Re-run the job. If the tag was created and only the GHCR step failed, the re-run creates the next `N` for the same commit.
 - "... is not a release tag vYYYY.0M.0D.N" or "... is not on main": run `rollback.yml` on a release tag that `tag-release` created.
 - "Delivery on main did not publish an image for this commit": the tag does not name a commit that `delivery.yml` published.
+
+## 12. A product in a private repository
+
+A product starts from this template with "Use this template". Its repository is often private. Some features of this pipeline then work only on some GitHub plans. This section lists what changes. It designs nothing: a later step does that. The facts were checked on 2026-10-12.
+
+### What each GitHub plan gives a private repository
+
+GitHub Pro is the plan of a personal account. GitHub Team is the plan of an organization. GitHub Free for organizations gives the same as GitHub Free here.
+
+| Feature | Free | Pro | Team | Enterprise Cloud |
+| --- | --- | --- | --- | --- |
+| Environments and environment secrets | No | Yes | Yes | Yes |
+| Required reviewers of an environment | No | No | No | Yes |
+| Rulesets | No | Yes | Yes | Yes |
+| Artifact attestations | No | No | No | Yes |
+| Actions minutes a month | 2,000 | 3,000 | 3,000 | 50,000 |
+
+Sources, GitHub Docs:
+
+- "Managing environments for deployment": environments, environment secrets and deployment branches in a private repository need Pro, Team or Enterprise. On Free, Pro and Team, required reviewers and wait timers work only in public repositories.
+- "GitHub's plans": Enterprise Cloud lists "Deployment protection rules with GitHub Actions for private or internal repositories". The same page gives the Actions minutes.
+- "About rulesets": rulesets work in private repositories with Pro, Team and Enterprise Cloud.
+- "Using artifact attestations to establish provenance for builds": on Free, Pro and Team, only in public repositories. A private repository needs Enterprise Cloud.
+
+Section 4 of `docs/github-settings.md` names the same limits for `pnpm github:apply`.
+
+### What the pipeline needs on GitHub Pro or Team
+
+Pro or Team is the recommended plan for a private product. The pipeline then needs two changes. A later step designs them.
+
+- **The production approval.** Required reviewers are not available, so the `production` environment cannot wait for an approval. Production starts from a manual run of a workflow (`workflow_dispatch`) on `main` instead. Only a person with write access to the repository can start it (GitHub Docs, "Manually running a workflow"). *Continuous Delivery*, chapter 5, calls this a push-button release.
+- **The provenance of the image.** Artifact attestations are not available, so `publish-api` cannot attest the image, and `rollback.yml` cannot run `gh attestation verify`. The release tag already names the image digest (section 5), and a release tag cannot be deleted or moved. The rollback check uses that digest instead: the image that it deploys must have the digest that the tag message names.
+
+### What Railway needs
+
+The GHCR package of a private repository is private. Section 5.4 of `docs/github-settings.md` makes the package public. For a private product, that would publish its image.
+
+Railway pulls an image from a private registry only on the Pro plan, with registry credentials. For GHCR, the credential is a personal access token with the scope `read:packages`. The Hobby plan cannot pull a private image (Railway docs, "Private registries").
+
+### The monthly cost
+
+A private product with staging and production, on GitHub Pro and Railway Pro. Prices of 2026-10-12, in USD. Prices change. Check them before a decision.
+
+| Item | Cost a month | Source |
+| --- | --- | --- |
+| GitHub Pro | 4 | Third-party pricing guides. github.com/pricing lists only Free, Team (4 a user, for the first 12 months) and Enterprise. |
+| Railway Pro | 20, with 20 of usage included | railway.com/pricing |
+| Railway usage: two environments, each with `api-web`, `api-worker` and `postgres` | About 8, inside the included 20 | See below |
+| **Total** | **About 24** | |
+
+- Railway usage: memory costs about 10 a GB a month, a vCPU about 20 a month, and a volume about 0.15 a GB a month (railway.com/pricing). Staging used about 0.35 GB of memory and almost no CPU for its three services on 2026-10-12, without traffic (Railway metrics). Two such environments use about 7 to 8 a month. Traffic adds to this.
+- Actions: one merged pull request used about 26 minutes (CI 12, Delivery 14, runs 38290763555 and 38301523555). The 3,000 minutes of Pro cover about 100 merges a month. A minute over that costs 0.006 on a Linux 2-core runner (GitHub Docs, "Actions runner pricing").
+- GitHub Packages: Pro includes 2 GB of storage and 10 GB of data transfer a month. A private image counts against both, and each Railway pull counts as data transfer (GitHub Docs, "GitHub Packages billing"). Old images must then be deleted.
+
+### Rejected alternatives
+
+- **Railway builds the image from the source on Hobby.** Each environment then builds its own image, which breaks "Only build your binaries once" (*Continuous Delivery*, chapter 5; Railway docs, "Builds").
+- **A VPS with Kamal.** Cheaper: a server with 1 vCPU and 2 GB costs 12 a month at DigitalOcean (digitalocean.com/pricing/droplets). At today's 0.35 GB an environment, it holds both. But the maintainer runs the server, the database and its backups. Kamal starts a database as an accessory, and does not update it when it deploys (Kamal docs, "Accessories").
+- **Coolify.** Its repository published 11 critical security advisories on 2026-01-03 and 5 more in June and July 2026 (GitHub Security Advisories of `coollabsio/coolify`). Its control plane needs a server with 2 GB of memory (Coolify docs, "Installation").
