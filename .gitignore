@@ -54,3 +54,6 @@ agent/
 # Local application settings
 appsettings.Development.json
 appsettings.*.local.json
+
+# Certificates. A database root certificate belongs outside the repository (docs/deployment.md, section 4, step 9).
+*.crt
