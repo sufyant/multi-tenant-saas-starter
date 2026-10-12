@@ -1,6 +1,6 @@
 name: Deploy
 
-# The only copy of the deploy steps. ci.yml calls it for staging and production, rollback.yml for
+# The only copy of the deploy steps. delivery.yml calls it for staging and production, rollback.yml for
 # production (Humble and Farley, Continuous Delivery, chapter 5: "Deploy the same way to every
 # environment").
 # The job reads the secrets and the variable API_URL of its GitHub environment. A caller passes

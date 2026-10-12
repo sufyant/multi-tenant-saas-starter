@@ -1,7 +1,7 @@
 name: Rollback
 
 # Deploys the image of an earlier release to production. A release tag vYYYY.0M.0D.N exists only
-# after a successful production deploy (tag-release in ci.yml), so its commit passed staging and
+# after a successful production deploy (tag-release in delivery.yml), so its commit passed staging and
 # production before. This workflow builds nothing.
 # Run it on the tag: gh workflow run rollback.yml --ref v2026.10.11.1
 on:
@@ -55,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
 
-      # publish-api in ci.yml tags each image with the full commit SHA.
+      # publish-api in delivery.yml tags each image with the full commit SHA.
       - name: Find the image of the commit
         id: image
         env:
@@ -70,7 +70,8 @@ jobs:
           echo "Image: $name@$digest"
           echo "image=$name@$digest" >> "$GITHUB_OUTPUT"
 
-      # The provenance must come from ci.yml, run on main, in this repository.
+      # The provenance must come from delivery.yml, run on main, in this repository. publish-api in
+      # delivery.yml signs it, so delivery.yml is the signer workflow.
       - name: Check where the image came from
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,7 +79,7 @@ jobs:
         run: |
           gh attestation verify "oci://$IMAGE" \
             --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/ci.yml" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/delivery.yml" \
             --source-ref refs/heads/main
 
       - name: Log out of GHCR
