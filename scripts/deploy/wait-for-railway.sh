@@ -6,9 +6,10 @@
 # deployment yet", and the script asks again. A jq failure stops the script.
 #
 # Inputs: RAILWAY_TOKEN (secret), RAILWAY_CLI_IMAGE, RUNNER_TEMP. WAIT_TIMEOUT_SECONDS (default 600)
-# and WAIT_POLL_SECONDS (default 15) exist for the timeout test, which would take 10 minutes without
-# them. The workflow does not set them.
-# Exit codes: 0 when both are SUCCESS; 1 when one is FAILED, CRASHED or REMOVED, or after the timeout.
+# and WAIT_POLL_SECONDS (default 15) let a local test of the timeout finish in seconds. The workflow
+# does not set them.
+# Exit codes: 0 when both are SUCCESS; 1 when one is FAILED, CRASHED or REMOVED, or after the timeout;
+# jq's exit code when jq fails.
 set -euo pipefail
 
 : "${RAILWAY_TOKEN:?}" "${RAILWAY_CLI_IMAGE:?}" "${RUNNER_TEMP:?}"
