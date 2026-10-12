@@ -111,14 +111,14 @@ The file `.github/rulesets/main.json` holds the ruleset. It uses the format that
 | Dismiss stale reviews, code owner review, last push approval | `false` | These rules need a second reviewer. The project has one maintainer. | GitHub Docs: "Available rules for rulesets" |
 | Required review thread resolution | `true` | A pull request cannot merge while a review comment is open. | GitHub Docs: "Available rules for rulesets" |
 | Allowed merge methods | `merge` | This matches the general settings in section 3.1. | GitHub Docs: "Available rules for rulesets" |
-| Required status checks | `CI` from GitHub Actions (`integration_id` 15368) | `CI` is the last job of `.github/workflows/ci.yml`. It fails when a job in its `needs` list did not pass. A new job is added to `needs` in the workflow, not here. | GitHub Docs: "Available rules for rulesets". Humble and Farley, *Continuous Delivery*, chapter 3 |
+| Required status checks | `CI` from GitHub Actions (`integration_id` 15368) | `CI` is the last job of `.github/workflows/ci.yml`, which only verifies. It fails when a job in its `needs` list did not pass. A new job is added to `needs` in the workflow, not here. `delivery.yml` calls the same workflow on a push to `main`. | GitHub Docs: "Available rules for rulesets". Humble and Farley, *Continuous Delivery*, chapter 3 |
 | Require branches to be up to date (`strict_required_status_checks_policy`) | `true` | CI tests the code that will be on `main` after the merge, not an old base. | GitHub Docs: "Available rules for rulesets" |
 
 ### 3.5 Ruleset for release tags
 
 The file `.github/rulesets/release-tags.json` holds the ruleset, in the same format as `main.json`. The script finds the repository ruleset named `release-tags`, and updates or creates it like `main`.
 
-A release tag `vYYYY.0M.0D.N` names a version that ran in production. The job `tag-release` in `.github/workflows/ci.yml` creates it with `GITHUB_TOKEN` after a successful production deploy (`docs/deployment.md`, section "Versions"). The ruleset does not restrict creation ("Restrict creations" is off), so the job can create the tag without a bypass. `deletion` and `update` stop a delete and a push to an existing tag; a new tag is neither.
+A release tag `vYYYY.0M.0D.N` names a version that ran in production. The job `tag-release` in `.github/workflows/delivery.yml` creates it with `GITHUB_TOKEN` after a successful production deploy (`docs/deployment.md`, section "Versions"). The ruleset does not restrict creation ("Restrict creations" is off), so the job can create the tag without a bypass. `deletion` and `update` stop a delete and a push to an existing tag. A new tag is neither.
 
 | Rule | Value | Reason | Source |
 | --- | --- | --- | --- |
@@ -129,7 +129,7 @@ A release tag `vYYYY.0M.0D.N` names a version that ran in production. The job `t
 
 ### 3.6 Environments `staging` and `production`
 
-`.github/workflows/deploy.yml` runs in one of these environments. On a push to `main`, `ci.yml` calls it for `staging`, and then for `production` after the maintainer's approval. `rollback.yml` calls it for `production` on a release tag. The script creates each environment with `PUT /repos/{owner}/{repo}/environments/{name}` and sets its deployment branches and tags with `/deployment-branch-policies`.
+`.github/workflows/deploy.yml` runs in one of these environments. On a push to `main`, `delivery.yml` calls it for `staging`, and then for `production` after the maintainer's approval. `rollback.yml` calls it for `production` on a release tag. The script creates each environment with `PUT /repos/{owner}/{repo}/environments/{name}` and sets its deployment branches and tags with `/deployment-branch-policies`.
 
 | Setting | Value | Reason | Source |
 | --- | --- | --- | --- |
@@ -214,7 +214,7 @@ Source: GitHub Docs: "Configuring a package's access control and visibility" and
 | `LICENSE` | After the maintainer decides the licence | The maintainer has not decided the licence. |
 | Required signed commits | After commit signing works for cloud agents | Cloud agents cannot sign commits yet. The rule would block their pull requests. |
 | Playwright end-to-end tests in CI | When a Clerk development instance and its keys exist as CI secrets | The tests need a real Clerk instance. |
-| Keep the Grype, Syft, Railway CLI and PostgreSQL image digests in `ci.yml` and `deploy.yml` current. Proposal: write the images as `FROM` lines in a file that Dependabot's `docker` ecosystem watches, for example `.github/images/Dockerfile`. The jobs read the references from that file. Dependabot then opens the pull requests | A later CI step | Dependabot's `github-actions` ecosystem does not update an image in a `run` step. Until then, the maintainer updates the digests by hand. |
+| Keep the Grype, Syft, Railway CLI and PostgreSQL image digests in `ci.yml`, `delivery.yml` and `deploy.yml` current. Proposal: write the images as `FROM` lines in a file that Dependabot's `docker` ecosystem watches, for example `.github/images/Dockerfile`. The jobs read the references from that file. Dependabot then opens the pull requests | A later CI step | Dependabot's `github-actions` ecosystem does not update an image in a `run` step. Until then, the maintainer updates the digests by hand. |
 | NuGet lock files (`packages.lock.json`) and restore in locked mode | Later; check first that Dependabot updates them | A lock file that Dependabot does not update would block its pull requests. `setup-dotnet` caches NuGet packages only with lock files. |
 | Upgrade Node to the next LTS line (`.nvmrc`, the build image and the distroless runtime image together) | Before Node 22 reaches end of life (April 2027) | A major upgrade needs its own tested pull request. |
 | Required code scanning results in the ruleset | After CodeQL has run on a few pull requests | A new rule must not block pull requests before the CodeQL results are known. |

@@ -16,13 +16,27 @@ Sources:
 
 ## 2. The flow
 
-| Trigger | Workflow | Result |
+| File | Trigger | Jobs |
 | --- | --- | --- |
-| Pull request | `ci.yml` | Test, build, scan. Nothing is published or deployed. |
-| Push to `main` | `ci.yml` | Test, build, scan, publish to GHCR, deploy to **staging**, then wait for the maintainer's approval, deploy to **production** and create the release tag |
-| A run by hand on a release tag | `rollback.yml` | No build. Deploy the image of that release to **production**, after the approval |
+| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `api-image`, `web-image`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
+| `delivery.yml` | `push` to `main` | Calls `ci.yml`, then `publish-api`, `deploy-staging`, `deploy-production`, `tag-release`, in this order |
+| `deploy.yml` | `workflow_call` | The only copy of the deploy steps, for staging and production |
+| `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the image of that release to **production**, after the approval |
 
-On a push to `main`, after the jobs `node`, `api`, `api-image`, `web-image` and `CI` pass:
+Which file to open:
+
+| Question | File |
+| --- | --- |
+| Why did a pull request fail? What does CI check? | `.github/workflows/ci.yml`, and the scripts in `scripts/ci/` |
+| What happens after a merge? In which order? | `.github/workflows/delivery.yml` |
+| How does a deploy work, in staging or production? | `.github/workflows/deploy.yml`, and the scripts in `scripts/deploy/` |
+| How do I roll production back? | `.github/workflows/rollback.yml`, and section 6 |
+| Which GitHub settings apply? | `docs/github-settings.md` and `scripts/github/apply-settings.sh` |
+| Which Railway settings apply? | `.railway/railway.ts` and section 7 |
+
+A workflow calls a script for each long step. A script reads its inputs from environment variables, and its header says how to run it locally when it needs no secret (Humble and Farley, *Continuous Delivery*, chapter 6, "Build and Deployment Scripting").
+
+On a push to `main`, after `ci.yml` passed (the jobs `node`, `api`, `api-image`, `web-image` and `CI`):
 
 1. `publish-api` pushes the tested image to GHCR as `ghcr.io/<owner>/<repo>/api`, with the tags `<commit SHA>` and `main`. It reads the digest from the registry. It attests the build provenance and an SPDX SBOM to that digest, and verifies both attestations.
 2. `deploy-staging` calls `deploy.yml` for `staging`, when the repository variable `DEPLOY_STAGING` is `true`.
@@ -61,7 +75,7 @@ Sources: GitHub Docs, "Control the concurrency of workflows and jobs" (one runni
 
 If the maintainer approves an old run after a newer commit reached production, the check in `deploy.yml` stops the deploy before the migration. The message says to approve the newest run, or to use the rollback.
 
-On a pull request, no deploy job and no tag job runs.
+On a pull request, only `ci.yml` runs. No publish, deploy or tag job runs.
 
 ## 3. What lives where
 
@@ -187,7 +201,7 @@ Run `rollback.yml` on an earlier release tag:
 gh workflow run rollback.yml --ref <release tag>
 ```
 
-The workflow checks that the tag is a release tag, that its commit is on `main`, that the image of the commit exists in GHCR, and that its provenance comes from `ci.yml` on `main`. Then the production job waits for the maintainer's approval, like any production deploy. It skips the check for an older commit, because a rollback deploys one on purpose.
+The workflow checks that the tag is a release tag, that its commit is on `main`, that the image of the commit exists in GHCR, and that its provenance comes from `delivery.yml` on `main`. Then the production job waits for the maintainer's approval, like any production deploy. It skips the check for an older commit, because a rollback deploys one on purpose.
 
 The run uses `rollback.yml` and `deploy.yml` as they were at that tag.
 

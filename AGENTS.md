@@ -73,6 +73,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Never create or push a `v*` tag. A release is the maintainer's decision.
 - Never approve a production deployment. It is the maintainer's decision.
 
+## Workflows
+
+- `ci.yml` verifies. `delivery.yml` delivers. `deploy.yml` holds the only copy of the deploy steps.
+- A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
+
 ## Monorepo tasks
 
 - In `turbo.json`, the web `build` depends on its own `check-types`, because `next build` cleans `.next` while `next typegen` writes to it.
