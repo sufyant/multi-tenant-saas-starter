@@ -35,6 +35,8 @@ USER $APP_UID
 
 # The base image sets ASPNETCORE_HTTP_PORTS=8080: the process listens on port 8080 on all interfaces.
 EXPOSE 8080
+# The management port (Host:ManagementPort): the health endpoints answer only there. Route no public traffic to it.
+EXPOSE 8081
 
 # No HEALTHCHECK: the image has no shell and no curl. The platform checks /health/live and /health/ready over HTTP.
 ENTRYPOINT ["dotnet", "Api.dll"]
