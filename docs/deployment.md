@@ -503,7 +503,7 @@ A private product with staging and production, on GitHub Pro and Railway Pro. Pr
 
 - Railway usage: memory costs about 10 a GB a month, a vCPU about 20 a month, and a volume about 0.15 a GB a month (railway.com/pricing). Staging used about 0.35 GB of memory and almost no CPU for its three services on 2026-10-12, without traffic (Railway metrics). Two such environments use about 7 to 8 a month. Traffic adds to this.
 - Actions: one merged pull request used about 26 minutes (CI 12, Delivery 14, runs 38290763555 and 38301523555). The 3,000 minutes of Pro cover about 100 merges a month. A minute over that costs 0.006 on a Linux 2-core runner (GitHub Docs, "Actions runner pricing").
-- GitHub Packages: Pro includes 2 GB of storage and 10 GB of data transfer a month. A private image counts against both, and each Railway pull counts as data transfer (GitHub Docs, "GitHub Packages billing"). Old images must then be deleted.
+- GHCR: the storage and the data transfer of container images are free today. GitHub gives at least one month's notice before this changes (GitHub Docs, "GitHub Packages billing").
 
 ### Rejected alternatives
 
