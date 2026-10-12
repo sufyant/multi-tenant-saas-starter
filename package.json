@@ -15,10 +15,14 @@
     "lint": "biome check",
     "format": "biome check --write",
     "github:apply": "scripts/github/apply-settings.sh",
-    "github:check": "scripts/github/apply-settings.sh --check"
+    "github:check": "scripts/github/apply-settings.sh --check",
+    "railway:plan": "railway config plan",
+    "railway:apply": "railway config apply"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
-    "turbo": "^2.10.12"
+    "railway": "^3.13.1",
+    "turbo": "^2.10.12",
+    "typescript": "^5"
   }
 }

@@ -1,15 +1,28 @@
 name: CI
 
+# Verification only: test, build and scan. It publishes and deploys nothing.
+# It runs on a pull request. delivery.yml calls it on a push to main, with keep-image: true.
 on:
   pull_request:
-  # Railway's "Wait for CI" needs a workflow that runs on push to main.
-  push:
-    branches: [main]
+  workflow_call:
+    inputs:
+      keep-image:
+        description: "true keeps the tested API image as the artifact api-image, for publish-api in delivery.yml"
+        type: boolean
+        required: false
+        default: false
 
-# A cancelled run on main would make Railway skip a deployment,
-# so only pull request runs cancel the run before them.
+# In a called workflow, the github context is the caller's: github.workflow is "Delivery",
+# github.event_name is "push" and github.run_id is the caller's run (GitHub Docs, "Reusing workflow
+# configurations", "github context"). The same docs warn that the same concurrency group in a caller
+# and a called workflow cancels or blocks the caller ("Supported keywords for jobs that call a
+# reusable workflow"). So the group starts with the fixed name "ci", not github.workflow:
+# - On a pull request, the group is ci-refs/pull/<number>/merge, and a newer run cancels the older one.
+# - Called from delivery.yml, the group is ci-<run id>: one group per run, never cancelled, and
+#   never the group of delivery.yml (Delivery-<run id>). So it never cancels or blocks a delivery run.
+# (GitHub Docs, "Control the concurrency of workflows and jobs".)
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -51,6 +64,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm lint
+
+      # .railway/railway.ts belongs to no workspace package, so turbo does not check its types.
+      - run: pnpm exec tsc -p .railway
+
+      # The scripts hold the long steps of the workflows. shellcheck checks them. The GitHub-hosted
+      # Ubuntu image has shellcheck (actions/runner-images, Ubuntu 24.04 readme).
+      - name: Check the shell scripts
+        run: find scripts -name '*.sh' -print0 | xargs -0 shellcheck
 
       # The api job builds and tests .NET.
       - run: pnpm turbo run check-types test build '--filter=!@repo/api'
@@ -96,8 +117,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # The labels name the repository and the commit that the image comes from (OCI image spec,
+      # "Pre-Defined Annotation Keys").
       - name: Build the image
-        run: docker build -t api apps/api
+        run: |
+          docker build -t api \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            apps/api
 
       - name: Check that the image runs as a non-root user
         run: |
@@ -122,92 +149,21 @@ jobs:
           grype
           grype --only-fixed --fail-on high
 
-      # The passwords are made for this run and printed nowhere. They protect nothing outside it.
+      # The script holds the steps and their reasons (scripts/ci/run-api-image.sh).
       - name: Run the migration, the web and the worker against PostgreSQL
-        run: |
-          superuser_password=$(openssl rand -hex 24)
-          provider_password=$(openssl rand -hex 24)
-          owner_password=$(openssl rand -hex 24)
-          application_password=$(openssl rand -hex 24)
+        run: scripts/ci/run-api-image.sh
 
-          docker network create api-image
-          docker run -d --name api-db --network api-image \
-            -e POSTGRES_PASSWORD="$superuser_password" -e POSTGRES_DB=app "$POSTGRES_IMAGE"
-
-          # Over TCP: while the image sets up the database, the server listens only on its socket.
-          for _ in $(seq 30); do
-            docker exec api-db pg_isready -h 127.0.0.1 -U postgres -d app && break
-            sleep 1
-          done
-          docker exec api-db pg_isready -h 127.0.0.1 -U postgres -d app
-
-          # A managed provider gives no superuser. Its most privileged role has CREATEROLE, CREATEDB and
-          # BYPASSRLS and owns the database, like neondb_owner on Neon (apps/api/docs/setup.md).
-          docker exec api-db psql -U postgres -d app -v ON_ERROR_STOP=1 \
-            -c "CREATE ROLE provider_admin LOGIN CREATEROLE CREATEDB BYPASSRLS PASSWORD '$provider_password'" \
-            -c "ALTER DATABASE app OWNER TO provider_admin"
-
-          # The two roles, as in apps/api/docs/local-run.md section 2, as the provider's role over the network.
-          bootstrap() {
-            docker run --rm -i --network api-image -e PGPASSWORD="$provider_password" "$POSTGRES_IMAGE" \
-              psql -h api-db -U provider_admin -d app \
-              -v owner_password="$1" -v application_password="$2" -f - < apps/api/db/bootstrap.sql
-          }
-          roles() {
-            docker exec api-db psql -U postgres -d app -At \
-              -c "SELECT * FROM pg_roles WHERE rolname IN ('api_owner', 'api_application') ORDER BY rolname"
-          }
-
-          # A rerun changes only the passwords: the steps below log in with the second run's passwords.
-          bootstrap "$(openssl rand -hex 24)" "$(openssl rand -hex 24)"
-          roles > "$RUNNER_TEMP/roles-first.txt"
-          bootstrap "$owner_password" "$application_password"
-          roles > "$RUNNER_TEMP/roles-second.txt"
-          cat "$RUNNER_TEMP/roles-second.txt"
-          diff "$RUNNER_TEMP/roles-first.txt" "$RUNNER_TEMP/roles-second.txt"
-
-          # A role that someone changed by hand stops a rerun, which names the role and the attribute.
-          docker exec api-db psql -U postgres -d app -c "ALTER ROLE api_application BYPASSRLS"
-          if bootstrap "$owner_password" "$application_password" 2> "$RUNNER_TEMP/changed-role.txt"; then
-            echo "The script ran on although api_application can bypass RLS." >&2
-            exit 1
-          fi
-          cat "$RUNNER_TEMP/changed-role.txt"
-          grep -q "api_application has BYPASSRLS" "$RUNNER_TEMP/changed-role.txt"
-          docker exec api-db psql -U postgres -d app -c "ALTER ROLE api_application NOBYPASSRLS"
-
-          # Only the owner role's connection (R3).
-          docker run --rm --network api-image \
-            -e ConnectionStrings__Migrations="Host=api-db;Port=5432;Database=app;Username=api_owner;Password=$owner_password" \
-            api migrate
-
-          # Every required setting (apps/api/docs/configuration.md). The fake values reach no real service.
-          {
-            echo "ASPNETCORE_ENVIRONMENT=Production"
-            echo "ConnectionStrings__Database=Host=api-db;Port=5432;Database=app;Username=api_application;Password=$application_password"
-            echo "Authentication__Clerk__Issuer=https://clerk.example.invalid"
-            echo "Authentication__Clerk__AuthorizedParties__0=https://app.example.invalid"
-            echo "ControlPlane__FirstSystemAdminEmail=admin@example.invalid"
-            echo "ControlPlane__Clerk__SecretKey=sk_test_fake_not_a_secret"
-            echo "ControlPlane__Clerk__BackendApiUrl=https://clerk.example.invalid/v1/"
-            echo "ControlPlane__Invitations__AcceptUrl=https://app.example.invalid/invitations/accept"
-            echo "Notifications__Resend__ApiKey=re_fake_not_a_secret"
-            echo "Notifications__Resend__From=App <no-reply@example.invalid>"
-            echo "Notifications__Resend__ApiUrl=https://resend.example.invalid/"
-          } > "$RUNNER_TEMP/api.env"
-
-          docker run -d --name api-web --network api-image -p 8080:8080 \
-            --env-file "$RUNNER_TEMP/api.env" -e Host__Role=web api
-          docker run -d --name api-worker --network api-image -p 8081:8080 \
-            --env-file "$RUNNER_TEMP/api.env" -e Host__Role=worker api
-
-          # The worker serves the health endpoints too (apps/api/docs/local-run.md section 6).
-          for port in 8080 8081; do
-            curl --silent --show-error --fail --max-time 5 \
-              --retry 60 --retry-delay 1 --retry-all-errors --retry-max-time 60 \
-              "http://localhost:$port/health/ready"
-            echo " on port $port"
-          done
+      # publish-api in delivery.yml pushes this tested archive. It does not build the image again
+      # (Humble and Farley, Continuous Delivery, chapter 5: "Only build your binaries once").
+      # On a pull request, inputs is empty, so the step is skipped.
+      - name: Keep the tested image for publish-api
+        if: inputs.keep-image
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-image
+          path: ${{ runner.temp }}/api.tar
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Print the container logs
         if: failure()
@@ -262,24 +218,7 @@ jobs:
       # The server needs Clerk keys. These are fake and well formed: the publishable key names
       # clerk.example.invalid, which does not resolve. No real key is used at build or run time.
       - name: Run the image
-        run: |
-          docker run -d --name web -p 3000:3000 \
-            -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_$(printf 'clerk.example.invalid$' | base64)" \
-            -e CLERK_SECRET_KEY=sk_test_fake_not_a_secret \
-            -e CLERK_TELEMETRY_DISABLED=1 \
-            web
-          # The sign-in page needs no sign-in. Any status below 500 passes.
-          for _ in $(seq 30); do
-            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 \
-              http://localhost:3000/sign-in || true)
-            if [[ "$status" =~ ^[1-4][0-9][0-9]$ ]]; then
-              echo "GET /sign-in: $status"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "GET /sign-in did not answer below 500 in 30 seconds. Last status: $status" >&2
-          exit 1
+        run: scripts/ci/run-web-image.sh
 
       - name: Print the container logs
         if: failure()

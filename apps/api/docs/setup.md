@@ -36,6 +36,7 @@ On Clerk:
 
 ## Container platform
 
-- The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead. On Railway, the health check path is `/health/ready`. On Kubernetes, the liveness probe is `/health/live` and the readiness probe is `/health/ready`.
+- Railway: `docs/deployment.md` at the repository root describes the deployment. `.railway/railway.ts` sets the health check and the variables.
+- The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead. The readiness path is `/health/ready` and the liveness path is `/health/live`. On Kubernetes, use them for the readiness probe and the liveness probe.
 - Set `runAsNonRoot: true`. Both images run as a numeric non-root user.
 - The process listens on port 8080. Route the platform's traffic to that port.

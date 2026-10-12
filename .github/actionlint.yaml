@@ -1,0 +1,9 @@
+# actionlint configuration.
+# actionlint 1.7.12 does not know GitHub's self-repository syntax `uses: $/...` yet
+# (rhysd/actionlint#711). GitHub supports it since 2026-07-30 ("Reference same-repository actions
+# with self-repository syntax"), and zizmor's self-repository audit asks for it. Remove this
+# ignore when actionlint supports the syntax.
+paths:
+  .github/workflows/*.yml:
+    ignore:
+      - 'reusable workflow call "\$/\.github/workflows/[a-z-]+\.yml" at "uses" is not following the format'

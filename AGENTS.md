@@ -69,6 +69,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - GitHub settings are code. They live in `docs/github-settings.md`, `.github/rulesets/` and `scripts/github/apply-settings.sh`.
 - Never change a setting only in the GitHub interface. Change the document and the script or the JSON in a pull request. The maintainer then runs `pnpm github:apply`.
 - Never run `pnpm github:apply` yourself. You may run `pnpm github:check`.
+- Railway settings are code: `.railway/railway.ts`. Never run `pnpm railway:apply` yourself. You may run `pnpm railway:plan`.
+- Never create or push a `v*` tag. A release is the maintainer's decision.
+- Never approve a production deployment. It is the maintainer's decision.
+
+## Workflows
+
+- `ci.yml` verifies. `delivery.yml` delivers. `deploy.yml` holds the only copy of the deploy steps.
+- A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
 
 ## Monorepo tasks
 
