@@ -9,6 +9,23 @@ internal static partial class MigrationStep
 {
     public const string Command = "migrate";
 
+    // The command returns the process's exit code: 0, or 1 after it logs the failure once. An exception that left Main would end the
+    // process through the runtime's abort, which never ends a process that runs as PID 1 in an arm64 container.
+    public static async Task<int> RunCommandAsync(IServiceProvider services)
+    {
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(MigrationStep));
+        try
+        {
+            await RunAsync(services, CancellationToken.None);
+            return 0;
+        }
+        catch (Exception exception)
+        {
+            LogFailed(logger, exception);
+            return 1;
+        }
+    }
+
     public static Task RunAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         var connectionString = services.GetRequiredService<IConfiguration>().GetConnectionString("Migrations");
@@ -38,4 +55,7 @@ internal static partial class MigrationStep
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Migration finished: the schemas {Schemas} and the message storage in {MessageSchema} are up to date")]
     private static partial void LogFinished(ILogger logger, string schemas, string messageSchema);
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Migration failed")]
+    private static partial void LogFailed(ILogger logger, Exception exception);
 }

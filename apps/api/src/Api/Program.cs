@@ -1,3 +1,4 @@
+using System.Reflection;
 using Api;
 using Api.Hosting;
 using Api.SystemAdmins;
@@ -20,8 +21,7 @@ var app = builder.Build();
 
 if (args is [MigrationStep.Command, ..])
 {
-    await MigrationStep.RunAsync(app.Services, CancellationToken.None);
-    return;
+    return await MigrationStep.RunCommandAsync(app.Services);
 }
 
 app.UseApiPipeline();
@@ -34,4 +34,15 @@ if (role.ServesTheApi())
     app.MapApiDocuments();
 }
 
-app.Run();
+// Main returns the exit code. An exception that left it would end the process through the runtime's abort, which never ends a
+// process that runs as PID 1 in an arm64 container. The host has logged the failure already ("Hosting failed to start"). When a test
+// host runs Main (WebApplicationFactory), the entry assembly is the test's, and the exception goes on to the test.
+try
+{
+    await app.RunAsync();
+    return 0;
+}
+catch (Exception) when (Assembly.GetEntryAssembly() == typeof(Program).Assembly)
+{
+    return 1;
+}
