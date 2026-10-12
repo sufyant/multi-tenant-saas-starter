@@ -116,6 +116,8 @@ jobs:
       # certificate against the environment's own root certificate, which PGSSLROOTCERT names
       # (docs/deployment.md, section 9).
       - name: Migrate the database
+        # Every external call has a time limit (Nygard, Release It!, "Timeouts").
+        timeout-minutes: 5
         env:
           ConnectionStrings__Migrations: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
           MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
