@@ -3,11 +3,12 @@
 # then once more with a changed role, which must fail), the migration with the owner role only, and
 # the web and the worker with every required setting. Both must answer /health/ready on their
 # management port, 8081 in the container. The web's public port, 8080, must answer 404 for it.
+# No process may try to load the Kerberos library (libgssapi), which the image does not have.
 # The passwords are made for this run and printed nowhere. They protect nothing outside it.
 #
 # Inputs: POSTGRES_IMAGE (the PostgreSQL image), RUNNER_TEMP (a directory for temporary files).
-# Exit codes: 0 when both processes are ready and the public port hides readiness; non-zero at the
-# first failed command.
+# Exit codes: 0 when both processes are ready, the public port hides readiness and no output names
+# libgssapi; non-zero at the first failed command.
 # Leaves the containers api-db, api-web, api-worker and the network api-image; the workflow prints
 # their logs on failure and removes them.
 #
@@ -71,10 +72,10 @@ cat "$RUNNER_TEMP/changed-role.txt"
 grep -q "api_application has BYPASSRLS" "$RUNNER_TEMP/changed-role.txt"
 docker exec api-db psql -U postgres -d app -c "ALTER ROLE api_application NOBYPASSRLS"
 
-# Only the owner role's connection (R3).
+# Only the owner role's connection (R3). The output is kept for the last check.
 docker run --rm --network api-image \
   -e ConnectionStrings__Migrations="Host=api-db;Port=5432;Database=app;Username=api_owner;Password=$owner_password" \
-  api migrate
+  api migrate 2>&1 | tee "$RUNNER_TEMP/migrate.log"
 
 # Every required setting (apps/api/docs/configuration.md). The fake values reach no real service.
 {
@@ -115,3 +116,19 @@ if [[ "$status" != "404" ]]; then
   echo "The public port answered $status for /health/ready, not 404." >&2
   exit 1
 fi
+
+# A false error trains people to ignore errors. When Npgsql tries GSSAPI encryption, the runtime
+# prints "Cannot load library libgssapi_krb5.so.2" to stderr, and the platform logs it as an error.
+docker logs api-web > "$RUNNER_TEMP/api-web.log" 2>&1
+docker logs api-worker > "$RUNNER_TEMP/api-worker.log" 2>&1
+failed=0
+for process in migrate api-web api-worker; do
+  if grep libgssapi "$RUNNER_TEMP/$process.log"; then
+    echo "The $process output names libgssapi: a connection tried GSSAPI encryption." >&2
+    failed=1
+  fi
+done
+if (( failed )); then
+  exit 1
+fi
+echo "No output names libgssapi."

@@ -65,7 +65,7 @@ Each module is five projects. Another module sees only the `Contracts` project.
 | `X.Domain` | Business rules | `SharedKernel` |
 | `X.Infrastructure` | EF Core, adapters for external services, contract implementations | Application, Domain, Contracts, `SharedKernel`, `Tenancy` |
 
-`SharedKernel` holds the result and error types, paging and the marker of a tenant entity; `Tenancy` holds the base of a module DbContext, the tenant declaration at the start of each transaction, row level security in migrations and the names of the database roles.
+`SharedKernel` holds the result and error types, paging and the marker of a tenant entity; `Tenancy` holds the base of a module DbContext, the tenant declaration at the start of each transaction, row level security in migrations, the names of the database roles and the settings that every PostgreSQL connection of the API gets.
 
 - Two controls enforce the boundary: project references (compilation) and architecture tests. Source: Ford, Parsons, Kua, Chapter 2.
 - The `Api` project cannot reach the `DbContext`. Source: Evans, Chapter 4.
@@ -303,7 +303,7 @@ Source: Twelve-Factor, Factor III. Nygard, Chapter 5 (Fail Fast).
 
 ### Container image
 
-The API has one container image, built from `apps/api/Dockerfile`. Every process runs from it, and only the configuration and the command change. `Host:Role` selects the web or the worker role. The migration is a command of the same image: `docker run <image> migrate`. The web process listens on port 8080 for the API and on port 8081, the management port, for the health endpoints. A worker listens only on port 8081. Both listen on all interfaces (section 8). The process runs as the base image's non-root user. The image holds no secret, no connection string and no `appsettings.Development.json`. The runtime base image is chiseled: it has no shell and no package manager. It runs in invariant globalization mode, because the code needs no ICU and no time zone data. CI builds the image and scans it. Then it runs the migration, the web and the worker against PostgreSQL and checks that each process is ready.
+The API has one container image, built from `apps/api/Dockerfile`. Every process runs from it, and only the configuration and the command change. `Host:Role` selects the web or the worker role. The migration is a command of the same image: `docker run <image> migrate`. The web process listens on port 8080 for the API and on port 8081, the management port, for the health endpoints. A worker listens only on port 8081. Both listen on all interfaces (section 8). The process runs as the base image's non-root user. The image holds no secret, no connection string and no `appsettings.Development.json`. The runtime base image is chiseled: it has no shell and no package manager. It runs in invariant globalization mode, because the code needs no ICU and no time zone data. The image has no Kerberos library, so the API turns GSSAPI encryption off on each database connection (`docs/configuration.md`). CI builds the image and scans it. Then it runs the migration, the web and the worker against PostgreSQL. It checks that each process is ready and that no process tries to load the Kerberos library.
 
 Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Humble and Farley, *Continuous Delivery*, Chapter 5.
 

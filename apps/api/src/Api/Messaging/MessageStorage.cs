@@ -60,7 +60,7 @@ internal static class MessageStorage
     // store as a runtime starts; the step asks it to, as the start would.
     public static async Task MigrateAsync(string ownerConnectionString, CancellationToken cancellationToken)
     {
-        await using var dataSource = NpgsqlDataSource.Create(ownerConnectionString);
+        await using var dataSource = DatabaseConnection.CreateDataSource(ownerConnectionString);
         var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings { DisableDefaults = true });
         builder.Services.AddWolverine(options => Configure(options, dataSource, HostRole.Worker));
         var host = builder.Build();

@@ -14,7 +14,7 @@ public static class TenancyServiceCollectionExtensions
 
     /// <summary>The host's part: the data source every module DbContext uses.</summary>
     public static IServiceCollection AddTenancy(this IServiceCollection services, Func<IServiceProvider, string> pooledConnectionString) =>
-        services.AddSingleton(provider => NpgsqlDataSource.Create(pooledConnectionString(provider)));
+        services.AddSingleton(provider => DatabaseConnection.CreateDataSource(pooledConnectionString(provider)));
 
     /// <summary>
     /// A module DbContext's options: the host's data source, the module's own schema, and the tenant declared at the start of each
@@ -43,7 +43,7 @@ public static class TenancyServiceCollectionExtensions
         where TContext : DbContext
     {
         var options = new DbContextOptionsBuilder<TContext>();
-        UseModuleConventions(options, npgsql => npgsql.UseNpgsql(connectionString, Configure(schema)));
+        UseModuleConventions(options, npgsql => npgsql.UseNpgsql(DatabaseConnection.Of(connectionString), Configure(schema)));
 
         return options.Options;
     }

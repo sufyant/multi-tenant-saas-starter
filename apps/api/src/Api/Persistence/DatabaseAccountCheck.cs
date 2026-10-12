@@ -78,7 +78,7 @@ internal sealed class DatabaseAccountCheck(IConfiguration configuration, IEnumer
 
     private async Task<string[]> MigrationProblemsAsync(string connectionString, CancellationToken cancellationToken)
     {
-        await using var dataSource = NpgsqlDataSource.Create(connectionString);
+        await using var dataSource = DatabaseConnection.CreateDataSource(connectionString);
         await using var command = dataSource.CreateCommand(MissingSchemasQuery);
         command.Parameters.AddWithValue("schemas", (string[])[.. modules.Select(module => module.Schema), MessageStorage.Schema]);
         var missing = (string)(await command.ExecuteScalarAsync(cancellationToken))!;
@@ -104,7 +104,7 @@ internal sealed class DatabaseAccountCheck(IConfiguration configuration, IEnumer
 
     private static async Task<string[]> ProblemsAsync(string key, string connectionString, CancellationToken cancellationToken)
     {
-        await using var dataSource = NpgsqlDataSource.Create(connectionString);
+        await using var dataSource = DatabaseConnection.CreateDataSource(connectionString);
         return await ProblemsAsync(dataSource, key, cancellationToken);
     }
 }
