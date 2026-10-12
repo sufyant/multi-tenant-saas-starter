@@ -73,6 +73,10 @@ jobs:
       - name: Check the shell scripts
         run: find scripts -name '*.sh' -print0 | xargs -0 shellcheck
 
+      # The GitHub-hosted Ubuntu image has jq (actions/runner-images, Ubuntu 24.04 readme).
+      - name: Check the agent skills
+        run: scripts/ci/check-agent-skills.sh
+
       # The api job builds and tests .NET.
       - run: pnpm turbo run check-types test build '--filter=!@repo/api'
 
