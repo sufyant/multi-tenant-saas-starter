@@ -65,7 +65,7 @@ Each module is five projects. Another module sees only the `Contracts` project.
 | `X.Domain` | Business rules | `SharedKernel` |
 | `X.Infrastructure` | EF Core, adapters for external services, contract implementations | Application, Domain, Contracts, `SharedKernel`, `Tenancy` |
 
-`SharedKernel` holds the result and error types, paging and the marker of a tenant entity; `Tenancy` holds the base of a module DbContext, the tenant declaration at the start of each transaction, row level security in migrations and the names of the database roles.
+`SharedKernel` holds the result and error types, paging and the marker of a tenant entity; `Tenancy` holds the base of a module DbContext, the tenant declaration at the start of each transaction, row level security in migrations, the names of the database roles and the settings that every PostgreSQL connection of the API gets.
 
 - Two controls enforce the boundary: project references (compilation) and architecture tests. Source: Ford, Parsons, Kua, Chapter 2.
 - The `Api` project cannot reach the `DbContext`. Source: Evans, Chapter 4.
