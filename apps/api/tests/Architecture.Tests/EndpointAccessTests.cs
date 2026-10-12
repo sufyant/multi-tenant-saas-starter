@@ -23,11 +23,10 @@ public sealed class EndpointAccessTests : IAsyncLifetime
 
     private const string TenantPath = "/v1/tenants/";
 
-    // Every endpoint anyone may call without signing in. A new one is added here on purpose.
+    // Every endpoint anyone may call without signing in. A new one is added here on purpose. The health checks are not endpoints:
+    // they answer on the management port alone, before routing (section 8).
     private static readonly string[] PublicEndpoints =
     [
-        "* /health/live",
-        "* /health/ready",
         "GET /openapi/{documentName}.json",
         "GET /scalar/{documentName?}",
         "GET /scalar/scalar.js",

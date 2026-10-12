@@ -11,6 +11,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Host:Role` | Required | none | The process type: `web` serves the API, `worker` handles messages, `all` does both in one process (local development and tests) |
 | `Host:ShutdownTimeout` | Optional | `00:00:30` | How long a stopping process may take to finish the work it has |
 | `Host:Cors:AllowedOrigins` | Optional | none | The browser origins that may call the API, such as `https://app.example.com`. With none, no browser origin may call |
+| `Host:ManagementPort` | Optional | `8081` | The port of the health endpoints `/health/live` and `/health/ready`. The process listens on it on all interfaces and answers nothing else there. It must differ from the public port. Each process on one machine needs its own management port |
 | `ConnectionStrings:Database` | Required | none | The application role's connection. Requests and handlers use it, and Wolverine too unless `ConnectionStrings:Messaging` is set |
 | `ConnectionStrings:Messaging` | Optional | `ConnectionStrings:Database` | The application role's direct or session-mode connection for Wolverine's message store. Needed when `ConnectionStrings:Database` goes through a pooler in transaction mode |
 | `ConnectionStrings:Migrations` | Required by `migrate` only | none | The owner role's direct connection. Given only to the `migrate` command, never to a running process (R3) |
@@ -41,7 +42,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Serilog:MinimumLevel:Override:<category>` | Optional | `Warning` for `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`, `Wolverine` and `JasperFx` (`appsettings.json`) | The lowest level for one log category. Each handled message is logged at `Information` under the message type's name |
 | `AllowedHosts` | Optional | `*` (`appsettings.json`) | The host names the API answers to |
 | `ASPNETCORE_ENVIRONMENT` | Optional | `Production` | The environment. `Development` relaxes the settings marked above |
-| `ASPNETCORE_URLS` | Optional | `http://localhost:5000`. In the container image: port 8080 on all interfaces (the base image sets `ASPNETCORE_HTTP_PORTS=8080`) | The address and port the process listens on. Each process on one machine needs its own port |
+| `ASPNETCORE_URLS` | Optional | `http://localhost:5000`. In the container image: port 8080 on all interfaces (the base image sets `ASPNETCORE_HTTP_PORTS=8080`) | The public address and port of the web process: the API, and in Development the OpenAPI document and Scalar. A worker opens no public port. Each process on one machine needs its own port |
 
 ## What Development relaxes
 

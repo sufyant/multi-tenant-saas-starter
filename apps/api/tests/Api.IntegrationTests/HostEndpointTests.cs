@@ -24,7 +24,9 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     [InlineData("/health/ready")]
     public async Task CheckHealth_RunningApplication_ReportsHealthy(string path)
     {
-        var response = await _client.GetAsync(path, TestContext.Current.CancellationToken);
+        await using var api = new ApiFactory(database.ApplicationConnectionString, ports: HostPorts.Free());
+
+        var response = await api.ManagementClient().GetAsync(path, TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -44,8 +46,8 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     public async Task CheckHealth_DatabaseGoesAway_IsLiveButNotReady()
     {
         var name = await database.CreateMigratedDatabaseAsync();
-        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
-        var client = api.CreateClient();
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name), ports: HostPorts.Free());
+        var client = api.ManagementClient();
         await database.CloseAsync(name);
 
         var live = await client.GetAsync("/health/live", TestContext.Current.CancellationToken);
@@ -133,9 +135,9 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task StartApplication_WithoutTheMessagingConnection_KeepsMessagesOverTheDatabaseConnection()
     {
-        await using var api = new ApiFactory(database.ApplicationConnectionString, messagingConnectionString: null);
+        await using var api = new ApiFactory(database.ApplicationConnectionString, messagingConnectionString: null, ports: HostPorts.Free());
 
-        var ready = await api.CreateClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -143,9 +145,9 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task StartApplication_AsTheApplicationAccount_Starts()
     {
-        await using var api = new ApiFactory(database.ApplicationConnectionString);
+        await using var api = new ApiFactory(database.ApplicationConnectionString, ports: HostPorts.Free());
 
-        var live = await api.CreateClient().GetAsync("/health/live", TestContext.Current.CancellationToken);
+        var live = await api.ManagementClient().GetAsync("/health/live", TestContext.Current.CancellationToken);
 
         live.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -155,8 +157,8 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     public async Task CheckReadiness_TheRoleGainsBypassRowLevelSecurityWhileRunning_IsNotReady()
     {
         var role = await database.CreateLoginRoleAsync("");
-        await using var api = new ApiFactory(role);
-        var client = api.CreateClient();
+        await using var api = new ApiFactory(role, ports: HostPorts.Free());
+        var client = api.ManagementClient();
         await database.ScalarAsSuperuserAsync<object>($"ALTER ROLE {new NpgsqlConnectionStringBuilder(role).Username} BYPASSRLS");
 
         var ready = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
@@ -169,8 +171,8 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     public async Task CheckReadiness_TheRoleBecomesAMemberOfTheMigrationAccountWhileRunning_IsNotReady()
     {
         var role = await database.CreateLoginRoleAsync("");
-        await using var api = new ApiFactory(role);
-        var client = api.CreateClient();
+        await using var api = new ApiFactory(role, ports: HostPorts.Free());
+        var client = api.ManagementClient();
         await database.ScalarAsSuperuserAsync<object>($"GRANT {DatabaseRoles.Owner} TO {UsernameOf(role)}");
 
         var ready = await client.GetAsync("/health/ready", TestContext.Current.CancellationToken);
@@ -195,9 +197,10 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task StartApplication_OutsideDevelopmentWithAuthorizedParties_IsReady()
     {
-        await using var api = new ApiFactory(database.ApplicationConnectionString, environment: Environments.Production, settings: Resend);
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString, environment: Environments.Production, settings: Resend, ports: HostPorts.Free());
 
-        var ready = await api.CreateClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -205,9 +208,9 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task StartApplication_InDevelopmentWithoutAuthorizedParties_IsReady()
     {
-        await using var api = new ApiFactory(database.ApplicationConnectionString, authorizedParties: []);
+        await using var api = new ApiFactory(database.ApplicationConnectionString, authorizedParties: [], ports: HostPorts.Free());
 
-        var ready = await api.CreateClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
     }

@@ -36,7 +36,8 @@ On Clerk:
 
 ## Container platform
 
-- Railway: `docs/deployment.md` at the repository root describes the deployment. `.railway/railway.ts` sets the health check and the variables.
-- The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead. The readiness path is `/health/ready` and the liveness path is `/health/live`. On Kubernetes, use them for the readiness probe and the liveness probe.
+- The process has two ports (section 8 of `ARCHITECTURE.md`). The public port, 8080, serves the API. The management port, 8081 (`Host:ManagementPort`), serves only `/health/live` and `/health/ready`. A worker opens only the management port. Route the platform's traffic to 8080 only.
+- Railway: `docs/deployment.md` at the repository root describes the deployment. `.railway/railway.ts` sets the health check and the variables. `PORT` is 8081, because Railway's health check uses `PORT`. The domain of `api-web` targets 8080.
+- The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead, on port 8081. The readiness path is `/health/ready` and the liveness path is `/health/live`.
+- Kubernetes: use `/health/ready` for the readiness probe and `/health/live` for the liveness probe, both on port 8081. The Service exposes only port 8080.
 - Set `runAsNonRoot: true`. Both images run as a numeric non-root user.
-- The process listens on port 8080. Route the platform's traffic to that port.

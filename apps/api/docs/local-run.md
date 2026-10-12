@@ -94,7 +94,8 @@ Notifications__InvitationEmailRetryDelays__2=00:05:00
 Notifications__InvitationEmailRetryDelays__3=00:15:00
 Notifications__Resend__From=App <no-reply@app.localhost>
 Notifications__Resend__Timeout=00:00:10
-ASPNETCORE_URLS=http://127.0.0.1:5080   # each process on the machine needs its own port
+ASPNETCORE_URLS=http://127.0.0.1:5080   # the public port; each web process on the machine needs its own
+Host__ManagementPort=5180               # the health endpoints; each process on the machine needs its own
 ```
 
 Notes:
@@ -110,18 +111,21 @@ Notes:
 From `out/api`, with the variables above:
 
 ```sh
-dotnet Api.dll                                                         # web, port 5080
-Host__Role=worker ASPNETCORE_URLS=http://127.0.0.1:5081 dotnet Api.dll # worker, port 5081
+dotnet Api.dll                                         # web: API on 5080, health on 5180
+Host__Role=worker Host__ManagementPort=5181 dotnet Api.dll # worker: health on 5181
 ```
 
 Each process checks its configuration and its database role on start, and stops if a setting is missing or the role may bypass row level security.
 
-Check both:
+Each process needs its own management port. A web process also needs its own public port. A worker opens no public port.
+
+Check both. The health endpoints answer only on the management port (section 8 of `ARCHITECTURE.md`):
 
 ```sh
-curl http://127.0.0.1:5080/health/live    # Healthy
-curl http://127.0.0.1:5080/health/ready   # Healthy
-curl http://127.0.0.1:5081/health/ready   # Healthy
+curl http://127.0.0.1:5180/health/live    # Healthy
+curl http://127.0.0.1:5180/health/ready   # Healthy
+curl http://127.0.0.1:5181/health/ready   # Healthy
+curl -i http://127.0.0.1:5080/health/ready   # 404: the public port does not answer them
 ```
 
 The worker serves only the health endpoints. A web process without a worker warns that no node can run durability agents. Onboarding then waits in the queue until a worker starts.
@@ -170,15 +174,15 @@ Send SIGTERM (Ctrl+C) to each process. It stops taking messages and finishes the
 
 The image `apps/api/Dockerfile` runs every process, as section 1 of `ARCHITECTURE.md` describes. The database and the roles come from section 2.
 
-Put the settings of section 5 in a file, `api.env`, one per line. Leave out the comments: Docker keeps a comment as part of the value. Leave out `ASPNETCORE_URLS`: the image listens on port 8080. Write `host.docker.internal` in place of `localhost` in the connection strings, so a container reaches the database on your machine.
+Put the settings of section 5 in a file, `api.env`, one per line. Leave out the comments: Docker keeps a comment as part of the value. Leave out `ASPNETCORE_URLS` and `Host__ManagementPort`: the image listens on port 8080 for the API and on port 8081 for the health endpoints. Write `host.docker.internal` in place of `localhost` in the connection strings, so a container reaches the database on your machine.
 
 ```sh
 docker build -t api apps/api
 docker run --rm --add-host=host.docker.internal:host-gateway \
   -e ConnectionStrings__Migrations="Host=host.docker.internal;Port=5432;Database=app;Username=api_owner;Password=<owner password>" \
   api migrate
-docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env -e Host__Role=web -p 5080:8080 api
-docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env -e Host__Role=worker -p 5081:8080 api
+docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env -e Host__Role=web -p 5080:8080 -p 5180:8081 api
+docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env -e Host__Role=worker -p 5181:8081 api
 ```
 
 `-e Host__Role` overrides the role in `api.env`. The checks of section 6 work on the same ports.

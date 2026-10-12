@@ -1,6 +1,6 @@
 # Architecture: multi-tenant SaaS starter template (API)
 
-Last updated: 2026-10-11
+Last updated: 2026-10-12
 
 This document is the single source of truth for the API in `apps/api/`. If the code does not agree with this document, the code changes. No other file overrides it.
 
@@ -303,7 +303,7 @@ Source: Twelve-Factor, Factor III. Nygard, Chapter 5 (Fail Fast).
 
 ### Container image
 
-The API has one container image, built from `apps/api/Dockerfile`. Every process runs from it, and only the configuration and the command change. `Host:Role` selects the web or the worker role. The migration is a command of the same image: `docker run <image> migrate`. The process listens on port 8080 on all interfaces. It runs as the base image's non-root user. The image holds no secret, no connection string and no `appsettings.Development.json`. The runtime base image is chiseled: it has no shell and no package manager. It runs in invariant globalization mode, because the code needs no ICU and no time zone data. CI builds the image and scans it. Then it runs the migration, the web and the worker against PostgreSQL and checks that each process is ready.
+The API has one container image, built from `apps/api/Dockerfile`. Every process runs from it, and only the configuration and the command change. `Host:Role` selects the web or the worker role. The migration is a command of the same image: `docker run <image> migrate`. The web process listens on port 8080 for the API and on port 8081, the management port, for the health endpoints. A worker listens only on port 8081. Both listen on all interfaces (section 8). The process runs as the base image's non-root user. The image holds no secret, no connection string and no `appsettings.Development.json`. The runtime base image is chiseled: it has no shell and no package manager. It runs in invariant globalization mode, because the code needs no ICU and no time zone data. CI builds the image and scans it. Then it runs the migration, the web and the worker against PostgreSQL and checks that each process is ready.
 
 Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Humble and Farley, *Continuous Delivery*, Chapter 5.
 
@@ -332,7 +332,24 @@ Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Hum
 | Internal structure is read from an error message | The error response has one shape and returns no internal detail. A 401 does not say why the token failed | API8 |
 | A browser request from another site | Only permitted origins can call | API8 |
 
-All business endpoints start with `/v1`. The only exception is the two health endpoints: `/health/live` and `/health/ready`. These endpoints serve the infrastructure, need no identity and return only "healthy" or "unhealthy". No detail is given to the outside. The readiness endpoint is for the platform. It is not routed from outside.
+All business endpoints start with `/v1`. The only exception is the two health endpoints: `/health/live` and `/health/ready`. These endpoints serve the infrastructure, need no identity and return only "healthy" or "unhealthy". Neither health endpoint is reachable from outside. The outside sees no health information at all.
+
+### Two ports
+
+| Port | Default | Serves | Reached from outside |
+| --- | --- | --- | --- |
+| Public | 8080 in the container image, which sets `ASPNETCORE_HTTP_PORTS=8080`. The process reads `ASPNETCORE_URLS`, else `ASPNETCORE_HTTP_PORTS` and `ASPNETCORE_HTTPS_PORTS`, else uses `http://localhost:5000` | The business endpoints (`/v1/...`) and, in Development, the OpenAPI document and Scalar | Yes, through the platform's domain |
+| Management | 8081 (`Host:ManagementPort`) | `/health/live` and `/health/ready` only | No. Only the platform's health check and Kubernetes probes reach it |
+
+- The web process listens on both ports. A worker listens only on the management port: it has no business endpoints.
+- A health path on the public port answers 404. Any other path on the management port answers 404.
+- The process chooses by the port that the connection arrived on (`HttpContext.Connection.LocalPort`), never by the `Host` header. A client can put any port in the `Host` header.
+- The health endpoints are not endpoint routes. A branch of the pipeline on the management port answers them, before authentication runs.
+- Kestrel ignores `ASPNETCORE_URLS` and `ASPNETCORE_HTTP_PORTS` when it is given an endpoint in code. So the host adds the management port to the public addresses that those settings name.
+- The process does not start when the management port is a public port.
+- The platform routes public traffic to 8080 only. On Railway, `PORT` is 8081 for the health check, and the domain targets 8080. On Kubernetes, both probes use port 8081, and the Service exposes only 8080 (`setup.md`).
+
+Source: Microsoft Learn, "Health checks in ASP.NET Core", "Require host": restrict the health endpoints to a port for monitoring services, and check `HttpContext.Connection.LocalPort`, because the `Host` header can be spoofed. Microsoft Learn, "Configure endpoints for the ASP.NET Core Kestrel web server". Railway docs, "Healthchecks", "Configure the healthcheck port". Spring Boot's `management.server.port` is the same practice.
 
 ## 9. Testing
 
@@ -383,7 +400,7 @@ These deviations were discussed openly and approved.
 | The invitation link goes to Notifications inside the message | OWASP, Forgot Password Cheat Sheet: a token is stored only as a hash | The link cannot be produced again later. The secret travels in ActivateTenant and OwnerInvitationReady and stays in the messaging tables until Wolverine removes handled messages. Protection: the verified email of the person who accepts must be the same as the invited address, the link is single use and expires, and an invitation whose email does not go out is cancelled. If a strict audit requires it, change to a signed token |
 | The rate limit is kept in each pod | OWASP API4: a limit for each user | A shared store (Redis or the database) is infrastructure the first template does not need. The real limit is the setting times the number of pods |
 | In Development, email without an email service is written to the log, link included | OWASP Logging Cheat Sheet: secrets are not logged | Local development and the smoke run need the link without an email account. Outside Development the application does not start without the email service |
-| The API image has no `HEALTHCHECK` | CIS Docker Benchmark 4.6: add a `HEALTHCHECK` instruction to the image | The chiseled image has no shell and no `curl` to run a check. The platform checks `/health/live` and `/health/ready` over HTTP: its own HTTP health check or Kubernetes probes (`setup.md`). Docker ignores `HEALTHCHECK` under Kubernetes |
+| The API image has no `HEALTHCHECK` | CIS Docker Benchmark 4.6: add a `HEALTHCHECK` instruction to the image | The chiseled image has no shell and no `curl` to run a check. The platform checks `/health/live` and `/health/ready` over HTTP on the management port: its own HTTP health check or Kubernetes probes (`setup.md`). Docker ignores `HEALTHCHECK` under Kubernetes |
 
 ## Deferred
 

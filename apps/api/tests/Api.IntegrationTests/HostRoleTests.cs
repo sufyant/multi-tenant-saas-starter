@@ -160,24 +160,25 @@ public sealed class HostRoleTests(Database database)
         (await ProbesAsync(name, $"announced:{second}")).ShouldBe(1L);
     }
 
-    // A worker serves no API: only the health endpoints answer.
+    // A worker serves the health endpoints on its management port. It opens no public port, so it serves no API
+    // (ManagementPortTests).
     [Theory]
-    [InlineData("/v1/me/tenants", HttpStatusCode.NotFound)]
-    [InlineData("/health/live", HttpStatusCode.OK)]
-    [InlineData("/health/ready", HttpStatusCode.OK)]
-    public async Task CallTheApi_OnAWorkerHost_AnswersOnlyTheHealthEndpoints(string path, HttpStatusCode expected)
+    [InlineData("/health/live")]
+    [InlineData("/health/ready")]
+    public async Task CheckHealth_OnAWorkerHost_IsHealthy(string path)
     {
-        await using var worker = Host(await database.CreateMigratedDatabaseAsync(), "worker", new HandlerRuns());
+        await using var worker = Host(await database.CreateMigratedDatabaseAsync(), "worker", new HandlerRuns(), HostPorts.Free());
 
-        var response = await worker.CreateClient("user_worker").GetAsync(path, Cancellation);
+        var response = await worker.ManagementClient().GetAsync(path, Cancellation);
 
-        response.StatusCode.ShouldBe(expected);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    private ApiFactory Host(string databaseName, string role, HandlerRuns runs) => new(
+    private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
         settings: new Dictionary<string, string?> { ["Host:Role"] = role },
-        configureServices: HandlerRunsOfHost.Register(role, runs));
+        configureServices: HandlerRunsOfHost.Register(role, runs),
+        ports: ports);
 
     // A host with the probe module's DbContext, the two handlers of ProbePinged, and a handler that writes and one that always fails.
     private ApiFactory ProbeHost(string databaseName, string role, HandlerRuns runs) => new(
