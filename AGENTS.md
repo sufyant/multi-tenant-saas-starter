@@ -80,6 +80,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `ci.yml` verifies. `delivery.yml` delivers. `deploy.yml` holds the only copy of the deploy steps.
 - A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
 
+## Agent skills
+
+- Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder.
+- Add a skill only for a tool this repository uses or has a planned place for. `docs/agent-skills.md` lists them.
+
 ## Monorepo tasks
 
 - In `turbo.json`, the web `build` depends on its own `check-types`, because `next build` cleans `.next` while `next typegen` writes to it.
