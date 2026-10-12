@@ -63,7 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: ${{ inputs.environment }}
-    # Two deploys to one environment never run at the same time, and a running migration is never cancelled.
+    # Two deploys to one environment never run at the same time, and a new run never cancels a running
+    # migration. Only the migrate step's own time limit stops it.
     concurrency:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false

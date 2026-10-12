@@ -393,6 +393,7 @@ After a restore, the private host, the proxy and the root certificate are new. U
 - "The secret ... of the environment ... is empty": set the secret (section 4, step 12).
 - "Production already runs a newer commit": the approved run is older than the commit that production runs. Reject it, and approve the newest waiting run. To go back on purpose, use the rollback (section 6).
 - The migration fails: the step prints the error of the `migrate` command. Nothing was deployed.
+- The migration step stops at its time limit of 5 minutes: the database did not answer in time, or a migration ran longer. Nothing was deployed. Check that the database answers. A migration that needs more time needs a higher `timeout-minutes` on that step of `deploy.yml`.
 - The migration fails with "The remote certificate was rejected": the database has a new root certificate. Set `MIGRATIONS_ROOT_CERTIFICATE` again (section 9, "When the root certificate changes").
 - The Railway step fails: the step prints the Railway CLI's own message. Check `RAILWAY_TOKEN` and the service names.
 - A deployment ends as `FAILED`, `CRASHED` or `REMOVED`: the step prints its ID. Read its logs in Railway. A missing shared variable or a private GHCR package are common causes.
