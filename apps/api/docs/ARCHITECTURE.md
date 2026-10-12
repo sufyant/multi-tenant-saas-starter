@@ -1,6 +1,6 @@
 # Architecture: multi-tenant SaaS starter template (API)
 
-Last updated: 2026-10-11
+Last updated: 2026-10-12
 
 This document is the single source of truth for the API in `apps/api/`. If the code does not agree with this document, the code changes. No other file overrides it.
 
@@ -338,7 +338,7 @@ All business endpoints start with `/v1`. The only exception is the two health en
 
 | Port | Default | Serves | Reached from outside |
 | --- | --- | --- | --- |
-| Public | 8080 (`ASPNETCORE_URLS` or `ASPNETCORE_HTTP_PORTS`) | The business endpoints (`/v1/...`) and, in Development, the OpenAPI document and Scalar | Yes, through the platform's domain |
+| Public | 8080 in the container image, which sets `ASPNETCORE_HTTP_PORTS=8080`. The process reads `ASPNETCORE_URLS`, else `ASPNETCORE_HTTP_PORTS` and `ASPNETCORE_HTTPS_PORTS`, else uses `http://localhost:5000` | The business endpoints (`/v1/...`) and, in Development, the OpenAPI document and Scalar | Yes, through the platform's domain |
 | Management | 8081 (`Host:ManagementPort`) | `/health/live` and `/health/ready` only | No. Only the platform's health check and Kubernetes probes reach it |
 
 - The web process listens on both ports. A worker listens only on the management port: it has no business endpoints.

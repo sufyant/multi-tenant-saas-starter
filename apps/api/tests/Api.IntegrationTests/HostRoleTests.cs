@@ -160,18 +160,18 @@ public sealed class HostRoleTests(Database database)
         (await ProbesAsync(name, $"announced:{second}")).ShouldBe(1L);
     }
 
-    // A worker serves no API: only the health endpoints answer, on its management port.
+    // A worker serves the health endpoints on its management port. It opens no public port, so it serves no API
+    // (ManagementPortTests).
     [Theory]
-    [InlineData("/v1/me/tenants", HttpStatusCode.NotFound)]
-    [InlineData("/health/live", HttpStatusCode.OK)]
-    [InlineData("/health/ready", HttpStatusCode.OK)]
-    public async Task CallTheApi_OnAWorkerHost_AnswersOnlyTheHealthEndpoints(string path, HttpStatusCode expected)
+    [InlineData("/health/live")]
+    [InlineData("/health/ready")]
+    public async Task CheckHealth_OnAWorkerHost_IsHealthy(string path)
     {
         await using var worker = Host(await database.CreateMigratedDatabaseAsync(), "worker", new HandlerRuns(), HostPorts.Free());
 
         var response = await worker.ManagementClient().GetAsync(path, Cancellation);
 
-        response.StatusCode.ShouldBe(expected);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null) => new(

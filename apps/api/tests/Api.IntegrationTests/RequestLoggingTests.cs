@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Testing;
 
@@ -46,16 +47,23 @@ public sealed class RequestLoggingTests(Database database) : IAsyncLifetime
         RequestLogs().ShouldHaveSingleItem().Message.ShouldNotContain("secret-token");
     }
 
+    // The health checks answer only on the management port, which the test server does not have; the host runs on Kestrel here.
     [Theory]
     [InlineData("/health/live")]
     [InlineData("/health/ready")]
     public async Task LogRequest_HealthCheck_IsNotLogged(string path)
     {
-        await _client.GetAsync(path, TestContext.Current.CancellationToken);
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString, configureServices: services => services.AddFakeLogging(), ports: HostPorts.Free());
 
-        RequestLogs().ShouldBeEmpty();
+        var response = await api.ManagementClient().GetAsync(path, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        RequestLogsOf(api.Services).ShouldBeEmpty();
     }
 
-    private List<FakeLogRecord> RequestLogs() =>
-        [.. _host.Services.GetFakeLogCollector().GetSnapshot().Where(record => record.Category == RequestLogCategory)];
+    private List<FakeLogRecord> RequestLogs() => RequestLogsOf(_host.Services);
+
+    private static List<FakeLogRecord> RequestLogsOf(IServiceProvider services) =>
+        [.. services.GetFakeLogCollector().GetSnapshot().Where(record => record.Category == RequestLogCategory)];
 }
