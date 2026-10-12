@@ -68,8 +68,8 @@ jobs:
       # .railway/railway.ts belongs to no workspace package, so turbo does not check its types.
       - run: pnpm exec tsc -p .railway
 
-      # actionlint checks the run blocks in the workflows, but not the scripts that they call.
-      # The GitHub-hosted Ubuntu image has shellcheck (actions/runner-images, Ubuntu 24.04 readme).
+      # The scripts hold the long steps of the workflows. shellcheck checks them. The GitHub-hosted
+      # Ubuntu image has shellcheck (actions/runner-images, Ubuntu 24.04 readme).
       - name: Check the shell scripts
         run: find scripts -name '*.sh' -print0 | xargs -0 shellcheck
 

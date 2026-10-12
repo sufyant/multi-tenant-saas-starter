@@ -4,7 +4,7 @@ This document describes how the API goes from `main` to staging, and after the m
 
 ## 1. Purpose and sources
 
-CI builds the API image once, tests it, scans it and publishes that same image. Each environment runs that image by digest. Railway builds nothing, and the repository is not connected to Railway.
+The pipeline builds the API image once, tests it, scans it and publishes that same image. Each environment runs that image by digest. Railway builds nothing, and the repository is not connected to Railway.
 
 Sources:
 
@@ -160,7 +160,7 @@ Do these steps in this order for one environment. In the commands, `<environment
       ```
 
       ```bash
-      gh run list --workflow CI --branch main --limit 1
+      gh run list --workflow Delivery --branch main --limit 1
       ```
 
       ```bash
@@ -287,4 +287,4 @@ Only the `migrate` command gets this connection (R3). It is a GitHub environment
 - The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role. A 429 means the anonymous rate limit is used up (section 10).
 - `tag-release` fails: production runs the new version, but it has no tag yet. Re-run the job. If the tag was created and only the GHCR step failed, the re-run creates the next `N` for the same commit.
 - "... is not a release tag vYYYY.0M.0D.N" or "... is not on main": run `rollback.yml` on a release tag that `tag-release` created.
-- "CI on main did not publish an image for this commit": the tag does not name a commit that CI published.
+- "Delivery on main did not publish an image for this commit": the tag does not name a commit that `delivery.yml` published.

@@ -3,7 +3,8 @@
 # 500 within 30 seconds. The publishable key names clerk.example.invalid, which does not resolve.
 # No real key is used.
 #
-# Inputs: none. Exit codes: 0 when /sign-in answers below 500; 1 otherwise.
+# Inputs: none. Exit codes: 0 when /sign-in answers below 500; Docker's exit code when the container
+# does not start; 1 when /sign-in does not answer below 500 in 30 seconds.
 # Leaves the container web; the workflow prints its logs on failure and removes it.
 #
 # Run it locally, with Docker:

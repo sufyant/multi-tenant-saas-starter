@@ -3,10 +3,11 @@
 # ID was not in $RUNNER_TEMP/deployments-before-<service>.json. Railway keeps the old deployment
 # serving when the new one fails its health check, so the script does not roll back. It prints
 # deployment IDs and statuses only, never a variable. A failed list call counts as "no new
-# deployment yet", and the script asks again.
+# deployment yet", and the script asks again. A jq failure stops the script.
 #
 # Inputs: RAILWAY_TOKEN (secret), RAILWAY_CLI_IMAGE, RUNNER_TEMP. WAIT_TIMEOUT_SECONDS (default 600)
-# and WAIT_POLL_SECONDS (default 15) exist for tests.
+# and WAIT_POLL_SECONDS (default 15) exist for the timeout test, which would take 10 minutes without
+# them. The workflow does not set them.
 # Exit codes: 0 when both are SUCCESS; 1 when one is FAILED, CRASHED or REMOVED, or after the timeout.
 set -euo pipefail
 
@@ -22,10 +23,10 @@ deadline=$((SECONDS + timeout_seconds))
 while (( ${#pending[@]} > 0 )); do
   waiting=()
   for service in "${pending[@]}"; do
-    deployment=$(railway deployment list --service "$service" --limit 50 --json |
+    deployment=$({ railway deployment list --service "$service" --limit 50 --json || true; } |
       jq -r --slurpfile before "$RUNNER_TEMP/deployments-before-$service.json" \
         '[.[] | select(.id | IN($before[0][]) | not)] | sort_by(.createdAt) | last
-         | if . == null then empty else "\(.id) \(.status)" end') || deployment=""
+         | if . == null then empty else "\(.id) \(.status)" end')
     state[$service]="${deployment:-no new deployment yet}"
     echo "$service: ${state[$service]}"
     case "${deployment#* }" in

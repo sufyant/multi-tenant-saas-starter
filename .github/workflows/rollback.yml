@@ -64,7 +64,7 @@ jobs:
           name="ghcr.io/${GITHUB_REPOSITORY,,}/api"
           digest=$(docker buildx imagetools inspect "$name:$COMMIT" --format '{{json .Manifest}}' | jq -r .digest) || true
           if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-            echo "::error::CI on main did not publish an image for this commit."
+            echo "::error::Delivery on main did not publish an image for this commit."
             exit 1
           fi
           echo "Image: $name@$digest"

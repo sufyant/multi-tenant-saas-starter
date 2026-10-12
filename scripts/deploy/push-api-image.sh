@@ -6,7 +6,8 @@
 # Inputs: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_OUTPUT (the step's output file). Needs a Docker login
 # to ghcr.io with permission to push, so it runs in CI only.
 # Outputs: name, digest and image (name@digest) in GITHUB_OUTPUT.
-# Exit codes: 0 when the push succeeded and the registry returned a digest; 1 otherwise.
+# Exit codes: 0 when the push succeeded and the registry returned a digest; Docker's exit code when
+# a docker command fails; 1 when the registry returned no digest.
 set -euo pipefail
 
 : "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_OUTPUT:?}"
