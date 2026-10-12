@@ -60,6 +60,8 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+**End every report with what you skipped, what you did not check, and the risks.** A report is a pull request description, a review, or the answer to a task. Write "none" when there is nothing. The reader must not find a gap later that you knew about.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
