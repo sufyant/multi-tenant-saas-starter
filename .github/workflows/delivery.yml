@@ -137,6 +137,7 @@ jobs:
     secrets:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+      MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
 
   # Deploys the digest that staging ran to production, after the maintainer approves the waiting
   # job: the environment production requires a reviewer ("push-button release", Continuous Delivery,
@@ -158,6 +159,7 @@ jobs:
     secrets:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+      MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
 
   # Names the version that production now runs: a CalVer tag vYYYY.0M.0D.N in UTC (calver.org),
   # with N from 1 each day. A tag therefore always names a version that ran in production. The tag

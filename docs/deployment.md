@@ -45,7 +45,7 @@ On a push to `main`, after `ci.yml` passed (the jobs `node`, `api`, `api-image`,
 
 `deploy.yml` holds the only copy of the deploy steps. In the GitHub environment that it gets:
 
-1. It checks that the two secrets are set.
+1. It checks that the three secrets are set.
 2. For `production`, it checks that the commit is not older than the commit that production runs (section 6). A rollback skips this check.
 3. It runs `migrate` with the image digest.
 4. It sets the digest as the image of `api-web` and `api-worker` in one Railway commit.
@@ -85,15 +85,18 @@ The table holds names only. A value never goes into the repository.
 | --- | --- | --- | --- |
 | The workflows, the image name, the Syft and Railway CLI image digests | Repository: `.github/workflows/` | same | same |
 | The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts` | same | same |
+| The PostgreSQL service `postgres`: Railway's template, its image `postgres-ssl:18` and its region | Repository: `.railway/railway.ts` | same | same |
+| Public access (TCP proxy) of `postgres` | Railway service settings, by hand (section 4, step 7) | own proxy | own proxy |
+| Backups and point-in-time recovery of `postgres` | Railway, by hand with the Railway CLI (section 4, step 11) | off | on |
 | `Host__Role`, `ASPNETCORE_ENVIRONMENT`, `PORT` | Repository: `.railway/railway.ts`, as literal values | same | same |
 | The names of the shared variables that each service uses | Repository: `.railway/railway.ts` | same | same |
 | The environments, their reviewers, their deployment branches and tags, the ruleset for release tags | Repository: `scripts/github/apply-settings.sh`, `.github/rulesets/` and `docs/github-settings.md` | branch `main`, no reviewer | branch `main` and tags `v*`, the owner as reviewer |
 | `RAILWAY_TOKEN` | GitHub environment secret | the staging project token | the production project token |
-| `MIGRATIONS_CONNECTION_STRING` | GitHub environment secret | the staging database | the production database |
+| `MIGRATIONS_CONNECTION_STRING` | GitHub environment secret | the staging database, through its TCP proxy | the production database, through its TCP proxy |
+| `MIGRATIONS_ROOT_CERTIFICATE` | GitHub environment secret | the root certificate of the staging database | the root certificate of the production database |
 | `API_URL` | GitHub environment variable | the staging URL of `api-web` | the production URL of `api-web` |
 | `DEPLOY_STAGING`, `DEPLOY_PRODUCTION` | GitHub repository variables | `DEPLOY_STAGING=true` switches the staging deploy on | `DEPLOY_PRODUCTION=true` switches the production deploy and the release tag on |
 | `ConnectionStrings__Database` | Railway shared variable, sealed | the staging database | the production database |
-| `ConnectionStrings__Messaging` | Railway shared variable, sealed | the staging database | the production database |
 | `Authentication__Clerk__Issuer` | Railway shared variable | own value | own value |
 | `Authentication__Clerk__AuthorizedParties__0` | Railway shared variable | own value | own value |
 | `ControlPlane__FirstSystemAdminEmail` | Railway shared variable | own value | own value |
@@ -107,9 +110,13 @@ The table holds names only. A value never goes into the repository.
 
 `apps/api/docs/configuration.md` describes each setting. The shared variables have the same names as the service variables, in the `__` form.
 
-One Railway project has the two environments `staging` and `production`. Each environment has its own project token, its own shared variables and its own database. Two environments never share a database or a database role.
+One Railway project has the two environments `staging` and `production`. Each environment has its own project token, its own shared variables and its own PostgreSQL service. Two environments never share a database server, a database role or data.
 
-A PostgreSQL role belongs to the whole server, not to one database (PostgreSQL docs, "Database Roles"). The API's roles have fixed names, `api_owner` and `api_application`. So each environment needs its own PostgreSQL server. On Neon, use a separate project or a separate branch. A Neon branch starts as a copy of its parent, with the parent's data and role passwords. So do not branch staging from a production branch that holds data, and run `db/bootstrap.sql` on the new branch with new passwords. Two databases on one server would share the roles: `db/bootstrap.sql` for the second environment would reset the first environment's passwords, and the staging owner connection could change the production database.
+A PostgreSQL role belongs to the whole server, not to one database (PostgreSQL docs, "Database Roles"). The API's roles have fixed names, `api_owner` and `api_application`. So each environment needs its own PostgreSQL server. Two databases on one server would share the roles: `db/bootstrap.sql` for the second environment would reset the first environment's passwords, and the staging owner connection could change the production database.
+
+Each environment gets its own PostgreSQL service `postgres`, from Railway's PostgreSQL template, with its own volume. `.railway/railway.ts` declares it, so `pnpm railway:apply` creates it in the linked environment. `db/bootstrap.sql` runs in each environment with new passwords. Railway's environment sync does not copy a database: "Sync copies configuration, not data" (Railway docs, "Isolate Staging from Production for Compliance").
+
+Another PostgreSQL provider works too, because the API uses plain PostgreSQL. `apps/api/docs/setup.md` holds the notes for Railway and for Neon, the alternative.
 
 ## 4. First deployment of an environment
 
@@ -118,8 +125,8 @@ Set up `staging` first. Set up `production` later, when the product has users. U
 Do these steps in this order for one environment. In the commands, `<environment>` is `staging` or `production`.
 
 1. Create the Railway project once, if it does not exist. A new project has the environment `production`. Add the environment `staging` as an empty environment.
-2. Create the database of the environment on its own PostgreSQL server (section 3), with its own owner and application roles. `apps/api/docs/setup.md` describes `db/bootstrap.sql`, which creates the roles.
-3. In the Railway dashboard, open the shared variables of `<environment>`. Set each Railway shared variable of section 3. Set a secret as a sealed variable. Set a value in the Railway dashboard only, never in a file or a chat.
+2. Make two new passwords for the environment: one for `api_owner` and one for `api_application`. Keep them in a password manager. Never use a password of another environment (section 3).
+3. In the Railway dashboard, open the shared variables of `<environment>`. Set each Railway shared variable of section 3. Set a secret as a sealed variable. Set a value in the Railway dashboard only, never in a file or a chat. `ConnectionStrings__Database` uses the application password of step 2, in the format of section 9. The database does not exist yet, but its private host is known.
 4. In the Railway project settings, create a project token for `<environment>`.
 5. Apply the GitHub settings. This creates both GitHub environments, the production reviewer and the ruleset for release tags. One run is enough for both environments:
 
@@ -127,14 +134,7 @@ Do these steps in this order for one environment. In the commands, `<environment
    pnpm github:apply
    ```
 
-6. Store the two secrets in the GitHub environment. Each command prompts for the value and does not echo it:
-
-   ```bash
-   gh secret set RAILWAY_TOKEN --env <environment>
-   gh secret set MIGRATIONS_CONNECTION_STRING --env <environment>
-   ```
-
-7. Install the Railway CLI, version 5.42.1 or newer. The Railway SDK in this repository needs that version. Then link the repository to the project and `<environment>`, and apply the Railway settings. The CLI compares the file with the linked environment only (Railway docs, "Infrastructure as Code"), so the same file serves both environments:
+6. Install the Railway CLI, version 5.42.1 or newer. The Railway SDK in this repository needs that version. Then link the repository to the project and `<environment>`, and apply the Railway settings. The CLI compares the file with the linked environment only (Railway docs, "Infrastructure as Code"), so the same file serves both environments:
 
    ```bash
    railway login
@@ -143,16 +143,86 @@ Do these steps in this order for one environment. In the commands, `<environment
    pnpm railway:apply
    ```
 
-   The first plan creates `api-web` and `api-worker` and sets their variables. Read section 7 before you apply a later plan.
+   The first plan creates `postgres`, `api-web` and `api-worker`. Railway attaches a volume to `postgres`. The API services get no image until the first deploy, so they do not start yet. Read section 7 before you apply a later plan.
 
-8. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain", port 8080. Do not accept port 8081: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain. Store the URL in the GitHub environment:
+7. Turn on public access for the database. In the Railway dashboard, open `postgres` in `<environment>`, then Settings, Networking, and add "Public Access" (a TCP proxy) on port 5432. Railway shows a proxy domain and a port, for example `shuttle.proxy.rlwy.net:15140`. Note both. The bootstrap (step 10) and the `migrate` command of `deploy.yml` connect through it. Why by hand: the `postgres` helper of `railway/iac` accepts only a region, so `.railway/railway.ts` cannot hold a TCP proxy for it.
+8. Check `postgres` in the dashboard: it runs in `europe-west4`, next to the API, from the image `ghcr.io/railwayapp-templates/postgres-ssl:18`, with a volume on `/var/lib/postgresql/data`.
+9. Download the root certificate of the environment's database (section 9). Reading the file changes nothing in the database:
 
    ```bash
-   gh variable set API_URL --env <environment> --body https://<the generated domain>
+   railway ssh --service postgres -- cat /var/lib/postgresql/data/certs/root.crt > <environment>-database-root.crt
    ```
 
-9. Make the GHCR package public, once. `publish-api` pushed it first when the deploy pipeline merged to `main`. `docs/github-settings.md`, section 5.4, gives the steps.
-10. Start the first deploy:
+   ```bash
+   openssl x509 -in <environment>-database-root.crt -noout -subject -enddate
+   ```
+
+   The second command prints `subject=CN=root-ca` and the end date.
+
+10. Run `apps/api/db/bootstrap.sql` once, as the template's superuser `postgres`, through the TCP proxy, from the repository root. Docker runs `psql` 18, so no local `psql` is needed. First read the three passwords. `read -s` does not echo them, and they never reach the shell history. The password of `postgres` is the variable `POSTGRES_PASSWORD` of the service `postgres` in the Railway dashboard. The other two are the passwords of step 2:
+
+    ```bash
+    printf 'Password of postgres: '; read -rs PGPASSWORD; echo
+    printf 'New password of api_owner: '; read -rs owner_password; echo
+    printf 'New password of api_application: '; read -rs application_password; echo
+    export PGPASSWORD owner_password application_password
+    ```
+
+    Then run the script. Replace `<proxy domain>` and `<proxy port>` with the values of step 7:
+
+    ```bash
+    docker run --rm -e PGPASSWORD -e owner_password -e application_password \
+      -v "$PWD/apps/api/db/bootstrap.sql:/bootstrap.sql:ro" \
+      -v "$PWD/<environment>-database-root.crt:/root.crt:ro" \
+      postgres:18 sh -c 'exec psql "host=<proxy domain> port=<proxy port> dbname=railway user=postgres sslmode=verify-ca sslrootcert=/root.crt" -v owner_password="$owner_password" -v application_password="$application_password" -f /bootstrap.sql'
+    ```
+
+    ```bash
+    unset PGPASSWORD owner_password application_password
+    ```
+
+    `docker run -e NAME` copies the variable from the shell, so no password is on the command line of the host. `sslmode=verify-ca` checks the server's certificate against the root certificate of step 9 (section 9). The script changes roles through SQL, so the database leaves Railway's database support scope (`apps/api/docs/setup.md`).
+
+11. Production only: turn on the backups and point-in-time recovery of the database. With the CLI linked to `production`:
+
+    ```bash
+    railway postgres pitr schedule set --service postgres --daily --weekly
+    ```
+
+    ```bash
+    railway postgres pitr enable --service postgres
+    ```
+
+    ```bash
+    railway postgres pitr status --service postgres
+    ```
+
+    The schedule keeps a daily backup for 6 days and a weekly backup for 27 days (Railway docs, "Backups"). Point-in-time recovery archives every WAL segment to a bucket `Postgres-PITR` and keeps about 4 weeks (Railway docs, "Point-in-Time Recovery"). Enabling it sets archive variables on `postgres` and redeploys it. Why by hand: `.railway/railway.ts` cannot hold them, because the `postgres` helper accepts only a region. Read section 7 before the next apply. Staging gets no backups: its data can be rebuilt.
+
+12. Store the three secrets in the GitHub environment. The first two commands prompt for the value and do not echo it. The third reads the file of step 9:
+
+    ```bash
+    gh secret set RAILWAY_TOKEN --env <environment>
+    ```
+
+    ```bash
+    gh secret set MIGRATIONS_CONNECTION_STRING --env <environment>
+    ```
+
+    ```bash
+    gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < <environment>-database-root.crt
+    ```
+
+    `MIGRATIONS_CONNECTION_STRING` uses the owner password of step 2 and the proxy of step 7, in the format of section 9.
+
+13. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain", port 8080. Do not accept port 8081: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain. Store the URL in the GitHub environment:
+
+    ```bash
+    gh variable set API_URL --env <environment> --body https://<the generated domain>
+    ```
+
+14. Make the GHCR package public, once. `publish-api` pushed it first when the deploy pipeline merged to `main`. `docs/github-settings.md`, section 5.4, gives the steps.
+15. Start the first deploy:
     - For `staging`, switch the deploy on, then run the workflow on `main` again:
 
       ```bash
@@ -230,16 +300,18 @@ pnpm railway:apply
 
 `railway:plan` changes nothing. `railway:apply` asks before it applies a destructive change.
 
-No setting differs between the environments today. If one must differ, the file can read `ctx.environment`.
+No setting in the file differs between the environments today. If one must differ, the file can read `ctx.environment`.
 
 Rules:
 
-- Change a setting of the two services in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
+- Change a setting of a service in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
-- The file has no `source`, because CI sets the image. Railway CLI 5.63.1 compares the image that CI set with the missing `source` in the file, so a plan after a deploy can show a change to `source`. It is not known whether such an apply removes the image. Do not apply a plan that changes the `source` of a service. Report it instead.
+- The API services have no `source` in the file, because CI sets their image. Railway CLI 5.63.1 compares the image that CI set with the missing `source` in the file, so a plan after a deploy can show a change to `source`. It is not known whether such an apply removes the image. Do not apply a plan that changes the `source` of a service. Report it instead.
 - A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 3 of section 4).
 - For most keys, an empty value stops the API at start, and the API names the key. Railway then marks the deployment as failed.
-- An empty `ConnectionStrings__Messaging` does not stop the API. Wolverine then uses `ConnectionStrings__Database`, which goes through the pooler, and fails later at run time (`apps/api/docs/setup.md`). Always set it.
+- The file declares `postgres` with the `postgres` helper of `railway/iac`, but Railway's own flows set its volume, its TCP proxy, its backups and its point-in-time recovery (the bucket `Postgres-PITR` and the archive variables). The Railway docs do not say how apply treats these. Do not apply a plan that removes or changes one of them. Report it instead.
+- Do not apply a plan that changes the image of `postgres`. A new major version needs Railway's upgrade flow, not a new image tag (Railway docs, "Upgrading PostgreSQL Major Versions", "Manual Image Edits"). Point-in-time recovery needs a major tag such as `:18`, not a minor tag (Railway docs, "Point-in-Time Recovery", "Limitations").
+- An environment that was set up before step 18f can still have the shared variable `ConnectionStrings__Messaging`. No service references it any more. Delete it in the Railway dashboard.
 - An empty `Host__Cors__AllowedOrigins__0` is not a valid origin, so the API stops. Set it to the web app's origin, also before the web app exists.
 
 ## 8. Migrations and the running version
@@ -255,34 +327,77 @@ Staging runs each migration before production does, against its own database.
 
 Sources: Humble and Farley, *Continuous Delivery*, chapter 12 ("Managing Data"). Ambler and Sadalage, *Refactoring Databases*, the transition period.
 
-## 9. The migrations connection
+## 9. The database connections
 
-`MIGRATIONS_CONNECTION_STRING` is the owner role's direct connection to the environment's database, in the Npgsql format:
+Each environment has its own PostgreSQL service `postgres`, from Railway's template (section 3). The template creates the database `railway` and the superuser `postgres` (the template's `POSTGRES_DB` and `POSTGRES_USER`). The API never uses that superuser, and no API service references the template's variables `DATABASE_URL`, `PGUSER` or `PGPASSWORD`. The API connects with the two roles of `apps/api/db/bootstrap.sql` (R2 and R7 in `apps/api/docs/ARCHITECTURE.md`).
+
+| Connection | Used by | Route | `SSL Mode` |
+| --- | --- | --- | --- |
+| `ConnectionStrings__Database` | `api-web` and `api-worker` | The private network of the environment | `Require` |
+| `MIGRATIONS_CONNECTION_STRING` | The `migrate` command in `deploy.yml`, on the GitHub runner | The TCP proxy, over the internet | `VerifyCA`, with `MIGRATIONS_ROOT_CERTIFICATE` |
+
+### The server's certificate
+
+- The template's image creates its own certificates when it initialises the volume: a root certificate `CN=root-ca`, and a server certificate `CN=localhost` that the root signs. They are on the volume, in `/var/lib/postgresql/data/certs`.
+- The server certificate names `localhost` and the private host of the service, `postgres.railway.internal`. It does not name the host of the TCP proxy.
+- No public CA signs it. A client that trusts only public CAs cannot verify it.
+- Each volume gets its own root certificate, and that root signs only this server's certificate.
+- Both certificates last 820 days (`SSL_CERT_DAYS`). At a restart or a redeploy, the image makes new certificates, with a new root, when the server certificate expires within 30 days.
+
+Source: the repository `railwayapp-templates/postgres-ssl`: `init-ssl.sh`, `wrapper.sh` and `README.md` ("Certificate expiry", "Certificate renewal").
+
+### `ConnectionStrings__Database`
+
+The application role over the private network. It is a sealed Railway shared variable:
 
 ```text
-Host=<direct host>;Port=5432;Database=<database>;Username=api_owner;Password=<password>;SSL Mode=VerifyFull
+Host=postgres.railway.internal;Port=5432;Database=railway;Username=api_application;Password=<application password>;SSL Mode=Require
 ```
 
-- Use the owner role `api_owner` that `apps/api/db/bootstrap.sql` creates (R2 and R7 in `apps/api/docs/ARCHITECTURE.md`).
-- Use the direct host, not the pooler. On Neon, the pooler's host name has `-pooler` in it.
-- Use `SSL Mode=VerifyFull`. The client then checks the server's certificate and its host name.
+- The host is the service's private name, `<service>.railway.internal` (Railway docs, "Private Networking"). The port is the template's `PGPORT`, 5432.
+- The connection is direct, with no pooler. So Wolverine uses it too, and `ConnectionStrings__Messaging` is not set (`apps/api/docs/configuration.md`).
+- `SSL Mode=Require`: the connection is encrypted and never falls back to plain text, but the client does not verify the certificate. A verified mode needs the root certificate as a file in the API's container, and the API image has none. A pinned root would also stop the API at each certificate renewal. The private network is an encrypted WireGuard network of this environment only (Railway docs, "How Private Networking Works"), so nobody outside the environment can intercept the connection.
 
-Only the `migrate` command gets this connection (R3). It is a GitHub environment secret, and it never goes to Railway. The running services use the application role's connections in `ConnectionStrings__Database` and `ConnectionStrings__Messaging` (`apps/api/docs/setup.md`).
+### `MIGRATIONS_CONNECTION_STRING`
+
+The owner role over the TCP proxy, from the GitHub runner. It is a GitHub environment secret:
+
+```text
+Host=<proxy domain>;Port=<proxy port>;Database=railway;Username=api_owner;Password=<owner password>;SSL Mode=VerifyCA
+```
+
+- Use the owner role `api_owner` that `apps/api/db/bootstrap.sql` creates.
+- The proxy domain and port come from section 4, step 7 (Railway docs, "TCP Proxy").
+- `SSL Mode=VerifyCA`: the client checks that the server's certificate chains to the environment's own root certificate. `MIGRATIONS_ROOT_CERTIFICATE` holds that root. `deploy.yml` writes it to a file and names the file in `PGSSLROOTCERT`, which Npgsql reads.
+- `VerifyFull` does not work here. It also checks the host name, and the certificate does not name the proxy's host. The maintainer chose `VerifyCA` with the pinned root (step 18f). PostgreSQL docs, section 32.19.3, "Protection Provided in Different Modes": with a local CA or a self-signed certificate, `verify-ca` often gives enough protection. Here the root is unique to one server, so a certificate that chains to it comes from that server.
+- A test with Npgsql 10 and certificates made like the template's: `VerifyFull` with the right root and a host name that the certificate does not name was rejected. `VerifyCA` with the right root was accepted. `VerifyCA` with another root of the same name was rejected.
+
+Only the `migrate` command gets this connection (R3). It never goes to Railway.
+
+### When the root certificate changes
+
+The template makes a new root certificate about every 27 months (the renewal above). A point-in-time restore creates a new service with its own volume, name and certificates (Railway docs, "Point-in-Time Recovery").
+
+After a renewal, the migration fails with "The remote certificate was rejected". Nothing was deployed. Download the new root certificate (section 4, step 9) and set `MIGRATIONS_ROOT_CERTIFICATE` again (section 4, step 12). The API services keep working, because `Require` does not check the root.
+
+After a restore, the private host, the proxy and the root certificate are new. Update `ConnectionStrings__Database`, `MIGRATIONS_CONNECTION_STRING` and `MIGRATIONS_ROOT_CERTIFICATE`. The restored service has another name, so `.railway/railway.ts` does not declare it, and the next plan can remove or replace a database. Do not apply that plan. Report it, and change the file in a pull request first.
 
 ## 10. Deviations and known gaps
 
 - **Staging runs no automated acceptance tests yet.** It runs only the smoke test of `deploy.yml`. *Continuous Delivery*, chapter 5, puts an automated acceptance test stage before a release. The row "Playwright end-to-end tests in CI" in `docs/github-settings.md`, section 6, closes this.
+- **Production's backups stay inside Railway.** The volume backups and the archive of point-in-time recovery are in the same Railway project as the database. The 3-2-1 backup rule asks for three copies of the data, on two kinds of media, with one copy off site (Peter Krogh, *The DAM Book*). Planned: a scheduled `pg_dump` of production to storage outside Railway, when production holds real data.
 - **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway.
 
 ## 11. When a deploy, a tag or a rollback fails
 
-- "The secret ... of the environment ... is empty": set the secret (section 4, step 6).
+- "The secret ... of the environment ... is empty": set the secret (section 4, step 12).
 - "Production already runs a newer commit": the approved run is older than the commit that production runs. Reject it, and approve the newest waiting run. To go back on purpose, use the rollback (section 6).
 - The migration fails: the step prints the error of the `migrate` command. Nothing was deployed.
+- The migration fails with "The remote certificate was rejected": the database has a new root certificate. Set `MIGRATIONS_ROOT_CERTIFICATE` again (section 9, "When the root certificate changes").
 - The Railway step fails: the step prints the Railway CLI's own message. Check `RAILWAY_TOKEN` and the service names.
 - A deployment ends as `FAILED`, `CRASHED` or `REMOVED`: the step prints its ID. Read its logs in Railway. A missing shared variable or a private GHCR package are common causes.
 - "Not healthy after 10 minutes" with "no new deployment yet": Railway started no deployment. This can happen when the services already run this digest.
-- "The variable API_URL ... is empty": set it (section 4, step 8).
+- "The variable API_URL ... is empty": set it (section 4, step 13).
 - The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role. A 429 means the anonymous rate limit is used up (section 10).
 - `tag-release` fails: production runs the new version, but it has no tag yet. Re-run the job. If the tag was created and only the GHCR step failed, the re-run creates the next `N` for the same commit.
 - "... is not a release tag vYYYY.0M.0D.N" or "... is not on main": run `rollback.yml` on a release tag that `tag-release` created.

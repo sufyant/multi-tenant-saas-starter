@@ -4,7 +4,7 @@ name: Deploy
 # production (Humble and Farley, Continuous Delivery, chapter 5: "Deploy the same way to every
 # environment").
 # The job reads the secrets and the variable API_URL of its GitHub environment. A caller passes
-# the two secrets by name; the job that sets `environment` gets the environment's value
+# the three secrets by name; the job that sets `environment` gets the environment's value
 # (GitHub Docs, "Reuse workflows").
 on:
   workflow_call:
@@ -26,6 +26,8 @@ on:
       RAILWAY_TOKEN:
         required: true
       MIGRATIONS_CONNECTION_STRING:
+        required: true
+      MIGRATIONS_ROOT_CERTIFICATE:
         required: true
 
 permissions:
@@ -77,10 +79,11 @@ jobs:
       - name: Check the secrets
         env:
           MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
+          MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           missing=0
-          for name in MIGRATIONS_CONNECTION_STRING RAILWAY_TOKEN; do
+          for name in MIGRATIONS_CONNECTION_STRING MIGRATIONS_ROOT_CERTIFICATE RAILWAY_TOKEN; do
             if [[ -z "${!name}" ]]; then
               echo "::error::The secret $name of the environment $ENVIRONMENT is empty. See docs/deployment.md."
               missing=1
@@ -109,10 +112,18 @@ jobs:
 
       # Only the migrate command gets the owner role's connection (R3). It never goes to Railway.
       # `docker run -e NAME` copies the variable from the step, so the value is not on the command line.
+      # The connection crosses the internet to the database's TCP proxy. Npgsql verifies the server's
+      # certificate against the environment's own root certificate, which PGSSLROOTCERT names
+      # (docs/deployment.md, section 9).
       - name: Migrate the database
         env:
           ConnectionStrings__Migrations: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
-        run: docker run --rm -e ConnectionStrings__Migrations "$IMAGE" migrate
+          MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
+          PGSSLROOTCERT: /run/database-root.crt
+        run: |
+          printf '%s\n' "$MIGRATIONS_ROOT_CERTIFICATE" >"$RUNNER_TEMP/database-root.crt"
+          docker run --rm -e ConnectionStrings__Migrations -e PGSSLROOTCERT \
+            -v "$RUNNER_TEMP/database-root.crt:$PGSSLROOTCERT:ro" "$IMAGE" migrate
 
       # One commit sets the image of both services. The project token selects the project and the
       # environment, and the CLI finds the services by name. CI=true turns off the CLI's self-update.
