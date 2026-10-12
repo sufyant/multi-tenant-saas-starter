@@ -13,9 +13,9 @@ using Api.Tenants;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
-using Npgsql;
 using Scalar.AspNetCore;
 using Serilog;
+using Tenancy;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.ErrorHandling;
@@ -76,7 +76,7 @@ internal static class ApiPipeline
             // never starts it; any other host without it does not start (PersistenceExtensions).
             if (!openApiBuild && PersistenceExtensions.MessagingConnectionOf(builder.Configuration) is { ConnectionString: var messaging })
             {
-                MessageStorage.Configure(options, NpgsqlDataSource.Create(messaging), role);
+                MessageStorage.Configure(options, DatabaseConnection.CreateDataSource(messaging), role);
             }
 
             // A stopping host stops taking messages and finishes the ones it has, within the host's shutdown time.
