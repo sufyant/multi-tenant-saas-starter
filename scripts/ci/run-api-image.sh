@@ -36,8 +36,8 @@ for _ in $(seq 30); do
 done
 docker exec api-db pg_isready -h 127.0.0.1 -U postgres -d app
 
-# A managed provider gives no superuser. Its most privileged role has CREATEROLE, CREATEDB and
-# BYPASSRLS and owns the database, like neondb_owner on Neon (apps/api/docs/setup.md).
+# A managed PostgreSQL gives no superuser. Its most privileged role has CREATEROLE, CREATEDB and
+# BYPASSRLS and owns the database (apps/api/docs/setup.md).
 docker exec api-db psql -U postgres -d app -v ON_ERROR_STOP=1 \
   -c "CREATE ROLE provider_admin LOGIN CREATEROLE CREATEDB BYPASSRLS PASSWORD '$provider_password'" \
   -c "ALTER DATABASE app OWNER TO provider_admin"
