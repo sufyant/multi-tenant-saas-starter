@@ -13,20 +13,7 @@ public sealed class FailedStartTests
     [InlineData("worker")]
     public async Task StartProcess_OnAHostThatDoesNotAnswer_LogsTheFailureOnceAndExitsWithOne(string role)
     {
-        var ports = HostPorts.Free();
-
-        var result = await ApiProcess.RunAsync(new Dictionary<string, string>
-        {
-            ["DOTNET_ENVIRONMENT"] = "Development",
-            ["Host__Role"] = role,
-            ["ConnectionStrings__Database"] = ApiProcess.HostThatDoesNotAnswer,
-            ["Authentication__Clerk__Issuer"] = TestTokens.Issuer,
-            ["ControlPlane__Clerk__SecretKey"] = "sk_test_unused",
-            ["ControlPlane__Invitations__AcceptUrl"] = ApiFactory.AcceptUrl,
-            ["ControlPlane__FirstSystemAdminEmail"] = ApiFactory.FirstSystemAdminEmail,
-            ["ASPNETCORE_URLS"] = $"http://127.0.0.1:{ports.Public}",
-            ["Host__ManagementPort"] = ports.Management.ToString(CultureInfo.InvariantCulture),
-        });
+        var result = await ApiProcess.RunAsync(SettingsFor(role, HostPorts.Free()));
 
         result.Exited.ShouldBeTrue(result.Output);
         result.ExitCode.ShouldBe(1, result.Output);
@@ -34,4 +21,34 @@ public sealed class FailedStartTests
         Regex.Count(result.Output, "Hosting failed to start").ShouldBe(1, result.Output);
         result.Output.ShouldNotContain("Unhandled exception");
     }
+
+    // The host reads some settings while it is composed, before it has a logger. A value it cannot read stops the process the same way,
+    // and the error is written once.
+    [Theory]
+    [InlineData("web")]
+    [InlineData("worker")]
+    public async Task StartProcess_WithASettingThatCannotBeRead_WritesTheFailureOnceAndExitsWithOne(string role)
+    {
+        var settings = new Dictionary<string, string>(SettingsFor(role, HostPorts.Free())) { ["Host__ManagementPort"] = "abc" };
+
+        var result = await ApiProcess.RunAsync(settings);
+
+        result.Exited.ShouldBeTrue(result.Output);
+        result.ExitCode.ShouldBe(1, result.Output);
+        Regex.Count(result.Output, "Failed to convert configuration value 'abc' at 'Host:ManagementPort'").ShouldBe(1, result.Output);
+        result.Output.ShouldNotContain("Unhandled exception");
+    }
+
+    private static Dictionary<string, string> SettingsFor(string role, HostPorts ports) => new()
+    {
+        ["DOTNET_ENVIRONMENT"] = "Development",
+        ["Host__Role"] = role,
+        ["ConnectionStrings__Database"] = ApiProcess.HostThatDoesNotAnswer,
+        ["Authentication__Clerk__Issuer"] = TestTokens.Issuer,
+        ["ControlPlane__Clerk__SecretKey"] = "sk_test_unused",
+        ["ControlPlane__Invitations__AcceptUrl"] = ApiFactory.AcceptUrl,
+        ["ControlPlane__FirstSystemAdminEmail"] = ApiFactory.FirstSystemAdminEmail,
+        ["ASPNETCORE_URLS"] = $"http://127.0.0.1:{ports.Public}",
+        ["Host__ManagementPort"] = ports.Management.ToString(CultureInfo.InvariantCulture),
+    };
 }

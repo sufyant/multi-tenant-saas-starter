@@ -114,6 +114,24 @@ public sealed class MigrationStepTests(Database database)
         result.Output.ShouldNotContain("Unhandled exception");
     }
 
+    // The migration step composes the same host, which reads some settings before it has a logger.
+    [Fact]
+    public async Task Migrate_WithASettingThatCannotBeRead_WritesTheFailureOnceAndExitsWithOne()
+    {
+        var result = await ApiProcess.RunAsync(
+            new Dictionary<string, string>
+            {
+                ["ConnectionStrings__Migrations"] = database.OwnerConnectionString,
+                ["Host__ManagementPort"] = "abc",
+            },
+            MigrationStep.Command);
+
+        result.Exited.ShouldBeTrue(result.Output);
+        result.ExitCode.ShouldBe(1, result.Output);
+        Regex.Count(result.Output, "Failed to convert configuration value 'abc' at 'Host:ManagementPort'").ShouldBe(1, result.Output);
+        result.Output.ShouldNotContain("Unhandled exception");
+    }
+
     [Fact]
     public async Task Migrate_WithoutItsOwnConnectionString_Fails()
     {
