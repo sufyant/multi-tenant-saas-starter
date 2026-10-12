@@ -10,6 +10,7 @@ using Api.Observability;
 using Api.Persistence;
 using Api.RateLimiting;
 using Api.Tenants;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Npgsql;
@@ -128,6 +129,14 @@ internal static class ApiPipeline
         app.UseExceptionHandler();
         app.UseStatusCodePages();
 
+        // The management port answers the health endpoints and nothing else; no other port answers them (section 8). The branch
+        // reads the port the connection arrived on, because a client can send any Host header (Microsoft Learn, Health checks in
+        // ASP.NET Core, Require host). Any other request there ends as not found, before anything asks who the caller is.
+        var managementPort = app.Configuration.Read().ManagementPort;
+        app.MapWhen(context => context.Connection.LocalPort == managementPort, management => management
+            .UseHealthChecks($"{HealthPath}/live", new HealthCheckOptions { Predicate = _ => false })
+            .UseHealthChecks($"{HealthPath}/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }));
+
         // Routing runs first so tenant resolution sees the tenant id. A browser's preflight is answered before anything asks who the
         // caller is. The rate limiter needs only the user, so a caller over their limit costs no membership lookup. Authorization comes
         // last, so callers it turns away have been rate limited too.
@@ -137,9 +146,6 @@ internal static class ApiPipeline
         app.UseRateLimiter();
         app.UseMiddleware<TenantResolutionMiddleware>();
         app.UseAuthorization();
-
-        app.MapHealthChecks($"{HealthPath}/live", new() { Predicate = _ => false }).AllowAnonymous();
-        app.MapHealthChecks($"{HealthPath}/ready", new() { Predicate = check => check.Tags.Contains("ready") }).AllowAnonymous();
 
         return app;
     }
