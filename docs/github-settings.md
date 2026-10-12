@@ -220,3 +220,5 @@ Source: GitHub Docs: "Configuring a package's access control and visibility" and
 | Upgrade Node to the next LTS line (`.nvmrc`, the build image and the distroless runtime image together) | Before Node 22 reaches end of life (April 2027) | A major upgrade needs its own tested pull request. |
 | Required code scanning results in the ruleset | After CodeQL has run on a few pull requests | A new rule must not block pull requests before the CodeQL results are known. |
 | Plan `.railway/railway.ts` on pull requests and apply it on merge | When the plan output is known to be stable | The maintainer applies by hand until then. |
+| Set up the `production` environment (`docs/deployment.md`, section 4) and set `DEPLOY_PRODUCTION` | In the product repository, before its first real user | The template has no users. A product that starts from the template in a private repository uses a different approval (`docs/deployment.md`, section 12). |
+| Remove the Dependabot advisories of `uuid`, `stream-json` and `braces` | When a fixed version fits the parents' ranges | `docs/deployment.md`, section 10. |
