@@ -50,7 +50,7 @@ On a push to `main`, after `ci.yml` passed (the jobs `node`, `api`, `api-image`,
 3. It runs `migrate` with the image digest.
 4. It sets the digest as the image of `api-web` and `api-worker` in one Railway commit.
 5. It waits until the new deployment of each service is `SUCCESS`.
-6. It smoke-tests the public route: `GET /health/live` must answer 200, and `GET /v1/me/tenants` without a token must answer 401. The 401 shows that the route reaches the web process and its authentication.
+6. It smoke-tests the public route: `GET /v1/me/tenants` without a token must answer 401, and `GET /health/ready` must answer 404. The 401 shows that the route reaches the web process and its authentication. The 404 shows that the public route does not reach the health endpoints: they answer only on the management port, 8081. Railway's health check covers readiness there.
 
 ### Approve a production deploy
 
@@ -145,7 +145,7 @@ Do these steps in this order for one environment. In the commands, `<environment
 
    The first plan creates `api-web` and `api-worker` and sets their variables. Read section 7 before you apply a later plan.
 
-8. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain", port 8080. The worker needs no domain. Store the URL in the GitHub environment:
+8. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain", port 8080. Do not accept port 8081: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain. Store the URL in the GitHub environment:
 
    ```bash
    gh variable set API_URL --env <environment> --body https://<the generated domain>
@@ -273,7 +273,6 @@ Only the `migrate` command gets this connection (R3). It is a GitHub environment
 
 - **Staging runs no automated acceptance tests yet.** It runs only the smoke test of `deploy.yml`. *Continuous Delivery*, chapter 5, puts an automated acceptance test stage before a release. The row "Playwright end-to-end tests in CI" in `docs/github-settings.md`, section 6, closes this.
 - **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway.
-- **The readiness endpoint is public.** Section 8 of `apps/api/docs/ARCHITECTURE.md` says that the readiness endpoint is not routed from outside. On Railway, the generated domain of `api-web` routes every path, so `/health/ready` is public too. Railway's health check needs this path. The deviations table of `ARCHITECTURE.md` does not record this yet. The maintainer decides how to close the gap.
 
 ## 11. When a deploy, a tag or a rollback fails
 

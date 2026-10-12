@@ -56,9 +56,10 @@ export default defineRailway((ctx) => {
       env: {
         Host__Role: role,
         ASPNETCORE_ENVIRONMENT: "Production",
-        // The API listens on 8080 and ignores PORT. Railway's health check uses it
-        // (Railway docs, "Healthchecks", "Configure the healthcheck port").
-        PORT: "8080",
+        // Railway's health check uses PORT; the public domain targets 8080. The API ignores PORT and
+        // answers the health endpoints only on its management port, 8081 (Railway docs,
+        // "Healthchecks", "Configure the healthcheck port").
+        PORT: "8081",
         ...Object.fromEntries(
           sharedVariables.map((name) => [name, ctx.shared[name]]),
         ),
