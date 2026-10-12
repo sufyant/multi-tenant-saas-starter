@@ -69,6 +69,8 @@ public sealed class HostConfigurationTests(Database database)
         { "Host:ShutdownTimeout", "00:00:00" },
         { "Host:Cors:AllowedOrigins:0", "*" },
         { "Host:Cors:AllowedOrigins:0", "https://app.test/path" },
+        { "Host:ManagementPort", "0" },
+        { "Host:ManagementPort", "65536" },
     };
 
     [Theory]
@@ -80,6 +82,19 @@ public sealed class HostConfigurationTests(Database database)
         var start = () => api.CreateClient();
 
         start.ShouldThrow<Exception>().Message.ShouldContain(key.TrimEnd(':', '0'));
+    }
+
+    // Section 8: the health endpoints have a port of their own, apart from the API's.
+    [Fact]
+    public async Task StartApplication_ManagementPortIsThePublicPort_FailsNamingTheKey()
+    {
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString,
+            settings: new Dictionary<string, string?> { ["urls"] = "http://127.0.0.1:5080", ["Host:ManagementPort"] = "5080" });
+
+        var start = () => api.CreateClient();
+
+        start.ShouldThrow<Exception>().Message.ShouldContain("Host:ManagementPort");
     }
 
     // Section 6: once the staff list has a system admin, the first system admin's setting has no effect.
@@ -95,9 +110,10 @@ public sealed class HostConfigurationTests(Database database)
             database: name);
         await using var api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application, name),
-            settings: new Dictionary<string, string?> { ["ControlPlane:FirstSystemAdminEmail"] = null });
+            settings: new Dictionary<string, string?> { ["ControlPlane:FirstSystemAdminEmail"] = null },
+            ports: HostPorts.Free());
 
-        var ready = await api.CreateClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
     }

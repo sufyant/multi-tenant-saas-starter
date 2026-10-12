@@ -77,9 +77,9 @@ public sealed class MigrationStepTests(Database database)
     {
         var empty = await database.CreateEmptyDatabaseAsync();
         (await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, empty))).ExitCode.ShouldBe(0);
-        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, empty));
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, empty), ports: HostPorts.Free());
 
-        var ready = await api.CreateClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
     }

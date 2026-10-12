@@ -15,7 +15,7 @@ namespace Api.IntegrationTests;
 // given database, in the role that serves requests and handles messages. Clerk and the email service are systems we do not own, so
 // they are fakes unless a test exercises the application's own email channel; the session tokens are signed with the test key. The
 // onboarding's retries are short, so a step that fails for good reaches the dead letter queue within a test. A setting a test gives
-// as null is left out.
+// as null is left out. A factory given ports runs the host on Kestrel, on those ports, once a client of one of them is asked for.
 internal sealed class ApiFactory(
     string databaseConnectionString,
     string? migrationsConnectionString = null,
@@ -25,8 +25,11 @@ internal sealed class ApiFactory(
     bool fakeEmailChannel = true,
     Action<IServiceCollection>? configureServices = null,
     string? messagingConnectionString = null,
-    IReadOnlyDictionary<string, string?>? settings = null) : WebApplicationFactory<Program>
+    IReadOnlyDictionary<string, string?>? settings = null,
+    HostPorts? ports = null) : WebApplicationFactory<Program>
 {
+    private bool _onKestrel;
+
     public const string AcceptUrl = "https://app.test/invitations/accept";
 
     // No account of the fake identity provider has this address, so nobody becomes the first system admin by accident.
@@ -42,6 +45,25 @@ internal sealed class ApiFactory(
         ["Notifications:InvitationEmailRetryDelays:1"] = "00:00:00.020",
         ["Notifications:InvitationEmailRetryDelays:2"] = "00:00:00.040",
     };
+
+    public HostPorts Ports => ports ?? throw new InvalidOperationException("The factory was given no ports.");
+
+    // Clients of the host's real ports. The test server has no port, so the host runs on Kestrel instead.
+    public HttpClient PublicClient() => ClientOn(Ports.Public);
+
+    public HttpClient ManagementClient() => ClientOn(Ports.Management);
+
+    private HttpClient ClientOn(int port)
+    {
+        if (!_onKestrel)
+        {
+            UseKestrel();
+            StartServer();
+            _onKestrel = true;
+        }
+
+        return new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}") };
+    }
 
     public HttpClient CreateClient(string userId, bool secondFactor = false)
     {
@@ -99,7 +121,7 @@ internal sealed class ApiFactory(
             configuration[$"Authentication:Clerk:AuthorizedParties:{index}"] = party;
         }
 
-        foreach (var (key, value) in ShortRetries.Concat(settings ?? new Dictionary<string, string?>()))
+        foreach (var (key, value) in ShortRetries.Concat(ports?.Settings ?? new Dictionary<string, string?>()).Concat(settings ?? new Dictionary<string, string?>()))
         {
             configuration[key] = value;
         }
