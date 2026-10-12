@@ -6,11 +6,28 @@ What the API needs from the providers it runs on, and how to set them up. The ar
 
 The API needs PostgreSQL 18 and the two roles of R2 and R7: an owner role for the migrations and an application role for running code. `db/bootstrap.sql` creates both.
 
-- `db/bootstrap.sql` runs before the first migration, against the API's own database. It runs as the owner of that database, and that role needs `CREATEROLE`. A superuser is not needed, but a superuser works too. On Neon, use the owner role that Neon created with the project, such as `neondb_owner`.
-- Create the application role with this SQL, not in the Neon console. A role that the console creates is a member of `neon_superuser`, which can bypass RLS. R10 then stops the application.
+- `db/bootstrap.sql` runs before the first migration, against the API's own database. It runs as the owner of that database, and that role needs `CREATEROLE`. A superuser is not needed, but a superuser works too.
 - The script is safe to run again. A rerun sets the passwords given and changes nothing else. If either role is a superuser, can bypass RLS, can create databases or can create roles, the script stops and names the role and the attribute.
-- `ConnectionStrings:Messaging` is needed when `ConnectionStrings:Database` goes through a pooler in transaction mode, such as Neon's pooled endpoint. Wolverine's message store holds session-level advisory locks, so the setting then names a direct or session-mode connection of the application role.
+- `ConnectionStrings:Messaging` is needed when `ConnectionStrings:Database` goes through a pooler in transaction mode. Wolverine's message store holds session-level advisory locks, so the setting then names a direct or session-mode connection of the application role.
 - `ConnectionStrings:Migrations` names a direct connection of the owner role. Only the `migrate` command gets it (R3).
+
+### Railway
+
+The deployed API uses Railway's PostgreSQL template, one service per environment. `docs/deployment.md` at the repository root gives the steps and the connection formats.
+
+- The template runs the image `ghcr.io/railwayapp-templates/postgres-ssl:18`, with a volume. It creates the database `railway` and the superuser `postgres`.
+- Run `db/bootstrap.sql` as `postgres`, once per environment, with new passwords. The API never connects as `postgres`.
+- There is no pooler. `ConnectionStrings:Database` connects directly over the private network, so Wolverine uses it too. Do not set `ConnectionStrings:Messaging`.
+- Support scope: Railway's database support covers the template as Railway ships it. A database whose roles are changed through SQL leaves that scope, and `db/bootstrap.sql` creates roles through SQL. From then on, the database is ours to manage. Railway's support still helps with the platform: provisioning, volumes, networking, and the flows for backups and point-in-time recovery. Source: Railway docs, "Databases", "Database support scope".
+
+### Neon (alternative)
+
+Neon works too, because the API uses plain PostgreSQL. It is not the default, because the worker polls its PostgreSQL queue every second (`src/Api/Messaging/MessageStorage.cs`), so a Neon compute never suspends.
+
+- Run `db/bootstrap.sql` as the owner role that Neon created with the project, such as `neondb_owner`.
+- Create the application role with this SQL, not in the Neon console. A role that the console creates is a member of `neon_superuser`, which can bypass RLS. R10 then stops the application.
+- Give each environment its own Neon project or branch. A Neon branch starts as a copy of its parent, with the parent's data and role passwords. So do not branch staging from a production branch that holds data, and run `db/bootstrap.sql` on the new branch with new passwords.
+- Neon's pooled endpoint is a pooler in transaction mode. If `ConnectionStrings:Database` uses it, set `ConnectionStrings:Messaging` to the direct endpoint. `ConnectionStrings:Migrations` uses the direct endpoint too: its host name has no `-pooler`.
 
 ## Identity provider
 
@@ -37,7 +54,7 @@ On Clerk:
 ## Container platform
 
 - The process has two ports (section 8 of `ARCHITECTURE.md`). The public port, 8080, serves the API. The management port, 8081 (`Host:ManagementPort`), serves only `/health/live` and `/health/ready`. A worker opens only the management port. Route the platform's traffic to 8080 only.
-- Railway: `docs/deployment.md` at the repository root describes the deployment. `.railway/railway.ts` sets the health check and the variables. `PORT` is 8081, because Railway's health check uses `PORT`. The domain of `api-web` targets 8080.
+- Railway: `docs/deployment.md` at the repository root describes the deployment. `.railway/railway.ts` declares the PostgreSQL service and sets the health check and the variables. `PORT` is 8081, because Railway's health check uses `PORT`. The domain of `api-web` targets 8080.
 - The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead, on port 8081. The readiness path is `/health/ready` and the liveness path is `/health/live`.
 - Kubernetes: use `/health/ready` for the readiness probe and `/health/live` for the liveness probe, both on port 8081. The Service exposes only port 8080.
 - Set `runAsNonRoot: true`. Both images run as a numeric non-root user.

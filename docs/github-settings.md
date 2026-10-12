@@ -141,15 +141,16 @@ A release tag `vYYYY.0M.0D.N` names a version that ran in production. The job `t
 | Wait timer | `0`, on both | The approval is the only wait. | GitHub Docs: "Managing environments for deployment", "Wait timer" |
 | `can_admins_bypass` | `false`, on both | The setting lets an admin start a job that waits for a deployment protection rule, without the rule ("Start all waiting jobs"). With `false`, nobody skips the production approval. It matches section 3.4, which allows no bypass. | GitHub Docs: "Deployments and environments", "Allow administrators to bypass configured protection rules". GitHub Docs: "Reviewing deployments", "Bypassing deployment protection rules" |
 
-Each environment holds two secrets and one variable. Each value is different per environment. The script never sets or reads them.
+Each environment holds three secrets and one variable. Each value is different per environment. The script never sets or reads them.
 
 | Name | Kind | What it holds | Who sets it |
 | --- | --- | --- | --- |
 | `RAILWAY_TOKEN` | secret | A Railway project token for the Railway environment of the same name | The maintainer, with `gh secret set RAILWAY_TOKEN --env <environment>` |
 | `MIGRATIONS_CONNECTION_STRING` | secret | The owner role's direct connection to that environment's database, for the `migrate` command only (R3 in `apps/api/docs/ARCHITECTURE.md`) | The maintainer, with `gh secret set MIGRATIONS_CONNECTION_STRING --env <environment>` |
+| `MIGRATIONS_ROOT_CERTIFICATE` | secret | The root certificate of that environment's database server. The `migrate` command verifies the server's certificate against it. It is not confidential; as a secret, only an admin can change it | The maintainer, with `gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < <file>` |
 | `API_URL` | variable | The public URL of `api-web` in that environment. The smoke test of `deploy.yml` calls it | The maintainer, with `gh variable set API_URL --env <environment> --body <URL>` |
 
-A caller passes the two secrets to `deploy.yml` by name. The called job sets `environment`, so it gets that environment's values (GitHub Docs: "Reuse workflows", "Using inputs and secrets in a reusable workflow").
+A caller passes the three secrets to `deploy.yml` by name. The called job sets `environment`, so it gets that environment's values (GitHub Docs: "Reuse workflows", "Using inputs and secrets in a reusable workflow").
 
 `docs/deployment.md` gives the order of the first deployment and the format of each value.
 
