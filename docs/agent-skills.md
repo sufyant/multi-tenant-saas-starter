@@ -10,15 +10,16 @@ The skills of this repository live in `.claude/skills`. Each skill is a real fol
 
 ## 2. Rules
 
-- Add a skill only for a tool that this repository uses.
+- Keep a skill when the repository uses its tool today or has a planned place for it (an app folder, a written plan). Remove it when neither is true.
 - Never add a skill that contradicts a closed decision. Example: `clerk-orgs` is not here, because tenants, roles and permissions live in our tables, not in Clerk organizations (`apps/api/AGENTS.md`, closed decisions; rule T6).
 - Never commit a symlink or an `.agents/` folder. A symlink points at a folder outside the repository, so a fresh clone gets nothing.
 - Never edit the content of a skill. The next update replaces the whole folder, so a local change is lost.
 - The license of a skill must be MIT, Apache-2.0, BSD or ISC. The repository is public, so it redistributes these files.
+- A skill whose sample files fail dependency review is not committed. Dependency review in `ci.yml` reads every manifest in the repository, a sample `package.json` in a skill too.
 
-Why so few skills: the name and the description of every skill load into every agent session. A skill for a tool we do not use fills the context, and it can trigger on the wrong task (Claude Code docs, "Agent Skills": progressive disclosure).
+Why so few skills: the name and the description of every skill load into every agent session. A skill for a tool we do not use or plan fills the context, and it can trigger on the wrong task (Claude Code docs, "Agent Skills": progressive disclosure).
 
-CI checks the first and the third rule. The step "Check the agent skills" in the `node` job of `ci.yml` runs `scripts/ci/check-agent-skills.sh`. It fails when `.claude/skills` holds a symlink, a folder without `SKILL.md`, or folders that differ from the skills in `skills-lock.json`.
+CI checks the symlink rule. The step "Check the agent skills" in the `node` job of `ci.yml` runs `scripts/ci/check-agent-skills.sh`. It fails when `.claude/skills` holds a symlink, a folder without `SKILL.md`, or folders that differ from the skills in `skills-lock.json`.
 
 ## 3. The skills
 
@@ -30,6 +31,9 @@ CI checks the first and the third rule. The step "Check the agent skills" in the
 | `clerk-backend-api` | `clerk/skills` | MIT (declared, see below) | The API calls the Clerk Backend API (`ClerkIdentityProvider`). |
 | `clerk-testing` | `clerk/skills` | MIT (declared, see below) | The Playwright tests in `apps/web/e2e` run behind Clerk sign-in. |
 | `clerk-webhooks` | `clerk/skills` | MIT (declared, see below) | Clerk webhook events. The API has no webhook endpoint yet. |
+| `clerk-expo` | `clerk/skills` | MIT (declared, see below) | `apps/mobile` is planned, and `.gitignore` names Expo. |
+| `clerk-custom-ui` | `clerk/skills` | MIT (declared, see below) | The sign-in screens will carry the product's own look. |
+| `clerk-cli` | `clerk/skills` | MIT (declared, see below) | Clerk instance setup from the terminal, for the production instance. |
 | `resend` | `resend/resend-skills` | MIT (`LICENSE`) | The API sends email with Resend (`ResendEmailChannel`). |
 | `resend-cli` | `resend/resend-skills` | MIT (`LICENSE`) | Domains, logs and test emails from the terminal. |
 | `email-best-practices` | `resend/resend-skills` | MIT (`LICENSE`) | Deliverability, SPF, DKIM, DMARC and compliance. |
@@ -40,7 +44,21 @@ CI checks the first and the third rule. The step "Check the agent skills" in the
 
 The Clerk license: the repository `clerk/skills` has no `LICENSE` file. It declares MIT in its `README.md` ("License"), in `plugin.json` and in the frontmatter of each `SKILL.md` (`license: MIT`). The maintainer accepted this declaration in step 18j. If Clerk adds a `LICENSE` file, update this table.
 
-Not kept: the other Clerk skills (other frameworks, organizations, billing, custom UI, CLI, quickstart), `react-email` (the API sends email from .NET), `agent-email-inbox` (the API receives no email), `neon-postgres` (the database is Railway PostgreSQL), `theme-factory` and `mcp-builder` (they serve no part of the product).
+One kept skill has a dependency manifest: `clerk-nextjs-patterns/templates/nextjs-basic-auth/package.json`. Its versions are `latest`, and it passes dependency review.
+
+Not kept:
+
+- `clerk-orgs`: tenants, roles and permissions live in our tables, not in Clerk organizations (`apps/api/AGENTS.md`, closed decisions; rule T6).
+- `clerk-billing`: there is no billing (`apps/api/docs/ARCHITECTURE.md`, fixed rule 3).
+- `clerk-android`, `clerk-swift`: the planned mobile app is Expo, not native.
+- `clerk-astro-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-react-patterns`: no planned app uses these frameworks. The web, admin and marketing apps are Next.js, which `clerk-nextjs-patterns` covers. Their sample `package.json` files are manifests for dependency review. The one in `clerk-astro-patterns` failed it (`astro@^5.0.0`: one critical and two high advisories).
+- `clerk-quickstart`: `clerk-setup` covers the setup.
+- `react-email`: the API sends email from .NET, without React Email.
+- `agent-email-inbox`: the API receives no email.
+- `neon-postgres`: the database is Railway PostgreSQL, not Neon.
+- `theme-factory`, `mcp-builder`: they serve no part of the product.
+
+A removed skill is one command away if a need appears (section 4).
 
 ## 4. Add or update a skill
 

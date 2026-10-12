@@ -81,7 +81,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Agent skills
 
 - Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder.
-- Add a skill only for a tool this repository uses. `docs/agent-skills.md` lists them.
+- Add a skill only for a tool this repository uses or has a planned place for. `docs/agent-skills.md` lists them.
 
 ## Monorepo tasks
 
