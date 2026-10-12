@@ -1,5 +1,7 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using Api.Persistence;
+using Npgsql;
 using Tenancy;
 
 namespace Api.IntegrationTests;
@@ -82,6 +84,34 @@ public sealed class MigrationStepTests(Database database)
         var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // A failed migration stops the deploy. The process logs the failure once and exits on its own with the code 1, never through the
+    // runtime's abort: as PID 1 in a container, an abort can spin forever (Twelve-Factor IX and XII; Nygard, "Fail Fast").
+    [Fact]
+    public async Task Migrate_WithAWrongPassword_LogsTheFailureOnceAndExitsWithOne()
+    {
+        var wrongPassword = new NpgsqlConnectionStringBuilder(database.OwnerConnectionString) { Password = "wrong-password" };
+
+        var result = await MigrateCommand.RunWithinTheTimeLimitAsync(wrongPassword.ConnectionString);
+
+        result.Exited.ShouldBeTrue(result.Output);
+        result.ExitCode.ShouldBe(1, result.Output);
+        result.Output.ShouldContain("28P01: password authentication failed");
+        Regex.Count(result.Output, "Migration failed").ShouldBe(1, result.Output);
+        result.Output.ShouldNotContain("Unhandled exception");
+    }
+
+    [Fact]
+    public async Task Migrate_OnAHostThatDoesNotAnswer_LogsTheFailureOnceAndExitsWithOne()
+    {
+        var result = await MigrateCommand.RunWithinTheTimeLimitAsync(ApiProcess.HostThatDoesNotAnswer);
+
+        result.Exited.ShouldBeTrue(result.Output);
+        result.ExitCode.ShouldBe(1, result.Output);
+        result.Output.ShouldContain("Failed to connect to 127.0.0.1:1");
+        Regex.Count(result.Output, "Migration failed").ShouldBe(1, result.Output);
+        result.Output.ShouldNotContain("Unhandled exception");
     }
 
     [Fact]
