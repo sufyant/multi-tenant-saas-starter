@@ -44,6 +44,8 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ASPNETCORE_ENVIRONMENT` | Optional | `Production` | The environment. `Development` relaxes the settings marked above |
 | `ASPNETCORE_URLS` | Optional | `http://localhost:5000`. In the container image: port 8080 on all interfaces (the base image sets `ASPNETCORE_HTTP_PORTS=8080`) | The public address and port of the web process: the API, and in Development the OpenAPI document and Scalar. A worker opens no public port. Each process on one machine needs its own port |
 
+The API turns GSSAPI encryption off on every PostgreSQL connection, unless the connection string names `GSS Encryption Mode`: TLS protects the connection, and the image has no Kerberos library, so Npgsql's default makes each process print a false error.
+
 ## What Development relaxes
 
 - `Authentication:Clerk:AuthorizedParties` may be empty.

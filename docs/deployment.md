@@ -125,7 +125,12 @@ Set up `staging` first. Set up `production` later, when the product has users. U
 Do these steps in this order for one environment. In the commands, `<environment>` is `staging` or `production`.
 
 1. Create the Railway project once, if it does not exist. A new project has the environment `production`. Add the environment `staging` as an empty environment.
-2. Make two new passwords for the environment: one for `api_owner` and one for `api_application`. Keep them in a password manager. Never use a password of another environment (section 3).
+2. Make two new passwords for the environment: one for `api_owner` and one for `api_application`. Keep them in a password manager. Never use a password of another environment (section 3). On macOS, this command makes a password and copies it to the clipboard. It prints nothing. A hex password has no character that a connection string treats in a special way. Run it once for each password, and paste each into the password manager:
+
+   ```bash
+   openssl rand -hex 32 | pbcopy
+   ```
+
 3. In the Railway dashboard, open the shared variables of `<environment>`. Set each Railway shared variable of section 3. Set a secret as a sealed variable. Set a value in the Railway dashboard only, never in a file or a chat. `ConnectionStrings__Database` uses the application password of step 2, in the format of section 9. The database does not exist yet, but its private host is known.
 4. In the Railway project settings, create a project token for `<environment>`.
 5. Apply the GitHub settings. This creates both GitHub environments, the production reviewer and the ruleset for release tags. One run is enough for both environments:
@@ -145,21 +150,39 @@ Do these steps in this order for one environment. In the commands, `<environment
 
    The first plan creates `postgres`, `api-web` and `api-worker`. Railway attaches a volume to `postgres`. The API services get no image until the first deploy, so they do not start yet. Read section 7 before you apply a later plan.
 
-7. Turn on public access for the database. In the Railway dashboard, open `postgres` in `<environment>`, then Settings, Networking, and add "Public Access" (a TCP proxy) on port 5432. Railway shows a proxy domain and a port, for example `shuttle.proxy.rlwy.net:15140`. Note both. The bootstrap (step 10) and the `migrate` command of `deploy.yml` connect through it. Why by hand: the `postgres` helper of `railway/iac` accepts only a region, so `.railway/railway.ts` cannot hold a TCP proxy for it.
+7. Turn on public access for the database. In the Railway dashboard, open the `postgres` service in `<environment>`, then Settings. In the section Networking, open Public access and press Add Public Access. Add it on port 5432: this is a TCP proxy. Railway shows a proxy domain and a port, for example `shuttle.proxy.rlwy.net:15140`. Note both. The bootstrap (step 10) and the `migrate` command of `deploy.yml` connect through it. Why by hand: the `postgres` helper of `railway/iac` accepts only a region, so `.railway/railway.ts` cannot hold a TCP proxy for it.
 8. Check `postgres` in the dashboard: it runs in `europe-west4`, next to the API, from the image `ghcr.io/railwayapp-templates/postgres-ssl:18`, with a volume on `/var/lib/postgresql/data`.
-9. Download the root certificate of the environment's database (section 9). Reading the file changes nothing in the database:
+9. Download the root certificate of the environment's database (section 9). Reading the file changes nothing in the database.
+
+   `railway ssh` needs an SSH key that is registered with Railway (Railway docs, "railway ssh", "Manage SSH keys"). If the machine has no SSH key, make one first:
 
    ```bash
-   railway ssh --service postgres -- cat /var/lib/postgresql/data/certs/root.crt > <environment>-database-root.crt
+   ssh-keygen -t ed25519
+   ```
+
+   Register the public key with Railway. `<name>` names the machine, for example `laptop`:
+
+   ```bash
+   railway ssh keys add --key ~/.ssh/id_ed25519.pub --name <name>
+   ```
+
+   Write the certificate outside the repository, in a folder for the project's keys. `<project>` is the name of the project. Steps 10 and 12 read the file from this path:
+
+   ```bash
+   mkdir -p ~/<project>-keys
    ```
 
    ```bash
-   openssl x509 -in <environment>-database-root.crt -noout -subject -enddate
+   railway ssh --service postgres -- cat /var/lib/postgresql/data/certs/root.crt > ~/<project>-keys/<environment>-database-root.crt
+   ```
+
+   ```bash
+   openssl x509 -in ~/<project>-keys/<environment>-database-root.crt -noout -subject -enddate
    ```
 
    The second command prints `subject=CN=root-ca` and the end date.
 
-10. Run `apps/api/db/bootstrap.sql` once, as the template's superuser `postgres`, through the TCP proxy, from the repository root. Docker runs `psql` 18, so no local `psql` is needed. First read the three passwords. `read -s` does not echo them, and they never reach the shell history. The password of `postgres` is the variable `POSTGRES_PASSWORD` of the service `postgres` in the Railway dashboard. The other two are the passwords of step 2:
+10. Run `apps/api/db/bootstrap.sql` once, as the template's superuser `postgres`, through the TCP proxy, from the repository root. Docker runs `psql` 18, so no local `psql` is needed. First read the three passwords. `read -s` does not echo them, and they never reach the shell history. The password of `postgres` is in the Railway dashboard: the service `postgres`, Variables, `POSTGRES_PASSWORD`. Copy it. Do not press Regenerate. The other two are the passwords of step 2. The password of `api_application` must be the one in `ConnectionStrings__Database` (step 3). If it differs, the API cannot connect:
 
     ```bash
     printf 'Password of postgres: '; read -rs PGPASSWORD; echo
@@ -173,9 +196,20 @@ Do these steps in this order for one environment. In the commands, `<environment
     ```bash
     docker run --rm -e PGPASSWORD -e owner_password -e application_password \
       -v "$PWD/apps/api/db/bootstrap.sql:/bootstrap.sql:ro" \
-      -v "$PWD/<environment>-database-root.crt:/root.crt:ro" \
+      -v "$HOME/<project>-keys/<environment>-database-root.crt:/root.crt:ro" \
       postgres:18 sh -c 'exec psql "host=<proxy domain> port=<proxy port> dbname=railway user=postgres sslmode=verify-ca sslrootcert=/root.crt" -v owner_password="$owner_password" -v application_password="$application_password" -f /bootstrap.sql'
     ```
+
+    Then check the application role. The command connects as `api_application` through the proxy, with its password and `verify-ca`:
+
+    ```bash
+    PGPASSWORD="$application_password" docker run --rm -e PGPASSWORD \
+      -v "$HOME/<project>-keys/<environment>-database-root.crt:/root.crt:ro" \
+      postgres:18 psql "host=<proxy domain> port=<proxy port> dbname=railway user=api_application sslmode=verify-ca sslrootcert=/root.crt" \
+      -At -F ' | ' -c "select current_user, rolsuper, rolbypassrls from pg_roles where rolname = current_user"
+    ```
+
+    The expected output is `api_application | f | f`: the role can log in with the password of `ConnectionStrings__Database`, it is not a superuser, and it does not bypass RLS. If the output differs, stop and find the cause before the next step.
 
     ```bash
     unset PGPASSWORD owner_password application_password
@@ -199,23 +233,34 @@ Do these steps in this order for one environment. In the commands, `<environment
 
     The schedule keeps a daily backup for 6 days and a weekly backup for 27 days (Railway docs, "Backups"). Point-in-time recovery archives every WAL segment to a bucket `Postgres-PITR` and keeps about 4 weeks (Railway docs, "Point-in-Time Recovery"). Enabling it sets archive variables on `postgres` and redeploys it. Why by hand: `.railway/railway.ts` cannot hold them, because the `postgres` helper accepts only a region. Read section 7 before the next apply. Staging gets no backups: its data can be rebuilt.
 
-12. Store the three secrets in the GitHub environment. The first two commands prompt for the value and do not echo it. The third reads the file of step 9:
+12. Store the three secrets in the GitHub environment. The first command prompts for the token and does not echo it:
 
     ```bash
     gh secret set RAILWAY_TOKEN --env <environment>
     ```
 
+    `MIGRATIONS_CONNECTION_STRING` uses the owner password of step 2 and the proxy of step 7, in the format of section 9. `read -rs` reads the password without an echo. `printf` is a shell builtin, so the password is on no command line, and the history keeps only the variable's name. Replace `<proxy domain>` and `<proxy port>`:
+
     ```bash
-    gh secret set MIGRATIONS_CONNECTION_STRING --env <environment>
+    printf 'Password of api_owner: '; read -rs owner_password; echo
     ```
 
     ```bash
-    gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < <environment>-database-root.crt
+    printf 'Host=%s;Port=%s;Database=railway;Username=api_owner;Password=%s;SSL Mode=VerifyCA' \
+      '<proxy domain>' '<proxy port>' "$owner_password" | gh secret set MIGRATIONS_CONNECTION_STRING --env <environment>
     ```
 
-    `MIGRATIONS_CONNECTION_STRING` uses the owner password of step 2 and the proxy of step 7, in the format of section 9.
+    ```bash
+    unset owner_password
+    ```
 
-13. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain", port 8080. Do not accept port 8081: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain. Store the URL in the GitHub environment:
+    The last secret is the file of step 9:
+
+    ```bash
+    gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < ~/<project>-keys/<environment>-database-root.crt
+    ```
+
+13. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain". The target port of the domain is 8080. Port 8081 must never get a domain: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain. Store the URL in the GitHub environment:
 
     ```bash
     gh variable set API_URL --env <environment> --body https://<the generated domain>
