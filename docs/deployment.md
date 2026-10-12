@@ -245,6 +245,11 @@ Do these steps in this order for one environment. In the commands, `<environment
 
 `deploy.yml` then migrates the database, deploys the image and runs the smoke test. After the first production deploy, `tag-release` creates the first release tag.
 
+### Switches
+
+- `DEPLOY_STAGING`: `true` turns the staging deploy on. Without it, no deploy job and no tag job runs.
+- `DEPLOY_PRODUCTION`: `true` turns the production deploy and the release tag on. Set it only after production is set up, when the product has users. To stop the production deploys, delete it with `gh variable delete DEPLOY_PRODUCTION`.
+
 ## 5. Versions
 
 Each successful production deploy gets a release tag in Calendar Versioning: `vYYYY.0M.0D.N`, for example `v2026.10.11.1` (calver.org). The date is the UTC date of the deploy. `N` starts at 1 each day and counts the production deploys of that day.
@@ -295,7 +300,7 @@ pnpm railway:apply
 
 `railway:plan` changes nothing. `railway:apply` asks before it applies a destructive change.
 
-No setting differs between the environments today. If one must differ, the file can read `ctx.environment`.
+No setting in the file differs between the environments today. If one must differ, the file can read `ctx.environment`.
 
 Rules:
 
@@ -375,7 +380,7 @@ The template makes a new root certificate about every 27 months (the renewal abo
 
 After a renewal, the migration fails with "The remote certificate was rejected". Nothing was deployed. Download the new root certificate (section 4, step 9) and set `MIGRATIONS_ROOT_CERTIFICATE` again (section 4, step 12). The API services keep working, because `Require` does not check the root.
 
-After a restore, the private host, the proxy and the root certificate are new. Update `ConnectionStrings__Database`, `MIGRATIONS_CONNECTION_STRING` and `MIGRATIONS_ROOT_CERTIFICATE`.
+After a restore, the private host, the proxy and the root certificate are new. Update `ConnectionStrings__Database`, `MIGRATIONS_CONNECTION_STRING` and `MIGRATIONS_ROOT_CERTIFICATE`. The restored service has another name, so `.railway/railway.ts` does not declare it, and the next plan can remove or replace a database. Do not apply that plan. Report it, and change the file in a pull request first.
 
 ## 10. Deviations and known gaps
 

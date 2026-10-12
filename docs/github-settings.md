@@ -147,7 +147,7 @@ Each environment holds three secrets and one variable. Each value is different p
 | --- | --- | --- | --- |
 | `RAILWAY_TOKEN` | secret | A Railway project token for the Railway environment of the same name | The maintainer, with `gh secret set RAILWAY_TOKEN --env <environment>` |
 | `MIGRATIONS_CONNECTION_STRING` | secret | The owner role's direct connection to that environment's database, for the `migrate` command only (R3 in `apps/api/docs/ARCHITECTURE.md`) | The maintainer, with `gh secret set MIGRATIONS_CONNECTION_STRING --env <environment>` |
-| `MIGRATIONS_ROOT_CERTIFICATE` | secret | The root certificate of that environment's database server. The `migrate` command verifies the server's certificate against it. It is not confidential; as a secret, only an admin can change it | The maintainer, with `gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < <file>` |
+| `MIGRATIONS_ROOT_CERTIFICATE` | secret | The root certificate of that environment's database server. The `migrate` command verifies the server's certificate against it. The certificate is not confidential | The maintainer, with `gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < <file>` |
 | `API_URL` | variable | The public URL of `api-web` in that environment. The smoke test of `deploy.yml` calls it | The maintainer, with `gh variable set API_URL --env <environment> --body <URL>` |
 
 A caller passes the three secrets to `deploy.yml` by name. The called job sets `environment`, so it gets that environment's values (GitHub Docs: "Reuse workflows", "Using inputs and secrets in a reusable workflow").
