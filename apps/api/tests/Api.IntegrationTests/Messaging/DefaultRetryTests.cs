@@ -15,16 +15,19 @@ public sealed class DefaultRetryTests(Database database)
     [InlineData("worker")]
     public async Task HandleQueuedMessage_AlwaysFails_RetriesThreeTimesThenDeadLetters(string role)
     {
-        await using var host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["Host:Role"] = role });
+        var name = await database.CreateMigratedDatabaseAsync();
+        await database.CreateProbesAsync(name);
+        await using var host = await PipelineHost.StartAsync(new Dictionary<string, string?>
+        {
+            ["Host:Role"] = role, ["ConnectionStrings:Database"] = database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name),
+        });
         var command = new RetryProbe(Guid.NewGuid());
 
-        var session = await host.Host.TrackActivity().IncludeExternalTransports().DoNotAssertOnExceptionsDetected()
-            .SendMessageAndWaitAsync(command);
+        await host.Host.MessageBus().SendAsync(command);
+        await Waiting.UntilAsync(async () => await database.ScalarAsync<long>(
+            $"SELECT count(*) FROM wolverine.wolverine_dead_letters WHERE message_type = 'Api.IntegrationTests.Fixtures.RetryProbe' AND position(convert_to('{command.Id}', 'UTF8') in body) > 0", database: name) == 1);
 
         host.Services.GetRequiredService<RetryAttempts>().Count(command.Id).ShouldBe(4);
-        session.Executed.MessagesOf<RetryProbe>().ShouldNotBeEmpty();
-        await Waiting.UntilAsync(async () => await database.ScalarAsync<long>(
-            $"SELECT count(*) FROM wolverine.wolverine_dead_letters WHERE position(convert_to('{command.Id}', 'UTF8') in body) > 0") == 1);
     }
 
     [Fact]
