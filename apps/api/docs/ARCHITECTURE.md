@@ -157,7 +157,7 @@ These ten rules come from a spike. The spike is in `apps/api/spikes/WolverineRls
 The claim expires after one minute so a crashed caller does not hold a key forever.
 An expired, unfinished claim can be taken again only when no live handler holds its row lock.
 Its new lease fences the old handler: if that handler can no longer update its claim, its whole transaction rolls back.
-The prototype and the production HTTP tests verify this transaction boundary.
+`CreateTenant_CommitFailsAfterTheResultWrite_RollsBackTheTenantAndResult` verifies this transaction boundary on the production code.
 
 Sources: [Stripe](https://docs.stripe.com/api/idempotent_requests), [Brandur Leach](https://brandur.org/idempotency-keys), [IETF draft 07](https://greenbytes.de/tech/specs/draft-ietf-httpapi-idempotency-key-header-07.html), [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2).
 
