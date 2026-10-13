@@ -11,14 +11,14 @@ using Wolverine;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>catalog</c> schema: the control plane's data above tenants (tenants, users, roles, system admins), and the memberships,
+/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, users, roles, system admins), and the memberships,
 /// invitations and tenant creation sagas, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public only because Wolverine's generated code creates it for the handlers (W9); its sets are internal to the module.</remarks>
-public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options, IMessageContext? messaging = null)
+public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
     : TenantDbContext(options, messaging)
 {
-    public const string Schema = "catalog";
+    public const string Schema = "control_plane";
 
     internal DbSet<Tenant> Tenants => Set<Tenant>();
 
@@ -32,7 +32,7 @@ public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options,
 
     internal DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
 
-    internal DbSet<TenantCreationSaga> TenantOnboardings => Set<TenantCreationSaga>();
+    internal DbSet<TenantCreationSaga> TenantCreationSagas => Set<TenantCreationSaga>();
 
     internal DbSet<TenantCreationRequest> TenantCreationRequests => Set<TenantCreationRequest>();
 

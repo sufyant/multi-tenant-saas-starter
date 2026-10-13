@@ -11,7 +11,7 @@ public sealed class CatalogPrivilegeTests(Database database)
     public async Task ReadTableOwners_CatalogSchema_AreAllTheOwnerRole()
     {
         var owners = await QueryAsync<string>(
-            DatabaseRoles.Application, "SELECT DISTINCT tableowner FROM pg_tables WHERE schemaname = 'catalog'");
+            DatabaseRoles.Application, "SELECT DISTINCT tableowner FROM pg_tables WHERE schemaname = 'control_plane'");
 
         owners.ShouldBe([DatabaseRoles.Owner]);
     }

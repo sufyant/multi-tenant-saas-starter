@@ -105,7 +105,7 @@ internal sealed class TwoWorkers : IAsyncDisposable
         Waiting.UntilAsync(async () => await OnboardingStateAsync(tenantId) == state);
 
     public Task<string?> OnboardingStateAsync(Guid tenantId) =>
-        _database.ScalarAsSuperuserAsync<string>($"SELECT state FROM catalog.tenant_onboardings WHERE id = '{tenantId}'", DatabaseName);
+        _database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", DatabaseName);
 
     public Task<long> DeadLettersAsync() =>
         _database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM wolverine.wolverine_dead_letters", DatabaseName);
@@ -118,8 +118,8 @@ internal sealed class TwoWorkers : IAsyncDisposable
         var externalId = $"user_{Guid.NewGuid():N}";
         await database.ScalarAsSuperuserAsync<object>(
             $"""
-            INSERT INTO catalog.users (id, external_id) VALUES ('{Guid.NewGuid()}', '{externalId}');
-            INSERT INTO catalog.system_admins (user_id, granted_at) SELECT id, now() FROM catalog.users WHERE external_id = '{externalId}';
+            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', '{externalId}');
+            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}';
             """,
             databaseName);
 

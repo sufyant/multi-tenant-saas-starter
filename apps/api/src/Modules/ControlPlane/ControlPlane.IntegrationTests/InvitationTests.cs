@@ -19,12 +19,12 @@ public sealed class InvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, invitee);
 
-        accepted.Value.ShouldBe(new TenantSummary(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM catalog.tenants WHERE id = '{tenantId}'")));
+        accepted.Value.ShouldBe(new TenantSummary(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'")));
         (await FindMembershipAsync(tenantId, invitee)).ShouldNotBeNull();
         (await ScalarAsync<string>(
             $"""
-            SELECT roles.built_in FROM catalog.memberships
-            JOIN catalog.users ON users.id = memberships.user_id JOIN catalog.roles ON roles.id = memberships.role_id
+            SELECT roles.built_in FROM control_plane.memberships
+            JOIN control_plane.users ON users.id = memberships.user_id JOIN control_plane.roles ON roles.id = memberships.role_id
             WHERE users.external_id = '{invitee}'
             """)).ShouldBe("Owner");
     }
@@ -41,7 +41,7 @@ public sealed class InvitationTests(Database database)
         await Handlers.AcceptAsync(database.Services, code, invitee.ExternalId);
 
         (await FindMembershipAsync(tenantId, invitee.ExternalId)).ShouldNotBeNull();
-        (await ScalarAsync<long>($"SELECT count(*) FROM catalog.users WHERE external_id = '{invitee.ExternalId}'")).ShouldBe(1);
+        (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee.ExternalId}'")).ShouldBe(1);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class InvitationTests(Database database)
         var accepted = await Handlers.AcceptAsync(database.Services, code, stranger);
 
         accepted.Error.Code.ShouldBe("invitation.email_mismatch");
-        (await ScalarAsync<long>($"SELECT count(*) FROM catalog.users WHERE external_id = '{stranger}'")).ShouldBe(0);
+        (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{stranger}'")).ShouldBe(0);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class InvitationTests(Database database)
     public async Task AcceptInvitation_Cancelled_IsNotFound()
     {
         var (tenantId, email, code) = await InviteOwnerAsync();
-        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM catalog.invitations WHERE tenant_id = '{tenantId}'");
+        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
         await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
         var invitee = Unique.ExternalId();
         database.Identity.AddAccount(invitee, email);

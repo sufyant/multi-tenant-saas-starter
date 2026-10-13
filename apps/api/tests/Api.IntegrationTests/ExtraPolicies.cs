@@ -6,6 +6,6 @@ internal static class ExtraPolicies
 {
     public static readonly IReadOnlyList<(string Table, string Name, string Command)> Policies =
     [
-        ("catalog.memberships", "own_memberships", "SELECT"),
+        ("control_plane.memberships", "own_memberships", "SELECT"),
     ];
 }

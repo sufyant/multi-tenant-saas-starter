@@ -3,7 +3,6 @@ using System;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,20 +10,62 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace ControlPlane.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(CatalogDbContext))]
-    [Migration("20261009075343_IsolateMembershipsAndInvitations")]
-    partial class IsolateMembershipsAndInvitations
+    [DbContext(typeof(ControlPlaneDbContext))]
+    partial class ControlPlaneDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("catalog")
+                .HasDefaultSchema("control_plane")
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("ControlPlane.Application.Tenants.TenantCreation.TenantCreationSaga", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<TimeSpan>("CancellationTimeout")
+                        .HasColumnType("interval")
+                        .HasColumnName("cancellation_timeout");
+
+                    b.Property<TimeSpan>("InvitationEmailTimeout")
+                        .HasColumnType("interval")
+                        .HasColumnName("invitation_email_timeout");
+
+                    b.Property<Guid>("InvitationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invitation_id");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tenant_creation_sagas");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_tenant_creation_sagas_tenant_id");
+
+                    b.ToTable("tenant_creation_sagas", "control_plane");
+                });
 
             modelBuilder.Entity("ControlPlane.Domain.Invitations.Invitation", b =>
                 {
@@ -98,7 +139,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_invitations_token_hash");
 
-                    b.ToTable("invitations", "catalog");
+                    b.ToTable("invitations", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
@@ -122,7 +163,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_roles");
 
-                    b.ToTable("roles", "catalog");
+                    b.ToTable("roles", "control_plane");
 
                     b.HasData(
                         new
@@ -155,17 +196,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("granted_at");
 
-                    b.Property<Guid?>("GrantedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("granted_by");
-
                     b.HasKey("UserId")
                         .HasName("pk_system_admins");
 
-                    b.HasIndex("GrantedBy")
-                        .HasDatabaseName("ix_system_admins_granted_by");
-
-                    b.ToTable("system_admins", "catalog");
+                    b.ToTable("system_admins", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
@@ -193,7 +227,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_memberships_user_id");
 
-                    b.ToTable("memberships", "catalog");
+                    b.ToTable("memberships", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
@@ -201,6 +235,17 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("cancellation_reason");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -221,7 +266,41 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_tenants_slug");
 
-                    b.ToTable("tenants", "catalog");
+                    b.ToTable("tenants", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantCreationRequest", b =>
+                {
+                    b.Property<Guid>("SystemAdminId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("system_admin_id");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("SystemAdminId", "IdempotencyKey")
+                        .HasName("pk_tenant_creation_requests");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_tenant_creation_requests_tenant_id");
+
+                    b.ToTable("tenant_creation_requests", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -243,7 +322,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_external_id");
 
-                    b.ToTable("users", "catalog");
+                    b.ToTable("users", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Invitations.Invitation", b =>
@@ -279,12 +358,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("GrantedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_system_admins_users_granted_by");
-
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithOne()
                         .HasForeignKey("ControlPlane.Domain.SystemAdmins.SystemAdmin", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -314,6 +387,23 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantCreationRequest", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("SystemAdminId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_creation_requests_users_system_admin_id");
+
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_creation_requests_tenants_tenant_id");
                 });
 #pragma warning restore 612, 618
         }

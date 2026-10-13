@@ -4,7 +4,6 @@ using ControlPlane.Infrastructure;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,16 +65,16 @@ public sealed class Database : IAsyncLifetime
         return name;
     }
 
-    // A database set up the way a deployment is, then with the catalog's last migration undone: the state after a deploy that brings
-    // a new migration, before its migration step has run.
-    public async Task<string> CreateDatabaseWithoutTheLastCatalogMigrationAsync()
+    // A database set up the way a deployment is, then with ControlPlane's last migration taken out of its history: what the application
+    // sees after a deploy that brings a new migration, before its migration step has run.
+    public async Task<string> CreateDatabaseWithoutTheLastControlPlaneMigrationAsync()
     {
         var name = await CreateMigratedDatabaseAsync();
-        await using var catalog = new CatalogDbContext(
-            TenancyServiceCollectionExtensions.ModuleDbContextOptions<CatalogDbContext>(
-                CatalogDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
-        var migrations = catalog.Database.GetMigrations().ToList();
-        await catalog.GetService<IMigrator>().MigrateAsync(migrations[^2]);
+        await using var controlPlane = new ControlPlaneDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<ControlPlaneDbContext>(
+                ControlPlaneDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        var last = controlPlane.Database.GetMigrations().Last();
+        await controlPlane.Database.ExecuteSqlAsync($"DELETE FROM control_plane.__ef_migrations_history WHERE migration_id = {last}");
 
         return name;
     }

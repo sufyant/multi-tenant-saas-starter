@@ -17,12 +17,12 @@ public sealed class OwnMembershipsPolicyTests(Database database)
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
         await _catalog.AddMemberAsync(first.Id);
 
-        var own = await database.ScalarAsUserAsync<long>(userId, $"SELECT count(*) FROM catalog.memberships WHERE user_id = '{userId}'");
-        var others = await database.ScalarAsUserAsync<long>(userId, $"SELECT count(*) FROM catalog.memberships WHERE user_id <> '{userId}'");
+        var own = await database.ScalarAsUserAsync<long>(userId, $"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'");
+        var others = await database.ScalarAsUserAsync<long>(userId, $"SELECT count(*) FROM control_plane.memberships WHERE user_id <> '{userId}'");
 
         own.ShouldBe(2);
         others.ShouldBe(0);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM catalog.memberships WHERE tenant_id = '{first.Id}'")).ShouldBe(2);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{first.Id}'")).ShouldBe(2);
     }
 
     [Fact]
@@ -33,10 +33,10 @@ public sealed class OwnMembershipsPolicyTests(Database database)
 
         var insert = () => database.ExecuteAsUserAsync(
             userId,
-            $"INSERT INTO catalog.memberships (tenant_id, user_id, role_id) SELECT '{tenant.Id}', '{userId}', id FROM catalog.roles WHERE built_in = 'Owner'");
+            $"INSERT INTO control_plane.memberships (tenant_id, user_id, role_id) SELECT '{tenant.Id}', '{userId}', id FROM control_plane.roles WHERE built_in = 'Owner'");
 
         (await insert.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM catalog.memberships WHERE user_id = '{userId}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'")).ShouldBe(0);
     }
 
     [Fact]
@@ -47,11 +47,11 @@ public sealed class OwnMembershipsPolicyTests(Database database)
 
         var changed = await database.ExecuteAsUserAsync(
             userId,
-            $"UPDATE catalog.memberships SET role_id = (SELECT id FROM catalog.roles WHERE built_in = 'Owner') WHERE user_id = '{userId}'");
+            $"UPDATE control_plane.memberships SET role_id = (SELECT id FROM control_plane.roles WHERE built_in = 'Owner') WHERE user_id = '{userId}'");
 
         changed.ShouldBe(0);
         (await database.ScalarAsSuperuserAsync<string>(
-            $"SELECT roles.built_in FROM catalog.memberships JOIN catalog.roles ON roles.id = memberships.role_id WHERE user_id = '{userId}'"))
+            $"SELECT roles.built_in FROM control_plane.memberships JOIN control_plane.roles ON roles.id = memberships.role_id WHERE user_id = '{userId}'"))
             .ShouldBe("Member");
     }
 
@@ -61,10 +61,10 @@ public sealed class OwnMembershipsPolicyTests(Database database)
         var (user, userId) = await UserAsync();
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
 
-        var changed = await database.ExecuteAsUserAsync(userId, $"DELETE FROM catalog.memberships WHERE user_id = '{userId}'");
+        var changed = await database.ExecuteAsUserAsync(userId, $"DELETE FROM control_plane.memberships WHERE user_id = '{userId}'");
 
         changed.ShouldBe(0);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM catalog.memberships WHERE user_id = '{userId}'")).ShouldBe(1);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'")).ShouldBe(1);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public sealed class OwnMembershipsPolicyTests(Database database)
         var (user, userId) = await UserAsync();
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
 
-        var seen = await database.ScalarAsync<long>($"SELECT count(*) FROM catalog.memberships WHERE user_id = '{userId}'");
+        var seen = await database.ScalarAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'");
 
         seen.ShouldBe(0);
     }

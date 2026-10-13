@@ -9,7 +9,7 @@ namespace Api.IntegrationTests;
 // Migrations run as a separate step after the bootstrap script, never on application start.
 public sealed class MigrationStepTests(Database database)
 {
-    private const string CatalogExists = "SELECT to_regclass('catalog.tenants') IS NOT NULL";
+    private const string ControlPlaneExists = "SELECT to_regclass('control_plane.tenants') IS NOT NULL";
     private const string MessageStorageExists = "SELECT to_regclass('wolverine.wolverine_incoming_envelopes') IS NOT NULL";
 
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
@@ -22,7 +22,7 @@ public sealed class MigrationStepTests(Database database)
         var start = () => api.CreateClient();
 
         start.ShouldThrow<InvalidOperationException>().Message.ShouldContain("run `dotnet Api.dll migrate`");
-        (await database.ScalarAsync<bool>(CatalogExists, database: empty)).ShouldBeFalse();
+        (await database.ScalarAsync<bool>(ControlPlaneExists, database: empty)).ShouldBeFalse();
         (await database.ScalarAsync<bool>(MessageStorageExists, database: empty)).ShouldBeFalse();
     }
 
@@ -31,7 +31,7 @@ public sealed class MigrationStepTests(Database database)
     [Fact]
     public async Task StartApplication_OnADatabaseMissingAModulesLastMigration_FailsNamingTheModuleAndSayingToMigrate()
     {
-        var behind = await database.CreateDatabaseWithoutTheLastCatalogMigrationAsync();
+        var behind = await database.CreateDatabaseWithoutTheLastControlPlaneMigrationAsync();
         await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, behind));
 
         var start = () => api.CreateClient();
@@ -50,7 +50,7 @@ public sealed class MigrationStepTests(Database database)
         var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, empty));
 
         exitCode.ShouldBe(0, output);
-        (await OwnerOfAsync("catalog", "tenants", empty)).ShouldBe(DatabaseRoles.Owner);
+        (await OwnerOfAsync("control_plane", "tenants", empty)).ShouldBe(DatabaseRoles.Owner);
         (await OwnerOfAsync("wolverine", "wolverine_incoming_envelopes", empty)).ShouldBe(DatabaseRoles.Owner);
         (await OwnerOfAsync("wolverine", "wolverine_queue_messages", empty)).ShouldBe(DatabaseRoles.Owner);
         (await OwnerOfAsync("wolverine", "wolverine_queue_messages_scheduled", empty)).ShouldBe(DatabaseRoles.Owner);
@@ -66,10 +66,10 @@ public sealed class MigrationStepTests(Database database)
         var again = await MigrateCommand.RunAsync(owner);
 
         first.ExitCode.ShouldBe(0, first.Output);
-        first.Output.ShouldContain("Migrated the catalog schema:");
+        first.Output.ShouldContain("Migrated the control_plane schema:");
         first.Output.ShouldContain("Migrated the audit schema:");
-        first.Output.ShouldContain("Migration finished: the schemas catalog, audit and the message storage in wolverine are up to date");
-        again.Output.ShouldContain("Migrated the catalog schema: 0 migrations applied");
+        first.Output.ShouldContain("Migration finished: the schemas control_plane, audit and the message storage in wolverine are up to date");
+        again.Output.ShouldContain("Migrated the control_plane schema: 0 migrations applied");
         again.Output.ShouldContain("Migrated the audit schema: 0 migrations applied");
     }
 

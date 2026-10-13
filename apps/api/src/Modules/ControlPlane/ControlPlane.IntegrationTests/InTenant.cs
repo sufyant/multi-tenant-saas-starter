@@ -40,9 +40,9 @@ internal static class InTenant
     }
 
     // The scope's message carries the tenant, the way Wolverine hands the message context to the DbContext it creates.
-    public static CatalogDbContext Catalog(AsyncServiceScope scope, Guid tenantId)
+    public static ControlPlaneDbContext Catalog(AsyncServiceScope scope, Guid tenantId)
     {
         scope.ServiceProvider.GetRequiredService<IMessageContext>().TenantId = tenantId.ToString();
-        return scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        return scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>();
     }
 }

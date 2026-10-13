@@ -7,11 +7,11 @@ internal static class TablesWithoutTenant
     // ControlPlane's data above tenants.
     public static readonly IReadOnlySet<string> Tables = new HashSet<string>(StringComparer.Ordinal)
     {
-        "catalog.tenants",
-        "catalog.users",
-        "catalog.roles",
-        "catalog.system_admins",
-        "catalog.tenant_creation_requests",
+        "control_plane.tenants",
+        "control_plane.users",
+        "control_plane.roles",
+        "control_plane.system_admins",
+        "control_plane.tenant_creation_requests",
     };
 
     // Every table in these schemas: Wolverine's message storage.

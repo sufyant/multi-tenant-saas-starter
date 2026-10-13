@@ -36,7 +36,7 @@ internal sealed class SystemAdminSettings
                 return ValidateOptionsResult.Success;
             }
 
-            return scope.ServiceProvider.GetRequiredService<CatalogDbContext>().SystemAdmins.Any()
+            return scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().SystemAdmins.Any()
                 ? ValidateOptionsResult.Success
                 : ValidateOptionsResult.Fail($"{Key} must name the email address of the first system admin while the staff list is empty.");
         }

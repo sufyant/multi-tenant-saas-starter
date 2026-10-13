@@ -29,7 +29,7 @@ public sealed class TenantOnboardingTests(Database database)
 
         started.Result.Value.ShouldBe(new TenantDetails(tenantId, "Acme Ltd", slug, "Provisioning"));
         var activate = started.Activate.ShouldNotBeNull().Message;
-        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM catalog.invitations WHERE tenant_id = '{tenantId}'");
+        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
         activate.ShouldSatisfyAllConditions(
             step => step.TenantId.ShouldBe(tenantId),
             step => step.InvitationId.ShouldBe(invitationId),
@@ -37,11 +37,11 @@ public sealed class TenantOnboardingTests(Database database)
             step => Handlers.TenantIdOf(Handlers.CodeOf(step.Link)).ShouldBe(tenantId));
         started.Timeout.ShouldBe(new ActivationTimedOut(tenantId, TimeSpan.FromMinutes(10)));
         (await StatusOfAsync(tenantId)).ShouldBe("Provisioning");
-        (await ScalarAsync<string>($"SELECT state FROM catalog.tenant_onboardings WHERE id = '{tenantId}' AND tenant_id = '{tenantId}'"))
+        (await ScalarAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}' AND tenant_id = '{tenantId}'"))
             .ShouldBe("Activating");
         (await ScalarAsync<long>(
             $"""
-            SELECT count(*) FROM catalog.invitations JOIN catalog.roles ON roles.id = invitations.role_id
+            SELECT count(*) FROM control_plane.invitations JOIN control_plane.roles ON roles.id = invitations.role_id
             WHERE invitations.id = '{invitationId}' AND invitations.email = '{owner}' AND invitations.status = 'Pending'
               AND roles.built_in = 'Owner' AND invitations.invited_by = '{admin.Id}'
             """)).ShouldBe(1);
@@ -57,7 +57,7 @@ public sealed class TenantOnboardingTests(Database database)
         var started = await Handlers.StartOnboardingAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
 
         var secret = Handlers.SecretOf(Handlers.CodeOf(started.Activate.ShouldNotBeNull().Message.Link));
-        (await ScalarAsync<string>($"SELECT token_hash FROM catalog.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
+        (await ScalarAsync<string>($"SELECT token_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
     }
 
     // The steps it starts carry the saga's id on their envelopes, so the fault of one that fails for good finds the saga.
@@ -103,7 +103,7 @@ public sealed class TenantOnboardingTests(Database database)
         await firstTransaction.CommitAsync(Cancellation);
 
         (await second).Error.Code.ShouldBe("tenant.slug_taken");
-        (await ScalarAsync<long>($"SELECT count(*) FROM catalog.tenants WHERE slug = '{slug}'")).ShouldBe(1);
+        (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 
     [Fact]
@@ -157,8 +157,8 @@ public sealed class TenantOnboardingTests(Database database)
 
         cancelled.ShouldBe(new CancelTenantReply(tenantId));
         (await StatusOfAsync(tenantId)).ShouldBe("Cancelled");
-        (await ScalarAsync<string>($"SELECT cancellation_reason FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
-        (await ScalarAsync<string>($"SELECT status FROM catalog.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
+        (await ScalarAsync<string>($"SELECT cancellation_reason FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public sealed class TenantOnboardingTests(Database database)
         var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "another_reason"));
 
         cancelled.ShouldBe(new CancelTenantReply(tenantId));
-        (await ScalarAsync<string>($"SELECT cancellation_reason FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
+        (await ScalarAsync<string>($"SELECT cancellation_reason FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
     }
 
     // The activation is the pivot: an active tenant is never cancelled. The compensation changes nothing and reports nothing, so the
@@ -185,8 +185,8 @@ public sealed class TenantOnboardingTests(Database database)
 
         cancelled.ShouldBeNull();
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
-        (await ScalarAsync<bool>($"SELECT cancellation_reason IS NULL FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBeTrue();
-        (await ScalarAsync<string>($"SELECT status FROM catalog.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
+        (await ScalarAsync<bool>($"SELECT cancellation_reason IS NULL FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBeTrue();
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public sealed class TenantOnboardingTests(Database database)
         await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
         await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
 
-        (await ScalarAsync<string>($"SELECT status FROM catalog.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
     }
 
@@ -228,8 +228,8 @@ public sealed class TenantOnboardingTests(Database database)
 
         await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, ready.InvitationId));
 
-        (await ScalarAsync<string>($"SELECT status FROM catalog.invitations WHERE id = '{ready.InvitationId}'")).ShouldBe("Accepted");
-        (await ScalarAsync<long>($"SELECT count(*) FROM catalog.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{ready.InvitationId}'")).ShouldBe("Accepted");
+        (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }
 
     private async Task<(Guid TenantId, Guid InvitationId)> StartAsync()
@@ -274,7 +274,7 @@ public sealed class TenantOnboardingTests(Database database)
         }
     }
 
-    private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM catalog.tenants WHERE id = '{tenantId}'");
+    private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
 
     private static string Sha256(string secret) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
 

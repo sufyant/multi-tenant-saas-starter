@@ -10,24 +10,24 @@ internal static class TenantTables
         ["audit.entries"] = new(
             ApplicationMayUpdate: false,
             tenant => $"INSERT INTO audit.entries (id, occurred_at, actor_id, kind, operation, tenant_id) VALUES (gen_random_uuid(), now(), 'user_isolation', 'Command', 'Isolation', '{tenant}')"),
-        ["catalog.invitations"] = new(
+        ["control_plane.invitations"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""
-                WITH inviter AS (INSERT INTO catalog.users (id, external_id) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid()) RETURNING id)
-                INSERT INTO catalog.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, status)
+                WITH inviter AS (INSERT INTO control_plane.users (id, external_id) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid()) RETURNING id)
+                INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, status)
                 SELECT gen_random_uuid(), '{tenant}', 'invited@example.com', roles.id, inviter.id, now(), now() + interval '7 days', 'Pending'
-                FROM inviter, catalog.roles WHERE roles.built_in = 'Member'
+                FROM inviter, control_plane.roles WHERE roles.built_in = 'Member'
                 """),
-        ["catalog.memberships"] = new(
+        ["control_plane.memberships"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""
-                WITH member AS (INSERT INTO catalog.users (id, external_id) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid()) RETURNING id)
-                INSERT INTO catalog.memberships (tenant_id, user_id, role_id)
-                SELECT '{tenant}', member.id, roles.id FROM member, catalog.roles WHERE roles.built_in = 'Member'
+                WITH member AS (INSERT INTO control_plane.users (id, external_id) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid()) RETURNING id)
+                INSERT INTO control_plane.memberships (tenant_id, user_id, role_id)
+                SELECT '{tenant}', member.id, roles.id FROM member, control_plane.roles WHERE roles.built_in = 'Member'
                 """),
-        ["catalog.tenant_onboardings"] = new(
+        ["control_plane.tenant_creation_sagas"] = new(
             ApplicationMayUpdate: true,
-            tenant => $"INSERT INTO catalog.tenant_onboardings (id, tenant_id, state, invitation_id, invitation_email_timeout, cancellation_timeout, version) VALUES (gen_random_uuid(), '{tenant}', 'Activating', gen_random_uuid(), interval '2 hours', interval '10 minutes', 0)"),
+            tenant => $"INSERT INTO control_plane.tenant_creation_sagas (id, tenant_id, state, invitation_id, invitation_email_timeout, cancellation_timeout, version) VALUES (gen_random_uuid(), '{tenant}', 'Activating', gen_random_uuid(), interval '2 hours', interval '10 minutes', 0)"),
         ["probes.probes"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO probes.probes (id, value, tenant_id) VALUES (gen_random_uuid(), 'isolation', '{tenant}')"),

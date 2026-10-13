@@ -11,22 +11,22 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace ControlPlane.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(CatalogDbContext))]
-    [Migration("20261010192104_RemoveSystemAdminGrantedBy")]
-    partial class RemoveSystemAdminGrantedBy
+    [DbContext(typeof(ControlPlaneDbContext))]
+    [Migration("20261013150357_InitialControlPlane")]
+    partial class InitialControlPlane
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("catalog")
+                .HasDefaultSchema("control_plane")
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ControlPlane.Application.Tenants.TenantOnboarding", b =>
+            modelBuilder.Entity("ControlPlane.Application.Tenants.TenantCreation.TenantCreationSaga", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -62,12 +62,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("Id")
-                        .HasName("pk_tenant_onboardings");
+                        .HasName("pk_tenant_creation_sagas");
 
                     b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_tenant_onboardings_tenant_id");
+                        .HasDatabaseName("ix_tenant_creation_sagas_tenant_id");
 
-                    b.ToTable("tenant_onboardings", "catalog");
+                    b.ToTable("tenant_creation_sagas", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Invitations.Invitation", b =>
@@ -142,7 +142,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_invitations_token_hash");
 
-                    b.ToTable("invitations", "catalog");
+                    b.ToTable("invitations", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
@@ -166,7 +166,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_roles");
 
-                    b.ToTable("roles", "catalog");
+                    b.ToTable("roles", "control_plane");
 
                     b.HasData(
                         new
@@ -202,7 +202,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("UserId")
                         .HasName("pk_system_admins");
 
-                    b.ToTable("system_admins", "catalog");
+                    b.ToTable("system_admins", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
@@ -230,7 +230,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_memberships_user_id");
 
-                    b.ToTable("memberships", "catalog");
+                    b.ToTable("memberships", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
@@ -269,7 +269,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_tenants_slug");
 
-                    b.ToTable("tenants", "catalog");
+                    b.ToTable("tenants", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantCreationRequest", b =>
@@ -303,7 +303,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_tenant_creation_requests_tenant_id");
 
-                    b.ToTable("tenant_creation_requests", "catalog");
+                    b.ToTable("tenant_creation_requests", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -325,7 +325,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_external_id");
 
-                    b.ToTable("users", "catalog");
+                    b.ToTable("users", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Invitations.Invitation", b =>

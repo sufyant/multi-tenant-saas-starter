@@ -76,11 +76,11 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
         created.StatusCode.ShouldBe(HttpStatusCode.OK);
         var tenant = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
-        tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM catalog.tenants WHERE slug = '{slug}'"));
+        tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);
         tenant.GetProperty("status").GetString().ShouldBe("Provisioning");
-        (await database.ScalarAsync<string>($"SELECT name FROM catalog.tenants WHERE slug = '{slug}'")).ShouldBe("Acme Ltd");
+        (await database.ScalarAsync<string>($"SELECT name FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe("Acme Ltd");
     }
 
     // T5: the system door is /v1/system; the old path is gone.
@@ -187,7 +187,7 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency_key_invalid");
-        (await CountAsync($"SELECT count(*) FROM catalog.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
     }
 
     public static TheoryData<string> InvalidIdempotencyKeys => ["", "has space", "tab\there", "ключ", new string('k', 256)];
@@ -233,8 +233,8 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
         var tenantId = await IdOfAsync(first);
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await IdOfAsync(again)).ShouldBe(tenantId);
-        (await CountAsync($"SELECT count(*) FROM catalog.tenants WHERE slug = '{slug}'")).ShouldBe(1);
-        (await CountAsync($"SELECT count(*) FROM catalog.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
+        (await CountAsync($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }
 
     [Fact]
@@ -249,7 +249,7 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
 
         reused.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
         (await reused.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency_key_reused");
-        (await CountAsync($"SELECT count(*) FROM catalog.tenants WHERE slug = '{otherSlug}'")).ShouldBe(0);
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{otherSlug}'")).ShouldBe(0);
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
 
         created.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
         (await IdOfAsync(created[0])).ShouldBe(await IdOfAsync(created[1]));
-        (await CountAsync($"SELECT count(*) FROM catalog.tenants WHERE slug = '{slug}'")).ShouldBe(1);
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 
     // A key belongs to the system admin who sent it.
@@ -294,5 +294,5 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
 
     private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
 
-    private Task<string?> StatusOfAsync(string slug) => database.ScalarAsync<string>($"SELECT status FROM catalog.tenants WHERE slug = '{slug}'");
+    private Task<string?> StatusOfAsync(string slug) => database.ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE slug = '{slug}'");
 }

@@ -94,7 +94,7 @@ public sealed class SystemAdminTests(Database database)
 
         await VisitAsync(services, user.ExternalId);
 
-        (await database.ScalarAsSuperuserAsync<Guid>("SELECT user_id FROM catalog.system_admins", _database)).ShouldBe(user.Id);
+        (await database.ScalarAsSuperuserAsync<Guid>("SELECT user_id FROM control_plane.system_admins", _database)).ShouldBe(user.Id);
     }
 
     private string _database = null!;
@@ -122,5 +122,5 @@ public sealed class SystemAdminTests(Database database)
     }
 
     private Task<long> StaffAsync(IServiceProvider services) =>
-        database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM catalog.system_admins", _database);
+        database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.system_admins", _database);
 }

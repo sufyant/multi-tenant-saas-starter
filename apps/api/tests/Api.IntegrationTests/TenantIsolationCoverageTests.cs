@@ -42,13 +42,13 @@ public sealed class TenantIsolationCoverageTests(Database database)
     {
         var name = await database.CreateMigratedDatabaseAsync();
         var tables = new DatabaseTables(database, name);
-        await database.ScalarAsSuperuserAsync<object>("CREATE POLICY stray ON catalog.invitations FOR SELECT USING (true)", name);
+        await database.ScalarAsSuperuserAsync<object>("CREATE POLICY stray ON control_plane.invitations FOR SELECT USING (true)", name);
 
         var withTheStrayPolicy = await tables.GapsAsync();
-        await database.ScalarAsSuperuserAsync<object>("DROP POLICY stray ON catalog.invitations", name);
+        await database.ScalarAsSuperuserAsync<object>("DROP POLICY stray ON control_plane.invitations", name);
         var withoutIt = await tables.GapsAsync();
 
-        withTheStrayPolicy.ShouldBe(["catalog.invitations: policy stray (SELECT) is neither tenant isolation on a tenant table nor listed"]);
+        withTheStrayPolicy.ShouldBe(["control_plane.invitations: policy stray (SELECT) is neither tenant isolation on a tenant table nor listed"]);
         withoutIt.ShouldBeEmpty();
     }
 

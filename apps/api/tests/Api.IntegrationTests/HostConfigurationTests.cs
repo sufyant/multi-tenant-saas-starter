@@ -104,8 +104,8 @@ public sealed class HostConfigurationTests(Database database)
         var name = await database.CreateMigratedDatabaseAsync();
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO catalog.users (id, external_id) VALUES ('{Guid.NewGuid()}', 'user_staff');
-            INSERT INTO catalog.system_admins (user_id, granted_at) SELECT id, now() FROM catalog.users WHERE external_id = 'user_staff';
+            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', 'user_staff');
+            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = 'user_staff';
             """,
             database: name);
         await using var api = new ApiFactory(

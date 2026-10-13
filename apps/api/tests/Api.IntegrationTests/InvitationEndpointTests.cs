@@ -35,13 +35,13 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
         var tenant = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug"], ignoreOrder: true);
-        tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM catalog.tenants WHERE slug = '{slug}'"));
+        tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);
         (await database.ScalarAsSuperuserAsync<long>(
             $"""
-            SELECT count(*) FROM catalog.memberships
-            JOIN catalog.tenants ON tenants.id = memberships.tenant_id JOIN catalog.users ON users.id = memberships.user_id
+            SELECT count(*) FROM control_plane.memberships
+            JOIN control_plane.tenants ON tenants.id = memberships.tenant_id JOIN control_plane.users ON users.id = memberships.user_id
             WHERE tenants.slug = '{slug}' AND users.external_id = '{invitee}'
             """)).ShouldBe(1);
     }
@@ -80,11 +80,11 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(accepted)).ShouldBe("invitation.staff_cannot_join");
         (await database.ScalarAsSuperuserAsync<long>(
             $"""
-            SELECT count(*) FROM catalog.memberships JOIN catalog.tenants ON tenants.id = memberships.tenant_id
+            SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id
             WHERE tenants.slug = '{slug}'
             """)).ShouldBe(0);
         (await database.ScalarAsSuperuserAsync<string>(
-            $"SELECT invitations.status FROM catalog.invitations JOIN catalog.tenants ON tenants.id = invitations.tenant_id WHERE tenants.slug = '{slug}'"))
+            $"SELECT invitations.status FROM control_plane.invitations JOIN control_plane.tenants ON tenants.id = invitations.tenant_id WHERE tenants.slug = '{slug}'"))
             .ShouldBe("Pending");
     }
 
@@ -99,9 +99,9 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
         var secret = SecretOf(_api.Email.CodeSentTo(email));
 
         var stored = await database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM catalog.invitations WHERE email = '{email}' AND token_hash = encode(sha256(convert_to('{secret}', 'UTF8')), 'hex')");
+            $"SELECT count(*) FROM control_plane.invitations WHERE email = '{email}' AND token_hash = encode(sha256(convert_to('{secret}', 'UTF8')), 'hex')");
         var holdingTheSecret = await database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM catalog.invitations WHERE position('{secret}' in invitations::text) > 0");
+            $"SELECT count(*) FROM control_plane.invitations WHERE position('{secret}' in invitations::text) > 0");
 
         stored.ShouldBe(1);
         holdingTheSecret.ShouldBe(0);
@@ -112,10 +112,10 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_AskingTheIdentityProvider_HappensBeforeTheInvitationIsLocked()
     {
         var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
-        var tenantId = await database.ScalarAsync<Guid>($"SELECT id FROM catalog.tenants WHERE slug = '{slug}'");
+        var tenantId = await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'");
         var lockedWhileAsked = false;
         _api.Identity.WhileReadingVerifiedEmails = async () => lockedWhileAsked = await database.IsLockedAsync(
-            tenantId, $"SELECT 1 FROM catalog.invitations WHERE tenant_id = '{tenantId}' FOR UPDATE NOWAIT");
+            tenantId, $"SELECT 1 FROM control_plane.invitations WHERE tenant_id = '{tenantId}' FOR UPDATE NOWAIT");
 
         var accepted = await AcceptAsync(invitee, code);
 
@@ -178,7 +178,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_Cancelled_IsNotFound()
     {
         var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE catalog.invitations SET status = 'Cancelled' WHERE tenant_id = '{TenantIdOf(code)}'");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.invitations SET status = 'Cancelled' WHERE tenant_id = '{TenantIdOf(code)}'");
 
         var accepted = await AcceptAsync(invitee, code);
 
@@ -199,7 +199,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(accepted)).ShouldBe("invitation.not_found");
         (await database.ScalarAsSuperuserAsync<string>(
-            $"SELECT status FROM catalog.invitations WHERE tenant_id = '{TenantIdOf(code)}'")).ShouldBe("Pending");
+            $"SELECT status FROM control_plane.invitations WHERE tenant_id = '{TenantIdOf(code)}'")).ShouldBe("Pending");
     }
 
     [Theory]

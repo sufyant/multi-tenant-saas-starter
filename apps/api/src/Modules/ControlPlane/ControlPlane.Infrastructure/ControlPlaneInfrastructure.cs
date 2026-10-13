@@ -20,10 +20,10 @@ public static class ControlPlaneInfrastructure
 {
     public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
-        services.AddDbContextWithWolverineIntegration<CatalogDbContext>(
-            (provider, options) => options.UseModuleDatabase(provider, CatalogDbContext.Schema),
+        services.AddDbContextWithWolverineIntegration<ControlPlaneDbContext>(
+            (provider, options) => options.UseModuleDatabase(provider, ControlPlaneDbContext.Schema),
             TenancyServiceCollectionExtensions.MessageSchema);
-        services.AddModuleMigrations<CatalogDbContext>(CatalogDbContext.Schema);
+        services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();

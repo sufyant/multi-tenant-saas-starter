@@ -6,12 +6,12 @@ using SharedKernel;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The catalog user is found by the identity provider's id in catalog.users, which belongs to no tenant. Their memberships are then
+/// The catalog user is found by the identity provider's id in control_plane.users, which belongs to no tenant. Their memberships are then
 /// read with that user declared in the transaction Wolverine began for the handler (R11), so the own_memberships policy decides
 /// what is seen; the query adds no filter of its own. The message has no tenant, so the transaction declares none (R4).
 /// </summary>
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
-public sealed class UserTenants(CatalogDbContext catalog) : IUserTenants
+public sealed class UserTenants(ControlPlaneDbContext catalog) : IUserTenants
 {
     async Task<ListPage<Tenant>> IUserTenants.ListActiveAsync(string externalUserId, PageRequest paging, CancellationToken cancellationToken)
     {

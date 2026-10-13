@@ -14,7 +14,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// message the handler serves (W2).
 /// </summary>
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
-public sealed class TenantCatalog(CatalogDbContext catalog) : ITenantCatalog
+public sealed class TenantCatalog(ControlPlaneDbContext catalog) : ITenantCatalog
 {
     internal IQueryable<Membership> Memberships
     {
@@ -52,7 +52,7 @@ public sealed class TenantCatalog(CatalogDbContext catalog) : ITenantCatalog
     async Task<Tenant> ITenantCatalog.FindTenantForUpdateAsync(CancellationToken cancellationToken)
     {
         var found = await catalog.Tenants
-            .FromSql($"SELECT * FROM catalog.tenants WHERE id = {ActiveTenant} FOR UPDATE")
+            .FromSql($"SELECT * FROM control_plane.tenants WHERE id = {ActiveTenant} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
         return found.Single();
@@ -83,7 +83,7 @@ public sealed class TenantCatalog(CatalogDbContext catalog) : ITenantCatalog
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken)
     {
         var found = await catalog.Invitations
-            .FromSql($"SELECT * FROM catalog.invitations WHERE token_hash = {tokenHash} FOR UPDATE")
+            .FromSql($"SELECT * FROM control_plane.invitations WHERE token_hash = {tokenHash} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
         return found.SingleOrDefault();
@@ -92,7 +92,7 @@ public sealed class TenantCatalog(CatalogDbContext catalog) : ITenantCatalog
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken)
     {
         var found = await catalog.Invitations
-            .FromSql($"SELECT * FROM catalog.invitations WHERE id = {invitationId} FOR UPDATE")
+            .FromSql($"SELECT * FROM control_plane.invitations WHERE id = {invitationId} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
         return found.SingleOrDefault();
@@ -111,7 +111,7 @@ public sealed class TenantCatalog(CatalogDbContext catalog) : ITenantCatalog
     {
         var added = OfActiveTenant(tenant, tenant.Id);
         var inserted = await catalog.Database.ExecuteSqlAsync(
-            $"INSERT INTO catalog.tenants (id, name, slug, status) VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}) ON CONFLICT (slug) DO NOTHING",
+            $"INSERT INTO control_plane.tenants (id, name, slug, status) VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}) ON CONFLICT (slug) DO NOTHING",
             cancellationToken);
 
         return inserted == 1;

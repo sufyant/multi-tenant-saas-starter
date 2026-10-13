@@ -56,13 +56,13 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
         var admin = await _catalog.AddSystemAdminAsync();
         var slug = Slug();
         var owner = Email();
-        await RefuseAsync("tenant_onboardings", "INSERT", $"NEW.tenant_id IN (SELECT id FROM catalog.tenants WHERE slug = '{slug}')");
+        await RefuseAsync("tenant_creation_sagas", "INSERT", $"NEW.tenant_id IN (SELECT id FROM control_plane.tenants WHERE slug = '{slug}')");
 
         var created = await _api.TrackMessagesAsync(() => CreateTenantAsync(admin, slug, owner));
 
         created.Sent.AllMessages().ShouldBeEmpty();
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM catalog.tenants WHERE slug = '{slug}'")).ShouldBe(0);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM catalog.invitations WHERE email = '{owner}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE email = '{owner}'")).ShouldBe(0);
     }
 
     // Wolverine publishes the fault of a message that went to the dead letter queue with the message's tenant and saga id, so the
@@ -99,7 +99,7 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
         var tenantId = await IdOfAsync(created);
         messages.MovedToErrorQueue.SingleMessage<ActivateTenant>().ShouldNotBeNull();
         (await TenantStatusAsync(tenantId)).ShouldBe("Cancelled");
-        (await database.ScalarAsSuperuserAsync<string>($"SELECT cancellation_reason FROM catalog.tenants WHERE id = '{tenantId}'"))
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT cancellation_reason FROM control_plane.tenants WHERE id = '{tenantId}'"))
             .ShouldBe("activation_failed");
         _api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record =>
             record.Id.Name == "TenantCancelled"
@@ -170,7 +170,7 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
         await database.ExecuteInTenantAsync(
             tenantId,
             $"""
-            INSERT INTO catalog.tenant_onboardings (id, state, invitation_id, invitation_email_timeout, cancellation_timeout, version)
+            INSERT INTO control_plane.tenant_creation_sagas (id, state, invitation_id, invitation_email_timeout, cancellation_timeout, version)
             VALUES ('{tenantId}', 'Activating', '{invitationId}', interval '2 hours', interval '10 minutes', 0)
             """);
         var now = DateTimeOffset.UtcNow;
@@ -205,16 +205,16 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
     }
 
     private async Task<Guid> InvitationIdAsync(Guid tenantId) =>
-        await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM catalog.invitations WHERE tenant_id = '{tenantId}'");
+        await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
 
     private Task<string?> TenantStatusAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT status FROM catalog.tenants WHERE id = '{tenantId}'");
+        database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
 
     private Task<string?> InvitationStatusAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT status FROM catalog.invitations WHERE tenant_id = '{tenantId}'");
+        database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
 
     private Task<string?> OnboardingStateAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT state FROM catalog.tenant_onboardings WHERE id = '{tenantId}'");
+        database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'");
 
     private Task<string?> AuditEntriesAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(
@@ -228,12 +228,12 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
         await connection.OpenAsync(Cancellation);
         await using var command = new NpgsqlCommand(
             $"""
-            CREATE FUNCTION catalog.{name}() RETURNS trigger LANGUAGE plpgsql AS $$
+            CREATE FUNCTION control_plane.{name}() RETURNS trigger LANGUAGE plpgsql AS $$
             BEGIN
                 IF {when} THEN RAISE EXCEPTION 'refused'; END IF;
                 RETURN NEW;
             END $$;
-            CREATE TRIGGER {name} BEFORE {statement} ON catalog.{table} FOR EACH ROW EXECUTE FUNCTION catalog.{name}();
+            CREATE TRIGGER {name} BEFORE {statement} ON control_plane.{table} FOR EACH ROW EXECUTE FUNCTION control_plane.{name}();
             """,
             connection);
         await command.ExecuteNonQueryAsync(Cancellation);
@@ -245,7 +245,7 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
         var connection = new NpgsqlConnection(database.SuperuserConnectionString);
         await connection.OpenAsync(Cancellation);
         var transaction = await connection.BeginTransactionAsync(Cancellation);
-        await using var lockRow = new NpgsqlCommand($"SELECT 1 FROM catalog.tenant_onboardings WHERE id = '{tenantId}' FOR UPDATE", connection, transaction);
+        await using var lockRow = new NpgsqlCommand($"SELECT 1 FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}' FOR UPDATE", connection, transaction);
         await lockRow.ExecuteNonQueryAsync(Cancellation);
 
         return new OnboardingHold(database, connection, transaction);
@@ -268,7 +268,7 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
             await using var waiting = new NpgsqlCommand(
                 $"""
                 SELECT count(*) FROM pg_stat_activity
-                WHERE pid <> {connection.ProcessID} AND wait_event_type = 'Lock' AND query LIKE '%UPDATE catalog.tenant_onboardings%'
+                WHERE pid <> {connection.ProcessID} AND wait_event_type = 'Lock' AND query LIKE '%UPDATE control_plane.tenant_creation_sagas%'
                 """,
                 observer);
             while ((long)(await waiting.ExecuteScalarAsync(timeout.Token))! < writers)

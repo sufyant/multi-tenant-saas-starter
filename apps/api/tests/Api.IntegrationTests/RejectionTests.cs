@@ -39,7 +39,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
             tenantId, new CreateTenant(admin, " ", Slug(), Email(), Guid.NewGuid().ToString()));
 
         result.Error.Code.ShouldBe("tenant.name_invalid");
-        (await _catalog.CountAsync($"SELECT count(*) FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -54,7 +54,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
             tenantId, new CreateTenant(admin, "Acme Ltd", existing.Slug, Email(), Guid.NewGuid().ToString()));
 
         result.Error.Code.ShouldBe("tenant.slug_taken");
-        (await _catalog.CountAsync($"SELECT count(*) FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -68,7 +68,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
             tenant.Id, new AcceptInvitation("no-such-secret", user, [Email()]));
 
         result.Error.Code.ShouldBe("invitation.not_found");
-        (await _catalog.CountAsync($"SELECT count(*) FROM catalog.users WHERE external_id = '{user}'")).ShouldBe(0);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -83,7 +83,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Error.Code.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
-        (await _catalog.CountAsync($"SELECT count(*) FROM catalog.users WHERE external_id = '{user}'")).ShouldBe(0);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -99,7 +99,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Error.Code.ShouldBe("membership.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
-        (await database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM catalog.memberships")).ShouldBe(1);
+        (await database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -114,7 +114,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
             tenant.Id, new ListMembers(PageRequest.Create(2, 50).Value));
 
         result.Value.Items.ShouldBeEmpty();
-        (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM catalog.memberships")).ShouldBe(1);
+        (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -128,7 +128,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
             result = await Bus().InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user, PageRequest.Create(null, null).Value), Cancellation));
 
         result.Value.Items.ShouldBeEmpty();
-        (await _catalog.CountAsync($"SELECT count(*) FROM catalog.users WHERE external_id = '{user}'")).ShouldBe(0);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -157,7 +157,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
     }
 
     private Task<long> PendingInvitationsAsync(Guid tenantId) =>
-        database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM catalog.invitations WHERE status = 'Pending'");
+        database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM control_plane.invitations WHERE status = 'Pending'");
 
     private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
 

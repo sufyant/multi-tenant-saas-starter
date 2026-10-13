@@ -39,16 +39,16 @@ internal static class Catalog
         return user;
     }
 
-    private static async Task SaveAsync(IServiceProvider services, Action<CatalogDbContext> change)
+    private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)
     {
         await using var scope = services.CreateAsyncScope();
-        var catalog = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        var catalog = scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>();
         change(catalog);
         await catalog.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     // A membership belongs to a tenant, so it is written in a transaction that declares its tenant.
-    private static async Task SaveInTenantAsync(IServiceProvider services, Guid tenantId, Action<CatalogDbContext> change)
+    private static async Task SaveInTenantAsync(IServiceProvider services, Guid tenantId, Action<ControlPlaneDbContext> change)
     {
         await using var scope = services.CreateAsyncScope();
         var catalog = InTenant.Catalog(scope, tenantId);

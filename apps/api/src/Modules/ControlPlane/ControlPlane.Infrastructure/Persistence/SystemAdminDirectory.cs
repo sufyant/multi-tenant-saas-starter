@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 namespace ControlPlane.Infrastructure.Persistence;
 
 internal sealed class SystemAdminDirectory(
-    CatalogDbContext catalog,
+    ControlPlaneDbContext catalog,
     IIdentityProvider identity,
     IOptions<SystemAdminSettings> settings,
     TimeProvider time) : ISystemAdminDirectory
@@ -48,15 +48,15 @@ internal sealed class SystemAdminDirectory(
         await catalog.Database.ExecuteSqlAsync(
             $"""
             WITH added AS (
-                INSERT INTO catalog.users (id, external_id) VALUES ({Guid.CreateVersion7(now)}, {externalUserId})
+                INSERT INTO control_plane.users (id, external_id) VALUES ({Guid.CreateVersion7(now)}, {externalUserId})
                 ON CONFLICT (external_id) DO NOTHING
                 RETURNING id),
             person AS (
                 SELECT id FROM added
-                UNION ALL SELECT id FROM catalog.users WHERE external_id = {externalUserId})
-            INSERT INTO catalog.system_admins (user_id, granted_at)
+                UNION ALL SELECT id FROM control_plane.users WHERE external_id = {externalUserId})
+            INSERT INTO control_plane.system_admins (user_id, granted_at)
             SELECT id, {now} FROM person
-            WHERE NOT EXISTS (SELECT FROM catalog.system_admins)
+            WHERE NOT EXISTS (SELECT FROM control_plane.system_admins)
             ON CONFLICT (user_id) DO NOTHING
             """,
             cancellationToken);

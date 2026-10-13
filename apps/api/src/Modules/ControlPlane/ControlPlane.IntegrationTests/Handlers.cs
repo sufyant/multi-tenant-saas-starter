@@ -36,7 +36,7 @@ internal static class Handlers
                 Cancellation);
             if (onboarding is not null)
             {
-                scope.GetRequiredService<CatalogDbContext>().Add(onboarding.Entity);
+                scope.GetRequiredService<ControlPlaneDbContext>().Add(onboarding.Entity);
             }
 
             return new StartedOnboarding(result, onboarding, activate, timeout);

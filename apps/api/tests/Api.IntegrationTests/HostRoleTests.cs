@@ -215,8 +215,8 @@ public sealed class HostRoleTests(Database database)
         var externalId = $"user_{Guid.NewGuid():N}";
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO catalog.users (id, external_id) VALUES ('{Guid.NewGuid()}', '{externalId}');
-            INSERT INTO catalog.system_admins (user_id, granted_at) SELECT id, now() FROM catalog.users WHERE external_id = '{externalId}';
+            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', '{externalId}');
+            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}';
             """,
             database: databaseName);
 
@@ -227,5 +227,5 @@ public sealed class HostRoleTests(Database database)
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
     private Task<string?> OnboardingStateAsync(string databaseName, Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT state FROM catalog.tenant_onboardings WHERE id = '{tenantId}'", databaseName);
+        database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", databaseName);
 }
