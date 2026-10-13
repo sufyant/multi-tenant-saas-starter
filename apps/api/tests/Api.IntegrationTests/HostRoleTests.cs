@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Audit.Application;
-using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application;

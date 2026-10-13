@@ -1,4 +1,4 @@
-using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
 using Wolverine;

@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Contracts;

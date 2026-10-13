@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using ControlPlane.Infrastructure;
+using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Tenancy;

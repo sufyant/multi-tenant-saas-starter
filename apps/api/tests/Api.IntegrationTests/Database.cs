@@ -1,6 +1,7 @@
 using Api.Persistence;
 using Audit.Infrastructure;
 using ControlPlane.Infrastructure;
+using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;

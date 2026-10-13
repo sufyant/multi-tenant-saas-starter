@@ -1,5 +1,6 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

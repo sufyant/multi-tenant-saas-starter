@@ -20,5 +20,5 @@ csharp_prefer_braces = true:warning
 dotnet_diagnostic.CA1707.severity = none
 
 # Migrations are written by `dotnet ef migrations add`; analyzers treat them as generated code.
-[src/Modules/*/*.Infrastructure/Migrations/*.cs]
+[src/Modules/*/*.Infrastructure/Persistence/Migrations/*.cs]
 generated_code = true

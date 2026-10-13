@@ -1,8 +1,9 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
-using ControlPlane.Infrastructure;
+using ControlPlane.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SharedKernel;
