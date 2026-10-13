@@ -35,8 +35,8 @@
     <Project Path="src/Shared/Tenancy.IntegrationTests/Tenancy.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
+    <Project Path="tests/Api.ArchitectureTests/Api.ArchitectureTests.csproj" />
     <Project Path="tests/Api.IntegrationTests/Api.IntegrationTests.csproj" />
-    <Project Path="tests/Onboarding.EndToEndTests/Onboarding.EndToEndTests.csproj" />
+    <Project Path="tests/Api.EndToEndTests/Api.EndToEndTests.csproj" />
   </Folder>
 </Solution>

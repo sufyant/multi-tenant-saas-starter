@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="Api.IntegrationTests.Fixtures" />
     <Using Include="Shouldly" />
     <Using Include="Xunit" />
   </ItemGroup>

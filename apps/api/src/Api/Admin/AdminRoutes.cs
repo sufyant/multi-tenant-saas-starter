@@ -2,7 +2,7 @@ using Api.Authorization;
 
 namespace Api.Admin;
 
-// The admin door (T5): a separate route group for system admins, with its own authorization policy. ControlPlane decides who
+// The system door (T5): a separate route group for system admins, with its own authorization policy. ControlPlane decides who
 // passes, including the second factor (A6).
 internal static class AdminRoutes
 {

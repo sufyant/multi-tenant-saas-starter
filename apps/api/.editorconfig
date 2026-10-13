@@ -20,7 +20,7 @@ csharp_prefer_braces = true:warning
 dotnet_code_quality.CA1716.analyzed_symbol_kinds = NamedType, Method, Property, Event, Parameter
 
 # Test names describe behaviour in words separated by underscores. A test project is known by its name, wherever it sits.
-[**/*.{UnitTests,IntegrationTests,EndToEndTests,Tests}/**.cs]
+[**/*.{UnitTests,IntegrationTests,EndToEndTests,ArchitectureTests}/**.cs]
 dotnet_diagnostic.CA1707.severity = none
 
 # Migrations are written by `dotnet ef migrations add`; analyzers treat them as generated code.

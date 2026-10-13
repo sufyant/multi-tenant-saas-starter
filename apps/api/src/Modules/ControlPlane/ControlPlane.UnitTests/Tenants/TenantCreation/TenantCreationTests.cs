@@ -1,0 +1,331 @@
+using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Contracts;
+using Notifications.Contracts;
+using Wolverine;
+
+namespace ControlPlane.UnitTests.Tenants.TenantCreation;
+
+// The tenant creation saga without a host (S12): it only decides, from its state and the message, what its next state is and which
+// messages it sends. A message that does not fit the state is ignored (S7). One test for each row of the saga's state table.
+public class TenantCreationTests
+{
+    private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
+    private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000401");
+    private static readonly Guid EventId = new("0199a8f0-0000-7000-8000-000000000501");
+    private static readonly DateTimeOffset Now = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
+    private static readonly Uri AcceptLink = new("https://app.test/invitations/accept?code=0199a8f0-0000-7000-8000-000000000201.secret");
+    private static readonly TenantCreationTimeouts Timeouts = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(2), TimeSpan.FromMinutes(15));
+    private const string OwnerEmail = "owner@acme.test";
+
+    // (start) | CreateTenant handled | Activating | ActivateTenant, ActivationTimedOut
+    [Fact]
+    public void CreateTenant_NewTenant_ActivatesTheTenantAndSchedulesTheActivationTimeout()
+    {
+        var (saga, activate, timeout) = TenantCreationSaga.Begin(TenantId, InvitationId, AcceptLink, Timeouts);
+
+        saga.Id.ShouldBe(TenantId);
+        saga.State.ShouldBe(TenantCreationSagaState.Activating);
+        activate.ShouldBe(new ActivateTenant(TenantId, InvitationId, AcceptLink));
+        timeout.ShouldBe(new ActivationTimedOut(TenantId, TimeSpan.FromMinutes(10)));
+    }
+
+    // Activating | ActivateTenantReply | SendingInvitation | InvitationEmailTimedOut
+    [Fact]
+    public void ActivateTenant_TenantActivated_SchedulesTheInvitationEmailTimeout()
+    {
+        var saga = Activating();
+
+        var sent = saga.Handle(Activated());
+
+        saga.State.ShouldBe(TenantCreationSagaState.SendingInvitation);
+        sent.ShouldBe([new InvitationEmailTimedOut(TenantId, TimeSpan.FromHours(2))]);
+    }
+
+    // Activating | Fault<ActivateTenant> | Cancelling | CancelTenant, CancellationTimedOut
+    [Fact]
+    public void ActivateTenant_FailsForGood_CancelsTheTenantAndSchedulesTheCancellationTimeout()
+    {
+        var saga = Activating();
+
+        var sent = saga.Handle(FaultOf(new ActivateTenant(TenantId, InvitationId, AcceptLink)));
+
+        saga.State.ShouldBe(TenantCreationSagaState.Cancelling);
+        sent.ShouldBe([new CancelTenant(TenantId, InvitationId, "activation_failed"), new CancellationTimedOut(TenantId, TimeSpan.FromMinutes(15))]);
+    }
+
+    // Activating | ActivationTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    [Fact]
+    public void ActivateTenant_TimesOut_NeedsAttentionAndCancelsTheInvitation()
+    {
+        var saga = Activating();
+
+        var sent = saga.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // Activating | SendOwnerInvitationReply | Completed | none. The tenant's activation and the invitation email are published together,
+    // so the email may be reported sent before the saga has heard of the activation; the email proves that the activation committed.
+    [Fact]
+    public void SendInvitation_EmailSentBeforeTheActivationArrives_CompletesTheTenantCreation()
+    {
+        var saga = Activating();
+
+        var sent = saga.Handle(EmailSent());
+
+        saga.State.ShouldBe(TenantCreationSagaState.Completed);
+        sent.ShouldBeEmpty();
+    }
+
+    // SendingInvitation | SendOwnerInvitationReply | Completed | none
+    [Fact]
+    public void SendInvitation_EmailSent_CompletesTheTenantCreation()
+    {
+        var saga = SendingInvitation();
+
+        var sent = saga.Handle(EmailSent());
+
+        saga.State.ShouldBe(TenantCreationSagaState.Completed);
+        sent.ShouldBeEmpty();
+    }
+
+    // Activating | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    [Fact]
+    public void SendInvitation_FailsForGoodBeforeTheActivationArrives_NeedsAttentionAndCancelsTheInvitation()
+    {
+        var saga = Activating();
+
+        var sent = saga.Handle(FaultOf(InvitationReady()));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // SendingInvitation | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    [Fact]
+    public void SendInvitation_FailsForGood_NeedsAttentionAndCancelsTheInvitation()
+    {
+        var saga = SendingInvitation();
+
+        var sent = saga.Handle(FaultOf(InvitationReady()));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // SendingInvitation | InvitationEmailTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    [Fact]
+    public void SendInvitation_TimesOut_NeedsAttentionAndCancelsTheInvitation()
+    {
+        var saga = SendingInvitation();
+
+        var sent = saga.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // Cancelling | CancelTenantReply | Cancelled | none
+    [Fact]
+    public void CancelTenant_TenantCancelled_EndsCancelled()
+    {
+        var saga = Cancelling();
+
+        var sent = saga.Handle(new CancelTenantReply(TenantId));
+
+        saga.State.ShouldBe(TenantCreationSagaState.Cancelled);
+        sent.ShouldBeEmpty();
+    }
+
+    // Cancelling | CancellationTimedOut | NeedsAttention | RaiseTenantCreationAlarm
+    [Fact]
+    public void CancelTenant_TimesOut_NeedsAttention()
+    {
+        var saga = Cancelling();
+
+        var sent = saga.Handle(new CancellationTimedOut(TenantId, Timeouts.Cancellation));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // Cancelling | Fault<CancelTenant> | NeedsAttention | RaiseTenantCreationAlarm. S9: a compensation that fails for good leaves the
+    // process to a person.
+    [Fact]
+    public void CancelTenant_FailsForGood_NeedsAttention()
+    {
+        var saga = Cancelling();
+
+        var sent = saga.Handle(FaultOf(new CancelTenant(TenantId, InvitationId, "activation_failed")));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // Any state except NeedsAttention | Fault<CancelInvitation> | NeedsAttention | RaiseTenantCreationAlarm
+    [Fact]
+    public void CancelInvitation_FailsForGoodWhileCancelling_NeedsAttention()
+    {
+        var saga = Cancelling();
+
+        var sent = saga.Handle(FaultOf(new CancelInvitation(TenantId, InvitationId)));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // NeedsAttention | any message | unchanged | none. M11: the alarm is raised once for each tenant creation.
+    [Fact]
+    public void CancelInvitation_FailsForGoodAfterTheAlarm_RaisesNoSecondAlarm()
+    {
+        var saga = SendingInvitation();
+        saga.Handle(FaultOf(InvitationReady()));
+
+        var sent = saga.Handle(FaultOf(new CancelInvitation(TenantId, InvitationId)));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBeEmpty();
+    }
+
+    // Completed | any message | unchanged | none
+    [Fact]
+    public void SendInvitation_TimeoutAfterCompletion_IsIgnored()
+    {
+        var saga = Completed();
+
+        var sent = saga.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
+
+        saga.State.ShouldBe(TenantCreationSagaState.Completed);
+        sent.ShouldBeEmpty();
+    }
+
+    // Cancelled | any message | unchanged | none
+    [Fact]
+    public void CancelTenant_TimeoutAfterTheTenantIsCancelled_IsIgnored()
+    {
+        var saga = Cancelling();
+        saga.Handle(new CancelTenantReply(TenantId));
+
+        var sent = saga.Handle(new CancellationTimedOut(TenantId, Timeouts.Cancellation));
+
+        saga.State.ShouldBe(TenantCreationSagaState.Cancelled);
+        sent.ShouldBeEmpty();
+    }
+
+    // M2: the invitation was cancelled when the wait timed out, so the late fault has nothing left to do.
+    [Fact]
+    public void SendInvitation_FaultAfterTheTimeout_IsIgnored()
+    {
+        var saga = SendingInvitation();
+        saga.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
+
+        var sent = saga.Handle(FaultOf(InvitationReady()));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBeEmpty();
+    }
+
+    // A late email carries a link to the cancelled invitation, which answers 404; the alarm already asked for a new invitation.
+    [Fact]
+    public void SendInvitation_EmailSentAfterTheTimeout_IsIgnored()
+    {
+        var saga = SendingInvitation();
+        saga.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
+
+        var sent = saga.Handle(EmailSent());
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBeEmpty();
+    }
+
+    // M11: a repeated alarm reaches the saga as a repeated timeout.
+    [Fact]
+    public void ActivateTenant_TimeoutArrivesAgainAfterTheAlarm_RaisesNoSecondAlarm()
+    {
+        var saga = Activating();
+        saga.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
+
+        var sent = saga.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void ActivateTenant_ActivationArrivesAfterTheEmailWasSent_IsIgnored()
+    {
+        var saga = Activating();
+        saga.Handle(EmailSent());
+
+        var sent = saga.Handle(Activated());
+
+        saga.State.ShouldBe(TenantCreationSagaState.Completed);
+        sent.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void ActivateTenant_TimeoutAfterTheActivation_IsIgnored()
+    {
+        var saga = SendingInvitation();
+
+        var sent = saga.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
+
+        saga.State.ShouldBe(TenantCreationSagaState.SendingInvitation);
+        sent.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void SendInvitation_EmailSentAgain_SendsNothing()
+    {
+        var saga = Completed();
+
+        var sent = saga.Handle(EmailSent());
+
+        saga.State.ShouldBe(TenantCreationSagaState.Completed);
+        sent.ShouldBeEmpty();
+    }
+
+    private static TenantCreationSaga Activating() => TenantCreationSaga.Begin(TenantId, InvitationId, AcceptLink, Timeouts).Saga;
+
+    private static TenantCreationSaga SendingInvitation()
+    {
+        var saga = Activating();
+        saga.Handle(Activated());
+        return saga;
+    }
+
+    private static TenantCreationSaga Completed()
+    {
+        var saga = SendingInvitation();
+        saga.Handle(EmailSent());
+        return saga;
+    }
+
+    private static TenantCreationSaga Cancelling()
+    {
+        var saga = Activating();
+        saga.Handle(FaultOf(new ActivateTenant(TenantId, InvitationId, AcceptLink)));
+        return saga;
+    }
+
+    private static ActivateTenantReply Activated() => new(TenantId);
+
+    private static OwnerInvitationReady InvitationReady() => new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink);
+
+    private static SendOwnerInvitationReply EmailSent() => new(EventId, Now, TenantId, InvitationId);
+
+    // What Wolverine publishes once a message has gone to the dead letter queue; it carries the exception's type only.
+    private static Fault<T> FaultOf<T>(T message)
+        where T : class =>
+        new(
+            message,
+            ExceptionInfo.From(new InvalidOperationException(), includeMessage: false, includeStackTrace: false),
+            4,
+            Now,
+            null,
+            Guid.Empty,
+            TenantId.ToString(),
+            null,
+            new Dictionary<string, string?>());
+}
