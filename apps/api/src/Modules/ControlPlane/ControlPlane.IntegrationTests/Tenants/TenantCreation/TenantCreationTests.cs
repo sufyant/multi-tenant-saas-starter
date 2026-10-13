@@ -254,7 +254,7 @@ public sealed class TenantCreationTests(Database database)
 
     private static async Task<SharedKernel.Result<TenantDetails>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
         (await CreateTenantHandler.HandleAsync(
-            new CreateTenant(adminId, "Acme Ltd", slug, Unique.Email(), Guid.NewGuid().ToString()),
+            new CreateTenant(adminId, "Acme Ltd", slug, Unique.Email()),
             scope.ServiceProvider.GetRequiredService<ITenantCatalog>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationSettings>(),
             scope.ServiceProvider.GetRequiredService<TenantCreationSettings>(),

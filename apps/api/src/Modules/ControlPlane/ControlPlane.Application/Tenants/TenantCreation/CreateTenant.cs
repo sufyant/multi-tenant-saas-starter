@@ -12,14 +12,10 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 
 /// <summary>
 /// A system admin creates a tenant. It runs inside the tenant it creates, whose id the caller chose, so every step
-/// of the saga runs in that tenant's transaction and hands the tenant on to the next one. The idempotency key makes it safe to
-/// send again: the same key with the same request answers with the tenant the first one created (section 8).
+/// of the saga runs in that tenant's transaction and hands the tenant on to the next one. The host's idempotency layer protects
+/// the HTTP request (section 3). The command carries no request key.
 /// </summary>
-public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail, string IdempotencyKey)
-{
-    /// <summary>Whether the client's value can be an idempotency key: 1 to 255 visible ASCII characters.</summary>
-    public static bool IsIdempotencyKey(string? value) => TenantCreationRequest.IsKey(value);
-}
+public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail);
 
 public sealed record TenantDetails(Guid Id, string Name, string Slug, string Status);
 
@@ -31,12 +27,11 @@ public sealed class CreateTenantValidator : AbstractValidator<CreateTenant>
         RuleFor(command => command.Name).NotNull();
         RuleFor(command => command.Slug).NotNull();
         RuleFor(command => command.OwnerEmail).NotEmpty().EmailAddress().MaximumLength(Invitation.EmailMaxLength);
-        RuleFor(command => command.IdempotencyKey).Must(TenantCreationRequest.IsKey);
     }
 }
 
 // Step 1 of the tenant creation saga, in one transaction: the tenant as provisioning, its first owner's invitation, the saga's record
-// (section 6) and the request under its idempotency key (section 8). The invitation's secret is born here; only its hash is stored,
+// (section 6). The host also saves the command result in this transaction (I4). The invitation's secret is born here; only its hash is stored,
 // and the accept link that carries it goes on in the activation's message. Every rejection returns before the handler changes
 // anything, because Wolverine commits a failed Result too (W7); a taken slug is found by the insert itself, which writes nothing then.
 public static class CreateTenantHandler
@@ -52,13 +47,6 @@ public static class CreateTenantHandler
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
             ?? throw new InvalidOperationException("A system admin is always a catalog user.");
 
-        if (await catalog.FindCreationRequestAsync(admin.Id, command.IdempotencyKey, cancellationToken) is { } earlier)
-        {
-            return earlier.IsFor(command.Name, command.Slug, command.OwnerEmail)
-                ? (Details(await catalog.FindTenantAsync(earlier.TenantId, cancellationToken)), null, null, null)
-                : (Error.Unprocessable("idempotency_key_reused", "This idempotency key was used for another request."), null, null, null);
-        }
-
         var tenant = Tenant.Create(catalog.TenantId, command.Name, command.Slug);
         if (!tenant.IsSuccess)
         {
@@ -71,8 +59,6 @@ public static class CreateTenantHandler
         }
 
         var now = time.GetUtcNow();
-        catalog.Add(TenantCreationRequest.Record(
-            admin.Id, command.IdempotencyKey, command.Name, command.Slug, command.OwnerEmail, tenant.Value.Id, now));
         var secret = InvitationToken.Generate();
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now), tenant.Value.Id, command.OwnerEmail, BuiltInRoles.Owner, admin.Id, now, invitations.Lifetime, secret);
