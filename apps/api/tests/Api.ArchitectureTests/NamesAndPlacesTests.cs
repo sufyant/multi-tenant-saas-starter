@@ -74,6 +74,19 @@ public sealed partial class NamesAndPlacesTests
         catchAll.ShouldBeEmpty();
     }
 
+    // N10: a folder becomes a namespace, and a namespace hides a type of the same name (CS0118). A feature folder named after its
+    // action would hide its command, so a feature folder takes the noun form of its root.
+    [Fact]
+    public void NameFolders_EveryProject_HasNoFolderNamedLikeATypeItSees()
+    {
+        var clashes = Solution.SolutionProjects
+            .SelectMany(project => FoldersOf(project).Select(folder => (Project: project, Folder: Path.GetFileName(folder))))
+            .Where(folder => TypeNamesSeenBy(folder.Project).Contains(folder.Folder))
+            .Select(folder => $"{folder.Project}: {folder.Folder}");
+
+        clashes.ShouldBeEmpty();
+    }
+
     // N9: a test project is {Project}.{Kind}Tests, where Project is a production project or a module of the solution.
     [Fact]
     public void NameTestProjects_EveryTestProject_IsProjectDotKindTests()
@@ -98,6 +111,15 @@ public sealed partial class NamesAndPlacesTests
         return Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories)
             .Where(folder => !Path.GetRelativePath(root, folder).Split(Path.DirectorySeparatorChar).Any(BuildOutput.Contains));
     }
+
+    // The top-level types the project declares and the ones it takes from the projects it references directly.
+    private static HashSet<string> TypeNamesSeenBy(string project) =>
+    [
+        .. Solution.ReadProjectFile(project).ProjectReferences.Append(project)
+            .SelectMany(seen => Solution.Load(seen).GetTypes())
+            .Where(type => !type.IsNested && !type.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute)))
+            .Select(type => type.Name),
+    ];
 
     private static bool IsProjectDotKindTests(string project)
     {

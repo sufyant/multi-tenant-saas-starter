@@ -5,7 +5,7 @@ using Audit.Application;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Application.Invitations.SendOwnerInvitation;
+using Notifications.Application.Invitations.InvitationEmail;
 using Notifications.Contracts;
 using Tenancy;
 using Wolverine;
@@ -26,8 +26,8 @@ public sealed class HostRoleTests(Database database)
         new(typeof(ActivateTenant), typeof(ActivateTenantHandler)),
         new(typeof(ActivateTenantReply), typeof(TenantCreationSaga)),
         new(typeof(TenantActivated), typeof(RecordTenantCreatedHandler)),
-        new(typeof(OwnerInvitationReady), typeof(SendOwnerInvitationHandler)),
-        new(typeof(SendOwnerInvitationReply), typeof(TenantCreationSaga)),
+        new(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)),
+        new(typeof(SendInvitationEmailReply), typeof(TenantCreationSaga)),
     ];
 
     private static readonly HandlerRun FirstStep = new(typeof(CreateTenant), typeof(CreateTenantHandler));

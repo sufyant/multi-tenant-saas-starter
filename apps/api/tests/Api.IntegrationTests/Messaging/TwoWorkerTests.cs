@@ -1,6 +1,6 @@
 using System.Net;
 using ControlPlane.Contracts;
-using Notifications.Application.Invitations.SendOwnerInvitation;
+using Notifications.Application.Invitations.InvitationEmail;
 
 namespace Api.IntegrationTests.Messaging;
 
@@ -68,7 +68,7 @@ public sealed class TwoWorkerTests(Database database)
         created.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await workers.SagaStateAsync(tenantId)).ShouldBe("Completed");
         workers.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
-        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendOwnerInvitationHandler)));
-        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendOwnerInvitationHandler)));
+        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)));
     }
 }

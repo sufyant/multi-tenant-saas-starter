@@ -22,7 +22,7 @@ public sealed class TraceIdTests(Database database)
         typeof(ActivateTenantReply).FullName!,
         typeof(TenantActivated).FullName!,
         typeof(OwnerInvitationReady).FullName!,
-        typeof(SendOwnerInvitationReply).FullName!,
+        typeof(SendInvitationEmailReply).FullName!,
     ];
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class TraceIdTests(Database database)
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
         var tenantId = await TwoWorkers.IdOfAsync(created);
-        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == typeof(SendOwnerInvitationReply).FullName));
+        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == typeof(SendInvitationEmailReply).FullName));
         var handlers = spans.OfTenant(tenantId);
 
         handlers.Select(span => span.MessageType).Distinct().ShouldBe(TenantCreationHandlers, ignoreOrder: true);

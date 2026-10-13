@@ -5,4 +5,4 @@ namespace Notifications.Contracts;
 /// invitation's tenant; only the saga handles it.
 /// </summary>
 /// <param name="EventId">Chosen by the sender, so a saga that receives the reply twice can tell.</param>
-public sealed record SendOwnerInvitationReply(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid InvitationId);
+public sealed record SendInvitationEmailReply(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid InvitationId);

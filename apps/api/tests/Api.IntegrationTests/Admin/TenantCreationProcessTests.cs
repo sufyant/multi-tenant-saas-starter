@@ -174,7 +174,7 @@ public sealed class TenantCreationProcessTests(Database database) : IAsyncLifeti
             VALUES ('{tenantId}', 'Activating', '{invitationId}', interval '2 hours', interval '10 minutes', 0)
             """);
         var now = DateTimeOffset.UtcNow;
-        var emailSent = new Notifications.Contracts.SendOwnerInvitationReply(Guid.CreateVersion7(), now, tenantId, invitationId);
+        var emailSent = new Notifications.Contracts.SendInvitationEmailReply(Guid.CreateVersion7(), now, tenantId, invitationId);
         var activated = new ActivateTenantReply(tenantId);
         await using var hold = await HoldSagaAsync(tenantId);
 

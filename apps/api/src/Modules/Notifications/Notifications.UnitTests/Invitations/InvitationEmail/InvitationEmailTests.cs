@@ -1,14 +1,14 @@
 using Notifications.Application;
-using Notifications.Application.Invitations.SendOwnerInvitation;
+using Notifications.Application.Invitations.InvitationEmail;
 using Notifications.Application.Ports;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Notifications.UnitTests.Invitations.SendOwnerInvitation;
+namespace Notifications.UnitTests.Invitations.InvitationEmail;
 
 // The Notifications module sends the invitation email when ControlPlane announces that a tenant's first owner can be invited.
-public sealed class SendOwnerInvitationTests
+public sealed class InvitationEmailTests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -67,8 +67,8 @@ public sealed class SendOwnerInvitationTests
     private static OwnerInvitationReady Ready() =>
         new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link);
 
-    private Task<SendOwnerInvitationReply> SendAsync(OwnerInvitationReady ready) =>
-        SendOwnerInvitationHandler.HandleAsync(ready, _channel, _time, Cancellation);
+    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReady ready) =>
+        SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);
 
     // The email channel, as a system we do not own, at our port.
     private sealed class RecordingEmailChannel : IEmailChannel

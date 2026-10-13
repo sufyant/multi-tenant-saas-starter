@@ -88,7 +88,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
 
     // The email can be reported before the activation reaches the saga: both are published by the activation, so the report proves
     // that the activation committed.
-    public OutgoingMessages Handle([SagaIdentityFrom(nameof(SendOwnerInvitationReply.TenantId))] SendOwnerInvitationReply sent) =>
+    public OutgoingMessages Handle([SagaIdentityFrom(nameof(SendInvitationEmailReply.TenantId))] SendInvitationEmailReply sent) =>
         IsSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
 
     // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is withdrawn.

@@ -65,7 +65,7 @@ public class TenantCreationTests
         sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // Activating | SendOwnerInvitationReply | Completed | none. The tenant's activation and the invitation email are published together,
+    // Activating | SendInvitationEmailReply | Completed | none. The tenant's activation and the invitation email are published together,
     // so the email may be reported sent before the saga has heard of the activation; the email proves that the activation committed.
     [Fact]
     public void SendInvitation_EmailSentBeforeTheActivationArrives_CompletesTheTenantCreation()
@@ -78,7 +78,7 @@ public class TenantCreationTests
         sent.ShouldBeEmpty();
     }
 
-    // SendingInvitation | SendOwnerInvitationReply | Completed | none
+    // SendingInvitation | SendInvitationEmailReply | Completed | none
     [Fact]
     public void SendInvitation_EmailSent_CompletesTheTenantCreation()
     {
@@ -313,7 +313,7 @@ public class TenantCreationTests
 
     private static OwnerInvitationReady InvitationReady() => new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink);
 
-    private static SendOwnerInvitationReply EmailSent() => new(EventId, Now, TenantId, InvitationId);
+    private static SendInvitationEmailReply EmailSent() => new(EventId, Now, TenantId, InvitationId);
 
     // What Wolverine publishes once a message has gone to the dead letter queue; it carries the exception's type only.
     private static Fault<T> FaultOf<T>(T message)
