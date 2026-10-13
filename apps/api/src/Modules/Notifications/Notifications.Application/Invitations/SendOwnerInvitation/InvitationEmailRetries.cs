@@ -7,7 +7,7 @@ using Wolverine.Configuration;
 using Wolverine.ErrorHandling;
 using Wolverine.Runtime.Handlers;
 
-namespace Notifications.Application;
+namespace Notifications.Application.Invitations.SendOwnerInvitation;
 
 // An invitation email that fails is tried again after each configured pause, which grows; then the event goes to the dead letter
 // queue and the tenant creation saga hears of it. The handler holds no transaction while it waits. A pause of a minute or more is a

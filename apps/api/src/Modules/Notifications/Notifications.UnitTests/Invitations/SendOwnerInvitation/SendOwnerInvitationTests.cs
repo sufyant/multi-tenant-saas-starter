@@ -1,13 +1,14 @@
 using Notifications.Application;
+using Notifications.Application.Invitations.SendOwnerInvitation;
 using Notifications.Application.Ports;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Notifications.UnitTests;
+namespace Notifications.UnitTests.Invitations.SendOwnerInvitation;
 
 // The Notifications module sends the invitation email when ControlPlane announces that a tenant's first owner can be invited.
-public sealed class InvitationEmailTests
+public sealed class SendOwnerInvitationTests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 

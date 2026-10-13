@@ -1,6 +1,6 @@
 using System.Net;
 using ControlPlane.Contracts;
-using Notifications.Application;
+using Notifications.Application.Invitations.SendOwnerInvitation;
 
 namespace Api.IntegrationTests.Messaging;
 

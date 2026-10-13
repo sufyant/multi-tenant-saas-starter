@@ -7,7 +7,7 @@ using Npgsql;
 namespace Audit.IntegrationTests;
 
 // The Audit module records that a tenant was created when ControlPlane announces its activation, under that tenant.
-public sealed class TenantCreatedAuditTests(Database database)
+public sealed class RecordTenantCreatedTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 

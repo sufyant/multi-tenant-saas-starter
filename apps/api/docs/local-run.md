@@ -61,6 +61,12 @@ The Notifications module stores no data and has no schema of its own. A database
 psql "postgresql://api_owner:<owner password>@localhost:5432/app" -c "DROP SCHEMA notifications CASCADE"
 ```
 
+ControlPlane's schema was `catalog` before it became `control_plane`. A database migrated by an earlier version still has the `catalog` schema. The migration creates `control_plane` empty and copies no rows, so the tenants, users and system admins of `catalog` are not seen any more. The first system admin comes from configuration again (section 6). Nothing uses `catalog`; the owner role can drop it by hand:
+
+```sh
+psql "postgresql://api_owner:<owner password>@localhost:5432/app" -c "DROP SCHEMA catalog CASCADE"
+```
+
 ## 5. Configure
 
 Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. Each key of `apps/api/appsettings.Example.json` becomes a variable with `__` in place of `:`, and an array item gets its index (`Host__Cors__AllowedOrigins__0`). For a local run:

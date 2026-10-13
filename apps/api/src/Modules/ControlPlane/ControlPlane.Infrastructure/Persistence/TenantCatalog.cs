@@ -14,44 +14,44 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// message the handler serves (W2).
 /// </summary>
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
-public sealed class TenantCatalog(ControlPlaneDbContext catalog) : ITenantCatalog
+public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantCatalog
 {
     internal IQueryable<Membership> Memberships
     {
         get
         {
             _ = ActiveTenant; // Fails fast outside a tenant.
-            return catalog.Memberships;
+            return controlPlane.Memberships;
         }
     }
 
     Guid ITenantCatalog.TenantId => ActiveTenant;
 
     private Guid ActiveTenant =>
-        catalog.MessageTenantId ?? throw new InvalidOperationException("Tenant-owned catalog rows are reached only inside a tenant.");
+        controlPlane.MessageTenantId ?? throw new InvalidOperationException("Tenant-owned catalog rows are reached only inside a tenant.");
 
     Task<Tenant> ITenantCatalog.FindTenantAsync(CancellationToken cancellationToken)
     {
         var tenantId = ActiveTenant;
-        return catalog.Tenants.AsNoTracking().SingleAsync(t => t.Id == tenantId, cancellationToken);
+        return controlPlane.Tenants.AsNoTracking().SingleAsync(t => t.Id == tenantId, cancellationToken);
     }
 
     Task<Tenant> ITenantCatalog.FindTenantAsync(Guid tenantId, CancellationToken cancellationToken) =>
-        catalog.Tenants.AsNoTracking().SingleAsync(t => t.Id == tenantId, cancellationToken);
+        controlPlane.Tenants.AsNoTracking().SingleAsync(t => t.Id == tenantId, cancellationToken);
 
     // A transaction-level advisory lock on the system admin and the key: it is not data, so taking it changes nothing (W7).
     async Task<TenantCreationRequest?> ITenantCatalog.FindCreationRequestAsync(Guid systemAdminId, string idempotencyKey, CancellationToken cancellationToken)
     {
         var lockKey = $"tenant_creation_requests/{systemAdminId}/{idempotencyKey}";
-        await catalog.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", cancellationToken);
+        await controlPlane.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", cancellationToken);
 
-        return await catalog.TenantCreationRequests.AsNoTracking()
+        return await controlPlane.TenantCreationRequests.AsNoTracking()
             .SingleOrDefaultAsync(request => request.SystemAdminId == systemAdminId && request.IdempotencyKey == idempotencyKey, cancellationToken);
     }
 
     async Task<Tenant> ITenantCatalog.FindTenantForUpdateAsync(CancellationToken cancellationToken)
     {
-        var found = await catalog.Tenants
+        var found = await controlPlane.Tenants
             .FromSql($"SELECT * FROM control_plane.tenants WHERE id = {ActiveTenant} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
@@ -66,7 +66,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext catalog) : ITenantCatalo
     {
         var members =
             from membership in Memberships
-            join role in catalog.Roles on membership.RoleId equals role.Id
+            join role in controlPlane.Roles on membership.RoleId equals role.Id
             select new { membership.UserId, role.BuiltIn };
 
         var total = await members.CountAsync(cancellationToken);
@@ -82,7 +82,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext catalog) : ITenantCatalo
 
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken)
     {
-        var found = await catalog.Invitations
+        var found = await controlPlane.Invitations
             .FromSql($"SELECT * FROM control_plane.invitations WHERE token_hash = {tokenHash} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
@@ -91,7 +91,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext catalog) : ITenantCatalo
 
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken)
     {
-        var found = await catalog.Invitations
+        var found = await controlPlane.Invitations
             .FromSql($"SELECT * FROM control_plane.invitations WHERE id = {invitationId} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
@@ -99,31 +99,31 @@ public sealed class TenantCatalog(ControlPlaneDbContext catalog) : ITenantCatalo
     }
 
     Task<User?> ITenantCatalog.FindUserAsync(string externalUserId, CancellationToken cancellationToken) =>
-        catalog.Users.SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
+        controlPlane.Users.SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
 
     Task<bool> ITenantCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
-        catalog.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
+        controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
-    public void AddMember(Guid userId, Guid roleId) => catalog.Memberships.Add(new Membership(ActiveTenant, userId, roleId));
+    public void AddMember(Guid userId, Guid roleId) => controlPlane.Memberships.Add(new Membership(ActiveTenant, userId, roleId));
 
     // An insert of a slug that another tenant creation has inserted but not yet committed waits for it, and is skipped if it commits.
     async Task<bool> ITenantCatalog.TryAddAsync(Tenant tenant, CancellationToken cancellationToken)
     {
         var added = OfActiveTenant(tenant, tenant.Id);
-        var inserted = await catalog.Database.ExecuteSqlAsync(
+        var inserted = await controlPlane.Database.ExecuteSqlAsync(
             $"INSERT INTO control_plane.tenants (id, name, slug, status) VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}) ON CONFLICT (slug) DO NOTHING",
             cancellationToken);
 
         return inserted == 1;
     }
 
-    void ITenantCatalog.Add(Invitation invitation) => catalog.Invitations.Add(invitation);
+    void ITenantCatalog.Add(Invitation invitation) => controlPlane.Invitations.Add(invitation);
 
-    void ITenantCatalog.Add(TenantCreationRequest request) => catalog.TenantCreationRequests.Add(request);
+    void ITenantCatalog.Add(TenantCreationRequest request) => controlPlane.TenantCreationRequests.Add(request);
 
-    void ITenantCatalog.Add(User user) => catalog.Users.Add(user);
+    void ITenantCatalog.Add(User user) => controlPlane.Users.Add(user);
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) => catalog.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
     // The tenants table belongs to no tenant, so row level security does not stop a tenant from adding another one.
     private T OfActiveTenant<T>(T row, Guid? tenantId) =>

@@ -2,7 +2,7 @@ using ControlPlane.Contracts;
 using Notifications.Application.Ports;
 using Notifications.Contracts;
 
-namespace Notifications.Application;
+namespace Notifications.Application.Invitations.SendOwnerInvitation;
 
 // Step 3 of the tenant creation: the invitation email to a new tenant's first owner. The handler takes no DbContext, so Wolverine
 // opens no transaction around the call to the email service; its retries are configured from the module's settings, and once

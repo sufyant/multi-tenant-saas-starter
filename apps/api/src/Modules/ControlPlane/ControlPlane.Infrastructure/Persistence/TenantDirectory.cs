@@ -9,21 +9,21 @@ namespace ControlPlane.Infrastructure.Persistence;
 // what it sees. The membership comes with its role's permissions, so the read stays one query.
 // It runs in the HTTP pipeline, before any message is sent, so no handler's transaction is there to join. It is the only place
 // outside a handler that begins a transaction of its own (W1).
-internal sealed class TenantDirectory(ControlPlaneDbContext catalog) : ITenantDirectory
+internal sealed class TenantDirectory(ControlPlaneDbContext controlPlane) : ITenantDirectory
 {
     public async Task<TenantMembership?> FindMembershipAsync(Guid tenantId, string externalUserId, CancellationToken cancellationToken)
     {
-        if (!await catalog.Tenants.AnyAsync(tenant => tenant.Id == tenantId && tenant.Status == TenantStatus.Active, cancellationToken))
+        if (!await controlPlane.Tenants.AnyAsync(tenant => tenant.Id == tenantId && tenant.Status == TenantStatus.Active, cancellationToken))
         {
             return null;
         }
 
-        await using var transaction = await catalog.Database.BeginTransactionAsync(cancellationToken);
-        await catalog.DeclareTenantAsync(tenantId, cancellationToken);
+        await using var transaction = await controlPlane.Database.BeginTransactionAsync(cancellationToken);
+        await controlPlane.DeclareTenantAsync(tenantId, cancellationToken);
         var memberRole = await (
-                from membership in catalog.Memberships
-                join user in catalog.Users on membership.UserId equals user.Id
-                join role in catalog.Roles on membership.RoleId equals role.Id
+                from membership in controlPlane.Memberships
+                join user in controlPlane.Users on membership.UserId equals user.Id
+                join role in controlPlane.Roles on membership.RoleId equals role.Id
                 where user.ExternalId == externalUserId
                 select role)
             .AsNoTracking()

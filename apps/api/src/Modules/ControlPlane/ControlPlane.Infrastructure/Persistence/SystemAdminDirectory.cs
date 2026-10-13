@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 namespace ControlPlane.Infrastructure.Persistence;
 
 internal sealed class SystemAdminDirectory(
-    ControlPlaneDbContext catalog,
+    ControlPlaneDbContext controlPlane,
     IIdentityProvider identity,
     IOptions<SystemAdminSettings> settings,
     TimeProvider time) : ISystemAdminDirectory
@@ -21,7 +21,7 @@ internal sealed class SystemAdminDirectory(
     {
         var mayBecomeTheFirst = secondFactorVerified
             && settings.Value.NamesTheFirstSystemAdmin
-            && !await catalog.SystemAdmins.AnyAsync(cancellationToken);
+            && !await controlPlane.SystemAdmins.AnyAsync(cancellationToken);
         var isSystemAdmin = await IsSystemAdminAsync(externalUserId, cancellationToken);
         if (!isSystemAdmin && mayBecomeTheFirst && await IsTheFirstAsync(externalUserId, cancellationToken))
         {
@@ -33,7 +33,7 @@ internal sealed class SystemAdminDirectory(
     }
 
     private Task<bool> IsSystemAdminAsync(string externalUserId, CancellationToken cancellationToken) =>
-        catalog.SystemAdmins.AnyAsync(admin => catalog.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);
+        controlPlane.SystemAdmins.AnyAsync(admin => controlPlane.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);
 
     // The verified addresses come from the identity provider's server, as when an invitation is accepted.
     private async Task<bool> IsTheFirstAsync(string externalUserId, CancellationToken cancellationToken) =>
@@ -45,7 +45,7 @@ internal sealed class SystemAdminDirectory(
     private async Task GrantTheFirstAsync(string externalUserId, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        await catalog.Database.ExecuteSqlAsync(
+        await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH added AS (
                 INSERT INTO control_plane.users (id, external_id) VALUES ({Guid.CreateVersion7(now)}, {externalUserId})

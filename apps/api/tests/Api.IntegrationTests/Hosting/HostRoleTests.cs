@@ -5,7 +5,7 @@ using Audit.Application;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Application;
+using Notifications.Application.Invitations.SendOwnerInvitation;
 using Notifications.Contracts;
 using Tenancy;
 using Wolverine;

@@ -11,11 +11,11 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// what is seen; the query adds no filter of its own. The message has no tenant, so the transaction declares none (R4).
 /// </summary>
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
-public sealed class UserTenants(ControlPlaneDbContext catalog) : IUserTenants
+public sealed class UserTenants(ControlPlaneDbContext controlPlane) : IUserTenants
 {
     async Task<ListPage<Tenant>> IUserTenants.ListActiveAsync(string externalUserId, PageRequest paging, CancellationToken cancellationToken)
     {
-        var userId = await catalog.Users
+        var userId = await controlPlane.Users
             .Where(user => user.ExternalId == externalUserId)
             .Select(user => (Guid?)user.Id)
             .SingleOrDefaultAsync(cancellationToken);
@@ -24,10 +24,10 @@ public sealed class UserTenants(ControlPlaneDbContext catalog) : IUserTenants
             return new ListPage<Tenant>([], paging, 0);
         }
 
-        await catalog.DeclareUserAsync(id, cancellationToken);
+        await controlPlane.DeclareUserAsync(id, cancellationToken);
         var tenants =
-            from membership in catalog.Memberships
-            join tenant in catalog.Tenants on membership.TenantId equals tenant.Id
+            from membership in controlPlane.Memberships
+            join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
             where tenant.Status == TenantStatus.Active
             select tenant;
 

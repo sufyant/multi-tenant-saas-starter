@@ -253,6 +253,18 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
+    // N5: accepting is the signed-in user's own work, so it is under /v1/me; the old path is gone. An empty code would answer 400 on
+    // a live route, so the 404 can only come from the missing route.
+    [Fact]
+    public async Task AcceptInvitation_OnTheOldPath_IsNotFound()
+    {
+        var client = _api.CreateClient($"user_{Guid.NewGuid():N}");
+
+        var accepted = await client.PostAsJsonAsync("/v1/invitations/accept", new { code = "" }, Cancellation);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
     // Creating a tenant invites its first owner, here someone who already has an account, so the link carries our invitation
     // code.
     private async Task<(string Slug, string Invitee, string Code)> InviteSomeoneWithAnAccountAsync()
