@@ -9,6 +9,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | Key | Required | Default | What it does |
 | --- | --- | --- | --- |
 | `Host:Role` | Required | none | The process type: `web` serves the API, `worker` handles messages, `all` does both in one process (local development and tests) |
+| `Api:IdempotencyKeyRetention` | Optional | `1.00:00:00` | How long the host keeps request keys and their results. Must be at least 24 hours. The worker sends a cleanup message each hour. Cleanup keeps an active claim |
 | `Host:ShutdownTimeout` | Optional | `00:00:30` | How long a stopping process may take to finish the work it has |
 | `Host:Cors:AllowedOrigins` | Optional | none | The browser origins that may call the API, such as `https://app.example.com`. With none, no browser origin may call |
 | `Host:ManagementPort` | Optional | `8081` | The port of the health endpoints `/health/live` and `/health/ready`. The process listens on it on all interfaces and answers nothing else there. It must differ from the public port. Each process on one machine needs its own management port |
