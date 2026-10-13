@@ -100,6 +100,7 @@ internal static class ApiPipeline
             // Of two messages a saga handles at once, the second fails on the saga's version and is tried again on the first one's
             // result (W6, S8). Wolverine does not retry this by itself.
             options.OnException<SagaConcurrencyException>().RetryTimes(3);
+            options.OnAnyException().ContinueWith(new QueuedRetries());
 
             // Wolverine's EF Core middleware begins, saves and commits the transaction of every handler that uses a module DbContext,
             // with the messages the handler sends in it (W1). Each handler of a message runs in its own transaction (W4).

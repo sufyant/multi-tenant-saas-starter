@@ -22,6 +22,8 @@ internal static class TestEndpoints
         MapOpen(open);
 
         v1.MapGet("/whoami", (ClaimsPrincipal user) => Results.Ok(user.FindFirstValue(ClaimTypes.NameIdentifier))).RequireSignedIn();
+        v1.MapPost("/retry-probes", (RetryProbe command, IMessageBus bus, CancellationToken cancellationToken) =>
+            bus.InvokeAsync<Result>(command, cancellationToken)).RequireSignedIn();
 
         // An endpoint that states no access at all (A5).
         v1.MapGet("/unstated", () => Results.Ok());

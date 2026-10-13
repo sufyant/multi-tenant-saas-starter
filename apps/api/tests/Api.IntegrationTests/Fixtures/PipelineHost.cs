@@ -67,6 +67,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         builder.Services.AddModuleMigrations<ProbeDbContext>(ProbeDbContext.Schema);
         builder.Services.TrustTestKey();
         builder.Services.AddSingleton<IdempotencyGate>();
+        builder.Services.AddSingleton<RetryAttempts>();
 
         // The identity provider is a system we do not own. The system door asks it for a user's verified emails while the staff list
         // is empty, which depends on the order the tests run in.
