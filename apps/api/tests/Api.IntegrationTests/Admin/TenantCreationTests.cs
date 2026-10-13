@@ -17,7 +17,7 @@ namespace Api.IntegrationTests.Admin;
 
 // The tenant creation saga through the system door and the real host: its three steps, its compensations, and what is left
 // for a person when the last step fails for good. Only Clerk and the email service are fakes.
-public sealed class TenantCreationProcessTests(Database database) : IAsyncLifetime
+public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 

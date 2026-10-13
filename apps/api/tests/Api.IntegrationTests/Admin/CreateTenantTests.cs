@@ -8,7 +8,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Admin;
 
-// A system admin creates a tenant through the system door, and the tenant creation saga runs through the outbox. TenantCreationProcessTests
+// A system admin creates a tenant through the system door, and the tenant creation saga runs through the outbox. TenantCreationTests
 // follows the saga itself.
 public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 {
