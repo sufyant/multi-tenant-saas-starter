@@ -42,13 +42,13 @@ The API needs these from an identity provider:
 On Clerk:
 
 - Use the session token. A JWT template's token carries no `sid`, so the API refuses it.
-- Enable the second factor. The first system admin enrolls a device before their first request to `/v1/system/...`.
+- Enable the second factor. The first system admin enrolls a device before their first request to `/v1/admin/...`.
 - Keep sign-up open and require email verification at sign-up.
 - The Backend API call is `GET users/{user id}`; the API reads the addresses whose verification status is `verified`.
 
-## Email and onboarding timing
+## Email and tenant creation timing
 
-- `ControlPlane:InvitationEmailTimeout` must be longer than the `Notifications:InvitationEmailRetryDelays` together. Otherwise the onboarding gives up on an email that is still being tried, cancels the invitation and raises the alarm.
+- `ControlPlane:InvitationEmailTimeout` must be longer than the `Notifications:InvitationEmailRetryDelays` together. Otherwise the tenant creation gives up on an email that is still being tried, cancels the invitation and raises the alarm.
 - Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
 
 ## Container platform

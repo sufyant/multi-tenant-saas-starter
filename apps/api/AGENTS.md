@@ -15,17 +15,17 @@ Run from `apps/api/`.
 - Build: `dotnet build Api.slnx`. No new warnings.
 - Test: `dotnet test --solution Api.slnx`. Needs Docker: tests run on PostgreSQL 18 in a container.
 - Format C#: `dotnet format whitespace Api.slnx`.
-- Add a migration to module X: `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/X/X.Infrastructure`.
+- Add a migration to module X: `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/X/X.Infrastructure --output-dir Persistence/Migrations`.
 - Run the system: follow `docs/local-run.md`. One build output; `Host:Role` is `web`, `worker` or `all`.
 
 ## Closed decisions
 
 These were decided with the maintainer, with their sources. Do not reopen one, and do not propose to, unless the maintainer asks or you have new information. Then say what the new information is.
 
-- The onboarding saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6; rules S1 to S13 in section 3)
+- The tenant creation saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6; rules S1 to S13 in section 3)
 - The tenant id is in the API path and is proven by membership. It never comes from the token, the body, the query or a header. (T1, T2, Deviations)
 - The identity provider only authenticates. Tenants, roles and permissions live in our tables. (T6, A1 to A6)
-- The Owner signs up with the identity provider like any user. The onboarding creates nothing in the identity provider. (Section 6)
+- The Owner signs up with the identity provider like any user. Tenant creation creates nothing in the identity provider. (Section 6)
 - RLS is the only tenant filter. No EF Core query filters as a second layer. (R1 to R11)
 - Wolverine is used as it is: dispatcher, EF Core transactions, outbox, PostgreSQL transport, saga. No custom transaction wrapper, mediator, outbox or saga store. No Wolverine.Http. (Section 3, W1 to W10)
 - One build output, two process roles: web and worker. (Section 1, W5)
@@ -44,6 +44,8 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - A package update changes no document unless it adds or removes a package, or changes a license. `LicenseTests` fails then.
 - Health endpoints answer only on the management port (`Host:ManagementPort`, 8081). A `curl` to 8080 gets 404. (Section 8, `ManagementPortTests`)
 - A migration runs while the previous version still serves. A migration that breaks the previous version breaks production during the deploy. Expand first; contract in a later release. (`docs/deployment.md` at the repository root)
+- A folder named `System` hides .NET's `System` namespace. The admin audience is `Admin`. The other rules for names and folders are in section 10 of `ARCHITECTURE.md` ("Names and places").
+- Me is a Visual Basic keyword. CA1716 does not check namespaces (`.editorconfig`); it still checks types and members.
 
 ## How we design
 

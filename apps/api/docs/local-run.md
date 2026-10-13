@@ -10,7 +10,7 @@ These steps take an empty machine to a created tenant and an accepted invitation
   - its issuer URL (`Authentication:Clerk:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
   - a way to get a session token for a user. The token carries `sub`, `sid`, `iss`, `exp` and `nbf`; a token without `sid`, such as a JWT template's token, is refused. A token for the system door also carries `fva` with a verified second factor (for example `[0,0]`).
   - open sign-up with email verification at sign-up: the Owner signs up like any other user. The application calls the Backend API only to read a user's verified email addresses when they accept an invitation.
-  - a user whose verified email address is the one you put in `ControlPlane:FirstSystemAdminEmail`. That user becomes the first system admin on their first request to `/v1/system/...` (section 6).
+  - a user whose verified email address is the one you put in `ControlPlane:FirstSystemAdminEmail`. That user becomes the first system admin on their first request to `/v1/admin/...` (section 6).
 
 ## 2. Database
 
@@ -44,15 +44,15 @@ The migration step runs as the owner role and needs only its connection (R3). `C
 cd out/api
 ConnectionStrings__Migrations="Host=localhost;Port=5432;Database=app;Username=api_owner;Password=<owner password>" \
   dotnet Api.dll migrate
-# ... Migrated the catalog schema: 11 migrations applied
+# ... Migrated the control_plane schema: 1 migrations applied
 # ... Migrated the audit schema: 2 migrations applied
-# ... Migration finished: the schemas catalog, audit and the message storage in wolverine are up to date
+# ... Migration finished: the schemas control_plane, audit and the message storage in wolverine are up to date
 ```
 
 The application does not start on a database that was not migrated. It stops at once and says so:
 
 ```text
-The application does not start: the database is not migrated, it has no schema audit, catalog, wolverine: run `dotnet Api.dll migrate` first.
+The application does not start: the database is not migrated, it has no schema audit, control_plane, wolverine: run `dotnet Api.dll migrate` first.
 ```
 
 The Notifications module stores no data and has no schema of its own. A database migrated by an earlier version still has an empty `notifications` schema, which nothing uses. The owner role can drop it by hand:
@@ -128,7 +128,7 @@ curl http://127.0.0.1:5181/health/ready   # Healthy
 curl -i http://127.0.0.1:5080/health/ready   # 404: the public port does not answer them
 ```
 
-The worker serves only the health endpoints. A web process without a worker warns that no node can run durability agents. Onboarding then waits in the queue until a worker starts.
+The worker serves only the health endpoints. A web process without a worker warns that no node can run durability agents. Tenant creation then waits in the queue until a worker starts.
 
 For a single process, `Host__Role=all` runs both roles in one process.
 
@@ -137,14 +137,14 @@ For a single process, `Host__Role=all` runs both roles in one process.
 As the first system admin, with a token that has a verified second factor:
 
 ```sh
-curl -X POST http://127.0.0.1:5080/v1/system/tenants \
+curl -X POST http://127.0.0.1:5080/v1/admin/tenants \
   -H "Authorization: Bearer <admin token>" \
   -H "Idempotency-Key: <a key of your choice>" \
   -H "Content-Type: application/json" \
   -d '{"name":"Acme","slug":"acme","ownerEmail":"owner@acme.test"}'
 ```
 
-The answer is `200` with the tenant in `Provisioning`. The first request takes a few seconds, while Wolverine generates its handler code. Within seconds the worker takes the onboarding to its end, and the worker's log shows the invitation email:
+The answer is `200` with the tenant in `Provisioning`. The first request takes a few seconds, while Wolverine generates its handler code. Within seconds the worker takes the tenant creation to its end, and the worker's log shows the invitation email:
 
 ```text
 Email to owner@acme.test is not sent in Development: You are invited to Acme
@@ -152,14 +152,14 @@ Email to owner@acme.test is not sent in Development: You are invited to Acme
 https://app.localhost/invitations/accept?code=<tenantId>.<secret>
 ```
 
-The link is always our accept link. The onboarding creates nothing at the identity provider: an owner without an account signs up there like any other user, with the invited email address verified, and then accepts.
+The link is always our accept link. Tenant creation creates nothing at the identity provider: an owner without an account signs up there like any other user, with the invited email address verified, and then accepts.
 
 ## 8. Accept the invitation
 
 As the owner, signed in with the invited email address verified:
 
 ```sh
-curl -X POST http://127.0.0.1:5080/v1/invitations/accept \
+curl -X POST http://127.0.0.1:5080/v1/me/invitations/accept \
   -H "Authorization: Bearer <owner token>" -H "Content-Type: application/json" \
   -d '{"code":"<tenantId>.<secret>"}'
 curl http://127.0.0.1:5080/v1/me/tenants -H "Authorization: Bearer <owner token>"
