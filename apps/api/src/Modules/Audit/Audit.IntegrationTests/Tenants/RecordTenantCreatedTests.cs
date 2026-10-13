@@ -1,10 +1,10 @@
-using Audit.Application;
 using Audit.Application.Ports;
+using Audit.Application.Tenants;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
-namespace Audit.IntegrationTests;
+namespace Audit.IntegrationTests.Tenants;
 
 // The Audit module records that a tenant was created when ControlPlane announces its activation, under that tenant.
 public sealed class RecordTenantCreatedTests(Database database)

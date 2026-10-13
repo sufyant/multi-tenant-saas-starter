@@ -1,5 +1,5 @@
 using System.Reflection;
-using Audit.Application;
+using Audit.Application.Tenants;
 
 namespace Audit.Api;
 

@@ -2,7 +2,7 @@ using Audit.Application.Ports;
 using Audit.Domain;
 using ControlPlane.Contracts;
 
-namespace Audit.Application;
+namespace Audit.Application.Tenants;
 
 // The audit record of a tenant's creation, written when ControlPlane announces the tenant active, under that tenant. The system
 // admin who created the tenant acted.

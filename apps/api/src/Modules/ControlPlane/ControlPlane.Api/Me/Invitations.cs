@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;

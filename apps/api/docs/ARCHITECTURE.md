@@ -425,7 +425,7 @@ The ControlPlane module after these rules:
 
 | Project | Folders |
 | --- | --- |
-| `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/` |
+| `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/`, `Authentication/` (the signed-in user's id), `ControlPlaneModule.cs` |
 | `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Invitations/`, `Members/`, `Ports/`, `Errors.cs` |
 | `ControlPlane.Domain` | One folder for each aggregate. `PermissionPools.cs`, which several aggregates use, sits at the root |
 | `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/`, `ControlPlaneInfrastructure.cs` |

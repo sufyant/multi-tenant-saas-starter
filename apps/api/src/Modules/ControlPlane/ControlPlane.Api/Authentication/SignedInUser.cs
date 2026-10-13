@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace ControlPlane.Api;
+namespace ControlPlane.Api.Authentication;
 
 internal static class SignedInUser
 {

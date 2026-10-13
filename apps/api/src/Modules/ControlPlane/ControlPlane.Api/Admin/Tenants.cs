@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;

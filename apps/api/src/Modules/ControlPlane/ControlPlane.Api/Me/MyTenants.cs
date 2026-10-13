@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Tenants;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
