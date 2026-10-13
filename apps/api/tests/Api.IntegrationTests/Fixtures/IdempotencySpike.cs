@@ -29,7 +29,7 @@ public static class SpikeResultMiddleware
     public static async Task AfterAsync(Result<SpikeTenantResult> result, Envelope envelope, ControlPlaneDbContext controlPlane, CancellationToken cancellationToken)
     {
         await controlPlane.Database.ExecuteSqlAsync(
-            $"INSERT INTO api.idempotency_keys (key, result) VALUES ({envelope.Headers["idempotency-key"]}, {result.Value.Id.ToString()})", cancellationToken);
+            $"INSERT INTO spike.idempotency_keys (key, result) VALUES ({envelope.Headers["spike-key"]}, {result.Value.Id.ToString()})", cancellationToken);
         if (envelope.Headers.ContainsKey("fail-after-result"))
         {
             throw new InvalidOperationException("The middleware failed after the result write.");
