@@ -54,9 +54,9 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
         var code = $"{Guid.NewGuid()}.unknown-secret";
         var client = _api.CreateClient(user);
-        HttpResponseMessage[] allowed = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => client.PostAsJsonAsync("/v1/invitations/accept", new { code }, Cancellation)));
+        HttpResponseMessage[] allowed = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => client.PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation)));
 
-        var rejected = await client.PostAsJsonAsync("/v1/invitations/accept", new { code }, Cancellation);
+        var rejected = await client.PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
         var other = await client.GetAsync("/v1/me/tenants", Cancellation);
 
         allowed.Select(response => response.StatusCode).Distinct().ShouldBe([HttpStatusCode.NotFound]);
@@ -225,7 +225,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_WithoutACode_IsABadRequest(string body)
     {
         var accepted = await _api.CreateClient($"user_{Guid.NewGuid():N}")
-            .PostAsync("/v1/invitations/accept", new StringContent(body, Encoding.UTF8, "application/json"), Cancellation);
+            .PostAsync("/v1/me/invitations/accept", new StringContent(body, Encoding.UTF8, "application/json"), Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(accepted)).ShouldBe("invitation.code_required");
@@ -239,7 +239,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_WithoutAReadableBody_IsABadRequest(string body)
     {
         var accepted = await _api.CreateClient($"user_{Guid.NewGuid():N}")
-            .PostAsync("/v1/invitations/accept", new StringContent(body, Encoding.UTF8, "application/json"), Cancellation);
+            .PostAsync("/v1/me/invitations/accept", new StringContent(body, Encoding.UTF8, "application/json"), Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         accepted.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
@@ -248,7 +248,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_WithoutASignedInUser_IsUnauthorized()
     {
-        var accepted = await _api.CreateClient().PostAsJsonAsync("/v1/invitations/accept", new { code = "any" }, Cancellation);
+        var accepted = await _api.CreateClient().PostAsJsonAsync("/v1/me/invitations/accept", new { code = "any" }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
@@ -275,7 +275,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
     }
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/invitations/accept", new { code }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
 
     // An invitation code is `<tenantId>.<secret>`.
     private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];

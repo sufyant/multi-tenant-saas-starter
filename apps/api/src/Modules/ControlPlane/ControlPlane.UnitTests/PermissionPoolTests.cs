@@ -16,9 +16,9 @@ public class PermissionPoolTests
     }
 
     [Fact]
-    public void NameSystemPermissions_EveryOne_StartsWithSystem()
+    public void NameSystemPermissions_EveryOne_StartsWithAdmin()
     {
-        var misnamed = PermissionPools.SystemPool.Where(permission => !permission.StartsWith("system.", StringComparison.Ordinal));
+        var misnamed = PermissionPools.SystemPool.Where(permission => !permission.StartsWith("admin.", StringComparison.Ordinal));
 
         misnamed.ShouldBeEmpty();
     }

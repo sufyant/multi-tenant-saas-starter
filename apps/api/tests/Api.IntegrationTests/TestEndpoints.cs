@@ -47,25 +47,25 @@ internal static class TestEndpoints
     // Tenant endpoints require a permission (A5); every built-in role holds this one, so any member gets in.
     public static void MapTenant(RouteGroupBuilder tenant)
     {
-        tenant.MapGet("/ping", () => Results.Ok()).RequireAuthorization(Permissions.MembersRead);
+        tenant.MapGet("/ping", () => Results.Ok()).RequireAuthorization(Permissions.TenantMembersRead);
 
         tenant.MapPost("/probes", (WriteProbe command, IMessageBus bus, CancellationToken cancellationToken) =>
                 bus.InvokeAsync<Result>(command, cancellationToken))
-            .RequireAuthorization(Permissions.MembersRead);
+            .RequireAuthorization(Permissions.TenantMembersRead);
 
         tenant.MapPost("/failing-probes", (WriteProbeThenFail command, IMessageBus bus, CancellationToken cancellationToken) =>
                 bus.InvokeAsync(command, cancellationToken))
-            .RequireAuthorization(Permissions.MembersRead);
+            .RequireAuthorization(Permissions.TenantMembersRead);
 
         tenant.MapGet("/probes", (IMessageBus bus, CancellationToken cancellationToken) =>
                 bus.InvokeAsync<Result<string[]>>(new ReadProbes(), cancellationToken))
-            .RequireAuthorization(Permissions.MembersRead);
+            .RequireAuthorization(Permissions.TenantMembersRead);
 
         tenant.MapPost("/guarded", () => Results.Ok()).RequireAuthorization(GuardedPermission);
     }
 
-    public static void MapSystem(RouteGroupBuilder system) =>
-        system.MapGet("/ping", () => Results.Ok()).RequireAuthorization(Permissions.SystemTenantsCreate);
+    public static void MapAdmin(RouteGroupBuilder admin) =>
+        admin.MapGet("/ping", () => Results.Ok()).RequireAuthorization(Permissions.AdminTenantsCreate);
 }
 
 // Wolverine only discovers public handlers, messages and validators.

@@ -83,13 +83,13 @@ public sealed class TenantOnboardingEndpointTests(Database database) : IAsyncLif
         (await database.ScalarAsync<string>($"SELECT name FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe("Acme Ltd");
     }
 
-    // T5: the system door is /v1/system; the old path is gone.
+    // T5: the admin door is /v1/admin; the old path is gone.
     [Fact]
     public async Task CreateTenant_OnTheOldPath_IsNotFound()
     {
         var admin = await AdminAsync();
 
-        var created = await admin.PostAsJsonAsync("/v1/admin/tenants", new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }, Cancellation);
+        var created = await admin.PostAsJsonAsync("/v1/system/tenants", new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }, Cancellation);
 
         created.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }

@@ -4,9 +4,9 @@ namespace Api.IntegrationTests;
 
 internal static class TenantRequests
 {
-    public const string Path = "/v1/system/tenants";
+    public const string Path = "/v1/admin/tenants";
 
-    // POST /v1/system/tenants is safe to repeat only under the key the client gives it; each call here is a new request unless the
+    // POST /v1/admin/tenants is safe to repeat only under the key the client gives it; each call here is a new request unless the
     // test gives the key.
     public static Task<HttpResponseMessage> CreateTenantAsync(this HttpClient client, object body, string? idempotencyKey = null) =>
         client.CreateTenantAsync(JsonContent.Create(body), idempotencyKey);

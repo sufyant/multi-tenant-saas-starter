@@ -1,6 +1,6 @@
 using Api.Authorization;
 
-namespace Api.Tenants;
+namespace Api.Tenant;
 
 internal static class TenantRoutes
 {

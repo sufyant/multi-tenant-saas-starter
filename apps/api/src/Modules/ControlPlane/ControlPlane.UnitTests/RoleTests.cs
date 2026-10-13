@@ -18,6 +18,6 @@ public class RoleTests
     {
         var roles = BuiltInRoles.All;
 
-        roles.ShouldAllBe(role => role.Permissions.Contains("members.read"));
+        roles.ShouldAllBe(role => role.Permissions.Contains("tenant.members.read"));
     }
 }

@@ -46,7 +46,7 @@ public sealed class TenantOnboardingTests(Database database) : IAsyncLifetime
         await Waiting.UntilAsync(() => _email.Sent.Any(sent => sent.To == ownerEmail));
         var acceptLink = LinkIn(_email.Sent.Single(sent => sent.To == ownerEmail).Text);
         _identity.SignUp("user_e2e_owner", ownerEmail);
-        var accepted = await owner.PostAsJsonAsync("/v1/invitations/accept", new { code = CodeOf(acceptLink) }, Cancellation);
+        var accepted = await owner.PostAsJsonAsync("/v1/me/invitations/accept", new { code = CodeOf(acceptLink) }, Cancellation);
         var myTenants = await owner.GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
         var members = await owner.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/members", Cancellation);
         var strangerMembers = await stranger.GetAsync($"/v1/tenants/{tenantId}/members", Cancellation);
@@ -63,7 +63,7 @@ public sealed class TenantOnboardingTests(Database database) : IAsyncLifetime
     }
 
     // The client gives each tenant it creates a key, so a repeated request does not create a second tenant.
-    private static HttpRequestMessage CreateTenant(object body) => new(HttpMethod.Post, "/v1/system/tenants")
+    private static HttpRequestMessage CreateTenant(object body) => new(HttpMethod.Post, "/v1/admin/tenants")
     {
         Content = JsonContent.Create(body),
         Headers = { { "Idempotency-Key", Guid.NewGuid().ToString() } },

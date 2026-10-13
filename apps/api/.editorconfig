@@ -15,6 +15,10 @@ indent_size = 2
 csharp_style_namespace_declarations = file_scoped:warning
 csharp_prefer_braces = true:warning
 
+# CA1716 checks types and members, not namespaces. Our namespaces follow the folder, route and audience rule (ARCHITECTURE.md,
+# "Names and places"), so an audience such as Me is a namespace. Only our own C# host uses these assemblies.
+dotnet_code_quality.CA1716.analyzed_symbol_kinds = NamedType, Method, Property, Event, Parameter
+
 # Test names describe behaviour in words separated by underscores. A test project is known by its name, wherever it sits.
 [**/*.{UnitTests,IntegrationTests,EndToEndTests,Tests}/**.cs]
 dotnet_diagnostic.CA1707.severity = none

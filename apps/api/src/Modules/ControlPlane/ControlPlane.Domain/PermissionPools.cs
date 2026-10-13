@@ -9,11 +9,11 @@ namespace ControlPlane.Domain;
 /// </summary>
 internal static class PermissionPools
 {
-    public const string SystemTenantsCreate = "system.tenants.create";
+    public const string AdminTenantsCreate = "admin.tenants.create";
 
-    public const string MembersRead = "members.read";
+    public const string TenantMembersRead = "tenant.members.read";
 
-    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(StringComparer.Ordinal, MembersRead);
+    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(StringComparer.Ordinal, TenantMembersRead);
 
-    public static IReadOnlySet<string> SystemPool { get; } = FrozenSet.Create(StringComparer.Ordinal, SystemTenantsCreate);
+    public static IReadOnlySet<string> SystemPool { get; } = FrozenSet.Create(StringComparer.Ordinal, AdminTenantsCreate);
 }

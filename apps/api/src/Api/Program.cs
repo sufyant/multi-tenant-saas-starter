@@ -1,8 +1,9 @@
 using System.Reflection;
 using Api;
 using Api.Hosting;
-using Api.SystemAdmins;
-using Api.Tenants;
+using Api.Admin;
+using Api.Me;
+using Api.Tenant;
 using Api.Persistence;
 using Audit.Api;
 using Audit.Infrastructure;
@@ -38,7 +39,7 @@ try
     if (role.ServesTheApi())
     {
         var v1 = app.MapV1();
-        v1.MapSignedIn().MapControlPlaneEndpoints(v1.MapSystem(), v1.MapTenant());
+        ControlPlaneModule.MapEndpoints(v1.MapAdmin(), v1.MapMe(), v1.MapTenant());
         app.MapApiDocuments();
     }
 }

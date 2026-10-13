@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
-using Api.SystemAdmins;
-using Api.Tenants;
+using Api.Admin;
+using Api.Tenant;
 using ControlPlane.Application.Ports;
 using ControlPlane.Infrastructure;
 using Microsoft.AspNetCore.Builder;
@@ -76,10 +76,10 @@ internal sealed class PipelineHost : IAsyncDisposable
         app.UseApiPipeline();
         app.MapApiDocuments();
         var v1 = app.MapV1();
-        var system = v1.MapSystem();
+        var admin = v1.MapAdmin();
         TestEndpoints.Map(v1);
         TestEndpoints.MapTenant(v1.MapTenant());
-        TestEndpoints.MapSystem(system);
+        TestEndpoints.MapAdmin(admin);
         await app.StartAsync(TestContext.Current.CancellationToken);
 
         return new PipelineHost(app);

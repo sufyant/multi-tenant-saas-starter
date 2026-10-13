@@ -2,17 +2,17 @@ using System.Diagnostics;
 using System.Security.Claims;
 using Api.Authentication;
 using Api.Authorization;
-using Api.SystemAdmins;
+using Api.Admin;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
 using Serilog.Context;
 using Wolverine;
 
-namespace Api.Tenants;
+namespace Api.Tenant;
 
 // Resolves the tenant of a request and what the caller may do there, never from the client's word alone. On a tenant
-// route the tenant comes from the id in the path and the user's membership, with the permissions of the member's role; on a system
+// route the tenant comes from the id in the path and the user's membership, with the permissions of the member's role; on an admin
 // route ControlPlane answers with the user's system permissions, given whether the session verified a second factor (A6).
 // It rejects nothing: authorization turns away the callers it finds no access for.
 internal sealed class TenantResolutionMiddleware(RequestDelegate next)
@@ -35,7 +35,7 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
         }
 
         Guid? tenantId = null;
-        if (metadata.GetMetadata<SystemEndpoint>() is not null)
+        if (metadata.GetMetadata<AdminEndpoint>() is not null)
         {
             access.SystemPermissions = await systemAdmins.FindSystemPermissionsAsync(
                 userId, context.User.HasVerifiedSecondFactor(), context.RequestAborted);
