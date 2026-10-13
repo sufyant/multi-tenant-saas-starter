@@ -88,8 +88,11 @@ public sealed class Database : IAsyncLifetime
         await disable.ExecuteNonQueryAsync();
         // The default timeout of zero reports only that SIGTERM was sent. Readiness must run after the sessions actually end.
         await using var terminate = new NpgsqlCommand(
-            $"SELECT coalesce(bool_and(pg_terminate_backend(pid, 5000)), true) FROM pg_stat_activity WHERE datname = '{database}'", connection);
-        ((bool)(await terminate.ExecuteScalarAsync())!).ShouldBeTrue("Every session must end before the test checks readiness.");
+            $"SELECT pg_terminate_backend(pid, 5000) FROM pg_stat_activity WHERE datname = '{database}'", connection);
+        await terminate.ExecuteNonQueryAsync();
+        // A session can end before its signal is sent, which returns false. Check the actual sessions in a fresh statement.
+        await using var remaining = new NpgsqlCommand($"SELECT count(*) FROM pg_stat_activity WHERE datname = '{database}'", connection);
+        ((long)(await remaining.ExecuteScalarAsync())!).ShouldBe(0, "Every session must end before the test checks readiness.");
     }
 
     // Real fault injection: pause a backend before its termination signal arrives, then resume it.
