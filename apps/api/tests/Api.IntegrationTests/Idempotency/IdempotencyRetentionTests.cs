@@ -68,7 +68,13 @@ public sealed class IdempotencyRetentionTests(Database database)
 
     private static IdempotencyKey Row(string subject, string key, DateTimeOffset createdAt, DateTimeOffset? lockedUntil = null) => new()
     {
-        Subject = subject, Key = key, Method = "POST", Route = "/test", RequestHash = new string('0', 64),
-        CreatedAt = createdAt, Lease = Guid.NewGuid(), LockedUntil = lockedUntil,
+        Subject = subject,
+        Key = key,
+        Method = "POST",
+        Route = "/test",
+        RequestHash = new string('0', 64),
+        CreatedAt = createdAt,
+        Lease = Guid.NewGuid(),
+        LockedUntil = lockedUntil,
     };
 }

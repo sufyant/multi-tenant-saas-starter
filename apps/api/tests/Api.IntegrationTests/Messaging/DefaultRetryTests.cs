@@ -19,7 +19,8 @@ public sealed class DefaultRetryTests(Database database)
         await database.CreateProbesAsync(name);
         await using var host = await PipelineHost.StartAsync(new Dictionary<string, string?>
         {
-            ["Host:Role"] = role, ["ConnectionStrings:Database"] = database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name),
+            ["Host:Role"] = role,
+            ["ConnectionStrings:Database"] = database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name),
         });
         var command = new RetryProbe(Guid.NewGuid());
 

@@ -136,7 +136,9 @@ internal static class ApiPipeline
                 operation.Parameters ??= [];
                 operation.Parameters.Add(new OpenApiParameter
                 {
-                    Name = IdempotencyMiddleware.Header, In = ParameterLocation.Header, Required = true,
+                    Name = IdempotencyMiddleware.Header,
+                    In = ParameterLocation.Header,
+                    Required = true,
                     Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 255, Pattern = "^[!-~]+$" },
                 });
             }
