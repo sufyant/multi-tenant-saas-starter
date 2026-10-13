@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="ControlPlane.IntegrationTests.Fixtures" />
     <Using Include="Shouldly" />
     <Using Include="Xunit" />
   </ItemGroup>

@@ -4,7 +4,7 @@ Every NuGet package of every project in `Api.slnx`, direct and transitive, with 
 
 Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under another license needs a decision first (fixed rule 4).
 
-`LicenseTests` in `Architecture.Tests` fails in these cases:
+`LicenseTests` in `Api.ArchitectureTests` fails in these cases:
 
 - A package in use has no row here, or has more than one row.
 - A row names a package that is no longer used.

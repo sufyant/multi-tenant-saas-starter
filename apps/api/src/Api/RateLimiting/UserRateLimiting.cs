@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using ControlPlane.Api;
+using ControlPlane.Api.Me;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
@@ -33,7 +33,7 @@ internal static class UserRateLimiting
                 context.GetEndpoint()?.Metadata.GetMetadata<UserRateLimit>() is null
                     ? RateLimitPartition.GetNoLimiter(Unlimited)
                     : PerUser(context, Options(context).PermitLimit, Options(context).Window));
-            limiter.AddPolicy(ControlPlaneEndpoints.InvitationAcceptRateLimit, context =>
+            limiter.AddPolicy(Invitations.AcceptRateLimit, context =>
                 PerUser(context, Options(context).InvitationAccept.PermitLimit, Options(context).InvitationAccept.Window));
         });
     }

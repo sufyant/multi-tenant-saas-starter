@@ -1,6 +1,6 @@
 # Architecture: multi-tenant SaaS starter template (API)
 
-Last updated: 2026-10-12
+Last updated: 2026-10-13
 
 This document is the single source of truth for the API in `apps/api/`. If the code does not agree with this document, the code changes. No other file overrides it.
 
@@ -28,9 +28,9 @@ The first template runs one flow from start to end: tenant creation.
 
 | In scope | Reason |
 | --- | --- |
-| `POST /v1/system/tenants` | The work itself |
+| `POST /v1/admin/tenants` | The work itself |
 | The first system admin comes from configuration | The first person who creates a tenant cannot get on the staff list in another way |
-| Tenant onboarding process (saga, three steps) | The approved flow |
+| Tenant creation process (saga, three steps) | The approved flow |
 | One handler that sends the invitation email (Notifications) | Step three of the process |
 | One handler that writes the "tenant created" record (Audit) | The only use of the Audit module |
 | The endpoint that accepts an invitation | Without it, the first Owner cannot exist |
@@ -71,7 +71,8 @@ Each module is five projects. Another module sees only the `Contracts` project.
 - The `Api` project cannot reach the `DbContext`. Source: Evans, Chapter 4.
 - A read across modules is a plain method call. The interface is in `A.Contracts`. Its implementation is an `internal sealed` class inside A. Source: Gamma et al., Chapter 4 (Facade). Evans, Chapter 14 (Open Host Service).
 - The shared kernel stays small and carries no business concept. Source: Evans, Chapter 14.
-- Test projects are next to their module. Tests of the host and system-wide tests (architecture, end to end) stay in the top tests folder.
+- Test projects are next to their module. Tests of the host and system-wide tests (architecture, end to end) stay in the top tests folder (N9).
+- Names, folders, routes and permissions follow section 10.
 
 ## 3. Messaging
 
@@ -185,7 +186,7 @@ The tenant id is in the API path. The id in the path does not give access. Verif
 | T2 | The tenant id is not read from the body, the query string or a header. A handler gets the tenant from the message envelope. A saga's messages may carry the tenant id to find the saga; data access still uses the envelope's tenant | Golding, Chapter 7 |
 | T3 | If there is no membership, the response is 404 | OWASP API Top 10, API1 |
 | T4 | `GET /v1/me/tenants` runs without a tenant | Industry practice |
-| T5 | Provider staff are not tenant members. Their door is the `/v1/system/...` path | Golding, Chapter 2 |
+| T5 | Provider staff are not tenant members. Their door is the `/v1/admin/...` path | Golding, Chapter 2 |
 | T6 | The token carries only the user identity. No tenant, role or permission comes from the identity provider | Fixed requirement: the identity provider is authentication only |
 | T7 | Membership is verified on each request in one place. No tenant endpoint can go around this filter | OWASP API Top 10, API1 |
 
@@ -225,48 +226,50 @@ The code checks permissions, not roles. Provider staff enter through a separate 
 
 Tenant users and staff sign in with the same identity provider instance. Our tables decide which door a person can use. Terms: "system admin" (Golding), "built-in roles" and "custom roles".
 
-## 6. Modules and onboarding
+## 6. Modules and tenant creation
 
 There are three modules. A system admin creates the tenant and the first Owner comes by invitation.
 
 | Module | What it holds |
 | --- | --- |
-| ControlPlane | Tenant record, system admins, users, memberships, roles and permissions, invitations, tenant onboarding |
+| ControlPlane | Tenant record, system admins, users, memberships, roles and permissions, invitations, tenant creation |
 | Notifications | It hears an event and sends a message to a person. In the first template, only the invitation email |
 | Audit | It hears an event and writes the record of "who did what and when" |
 
 Source: Golding, Chapter 2 (control plane). Khononov, Chapter 3 (when you are not sure, keep the boundary wide).
 
-### Tenant onboarding process
+### Tenant creation process
 
 The process is a saga. Three steps run in order.
 
-The saga is part of the template, and the onboarding is its reference use. It meets all three conditions of S2: the process covers ControlPlane, Notifications and an email service, it needs compensation and timeouts, and someone asks where it is. A product built on the template keeps it. A new saga, or a new step, must meet S1 and S2 too.
+The saga is part of the template, and tenant creation is its reference use. It meets all three conditions of S2: the process covers ControlPlane, Notifications and an email service, it needs compensation and timeouts, and someone asks where it is. A product built on the template keeps it. A new saga, or a new step, must meet S1 and S2 too.
 
 1. ControlPlane writes the tenant ("provisioning"), the Owner invitation and the saga record in one transaction. The invitation code and its link are created here. Compensatable.
 2. The tenant becomes "active". Pivot.
 3. Notifications sends the invitation email. It is tried a limited number of times, with growing pauses.
 
-The Owner signs up with the identity provider like any other user. The onboarding creates nothing in the identity provider.
+The Owner signs up with the identity provider like any other user. Tenant creation creates nothing in the identity provider.
 
-Onboarding messages:
+Tenant creation messages (N1 to N3):
 
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
-| `StartTenantOnboarding` | `POST /v1/system/tenants` | ControlPlane, `StartTenantOnboardingHandler` (step 1, starts the saga) | Yes |
+| `CreateTenant` | `POST /v1/admin/tenants` | ControlPlane, `CreateTenantHandler` (step 1, starts the saga) | Yes |
 | `ActivateTenant` | Step 1 | ControlPlane, `ActivateTenantHandler` (step 2, pivot) | Yes |
-| `ActivationTimedOut` | Step 1, scheduled | ControlPlane, `TenantOnboarding` saga | Yes |
+| `ActivationTimedOut` | Step 1, scheduled | ControlPlane, `TenantCreationSaga` | Yes |
 | `TenantActivated` | Step 2 | Audit, `RecordTenantCreatedHandler` | Yes |
-| `TenantActivationCompleted` | Step 2 | ControlPlane, `TenantOnboarding` saga | Yes |
-| `OwnerInvitationReady` | Step 2 | Notifications, `SendOwnerInvitationHandler` (step 3, calls the email service) | No |
-| `InvitationEmailTimedOut` | Saga, scheduled | ControlPlane, `TenantOnboarding` saga | Yes |
-| `InvitationEmailSent` | Step 3 | ControlPlane, `TenantOnboarding` saga | Yes |
+| `ActivateTenantReply` | Step 2 | ControlPlane, `TenantCreationSaga` | Yes |
+| `OwnerInvitationReady` | Step 2 | Notifications, `SendInvitationEmailHandler` (step 3, calls the email service) | No |
+| `InvitationEmailTimedOut` | Saga, scheduled | ControlPlane, `TenantCreationSaga` | Yes |
+| `SendInvitationEmailReply` | Step 3 | ControlPlane, `TenantCreationSaga` | Yes |
 | `CancelTenant` | Saga | ControlPlane, `CancelTenantHandler` (compensation) | Yes |
-| `TenantCancelled` | `CancelTenantHandler` | ControlPlane, `TenantOnboarding` saga | Yes |
-| `CancellationTimedOut` | Saga, scheduled | ControlPlane, `TenantOnboarding` saga | Yes |
+| `CancelTenantReply` | `CancelTenantHandler` | ControlPlane, `TenantCreationSaga` | Yes |
+| `CancellationTimedOut` | Saga, scheduled | ControlPlane, `TenantCreationSaga` | Yes |
 | `CancelInvitation` | Saga | ControlPlane, `CancelInvitationHandler` (compensation) | Yes |
-| `RaiseOnboardingAlarm` | Saga | ControlPlane, `OnboardingAlarmHandler` | No |
-| `Fault<T>` of a step or a compensation | Wolverine, when the message goes to the dead letter queue | ControlPlane, `TenantOnboarding` saga | Yes |
+| `RaiseTenantCreationAlarm` | Saga | ControlPlane, `TenantCreationAlarmHandler` | No |
+| `Fault<T>` of a step or a compensation | Wolverine, when the message goes to the dead letter queue | ControlPlane, `TenantCreationSaga` | Yes |
+
+The saga's record is the table `control_plane.tenant_creation_sagas`. The alarm is the error log event `TenantCreationNeedsAttention` and the counter `tenant_creation.needs_attention`.
 
 - If step 2 fails for good, the tenant is cancelled. A reason code is stored on the tenant and logged. No endpoint shows it yet: the tenant list for the system admin is deferred.
 - If step 3 fails for good, or a wait after step 1 times out, the process goes to "needs attention" and the invitation is cancelled. The alarm is raised once.
@@ -370,7 +373,7 @@ The test is written first. Tests run with real PostgreSQL. We do not fake our ow
 
 Unit test standard:
 
-- Each test kind is in its own project: .UnitTests, .IntegrationTests, .EndToEndTests, and .Tests for architecture tests.
+- Each test kind is in its own project: .UnitTests, .IntegrationTests, .EndToEndTests and .ArchitectureTests (N9).
 - Each project carries a `TestClassification` trait.
 - The structure is Arrange, Act, Assert.
 - A test has no `if` and no loop.
@@ -383,6 +386,49 @@ An architecture test fails when a module DbContext has model changes without a m
 Module integration tests call a handler with the module's DbContext on real PostgreSQL, inside a transaction the test opens. The Wolverine pipeline is tested in Api.IntegrationTests. The spike in apps/api/spikes is outside the test standard.
 
 The order for a fix is: first a red test that checks the rule, then the fix.
+
+## 10. Names and places
+
+One concept has one name in the code, the route, the table and the documents. A name says what a thing is. A folder says what the code is about and who uses it. Where a rule names a test, the test checks the part of the rule that the note names. The rest of the rule is checked in review.
+
+Sources: Evans, *Domain-Driven Design*, Chapter 2 (Ubiquitous Language). Richards and Ford, *Fundamentals of Software Architecture*, "Component-Based Thinking" (domain partitioning). Robert C. Martin, "Screaming Architecture". Microsoft Learn, "Route handlers in Minimal API apps", route groups. OWASP API Security Top 10 2023, API5. Richardson, *Microservices Patterns*, Chapter 4 (command and reply).
+
+### Names
+
+| # | Rule | Source |
+| --- | --- | --- |
+| N1 | A feature has one root word. An action (endpoint, command, handler) uses its verb form: `CreateTenant`, `CreateTenantHandler`. A record (saga, table) uses its noun form: `TenantCreationSaga`, `tenant_creation_sagas`. The documents use the noun form: "the tenant creation process". A configuration key keeps its name when a type is renamed | Evans, Chapter 2 |
+| N2 | A class that derives from Wolverine's `Saga` ends with `Saga`. Its table ends with `_sagas`. Every table name is plural. Test of the saga class and table names: `SagaNameTests` | Evans, Chapter 2 |
+| N3 | A saga handles three kinds of message only: the replies to its steps (`...Reply`), its own timeouts (`...TimedOut`) and Wolverine's `Fault<T>`. It handles no public event. Only a saga handles a `...Reply`. A reply is named after the work it answers: `ActivateTenantReply` answers `ActivateTenant`. The name makes S13 visible. Test of both sentences: `SagaMessageTests` | Richardson, Chapter 4 |
+| N4 | A module's schema is the module's name in snake case: `control_plane`, `audit`. Its DbContext is `{Module}DbContext`. A name that describes a concept, not the module, stays: `ITenantCatalog` is the tenant catalog. Test of the schema name: `NamesAndPlacesTests` | Evans, Chapter 2. Richards and Ford, "Component-Based Thinking" |
+| N5 | An audience is who calls an endpoint. Its folder, its route prefix and its permission prefix are the same word (table below). A new audience gets a new folder, a new route prefix and a new host file. Example: `Webhooks/`, `/v1/webhooks`, `Api/Webhooks/WebhooksRoutes.cs`. Test of the endpoint folder against the route prefix: `EndpointPlaceTests` | Microsoft Learn, route groups. OWASP API5 |
+| N6 | A permission is `audience.resource.action`, in lower snake case. The audience is `admin` or `tenant`. The action is coarse: `read`, `create`, `update`, `delete`, or a business verb. `read` covers a list and a single record. The `me` audience has no permissions: being signed in is enough, and the user reaches only their own data. Test of the format and the two audiences: `NamesAndPlacesTests` | OWASP API5 |
+
+| Audience | Route prefix | Folder | Host file and method | Permission prefix |
+| --- | --- | --- | --- | --- |
+| System admin | `/v1/admin` | `Admin/` | `Api/Admin/AdminRoutes.cs`, `MapAdmin` | `admin.` |
+| The signed-in user, acting for themselves | `/v1/me` | `Me/` | `Api/Me/MeRoutes.cs`, `MapMe` | none |
+| A tenant member | `/v1/tenants/{tenantId}` | `Tenant/` | `Api/Tenant/TenantRoutes.cs`, `MapTenant` | `tenant.` |
+
+The word for the system admin audience is `Admin`, not `System`. A folder named `System` makes the namespace `...Api.System`, and that namespace hides .NET's `System` namespace. The role keeps its name, "system admin", and it still passes the system door (A6). `Me` is a Visual Basic keyword, so CA1716 does not check namespaces (`.editorconfig`). It still checks types and members.
+
+### Places
+
+| # | Rule | Source |
+| --- | --- | --- |
+| N7 | In a module's `Api` project, the endpoints sit in the audience folder, one file for each resource: `Admin/Tenants.cs`, `Me/MyTenants.cs`, `Me/Invitations.cs`, `Tenant/Members.cs`. The module entry point (`ControlPlaneModule.cs`) calls the files. An endpoint is a method with the action's name, the same name as its handler in `Application`. The request and response types sit at the end of the file that uses them. A request is named by its action (`{Action}Request`), a response by its resource (`{Resource}Response`). A second shape of the same resource carries its audience in the name (`MyTenantResponse`). Every request and response name is unique in the API, because the OpenAPI document builds its schema names from the type names. Tests of the audience folder (`EndpointPlaceTests`) and of the unique names (`NamesAndPlacesTests`) | Martin, "Screaming Architecture" |
+| N8 | The folders of `Application` follow the work. The folders of `Domain` follow the aggregate. The folders of `Infrastructure` follow the external system: `Persistence/`, `Clerk/`, `Email/`. A feature with more than one file gets its own folder, named by N10. A feature with one file stays in its resource folder. Code that several features of one module use goes into a folder named by what it is: `Ports/`, `Persistence/`. No project has a folder named `Helpers`, `Utils`, `Utilities`, `Common` or `Misc`. Code that several modules use lives only in `SharedKernel` or `Tenancy`. Test of the folder names: `NamesAndPlacesTests` | Richards and Ford, "Component-Based Thinking". Martin, "Screaming Architecture" |
+| N9 | A test project that tests one module sits in the module's folder. A test project that tests a shared project sits next to it. Tests of the whole system (host, architecture, end to end) sit in `apps/api/tests/`. A test project is named `{Project}.{Kind}Tests`, where Kind is Unit, Integration, EndToEnd or Architecture. Inside a test project the folders follow the project it tests. A test class is named `{Feature}Tests`. A test that checks several features goes into the folder of the feature it checks last. Helper files go into `Fixtures/`. Test of the project name: `NamesAndPlacesTests` | Section 9. Industry practice |
+| N10 | A feature with more than one file always gets a folder in the noun form of its root, never the action name: `Tenants/TenantCreation/` holds `CreateTenant`, and `Invitations/InvitationEmail/` holds `SendInvitationEmailHandler`. The reason: the folder becomes a namespace, and a folder named after the action hides the command type of the same name (CS0118). For the same reason, no folder has the name of a type its project declares or uses from a project it references. Test of that last sentence: `NamesAndPlacesTests` | Cwalina, Barton, Abrams, *Framework Design Guidelines*, "Names of Namespaces" |
+
+The ControlPlane module after these rules:
+
+| Project | Folders |
+| --- | --- |
+| `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/`, `Authentication/` (the signed-in user's id), `ControlPlaneModule.cs` |
+| `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Invitations/`, `Members/`, `Ports/`, `Errors.cs` |
+| `ControlPlane.Domain` | One folder for each aggregate. `PermissionPools.cs`, which several aggregates use, sits at the root |
+| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/`, `ControlPlaneInfrastructure.cs` |
 
 ## Deviations from the books
 

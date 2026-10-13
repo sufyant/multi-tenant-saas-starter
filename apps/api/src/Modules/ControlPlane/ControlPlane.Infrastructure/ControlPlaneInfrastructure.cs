@@ -1,8 +1,9 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
-using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using ControlPlane.Infrastructure.Clerk;
+using ControlPlane.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Tenancy;
@@ -19,10 +20,10 @@ public static class ControlPlaneInfrastructure
 {
     public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
-        services.AddDbContextWithWolverineIntegration<CatalogDbContext>(
-            (provider, options) => options.UseModuleDatabase(provider, CatalogDbContext.Schema),
+        services.AddDbContextWithWolverineIntegration<ControlPlaneDbContext>(
+            (provider, options) => options.UseModuleDatabase(provider, ControlPlaneDbContext.Schema),
             TenancyServiceCollectionExtensions.MessageSchema);
-        services.AddModuleMigrations<CatalogDbContext>(CatalogDbContext.Schema);
+        services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();
@@ -40,14 +41,14 @@ public static class ControlPlaneInfrastructure
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<InvitationSettings>>().Value);
 
-        services.AddOptions<OnboardingSettings>()
-            .BindConfiguration(OnboardingSettings.Section)
-            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{OnboardingSettings.Section}:ActivationTimeout must be positive.")
-            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{OnboardingSettings.Section}:InvitationEmailTimeout must be positive.")
-            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{OnboardingSettings.Section}:CancellationTimeout must be positive.")
+        services.AddOptions<TenantCreationSettings>()
+            .BindConfiguration(TenantCreationSettings.Section)
+            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:ActivationTimeout must be positive.")
+            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:InvitationEmailTimeout must be positive.")
+            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:CancellationTimeout must be positive.")
             .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<OnboardingSettings>>().Value);
-        services.AddSingleton<OnboardingAlarm>();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantCreationSettings>>().Value);
+        services.AddSingleton<TenantCreationAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it
         // resolves it from the message's scope. It reaches no DbContext.

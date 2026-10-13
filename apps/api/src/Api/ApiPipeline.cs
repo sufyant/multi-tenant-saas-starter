@@ -9,7 +9,7 @@ using Api.Networking;
 using Api.Observability;
 using Api.Persistence;
 using Api.RateLimiting;
-using Api.Tenants;
+using Api.Tenant;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
@@ -169,7 +169,4 @@ internal static class ApiPipeline
             .AddEndpointFilter<ResultEndpointFilter>()
             .DescribeResults()
             .RequireUserRateLimit();
-
-    // The endpoints of the version group that any signed-in user may call, without a permission (A5).
-    public static RouteGroupBuilder MapSignedIn(this RouteGroupBuilder v1) => v1.MapGroup("").RequireSignedIn();
 }

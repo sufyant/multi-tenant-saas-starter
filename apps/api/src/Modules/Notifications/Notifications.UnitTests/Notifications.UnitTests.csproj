@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="Notifications.UnitTests.Fixtures" />
     <Using Include="Shouldly" />
     <Using Include="Xunit" />
   </ItemGroup>

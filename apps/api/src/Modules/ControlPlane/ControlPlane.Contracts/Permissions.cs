@@ -6,7 +6,7 @@ namespace ControlPlane.Contracts;
 /// </summary>
 public static class Permissions
 {
-    public const string SystemTenantsCreate = "system.tenants.create";
+    public const string AdminTenantsCreate = "admin.tenants.create";
 
-    public const string MembersRead = "members.read";
+    public const string TenantMembersRead = "tenant.members.read";
 }

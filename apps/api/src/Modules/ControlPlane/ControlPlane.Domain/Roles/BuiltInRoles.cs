@@ -22,7 +22,7 @@ internal static class BuiltInRoles
     private static readonly FrozenSet<string> AdminPermissions = OwnerPermissions;
 
     // Members get the permissions of the capabilities that modules add for them.
-    private static readonly FrozenSet<string> MemberPermissions = FrozenSet.Create(StringComparer.Ordinal, PermissionPools.MembersRead);
+    private static readonly FrozenSet<string> MemberPermissions = FrozenSet.Create(StringComparer.Ordinal, PermissionPools.TenantMembersRead);
 
     public static IReadOnlySet<string> PermissionsOf(BuiltInRole role) => role switch
     {
