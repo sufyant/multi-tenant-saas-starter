@@ -237,6 +237,7 @@ public sealed class Database : IAsyncLifetime
     {
         await using var services = new ServiceCollection()
             .AddLogging()
+            .AddApiPersistence()
             .AddTenancy(_ => ConnectionStringFor(DatabaseRoles.Application, database))
             .AddControlPlaneInfrastructure()
             .AddNotificationsInfrastructure()
