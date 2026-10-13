@@ -24,13 +24,13 @@ public sealed class HostRoleTests(Database database)
     private static readonly HandlerRun[] HandlersAfterTheFirstStep =
     [
         new(typeof(ActivateTenant), typeof(ActivateTenantHandler)),
-        new(typeof(TenantActivationCompleted), typeof(TenantOnboarding)),
+        new(typeof(ActivateTenantReply), typeof(TenantCreationSaga)),
         new(typeof(TenantActivated), typeof(RecordTenantCreatedHandler)),
         new(typeof(OwnerInvitationReady), typeof(SendOwnerInvitationHandler)),
-        new(typeof(InvitationEmailSent), typeof(TenantOnboarding)),
+        new(typeof(SendOwnerInvitationReply), typeof(TenantCreationSaga)),
     ];
 
-    private static readonly HandlerRun FirstStep = new(typeof(StartTenantOnboarding), typeof(StartTenantOnboardingHandler));
+    private static readonly HandlerRun FirstStep = new(typeof(CreateTenant), typeof(CreateTenantHandler));
 
     [Fact]
     public async Task OnboardTenant_OnAWebAndAWorkerHost_RunsEveryStepAfterTheFirstInTheWorker()

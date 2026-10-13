@@ -26,7 +26,7 @@ internal sealed class Tenant
 
     public TenantStatus Status { get; private set; }
 
-    /// <summary>Why the onboarding cancelled the tenant: a fixed code, never the text of an exception.</summary>
+    /// <summary>Why the tenant creation cancelled the tenant: a fixed code, never the text of an exception.</summary>
     public string? CancellationReason { get; private set; }
 
     /// <summary>The name is stored without the spaces around it.</summary>
@@ -45,11 +45,11 @@ internal sealed class Tenant
                 "A slug is 3 to 63 lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
     }
 
-    /// <summary>Ends the tenant's onboarding. Only a provisioning tenant becomes active.</summary>
+    /// <summary>Ends the tenant's creation. Only a provisioning tenant becomes active.</summary>
     public bool Activate() => Leave(TenantStatus.Active);
 
     /// <summary>
-    /// Compensates an onboarding that did not reach the activation. Only a provisioning tenant is cancelled: an active one stays
+    /// Compensates a tenant creation that did not reach the activation. Only a provisioning tenant is cancelled: an active one stays
     /// active, and a cancelled one keeps its first reason.
     /// </summary>
     public bool Cancel(string reason)

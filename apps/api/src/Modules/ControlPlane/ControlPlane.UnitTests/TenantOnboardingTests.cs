@@ -14,22 +14,22 @@ public class TenantOnboardingTests
     private static readonly Guid EventId = new("0199a8f0-0000-7000-8000-000000000501");
     private static readonly DateTimeOffset Now = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
     private static readonly Uri AcceptLink = new("https://app.test/invitations/accept?code=0199a8f0-0000-7000-8000-000000000201.secret");
-    private static readonly OnboardingTimeouts Timeouts = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(2), TimeSpan.FromMinutes(15));
+    private static readonly TenantCreationTimeouts Timeouts = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(2), TimeSpan.FromMinutes(15));
     private const string OwnerEmail = "owner@acme.test";
 
-    // (start) | StartTenantOnboarding handled | Activating | ActivateTenant, ActivationTimedOut
+    // (start) | CreateTenant handled | Activating | ActivateTenant, ActivationTimedOut
     [Fact]
     public void StartOnboarding_NewTenant_ActivatesTheTenantAndSchedulesTheActivationTimeout()
     {
-        var (onboarding, activate, timeout) = TenantOnboarding.Begin(TenantId, InvitationId, AcceptLink, Timeouts);
+        var (onboarding, activate, timeout) = TenantCreationSaga.Begin(TenantId, InvitationId, AcceptLink, Timeouts);
 
         onboarding.Id.ShouldBe(TenantId);
-        onboarding.State.ShouldBe(TenantOnboardingState.Activating);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Activating);
         activate.ShouldBe(new ActivateTenant(TenantId, InvitationId, AcceptLink));
         timeout.ShouldBe(new ActivationTimedOut(TenantId, TimeSpan.FromMinutes(10)));
     }
 
-    // Activating | TenantActivationCompleted | SendingInvitation | InvitationEmailTimedOut
+    // Activating | ActivateTenantReply | SendingInvitation | InvitationEmailTimedOut
     [Fact]
     public void ActivateTenant_TenantActivated_SchedulesTheInvitationEmailTimeout()
     {
@@ -37,7 +37,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(Activated());
 
-        onboarding.State.ShouldBe(TenantOnboardingState.SendingInvitation);
+        onboarding.State.ShouldBe(TenantCreationSagaState.SendingInvitation);
         sent.ShouldBe([new InvitationEmailTimedOut(TenantId, TimeSpan.FromHours(2))]);
     }
 
@@ -49,11 +49,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(new ActivateTenant(TenantId, InvitationId, AcceptLink)));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Cancelling);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Cancelling);
         sent.ShouldBe([new CancelTenant(TenantId, InvitationId, "activation_failed"), new CancellationTimedOut(TenantId, TimeSpan.FromMinutes(15))]);
     }
 
-    // Activating | ActivationTimedOut | NeedsAttention | CancelInvitation, RaiseOnboardingAlarm
+    // Activating | ActivationTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
     [Fact]
     public void ActivateTenant_TimesOut_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -61,11 +61,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // Activating | InvitationEmailSent | Completed | none. The tenant's activation and the invitation email are published together,
+    // Activating | SendOwnerInvitationReply | Completed | none. The tenant's activation and the invitation email are published together,
     // so the email may be reported sent before the saga has heard of the activation; the email proves that the activation committed.
     [Fact]
     public void SendInvitation_EmailSentBeforeTheActivationArrives_CompletesTheOnboarding()
@@ -74,11 +74,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(EmailSent());
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Completed);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Completed);
         sent.ShouldBeEmpty();
     }
 
-    // SendingInvitation | InvitationEmailSent | Completed | none
+    // SendingInvitation | SendOwnerInvitationReply | Completed | none
     [Fact]
     public void SendInvitation_EmailSent_CompletesTheOnboarding()
     {
@@ -86,11 +86,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(EmailSent());
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Completed);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Completed);
         sent.ShouldBeEmpty();
     }
 
-    // Activating | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseOnboardingAlarm
+    // Activating | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
     [Fact]
     public void SendInvitation_FailsForGoodBeforeTheActivationArrives_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -98,11 +98,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(InvitationReady()));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // SendingInvitation | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseOnboardingAlarm
+    // SendingInvitation | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
     [Fact]
     public void SendInvitation_FailsForGood_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -110,11 +110,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(InvitationReady()));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // SendingInvitation | InvitationEmailTimedOut | NeedsAttention | CancelInvitation, RaiseOnboardingAlarm
+    // SendingInvitation | InvitationEmailTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
     [Fact]
     public void SendInvitation_TimesOut_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -122,23 +122,23 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // Cancelling | TenantCancelled | Cancelled | none
+    // Cancelling | CancelTenantReply | Cancelled | none
     [Fact]
     public void CancelTenant_TenantCancelled_EndsCancelled()
     {
         var onboarding = Cancelling();
 
-        var sent = onboarding.Handle(new TenantCancelled(TenantId));
+        var sent = onboarding.Handle(new CancelTenantReply(TenantId));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Cancelled);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Cancelled);
         sent.ShouldBeEmpty();
     }
 
-    // Cancelling | CancellationTimedOut | NeedsAttention | RaiseOnboardingAlarm
+    // Cancelling | CancellationTimedOut | NeedsAttention | RaiseTenantCreationAlarm
     [Fact]
     public void CancelTenant_TimesOut_NeedsAttention()
     {
@@ -146,11 +146,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(new CancellationTimedOut(TenantId, Timeouts.Cancellation));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // Cancelling | Fault<CancelTenant> | NeedsAttention | RaiseOnboardingAlarm. S9: a compensation that fails for good leaves the
+    // Cancelling | Fault<CancelTenant> | NeedsAttention | RaiseTenantCreationAlarm. S9: a compensation that fails for good leaves the
     // process to a person.
     [Fact]
     public void CancelTenant_FailsForGood_NeedsAttention()
@@ -159,11 +159,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(new CancelTenant(TenantId, InvitationId, "activation_failed")));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // Any state except NeedsAttention | Fault<CancelInvitation> | NeedsAttention | RaiseOnboardingAlarm
+    // Any state except NeedsAttention | Fault<CancelInvitation> | NeedsAttention | RaiseTenantCreationAlarm
     [Fact]
     public void CancelInvitation_FailsForGoodWhileCancelling_NeedsAttention()
     {
@@ -171,11 +171,11 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(new CancelInvitation(TenantId, InvitationId)));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
-        sent.ShouldBe([new RaiseOnboardingAlarm(TenantId)]);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
     }
 
-    // NeedsAttention | any message | unchanged | none. M11: the alarm is raised once for each onboarding.
+    // NeedsAttention | any message | unchanged | none. M11: the alarm is raised once for each tenant creation.
     [Fact]
     public void CancelInvitation_FailsForGoodAfterTheAlarm_RaisesNoSecondAlarm()
     {
@@ -184,7 +184,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(new CancelInvitation(TenantId, InvitationId)));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
         sent.ShouldBeEmpty();
     }
 
@@ -196,7 +196,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Completed);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Completed);
         sent.ShouldBeEmpty();
     }
 
@@ -205,11 +205,11 @@ public class TenantOnboardingTests
     public void CancelTenant_TimeoutAfterTheTenantIsCancelled_IsIgnored()
     {
         var onboarding = Cancelling();
-        onboarding.Handle(new TenantCancelled(TenantId));
+        onboarding.Handle(new CancelTenantReply(TenantId));
 
         var sent = onboarding.Handle(new CancellationTimedOut(TenantId, Timeouts.Cancellation));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Cancelled);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Cancelled);
         sent.ShouldBeEmpty();
     }
 
@@ -222,7 +222,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(FaultOf(InvitationReady()));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
         sent.ShouldBeEmpty();
     }
 
@@ -235,7 +235,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(EmailSent());
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
         sent.ShouldBeEmpty();
     }
 
@@ -248,7 +248,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.NeedsAttention);
+        onboarding.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
         sent.ShouldBeEmpty();
     }
 
@@ -260,7 +260,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(Activated());
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Completed);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Completed);
         sent.ShouldBeEmpty();
     }
 
@@ -271,7 +271,7 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
 
-        onboarding.State.ShouldBe(TenantOnboardingState.SendingInvitation);
+        onboarding.State.ShouldBe(TenantCreationSagaState.SendingInvitation);
         sent.ShouldBeEmpty();
     }
 
@@ -282,38 +282,38 @@ public class TenantOnboardingTests
 
         var sent = onboarding.Handle(EmailSent());
 
-        onboarding.State.ShouldBe(TenantOnboardingState.Completed);
+        onboarding.State.ShouldBe(TenantCreationSagaState.Completed);
         sent.ShouldBeEmpty();
     }
 
-    private static TenantOnboarding Activating() => TenantOnboarding.Begin(TenantId, InvitationId, AcceptLink, Timeouts).Onboarding;
+    private static TenantCreationSaga Activating() => TenantCreationSaga.Begin(TenantId, InvitationId, AcceptLink, Timeouts).Saga;
 
-    private static TenantOnboarding SendingInvitation()
+    private static TenantCreationSaga SendingInvitation()
     {
         var onboarding = Activating();
         onboarding.Handle(Activated());
         return onboarding;
     }
 
-    private static TenantOnboarding Completed()
+    private static TenantCreationSaga Completed()
     {
         var onboarding = SendingInvitation();
         onboarding.Handle(EmailSent());
         return onboarding;
     }
 
-    private static TenantOnboarding Cancelling()
+    private static TenantCreationSaga Cancelling()
     {
         var onboarding = Activating();
         onboarding.Handle(FaultOf(new ActivateTenant(TenantId, InvitationId, AcceptLink)));
         return onboarding;
     }
 
-    private static TenantActivationCompleted Activated() => new(TenantId);
+    private static ActivateTenantReply Activated() => new(TenantId);
 
     private static OwnerInvitationReady InvitationReady() => new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink);
 
-    private static InvitationEmailSent EmailSent() => new(EventId, Now, TenantId, InvitationId);
+    private static SendOwnerInvitationReply EmailSent() => new(EventId, Now, TenantId, InvitationId);
 
     // What Wolverine publishes once a message has gone to the dead letter queue; it carries the exception's type only.
     private static Fault<T> FaultOf<T>(T message)

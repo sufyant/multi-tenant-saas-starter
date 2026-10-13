@@ -66,7 +66,7 @@ public sealed class InvitationEmailTests
     private static OwnerInvitationReady Ready() =>
         new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link);
 
-    private Task<InvitationEmailSent> SendAsync(OwnerInvitationReady ready) =>
+    private Task<SendOwnerInvitationReply> SendAsync(OwnerInvitationReady ready) =>
         SendOwnerInvitationHandler.HandleAsync(ready, _channel, _time, Cancellation);
 
     // The email channel, as a system we do not own, at our port.

@@ -40,14 +40,14 @@ public static class ControlPlaneInfrastructure
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<InvitationSettings>>().Value);
 
-        services.AddOptions<OnboardingSettings>()
-            .BindConfiguration(OnboardingSettings.Section)
-            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{OnboardingSettings.Section}:ActivationTimeout must be positive.")
-            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{OnboardingSettings.Section}:InvitationEmailTimeout must be positive.")
-            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{OnboardingSettings.Section}:CancellationTimeout must be positive.")
+        services.AddOptions<TenantCreationSettings>()
+            .BindConfiguration(TenantCreationSettings.Section)
+            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:ActivationTimeout must be positive.")
+            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:InvitationEmailTimeout must be positive.")
+            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:CancellationTimeout must be positive.")
             .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<OnboardingSettings>>().Value);
-        services.AddSingleton<OnboardingAlarm>();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantCreationSettings>>().Value);
+        services.AddSingleton<TenantCreationAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it
         // resolves it from the message's scope. It reaches no DbContext.

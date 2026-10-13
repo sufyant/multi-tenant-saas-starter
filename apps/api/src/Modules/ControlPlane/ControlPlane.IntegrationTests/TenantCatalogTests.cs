@@ -85,7 +85,7 @@ public sealed class TenantCatalogTests(Database database)
         found.ShouldBeNull();
     }
 
-    // Onboarding adds the tenant it runs in, and only that one.
+    // Tenant creation adds the tenant it runs in, and only that one.
     [Fact]
     public async Task AddTenant_OtherThanTheDeclaredTenant_IsRefused()
     {

@@ -2,7 +2,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.Tenants;
 
-// The messages of the tenant onboarding saga inside ControlPlane. Each carries the new tenant, which is also the saga's id; the
+// The messages of the tenant creation saga inside ControlPlane. Each carries the new tenant, which is also the saga's id; the
 // envelope carries the same tenant, so every step runs in it. The events that leave the module are in ControlPlane.Contracts and
 // Notifications.Contracts.
 
@@ -10,19 +10,19 @@ namespace ControlPlane.Application.Tenants;
 public sealed record ActivateTenant(Guid TenantId, Guid InvitationId, Uri Link);
 
 /// <summary>The reply to the saga: the tenant is active (S13).</summary>
-public sealed record TenantActivationCompleted(Guid TenantId);
+public sealed record ActivateTenantReply(Guid TenantId);
 
 /// <summary>Compensation before the pivot: cancels the tenant, with a fixed reason code, and its owner's invitation.</summary>
 public sealed record CancelTenant(Guid TenantId, Guid InvitationId, string Reason);
 
 /// <summary>The tenant is cancelled.</summary>
-public sealed record TenantCancelled(Guid TenantId);
+public sealed record CancelTenantReply(Guid TenantId);
 
 /// <summary>Withdraws the owner's invitation, when nobody could be told of it.</summary>
 public sealed record CancelInvitation(Guid TenantId, Guid InvitationId);
 
-/// <summary>Tells a person that an onboarding needs them (S9).</summary>
-public sealed record RaiseOnboardingAlarm(Guid TenantId);
+/// <summary>Tells a person that a tenant creation needs them (S9).</summary>
+public sealed record RaiseTenantCreationAlarm(Guid TenantId);
 
 /// <summary>The activation took too long (S10).</summary>
 public sealed record ActivationTimedOut(Guid TenantId, TimeSpan DelayTime) : TimeoutMessage(DelayTime);

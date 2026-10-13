@@ -16,7 +16,7 @@ internal static class Handlers
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    // Onboarding runs inside the tenant it creates, whose id the endpoint chooses. The saga it starts is inserted in the same
+    // Tenant creation runs inside the tenant it creates, whose id the endpoint chooses. The saga it starts is inserted in the same
     // transaction, as Wolverine inserts a returned Insert<T>.
     public static Task<StartedOnboarding> StartOnboardingAsync(
         IServiceProvider services,
@@ -26,11 +26,11 @@ internal static class Handlers
         string ownerEmail) =>
         InTenant.RunAsync(services, tenantId, async scope =>
         {
-            var (result, onboarding, activate, timeout) = await StartTenantOnboardingHandler.HandleAsync(
-                new StartTenantOnboarding(adminId, "Acme Ltd", slug, ownerEmail, Guid.NewGuid().ToString()),
+            var (result, onboarding, activate, timeout) = await CreateTenantHandler.HandleAsync(
+                new CreateTenant(adminId, "Acme Ltd", slug, ownerEmail, Guid.NewGuid().ToString()),
                 scope.GetRequiredService<ITenantCatalog>(),
                 scope.GetRequiredService<InvitationSettings>(),
-                scope.GetRequiredService<OnboardingSettings>(),
+                scope.GetRequiredService<TenantCreationSettings>(),
                 scope.GetRequiredService<TimeProvider>(),
                 Cancellation);
             if (onboarding is not null)
@@ -41,18 +41,18 @@ internal static class Handlers
             return new StartedOnboarding(result, onboarding, activate, timeout);
         });
 
-    public static Task<(TenantActivationCompleted? Completed, TenantActivated? Activated, OwnerInvitationReady? Ready)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenant step) =>
+    public static Task<(ActivateTenantReply? Completed, TenantActivated? Activated, OwnerInvitationReady? Ready)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenant step) =>
         InTenant.RunAsync(services, tenantId, scope => ActivateTenantHandler.HandleAsync(
             step,
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
 
-    public static Task<TenantCancelled?> CancelTenantAsync(IServiceProvider services, Guid tenantId, CancelTenant step) =>
+    public static Task<CancelTenantReply?> CancelTenantAsync(IServiceProvider services, Guid tenantId, CancelTenant step) =>
         InTenant.RunAsync(services, tenantId, scope => CancelTenantHandler.HandleAsync(
             step,
             scope.GetRequiredService<ITenantCatalog>(),
-            scope.GetRequiredService<ILogger<TenantOnboarding>>(),
+            scope.GetRequiredService<ILogger<TenantCreationSaga>>(),
             Cancellation));
 
     public static Task CancelInvitationAsync(IServiceProvider services, Guid tenantId, CancelInvitation step) =>
@@ -98,7 +98,7 @@ internal static class Handlers
 
     public sealed record StartedOnboarding(
         Result<TenantDetails> Result,
-        Insert<TenantOnboarding>? Onboarding,
+        Insert<TenantCreationSaga>? Onboarding,
         DeliveryMessage<ActivateTenant>? Activate,
         ActivationTimedOut? Timeout);
 }

@@ -30,7 +30,7 @@ public interface ITenantCatalog
     /// </summary>
     internal Task<TenantCreationRequest?> FindCreationRequestAsync(Guid systemAdminId, string idempotencyKey, CancellationToken cancellationToken);
 
-    /// <summary>The active tenant, locked for the rest of the transaction, so the steps of its onboarding run one at a time.</summary>
+    /// <summary>The active tenant, locked for the rest of the transaction, so the steps of its creation run one at a time.</summary>
     internal Task<Tenant> FindTenantForUpdateAsync(CancellationToken cancellationToken);
 
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
@@ -52,8 +52,8 @@ public interface ITenantCatalog
     internal void AddMember(Guid userId, Guid roleId);
 
     /// <summary>
-    /// Adds the active tenant itself, which its onboarding creates, unless another tenant has its slug. The slug's unique index
-    /// decides, also between two onboardings at the same moment, and nothing else about the other tenant is revealed.
+    /// Adds the active tenant itself, which its creation adds, unless another tenant has its slug. The slug's unique index
+    /// decides, also between two tenant creations at the same moment, and nothing else about the other tenant is revealed.
     /// </summary>
     internal Task<bool> TryAddAsync(Tenant tenant, CancellationToken cancellationToken);
 

@@ -253,7 +253,7 @@ public sealed class InvitationEndpointTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
-    // Onboarding a tenant invites its first owner, here someone who already has an account, so the link carries our invitation
+    // Creating a tenant invites its first owner, here someone who already has an account, so the link carries our invitation
     // code.
     private async Task<(string Slug, string Invitee, string Code)> InviteSomeoneWithAnAccountAsync()
     {

@@ -12,7 +12,7 @@ namespace ControlPlane.Infrastructure;
 
 /// <summary>
 /// The <c>catalog</c> schema: the control plane's data above tenants (tenants, users, roles, system admins), and the memberships,
-/// invitations and tenant onboardings, which belong to a tenant and are under row level security.
+/// invitations and tenant creation sagas, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public only because Wolverine's generated code creates it for the handlers (W9); its sets are internal to the module.</remarks>
 public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options, IMessageContext? messaging = null)
@@ -32,7 +32,7 @@ public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options,
 
     internal DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
 
-    internal DbSet<TenantOnboarding> TenantOnboardings => Set<TenantOnboarding>();
+    internal DbSet<TenantCreationSaga> TenantOnboardings => Set<TenantCreationSaga>();
 
     internal DbSet<TenantCreationRequest> TenantCreationRequests => Set<TenantCreationRequest>();
 
@@ -89,13 +89,13 @@ public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options,
             invitation.HasOne<User>().WithMany().HasForeignKey(i => i.AcceptedBy).OnDelete(DeleteBehavior.Restrict);
         });
 
-        // The onboarding saga's record (W6). Wolverine raises its version on each change; as the concurrency token the version is
+        // The tenant creation saga's record (W6). Wolverine raises its version on each change; as the concurrency token the version is
         // in the update's WHERE clause, so of two messages handled at once the second fails and is tried again (S8).
-        modelBuilder.Entity<TenantOnboarding>(onboarding =>
+        modelBuilder.Entity<TenantCreationSaga>(saga =>
         {
-            onboarding.Property(o => o.Id).ValueGeneratedNever();
-            onboarding.Property(o => o.State).HasConversion<string>().HasMaxLength(20);
-            onboarding.Property(o => o.Version).IsConcurrencyToken();
+            saga.Property(o => o.Id).ValueGeneratedNever();
+            saga.Property(o => o.State).HasConversion<string>().HasMaxLength(20);
+            saga.Property(o => o.Version).IsConcurrencyToken();
         });
 
         // A system admin's requests to create a tenant, by idempotency key (section 8). They belong to the system admin, not to a

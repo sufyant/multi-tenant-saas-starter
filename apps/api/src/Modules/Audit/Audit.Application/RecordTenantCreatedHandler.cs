@@ -5,7 +5,7 @@ using ControlPlane.Contracts;
 namespace Audit.Application;
 
 // The audit record of a tenant's creation, written when ControlPlane announces the tenant active, under that tenant. The system
-// admin who started the onboarding acted.
+// admin who created the tenant acted.
 public static class RecordTenantCreatedHandler
 {
     private const string TenantCreated = "tenant.created";

@@ -17,12 +17,12 @@ public sealed class TraceIdTests(Database database)
     // Every handler of the onboarding, as section 6 lists them, by the message it handles.
     private static readonly string[] OnboardingHandlers =
     [
-        typeof(StartTenantOnboarding).FullName!,
+        typeof(CreateTenant).FullName!,
         typeof(ActivateTenant).FullName!,
-        typeof(TenantActivationCompleted).FullName!,
+        typeof(ActivateTenantReply).FullName!,
         typeof(TenantActivated).FullName!,
         typeof(OwnerInvitationReady).FullName!,
-        typeof(InvitationEmailSent).FullName!,
+        typeof(SendOwnerInvitationReply).FullName!,
     ];
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class TraceIdTests(Database database)
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
         var tenantId = await TwoWorkers.IdOfAsync(created);
-        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == typeof(InvitationEmailSent).FullName));
+        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == typeof(SendOwnerInvitationReply).FullName));
         var handlers = spans.OfTenant(tenantId);
 
         handlers.Select(span => span.MessageType).Distinct().ShouldBe(OnboardingHandlers, ignoreOrder: true);

@@ -106,7 +106,7 @@ public sealed class TenantCatalog(CatalogDbContext catalog) : ITenantCatalog
 
     public void AddMember(Guid userId, Guid roleId) => catalog.Memberships.Add(new Membership(ActiveTenant, userId, roleId));
 
-    // An insert of a slug that another onboarding has inserted but not yet committed waits for it, and is skipped if it commits.
+    // An insert of a slug that another tenant creation has inserted but not yet committed waits for it, and is skipped if it commits.
     async Task<bool> ITenantCatalog.TryAddAsync(Tenant tenant, CancellationToken cancellationToken)
     {
         var added = OfActiveTenant(tenant, tenant.Id);

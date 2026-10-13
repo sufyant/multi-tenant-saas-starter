@@ -117,7 +117,7 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
     {
         var admin = await _catalog.AddSystemAdminAsync();
         _api.Email.IsDown = true;
-        using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_onboarding.needs_attention");
+        using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_creation.needs_attention");
 
         HttpResponseMessage created = null!;
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), Email()));
@@ -129,7 +129,7 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
         (await OnboardingStateAsync(tenantId)).ShouldBe("NeedsAttention");
         _api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record =>
             record.Level == LogLevel.Error
-            && record.Id.Name == "TenantOnboardingNeedsAttention"
+            && record.Id.Name == "TenantCreationNeedsAttention"
             && record.Message.Contains(tenantId.ToString(), StringComparison.Ordinal));
         alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
     }
@@ -174,8 +174,8 @@ public sealed class TenantOnboardingProcessTests(Database database) : IAsyncLife
             VALUES ('{tenantId}', 'Activating', '{invitationId}', interval '2 hours', interval '10 minutes', 0)
             """);
         var now = DateTimeOffset.UtcNow;
-        var emailSent = new Notifications.Contracts.InvitationEmailSent(Guid.CreateVersion7(), now, tenantId, invitationId);
-        var activated = new TenantActivationCompleted(tenantId);
+        var emailSent = new Notifications.Contracts.SendOwnerInvitationReply(Guid.CreateVersion7(), now, tenantId, invitationId);
+        var activated = new ActivateTenantReply(tenantId);
         await using var hold = await HoldOnboardingAsync(tenantId);
 
         var messages = await _api.TrackMessagesAsync(async () =>

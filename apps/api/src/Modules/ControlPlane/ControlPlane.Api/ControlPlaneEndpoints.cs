@@ -78,7 +78,7 @@ public static class ControlPlaneEndpoints
             return tenants.Map(list => list.Map(tenant => new TenantSummaryResponse(tenant.Id, tenant.Name, tenant.Slug)));
         });
 
-        // Onboarding runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client
+        // Tenant creation runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client
         // gives each new tenant an idempotency key; the same key with the same request answers with the tenant the first one created.
         system.MapPost("/tenants", async (
                 CreateTenantRequest request,
@@ -88,14 +88,14 @@ public static class ControlPlaneEndpoints
                 TimeProvider time,
                 CancellationToken cancellationToken) =>
             {
-                if (!StartTenantOnboarding.IsIdempotencyKey(idempotencyKey))
+                if (!CreateTenant.IsIdempotencyKey(idempotencyKey))
                 {
                     return (Result<TenantResponse>)IdempotencyKeyInvalid;
                 }
 
                 var started = await bus.InvokeForTenantAsync<Result<TenantDetails>>(
                     Guid.CreateVersion7(time.GetUtcNow()).ToString(),
-                    new StartTenantOnboarding(user.Id(), request.Name, request.Slug, request.OwnerEmail, idempotencyKey!),
+                    new CreateTenant(user.Id(), request.Name, request.Slug, request.OwnerEmail, idempotencyKey!),
                     cancellationToken);
                 return started.Map(tenant => new TenantResponse(tenant.Id, tenant.Name, tenant.Slug, tenant.Status));
             })

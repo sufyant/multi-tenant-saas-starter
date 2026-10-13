@@ -7,7 +7,7 @@ using Wolverine.Runtime.Handlers;
 
 namespace ControlPlane.Application.Tenants;
 
-// The steps and compensations of the tenant onboarding saga. Each runs in the new tenant, may run twice (S7), and returns its
+// The steps and compensations of the tenant creation saga. Each runs in the new tenant, may run twice (S7), and returns its
 // result as a message. A step that fails for good goes to the dead letter queue, and the saga hears of it through the fault
 // Wolverine publishes.
 
@@ -17,7 +17,7 @@ public static class ActivateTenantHandler
 
     // The pivot. The tenant is locked, so a repeated activation finds it active and announces nothing again. The tenant was created
     // by the system admin who invited its first owner. The saga hears of it through a reply of its own (S13).
-    public static async Task<(TenantActivationCompleted?, TenantActivated?, OwnerInvitationReady?)> HandleAsync(
+    public static async Task<(ActivateTenantReply?, TenantActivated?, OwnerInvitationReady?)> HandleAsync(
         ActivateTenant step,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -35,7 +35,7 @@ public static class ActivateTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (
-            new TenantActivationCompleted(tenant.Id),
+            new ActivateTenantReply(tenant.Id),
             new TenantActivated(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.InvitedBy),
             new OwnerInvitationReady(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, invitation.Email, tenant.Name, step.Link));
     }
@@ -46,11 +46,11 @@ public static partial class CancelTenantHandler
     public static void Configure(HandlerChain chain) => chain.OnAnyException().RetryTimes(3);
 
     // An active tenant is past the pivot and is never cancelled: the compensation changes nothing and reports nothing, and the saga's
-    // cancellation timeout leaves the onboarding to a person. A cancelled tenant keeps its first reason.
-    public static async Task<TenantCancelled?> HandleAsync(
+    // cancellation timeout leaves the tenant creation to a person. A cancelled tenant keeps its first reason.
+    public static async Task<CancelTenantReply?> HandleAsync(
         CancelTenant step,
         ITenantCatalog catalog,
-        ILogger<TenantOnboarding> logger,
+        ILogger<TenantCreationSaga> logger,
         CancellationToken cancellationToken)
     {
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken);
@@ -66,7 +66,7 @@ public static partial class CancelTenantHandler
 
         (await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
         await catalog.SaveChangesAsync(cancellationToken);
-        return new TenantCancelled(step.TenantId);
+        return new CancelTenantReply(step.TenantId);
     }
 
     [LoggerMessage(EventName = "TenantCancelled", Level = LogLevel.Warning, Message = "Tenant {TenantId} is cancelled: {Reason}")]
@@ -85,7 +85,7 @@ public static class CancelInvitationHandler
     }
 }
 
-public static class OnboardingAlarmHandler
+public static class TenantCreationAlarmHandler
 {
-    public static void Handle(RaiseOnboardingAlarm alarm, OnboardingAlarm onboardingAlarm) => onboardingAlarm.Raise(alarm.TenantId);
+    public static void Handle(RaiseTenantCreationAlarm alarm, TenantCreationAlarm tenantCreationAlarm) => tenantCreationAlarm.Raise(alarm.TenantId);
 }

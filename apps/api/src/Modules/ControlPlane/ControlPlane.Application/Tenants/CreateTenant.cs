@@ -11,11 +11,11 @@ using Wolverine.Persistence;
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>
-/// A system admin starts a tenant's onboarding. It runs inside the tenant it creates, whose id the caller chose, so every step
+/// A system admin creates a tenant. It runs inside the tenant it creates, whose id the caller chose, so every step
 /// of the saga runs in that tenant's transaction and hands the tenant on to the next one. The idempotency key makes it safe to
 /// send again: the same key with the same request answers with the tenant the first one created (section 8).
 /// </summary>
-public sealed record StartTenantOnboarding(string AdminId, string Name, string Slug, string OwnerEmail, string IdempotencyKey)
+public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail, string IdempotencyKey)
 {
     /// <summary>Whether the client's value can be an idempotency key: 1 to 255 visible ASCII characters.</summary>
     public static bool IsIdempotencyKey(string? value) => TenantCreationRequest.IsKey(value);
@@ -23,9 +23,9 @@ public sealed record StartTenantOnboarding(string AdminId, string Name, string S
 
 public sealed record TenantDetails(Guid Id, string Name, string Slug, string Status);
 
-public sealed class StartTenantOnboardingValidator : AbstractValidator<StartTenantOnboarding>
+public sealed class CreateTenantValidator : AbstractValidator<CreateTenant>
 {
-    public StartTenantOnboardingValidator()
+    public CreateTenantValidator()
     {
         // The tenant checks the name and the slug itself; a request without one never reaches it.
         RuleFor(command => command.Name).NotNull();
@@ -35,17 +35,17 @@ public sealed class StartTenantOnboardingValidator : AbstractValidator<StartTena
     }
 }
 
-// Step 1 of the onboarding saga, in one transaction: the tenant as provisioning, its first owner's invitation, the saga's record
+// Step 1 of the tenant creation saga, in one transaction: the tenant as provisioning, its first owner's invitation, the saga's record
 // (section 6) and the request under its idempotency key (section 8). The invitation's secret is born here; only its hash is stored,
 // and the accept link that carries it goes on in the activation's message. Every rejection returns before the handler changes
 // anything, because Wolverine commits a failed Result too (W7); a taken slug is found by the insert itself, which writes nothing then.
-public static class StartTenantOnboardingHandler
+public static class CreateTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, Insert<TenantOnboarding>?, DeliveryMessage<ActivateTenant>?, ActivationTimedOut?)> HandleAsync(
-        StartTenantOnboarding command,
+    public static async Task<(Result<TenantDetails>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenant>?, ActivationTimedOut?)> HandleAsync(
+        CreateTenant command,
         ITenantCatalog catalog,
         InvitationSettings invitations,
-        OnboardingSettings onboarding,
+        TenantCreationSettings tenantCreation,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -78,11 +78,11 @@ public static class StartTenantOnboardingHandler
             Guid.CreateVersion7(now), tenant.Value.Id, command.OwnerEmail, BuiltInRoles.Owner, admin.Id, now, invitations.Lifetime, secret);
         catalog.Add(invitation);
 
-        var (saga, activate, timeout) = TenantOnboarding.Begin(
+        var (saga, activate, timeout) = TenantCreationSaga.Begin(
             tenant.Value.Id,
             invitation.Id,
             invitations.AcceptLink(new InvitationCode(tenant.Value.Id, secret)),
-            onboarding.Timeouts);
+            tenantCreation.Timeouts);
 
         // A saga that is only being started gives its messages no saga id of their own; this one needs it, so that its fault finds
         // the saga.

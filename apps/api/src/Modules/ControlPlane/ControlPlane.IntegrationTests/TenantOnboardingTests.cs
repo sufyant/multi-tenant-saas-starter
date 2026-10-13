@@ -11,7 +11,7 @@ using Tenancy;
 
 namespace ControlPlane.IntegrationTests;
 
-// The steps of the tenant onboarding saga, each run the way Wolverine runs it: a step that writes the catalog in the new tenant's
+// The steps of the tenant creation saga, each run the way Wolverine runs it: a step that writes the catalog in the new tenant's
 // transaction. Each step and each compensation may run twice (S7).
 public sealed class TenantOnboardingTests(Database database)
 {
@@ -119,7 +119,7 @@ public sealed class TenantOnboardingTests(Database database)
         var (completed, activated, ready) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, link));
 
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
-        completed.ShouldBe(new TenantActivationCompleted(tenantId));
+        completed.ShouldBe(new ActivateTenantReply(tenantId));
         activated.ShouldNotBeNull().ShouldSatisfyAllConditions(
             announced => announced.TenantId.ShouldBe(tenantId),
             announced => announced.Name.ShouldBe("Acme Ltd"),
@@ -155,7 +155,7 @@ public sealed class TenantOnboardingTests(Database database)
 
         var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
 
-        cancelled.ShouldBe(new TenantCancelled(tenantId));
+        cancelled.ShouldBe(new CancelTenantReply(tenantId));
         (await StatusOfAsync(tenantId)).ShouldBe("Cancelled");
         (await ScalarAsync<string>($"SELECT cancellation_reason FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
         (await ScalarAsync<string>($"SELECT status FROM catalog.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
@@ -169,12 +169,12 @@ public sealed class TenantOnboardingTests(Database database)
 
         var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "another_reason"));
 
-        cancelled.ShouldBe(new TenantCancelled(tenantId));
+        cancelled.ShouldBe(new CancelTenantReply(tenantId));
         (await ScalarAsync<string>($"SELECT cancellation_reason FROM catalog.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
     }
 
     // The activation is the pivot: an active tenant is never cancelled. The compensation changes nothing and reports nothing, so the
-    // saga's cancellation timeout leaves the onboarding to a person.
+    // saga's cancellation timeout leaves the tenant creation to a person.
     [Fact]
     public async Task CancelTenant_Active_ChangesNothingAndReportsNoCancellation()
     {
@@ -252,11 +252,11 @@ public sealed class TenantOnboardingTests(Database database)
     }
 
     private static async Task<SharedKernel.Result<TenantDetails>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
-        (await StartTenantOnboardingHandler.HandleAsync(
-            new StartTenantOnboarding(adminId, "Acme Ltd", slug, Unique.Email(), Guid.NewGuid().ToString()),
+        (await CreateTenantHandler.HandleAsync(
+            new CreateTenant(adminId, "Acme Ltd", slug, Unique.Email(), Guid.NewGuid().ToString()),
             scope.ServiceProvider.GetRequiredService<ITenantCatalog>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationSettings>(),
-            scope.ServiceProvider.GetRequiredService<OnboardingSettings>(),
+            scope.ServiceProvider.GetRequiredService<TenantCreationSettings>(),
             TimeProvider.System,
             Cancellation)).Item1;
 

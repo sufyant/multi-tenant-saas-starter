@@ -163,7 +163,7 @@ public sealed class InvitationDeliveryTests(Database database)
             }
         });
 
-    // Onboarding a tenant invites its first owner.
+    // Creating a tenant invites its first owner.
     private async Task<HttpResponseMessage> InviteOwnerAsync(ApiFactory api, string email)
     {
         var admin = await _catalog.AddSystemAdminAsync();

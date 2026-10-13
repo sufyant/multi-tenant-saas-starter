@@ -35,7 +35,7 @@ public sealed class SagaMessageTests : IAsyncLifetime
             .Where(message => message.Value.Length > 1)
             .Select(message => $"{message.Key.Name} -> {string.Join(", ", message.Value.Select(handler => handler.Name))}");
 
-        sagaMessages.Select(message => message.Key).ShouldContain(typeof(InvitationEmailSent));
+        sagaMessages.Select(message => message.Key).ShouldContain(typeof(SendOwnerInvitationReply));
         sagaMessages.Select(message => message.Key).ShouldContain(typeof(Fault<ActivateTenant>));
         shared.ShouldBeEmpty(WhyNot);
     }
