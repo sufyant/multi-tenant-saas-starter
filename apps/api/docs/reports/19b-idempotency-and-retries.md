@@ -92,7 +92,7 @@ Test names omit their shared `Api.IntegrationTests` namespace.
 | Invalid key answers 400 | `Admin.CreateTenantTests.CreateTenant_WithAnInvalidIdempotencyKey_IsABadRequest` (five cases) | `created.StatusCode should be BadRequest but was OK` |
 | First request runs and saves its result | `Idempotency.IdempotencyTests.CreateTenant_FirstRequest_SavesTheHandlerResultWithoutTheRequestBody` | Saved row count `should be 1L but was 0L` |
 | Finished request replays its status and body | `Admin.CreateTenantTests.CreateTenant_TheSameKeyAndBodyAgain_ReturnsTheFirstTenantAndCreatesNothingNew` | `again.StatusCode should be OK but was Conflict` |
-| Replay preserves Location and carries the replay header | `Idempotency.IdempotencyBoundaryTests.RunCommand_FinishedRequest_ReplaysTheBodyStatusAndLocation` | Location `should be /v1/idempotency/<first id> but was /v1/idempotency/<second id>` |
+| Replay preserves Location and carries the replay header | `Idempotency.IdempotencyBoundaryTests.RunCommand_FinishedRequest_ReplaysTheBodyStatusAndLocation` | Location `should be /v1/idempotency/01a13656-a643-7514-b80d-c5f46a22c403 but was /v1/idempotency/01a13656-a647-74c8-bf8c-e533aecb2d64` |
 | Running request answers 409 | `Idempotency.IdempotencyBoundaryTests.RunCommand_FirstRequestIsRunning_AnswersConflictWithoutWaiting` | `concurrent.StatusCode should be Conflict but was Created` |
 | Different input answers 422 | `Admin.CreateTenantTests.CreateTenant_TheSameKeyWithAnotherBody_IsUnprocessable` | `reused.StatusCode should be UnprocessableEntity but was OK` |
 | Different endpoint, route value or method answers 422 | `Idempotency.IdempotencyBoundaryTests.RunCommand_KeyReusedWithAnotherRouteOrMethod_IsUnprocessable` (three cases) | `reused.StatusCode should be UnprocessableEntity but was Created` |
@@ -166,12 +166,21 @@ completedWhileTheSessionWasStillAlive should be False but was True
 ```
 
 The fixture now commits the statement that disables new connections first.
-It then calls `pg_terminate_backend(pid, 5000)` and checks its Boolean result.
+It then calls `pg_terminate_backend(pid, 5000)` for every session.
+It checks that a fresh `pg_stat_activity` query has zero sessions before readiness runs.
 The five-second bound is on confirmed backend termination, not an increased HTTP or test timeout.
 The test resumes the backend in a finally block.
 The original health test has no retry and no added sleep.
 
-Sources: [PostgreSQL 18, Server Signaling Functions](https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-SIGNAL), [Npgsql, Batching](https://www.npgsql.org/doc/basic-usage.html#batching).
+An early consecutive-run attempt exposed a second faulty assumption in the fixture fix.
+An aggregate of the termination Boolean results returned false in its third run.
+That Boolean can also be false when the session ends before the signal arrives.
+PostgreSQL's implementation explicitly permits that race.
+The final helper checks the live-session count instead of treating every false result as a live session.
+Temporary notice diagnostics were removed.
+The earlier failed sequence is not counted as the final ten consecutive runs.
+
+Sources: [PostgreSQL 18, Server Signaling Functions](https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-SIGNAL), [PostgreSQL 18, backend signaling implementation](https://github.com/postgres/postgres/blob/REL_18_STABLE/src/backend/storage/ipc/signalfuncs.c), [Npgsql, Batching](https://www.npgsql.org/doc/basic-usage.html#batching).
 
 ## Test counts
 
@@ -203,7 +212,58 @@ The maintainer accepts this exception to expand-first migration practice because
 
 ## Final verification
 
-The final build, ten consecutive full runs, old-name search and architecture-review result are recorded here after they complete.
+`dotnet build Api.slnx` passed with zero warnings and zero errors.
+The final targeted outage run passed both the original health test and the SIGSTOP/SIGTERM regression.
+
+The `architecture-reviewer` subagent reviewed `dd3fd90..473dd98` against the repository rules.
+It found no actionable architecture violation.
+It also reviewed the final session-count fixture change separately and found no actionable violation.
+It checked W1, W7, W11, I1 to I7, R4, R6 and N4.
+
+The old-name search found no matches outside migrations and this report:
+
+```sh
+rg -n 'tenant_creation_requests|TenantCreationRequest|FindCreationRequestAsync' . \
+  --glob '!**/Migrations/**' \
+  --glob '!apps/api/docs/reports/19b-idempotency-and-retries.md' \
+  --glob '!**/bin/**' --glob '!**/obj/**'
+```
+
+`git diff --check` passed.
+The final ten consecutive full runs all passed at commit `0e99247`.
+Each full run includes `CheckHealth_DatabaseGoesAway_IsLiveButNotReady` and the termination regression.
+No test was retried or skipped.
+Only this report changed after those runs.
+
+The command ran from `apps/api` in zsh:
+
+```sh
+for run in {1..10}; do
+  dotnet test --solution Api.slnx > "/private/tmp/19b-final-full-${run}.log" 2>&1
+  result=$?
+  print "RUN ${run} EXIT ${result}"
+  rg '^  (total|failed|succeeded|skipped|duration):' "/private/tmp/19b-final-full-${run}.log"
+  if (( result != 0 )); then
+    tail -n 100 "/private/tmp/19b-final-full-${run}.log"
+    exit "$result"
+  fi
+done
+```
+
+Each command exited with code 0:
+
+| Full run | Passed | Failed | Skipped | Duration |
+| --- | ---: | ---: | ---: | --- |
+| 1 | 689 | 0 | 0 | 55s 328ms |
+| 2 | 689 | 0 | 0 | 55s 182ms |
+| 3 | 689 | 0 | 0 | 53s 790ms |
+| 4 | 689 | 0 | 0 | 54s 503ms |
+| 5 | 689 | 0 | 0 | 51s 922ms |
+| 6 | 689 | 0 | 0 | 53s 611ms |
+| 7 | 689 | 0 | 0 | 53s 982ms |
+| 8 | 689 | 0 | 0 | 52s 756ms |
+| 9 | 689 | 0 | 0 | 52s 420ms |
+| 10 | 689 | 0 | 0 | 51s 267ms |
 
 Skipped: none in the implementation.
 Not checked: staging, production, Railway and GitHub settings, or the web application's build. The request excludes those changes and covers the API.
