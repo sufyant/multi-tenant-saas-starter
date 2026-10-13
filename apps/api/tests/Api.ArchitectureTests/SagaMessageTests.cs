@@ -24,12 +24,7 @@ public sealed class SagaMessageTests : IAsyncLifetime
     [Fact]
     public void ReadTheHandlerGraph_EveryMessageASagaHandles_HasNoOtherHandler()
     {
-        var graph = _application.Services.GetRequiredService<HandlerGraph>();
-        var handlersByMessage = graph.Chains
-            .Concat(graph.Chains.SelectMany(chain => chain.ByEndpoint))
-            .GroupBy(chain => chain.MessageType)
-            .ToDictionary(message => message.Key, message => message.SelectMany(chain => chain.Handlers).Select(call => call.HandlerType).Distinct().ToArray());
-        var sagaMessages = handlersByMessage.Where(message => message.Value.Any(IsSaga)).ToList();
+        var sagaMessages = SagaMessages();
 
         var shared = sagaMessages
             .Where(message => message.Value.Length > 1)
@@ -39,6 +34,49 @@ public sealed class SagaMessageTests : IAsyncLifetime
         sagaMessages.Select(message => message.Key).ShouldContain(typeof(Fault<ActivateTenant>));
         shared.ShouldBeEmpty(WhyNot);
     }
+
+    // N3: a saga hears only the replies to its steps, its own timeouts and Wolverine's faults; never a public event.
+    [Fact]
+    public void ReadTheHandlerGraph_EveryMessageASagaHandles_IsAReplyATimeoutOrAFault()
+    {
+        var others = SagaMessages()
+            .Select(message => message.Key)
+            .Where(message => !IsReply(message) && !IsTimeout(message) && !IsFault(message))
+            .Select(message => message.FullName);
+
+        others.ShouldBeEmpty("A saga handles only ...Reply, ...TimedOut and Fault<T> (N3).");
+    }
+
+    // N3: a reply answers a saga's step, so no other handler hears it. The name makes S13 visible.
+    [Fact]
+    public void ReadTheHandlerGraph_EveryReply_IsHandledOnlyByASaga()
+    {
+        var replies = HandlersByMessage().Where(message => IsReply(message.Key)).ToList();
+
+        var heardElsewhere = replies
+            .Where(message => message.Value.Any(handler => !IsSaga(handler)))
+            .Select(message => $"{message.Key.Name} -> {string.Join(", ", message.Value.Select(handler => handler.Name))}");
+
+        replies.ShouldNotBeEmpty();
+        heardElsewhere.ShouldBeEmpty("Only a saga handles a ...Reply (N3).");
+    }
+
+    private Dictionary<Type, Type[]> HandlersByMessage()
+    {
+        var graph = _application.Services.GetRequiredService<HandlerGraph>();
+        return graph.Chains
+            .Concat(graph.Chains.SelectMany(chain => chain.ByEndpoint))
+            .GroupBy(chain => chain.MessageType)
+            .ToDictionary(message => message.Key, message => message.SelectMany(chain => chain.Handlers).Select(call => call.HandlerType).Distinct().ToArray());
+    }
+
+    private List<KeyValuePair<Type, Type[]>> SagaMessages() => [.. HandlersByMessage().Where(message => message.Value.Any(IsSaga))];
+
+    private static bool IsReply(Type message) => message.Name.EndsWith("Reply", StringComparison.Ordinal);
+
+    private static bool IsTimeout(Type message) => message.Name.EndsWith("TimedOut", StringComparison.Ordinal);
+
+    private static bool IsFault(Type message) => message.IsGenericType && message.GetGenericTypeDefinition() == typeof(Fault<>);
 
     private static bool IsSaga(Type handler) => handler.IsAssignableTo(typeof(Saga));
 }
