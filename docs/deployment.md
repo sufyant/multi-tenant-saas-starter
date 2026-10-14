@@ -364,9 +364,12 @@ Rules:
 Add a shared variable to the API services without apply:
 
 1. Add its name to `sharedVariables` in `.railway/railway.ts`, in a pull request.
-2. After the merge, set the shared variable in each environment, as in step 3 of section 4.
-3. In the Railway dashboard, open Shared Variables, choose "Configure Shared Variable" for the new variable, and tick `api-web` and `api-worker`.
-4. Read the plan first: run `pnpm railway:plan`. It must show only the two `source` changes, one for `api-web` and one for `api-worker`. Any other line means the file and Railway differ. Fix the file or Railway first, and do not apply.
+2. Before the merge, set the shared variable in each environment, as in step 3 of section 4.
+3. Before the merge, in the Railway dashboard, open Shared Variables, choose "Configure Shared Variable" for the new variable, and tick `api-web` and `api-worker`.
+4. Read the plan first: on the pull request branch, run `pnpm railway:plan`. It must show only the two `source` changes, one for `api-web` and one for `api-worker`. Any other line means the file and Railway differ. Fix that first, and do not apply.
+5. Merge.
+
+Steps 2 and 3 are safe before the merge, because the running version ignores a variable it does not read. The order matters when the same pull request adds code that needs the variable at start: without the variable, the staging deploy fails.
 
 ## 8. Migrations and the running version
 
