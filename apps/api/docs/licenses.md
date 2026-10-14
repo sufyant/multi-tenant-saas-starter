@@ -129,6 +129,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | OpenTelemetry.Instrumentation.AspNetCore | Apache-2.0 |
 | Patched.DistributedLock.Core | MIT |
 | Patched.DistributedLock.Postgres | MIT |
+| Polly | BSD-3-Clause |
 | Polly.Core | BSD-3-Clause |
 | Scalar.AspNetCore | MIT |
 | Serilog | Apache-2.0 |
@@ -145,6 +146,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Spectre.Console | MIT |
 | Spectre.Console.Ansi | MIT |
 | SSH.NET | MIT |
+| Svix | MIT |
 | System.CodeDom | MIT |
 | System.Composition | MIT |
 | System.Composition.AttributedModel | MIT |

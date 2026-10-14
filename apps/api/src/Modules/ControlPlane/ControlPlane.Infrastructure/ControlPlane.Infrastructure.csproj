@@ -11,6 +11,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <!-- Verifies the signature of the identity provider's webhooks, which Clerk sends through Svix. -->
+    <PackageReference Include="Svix" />
     <!-- The module's DbContext is registered with Wolverine's EF Core integration (W1). -->
     <PackageReference Include="WolverineFx" />
     <PackageReference Include="WolverineFx.EntityFrameworkCore" />
