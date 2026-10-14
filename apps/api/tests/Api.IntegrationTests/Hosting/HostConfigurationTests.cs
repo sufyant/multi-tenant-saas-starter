@@ -7,8 +7,9 @@ using Tenancy;
 namespace Api.IntegrationTests.Hosting;
 
 // Section 7, configuration rule 2: every setting is checked while the application starts. A required setting that is missing, or
-// a value that is wrong, stops the start, and the error names the setting's full key. Each case runs on a database of its own whose
-// staff list is empty, so the first system admin's setting is required there too.
+// a value that is wrong, stops the start, and the error names the setting's full key. Each case without a required setting runs on a
+// database of its own whose staff list is empty, so the first system admin's setting is required there too. A case on the shared
+// database gives the first system admin's setting, so the check reads no staff list there.
 public sealed class HostConfigurationTests(Database database)
 {
     // The first key of each row is the one the error names; the others are missing too.
@@ -86,6 +87,24 @@ public sealed class HostConfigurationTests(Database database)
         start.ShouldThrow<Exception>().Message.ShouldContain(key.TrimEnd(':', '0'));
     }
 
+    // The test host runs Program on a thread of its own, and the factory starts the host on the test's thread. A wrong setting stops
+    // the start at once. Here the factory waits up to a second for the application to fail and dispose its host, and only then starts
+    // the host. The error still names the key.
+    [Fact]
+    public async Task StartApplication_WithAWrongSettingAndAFactoryThatStartsTheHostLate_FailsNamingTheKey()
+    {
+        var disposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString,
+            settings: new Dictionary<string, string?> { ["ControlPlane:FirstSystemAdminEmail"] = "not an email" },
+            configureServices: services => services.AddHostedService(_ => new SignalWhenDisposed(disposed)),
+            beforeStart: () => Task.WhenAny(disposed.Task, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)));
+
+        var start = () => api.CreateClient();
+
+        start.ShouldThrow<Exception>().Message.ShouldContain("ControlPlane:FirstSystemAdminEmail");
+    }
+
     // Section 8: the health endpoints have a port of their own, apart from the API's.
     [Fact]
     public async Task StartApplication_ManagementPortIsThePublicPort_FailsNamingTheKey()
@@ -157,4 +176,15 @@ public sealed class HostConfigurationTests(Database database)
         ["Notifications:Resend:ApiKey"] = "re_test_key",
         ["Notifications:Resend:From"] = "no-reply@app.test",
     };
+
+    // The host creates its hosted services before it checks the settings, and its services dispose them with the host. The services
+    // count as disposed before they dispose this one.
+    private sealed class SignalWhenDisposed(TaskCompletionSource disposed) : IHostedService, IDisposable
+    {
+        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void Dispose() => disposed.TrySetResult();
+    }
 }
