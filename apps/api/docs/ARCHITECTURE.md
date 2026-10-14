@@ -35,6 +35,7 @@ The first template runs one flow from start to end: tenant creation.
 | One handler that writes the "tenant created" record (Audit) | The only use of the Audit module |
 | The endpoint that accepts an invitation | Without it, the first Owner cannot exist |
 | `GET /v1/me/tenants` | The user sees their tenants after sign-in |
+| A copy of each user's email address and name, and `POST /v1/webhooks/clerk`, which keeps it fresh (A7, A8) | The admin screens of step 19d list users by email address and name, not by the identity provider's id |
 | One read endpoint behind the tenant door. Example: `GET /v1/tenants/{tenantId}/members` | It exercises the tenant door, membership, RLS and the permission check |
 
 Out of scope: member invitation by an Owner, custom roles and role assignment, member removal, tenant suspension and deletion, support access, in-app notifications, adding a second system admin, the tenant list for the system admin.
@@ -65,7 +66,7 @@ Each module is five projects. Another module sees only the `Contracts` project.
 | `X.Domain` | Business rules | `SharedKernel` |
 | `X.Infrastructure` | EF Core, adapters for external services, contract implementations | Application, Domain, Contracts, `SharedKernel`, `Tenancy` |
 
-`SharedKernel` holds the result and error types, paging and the marker of a tenant entity; `Tenancy` holds the base of a module DbContext, the tenant declaration at the start of each transaction, row level security in migrations, the names of the database roles and the settings that every PostgreSQL connection of the API gets.
+`SharedKernel` holds the result and error types, paging, the marker of a tenant entity and two kinds of endpoint metadata (`IdempotencyKeyRequired`, `SignatureChecked`); `Tenancy` holds the base of a module DbContext, the tenant declaration at the start of each transaction, row level security in migrations, the names of the database roles and the settings that every PostgreSQL connection of the API gets.
 
 - Two controls enforce the boundary: project references (compilation) and architecture tests. Source: Ford, Parsons, Kua, Chapter 2.
 - The `Api` project cannot reach the `DbContext`. Source: Evans, Chapter 4.
@@ -351,7 +352,7 @@ Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Hum
 | --- | --- | --- |
 | Another tenant's id is put in the path | Membership check and RLS | API1 |
 | A forged or expired token | Signature, expiry and issuer are verified on each request. Only a session token is accepted: a token without the session's id (`sid`), such as a JWT template's token, is refused | API2 |
-| A forged or replayed webhook delivery | Svix's library checks the signature with the endpoint's signing secret before the body is read, and refuses a timestamp more than five minutes from now. A refused delivery answers 400 and changes nothing | API2 |
+| A forged or replayed webhook delivery | Svix's library checks the signature with the endpoint's signing secret before the body is parsed, and refuses a timestamp more than five minutes from now. A refused delivery answers 400 and changes nothing | API2 |
 | Extra fields are added to a request | An endpoint reads only the defined fields | API3 |
 | Too many requests | A rate limit for each user, kept in each pod. A caller without a user, such as a webhook, is limited by its client address. Accepting an invitation has a stricter limit of its own. Lists are paged and the page size has a limit | API4 |
 | A tenant user calls a system endpoint | The system door checks the staff list | API5 |
