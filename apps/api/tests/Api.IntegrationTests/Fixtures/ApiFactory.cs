@@ -101,13 +101,33 @@ internal sealed class ApiFactory(
         Task RunAsync(IMessageContext _) => action();
     }
 
+    // Program runs on a thread of its own and starts the application as soon as it has built it. The factory's host waits for that
+    // start, but it asks the application's services for the start only when it is started itself. A start that fails at once disposes
+    // the services first, and the factory then reports the disposed services instead of the start's error. So the application starts
+    // only once the factory waits for it, and every failed start reaches the test with its own error.
+    private readonly TaskCompletionSource _factoryWaits = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     // The factory never asks for a Kestrel port of its own, so the base's port setting has nothing to do.
     protected override IHost CreateHost(IHostBuilder builder)
     {
         var host = builder.Build();
         beforeStart?.Invoke().GetAwaiter().GetResult();
-        host.Start();
+        var start = host.StartAsync();
+        _factoryWaits.SetResult();
+        start.GetAwaiter().GetResult();
         return host;
+    }
+
+    // IHostLifetime.WaitForStartAsync is the host's own way to delay its start until an outside event.
+    private sealed class StartsWhenTheFactoryWaits(IHostLifetime lifetime, Task factoryWaits) : IHostLifetime
+    {
+        public async Task WaitForStartAsync(CancellationToken cancellationToken)
+        {
+            await factoryWaits.WaitAsync(cancellationToken);
+            await lifetime.WaitForStartAsync(cancellationToken);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => lifetime.StopAsync(cancellationToken);
     }
 
     private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TimeSpan.FromSeconds(30));
@@ -147,6 +167,9 @@ internal sealed class ApiFactory(
         builder.ConfigureTestServices(services =>
         {
             services.TrustTestKey();
+            var lifetime = services.Single(service => service.ServiceType == typeof(IHostLifetime));
+            services.Replace(ServiceDescriptor.Singleton<IHostLifetime>(provider =>
+                new StartsWhenTheFactoryWaits((IHostLifetime)ActivatorUtilities.CreateInstance(provider, lifetime.ImplementationType!), _factoryWaits.Task)));
             services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(Identity));
             if (fakeEmailChannel)
             {
