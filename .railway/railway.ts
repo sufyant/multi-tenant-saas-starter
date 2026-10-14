@@ -22,8 +22,7 @@
 // `railway link` to that environment:
 //   pnpm railway:plan     shows the changes and changes nothing
 //   pnpm railway:apply    applies the changes
-// Read the plan first. Do not apply a plan that changes the `source` of a service
-// (docs/deployment.md, section 7).
+// Read the plan first. After the first deploy, do not apply: follow docs/deployment.md, section 7.
 import { defineRailway, postgres, project, service } from "railway/iac";
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
