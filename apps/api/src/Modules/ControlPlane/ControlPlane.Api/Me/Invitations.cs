@@ -47,9 +47,9 @@ public static class Invitations
             return InvitationNotFound;
         }
 
-        var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
+        var account = await identity.FindAccountAsync(user.Id(), cancellationToken);
         var accepted = await bus.InvokeForTenantAsync<Result<TenantSummary>>(
-            code.TenantId.ToString(), new AcceptInvitation(code.Secret, user.Id(), verifiedEmails), cancellationToken);
+            code.TenantId.ToString(), new AcceptInvitation(code.Secret, user.Id(), account.VerifiedEmails, account.Profile), cancellationToken);
         return accepted.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug));
     }
 }

@@ -85,6 +85,7 @@ docker run --rm --network api-image \
   echo "Authentication__Clerk__AuthorizedParties__0=https://app.example.invalid"
   echo "ControlPlane__FirstSystemAdminEmail=admin@example.invalid"
   echo "ControlPlane__Clerk__SecretKey=sk_test_fake_not_a_secret"
+  echo "ControlPlane__Clerk__WebhookSigningSecret=whsec_ZmFrZS1ub3QtYS1zZWNyZXQ="
   echo "ControlPlane__Clerk__BackendApiUrl=https://clerk.example.invalid/v1/"
   echo "ControlPlane__Invitations__AcceptUrl=https://app.example.invalid/invitations/accept"
   echo "Notifications__Resend__ApiKey=re_fake_not_a_secret"

@@ -22,7 +22,7 @@ namespace Api.IntegrationTests.Fixtures;
 public sealed class Database : IAsyncLifetime
 {
     private const string Password = "test-password";
-    private const string MainDatabase = "api";
+    public const string MainDatabase = "api";
 
     // The tests run the application in many hosts at once, each with its own pools for requests and messages; together
     // they need more connections than PostgreSQL's default of 100.
@@ -257,7 +257,7 @@ public sealed class Database : IAsyncLifetime
             .AddLogging()
             .AddApiPersistence()
             .AddTenancy(_ => ConnectionStringFor(DatabaseRoles.Application, database))
-            .AddControlPlaneInfrastructure()
+            .AddControlPlaneInfrastructure(servesTheApi: false)
             .AddNotificationsInfrastructure()
             .AddAuditInfrastructure()
             .BuildServiceProvider();

@@ -113,6 +113,7 @@ internal sealed class ApiFactory(
             ["ConnectionStrings:Migrations"] = migrationsConnectionString,
             ["ControlPlane:Invitations:AcceptUrl"] = AcceptUrl,
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
+            ["ControlPlane:Clerk:WebhookSigningSecret"] = ClerkDeliveries.SigningSecret,
             ["ControlPlane:FirstSystemAdminEmail"] = FirstSystemAdminEmail,
             ["Authentication:Clerk:Issuer"] = TestTokens.Issuer,
         };

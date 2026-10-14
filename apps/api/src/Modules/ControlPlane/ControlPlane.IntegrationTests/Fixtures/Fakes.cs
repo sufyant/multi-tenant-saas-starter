@@ -6,10 +6,16 @@ namespace ControlPlane.IntegrationTests.Fixtures;
 // Clerk, as far as the module uses it. Tests use email addresses and user ids of their own, so they share one instance.
 public sealed class FakeIdentityProvider : IIdentityProvider
 {
-    private readonly ConcurrentDictionary<string, string[]> _verifiedEmails = new();
+    // The profile of an account a test gives none.
+    public static readonly UserProfile NoProfile = new(null, null, null, DateTimeOffset.UnixEpoch);
 
-    public void AddAccount(string externalUserId, params string[] verifiedEmails) => _verifiedEmails[externalUserId] = verifiedEmails;
+    private readonly ConcurrentDictionary<string, IdentityAccount> _accounts = new();
 
-    public Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<string>>(_verifiedEmails.GetValueOrDefault(externalUserId, []));
+    public void AddAccount(string externalUserId, params string[] verifiedEmails) => AddAccount(externalUserId, NoProfile, verifiedEmails);
+
+    public void AddAccount(string externalUserId, UserProfile profile, params string[] verifiedEmails) =>
+        _accounts[externalUserId] = new IdentityAccount(verifiedEmails, profile);
+
+    public Task<IdentityAccount> FindAccountAsync(string externalUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(_accounts.GetValueOrDefault(externalUserId, new IdentityAccount([], NoProfile)));
 }

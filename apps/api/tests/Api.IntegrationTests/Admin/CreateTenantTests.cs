@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using ControlPlane.Application.Ports;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
@@ -285,6 +286,24 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         byFirst.StatusCode.ShouldBe(HttpStatusCode.OK);
         bySecond.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await IdOfAsync(bySecond)).ShouldNotBe(await IdOfAsync(byFirst));
+    }
+
+    // A7: the first system admin's first visit writes their catalog user, which starts with a copy of the profile that the identity
+    // provider gave in the same call as the verified addresses. Their staff list is empty, so the test has a database of its own.
+    [Fact]
+    public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithACopyOfTheirProfile()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
+        var admin = $"user_{Guid.NewGuid():N}";
+        var updatedAt = new DateTimeOffset(2026, 10, 3, 8, 30, 0, TimeSpan.Zero);
+        api.Identity.AddAccount(admin, new UserProfile(ApiFactory.FirstSystemAdminEmail, "Grace", "Hopper", updatedAt), ApiFactory.FirstSystemAdminEmail);
+
+        var created = await api.WaitingForMessagesAsync(
+            () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _catalog.ProfileOfAsync(admin, name)).ShouldBe(new StoredProfile(ApiFactory.FirstSystemAdminEmail, "Grace", "Hopper", updatedAt, null));
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);

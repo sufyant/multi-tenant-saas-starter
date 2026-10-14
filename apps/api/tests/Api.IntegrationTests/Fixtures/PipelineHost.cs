@@ -59,7 +59,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         builder.Configuration.AddInMemoryCollection(settings ?? new Dictionary<string, string?>());
 
         builder.AddApiPipeline(typeof(PipelineHost).Assembly);
-        builder.Services.AddControlPlaneInfrastructure();
+        builder.Services.AddControlPlaneInfrastructure(servesTheApi: false);
         builder.Services.AddNotificationsInfrastructure();
         builder.Services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
             (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),

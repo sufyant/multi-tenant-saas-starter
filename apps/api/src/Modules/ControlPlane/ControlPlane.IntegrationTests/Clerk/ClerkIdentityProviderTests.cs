@@ -19,7 +19,7 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     {
         _clerk.Respond("""{"id":"user_1","email_addresses":[]}""");
 
-        await Identity().FindVerifiedEmailsAsync("user_1", Cancellation);
+        await Identity().FindAccountAsync("user_1", Cancellation);
 
         _clerk.Requests.ShouldHaveSingleItem().Authorization.ShouldBe("Bearer sk_test_secret");
     }
@@ -34,10 +34,27 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
               {"email_address":"ada@old.example","verification":null}]}
             """);
 
-        var emails = await Identity().FindVerifiedEmailsAsync("user_1", Cancellation);
+        var account = await Identity().FindAccountAsync("user_1", Cancellation);
 
-        emails.ShouldBe(["ada@example.com"]);
+        account.VerifiedEmails.ShouldBe(["ada@example.com"]);
         _clerk.Requests.ShouldHaveSingleItem().Uri.ShouldBe(new Uri("https://api.clerk.test/v1/users/user_1"));
+    }
+
+    // The profile copy takes the address marked primary, not the first in the list, and Clerk's time of the user's last change.
+    [Fact]
+    public async Task FindAccount_PrimaryAddressNotFirst_ReturnsThePrimaryInTheProfile()
+    {
+        _clerk.Respond("""
+            {"id":"user_1","primary_email_address_id":"idn_2","first_name":"Ada","last_name":"Lovelace","updated_at":1760432400123,
+             "email_addresses":[
+              {"id":"idn_1","email_address":"ada@old.example","verification":{"status":"verified"}},
+              {"id":"idn_2","email_address":"ada@example.com","verification":{"status":"verified"}}],
+             "image_url":"https://img.clerk.test/ada.png","phone_numbers":[{"phone_number":"+15550100"}],"public_metadata":{"plan":"x"}}
+            """);
+
+        var account = await Identity().FindAccountAsync("user_1", Cancellation);
+
+        account.Profile.ShouldBe(new UserProfile("ada@example.com", "Ada", "Lovelace", DateTimeOffset.FromUnixTimeMilliseconds(1760432400123)));
     }
 
     [Fact]
@@ -45,7 +62,7 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     {
         _clerk.Respond("""{"errors":[{"code":"internal"}]}""", HttpStatusCode.InternalServerError);
 
-        var find = async () => await Identity().FindVerifiedEmailsAsync("user_1", Cancellation);
+        var find = async () => await Identity().FindAccountAsync("user_1", Cancellation);
 
         await find.ShouldThrowAsync<HttpRequestException>();
     }
@@ -56,7 +73,7 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     {
         _clerk.Delay = TimeSpan.FromSeconds(30);
 
-        var find = async () => await Identity(timeout: "00:00:00.100").FindVerifiedEmailsAsync("user_1", Cancellation);
+        var find = async () => await Identity(timeout: "00:00:00.100").FindAccountAsync("user_1", Cancellation);
 
         await find.ShouldThrowAsync<TaskCanceledException>();
     }

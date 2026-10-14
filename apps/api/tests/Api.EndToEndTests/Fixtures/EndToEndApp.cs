@@ -31,6 +31,7 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
         builder.UseSetting("ConnectionStrings:Database", database.ApplicationConnectionString);
         builder.UseSetting("ControlPlane:Invitations:AcceptUrl", "https://app.test/invitations/accept");
         builder.UseSetting("ControlPlane:Clerk:SecretKey", "sk_test_unused");
+        builder.UseSetting("ControlPlane:Clerk:WebhookSigningSecret", "whsec_ZmFrZS1ub3QtYS1zZWNyZXQ=");
         builder.UseSetting("ControlPlane:FirstSystemAdminEmail", FirstSystemAdminEmail);
         builder.UseSetting("Authentication:Clerk:Issuer", TestTokens.Issuer);
         builder.UseSetting("Authentication:Clerk:AuthorizedParties:0", TestTokens.AuthorizedParty);
