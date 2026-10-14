@@ -356,7 +356,7 @@ Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Hum
 | Extra fields are added to a request | An endpoint reads only the defined fields | API3 |
 | Too many requests | A rate limit for each user, kept in each pod. A caller without a user, such as a webhook, is limited by its client address. Accepting an invitation has a stricter limit of its own. Lists are paged and the page size has a limit | API4 |
 | A tenant user calls a system endpoint | The system door checks the staff list | API5 |
-| Internal structure is read from an error message | The error response has one shape and returns no internal detail. A 401 does not say why the token failed | API8 |
+| Internal structure is read from an error message | The error response has one shape and returns no internal detail. A 401 does not say why the token failed. A request the server refuses while it reads it, such as a body over its endpoint's size limit, keeps the server's status (413, 400 or 408); any other exception is a 500 | API8 |
 | A browser request from another site | Only permitted origins can call | API8 |
 
 All business endpoints start with `/v1`. The only exception is the two health endpoints: `/health/live` and `/health/ready`. These endpoints serve the infrastructure, need no identity and return only "healthy" or "unhealthy". Neither health endpoint is reachable from outside. The outside sees no health information at all.
