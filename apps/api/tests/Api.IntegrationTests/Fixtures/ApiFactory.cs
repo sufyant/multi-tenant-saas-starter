@@ -16,6 +16,7 @@ namespace Api.IntegrationTests.Fixtures;
 // they are fakes unless a test exercises the application's own email channel; the session tokens are signed with the test key. The
 // tenant creation's retries are short, so a step that fails for good reaches the dead letter queue within a test. A setting a test gives
 // as null is left out. A factory given ports runs the host on Kestrel, on those ports, once a client of one of them is asked for.
+// A test that orders the start against the application's own thread gives an action that runs before the factory starts the host.
 internal sealed class ApiFactory(
     string databaseConnectionString,
     string? migrationsConnectionString = null,
@@ -26,7 +27,8 @@ internal sealed class ApiFactory(
     Action<IServiceCollection>? configureServices = null,
     string? messagingConnectionString = null,
     IReadOnlyDictionary<string, string?>? settings = null,
-    HostPorts? ports = null) : WebApplicationFactory<Program>
+    HostPorts? ports = null,
+    Func<Task>? beforeStart = null) : WebApplicationFactory<Program>
 {
     private bool _onKestrel;
 
@@ -99,6 +101,35 @@ internal sealed class ApiFactory(
         Task RunAsync(IMessageContext _) => action();
     }
 
+    // Program runs on a thread of its own and starts the application as soon as it has built it. The factory's host waits for that
+    // start, but it asks the application's services for the start only when it is started itself. A start that fails at once disposes
+    // the services first, and the factory then reports the disposed services instead of the start's error. So the application starts
+    // only once the factory waits for it, and every failed start reaches the test with its own error.
+    private readonly TaskCompletionSource _factoryWaits = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // The factory never asks for a Kestrel port of its own, so the base's port setting has nothing to do.
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = builder.Build();
+        beforeStart?.Invoke().GetAwaiter().GetResult();
+        var start = host.StartAsync();
+        _factoryWaits.SetResult();
+        start.GetAwaiter().GetResult();
+        return host;
+    }
+
+    // IHostLifetime.WaitForStartAsync is the host's own way to delay its start until an outside event.
+    private sealed class StartsWhenTheFactoryWaits(IHostLifetime lifetime, Task factoryWaits) : IHostLifetime
+    {
+        public async Task WaitForStartAsync(CancellationToken cancellationToken)
+        {
+            await factoryWaits.WaitAsync(cancellationToken);
+            await lifetime.WaitForStartAsync(cancellationToken);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => lifetime.StopAsync(cancellationToken);
+    }
+
     private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TimeSpan.FromSeconds(30));
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -136,6 +167,11 @@ internal sealed class ApiFactory(
         builder.ConfigureTestServices(services =>
         {
             services.TrustTestKey();
+            // The services hold the host's own lifetime too, so they dispose it with the host.
+            var lifetime = services.Single(service => service.ServiceType == typeof(IHostLifetime)).ImplementationType!;
+            services.AddSingleton(lifetime);
+            services.Replace(ServiceDescriptor.Singleton<IHostLifetime>(provider =>
+                new StartsWhenTheFactoryWaits((IHostLifetime)provider.GetRequiredService(lifetime), _factoryWaits.Task)));
             services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(Identity));
             if (fakeEmailChannel)
             {
