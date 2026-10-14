@@ -352,13 +352,24 @@ Rules:
 
 - Change a setting of a service in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
-- The API services have no `source` in the file, because CI sets their image. Railway CLI 5.63.1 compares the image that CI set with the missing `source` in the file, so a plan after a deploy can show a change to `source`. It is not known whether such an apply removes the image. Do not apply a plan that changes the `source` of a service. Report it instead.
+- The API services have no `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of `api-web` and `api-worker` going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). It is not known whether such an apply removes the image. So after the first deploy, do not apply. Add settings with the procedure below.
+- The first apply of a new environment is safe (step 6 of section 4). The services have no image yet, so the plan shows no change to `source`.
 - A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 3 of section 4).
 - For most keys, an empty value stops the API at start, and the API names the key. Railway then marks the deployment as failed.
 - The file declares `postgres` with the `postgres` helper of `railway/iac`, but Railway's own flows set its volume, its TCP proxy, its backups and its point-in-time recovery (the bucket `Postgres-PITR` and the archive variables). The Railway docs do not say how apply treats these. Do not apply a plan that removes or changes one of them. Report it instead.
 - Do not apply a plan that changes the image of `postgres`. A new major version needs Railway's upgrade flow, not a new image tag (Railway docs, "Upgrading PostgreSQL Major Versions", "Manual Image Edits"). Point-in-time recovery needs a major tag such as `:18`, not a minor tag (Railway docs, "Point-in-Time Recovery", "Limitations").
 - An environment that was set up before step 18f can still have the shared variable `ConnectionStrings__Messaging`. No service references it any more. Delete it in the Railway dashboard.
 - An empty `Host__Cors__AllowedOrigins__0` is not a valid origin, so the API stops. Set it to the web app's origin, also before the web app exists.
+
+Add a shared variable to the API services without apply:
+
+1. Add its name to `sharedVariables` in `.railway/railway.ts`, in a pull request.
+2. Before the merge, set the shared variable in each environment, as in step 3 of section 4.
+3. Before the merge, in the Railway dashboard, open Shared Variables, choose "Configure Shared Variable" for the new variable, and tick `api-web` and `api-worker`.
+4. Read the plan first: on the pull request branch, run `pnpm railway:plan`. It must show only the two `source` changes, one for `api-web` and one for `api-worker`. Any other line means the file and Railway differ. Fix that first, and do not apply.
+5. Merge.
+
+Steps 2 and 3 are safe before the merge, because the running version ignores a variable it does not read. The order matters when the same pull request adds code that needs the variable at start: without the variable, the staging deploy fails.
 
 ## 8. Migrations and the running version
 
