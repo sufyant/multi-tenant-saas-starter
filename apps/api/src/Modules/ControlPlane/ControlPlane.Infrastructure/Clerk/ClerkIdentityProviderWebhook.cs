@@ -12,7 +12,7 @@ namespace ControlPlane.Infrastructure.Clerk;
 // Clerk's webhook. Clerk sends it through Svix, and Svix's own library checks the signature and the timestamp's tolerance of five
 // minutes. Only user.updated and user.deleted change the copy; user.created does not, because a Clerk account becomes a catalog user
 // only through an invitation or as the first system admin, and those paths fill the copy themselves.
-internal sealed class ClerkWebhook(IOptions<ClerkOptions> options) : IIdentityProviderWebhook
+internal sealed class ClerkIdentityProviderWebhook(IOptions<ClerkOptions> options) : IIdentityProviderWebhook
 {
     private static readonly Error SignatureInvalid = Error.Validation("webhook.signature_invalid", "The webhook signature is missing, wrong or too old.");
 

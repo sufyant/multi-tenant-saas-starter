@@ -62,10 +62,10 @@ public static class ControlPlaneInfrastructure
             .Validate(clerk => clerk.BackendApiUrl.IsAbsoluteUri, $"{ClerkOptions.Section}:BackendApiUrl must be an absolute URL.")
             .Validate(clerk => clerk.Timeout > TimeSpan.Zero, $"{ClerkOptions.Section}:Timeout must be positive.")
             .Validate(
-                clerk => !servesTheApi || ClerkWebhook.IsSigningSecret(clerk.WebhookSigningSecret),
+                clerk => !servesTheApi || ClerkIdentityProviderWebhook.IsSigningSecret(clerk.WebhookSigningSecret),
                 $"{ClerkOptions.Section}:WebhookSigningSecret must be the signing secret of the Clerk webhook endpoint, which starts with whsec_.")
             .ValidateOnStart();
-        services.AddSingleton<IIdentityProviderWebhook, ClerkWebhook>();
+        services.AddSingleton<IIdentityProviderWebhook, ClerkIdentityProviderWebhook>();
         services.AddHttpClient<IIdentityProvider, ClerkIdentityProvider>((provider, http) =>
         {
             var clerk = provider.GetRequiredService<IOptions<ClerkOptions>>().Value;
