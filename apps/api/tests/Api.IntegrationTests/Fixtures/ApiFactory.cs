@@ -167,9 +167,11 @@ internal sealed class ApiFactory(
         builder.ConfigureTestServices(services =>
         {
             services.TrustTestKey();
-            var lifetime = services.Single(service => service.ServiceType == typeof(IHostLifetime));
+            // The services hold the host's own lifetime too, so they dispose it with the host.
+            var lifetime = services.Single(service => service.ServiceType == typeof(IHostLifetime)).ImplementationType!;
+            services.AddSingleton(lifetime);
             services.Replace(ServiceDescriptor.Singleton<IHostLifetime>(provider =>
-                new StartsWhenTheFactoryWaits((IHostLifetime)ActivatorUtilities.CreateInstance(provider, lifetime.ImplementationType!), _factoryWaits.Task)));
+                new StartsWhenTheFactoryWaits((IHostLifetime)provider.GetRequiredService(lifetime), _factoryWaits.Task)));
             services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(Identity));
             if (fakeEmailChannel)
             {

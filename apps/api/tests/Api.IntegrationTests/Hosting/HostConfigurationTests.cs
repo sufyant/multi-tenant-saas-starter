@@ -88,9 +88,10 @@ public sealed class HostConfigurationTests(Database database)
     }
 
     // The test host runs Program on a thread of its own, and the factory starts the host on the test's thread. A wrong setting stops
-    // the start at once, so the application can fail and dispose its host before the factory starts it. The error still names the key.
+    // the start at once. Here the factory waits up to a second for the application to fail and dispose its host, and only then starts
+    // the host. The error still names the key.
     [Fact]
-    public async Task StartApplication_WithAWrongSettingBeforeTheFactoryStartsTheHost_FailsNamingTheKey()
+    public async Task StartApplication_WithAWrongSettingAndAFactoryThatStartsTheHostLate_FailsNamingTheKey()
     {
         var disposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await using var api = new ApiFactory(
