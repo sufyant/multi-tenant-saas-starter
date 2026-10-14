@@ -20,7 +20,7 @@ public sealed partial class NamesAndPlacesTests
     {
         var contextType = ModuleDbContexts.Types().Single(type => type.FullName == contextName);
         using var context = ModuleDbContexts.CreateAsDotnetEfDoes(contextType);
-        var module = contextType.Assembly.GetName().Name![..^".Infrastructure".Length];
+        var module = contextType.Assembly.GetName().Name!.Replace(".Infrastructure", "", StringComparison.Ordinal);
 
         var schema = context.Model.GetDefaultSchema();
 

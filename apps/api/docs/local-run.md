@@ -38,21 +38,22 @@ Every process below runs this output. Only the configuration changes.
 
 ## 4. Migrate
 
-The migration step runs as the owner role and needs only its connection (R3). `ConnectionStrings:Migrations` is given only to the `migrate` command, never to a running process. It creates every module's schema and the `wolverine` schema, then exits. It logs one line for each module, with the number of migrations it applied, and one line when it has finished. Running it again is safe.
+The migration step runs as the owner role and needs only its connection (R3). `ConnectionStrings:Migrations` is given only to the `migrate` command, never to a running process. It creates every module's schema, the host's `api` schema and the `wolverine` schema, then exits. It logs one line for each module, with the number of migrations it applied, and one line when it has finished. Running it again is safe.
 
 ```sh
 cd out/api
 ConnectionStrings__Migrations="Host=localhost;Port=5432;Database=app;Username=api_owner;Password=<owner password>" \
   dotnet Api.dll migrate
-# ... Migrated the control_plane schema: 1 migrations applied
+# ... Migrated the api schema: 1 migrations applied
+# ... Migrated the control_plane schema: 2 migrations applied
 # ... Migrated the audit schema: 2 migrations applied
-# ... Migration finished: the schemas control_plane, audit and the message storage in wolverine are up to date
+# ... Migration finished: the schemas api, control_plane, audit and the message storage in wolverine are up to date
 ```
 
 The application does not start on a database that was not migrated. It stops at once and says so:
 
 ```text
-The application does not start: the database is not migrated, it has no schema audit, control_plane, wolverine: run `dotnet Api.dll migrate` first.
+The application does not start: the database is not migrated, it has no schema api, audit, control_plane, wolverine: run `dotnet Api.dll migrate` first.
 ```
 
 The Notifications module stores no data and has no schema of its own. A database migrated by an earlier version still has an empty `notifications` schema, which nothing uses. The owner role can drop it by hand:

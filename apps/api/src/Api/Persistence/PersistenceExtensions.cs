@@ -1,9 +1,17 @@
 using Tenancy;
+using Wolverine.EntityFrameworkCore;
 
 namespace Api.Persistence;
 
 internal static class PersistenceExtensions
 {
+    public static IServiceCollection AddApiPersistence(this IServiceCollection services)
+    {
+        services.AddDbContextWithWolverineIntegration<ApiDbContext>(
+            (provider, options) => options.UseModuleDatabase(provider, ApiDbContext.Schema), TenancyServiceCollectionExtensions.MessageSchema);
+        return services.AddModuleMigrations<ApiDbContext>(ApiDbContext.Schema);
+    }
+
     private const string Section = "ConnectionStrings";
 
     public const string DatabaseConnection = "Database";

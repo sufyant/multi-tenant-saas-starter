@@ -28,7 +28,7 @@ internal static class Handlers
         InTenant.RunAsync(services, tenantId, async scope =>
         {
             var (result, saga, activate, timeout) = await CreateTenantHandler.HandleAsync(
-                new CreateTenant(adminId, "Acme Ltd", slug, ownerEmail, Guid.NewGuid().ToString()),
+                new CreateTenant(adminId, "Acme Ltd", slug, ownerEmail),
                 scope.GetRequiredService<ITenantCatalog>(),
                 scope.GetRequiredService<InvitationSettings>(),
                 scope.GetRequiredService<TenantCreationSettings>(),

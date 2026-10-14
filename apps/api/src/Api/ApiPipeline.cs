@@ -4,6 +4,7 @@ using Api.Authentication;
 using Api.Authorization;
 using Api.ErrorHandling;
 using Api.Hosting;
+using Api.Idempotency;
 using Api.Messaging;
 using Api.Networking;
 using Api.Observability;
@@ -13,6 +14,8 @@ using Api.Tenant;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Microsoft.OpenApi;
+using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
 using Tenancy;
@@ -51,6 +54,13 @@ internal static class ApiPipeline
         var host = builder.AddHostSettings();
         var role = openApiBuild ? HostRole.All : host.RoleOrNull;
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddApiPersistence();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IIdempotencyExecutor, IdempotencyExecutor>();
+        builder.Services.AddOptions<IdempotencySettings>()
+            .BindConfiguration(IdempotencySettings.Section)
+            .Validate(settings => settings.IdempotencyKeyRetention >= TimeSpan.FromHours(24), "Api:IdempotencyKeyRetention must be at least 24 hours.")
+            .ValidateOnStart();
 
         builder.AddObservability();
         builder.AddClerkAuthentication();
@@ -58,7 +68,7 @@ internal static class ApiPipeline
         builder.Services.AddAccessAuthorization();
 
         builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
-            context.ProblemDetails.Extensions["traceId"] = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier);
+            context.ProblemDetails.Extensions["traceId"] = context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? Activity.Current?.Id ?? context.HttpContext.TraceIdentifier);
         builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 
         // A request an endpoint cannot read answers 400 in every environment. Development would otherwise throw, and the exception
@@ -67,6 +77,7 @@ internal static class ApiPipeline
 
         builder.Services.AddWolverine(options =>
         {
+            options.Discovery.IncludeAssembly(typeof(ApiPipeline).Assembly);
             foreach (var assembly in handlerAssemblies)
             {
                 options.Discovery.IncludeAssembly(assembly);
@@ -89,18 +100,25 @@ internal static class ApiPipeline
             // Of two messages a saga handles at once, the second fails on the saga's version and is tried again on the first one's
             // result (W6, S8). Wolverine does not retry this by itself.
             options.OnException<SagaConcurrencyException>().RetryTimes(3);
+            options.OnAnyException().ContinueWith(new QueuedRetries());
 
             // Wolverine's EF Core middleware begins, saves and commits the transaction of every handler that uses a module DbContext,
             // with the messages the handler sends in it (W1). Each handler of a message runs in its own transaction (W4).
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();
             options.MultipleHandlerBehavior = MultipleHandlerBehavior.Separated;
+            options.Policies.Add<IdempotencyPolicy>();
 
             options.UseFluentValidation();
 
             // Each process logs every message it handled, at Information (Wolverine's default is Debug).
             options.Policies.MessageSuccessLogLevel(LogLevel.Information);
         });
+
+        if (!openApiBuild && role is HostRole.Worker or HostRole.All)
+        {
+            builder.Services.AddHostedService<IdempotencyCleanup>();
+        }
 
         // API8: only the configured browser origins may call, with the methods and headers the API uses, and without credentials
         // mode: the API reads its caller from the Authorization header, never from a cookie.
@@ -111,7 +129,22 @@ internal static class ApiPipeline
 
         builder.Services.AddUserRateLimiting();
         builder.Services.AddHealthChecks();
-        builder.Services.AddOpenApi();
+        builder.Services.AddOpenApi(options => options.AddOperationTransformer((operation, context, _) =>
+        {
+            if (context.Description.ActionDescriptor.EndpointMetadata.OfType<IdempotencyKeyRequired>().Any())
+            {
+                operation.Parameters ??= [];
+                operation.Parameters.Add(new OpenApiParameter
+                {
+                    Name = IdempotencyMiddleware.Header,
+                    In = ParameterLocation.Header,
+                    Required = true,
+                    Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 255, Pattern = "^[!-~]+$" },
+                });
+            }
+
+            return Task.CompletedTask;
+        }));
 
         return role;
     }
@@ -146,6 +179,7 @@ internal static class ApiPipeline
         app.UseRateLimiter();
         app.UseMiddleware<TenantResolutionMiddleware>();
         app.UseAuthorization();
+        app.UseMiddleware<IdempotencyMiddleware>();
 
         return app;
     }

@@ -269,40 +269,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("tenants", "control_plane");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantCreationRequest", b =>
-                {
-                    b.Property<Guid>("SystemAdminId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("system_admin_id");
-
-                    b.Property<string>("IdempotencyKey")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("idempotency_key");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("RequestHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("request_hash");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("SystemAdminId", "IdempotencyKey")
-                        .HasName("pk_tenant_creation_requests");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_tenant_creation_requests_tenant_id");
-
-                    b.ToTable("tenant_creation_requests", "control_plane");
-                });
-
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -387,23 +353,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
-                });
-
-            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantCreationRequest", b =>
-                {
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("SystemAdminId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_tenant_creation_requests_users_system_admin_id");
-
-                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_tenant_creation_requests_tenants_tenant_id");
                 });
 #pragma warning restore 612, 618
         }

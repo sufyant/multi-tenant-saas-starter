@@ -84,13 +84,31 @@ public sealed class Database : IAsyncLifetime
     {
         await using var connection = new NpgsqlConnection(SuperuserConnectionString);
         await connection.OpenAsync();
-        await using var close = new NpgsqlCommand(
-            $"""
-            ALTER DATABASE {database} ALLOW_CONNECTIONS false;
-            SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{database}';
-            """,
-            connection);
-        await close.ExecuteNonQueryAsync();
+        await using var disable = new NpgsqlCommand($"ALTER DATABASE {database} ALLOW_CONNECTIONS false", connection);
+        await disable.ExecuteNonQueryAsync();
+        // The default timeout of zero reports only that SIGTERM was sent. Readiness must run after the sessions actually end.
+        await using var terminate = new NpgsqlCommand(
+            $"SELECT pg_terminate_backend(pid, 5000) FROM pg_stat_activity WHERE datname = '{database}'", connection);
+        await terminate.ExecuteNonQueryAsync();
+        // A session can end before its signal is sent, which returns false. Check the actual sessions in a fresh statement.
+        await using var remaining = new NpgsqlCommand($"SELECT count(*) FROM pg_stat_activity WHERE datname = '{database}'", connection);
+        ((long)(await remaining.ExecuteScalarAsync())!).ShouldBe(0, "Every session must end before the test checks readiness.");
+    }
+
+    // Real fault injection: pause a backend before its termination signal arrives, then resume it.
+    public async Task SignalBackendAsync(int pid, string signal)
+    {
+        var result = await _container.ExecAsync(["sh", "-c", $"kill -{signal} {pid}"]);
+        result.ExitCode.ShouldBe(0, result.Stderr);
+    }
+
+    public async Task<bool> HasPendingTerminationAsync(int pid)
+    {
+        var result = await _container.ExecAsync(["cat", $"/proc/{pid}/status"]);
+        result.ExitCode.ShouldBe(0, result.Stderr);
+        return result.Stdout.Split('\n').Where(line => line.StartsWith("SigPnd:", StringComparison.Ordinal)
+                || line.StartsWith("ShdPnd:", StringComparison.Ordinal))
+            .Any(line => (Convert.ToUInt64(line.Split(':')[1].Trim(), 16) & (1UL << 14)) != 0);
     }
 
     // Whether another transaction holds a lock on the rows the query selects FOR UPDATE NOWAIT in the tenant.
@@ -237,6 +255,7 @@ public sealed class Database : IAsyncLifetime
     {
         await using var services = new ServiceCollection()
             .AddLogging()
+            .AddApiPersistence()
             .AddTenancy(_ => ConnectionStringFor(DatabaseRoles.Application, database))
             .AddControlPlaneInfrastructure()
             .AddNotificationsInfrastructure()

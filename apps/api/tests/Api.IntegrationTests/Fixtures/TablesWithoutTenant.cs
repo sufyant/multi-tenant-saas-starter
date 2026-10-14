@@ -11,7 +11,7 @@ internal static class TablesWithoutTenant
         "control_plane.users",
         "control_plane.roles",
         "control_plane.system_admins",
-        "control_plane.tenant_creation_requests",
+        "api.idempotency_keys",
     };
 
     // Every table in these schemas: Wolverine's message storage.

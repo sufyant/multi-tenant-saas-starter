@@ -66,6 +66,8 @@ internal sealed class PipelineHost : IAsyncDisposable
             TenancyServiceCollectionExtensions.MessageSchema);
         builder.Services.AddModuleMigrations<ProbeDbContext>(ProbeDbContext.Schema);
         builder.Services.TrustTestKey();
+        builder.Services.AddSingleton<IdempotencyGate>();
+        builder.Services.AddSingleton<RetryAttempts>();
 
         // The identity provider is a system we do not own. The system door asks it for a user's verified emails while the staff list
         // is empty, which depends on the order the tests run in.
@@ -78,6 +80,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         var v1 = app.MapV1();
         var admin = v1.MapAdmin();
         TestEndpoints.Map(v1);
+        IdempotencyEndpoints.Map(v1);
         TestEndpoints.MapTenant(v1.MapTenant());
         TestEndpoints.MapAdmin(admin);
         await app.StartAsync(TestContext.Current.CancellationToken);

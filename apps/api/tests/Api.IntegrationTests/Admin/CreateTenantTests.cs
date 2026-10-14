@@ -233,6 +233,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var tenantId = await IdOfAsync(first);
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await IdOfAsync(again)).ShouldBe(tenantId);
+        again.Headers.GetValues("Idempotent-Replayed").ShouldBe(["true"]);
+        (await again.Content.ReadAsStringAsync(Cancellation)).ShouldBe(await first.Content.ReadAsStringAsync(Cancellation));
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
         (await CountAsync($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }
@@ -262,8 +264,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         var created = await Task.WhenAll(admin.CreateTenantAsync(body, key), admin.CreateTenantAsync(body, key));
 
-        created.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
-        (await IdOfAsync(created[0])).ShouldBe(await IdOfAsync(created[1]));
+        created.Select(response => response.StatusCode).ShouldContain(HttpStatusCode.OK);
+        created.Select(response => response.StatusCode).ShouldAllBe(status => status == HttpStatusCode.OK || status == HttpStatusCode.Conflict);
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 

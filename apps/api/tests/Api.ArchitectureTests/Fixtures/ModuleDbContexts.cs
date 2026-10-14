@@ -9,6 +9,7 @@ internal static class ModuleDbContexts
 {
     public static IEnumerable<Type> Types() =>
         Solution.ModuleProjects
+            .Append(Solution.Host)
             .SelectMany(project => Solution.Load(project).GetTypes())
             .Where(type => type.IsSubclassOf(typeof(DbContext)) && !type.IsAbstract);
 

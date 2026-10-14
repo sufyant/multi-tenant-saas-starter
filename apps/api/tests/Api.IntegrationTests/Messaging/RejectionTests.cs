@@ -36,7 +36,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var tenantId = Guid.NewGuid();
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantDetails>>(
-            tenantId, new CreateTenant(admin, " ", Slug(), Email(), Guid.NewGuid().ToString()));
+            tenantId, new CreateTenant(admin, " ", Slug(), Email()));
 
         result.Error.Code.ShouldBe("tenant.name_invalid");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
@@ -51,7 +51,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var tenantId = Guid.NewGuid();
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantDetails>>(
-            tenantId, new CreateTenant(admin, "Acme Ltd", existing.Slug, Email(), Guid.NewGuid().ToString()));
+            tenantId, new CreateTenant(admin, "Acme Ltd", existing.Slug, Email()));
 
         result.Error.Code.ShouldBe("tenant.slug_taken");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
