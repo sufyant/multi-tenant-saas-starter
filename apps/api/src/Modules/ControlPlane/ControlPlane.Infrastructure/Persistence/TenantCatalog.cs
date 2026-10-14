@@ -36,13 +36,28 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
         return controlPlane.Tenants.AsNoTracking().SingleAsync(t => t.Id == tenantId, cancellationToken);
     }
 
-    async Task<Tenant> ITenantCatalog.FindTenantForUpdateAsync(CancellationToken cancellationToken)
+    async Task<Tenant?> ITenantCatalog.FindTenantForUpdateAsync(CancellationToken cancellationToken)
     {
         var found = await controlPlane.Tenants
             .FromSql($"SELECT * FROM control_plane.tenants WHERE id = {ActiveTenant} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
-        return found.Single();
+        return found.SingleOrDefault();
+    }
+
+    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant.
+    async Task<ListPage<Tenant>> ITenantCatalog.ListTenantsAsync(PageRequest paging, CancellationToken cancellationToken)
+    {
+        var total = await controlPlane.Tenants.CountAsync(cancellationToken);
+        var page = await controlPlane.Tenants
+            .OrderBy(tenant => tenant.Name)
+            .ThenBy(tenant => tenant.Id)
+            .Skip(paging.Skip)
+            .Take(paging.PageSize)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return new ListPage<Tenant>(page, paging, total);
     }
 
     Task<Membership?> ITenantCatalog.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>

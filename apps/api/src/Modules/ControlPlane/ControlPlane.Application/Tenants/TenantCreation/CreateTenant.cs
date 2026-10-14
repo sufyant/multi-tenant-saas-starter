@@ -17,8 +17,6 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// </summary>
 public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail);
 
-public sealed record TenantDetails(Guid Id, string Name, string Slug, string Status);
-
 public sealed class CreateTenantValidator : AbstractValidator<CreateTenant>
 {
     public CreateTenantValidator()
@@ -73,11 +71,9 @@ public static class CreateTenantHandler
         // A saga that is only being started gives its messages no saga id of their own; this one needs it, so that its fault finds
         // the saga.
         return (
-            Details(tenant.Value),
+            TenantDetails.Of(tenant.Value),
             Storage.Insert(saga),
             activate.WithDeliveryOptions(new DeliveryOptions { SagaId = saga.Id.ToString() }),
             timeout);
     }
-
-    private static TenantDetails Details(Tenant tenant) => new(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString());
 }

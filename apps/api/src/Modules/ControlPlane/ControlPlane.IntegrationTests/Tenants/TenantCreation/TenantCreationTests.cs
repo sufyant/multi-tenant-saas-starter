@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.EntityFrameworkCore;

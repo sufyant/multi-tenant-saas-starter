@@ -1,6 +1,7 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using SharedKernel;
 
 namespace ControlPlane.Infrastructure.Persistence;
 
@@ -15,6 +16,34 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
             .ToListAsync(cancellationToken);
 
         return found.SingleOrDefault();
+    }
+
+    async Task<User?> IUserCatalog.FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.Users
+            .FromSql($"SELECT * FROM control_plane.users WHERE id = {userId} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+
+        return found.SingleOrDefault();
+    }
+
+    Task<bool> IUserCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
+        controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
+
+    async Task<ListPage<(User User, bool IsSystemAdmin)>> IUserCatalog.ListUsersAsync(PageRequest paging, CancellationToken cancellationToken)
+    {
+        var total = await controlPlane.Users.CountAsync(cancellationToken);
+        var page = await controlPlane.Users
+            .OrderBy(user => user.Email == null)
+            .ThenBy(user => user.Email)
+            .ThenBy(user => user.Id)
+            .Skip(paging.Skip)
+            .Take(paging.PageSize)
+            .Select(user => new { User = user, IsSystemAdmin = controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) })
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return new([.. page.Select(found => (found.User, found.IsSystemAdmin))], paging, total);
     }
 
     Task IUserCatalog.SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);

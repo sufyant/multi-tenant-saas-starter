@@ -43,13 +43,24 @@ internal static class AccessPolicies
             ?? new AuthorizationPolicyBuilder().RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(policyName)).Build();
     }
 
-    // A tenant route the caller cannot enter answers 404, so it looks the same as a tenant that does not exist.
+    // A caller ControlPlane refused is told why, in the error shape of every other refusal. A tenant route the caller cannot enter
+    // answers 404, so it looks the same as a tenant that does not exist.
     private sealed class AccessDeniedHandler : IAuthorizationMiddlewareResultHandler
     {
         private readonly AuthorizationMiddlewareResultHandler _default = new();
 
         public async Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy, PolicyAuthorizationResult authorizeResult)
         {
+            if (authorizeResult.Forbidden && context.RequestServices.GetRequiredService<RequestAccess>().Refusal is { } refusal)
+            {
+                await TypedResults.Problem(
+                        statusCode: StatusCodes.Status403Forbidden,
+                        detail: refusal.Description,
+                        extensions: new Dictionary<string, object?> { ["code"] = refusal.Code })
+                    .ExecuteAsync(context);
+                return;
+            }
+
             if (authorizeResult.Forbidden && TenantNotFound(context))
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -88,7 +99,14 @@ internal sealed class AccessHandler : IAuthorizationHandler
             return Task.CompletedTask;
         }
 
+        // A refused caller meets no requirement, whatever the endpoint asks (A9).
         var access = http.RequestServices.GetRequiredService<RequestAccess>();
+        if (access.Refusal is not null)
+        {
+            context.Fail();
+            return Task.CompletedTask;
+        }
+
         foreach (var requirement in context.PendingRequirements.ToList())
         {
             var met = requirement switch

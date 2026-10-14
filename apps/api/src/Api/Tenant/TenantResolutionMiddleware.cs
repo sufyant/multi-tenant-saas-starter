@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Api.Authentication;
 using Api.Authorization;
 using Api.Admin;
+using Api.Me;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
@@ -11,10 +12,11 @@ using Wolverine;
 
 namespace Api.Tenant;
 
-// Resolves the tenant of a request and what the caller may do there, never from the client's word alone. On a tenant
-// route the tenant comes from the id in the path and the user's membership, with the permissions of the member's role; on an admin
-// route ControlPlane answers with the user's system permissions, given whether the session verified a second factor (A6).
-// It rejects nothing: authorization turns away the callers it finds no access for.
+// Resolves the tenant of a request and what the caller may do there, never from the client's word alone. On a me or a tenant route
+// ControlPlane first says whether the user may act at all: a suspended user is refused (A9). On a tenant route the tenant then comes
+// from the id in the path and the user's membership, with the permissions of the member's role, or ControlPlane's reason to refuse a
+// member; on an admin route ControlPlane answers with the user's system permissions, given whether the session verified a second
+// factor (A6). It rejects nothing: authorization turns away the callers it finds no access for.
 internal sealed class TenantResolutionMiddleware(RequestDelegate next)
 {
     private const string TenantTag = "tenant.id";
@@ -23,6 +25,7 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
         HttpContext context,
         ITenantDirectory directory,
         ISystemAdminDirectory systemAdmins,
+        IUserDirectory users,
         RequestAccess access,
         IMessageBus bus,
         IDiagnosticContext diagnostics)
@@ -34,16 +37,26 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
             return;
         }
 
-        Guid? tenantId = null;
+        var tenantScoped = metadata.GetMetadata<TenantScopedEndpoint>() is not null;
         if (metadata.GetMetadata<AdminEndpoint>() is not null)
         {
             access.SystemPermissions = await systemAdmins.FindSystemPermissionsAsync(
                 userId, context.User.HasVerifiedSecondFactor(), context.RequestAborted);
         }
-        else if (metadata.GetMetadata<TenantScopedEndpoint>() is not null
+        else if (tenantScoped || metadata.GetMetadata<MeEndpoint>() is not null)
+        {
+            var active = await users.CheckActiveAsync(userId, context.RequestAborted);
+            access.Refusal = active.IsSuccess ? null : active.Error;
+        }
+
+        Guid? tenantId = null;
+        if (tenantScoped
+            && access.Refusal is null
             && Guid.TryParse(context.GetRouteValue(TenantRoutes.TenantIdParameter) as string, out var requested))
         {
-            access.Membership = (await directory.FindMembershipAsync(requested, userId, context.RequestAborted))?.Value;
+            var found = await directory.FindMembershipAsync(requested, userId, context.RequestAborted);
+            access.Membership = found is { IsSuccess: true } ? found.Value : null;
+            access.Refusal = found is { IsSuccess: false } ? found.Error : null;
             tenantId = access.Membership?.TenantId;
         }
 

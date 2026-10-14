@@ -23,7 +23,8 @@ public static class ActivateTenantHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken);
+        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+            ?? throw new InvalidOperationException("A tenant is activated after its creation added it.");
         if (!tenant.Activate())
         {
             return (null, null, null);
@@ -45,16 +46,17 @@ public static partial class CancelTenantHandler
 {
     public static void Configure(HandlerChain chain) => chain.OnAnyException().RetryTimes(3);
 
-    // An active tenant is past the pivot and is never cancelled: the compensation changes nothing and reports nothing, and the saga's
-    // cancellation timeout leaves the tenant creation to a person. A cancelled tenant keeps its first reason.
+    // An active or suspended tenant is past the pivot and is never cancelled: the compensation changes nothing and reports nothing, and
+    // the saga's cancellation timeout leaves the tenant creation to a person. A cancelled tenant keeps its first reason.
     public static async Task<CancelTenantReply?> HandleAsync(
         CancelTenant step,
         ITenantCatalog catalog,
         ILogger<TenantCreationSaga> logger,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken);
-        if (tenant.Status == TenantStatus.Active)
+        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+            ?? throw new InvalidOperationException("A tenant is cancelled after its creation added it.");
+        if (tenant.Status is TenantStatus.Active or TenantStatus.Suspended)
         {
             return null;
         }

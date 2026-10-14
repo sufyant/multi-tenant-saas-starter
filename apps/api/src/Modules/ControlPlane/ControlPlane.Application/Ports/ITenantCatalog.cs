@@ -9,7 +9,8 @@ namespace ControlPlane.Application.Ports;
 /// <summary>
 /// The one way handlers reach catalog rows that belong to a tenant, used inside the active tenant. Row level security keeps one
 /// tenant's memberships and invitations from another. Users are not tenant-owned; they are here because accepting an invitation
-/// saves a user and its membership together.
+/// saves a user and its membership together. The list of every tenant is here too: it is the catalog's own table, which belongs to
+/// no tenant, and it is read outside any.
 /// </summary>
 /// <remarks>
 /// Public only because Wolverine's generated code passes it to public handlers; its members speak domain types, so they
@@ -21,8 +22,14 @@ public interface ITenantCatalog
 
     internal Task<Tenant> FindTenantAsync(CancellationToken cancellationToken);
 
-    /// <summary>The active tenant, locked for the rest of the transaction, so the steps of its creation run one at a time.</summary>
-    internal Task<Tenant> FindTenantForUpdateAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// The active tenant, locked for the rest of the transaction, so the steps of its creation, and its suspension and reactivation,
+    /// run one at a time. Null when no tenant has the active tenant's id.
+    /// </summary>
+    internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
+
+    /// <summary>A page of every tenant, in every status, by name, then id. It needs no active tenant.</summary>
+    internal Task<ListPage<Tenant>> ListTenantsAsync(PageRequest paging, CancellationToken cancellationToken);
 
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 

@@ -7,7 +7,11 @@ namespace ControlPlane.Contracts;
 /// </summary>
 public interface ITenantDirectory
 {
-    /// <summary>The user's membership in the tenant with this id, when the tenant is active and the user is its member.</summary>
+    /// <summary>
+    /// The user's membership in the tenant with this id, when the tenant is active and the user is its member. A member of a
+    /// suspended tenant is refused with a reason. Null when the user is not a member, or the tenant is neither active nor suspended, so
+    /// a stranger cannot tell a suspended tenant from one that does not exist (T3).
+    /// </summary>
     Task<Result<TenantMembership>?> FindMembershipAsync(Guid tenantId, string externalUserId, CancellationToken cancellationToken);
 }
 

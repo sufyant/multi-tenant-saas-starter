@@ -1,6 +1,7 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Invitations;
+using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using SharedKernel;
 
@@ -28,6 +29,13 @@ public static class AcceptInvitationHandler
             || invitation.Status == InvitationStatus.Cancelled)
         {
             return Errors.InvitationNotFound;
+        }
+
+        // A suspended tenant takes no new member; the invitation stays pending for its reactivation.
+        var tenant = await catalog.FindTenantAsync(cancellationToken);
+        if (tenant.Status == TenantStatus.Suspended)
+        {
+            return Error.Conflict("tenant.suspended", "The tenant is suspended.");
         }
 
         var now = time.GetUtcNow();
@@ -59,7 +67,6 @@ public static class AcceptInvitationHandler
 
         catalog.AddMember(user.Id, invitation.RoleId);
         await catalog.SaveChangesAsync(cancellationToken);
-        var tenant = await catalog.FindTenantAsync(cancellationToken);
-        return new TenantSummary(tenant.Id, tenant.Name, tenant.Slug);
+        return new TenantSummary(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString());
     }
 }

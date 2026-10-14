@@ -63,9 +63,33 @@ internal sealed class Tenant
         return true;
     }
 
-    public Result<bool> Suspend() => throw new NotImplementedException();
+    /// <summary>
+    /// Suspends an active tenant: its members are refused at the tenant door until it is reactivated. Returns whether the status
+    /// changed; a suspended tenant stays suspended. A tenant whose creation has not passed its pivot, or never will, is rejected.
+    /// </summary>
+    public Result<bool> Suspend() => Move(from: TenantStatus.Active, to: TenantStatus.Suspended);
 
-    public Result<bool> Reactivate() => throw new NotImplementedException();
+    /// <summary>
+    /// Gives a suspended tenant back to its members. Returns whether the status changed; an active tenant stays active. A tenant
+    /// whose creation has not passed its pivot, or never will, is rejected.
+    /// </summary>
+    public Result<bool> Reactivate() => Move(from: TenantStatus.Suspended, to: TenantStatus.Active);
+
+    private Result<bool> Move(TenantStatus from, TenantStatus to)
+    {
+        if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
+        {
+            return Error.Conflict("tenant.not_active", "Only an active or a suspended tenant can be suspended or reactivated.");
+        }
+
+        if (Status != from)
+        {
+            return false;
+        }
+
+        Status = to;
+        return true;
+    }
 
     private bool Leave(TenantStatus status)
     {
