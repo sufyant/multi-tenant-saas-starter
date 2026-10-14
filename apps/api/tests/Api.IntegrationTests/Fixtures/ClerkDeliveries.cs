@@ -50,6 +50,10 @@ internal static class ClerkDeliveries
             ["public_metadata"] = new { plan = "any" },
         });
 
+    // A user.updated event padded with a field the copy ignores until its JSON is the given size in bytes.
+    public static string Padded(string payload, int bytes) =>
+        payload.Insert(payload.Length - 1, $",\"padding\":\"{new string('x', bytes - payload.Length - 13)}\"");
+
     public static string UserUpdated(string userId, string email, string? firstName, string? lastName, DateTimeOffset updatedAt) =>
         UserEvent("user.updated", userId, email, firstName, lastName, updatedAt);
 

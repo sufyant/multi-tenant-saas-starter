@@ -179,6 +179,22 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
         rejected.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
     }
 
+    // API4: a webhook has no user and its body is read whole before the signature is checked, so the group takes at most 1 MB. A body
+    // over the limit is refused even with a valid signature. Kestrel applies the limit, so the host runs on it here.
+    [Fact]
+    public async Task ReceiveClerkEvent_BodyOverOneMegabyte_IsTooLargeAndChangesNothing()
+    {
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), ports: HostPorts.Free());
+        var user = await _catalog.AddUserAsync();
+        var payload = ClerkDeliveries.Padded(ClerkDeliveries.UserUpdated(user, "ada@example.com", "Ada", "Lovelace", Later), (1024 * 1024) + 1);
+
+        var received = await api.PublicClient().SendAsync(ClerkDeliveries.Signed(payload), Cancellation);
+
+        payload.Length.ShouldBe((1024 * 1024) + 1);
+        received.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
+        (await _catalog.ProfileOfAsync(user)).ShouldBe(new StoredProfile(null, null, null, null, null));
+    }
+
     // The delivery carries no Authorization header: the webhook has no user authentication.
     private Task<HttpResponseMessage> SendAsync(HttpRequestMessage delivery) => _api.CreateClient().SendAsync(delivery, Cancellation);
 }

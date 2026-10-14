@@ -159,7 +159,12 @@ internal static class ApiPipeline
         app.UseWhen(
             context => !context.Request.Path.StartsWithSegments(HealthPath),
             requests => requests.UseSerilogRequestLogging(options => options.Logger = app.Services.GetRequiredService<Serilog.ILogger>()));
-        app.UseExceptionHandler();
+        // A request the server refuses while reading it, such as a body over its endpoint's size limit, keeps the status the server
+        // gives it (413); any other exception is a 500.
+        app.UseExceptionHandler(new ExceptionHandlerOptions
+        {
+            StatusCodeSelector = exception => exception is BadHttpRequestException refused ? refused.StatusCode : StatusCodes.Status500InternalServerError,
+        });
         app.UseStatusCodePages();
 
         // The management port answers the health endpoints and nothing else; no other port answers them (section 8). The branch
