@@ -53,12 +53,13 @@ updates:
 
   # The base images in the Dockerfiles, pinned by digest. Dependabot updates the digest,
   # and the tag too where the tag names a full version.
+  # Daily and no cooldown: the image scan in CI fails on a vulnerability with a fix, so a fixed
+  # base image must arrive at once. A cooldown protects against a new package release that is
+  # later found to be harmful. A base image is pinned by digest and scanned on every update.
   - package-ecosystem: docker
     directories: [/apps/api, /apps/web]
     schedule:
-      interval: weekly
-    cooldown:
-      default-days: 7
+      interval: daily
     # A Node major version changes .nvmrc, the build image and the distroless runtime image
     # together (apps/web/Dockerfile). That is a planned upgrade, not a Dependabot update.
     ignore:
