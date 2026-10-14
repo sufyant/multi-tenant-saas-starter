@@ -16,6 +16,7 @@ namespace Api.IntegrationTests.Fixtures;
 // they are fakes unless a test exercises the application's own email channel; the session tokens are signed with the test key. The
 // tenant creation's retries are short, so a step that fails for good reaches the dead letter queue within a test. A setting a test gives
 // as null is left out. A factory given ports runs the host on Kestrel, on those ports, once a client of one of them is asked for.
+// A test that orders the start against the application's own thread gives an action that runs before the factory starts the host.
 internal sealed class ApiFactory(
     string databaseConnectionString,
     string? migrationsConnectionString = null,
@@ -26,7 +27,8 @@ internal sealed class ApiFactory(
     Action<IServiceCollection>? configureServices = null,
     string? messagingConnectionString = null,
     IReadOnlyDictionary<string, string?>? settings = null,
-    HostPorts? ports = null) : WebApplicationFactory<Program>
+    HostPorts? ports = null,
+    Func<Task>? beforeStart = null) : WebApplicationFactory<Program>
 {
     private bool _onKestrel;
 
@@ -97,6 +99,15 @@ internal sealed class ApiFactory(
         return Tracking().DoNotAssertOnExceptionsDetected().WaitForCondition(until).ExecuteAndWaitAsync(RunAsync);
 
         Task RunAsync(IMessageContext _) => action();
+    }
+
+    // The factory never asks for a Kestrel port of its own, so the base's port setting has nothing to do.
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = builder.Build();
+        beforeStart?.Invoke().GetAwaiter().GetResult();
+        host.Start();
+        return host;
     }
 
     private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TimeSpan.FromSeconds(30));
