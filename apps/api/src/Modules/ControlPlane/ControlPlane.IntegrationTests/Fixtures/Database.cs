@@ -84,7 +84,7 @@ public sealed class Database : IAsyncLifetime
             .AddLogging()
             .AddSingleton(TimeProvider.System)
             .AddTenancy(_ => ConnectionStringFor(DatabaseRoles.Application, database))
-            .AddControlPlaneInfrastructure()
+            .AddControlPlaneInfrastructure(servesTheApi: false)
             .AddScoped<IMessageContext>(_ => new TestMessageContext());
         if (!realIdentityProvider)
         {

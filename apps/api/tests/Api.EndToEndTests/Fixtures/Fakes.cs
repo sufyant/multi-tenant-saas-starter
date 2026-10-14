@@ -5,15 +5,17 @@ using Notifications.Application.Ports;
 
 namespace Api.EndToEndTests.Fixtures;
 
-// Clerk, as far as the application uses it. The owner signs up like any other user, and the provider verifies their email.
+// Clerk, as far as the application uses it. The owner signs up like any other user, and the provider verifies their email, which
+// is their primary address.
 internal sealed class FakeIdentityProvider : IIdentityProvider
 {
-    private readonly ConcurrentDictionary<string, string[]> _verifiedEmails = new();
+    private readonly ConcurrentDictionary<string, IdentityAccount> _accounts = new();
 
-    public void SignUp(string externalUserId, string verifiedEmail) => _verifiedEmails[externalUserId] = [verifiedEmail];
+    public void SignUp(string externalUserId, string verifiedEmail) =>
+        _accounts[externalUserId] = new IdentityAccount([verifiedEmail], new UserProfile(verifiedEmail, null, null, DateTimeOffset.UtcNow));
 
-    public Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<string>>(_verifiedEmails.GetValueOrDefault(externalUserId, []));
+    public Task<IdentityAccount> FindAccountAsync(string externalUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(_accounts.GetValueOrDefault(externalUserId, new IdentityAccount([], new UserProfile(null, null, null, DateTimeOffset.UnixEpoch))));
 }
 
 // The email service, as the application sends through it.

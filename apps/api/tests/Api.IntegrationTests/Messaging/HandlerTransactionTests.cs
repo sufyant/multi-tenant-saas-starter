@@ -1,5 +1,6 @@
 using System.Reflection;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Users;
 using JasperFx;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,6 +47,8 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
                 .Select(service => $"{Describe(chain)}: {service.FullName}"));
 
         reaching.Select(chain => chain.MessageType).ShouldContain(typeof(AcceptInvitation));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(UpdateUserProfile));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(DeleteUser));
         withoutTransaction.ShouldBeEmpty();
         serviceLocated.ShouldBeEmpty();
     }

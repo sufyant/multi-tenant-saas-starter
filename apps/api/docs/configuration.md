@@ -31,6 +31,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ControlPlane:Clerk:SecretKey` | Required | none | The identity provider's Backend API secret key |
 | `ControlPlane:Clerk:BackendApiUrl` | Optional | `https://api.clerk.com/v1/` | The identity provider's Backend API URL, ending in `/` |
 | `ControlPlane:Clerk:Timeout` | Optional | `00:00:10` | How long a Backend API call may take |
+| `ControlPlane:Clerk:WebhookSigningSecret` | Required in the roles `web` and `all`. A worker does not read it | none | The signing secret of the webhook endpoint in the Clerk dashboard, `whsec_` and a base64 key. The web process checks the signature of each webhook delivery with it |
 | `ControlPlane:Invitations:AcceptUrl` | Required | none | The frontend page that accepts an invitation. The invitation code is added as the `code` parameter |
 | `ControlPlane:Invitations:Lifetime` | Optional | `7.00:00:00` | How long an invitation can be accepted |
 | `Notifications:InvitationEmailRetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of the invitation email. Each is positive and longer than the one before |

@@ -9,10 +9,10 @@ namespace ControlPlane.Application.Invitations;
 /// <summary>
 /// Accepts an invitation in its tenant, the one its invitation code names: the invitation is found by the hash of the code's
 /// secret, and the catalog user, when new, and the membership are created in the same transaction as the invitation is used up.
-/// The user's verified email addresses are read from the identity provider before that transaction begins, so no call leaves
-/// the process while the invitation is locked.
+/// The user's verified email addresses and profile are read from the identity provider before that transaction begins, so no call
+/// leaves the process while the invitation is locked. A new catalog user starts with a copy of that profile.
 /// </summary>
-public sealed record AcceptInvitation(string Secret, string UserId, IReadOnlyList<string> VerifiedEmails);
+public sealed record AcceptInvitation(string Secret, string UserId, IReadOnlyList<string> VerifiedEmails, UserProfile Profile);
 
 // Every rejection returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class AcceptInvitationHandler
@@ -53,6 +53,7 @@ public static class AcceptInvitationHandler
 
         if (existing is null)
         {
+            user.CopyProfile(command.Profile.Email, command.Profile.FirstName, command.Profile.LastName, command.Profile.UpdatedAt);
             catalog.Add(user);
         }
 

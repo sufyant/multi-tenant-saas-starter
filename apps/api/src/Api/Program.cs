@@ -4,6 +4,7 @@ using Api.Hosting;
 using Api.Admin;
 using Api.Me;
 using Api.Tenant;
+using Api.Webhooks;
 using Api.Persistence;
 using Audit.Api;
 using Audit.Infrastructure;
@@ -22,7 +23,7 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
     var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
-    builder.Services.AddControlPlaneInfrastructure();
+    builder.Services.AddControlPlaneInfrastructure(role.ServesTheApi());
     builder.Services.AddNotificationsInfrastructure();
     builder.Services.AddAuditInfrastructure();
 
@@ -39,7 +40,7 @@ try
     if (role.ServesTheApi())
     {
         var v1 = app.MapV1();
-        ControlPlaneModule.MapEndpoints(v1.MapAdmin(), v1.MapMe(), v1.MapTenant());
+        ControlPlaneModule.MapEndpoints(v1.MapAdmin(), v1.MapMe(), v1.MapTenant(), v1.MapWebhooks());
         app.MapApiDocuments();
     }
 }

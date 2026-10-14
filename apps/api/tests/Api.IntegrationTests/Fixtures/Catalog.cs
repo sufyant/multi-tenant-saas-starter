@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Api.IntegrationTests.Fixtures;
 
 // Writes catalog rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
@@ -49,4 +51,20 @@ internal sealed class Catalog(Database database)
     }
 
     public Task<long> CountAsync(string sql) => database.ScalarAsync<long>(sql);
+
+    // The catalog's copy of a user's profile, and whether the user is marked deleted.
+    public async Task<StoredProfile> ProfileOfAsync(string externalId, string? databaseName = null)
+    {
+        var json = await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT json_build_object(
+                'email', email, 'firstName', first_name, 'lastName', last_name, 'updatedAt', profile_updated_at, 'deletedAt', deleted_at)::text
+            FROM control_plane.users WHERE external_id = '{externalId}'
+            """,
+            databaseName ?? Database.MainDatabase);
+
+        return JsonSerializer.Deserialize<StoredProfile>(json!, JsonSerializerOptions.Web)!;
+    }
 }
+
+internal sealed record StoredProfile(string? Email, string? FirstName, string? LastName, DateTimeOffset? UpdatedAt, DateTimeOffset? DeletedAt);

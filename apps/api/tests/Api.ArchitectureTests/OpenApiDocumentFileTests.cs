@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace Api.ArchitectureTests;
 
@@ -14,6 +15,18 @@ public sealed class OpenApiDocumentFileTests
         var (exitCode, difference) = await GitDiffAsync(DocumentFile);
 
         exitCode.ShouldBe(0, $"The build wrote a different {DocumentFile}. Add it to the commit:{Environment.NewLine}{difference}");
+    }
+
+    // N5: the document is the contract for our own clients. A webhook's sender does not read it, so no webhook path is in it.
+    [Fact]
+    public void BuildOpenApiDocument_WebhookEndpoints_AreNotInTheDocument()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(Solution.Root, DocumentFile)));
+
+        var paths = document.RootElement.GetProperty("paths").EnumerateObject().Select(path => path.Name);
+
+        paths.ShouldNotBeEmpty();
+        paths.ShouldNotContain(path => path.StartsWith("/v1/webhooks", StringComparison.Ordinal));
     }
 
     // The file as the build left it against the file in git's index, which is the committed file until the change is staged.

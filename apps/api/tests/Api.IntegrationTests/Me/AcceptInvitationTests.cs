@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using ControlPlane.Application.Ports;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -44,6 +45,23 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
             JOIN control_plane.tenants ON tenants.id = memberships.tenant_id JOIN control_plane.users ON users.id = memberships.user_id
             WHERE tenants.slug = '{slug}' AND users.external_id = '{invitee}'
             """)).ShouldBe(1);
+    }
+
+    // A7: a new catalog user starts with a copy of the profile that the identity provider gave in the same call as the verified
+    // addresses.
+    [Fact]
+    public async Task AcceptInvitation_NewUser_StartsWithACopyOfTheirProfile()
+    {
+        var invitee = $"user_{Guid.NewGuid():N}";
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var updatedAt = new DateTimeOffset(2026, 10, 3, 8, 30, 0, TimeSpan.Zero);
+        _api.Identity.AddAccount(invitee, new UserProfile(email, "Ada", "Lovelace", updatedAt), email);
+        await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
+
+        var accepted = await AcceptAsync(invitee, _api.Email.CodeSentTo(email));
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _catalog.ProfileOfAsync(invitee)).ShouldBe(new StoredProfile(email, "Ada", "Lovelace", updatedAt, null));
     }
 
     // API4: accepting an invitation has a stricter limit of its own, ten in a minute by default, on top of the general one; the
@@ -128,7 +146,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     {
         var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
         var sameEmail = $"user_{Guid.NewGuid():N}";
-        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindVerifiedEmailsAsync(invitee, Cancellation))[0]);
+        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindAccountAsync(invitee, Cancellation)).VerifiedEmails[0]);
         await AcceptAsync(invitee, code);
 
         var reused = await AcceptAsync(sameEmail, code);

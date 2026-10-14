@@ -8,6 +8,9 @@ internal sealed class ClerkOptions
 
     public string? SecretKey { get; set; }
 
+    // The signing secret of the webhook endpoint, from the Clerk dashboard. Only a process that serves the API needs it.
+    public string? WebhookSigningSecret { get; set; }
+
     public Uri BackendApiUrl { get; set; } = new("https://api.clerk.com/v1/");
 
     // How long a call may take.

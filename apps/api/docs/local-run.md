@@ -45,7 +45,7 @@ cd out/api
 ConnectionStrings__Migrations="Host=localhost;Port=5432;Database=app;Username=api_owner;Password=<owner password>" \
   dotnet Api.dll migrate
 # ... Migrated the api schema: 1 migrations applied
-# ... Migrated the control_plane schema: 2 migrations applied
+# ... Migrated the control_plane schema: 3 migrations applied
 # ... Migrated the audit schema: 2 migrations applied
 # ... Migration finished: the schemas api, control_plane, audit and the message storage in wolverine are up to date
 ```
@@ -93,6 +93,7 @@ ControlPlane__CancellationTimeout=00:10:00
 ControlPlane__Clerk__SecretKey=<Backend API secret key>
 ControlPlane__Clerk__BackendApiUrl=<Backend API URL, ending in />
 ControlPlane__Clerk__Timeout=00:00:10
+ControlPlane__Clerk__WebhookSigningSecret=<signing secret of the webhook endpoint, whsec_...>   # web only; section 11
 ControlPlane__Invitations__AcceptUrl=https://app.localhost/invitations/accept
 ControlPlane__Invitations__Lifetime=7.00:00:00
 Notifications__InvitationEmailRetryDelays__0=00:00:10
@@ -193,3 +194,18 @@ docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env 
 ```
 
 `-e Host__Role` overrides the role in `api.env`. The checks of section 6 work on the same ports.
+
+## 11. Receive the identity provider's webhook
+
+The web process keeps the catalog's copy of each user's email address and name fresh from Clerk's webhook, `POST /v1/webhooks/clerk` (A7). Clerk cannot reach `127.0.0.1`, so the Clerk CLI opens a relay and forwards each delivery to the web process. The headers stay the same, so the signature stays valid.
+
+```sh
+clerk webhooks listen --token "$(clerk webhooks token)" --forward-to http://127.0.0.1:5080/v1/webhooks/clerk
+```
+
+1. The command prints a relay URL. In the Clerk dashboard of the development instance, add a webhook endpoint with that URL. Subscribe it to `user.updated` and `user.deleted`.
+2. Copy the endpoint's signing secret into `ControlPlane__Clerk__WebhookSigningSecret` and restart the web process.
+3. Change the name of a user who has accepted an invitation, or use the endpoint's "Testing" tab in the dashboard. The web process answers `204`, and the user's row in `control_plane.users` shows the new name.
+
+A delivery without a valid signature, or older than five minutes, answers `400` and changes nothing.
+

@@ -9,21 +9,27 @@ namespace Api.IntegrationTests.Fixtures;
 // Clerk, as far as the application uses it.
 internal sealed class FakeIdentityProvider : IIdentityProvider
 {
-    private readonly ConcurrentDictionary<string, string[]> _verifiedEmails = new();
+    // The profile of an account a test gives none.
+    public static readonly UserProfile NoProfile = new(null, null, null, DateTimeOffset.UnixEpoch);
 
-    public void AddAccount(string externalUserId, params string[] verifiedEmails) => _verifiedEmails[externalUserId] = verifiedEmails;
+    private readonly ConcurrentDictionary<string, IdentityAccount> _accounts = new();
 
-    // Lets a test look at the database at the moment the application asks for a user's verified email addresses.
+    public void AddAccount(string externalUserId, params string[] verifiedEmails) => AddAccount(externalUserId, NoProfile, verifiedEmails);
+
+    public void AddAccount(string externalUserId, UserProfile profile, params string[] verifiedEmails) =>
+        _accounts[externalUserId] = new IdentityAccount(verifiedEmails, profile);
+
+    // Lets a test look at the database at the moment the application asks for a user's account.
     public Func<Task>? WhileReadingVerifiedEmails { get; set; }
 
-    public async Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken)
+    public async Task<IdentityAccount> FindAccountAsync(string externalUserId, CancellationToken cancellationToken)
     {
         if (WhileReadingVerifiedEmails is { } probe)
         {
             await probe();
         }
 
-        return _verifiedEmails.GetValueOrDefault(externalUserId, []);
+        return _accounts.GetValueOrDefault(externalUserId, new IdentityAccount([], NoProfile));
     }
 }
 
