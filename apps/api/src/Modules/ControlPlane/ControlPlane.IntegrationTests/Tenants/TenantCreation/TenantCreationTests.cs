@@ -191,6 +191,21 @@ public sealed class TenantCreationTests(Database database)
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
     }
 
+    // A suspended tenant is past the pivot too: a late compensation leaves it and its owner's invitation as they are.
+    [Fact]
+    public async Task CancelTenant_Suspended_ChangesNothingAndReportsNoCancellation()
+    {
+        var (tenantId, invitationId) = await StartAsync();
+        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, AcceptLink()));
+        await ScalarAsync<object>($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE id = '{tenantId}'");
+
+        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+
+        cancelled.ShouldBeNull();
+        (await StatusOfAsync(tenantId)).ShouldBe("Suspended");
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
+    }
+
     [Fact]
     public async Task ActivateTenant_Cancelled_AnnouncesNothing()
     {

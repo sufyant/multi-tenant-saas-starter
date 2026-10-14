@@ -122,6 +122,27 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
     }
 
+    // O3: a reactivation is announced from the web host, and its Audit handler runs in the worker, once.
+    [Fact]
+    public async Task ReactivateTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await new Catalog(database, name).AddTenantAsync(status: "Suspended");
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var reactivated = await admin.PostAsync($"/v1/admin/tenants/{tenant.Id}/reactivate", null, Cancellation);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated") > 0);
+
+        reactivated.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ReactivateTenant), typeof(ReactivateTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantReactivated), typeof(RecordTenantReactivatedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated")).ShouldBe(1L);
+    }
+
     // Spike T8 in the production layout (O3, W4): each handler of an event runs in a worker, in its own transaction. The one that
     // throws goes to the dead letter queue; the other commits its row once.
     [Fact]
