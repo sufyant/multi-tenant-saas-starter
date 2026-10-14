@@ -453,7 +453,7 @@ The ControlPlane module after these rules:
 | `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/`, `Webhooks/`, `Authentication/` (the signed-in user's id), `ControlPlaneModule.cs` |
 | `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Invitations/`, `Members/`, `Users/UpdateUserProfile.cs`, `Users/DeleteUser.cs`, `Ports/`, `Errors.cs` |
 | `ControlPlane.Domain` | One folder for each aggregate. `PermissionPools.cs`, which several aggregates use, sits at the root |
-| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `UserProfiles`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/` (the Backend API and the webhook), `ControlPlaneInfrastructure.cs` |
+| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `UserCatalog`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/` (the Backend API and the webhook), `ControlPlaneInfrastructure.cs` |
 
 ## Deviations from the books
 

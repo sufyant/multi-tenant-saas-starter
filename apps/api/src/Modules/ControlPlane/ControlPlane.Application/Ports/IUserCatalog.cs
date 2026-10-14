@@ -7,7 +7,7 @@ namespace ControlPlane.Application.Ports;
 /// neither a tenant nor a user.
 /// </summary>
 /// <remarks>Public only because Wolverine's generated code passes it to public handlers.</remarks>
-public interface IUserProfiles
+public interface IUserCatalog
 {
     /// <summary>The user with this identity provider id, locked for the rest of the transaction, so two events change it one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken);

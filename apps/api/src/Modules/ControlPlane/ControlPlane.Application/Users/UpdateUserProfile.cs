@@ -12,7 +12,7 @@ public sealed record UpdateUserProfile(string UserId, UserProfile Profile);
 // system admin.
 public static class UpdateUserProfileHandler
 {
-    public static async Task HandleAsync(UpdateUserProfile command, IUserProfiles users, CancellationToken cancellationToken)
+    public static async Task HandleAsync(UpdateUserProfile command, IUserCatalog users, CancellationToken cancellationToken)
     {
         if (await users.FindUserForUpdateAsync(command.UserId, cancellationToken) is not { } user)
         {

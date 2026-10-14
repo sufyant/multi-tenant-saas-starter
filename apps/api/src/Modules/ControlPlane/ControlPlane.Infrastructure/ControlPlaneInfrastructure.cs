@@ -34,7 +34,7 @@ public static class ControlPlaneInfrastructure
         // handler needs its transaction (W1).
         services.AddScoped<ITenantCatalog, TenantCatalog>();
         services.AddScoped<IUserTenants, UserTenants>();
-        services.AddScoped<IUserProfiles, UserProfiles>();
+        services.AddScoped<IUserCatalog, UserCatalog>();
 
         services.AddOptions<InvitationSettings>()
             .BindConfiguration(InvitationSettings.Section)
