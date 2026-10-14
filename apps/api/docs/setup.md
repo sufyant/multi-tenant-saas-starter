@@ -37,14 +37,16 @@ The API needs these from an identity provider:
 - Session tokens that carry `sub` (the user) and `sid` (the session). A token without `sid` is refused (API2).
 - `fva` in the session token for the second factor: the minutes since the first and the second factor were verified, `-1` for never. The system door requires a verified second factor (A6).
 - Open sign-up with email verification at sign-up. The Owner of a new tenant signs up like any other user and then accepts the invitation with the invited address verified.
-- A Backend API that returns a user's verified email addresses. The API calls it when a user accepts an invitation and when the first system admin enters the system door. Its URL and secret key are `ControlPlane:Clerk:BackendApiUrl` and `ControlPlane:Clerk:SecretKey`.
+- A Backend API that returns a user's verified email addresses and profile. The API calls it when a user accepts an invitation and when the first system admin enters the system door. Its URL and secret key are `ControlPlane:Clerk:BackendApiUrl` and `ControlPlane:Clerk:SecretKey`.
+- Webhooks for user changes, signed in the Svix format. The web process receives them at `POST /v1/webhooks/clerk`. The signing secret is `ControlPlane:Clerk:WebhookSigningSecret`.
 
 On Clerk:
 
 - Use the session token. A JWT template's token carries no `sid`, so the API refuses it.
 - Enable the second factor. The first system admin enrolls a device before their first request to `/v1/admin/...`.
 - Keep sign-up open and require email verification at sign-up.
-- The Backend API call is `GET users/{user id}`; the API reads the addresses whose verification status is `verified`.
+- The Backend API call is `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It copies the address marked primary (`primary_email_address_id`), `first_name`, `last_name` and `updated_at`.
+- Add a webhook endpoint in the Clerk dashboard for each instance, with the URL `https://<API domain>/v1/webhooks/clerk` and the events `user.updated` and `user.deleted`. Its signing secret starts with `whsec_`.
 
 ## Email and tenant creation timing
 

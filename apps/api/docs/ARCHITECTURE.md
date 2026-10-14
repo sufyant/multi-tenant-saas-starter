@@ -1,6 +1,6 @@
 # Architecture: multi-tenant SaaS starter template (API)
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 This document is the single source of truth for the API in `apps/api/`. If the code does not agree with this document, the code changes. No other file overrides it.
 
@@ -146,7 +146,7 @@ These ten rules come from a spike. The spike is in `apps/api/spikes/WolverineRls
 
 | # | Rule | Source |
 | --- | --- | --- |
-| I1 | Every POST that creates something or starts a process requires an idempotency key. An endpoint that only reads, or sets a state such as suspend or reactivate, does not. GET and DELETE take no key. An endpoint opts in with `IdempotencyKeyRequired` metadata. The OpenAPI document declares its header as required | Stripe, "Idempotent requests". RFC 9110, section 9.2.2 |
+| I1 | Every POST that creates something or starts a process requires an idempotency key. An endpoint that only reads, or sets a state such as suspend or reactivate, does not. GET and DELETE take no key. An endpoint opts in with `IdempotencyKeyRequired` metadata. The OpenAPI document declares its header as required. A webhook endpoint takes no idempotency key. Its sender's retries are safe because the endpoint sets a state, and an older event is ignored by its timestamp | Stripe, "Idempotent requests". RFC 9110, section 9.2.2 |
 | I2 | The header is `Idempotency-Key`. It contains 1 to 255 visible ASCII characters. A missing or invalid key answers 400. Authorization runs before the key check | IETF Idempotency-Key draft 07. Stripe, "Idempotent requests" |
 | I3 | The host owns `api.idempotency_keys`. A key is unique for the identity provider's user id and the key together. The row holds the method, route, SHA-256 of the body and route values, a lease and its expiry, the saved handler result, and its creation time. It holds no request body or tenant column | Brandur Leach, "Implementing Stripe-like Idempotency Keys in Postgres" |
 | I4 | The claim is one short, atomic database statement before the handler runs. The endpoint calls `IIdempotencyExecutor`. The key, subject and lease travel in envelope headers. Middleware holds a row lock in the handler's Wolverine transaction. A postprocessor writes the handler's `Result<T>` and clears the lock through the handler's own DbContext, before Wolverine commits its transaction. The result and business data commit together. A command with no business DbContext uses `ApiDbContext` and Wolverine's own transaction frames. The layer opens or commits no handler transaction | Brandur Leach, atomic phases. W1. Wolverine, "Middleware", "After is before the commit" |
@@ -241,8 +241,10 @@ The code checks permissions, not roles. Provider staff enter through a separate 
 | A2 | The built-in roles are Owner, Admin and Member. They are the same in each tenant and cannot be changed | Industry practice |
 | A3 | A tenant builds its own role (custom role) from the fixed permission list. This feature is not in the first template | Industry practice |
 | A4 | A system admin is not a tenant member. The staff list is in ControlPlane. It has its own permission list | Golding, Chapter 2 |
-| A5 | Each endpoint carries one of three explicit states: public, signed-in only, requires a permission. An endpoint without a state breaks the architecture test. Each endpoint on the tenant path requires a permission | OWASP API Top 10, API5 |
+| A5 | Each endpoint carries one of four explicit states: public, signed-in only, requires a permission, checks a signature. An endpoint without a state breaks the architecture test. Each endpoint on the tenant path requires a permission. Each endpoint on the webhooks path has no user and declares `SignatureChecked`, and only those endpoints do | OWASP API Top 10, API5 |
 | A6 | The system door requires a second factor. The rule is in ControlPlane. The host only translates the identity provider's field into a neutral value. Tenant users are not affected | OWASP ASVS, item 4.3.1 |
+| A7 | A catalog user keeps a copy of their primary email address, first name and last name. The identity provider owns these fields; T6 does not change. The path that creates a catalog user (accepting an invitation, the first system admin's first visit) fills the copy from the same Backend API call that returns the verified addresses. The webhook `POST /v1/webhooks/clerk` keeps it fresh: `user.updated` sets the copy of a known user, and an event older than the copy's `ProfileUpdatedAt` is ignored. `user.created`, any other type, and an event for a user the catalog does not know change nothing | Clerk, "Sync data to your app with webhooks" |
+| A8 | The copy holds only what a screen needs: no image, no phone number, no metadata. `user.deleted` erases the email address and the name and sets `DeletedAt`. The row stays, because memberships and audit entries point to it. An update that arrives after the deletion is ignored | GDPR, Article 5(1)(c) (data minimisation). Clerk, "Sync data to your app with webhooks" |
 
 Tenant users and staff sign in with the same identity provider instance. Our tables decide which door a person can use. Terms: "system admin" (Golding), "built-in roles" and "custom roles".
 
@@ -349,8 +351,9 @@ Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Hum
 | --- | --- | --- |
 | Another tenant's id is put in the path | Membership check and RLS | API1 |
 | A forged or expired token | Signature, expiry and issuer are verified on each request. Only a session token is accepted: a token without the session's id (`sid`), such as a JWT template's token, is refused | API2 |
+| A forged or replayed webhook delivery | Svix's library checks the signature with the endpoint's signing secret before the body is read, and refuses a timestamp more than five minutes from now. A refused delivery answers 400 and changes nothing | API2 |
 | Extra fields are added to a request | An endpoint reads only the defined fields | API3 |
-| Too many requests | A rate limit for each user, kept in each pod. Accepting an invitation has a stricter limit of its own. Lists are paged and the page size has a limit | API4 |
+| Too many requests | A rate limit for each user, kept in each pod. A caller without a user, such as a webhook, is limited by its client address. Accepting an invitation has a stricter limit of its own. Lists are paged and the page size has a limit | API4 |
 | A tenant user calls a system endpoint | The system door checks the staff list | API5 |
 | Internal structure is read from an error message | The error response has one shape and returns no internal detail. A 401 does not say why the token failed | API8 |
 | A browser request from another site | Only permitted origins can call | API8 |
@@ -422,13 +425,14 @@ Sources: Evans, *Domain-Driven Design*, Chapter 2 (Ubiquitous Language). Richard
 | N3 | A saga handles three kinds of message only: the replies to its steps (`...Reply`), its own timeouts (`...TimedOut`) and Wolverine's `Fault<T>`. It handles no public event. Only a saga handles a `...Reply`. A reply is named after the work it answers: `ActivateTenantReply` answers `ActivateTenant`. The name makes S13 visible. Test of both sentences: `SagaMessageTests` | Richardson, Chapter 4 |
 | N4 | A module's schema is the module's name in snake case: `control_plane`, `audit`. The host's schema is `api`, and its DbContext is `ApiDbContext`. A module's DbContext is `{Module}DbContext`. A name that describes a concept, not the module, stays: `ITenantCatalog` is the tenant catalog. Test of the schema name: `NamesAndPlacesTests` | Evans, Chapter 2. Richards and Ford, "Component-Based Thinking" |
 | N5 | An audience is who calls an endpoint. Its folder, its route prefix and its permission prefix are the same word (table below). A new audience gets a new folder, a new route prefix and a new host file. Example: `Webhooks/`, `/v1/webhooks`, `Api/Webhooks/WebhooksRoutes.cs`. Test of the endpoint folder against the route prefix: `EndpointPlaceTests` | Microsoft Learn, route groups. OWASP API5 |
-| N6 | A permission is `audience.resource.action`, in lower snake case. The audience is `admin` or `tenant`. The action is coarse: `read`, `create`, `update`, `delete`, or a business verb. `read` covers a list and a single record. The `me` audience has no permissions: being signed in is enough, and the user reaches only their own data. Test of the format and the two audiences: `NamesAndPlacesTests` | OWASP API5 |
+| N6 | A permission is `audience.resource.action`, in lower snake case. The audience is `admin` or `tenant`. The action is coarse: `read`, `create`, `update`, `delete`, or a business verb. `read` covers a list and a single record. The `me` audience has no permissions: being signed in is enough, and the user reaches only their own data. The `webhooks` audience has no permissions either: a signature proves the sender. Test of the format and the two audiences: `NamesAndPlacesTests` | OWASP API5 |
 
 | Audience | Route prefix | Folder | Host file and method | Permission prefix |
 | --- | --- | --- | --- | --- |
 | System admin | `/v1/admin` | `Admin/` | `Api/Admin/AdminRoutes.cs`, `MapAdmin` | `admin.` |
 | The signed-in user, acting for themselves | `/v1/me` | `Me/` | `Api/Me/MeRoutes.cs`, `MapMe` | none |
 | A tenant member | `/v1/tenants/{tenantId}` | `Tenant/` | `Api/Tenant/TenantRoutes.cs`, `MapTenant` | `tenant.` |
+| An external system, proven by a signature | `/v1/webhooks` | `Webhooks/` | `Api/Webhooks/WebhooksRoutes.cs`, `MapWebhooks` | none |
 
 The word for the system admin audience is `Admin`, not `System`. A folder named `System` makes the namespace `...Api.System`, and that namespace hides .NET's `System` namespace. The role keeps its name, "system admin", and it still passes the system door (A6). `Me` is a Visual Basic keyword, so CA1716 does not check namespaces (`.editorconfig`). It still checks types and members.
 
@@ -436,7 +440,7 @@ The word for the system admin audience is `Admin`, not `System`. A folder named 
 
 | # | Rule | Source |
 | --- | --- | --- |
-| N7 | In a module's `Api` project, the endpoints sit in the audience folder, one file for each resource: `Admin/Tenants.cs`, `Me/MyTenants.cs`, `Me/Invitations.cs`, `Tenant/Members.cs`. The module entry point (`ControlPlaneModule.cs`) calls the files. An endpoint is a method with the action's name, the same name as its handler in `Application`. The request and response types sit at the end of the file that uses them. A request is named by its action (`{Action}Request`), a response by its resource (`{Resource}Response`). A second shape of the same resource carries its audience in the name (`MyTenantResponse`). Every request and response name is unique in the API, because the OpenAPI document builds its schema names from the type names. Tests of the audience folder (`EndpointPlaceTests`) and of the unique names (`NamesAndPlacesTests`) | Martin, "Screaming Architecture" |
+| N7 | In a module's `Api` project, the endpoints sit in the audience folder, one file for each resource: `Admin/Tenants.cs`, `Me/MyTenants.cs`, `Me/Invitations.cs`, `Tenant/Members.cs`, `Webhooks/ClerkEvents.cs`. The module entry point (`ControlPlaneModule.cs`) calls the files. An endpoint is a method with the action's name, the same name as its handler in `Application`. A webhook endpoint receives several event types, so it is named after what it receives: `ReceiveClerkEvent` sends `UpdateUserProfile`. The request and response types sit at the end of the file that uses them. A request is named by its action (`{Action}Request`), a response by its resource (`{Resource}Response`). A second shape of the same resource carries its audience in the name (`MyTenantResponse`). Every request and response name is unique in the API, because the OpenAPI document builds its schema names from the type names. Tests of the audience folder (`EndpointPlaceTests`) and of the unique names (`NamesAndPlacesTests`) | Martin, "Screaming Architecture" |
 | N8 | The folders of `Application` follow the work. The folders of `Domain` follow the aggregate. The folders of `Infrastructure` follow the external system: `Persistence/`, `Clerk/`, `Email/`. A feature with more than one file gets its own folder, named by N10. A feature with one file stays in its resource folder. Code that several features of one module use goes into a folder named by what it is: `Ports/`, `Persistence/`. No project has a folder named `Helpers`, `Utils`, `Utilities`, `Common` or `Misc`. Code that several modules use lives only in `SharedKernel` or `Tenancy`. Test of the folder names: `NamesAndPlacesTests` | Richards and Ford, "Component-Based Thinking". Martin, "Screaming Architecture" |
 | N9 | A test project that tests one module sits in the module's folder. A test project that tests a shared project sits next to it. Tests of the whole system (host, architecture, end to end) sit in `apps/api/tests/`. A test project is named `{Project}.{Kind}Tests`, where Kind is Unit, Integration, EndToEnd or Architecture. Inside a test project the folders follow the project it tests. A test class is named `{Feature}Tests`. A test that checks several features goes into the folder of the feature it checks last. Helper files go into `Fixtures/`. Test of the project name: `NamesAndPlacesTests` | Section 9. Industry practice |
 | N10 | A feature with more than one file always gets a folder in the noun form of its root, never the action name: `Tenants/TenantCreation/` holds `CreateTenant`, and `Invitations/InvitationEmail/` holds `SendInvitationEmailHandler`. The reason: the folder becomes a namespace, and a folder named after the action hides the command type of the same name (CS0118). For the same reason, no folder has the name of a type its project declares or uses from a project it references. Test of that last sentence: `NamesAndPlacesTests` | Cwalina, Barton, Abrams, *Framework Design Guidelines*, "Names of Namespaces" |
@@ -445,10 +449,10 @@ The ControlPlane module after these rules:
 
 | Project | Folders |
 | --- | --- |
-| `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/`, `Authentication/` (the signed-in user's id), `ControlPlaneModule.cs` |
-| `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Invitations/`, `Members/`, `Ports/`, `Errors.cs` |
+| `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/`, `Webhooks/`, `Authentication/` (the signed-in user's id), `ControlPlaneModule.cs` |
+| `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Invitations/`, `Members/`, `Users/UpdateUserProfile.cs`, `Ports/`, `Errors.cs` |
 | `ControlPlane.Domain` | One folder for each aggregate. `PermissionPools.cs`, which several aggregates use, sits at the root |
-| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/`, `ControlPlaneInfrastructure.cs` |
+| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `UserProfiles`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/` (the Backend API and the webhook), `ControlPlaneInfrastructure.cs` |
 
 ## Deviations from the books
 
