@@ -7,8 +7,9 @@ using Tenancy;
 namespace Api.IntegrationTests.Hosting;
 
 // Section 7, configuration rule 2: every setting is checked while the application starts. A required setting that is missing, or
-// a value that is wrong, stops the start, and the error names the setting's full key. Each case runs on a database of its own whose
-// staff list is empty, so the first system admin's setting is required there too.
+// a value that is wrong, stops the start, and the error names the setting's full key. Each case without a required setting runs on a
+// database of its own whose staff list is empty, so the first system admin's setting is required there too. A case on the shared
+// database gives the first system admin's setting, so the check reads no staff list there.
 public sealed class HostConfigurationTests(Database database)
 {
     // The first key of each row is the one the error names; the others are missing too.
