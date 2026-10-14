@@ -8,3 +8,5 @@ internal static class MeRoutes
 {
     public static RouteGroupBuilder MapMe(this RouteGroupBuilder v1) => v1.MapGroup("/me").RequireSignedIn();
 }
+
+internal sealed class MeEndpoint;

@@ -118,8 +118,8 @@ public sealed class AcceptInvitationTests(Database database)
     {
         await using var scope = database.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<ITenantDirectory>()
-            .FindMembershipAsync(tenantId, externalUserId, TestContext.Current.CancellationToken);
+        return (await scope.ServiceProvider.GetRequiredService<ITenantDirectory>()
+            .FindMembershipAsync(tenantId, externalUserId, TestContext.Current.CancellationToken))?.Value;
     }
 
     private Task<T> ScalarAsync<T>(string sql) => database.ScalarAsSuperuserAsync<T>(sql);

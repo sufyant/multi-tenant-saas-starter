@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Audit.Application.Tenants;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
@@ -98,6 +99,27 @@ public sealed class HostRoleTests(Database database)
 
         (await SagaStateAsync(name, tenantId)).ShouldBe("Completed");
         (await TenantCreatedEntriesAsync(name, tenantId)).ShouldBe(1L);
+    }
+
+    // O3: a suspension is announced from the web host, and its Audit handler runs in the worker, once.
+    [Fact]
+    public async Task SuspendTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await new Catalog(database, name).AddTenantAsync();
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var suspended = await admin.PostAsync($"/v1/admin/tenants/{tenant.Id}/suspend", null, Cancellation);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.suspended") > 0);
+
+        suspended.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendTenant), typeof(SuspendTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantSuspended), typeof(RecordTenantSuspendedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
     }
 
     // Spike T8 in the production layout (O3, W4): each handler of an event runs in a worker, in its own transaction. The one that
@@ -199,9 +221,11 @@ public sealed class HostRoleTests(Database database)
             });
         });
 
-    private Task<long> TenantCreatedEntriesAsync(string databaseName, Guid tenantId) =>
+    private Task<long> TenantCreatedEntriesAsync(string databaseName, Guid tenantId) => AuditEntriesAsync(databaseName, tenantId, "tenant.created");
+
+    private Task<long> AuditEntriesAsync(string databaseName, Guid tenantId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = 'tenant.created'", databaseName);
+            $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", databaseName);
 
     private Task<long> ProbesAsync(string databaseName, string value) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM probes.probes WHERE value = '{value}'", databaseName);

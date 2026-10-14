@@ -63,6 +63,10 @@ internal sealed class Tenant
         return true;
     }
 
+    public Result<bool> Suspend() => throw new NotImplementedException();
+
+    public Result<bool> Reactivate() => throw new NotImplementedException();
+
     private bool Leave(TenantStatus status)
     {
         if (Status != TenantStatus.Provisioning)

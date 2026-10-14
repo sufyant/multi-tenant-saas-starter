@@ -13,9 +13,14 @@ internal static class Catalog
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
         var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug()).Value;
-        if (status == TenantStatus.Active)
+        if (status is TenantStatus.Active or TenantStatus.Suspended)
         {
             tenant.Activate();
+        }
+
+        if (status == TenantStatus.Suspended)
+        {
+            tenant.Suspend();
         }
 
         await SaveAsync(services, catalog => catalog.Tenants.Add(tenant));

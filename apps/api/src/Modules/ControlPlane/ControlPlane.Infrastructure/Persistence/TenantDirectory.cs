@@ -1,6 +1,7 @@
 using ControlPlane.Contracts;
 using ControlPlane.Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
+using SharedKernel;
 
 namespace ControlPlane.Infrastructure.Persistence;
 
@@ -11,7 +12,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 // outside a handler that begins a transaction of its own (W1).
 internal sealed class TenantDirectory(ControlPlaneDbContext controlPlane) : ITenantDirectory
 {
-    public async Task<TenantMembership?> FindMembershipAsync(Guid tenantId, string externalUserId, CancellationToken cancellationToken)
+    public async Task<Result<TenantMembership>?> FindMembershipAsync(Guid tenantId, string externalUserId, CancellationToken cancellationToken)
     {
         if (!await controlPlane.Tenants.AnyAsync(tenant => tenant.Id == tenantId && tenant.Status == TenantStatus.Active, cancellationToken))
         {
@@ -30,6 +31,6 @@ internal sealed class TenantDirectory(ControlPlaneDbContext controlPlane) : ITen
             .SingleOrDefaultAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return memberRole is null ? null : new TenantMembership(tenantId, memberRole.Permissions);
+        return memberRole is null ? null : (Result<TenantMembership>)new TenantMembership(tenantId, memberRole.Permissions);
     }
 }

@@ -35,7 +35,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
         var tenant = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug"], ignoreOrder: true);
+        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);
@@ -81,6 +81,25 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         rejected.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
         rejected.Headers.RetryAfter.ShouldNotBeNull();
         other.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // A suspended tenant takes no new member. The invitation stays pending, so it can be accepted once the tenant is reactivated.
+    [Fact]
+    public async Task AcceptInvitation_ToASuspendedTenant_IsAConflictAndTheInvitationStaysPending()
+    {
+        var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+        await database.ScalarAsync<object>($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE slug = '{slug}'");
+
+        var accepted = await AcceptAsync(invitee, code);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(accepted)).ShouldBe("tenant.suspended");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT invitations.status FROM control_plane.invitations JOIN control_plane.tenants ON tenants.id = invitations.tenant_id WHERE tenants.slug = '{slug}'"))
+            .ShouldBe("Pending");
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id WHERE tenants.slug = '{slug}'"))
+            .ShouldBe(0);
     }
 
     // T5: provider staff are not tenant members, even with the code and the invited email address verified.

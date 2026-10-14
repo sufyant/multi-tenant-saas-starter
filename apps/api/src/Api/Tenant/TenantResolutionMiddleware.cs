@@ -43,7 +43,7 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
         else if (metadata.GetMetadata<TenantScopedEndpoint>() is not null
             && Guid.TryParse(context.GetRouteValue(TenantRoutes.TenantIdParameter) as string, out var requested))
         {
-            access.Membership = await directory.FindMembershipAsync(requested, userId, context.RequestAborted);
+            access.Membership = (await directory.FindMembershipAsync(requested, userId, context.RequestAborted))?.Value;
             tenantId = access.Membership?.TenantId;
         }
 

@@ -42,4 +42,10 @@ internal sealed class User(Guid id, string externalId)
         (Email, FirstName, LastName) = (null, null, null);
         DeletedAt ??= now;
     }
+
+    public DateTimeOffset? SuspendedAt { get; private set; }
+
+    public void Suspend(DateTimeOffset now) => throw new NotImplementedException();
+
+    public void Reactivate() => throw new NotImplementedException();
 }
