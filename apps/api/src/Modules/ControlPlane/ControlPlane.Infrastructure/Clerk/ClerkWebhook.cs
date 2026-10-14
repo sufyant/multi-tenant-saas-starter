@@ -18,7 +18,7 @@ internal sealed class ClerkWebhook(IOptions<ClerkOptions> options) : IIdentityPr
 
     private readonly Lazy<Webhook> _webhook = new(() => new Webhook(options.Value.WebhookSigningSecret!));
 
-    public Result<UpdateUserProfile?> Read(string payload, Func<string, string?> header)
+    public Result<object?> Read(string payload, Func<string, string?> header)
     {
         try
         {
@@ -33,8 +33,8 @@ internal sealed class ClerkWebhook(IOptions<ClerkOptions> options) : IIdentityPr
         return clerkEvent.Type switch
         {
             "user.updated" when clerkEvent.Data.Deserialize<ClerkUser>() is { } user => new UpdateUserProfile(user.Id, user.Profile),
-            "user.deleted" when clerkEvent.Data.TryGetProperty("id", out var id) && id.GetString() is { } userId => new UpdateUserProfile(userId, null),
-            _ => (UpdateUserProfile?)null,
+            "user.deleted" when clerkEvent.Data.TryGetProperty("id", out var id) && id.GetString() is { } userId => new DeleteUser(userId),
+            _ => (object?)null,
         };
     }
 

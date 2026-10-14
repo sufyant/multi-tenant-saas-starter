@@ -48,6 +48,7 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
 
         reaching.Select(chain => chain.MessageType).ShouldContain(typeof(AcceptInvitation));
         reaching.Select(chain => chain.MessageType).ShouldContain(typeof(UpdateUserProfile));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(DeleteUser));
         withoutTransaction.ShouldBeEmpty();
         serviceLocated.ShouldBeEmpty();
     }
