@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Svix;
@@ -5,24 +6,24 @@ using Svix;
 namespace Api.IntegrationTests.Fixtures;
 
 // Clerk's webhook deliveries, as Svix sends them: the event's JSON, signed with the Svix library's own signing function. The secrets are
-// test values, made for these tests.
+// random, made when the tests run, so no signing secret is in the repository.
 internal static class ClerkDeliveries
 {
     public const string Path = "/v1/webhooks/clerk";
 
-    public const string SigningSecret = "whsec_dGVzdC1zaWduaW5nLXNlY3JldC1vZi10aGUtYXBpISE=";
+    public static readonly string SigningSecret = "whsec_" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
-    public const string AnotherSecret = "whsec_YW5vdGhlci1zZWNyZXQtbm90LXRoZS1hcGktb25lISE=";
+    public static readonly string AnotherSecret = "whsec_" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
     // A delivery signed now with the API's secret, unless a test names another secret or time.
-    public static HttpRequestMessage Signed(string payload, string secret = SigningSecret, DateTimeOffset? at = null)
+    public static HttpRequestMessage Signed(string payload, string? secret = null, DateTimeOffset? at = null)
     {
         var id = $"msg_{Guid.NewGuid():N}";
         var timestamp = at ?? DateTimeOffset.UtcNow;
         var request = Unsigned(payload);
         request.Headers.Add("svix-id", id);
         request.Headers.Add("svix-timestamp", timestamp.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture));
-        request.Headers.Add("svix-signature", new Webhook(secret).Sign(id, timestamp, payload));
+        request.Headers.Add("svix-signature", new Webhook(secret ?? SigningSecret).Sign(id, timestamp, payload));
         return request;
     }
 

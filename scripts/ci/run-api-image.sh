@@ -77,7 +77,9 @@ docker run --rm --network api-image \
   -e ConnectionStrings__Migrations="Host=api-db;Port=5432;Database=app;Username=api_owner;Password=$owner_password" \
   api migrate 2>&1 | tee "$RUNNER_TEMP/migrate.log"
 
-# Every required setting (apps/api/docs/configuration.md). The fake values reach no real service.
+# Every required setting (apps/api/docs/configuration.md). The fake values reach no real service. The
+# webhook's signing secret is random, made for this run, so no secret is in the repository.
+webhook_signing_secret="whsec_$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
 {
   echo "ASPNETCORE_ENVIRONMENT=Production"
   echo "ConnectionStrings__Database=Host=api-db;Port=5432;Database=app;Username=api_application;Password=$application_password"
@@ -85,7 +87,7 @@ docker run --rm --network api-image \
   echo "Authentication__Clerk__AuthorizedParties__0=https://app.example.invalid"
   echo "ControlPlane__FirstSystemAdminEmail=admin@example.invalid"
   echo "ControlPlane__Clerk__SecretKey=sk_test_fake_not_a_secret"
-  echo "ControlPlane__Clerk__WebhookSigningSecret=whsec_ZmFrZS1ub3QtYS1zZWNyZXQ="
+  echo "ControlPlane__Clerk__WebhookSigningSecret=$webhook_signing_secret"
   echo "ControlPlane__Clerk__BackendApiUrl=https://clerk.example.invalid/v1/"
   echo "ControlPlane__Invitations__AcceptUrl=https://app.example.invalid/invitations/accept"
   echo "Notifications__Resend__ApiKey=re_fake_not_a_secret"

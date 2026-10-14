@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using ControlPlane.Application.Ports;
 using Notifications.Application.Ports;
 using Microsoft.AspNetCore.Hosting;
@@ -17,6 +18,9 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
 {
     public const string FirstSystemAdminEmail = "admin@e2e.test";
 
+    // Random, made when the tests run: the web host needs a signing secret, and no secret is in the repository.
+    private static readonly string WebhookSigningSecret = "whsec_" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+
     public HttpClient ClientFor(string userId, bool secondFactor = false)
     {
         var client = CreateClient();
@@ -31,7 +35,7 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
         builder.UseSetting("ConnectionStrings:Database", database.ApplicationConnectionString);
         builder.UseSetting("ControlPlane:Invitations:AcceptUrl", "https://app.test/invitations/accept");
         builder.UseSetting("ControlPlane:Clerk:SecretKey", "sk_test_unused");
-        builder.UseSetting("ControlPlane:Clerk:WebhookSigningSecret", "whsec_ZmFrZS1ub3QtYS1zZWNyZXQ=");
+        builder.UseSetting("ControlPlane:Clerk:WebhookSigningSecret", WebhookSigningSecret);
         builder.UseSetting("ControlPlane:FirstSystemAdminEmail", FirstSystemAdminEmail);
         builder.UseSetting("Authentication:Clerk:Issuer", TestTokens.Issuer);
         builder.UseSetting("Authentication:Clerk:AuthorizedParties:0", TestTokens.AuthorizedParty);
