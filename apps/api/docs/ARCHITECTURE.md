@@ -32,13 +32,16 @@ The first template runs one flow from start to end: tenant creation.
 | The first system admin comes from configuration | The first person who creates a tenant cannot get on the staff list in another way |
 | Tenant creation process (saga, three steps) | The approved flow |
 | One handler that sends the invitation email (Notifications) | Step three of the process |
-| One handler that writes the "tenant created" record (Audit) | The only use of the Audit module |
+| The handlers that write the "tenant created", "tenant suspended" and "tenant reactivated" records (Audit) | The uses of the Audit module |
 | The endpoint that accepts an invitation | Without it, the first Owner cannot exist |
 | `GET /v1/me/tenants` | The user sees their tenants after sign-in |
 | A copy of each user's email address and name, and `POST /v1/webhooks/clerk`, which keeps it fresh (A7, A8) | The admin screens of step 19d list users by email address and name, not by the identity provider's id |
 | One read endpoint behind the tenant door. Example: `GET /v1/tenants/{tenantId}/members` | It exercises the tenant door, membership, RLS and the permission check |
+| `GET /v1/admin/tenants` and `GET /v1/admin/users` | The admin app lists every tenant and every user |
+| `POST /v1/admin/tenants/{tenantId}/suspend` and `.../reactivate` | A system admin stops a tenant's members, and lets them in again (section 6) |
+| `POST /v1/admin/users/{userId}/suspend` and `.../reactivate` | A system admin stops a user in every tenant, and lets them in again (A9) |
 
-Out of scope: member invitation by an Owner, custom roles and role assignment, member removal, tenant suspension and deletion, support access, in-app notifications, adding a second system admin, the tenant list for the system admin.
+Out of scope: member invitation by an Owner, custom roles and role assignment, member removal, tenant deletion, support access, in-app notifications, adding a second system admin.
 
 ## 1. The big picture
 
@@ -111,7 +114,7 @@ Wolverine is the dispatcher. An endpoint sends a command or a query through `IMe
 
 | Order | Command chain | Query chain |
 | --- | --- | --- |
-| 1 | HTTP: authentication, rate limit, tenant membership, authorization (ASP.NET Core) | HTTP: authentication, rate limit, tenant membership, authorization (ASP.NET Core) |
+| 1 | HTTP: authentication, rate limit, the user's state (A9) and tenant membership, authorization (ASP.NET Core) | HTTP: authentication, rate limit, the user's state (A9) and tenant membership, authorization (ASP.NET Core) |
 | 2 | Logging and tracing | Logging and tracing |
 | 3 | The transaction opens, the tenant is declared | The transaction opens, the tenant is declared |
 | 4 | Input validation | Input validation |
@@ -133,7 +136,7 @@ These ten rules come from a spike. The spike is in `apps/api/spikes/WolverineRls
 | --- | --- | --- | --- |
 | W1 | Wolverine's EF Core middleware opens and closes the transaction. There is no hand-written transaction code. One exception: TenantDirectory opens a short transaction of its own in the HTTP pipeline, before any message is sent, to read the membership. | The saga record, the business data and the outgoing message go into one transaction (O1, S6) | T3, T4 |
 | W2 | The module's DbContext reads the tenant from the message context. An EF Core transaction interceptor runs `set_config('app.tenant_id', ..., true)` when the transaction starts | R4, R5 | T1, T2, T5, T6 |
-| W3 | An endpoint on the tenant path relies on the tenant middleware, which sets the tenant on the message bus, and uses `InvokeAsync`. Accepting an invitation uses `InvokeForTenantAsync` with the tenant from the code. Creating a tenant passes the id the server chose to the idempotency executor. It uses `InvokeAsync` with `DeliveryOptions.TenantId` and the key's envelope headers (I4). Both Wolverine invocation methods put the tenant on the envelope. The tenant goes to the following messages automatically. A message without a tenant carries the value `*DEFAULT*`. The interceptor does not treat this value as a tenant | Requirement 7, R5. Wolverine, message bus invocation | T3, T6 |
+| W3 | An endpoint on the tenant path relies on the tenant middleware, which sets the tenant on the message bus, and uses `InvokeAsync`. Accepting an invitation uses `InvokeForTenantAsync` with the tenant from the code. Suspending and reactivating a tenant use `InvokeForTenantAsync` with the tenant from the admin route. Creating a tenant passes the id the server chose to the idempotency executor. It uses `InvokeAsync` with `DeliveryOptions.TenantId` and the key's envelope headers (I4). Both Wolverine invocation methods put the tenant on the envelope. The tenant goes to the following messages automatically. A message without a tenant carries the value `*DEFAULT*`. The interceptor does not treat this value as a tenant | Requirement 7, R5. Wolverine, message bus invocation | T3, T6 |
 | W4 | `MultipleHandlerBehavior.Separated` is on | O3 | T8 |
 | W5 | Messages wait in durable queues, and the message store is in the shared `wolverine` schema. In the role `all`, a message goes to a durable local queue (`UseDurableLocalQueues`). In the roles `web` and `worker`, every message goes through the outbox to one PostgreSQL queue in the same schema (Wolverine's PostgreSQL transport). Only a worker listens to that queue, and it hands an event with several handlers on to durable local queues, one for each handler (W4). A web host runs no durability agent (`DurabilityAgentEnabled = false`): outbox and inbox recovery run in a worker | O1, O5, Requirement 5, section 1 | T3, `HostRoleTests` |
 | W6 | A saga derives from Wolverine's `Saga` class. Its record is stored with EF Core in the module's own schema. The `Version` property is mapped as a concurrency token. There is a retry policy for `SagaConcurrencyException` | S3, S8 | T7, T9 |
@@ -211,7 +214,7 @@ The tenant id is in the API path. The id in the path does not give access. Verif
 | T6 | The token carries only the user identity. No tenant, role or permission comes from the identity provider | Fixed requirement: the identity provider is authentication only |
 | T7 | Membership is verified on each request in one place. No tenant endpoint can go around this filter | OWASP API Top 10, API1 |
 
-A tenant has two descriptive fields. `name` is free text, cannot be empty, has a maximum of 100 characters and does not have to be unique. `slug` is unique and is given when the tenant is created. `GET /v1/me/tenants` returns both. The path, authorization and isolation use only the id.
+A tenant has two descriptive fields. `name` is free text, cannot be empty, has a maximum of 100 characters and does not have to be unique. `slug` is unique and is given when the tenant is created. `GET /v1/me/tenants` returns both, and the tenant's status. The path, authorization and isolation use only the id.
 
 ### Row Level Security
 
@@ -228,7 +231,7 @@ A tenant has two descriptive fields. `name` is free text, cannot be empty, has a
 | R9 | Each tenant table is tested with real PostgreSQL: read, update, insert for another tenant | Khorikov, Chapter 10 |
 | R10 | At startup the application checks its own account. If the account, or a role it is a member of, is a superuser, can bypass RLS or owns a table, the application does not start. The readiness check asks the same. | Nygard, Chapter 5 (Fail Fast). PostgreSQL documentation, Privileges |
 | R11 | The membership table has one more policy, `own_memberships`: `FOR SELECT` only, on `user_id` = the declared user (`app.user_id`, set in the transaction like the tenant). It serves `GET /v1/me/tenants`. Any policy other than `tenant_isolation` must be on an explicit list, and a test fails on any other | Postgres combines permissive policies with OR. A write policy would widen access |
-| R12 | Deferred with the tenant list for the system admin (see Deferred): the system admin sees tenant and member counts from ControlPlane's own summary data | Golding, Chapter 2 |
+| R12 | Deferred (see Deferred): the system admin sees tenant and member counts from ControlPlane's own summary data. The tenant list of step 19d has no member counts. Memberships are under RLS and the list reads across tenants, so a count needs that summary data, which does not exist yet | Golding, Chapter 2 |
 
 Work across tenants goes through the tenant list and declares each tenant in turn. RLS does not protect a cache or data that leaves the database. An EF Core query filter is not added as a second layer. RLS is the single source of truth.
 
@@ -246,6 +249,7 @@ The code checks permissions, not roles. Provider staff enter through a separate 
 | A6 | The system door requires a second factor. The rule is in ControlPlane. The host only translates the identity provider's field into a neutral value. Tenant users are not affected | OWASP ASVS, item 4.3.1 |
 | A7 | A catalog user keeps a copy of their primary email address, first name and last name. The identity provider owns these fields; T6 does not change. The path that creates a catalog user (accepting an invitation, the first system admin's first visit) fills the copy from the same Backend API call that returns the verified addresses. The webhook `POST /v1/webhooks/clerk` keeps it fresh: `user.updated` becomes `UpdateUserProfile`, which sets the copy of a known user, and an event older than the copy's `ProfileUpdatedAt` is ignored. `user.created`, any other type, and an event for a user the catalog does not know change nothing | Clerk, "Sync data to your app with webhooks" |
 | A8 | The copy holds only what a screen needs: no image, no phone number, no metadata. `user.deleted` becomes its own command, `DeleteUser`, which erases the email address and the name and sets `DeletedAt`. The row stays, because memberships and audit entries point to it. An update that arrives after the deletion is ignored | GDPR, Article 5(1)(c) (data minimisation). Clerk, "Sync data to your app with webhooks" |
+| A9 | A system admin can suspend a catalog user. A suspended user gets 403 `user.suspended` on every `me` and `tenant` endpoint, accepting an invitation included. The check runs on every request, in one place: `TenantResolutionMiddleware` asks ControlPlane (`IUserDirectory`) for an endpoint with the `me` or the tenant metadata, and authorization turns the user away. It runs before the membership, so a suspended user who is also in a suspended tenant gets `user.suspended`. No endpoint can go around it: a test fails for a `me` or tenant endpoint without its group's metadata, or with anonymous access (`SuspendedUserRoutesTests`). The admin door is not checked: a system admin cannot be suspended (409 `user.is_system_admin`), so the staff keep their door. The identity provider is not told; the user can still sign in, and our tables refuse them | OWASP API Top 10, API1 and API5 (one check no endpoint skips, as T7). NIST SP 800-53 Rev. 5, AC-2 (disable accounts) |
 
 Tenant users and staff sign in with the same identity provider instance. Our tables decide which door a person can use. Terms: "system admin" (Golding), "built-in roles" and "custom roles".
 
@@ -255,7 +259,7 @@ There are three modules. A system admin creates the tenant and the first Owner c
 
 | Module | What it holds |
 | --- | --- |
-| ControlPlane | Tenant record, system admins, users, memberships, roles and permissions, invitations, tenant creation |
+| ControlPlane | Tenant record, system admins, users, memberships, roles and permissions, invitations, tenant creation, tenant and user suspension |
 | Notifications | It hears an event and sends a message to a person. In the first template, only the invitation email |
 | Audit | It hears an event and writes the record of "who did what and when" |
 
@@ -294,7 +298,7 @@ Tenant creation messages (N1 to N3):
 
 The saga's record is the table `control_plane.tenant_creation_sagas`. The alarm is the error log event `TenantCreationNeedsAttention` and the counter `tenant_creation.needs_attention`.
 
-- If step 2 fails for good, the tenant is cancelled. A reason code is stored on the tenant and logged. No endpoint shows it yet: the tenant list for the system admin is deferred.
+- If step 2 fails for good, the tenant is cancelled. A reason code is stored on the tenant and logged. The tenant list for the system admin shows the status `Cancelled`, not the reason.
 - If step 3 fails for good, or a wait after step 1 times out, the process goes to "needs attention" and the invitation is cancelled. The alarm is raised once.
 - The invitation link travels to Notifications inside the message. See the deviations list.
 - The invitation link carries one invitation code: the tenant id and a secret, `<tenantId>.<secret>`. Only the hash of the secret is stored. Accepting declares the tenant from the code, then finds the invitation by the hash in that tenant. A missing or empty code answers 400. A wrong tenant, a wrong secret and a malformed code all answer 404. This is the only place where a request names its tenant outside the path. The secret gives the right, not the tenant id.
@@ -304,6 +308,33 @@ The saga's record is the table `control_plane.tenant_creation_sagas`. The alarm 
 - The first system admin comes from an email address in configuration. The application writes it only while the staff list is empty.
 
 Source: Golding, Chapter 4. Richardson, Chapter 4.
+
+### Tenant suspension
+
+A system admin suspends a tenant and reactivates it. This is not a saga: one module changes one row (S1). The command runs in the tenant's own transaction, with the tenant declared from the admin route (W3), and locks the tenant row.
+
+| Status | `POST .../suspend` | `POST .../reactivate` |
+| --- | --- | --- |
+| `Active` | Becomes `Suspended`, 200 | No change, 200 |
+| `Suspended` | No change, 200 | Becomes `Active`, 200 |
+| `Provisioning`, `Cancelled` | 409 `tenant.not_active` | 409 `tenant.not_active` |
+
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `SuspendTenant` | `POST /v1/admin/tenants/{tenantId}/suspend` | ControlPlane, `SuspendTenantHandler` | Yes |
+| `ReactivateTenant` | `POST /v1/admin/tenants/{tenantId}/reactivate` | ControlPlane, `ReactivateTenantHandler` | Yes |
+| `TenantSuspended` | `SuspendTenantHandler`, on a change of status | Audit, `RecordTenantSuspendedHandler` (`tenant.suspended`) | Yes |
+| `TenantReactivated` | `ReactivateTenantHandler`, on a change of status | Audit, `RecordTenantReactivatedHandler` (`tenant.reactivated`) | Yes |
+
+- A request that changes nothing publishes nothing, so Audit records each change once.
+- A member who calls a tenant route gets 403 `tenant.suspended`. A non-member still gets 404 (T3): only a member learns that the tenant is suspended.
+- `GET /v1/me/tenants` lists active and suspended tenants, each with its status. Provisioning and cancelled tenants stay hidden.
+- Accepting an invitation to a suspended tenant answers 409 `tenant.suspended`. The invitation stays pending.
+- Messages already in flight for the tenant still run.
+- A suspended tenant is past the pivot: a late compensation does not cancel it.
+- Reactivation gives the members their access back as before.
+
+Source: Golding, Chapter 2 (control plane, tenant management).
 
 ## 7. Side tools and configuration
 
@@ -356,6 +387,7 @@ Source: Twelve-Factor, Factors V, VII, IX and XII. CIS Docker Benchmark 4.1. Hum
 | Extra fields are added to a request | An endpoint reads only the defined fields | API3 |
 | Too many requests | A rate limit for each user, kept in each pod. A caller without a user, such as a webhook, is limited by its client address. Accepting an invitation has a stricter limit of its own. Lists are paged and the page size has a limit | API4 |
 | A tenant user calls a system endpoint | The system door checks the staff list | API5 |
+| A suspended user or tenant | A suspended user gets 403 `user.suspended` on every `me` and tenant endpoint, checked in one place on each request (A9). A member of a suspended tenant gets 403 `tenant.suspended` at the tenant door; a non-member still gets 404, so a stranger learns nothing (T3). A system admin cannot be suspended | API1, API5 |
 | Internal structure is read from an error message | The error response has one shape and returns no internal detail. A 401 does not say why the token failed. A request the server refuses while it reads it, such as a body over its endpoint's size limit, keeps the server's status (413, 400 or 408); any other exception is a 500 | API8 |
 | A browser request from another site | Only permitted origins can call | API8 |
 
@@ -426,7 +458,7 @@ Sources: Evans, *Domain-Driven Design*, Chapter 2 (Ubiquitous Language). Richard
 | N3 | A saga handles three kinds of message only: the replies to its steps (`...Reply`), its own timeouts (`...TimedOut`) and Wolverine's `Fault<T>`. It handles no public event. Only a saga handles a `...Reply`. A reply is named after the work it answers: `ActivateTenantReply` answers `ActivateTenant`. The name makes S13 visible. Test of both sentences: `SagaMessageTests` | Richardson, Chapter 4 |
 | N4 | A module's schema is the module's name in snake case: `control_plane`, `audit`. The host's schema is `api`, and its DbContext is `ApiDbContext`. A module's DbContext is `{Module}DbContext`. A name that describes a concept, not the module, stays: `ITenantCatalog` is the tenant catalog. Test of the schema name: `NamesAndPlacesTests` | Evans, Chapter 2. Richards and Ford, "Component-Based Thinking" |
 | N5 | An audience is who calls an endpoint. Its folder, its route prefix and its permission prefix are the same word (table below). A new audience gets a new folder, a new route prefix and a new host file. Example: `Webhooks/`, `/v1/webhooks`, `Api/Webhooks/WebhooksRoutes.cs`. A webhook endpoint is not in the OpenAPI document: the document is the contract for our own clients, and a webhook's sender does not read it. Test of the endpoint folder against the route prefix: `EndpointPlaceTests` | Microsoft Learn, route groups. OWASP API5 |
-| N6 | A permission is `audience.resource.action`, in lower snake case. The audience is `admin` or `tenant`. The action is coarse: `read`, `create`, `update`, `delete`, or a business verb. `read` covers a list and a single record. The `me` audience has no permissions: being signed in is enough, and the user reaches only their own data. The `webhooks` audience has no permissions either: a signature proves the sender. Test of the format and the two audiences: `NamesAndPlacesTests` | OWASP API5 |
+| N6 | A permission is `audience.resource.action`, in lower snake case. The audience is `admin` or `tenant`. The action is coarse: `read`, `create`, `update`, `delete`, or a business verb. `read` covers a list and a single record. The `me` audience has no permissions: being signed in is enough, and the user reaches only their own data. The `webhooks` audience has no permissions either: a signature proves the sender. The system pool holds `admin.tenants.create`, `admin.tenants.read`, `admin.tenants.suspend`, `admin.tenants.reactivate`, `admin.users.read`, `admin.users.suspend` and `admin.users.reactivate`; `suspend` and `reactivate` are business verbs. The tenant pool holds `tenant.members.read`. Test of the format and the two audiences: `NamesAndPlacesTests` | OWASP API5 |
 
 | Audience | Route prefix | Folder | Host file and method | Permission prefix |
 | --- | --- | --- | --- | --- |
@@ -441,7 +473,7 @@ The word for the system admin audience is `Admin`, not `System`. A folder named 
 
 | # | Rule | Source |
 | --- | --- | --- |
-| N7 | In a module's `Api` project, the endpoints sit in the audience folder, one file for each resource: `Admin/Tenants.cs`, `Me/MyTenants.cs`, `Me/Invitations.cs`, `Tenant/Members.cs`, `Webhooks/ClerkEvents.cs`. The module entry point (`ControlPlaneModule.cs`) calls the files. An endpoint is a method with the action's name, the same name as its handler in `Application`. A webhook endpoint receives several event types, so it is named after what it receives: `ReceiveClerkEvent` sends `UpdateUserProfile` or `DeleteUser`. The request and response types sit at the end of the file that uses them. A request is named by its action (`{Action}Request`), a response by its resource (`{Resource}Response`). A second shape of the same resource carries its audience in the name (`MyTenantResponse`). Every request and response name is unique in the API, because the OpenAPI document builds its schema names from the type names. Tests of the audience folder (`EndpointPlaceTests`) and of the unique names (`NamesAndPlacesTests`) | Martin, "Screaming Architecture" |
+| N7 | In a module's `Api` project, the endpoints sit in the audience folder, one file for each resource: `Admin/Tenants.cs`, `Admin/Users.cs`, `Me/MyTenants.cs`, `Me/Invitations.cs`, `Tenant/Members.cs`, `Webhooks/ClerkEvents.cs`. The module entry point (`ControlPlaneModule.cs`) calls the files. An endpoint is a method with the action's name, the same name as its handler in `Application`. A webhook endpoint receives several event types, so it is named after what it receives: `ReceiveClerkEvent` sends `UpdateUserProfile` or `DeleteUser`. The request and response types sit at the end of the file that uses them. A request is named by its action (`{Action}Request`), a response by its resource (`{Resource}Response`). A second shape of the same resource carries its audience in the name (`MyTenantResponse`). Every request and response name is unique in the API, because the OpenAPI document builds its schema names from the type names. Tests of the audience folder (`EndpointPlaceTests`) and of the unique names (`NamesAndPlacesTests`) | Martin, "Screaming Architecture" |
 | N8 | The folders of `Application` follow the work. The folders of `Domain` follow the aggregate. The folders of `Infrastructure` follow the external system: `Persistence/`, `Clerk/`, `Email/`. A feature with more than one file gets its own folder, named by N10. A feature with one file stays in its resource folder. Code that several features of one module use goes into a folder named by what it is: `Ports/`, `Persistence/`. No project has a folder named `Helpers`, `Utils`, `Utilities`, `Common` or `Misc`. Code that several modules use lives only in `SharedKernel` or `Tenancy`. Test of the folder names: `NamesAndPlacesTests` | Richards and Ford, "Component-Based Thinking". Martin, "Screaming Architecture" |
 | N9 | A test project that tests one module sits in the module's folder. A test project that tests a shared project sits next to it. Tests of the whole system (host, architecture, end to end) sit in `apps/api/tests/`. A test project is named `{Project}.{Kind}Tests`, where Kind is Unit, Integration, EndToEnd or Architecture. Inside a test project the folders follow the project it tests. A test class is named `{Feature}Tests`. A test that checks several features goes into the folder of the feature it checks last. Helper files go into `Fixtures/`. Test of the project name: `NamesAndPlacesTests` | Section 9. Industry practice |
 | N10 | A feature with more than one file always gets a folder in the noun form of its root, never the action name: `Tenants/TenantCreation/` holds `CreateTenant`, and `Invitations/InvitationEmail/` holds `SendInvitationEmailHandler`. The reason: the folder becomes a namespace, and a folder named after the action hides the command type of the same name (CS0118). For the same reason, no folder has the name of a type its project declares or uses from a project it references. Test of that last sentence: `NamesAndPlacesTests` | Cwalina, Barton, Abrams, *Framework Design Guidelines*, "Names of Namespaces" |
@@ -451,9 +483,9 @@ The ControlPlane module after these rules:
 | Project | Folders |
 | --- | --- |
 | `ControlPlane.Api` | `Admin/`, `Me/`, `Tenant/`, `Webhooks/`, `Authentication/` (the signed-in user's id), `ControlPlaneModule.cs` |
-| `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Invitations/`, `Members/`, `Users/UpdateUserProfile.cs`, `Users/DeleteUser.cs`, `Ports/`, `Errors.cs` |
+| `ControlPlane.Application` | `Tenants/TenantCreation/` (command, handler, validator, saga, steps, messages, settings, alarm), `Tenants/ListMyTenants.cs`, `Tenants/ListTenants.cs`, `Tenants/SuspendTenant.cs`, `Tenants/ReactivateTenant.cs`, `Tenants/TenantDetails.cs` (the admin's shape of a tenant, which four features use), `Invitations/`, `Members/`, `Users/UpdateUserProfile.cs`, `Users/DeleteUser.cs`, `Users/ListUsers.cs`, `Users/SuspendUser.cs`, `Users/ReactivateUser.cs`, `Users/UserDetails.cs` (the admin's shape of a user, which three features use), `Ports/`, `Errors.cs` |
 | `ControlPlane.Domain` | One folder for each aggregate. `PermissionPools.cs`, which several aggregates use, sits at the root |
-| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `UserCatalog`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/` (the Backend API and the webhook), `ControlPlaneInfrastructure.cs` |
+| `ControlPlane.Infrastructure` | `Persistence/` (DbContext, its design-time factory, migrations, `TenantCatalog`, `TenantDirectory`, `UserTenants`, `UserCatalog`, `UserDirectory`, `SystemAdminDirectory`, `SystemAdminSettings`), `Clerk/` (the Backend API and the webhook), `ControlPlaneInfrastructure.cs` |
 
 ## Deviations from the books
 
@@ -487,7 +519,10 @@ These parts are not in the first template. Each one comes in when its written co
 | Slug in addresses | The frontend wants the tenant name in the address. The slug field is ready. The API path continues to use the id |
 | Read model | A report appears that needs a join across modules |
 | Pre-generated handler code | Startup time becomes a problem or the RuntimeCompilation package is not wanted in production. Try it first |
-| Features | Member invitation, custom roles, member removal, tenant suspension and deletion, support access, in-app notifications, a second system admin, the tenant list for the system admin |
+| Features | Member invitation, custom roles, member removal, tenant deletion, support access, in-app notifications, a second system admin |
+| An audit log of system admin actions above tenants, such as a user's suspension | A product or audit requirement asks for it. An audit entry belongs to a tenant (`AuditEntry` is a tenant entity, under RLS), and a user is above tenants, so the log needs a table outside RLS of its own |
+| The tenant creation state ("needs attention") in the admin's tenant list | The admin app needs it. The saga record belongs to the tenant (RLS), and the list reads across tenants, so the state needs a copy outside RLS or a read that declares each tenant in turn |
+| Member counts in the admin's tenant list (R12) | The admin app needs them. They come from ControlPlane's own summary data |
 
 ## Open items
 
