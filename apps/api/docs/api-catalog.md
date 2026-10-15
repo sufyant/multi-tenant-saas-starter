@@ -86,7 +86,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K3. Audit
 
-- Every command that changes state writes one audit entry. An architecture test enforces it. Reads write nothing.
+- Every command that changes state writes one audit record in each log it belongs to. An architecture test enforces it. Reads write nothing.
 - An audit entry stores no personal name or email address. It stores the actor's catalog user id, the target's kind and id, and the target's name only when the target is not a person. A tenant's name stays in the entry.
 - A `member.invited` entry stores the invitation id, not the email address.
 - The read side resolves names in one batch through an interface in `ControlPlane.Contracts` (API composition). Audit never reads `control_plane` tables directly.
@@ -117,7 +117,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K6. Concurrency
 
-- A command that changes data first locks the root row of the aggregate it changes (`SELECT … FOR UPDATE`). Updating a tenant locks that tenant's row; updating an invoice locks that invoice's row, never the tenant's.
+- Every handler that changes data, a saga step included, first locks the root row of the aggregate it changes (`SELECT … FOR UPDATE`). Updating a tenant locks that tenant's row; updating an invoice locks that invoice's row, never the tenant's.
 - In ControlPlane, memberships and invitations belong to the tenant aggregate, and "at least one Owner" is the tenant's rule. So a change to them locks the tenant row.
 - A rule that only keeps a value unique uses a database constraint (a unique index), not a lock.
 - Locks are taken in one order: the aggregate root first. A lock lives only inside one transaction, never across two HTTP requests.
@@ -141,10 +141,10 @@ Each step is one prompt and one pull request. They run in order, because each to
 
 | Step | Content |
 | --- | --- |
-| 20b | This catalog in the repository. The audit foundation: names kept at the moment, the platform log table, the rule "every command writes audit" and its test, anonymization on user deletion. Existing commands follow the rule. K6 is written into ARCHITECTURE.md. |
+| 20b | This catalog in the repository. The audit foundation: records with ids and no personal name or email address, the platform log table, the rule "every command writes audit" and its test, and names resolved on read, so a deleted user reads as "Deleted user" with no change to a record. Existing commands follow the rule. K6 is written into ARCHITECTURE.md. |
 | 20c | Reads and the list contract: `GetMe`, `GetMyTenant`, admin `GetTenant`, email and names in `ListMembers`. Every list moves to the one contract. |
 | 20d | Invitations: `InviteMember`, `ListInvitations`, `RevokeInvitation`. The daily limit and one pending invitation per email. |
 | 20e | Member management: `ChangeMemberRole`, `RemoveMember`, the Owner rules of K1, the tenant row lock and a race test with two requests at once. |
-| 20f | Reading the audit logs: the tenant's and the platform's, with a cursor. |
+| 20f | Reading the audit logs: the tenant's and the platform's, with a cursor. `audit.entries.actor_id` becomes uuid, as in the platform log. |
 | 20g | The rest of the contract: the error code enum, 401 and 429. No endpoint. |
 | 20h | Tenant lifecycle: `RenameTenant`, a reason for suspension, `CloseTenant`, `ReopenTenant`, the closed state. Closing cancels pending invitations. |
