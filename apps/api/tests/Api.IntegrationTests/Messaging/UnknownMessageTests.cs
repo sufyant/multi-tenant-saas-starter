@@ -28,12 +28,14 @@ public sealed class UnknownMessageTests(Database database)
 
         await deploy.SendFromWebAsync(new RecordHandling(id));
         await deploy.WaitForLogAsync(RollingDeploy.Old, LogLevel.Warning, 1);
+        var putBack = deploy.LogOf(RollingDeploy.Old, LogLevel.Warning)[0];
         deploy.StartWorker(RollingDeploy.New);
+        await deploy.StopWorkerAsync(RollingDeploy.Old);
         await deploy.WaitForHandledAsync<RecordHandling>(1);
 
         (await deploy.Handlings.ReadAsync()).ShouldBe([(id, RollingDeploy.New)]);
         deploy.Handlings.Runs.ShouldBe([RollingDeploy.New]);
-        deploy.LogOf(RollingDeploy.Old, LogLevel.Warning)[0].ShouldStartWith($"No handler for {typeof(RecordHandling).FullName} on this node. It is put back for try 1 of 1000");
+        putBack.ShouldStartWith($"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 1 of 1000");
         (await deploy.DeadLettersAsync()).ShouldBe(0);
     }
 
@@ -50,11 +52,11 @@ public sealed class UnknownMessageTests(Database database)
 
         deploy.LogOf(RollingDeploy.Old, LogLevel.Warning).Select(message => message[..message.IndexOf(", in ", StringComparison.Ordinal)]).ShouldBe(
         [
-            $"No handler for {typeof(RecordHandling).FullName} on this node. It is put back for try 1 of 2",
-            $"No handler for {typeof(RecordHandling).FullName} on this node. It is put back for try 2 of 2",
+            $"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 1 of 2",
+            $"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 2 of 2",
         ]);
         deploy.LogOf(RollingDeploy.Old, LogLevel.Error).ShouldHaveSingleItem().ShouldStartWith(
-            $"No node handled {typeof(RecordHandling).FullName} after 2 tries. It is moved to the dead letter queue");
+            $"No node handled \"{typeof(RecordHandling).FullName}\" after 2 tries. It is moved to the dead letter queue");
         (await deploy.DeadLettersAsync()).ShouldBe(1);
     }
 
@@ -87,6 +89,6 @@ public sealed class UnknownMessageTests(Database database)
 
         var logs = api.Services.GetFakeLogCollector().GetSnapshot();
         logs.ShouldNotContain(record => record.Level == LogLevel.Warning && record.Message.StartsWith("No handler for", StringComparison.Ordinal));
-        logs.ShouldContain(record => record.Level == LogLevel.Error && record.Message.StartsWith($"No node handled {typeof(RecordHandling).FullName} after 0 tries", StringComparison.Ordinal));
+        logs.ShouldContain(record => record.Level == LogLevel.Error && record.Message.StartsWith($"No node handled \"{typeof(RecordHandling).FullName}\" after 0 tries", StringComparison.Ordinal));
     }
 }

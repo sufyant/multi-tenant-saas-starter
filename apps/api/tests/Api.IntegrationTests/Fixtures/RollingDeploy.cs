@@ -50,15 +50,26 @@ internal sealed class RollingDeploy : IAsyncDisposable
         _ = _workers[version].Services;
     }
 
+    // The end of the deploy: the old worker stops, as the platform stops the old version once the new one is healthy.
+    public async Task StopWorkerAsync(string version)
+    {
+        await _workers[version].DisposeAsync();
+        _workers.Remove(version);
+    }
+
     public async Task SendFromWebAsync(object message)
     {
         await using var scope = Web.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<IMessageBus>().SendAsync(message);
     }
 
-    // The messages of the worker's log at the level, in order.
+    // The put-back log of the worker at the level, in order. Wolverine logs each put-back too, as an error of its own category.
     public IReadOnlyList<string> LogOf(string version, LogLevel level) =>
-        [.. _workers[version].Services.GetFakeLogCollector().GetSnapshot().Where(record => record.Level == level).Select(record => record.Message)];
+    [
+        .. _workers[version].Services.GetFakeLogCollector().GetSnapshot()
+            .Where(record => record.Level == level && record.Category == "Api.Messaging.UnknownMessages")
+            .Select(record => record.Message),
+    ];
 
     public Task WaitForLogAsync(string version, LogLevel level, int count) => Waiting.UntilAsync(() => LogOf(version, level).Count >= count);
 
