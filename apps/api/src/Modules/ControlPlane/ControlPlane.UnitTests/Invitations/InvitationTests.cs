@@ -136,6 +136,30 @@ public class InvitationTests
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
+    // The checks of an acceptance, apart from the change, so a handler can refuse after them and still change nothing (W7).
+    [Fact]
+    public void CheckAcceptance_Allowed_ChangesNothing()
+    {
+        var invitation = Invite("ada@example.com");
+
+        var allowed = invitation.CheckAcceptance(["ada@example.com"], Now);
+
+        allowed.IsSuccess.ShouldBeTrue();
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+        invitation.AcceptedBy.ShouldBeNull();
+    }
+
+    [Fact]
+    public void CheckAcceptance_WithoutTheInvitedEmail_IsRefused()
+    {
+        var invitation = Invite("ada@example.com");
+
+        var allowed = invitation.CheckAcceptance(["grace@example.com"], Now);
+
+        allowed.Error.Code.ShouldBe("invitation.email_mismatch");
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
     private static Invitation Invite(string email) =>
         Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, InviterId, Now, Lifetime, Token);
 }

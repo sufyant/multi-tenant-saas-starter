@@ -83,23 +83,71 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         other.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    // A suspended tenant takes no new member. The invitation stays pending, so it can be accepted once the tenant is reactivated.
+    // A suspended tenant takes no new member. The invitation stays pending, so its person can accept it once the tenant is
+    // reactivated.
     [Fact]
-    public async Task AcceptInvitation_ToASuspendedTenant_IsAConflictAndTheInvitationStaysPending()
+    public async Task AcceptInvitation_ToASuspendedTenant_IsAConflictAndCanBeAcceptedAfterReactivation()
     {
         var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
-        await database.ScalarAsync<object>($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE slug = '{slug}'");
+        await SetStatusAsync(slug, "Suspended");
+
+        var refused = await AcceptAsync(invitee, code);
+        var pendingAfterTheRefusal = await InvitationStatusAsync(slug);
+        var membersAfterTheRefusal = await MembersAsync(slug);
+        (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true)
+            .PostAsync($"/v1/admin/tenants/{TenantIdOf(code)}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
+        var accepted = await AcceptAsync(invitee, code);
+
+        refused.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(refused)).ShouldBe("tenant.suspended");
+        pendingAfterTheRefusal.ShouldBe("Pending");
+        membersAfterTheRefusal.ShouldBe(0);
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await MembersAsync(slug)).ShouldBe(1);
+    }
+
+    // As T3: only the invited person with a live invitation learns that the tenant is suspended. A stranger with the link keeps the
+    // invitation's own answer, and an expired invitation stays dead after a reactivation.
+    [Fact]
+    public async Task AcceptInvitation_ToASuspendedTenantWithoutTheInvitedEmail_KeepsItsOwnError()
+    {
+        var (slug, _, code) = await InviteSomeoneWithAnAccountAsync();
+        await SetStatusAsync(slug, "Suspended");
+        var stranger = $"user_{Guid.NewGuid():N}";
+        _api.Identity.AddAccount(stranger, $"{Guid.NewGuid():N}@example.com");
+
+        var accepted = await AcceptAsync(stranger, code);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(accepted)).ShouldBe("invitation.email_mismatch");
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_ExpiredToASuspendedTenant_KeepsItsOwnError()
+    {
+        var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+        await SetStatusAsync(slug, "Suspended");
+        _time.Advance(TimeSpan.FromDays(7));
 
         var accepted = await AcceptAsync(invitee, code);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await CodeOfAsync(accepted)).ShouldBe("tenant.suspended");
-        (await database.ScalarAsSuperuserAsync<string>(
-            $"SELECT invitations.status FROM control_plane.invitations JOIN control_plane.tenants ON tenants.id = invitations.tenant_id WHERE tenants.slug = '{slug}'"))
-            .ShouldBe("Pending");
-        (await database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id WHERE tenants.slug = '{slug}'"))
-            .ShouldBe(0);
+        (await CodeOfAsync(accepted)).ShouldBe("invitation.expired");
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_AlreadyUsedToASuspendedTenant_KeepsItsOwnError()
+    {
+        var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+        var sameEmail = $"user_{Guid.NewGuid():N}";
+        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindAccountAsync(invitee, Cancellation)).VerifiedEmails[0]);
+        (await AcceptAsync(invitee, code)).EnsureSuccessStatusCode();
+        await SetStatusAsync(slug, "Suspended");
+
+        var reused = await AcceptAsync(sameEmail, code);
+
+        reused.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(reused)).ShouldBe("invitation.not_pending");
     }
 
     // T5: provider staff are not tenant members, even with the code and the invited email address verified.
@@ -322,6 +370,17 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
         return slug;
     }
+
+    private async Task SetStatusAsync(string slug, string status) =>
+        await database.ScalarAsync<object>($"UPDATE control_plane.tenants SET status = '{status}' WHERE slug = '{slug}'");
+
+    private Task<string?> InvitationStatusAsync(string slug) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"SELECT invitations.status FROM control_plane.invitations JOIN control_plane.tenants ON tenants.id = invitations.tenant_id WHERE tenants.slug = '{slug}'");
+
+    private Task<long> MembersAsync(string slug) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id WHERE tenants.slug = '{slug}'");
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);

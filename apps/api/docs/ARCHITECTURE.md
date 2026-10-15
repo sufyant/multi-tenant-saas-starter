@@ -329,7 +329,7 @@ A system admin suspends a tenant and reactivates it. This is not a saga: one mod
 - A request that changes nothing publishes nothing, so Audit records each change once.
 - A member who calls a tenant route gets 403 `tenant.suspended`. A non-member still gets 404 (T3): only a member learns that the tenant is suspended.
 - `GET /v1/me/tenants` lists active and suspended tenants, each with its status. Provisioning and cancelled tenants stay hidden.
-- Accepting an invitation to a suspended tenant answers 409 `tenant.suspended`. The invitation stays pending.
+- Accepting an invitation to a suspended tenant answers 409 `tenant.suspended` only for a valid invitation and the right person, as T3. The order is: not found or cancelled (404), staff (422 `invitation.staff_cannot_join`), already a member (409 `membership.exists`), the invitation's own checks (`invitation.not_pending`, `invitation.expired`, `invitation.email_mismatch`), then `tenant.suspended`, then the change. A stranger with the link keeps the invitation's own answer, and an expired invitation stays dead after a reactivation. The invitation's checks are a pure method (`CheckAcceptance`) that `Accept` also uses, so the refusal comes before any change (W7). The invitation stays pending and can be accepted after the reactivation.
 - Messages already in flight for the tenant still run.
 - A suspended tenant is past the pivot: a late compensation does not cancel it.
 - Reactivation gives the members their access back as before.

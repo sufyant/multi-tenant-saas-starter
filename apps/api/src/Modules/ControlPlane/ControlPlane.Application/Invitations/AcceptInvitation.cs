@@ -31,13 +31,6 @@ public static class AcceptInvitationHandler
             return Errors.InvitationNotFound;
         }
 
-        // A suspended tenant takes no new member; the invitation stays pending for its reactivation.
-        var tenant = await catalog.FindTenantAsync(cancellationToken);
-        if (tenant.Status == TenantStatus.Suspended)
-        {
-            return Error.Conflict("tenant.suspended", "The tenant is suspended.");
-        }
-
         var now = time.GetUtcNow();
         var existing = await catalog.FindUserAsync(command.UserId, cancellationToken);
 
@@ -50,6 +43,20 @@ public static class AcceptInvitationHandler
         if (existing is not null && await catalog.FindMembershipAsync(existing.Id, cancellationToken) is not null)
         {
             return Error.Conflict("membership.exists", "You are already a member of this tenant.");
+        }
+
+        var allowed = invitation.CheckAcceptance(command.VerifiedEmails, now);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        // Only the invited person with a live invitation learns that the tenant is suspended (as T3). The invitation stays pending,
+        // so it can be accepted once the tenant is reactivated.
+        var tenant = await catalog.FindTenantAsync(cancellationToken);
+        if (tenant.Status == TenantStatus.Suspended)
+        {
+            return Error.Conflict("tenant.suspended", "The tenant is suspended.");
         }
 
         var user = existing ?? new User(Guid.CreateVersion7(now), command.UserId);
