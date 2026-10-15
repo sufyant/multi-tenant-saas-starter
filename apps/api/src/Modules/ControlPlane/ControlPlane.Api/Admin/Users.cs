@@ -23,17 +23,28 @@ public static class Users
     private static async Task<Result<ListPage<UserResponse>>> ListUsers(
         int? page,
         int? pageSize,
+        ListSort<ListUsersSort>? sort,
+        string? q,
+        ListFilter<UserResponseStatus>? status,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var paging = PageRequest.Create(page, pageSize);
-        if (!paging.IsSuccess)
+        var list = ListRequest.Create(page, pageSize, sort, q);
+        if (!list.IsSuccess)
         {
-            return paging.Error;
+            return list.Error;
         }
 
-        var users = await bus.InvokeAsync<Result<ListPage<UserDetails>>>(new ListUsers(paging.Value), cancellationToken);
-        return users.Map(list => list.Map(ToResponse));
+        var filter = ListFilter.Read(status, nameof(status));
+        if (!filter.IsSuccess)
+        {
+            return filter.Error;
+        }
+
+        var users = await bus.InvokeAsync<Result<ListPage<UserDetails>>>(
+            new ListUsers(list.Value, filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null),
+            cancellationToken);
+        return users.Map(found => found.Map(ToResponse));
     }
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).

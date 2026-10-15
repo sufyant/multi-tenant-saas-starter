@@ -18,6 +18,7 @@ public static class Tenants
     {
         admin.MapPost("/tenants", CreateTenant).WithMetadata(new IdempotencyKeyRequired()).RequireAuthorization(Permissions.AdminTenantsCreate);
         admin.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.AdminTenantsRead);
+        admin.MapGet("/tenants/{tenantId:guid}", GetTenant).RequireAuthorization(Permissions.AdminTenantsRead);
         admin.MapPost("/tenants/{tenantId:guid}/suspend", SuspendTenant).RequireAuthorization(Permissions.AdminTenantsSuspend);
         admin.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.AdminTenantsReactivate);
     }
@@ -42,18 +43,33 @@ public static class Tenants
     private static async Task<Result<ListPage<TenantResponse>>> ListTenants(
         int? page,
         int? pageSize,
+        ListSort<ListTenantsSort>? sort,
+        string? q,
+        ListFilter<TenantResponseStatus>? status,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var paging = PageRequest.Create(page, pageSize);
-        if (!paging.IsSuccess)
+        var list = ListRequest.Create(page, pageSize, sort, q);
+        if (!list.IsSuccess)
         {
-            return paging.Error;
+            return list.Error;
         }
 
-        var tenants = await bus.InvokeAsync<Result<ListPage<TenantDetails>>>(new ListTenants(paging.Value), cancellationToken);
-        return tenants.Map(list => list.Map(ToResponse));
+        var filter = ListFilter.Read(status, nameof(status));
+        if (!filter.IsSuccess)
+        {
+            return filter.Error;
+        }
+
+        var tenants = await bus.InvokeAsync<Result<ListPage<TenantDetails>>>(
+            new ListTenants(list.Value, filter.Value is { } chosen ? ResponseStatus.OfTenant(chosen) : null),
+            cancellationToken);
+        return tenants.Map(found => found.Map(ToResponse));
     }
+
+    // One tenant is read inside the tenant the route names, as suspension does (W3); an id no tenant has is not found.
+    private static async Task<Result<TenantResponse>> GetTenant(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new GetTenant(), cancellationToken)).Map(ToResponse);
 
     // Suspension and reactivation run inside the tenant the route names (W3). They set a state, so they take no idempotency key (I1).
     private static async Task<Result<TenantResponse>> SuspendTenant(

@@ -25,7 +25,9 @@ internal static class PermissionPools
 
     public const string TenantMembersRead = "tenant.members.read";
 
-    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(StringComparer.Ordinal, TenantMembersRead);
+    public const string TenantProfileRead = "tenant.profile.read";
+
+    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(StringComparer.Ordinal, TenantMembersRead, TenantProfileRead);
 
     public static IReadOnlySet<string> SystemPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,

@@ -18,24 +18,26 @@ public static class MyTenants
     private static async Task<Result<ListPage<MyTenantResponse>>> ListMyTenants(
         int? page,
         int? pageSize,
+        ListSort<ListMyTenantsSort>? sort,
+        string? q,
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var paging = PageRequest.Create(page, pageSize);
-        if (!paging.IsSuccess)
+        var list = ListRequest.Create(page, pageSize, sort, q);
+        if (!list.IsSuccess)
         {
-            return paging.Error;
+            return list.Error;
         }
 
-        var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), paging.Value), cancellationToken);
-        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status))));
+        var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), list.Value), cancellationToken);
+        return tenants.Map(found => found.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status))));
     }
 }
 
 /// <summary>
-/// A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
-/// active, or suspended when its members cannot enter it.
+/// A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a
+/// member reads by its id. Its status is active, or suspended when its members cannot enter it.
 /// </summary>
 public sealed record MyTenantResponse(Guid Id, string Name, string Slug, MyTenantResponseStatus Status);
 

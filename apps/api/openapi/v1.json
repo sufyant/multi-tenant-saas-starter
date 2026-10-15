@@ -126,6 +126,39 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "name",
+                "-name",
+                "slug",
+                "-slug"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "provisioning",
+                "active",
+                "suspended",
+                "cancelled"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -135,6 +168,87 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ListPageOfTenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/tenants/{tenantId}": {
+      "get": {
+        "tags": [
+          "Tenants"
+        ],
+        "operationId": "GetTenant",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
                 }
               }
             }
@@ -384,6 +498,38 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "email",
+                "-email",
+                "lastName",
+                "-lastName"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "active",
+                "suspended",
+                "deleted"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -612,6 +758,76 @@
         }
       }
     },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "MyProfile"
+        ],
+        "operationId": "GetMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/tenants": {
       "get": {
         "tags": [
@@ -641,6 +857,24 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "name",
+                "-name"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -788,6 +1022,87 @@
         }
       }
     },
+    "/v1/tenants/{tenantId}": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "operationId": "GetMyTenant",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tenants/{tenantId}/members": {
       "get": {
         "tags": [
@@ -817,6 +1132,40 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "role",
+                "-role",
+                "email",
+                "-email",
+                "lastName",
+                "-lastName"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "Owner",
+                "Admin",
+                "Member"
+              ],
+              "type": "string"
             }
           },
           {
@@ -1071,6 +1420,9 @@
       "MemberResponse": {
         "required": [
           "userId",
+          "email",
+          "firstName",
+          "lastName",
           "role"
         ],
         "type": "object",
@@ -1079,11 +1431,67 @@
             "type": "string",
             "format": "uuid"
           },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "role": {
             "type": "string"
           }
         },
-        "description": "A member of the tenant: the user's id and their role, Owner, Admin or Member."
+        "description": "A member of the tenant: the user's id, the copy of their email address and name, and their role, Owner, Admin or Member. The email\naddress and the names are empty when the identity provider deleted the user; the screen shows \"Deleted user\"."
+      },
+      "MeResponse": {
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "isSystemAdmin"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isSystemAdmin": {
+            "type": "boolean"
+          }
+        },
+        "description": "The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, and whether they are a system admin.\nIt has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
       "MyTenantResponse": {
         "required": [
@@ -1108,7 +1516,7 @@
             "$ref": "#/components/schemas/MyTenantResponseStatus"
           }
         },
-        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended when its members cannot enter it."
+        "description": "A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a\nmember reads by its id. Its status is active, or suspended when its members cannot enter it."
       },
       "MyTenantResponseStatus": {
         "enum": [
@@ -1267,10 +1675,16 @@
       "name": "Users"
     },
     {
+      "name": "MyProfile"
+    },
+    {
       "name": "MyTenants"
     },
     {
       "name": "Invitations"
+    },
+    {
+      "name": "Profile"
     },
     {
       "name": "Members"

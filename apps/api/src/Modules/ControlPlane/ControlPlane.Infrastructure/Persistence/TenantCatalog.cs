@@ -1,4 +1,6 @@
+using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -39,41 +41,87 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
         return found.SingleOrDefault();
     }
 
+    Task<Tenant?> ITenantCatalog.FindTenantAsync(CancellationToken cancellationToken) =>
+        controlPlane.Tenants.AsNoTracking().SingleOrDefaultAsync(tenant => tenant.Id == ActiveTenant, cancellationToken);
+
     // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant.
-    async Task<ListPage<Tenant>> ITenantCatalog.ListTenantsAsync(PageRequest paging, CancellationToken cancellationToken)
+    async Task<ListPage<Tenant>> ITenantCatalog.ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken)
     {
-        var total = await controlPlane.Tenants.CountAsync(cancellationToken);
-        var page = await controlPlane.Tenants
-            .OrderBy(tenant => tenant.Name)
+        var tenants = controlPlane.Tenants.AsQueryable();
+        if (status is { } wanted)
+        {
+            tenants = tenants.Where(tenant => tenant.Status == wanted);
+        }
+
+        if (list.Search is { } search)
+        {
+            var pattern = ListQueries.ContainsPattern(search);
+            tenants = tenants.Where(tenant =>
+                EF.Functions.ILike(tenant.Name, pattern, ListQueries.Escape) || EF.Functions.ILike(tenant.Slug, pattern, ListQueries.Escape));
+        }
+
+        var total = await tenants.CountAsync(cancellationToken);
+        var sorted = list.Sort switch
+        {
+            ListTenantsSort.Slug => tenants.OrderBy(tenant => tenant.Slug, list.Descending),
+            _ => tenants.OrderBy(tenant => tenant.Name, list.Descending),
+        };
+        var page = await sorted
             .ThenBy(tenant => tenant.Id)
-            .Skip(paging.Skip)
-            .Take(paging.PageSize)
+            .Skip(list.Paging.Skip)
+            .Take(list.Paging.PageSize)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new ListPage<Tenant>(page, paging, total);
+        return new ListPage<Tenant>(page, list.Paging, total);
     }
 
     Task<Membership?> ITenantCatalog.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
 
-    // Row level security keeps the list to the active tenant; the query names no tenant.
-    async Task<ListPage<(Guid UserId, BuiltInRole Role)>> ITenantCatalog.ListMembersAsync(PageRequest paging, CancellationToken cancellationToken)
+    // Row level security keeps the list to the active tenant; the query names no tenant. The users table is not under row level security
+    // (R6), so the query starts from the memberships and joins each member's user: a user of another tenant never enters it.
+    async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role)>> ITenantCatalog.ListMembersAsync(
+        ListRequest<ListMembersSort> list,
+        BuiltInRole? role,
+        CancellationToken cancellationToken)
     {
         var members =
             from membership in Memberships
-            join role in controlPlane.Roles on membership.RoleId equals role.Id
-            select new { membership.UserId, role.BuiltIn };
+            join memberRole in controlPlane.Roles on membership.RoleId equals memberRole.Id
+            join user in controlPlane.Users on membership.UserId equals user.Id
+            select new { membership.UserId, user.Email, user.FirstName, user.LastName, memberRole.BuiltIn };
+        if (role is { } wanted)
+        {
+            members = members.Where(member => member.BuiltIn == wanted);
+        }
 
+        if (list.Search is { } search)
+        {
+            var pattern = ListQueries.ContainsPattern(search);
+            members = members.Where(member =>
+                EF.Functions.ILike(member.Email!, pattern, ListQueries.Escape)
+                || EF.Functions.ILike(member.FirstName!, pattern, ListQueries.Escape)
+                || EF.Functions.ILike(member.LastName!, pattern, ListQueries.Escape));
+        }
+
+        // A member without an email address or a last name, such as a deleted user, comes last in both directions.
         var total = await members.CountAsync(cancellationToken);
-        var page = await members
-            .OrderBy(member => member.BuiltIn == BuiltInRole.Owner ? 0 : member.BuiltIn == BuiltInRole.Admin ? 1 : 2)
+        var sorted = list.Sort switch
+        {
+            ListMembersSort.Email => members.OrderBy(member => member.Email == null).ThenBy(member => member.Email, list.Descending),
+            ListMembersSort.LastName => members.OrderBy(member => member.LastName == null).ThenBy(member => member.LastName, list.Descending),
+            _ => members.OrderBy(
+                member => member.BuiltIn == BuiltInRole.Owner ? 0 : member.BuiltIn == BuiltInRole.Admin ? 1 : 2,
+                list.Descending),
+        };
+        var page = await sorted
             .ThenBy(member => member.UserId)
-            .Skip(paging.Skip)
-            .Take(paging.PageSize)
+            .Skip(list.Paging.Skip)
+            .Take(list.Paging.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(member => (member.UserId, member.BuiltIn))], paging, total);
+        return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn))], list.Paging, total);
     }
 
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken)

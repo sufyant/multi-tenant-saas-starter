@@ -21,4 +21,6 @@ public static class Permissions
     public const string AdminUsersReactivate = "admin.users.reactivate";
 
     public const string TenantMembersRead = "tenant.members.read";
+
+    public const string TenantProfileRead = "tenant.profile.read";
 }
