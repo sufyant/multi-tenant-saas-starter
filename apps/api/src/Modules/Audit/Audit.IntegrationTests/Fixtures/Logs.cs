@@ -17,7 +17,7 @@ internal static class Logs
             tenantId,
             async command => await command.ExecuteScalarAsync(Cancellation) as string,
             $"""
-            SELECT concat_ws('|', operation, actor_kind, coalesce(actor_id, '-'), target_kind, target_id, coalesce(target_name, '-'))
+            SELECT concat_ws('|', operation, actor_kind, coalesce(actor_id::text, '-'), target_kind, target_id, coalesce(target_name, '-'))
             FROM {log} WHERE id = '{entryId}'
             """);
 

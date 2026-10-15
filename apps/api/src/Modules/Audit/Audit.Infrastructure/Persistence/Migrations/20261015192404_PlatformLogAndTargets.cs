@@ -61,7 +61,7 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     occurred_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     actor_kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    actor_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    actor_id = table.Column<Guid>(type: "uuid", nullable: true),
                     kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     operation = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     target_kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),

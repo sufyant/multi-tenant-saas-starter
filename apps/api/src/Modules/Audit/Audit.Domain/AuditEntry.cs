@@ -24,7 +24,7 @@ internal abstract class AuditRecord
     protected AuditRecord(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details)
     {
         (Id, OccurredAt, Operation, Details) = (id, occurredAt, operation, details);
-        (ActorKind, ActorId) = (actor.Kind, actor.UserId?.ToString());
+        (ActorKind, ActorId) = (actor.Kind, actor.UserId);
         (TargetKind, TargetId, TargetName) = (target.Kind, target.Id, target.Name);
     }
 
@@ -35,8 +35,11 @@ internal abstract class AuditRecord
     /// <summary>Who acted. A record written before K3 has none: its actor is the system admin whose id is in <see cref="ActorId"/>.</summary>
     public AuditActorKind? ActorKind { get; private init; }
 
-    /// <summary>The catalog user id of an actor that is a user; none for the platform or the identity provider.</summary>
-    public string? ActorId { get; private init; }
+    /// <summary>
+    /// The catalog user id of an actor that is a user; none for the platform or the identity provider. The tenant's log keeps it as
+    /// text, as written before K3; step 20f converts that column.
+    /// </summary>
+    public Guid? ActorId { get; private init; }
 
     public AuditEntryKind Kind { get; private init; } = AuditEntryKind.Command;
 

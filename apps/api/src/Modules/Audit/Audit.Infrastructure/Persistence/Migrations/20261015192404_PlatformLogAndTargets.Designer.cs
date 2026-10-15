@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Audit.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AuditDbContext))]
-    [Migration("20261015185515_PlatformLogAndTargets")]
+    [Migration("20261015192404_PlatformLogAndTargets")]
     partial class PlatformLogAndTargets
     {
         /// <inheritdoc />
@@ -100,9 +100,8 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("ActorId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
                         .HasColumnName("actor_id");
 
                     b.Property<string>("ActorKind")

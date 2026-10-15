@@ -14,5 +14,5 @@ internal sealed class AuditLogs(Database database)
             $"SELECT string_agg({Record}, ', ' ORDER BY occurred_at, id) FROM audit.platform_entries WHERE target_id = '{targetId}'");
 
     private const string Record =
-        "concat_ws('|', operation, actor_kind, coalesce(actor_id, '-'), target_kind, target_id, coalesce(target_name, '-'))";
+        "concat_ws('|', operation, actor_kind, coalesce(actor_id::text, '-'), target_kind, target_id, coalesce(target_name, '-'))";
 }

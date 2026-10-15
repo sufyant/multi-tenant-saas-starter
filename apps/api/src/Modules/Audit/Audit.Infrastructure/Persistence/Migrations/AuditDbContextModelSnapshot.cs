@@ -97,9 +97,8 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("ActorId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
                         .HasColumnName("actor_id");
 
                     b.Property<string>("ActorKind")

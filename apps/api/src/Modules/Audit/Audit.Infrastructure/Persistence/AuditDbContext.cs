@@ -28,6 +28,7 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
         {
             entry.ToTable("entries");
             MapRecord(entry);
+            entry.Property(e => e.ActorId).HasConversion<string>().HasMaxLength(AuditRecord.ActorIdMaxLength);
         });
 
         modelBuilder.Entity<PlatformAuditEntry>(entry =>
@@ -45,7 +46,6 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
     {
         entry.Property(e => e.Id).ValueGeneratedNever();
         entry.Property(e => e.ActorKind).HasConversion<string>().HasMaxLength(20);
-        entry.Property(e => e.ActorId).HasMaxLength(AuditRecord.ActorIdMaxLength);
         entry.Property(e => e.Kind).HasConversion<string>().HasMaxLength(20);
         entry.Property(e => e.Operation).HasMaxLength(AuditRecord.OperationMaxLength);
         entry.Property(e => e.TargetKind).HasConversion<string>().HasMaxLength(20);
