@@ -246,7 +246,7 @@ public sealed class TenantCreationTests(Database database)
         await lockTenant.ExecuteNonQueryAsync(Cancellation);
 
         var cancelling = Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
-        var waited = await WaitsForATenantLockAsync(cancelling);
+        var waited = await WaitsForAsync(other.ProcessID, cancelling);
         await holding.CommitAsync(Cancellation);
         await cancelling;
 
@@ -270,14 +270,14 @@ public sealed class TenantCreationTests(Database database)
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }
 
-    // True once a transaction waits for a lock on a tenant row; false when the work finishes first, so it never waited.
-    private async Task<bool> WaitsForATenantLockAsync(Task work)
+    // True once another session waits for a lock that the holder's session holds; false when the work finishes first, so it never
+    // waited.
+    private async Task<bool> WaitsForAsync(int holder, Task work)
     {
         var deadline = DateTime.UtcNow.AddSeconds(10);
         while (!work.IsCompleted && DateTime.UtcNow < deadline)
         {
-            if (await ScalarAsync<long>(
-                "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%control_plane.tenants%FOR UPDATE%'") > 0)
+            if (await ScalarAsync<long>($"SELECT count(*) FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))") > 0)
             {
                 return true;
             }

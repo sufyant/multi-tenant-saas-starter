@@ -76,7 +76,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         await suspend.ExecuteNonQueryAsync(Cancellation);
 
         var accepting = AcceptAsync(invitee, code);
-        await Waiting.UntilAsync(async () => accepting.IsCompleted || await WaitsForTheTenantRowAsync());
+        await Waiting.UntilAsync(async () => accepting.IsCompleted || await IsBlockingAsync(suspension.ProcessID));
         await holding.CommitAsync(Cancellation);
         var accepted = await accepting;
 
@@ -420,9 +420,9 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id WHERE tenants.slug = '{slug}'");
 
-    private async Task<bool> WaitsForTheTenantRowAsync() =>
-        await database.ScalarAsSuperuserAsync<long>(
-            "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%control_plane.tenants%FOR UPDATE%'") > 0;
+    // Whether another session waits for a lock that the holder's session holds.
+    private async Task<bool> IsBlockingAsync(int holder) =>
+        await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))") > 0;
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
