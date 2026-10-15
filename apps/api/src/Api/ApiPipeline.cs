@@ -60,6 +60,11 @@ internal static class ApiPipeline
             .BindConfiguration(IdempotencySettings.Section)
             .Validate(settings => settings.IdempotencyKeyRetention >= TimeSpan.FromHours(24), "Api:IdempotencyKeyRetention must be at least 24 hours.")
             .ValidateOnStart();
+        builder.Services.AddOptions<UnknownMessageSettings>()
+            .BindConfiguration(UnknownMessageSettings.Section)
+            .Validate(settings => settings.Delay > TimeSpan.Zero, $"{UnknownMessageSettings.Section}:Delay must be positive.")
+            .Validate(settings => settings.Tries > 0, $"{UnknownMessageSettings.Section}:Tries must be positive.")
+            .ValidateOnStart();
 
         builder.AddObservability();
         builder.AddClerkAuthentication();
@@ -100,6 +105,9 @@ internal static class ApiPipeline
             // result (W6, S8). Wolverine does not retry this by itself.
             options.OnException<SagaConcurrencyException>().RetryTimes(3);
             options.OnAnyException().ContinueWith(new QueuedRetries());
+
+            // A node without a handler for a message puts it back for a node that has one, a bounded number of times (W12).
+            options.Services.AddSingleton<IMissingHandler, UnknownMessages>();
 
             // Wolverine's EF Core middleware begins, saves and commits the transaction of every handler that uses a module DbContext,
             // with the messages the handler sends in it (W1). Each handler of a message runs in its own transaction (W4).

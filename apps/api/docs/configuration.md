@@ -13,6 +13,8 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Host:ShutdownTimeout` | Optional | `00:00:30` | How long a stopping process may take to finish the work it has |
 | `Host:Cors:AllowedOrigins` | Optional | none | The browser origins that may call the API, such as `https://app.example.com`. With none, no browser origin may call |
 | `Host:ManagementPort` | Optional | `8081` | The port of the health endpoints `/health/live` and `/health/ready`. The process listens on it on all interfaces and answers nothing else there. It must differ from the public port. Each process on one machine needs its own management port |
+| `Messaging:UnknownMessages:Delay` | Optional | `00:00:30` | How long a worker waits before a message it has no handler for is offered again. During a rolling deploy, an old worker puts back a message only the new version knows. Must be positive (W12) |
+| `Messaging:UnknownMessages:Tries` | Optional | `10` | How many times a worker puts back a message it has no handler for. After that, the message goes to the dead letter queue. Delay times tries must be longer than a deploy. Must be positive (W12) |
 | `ConnectionStrings:Database` | Required | none | The application role's connection. Requests and handlers use it, and Wolverine too unless `ConnectionStrings:Messaging` is set |
 | `ConnectionStrings:Messaging` | Optional | `ConnectionStrings:Database` | The application role's direct or session-mode connection for Wolverine's message store. Needed when `ConnectionStrings:Database` goes through a pooler in transaction mode |
 | `ConnectionStrings:Migrations` | Required by `migrate` only | none | The owner role's direct connection. Given only to the `migrate` command, never to a running process (R3) |

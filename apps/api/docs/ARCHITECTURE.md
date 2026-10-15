@@ -132,7 +132,7 @@ Authorization runs once, in ASP.NET Core, before the endpoint sends the message.
 
 ### Wolverine setup rules
 
-These ten rules come from a spike. The spike is in `apps/api/spikes/WolverineRlsSpike`. The T numbers are the tests in the spike.
+Rules W1 to W10 come from a spike. The spike is in `apps/api/spikes/WolverineRlsSpike`. The T numbers are the tests in the spike.
 
 | # | Rule | Reason | Evidence |
 | --- | --- | --- | --- |
@@ -147,6 +147,7 @@ These ten rules come from a spike. The spike is in `apps/api/spikes/WolverineRls
 | W9 | Handler, saga, message and DbContext types are `public` | Wolverine compiles handler code in a separate assembly | Compile errors CS0051 and CS0122 |
 | W10 | The `WolverineFx.RuntimeCompilation` package is necessary | Handler code is generated at startup. Pre-generated code was not tried | The host did not start without the package |
 | W11 | Every queued message retries an exception three times inline, after 100 ms, 500 ms and 2 s. It then goes to the dead letter queue. Message-specific rules run first. The tenant steps, invitation email and `SagaConcurrencyException` keep their rules. The global fallback declines an inline `InvokeAsync` envelope, which has no queue destination | Nygard, *Release It!*, Chapter 5 (bounded retries). Hohpe and Woolf, "Dead Letter Channel". Wolverine, "Error Handling" | `DefaultRetryTests`, `ExistingRetryPolicyTests` |
+| W12 | A node with no handler for a message from the PostgreSQL queue does not drop it. A missing handler (`IMissingHandler`) puts it back in the queue's scheduled table, with the same id, after `Messaging:UnknownMessages:Delay` (30 s). The header `unknown-message-tries` counts the put-backs. After `Messaging:UnknownMessages:Tries` (10), the message goes to the dead letter queue. A message in a durable local queue goes to the dead letter queue at once: Wolverine marks it as handled after the missing handler runs, and that mark overwrites a put-back in the inbox. Wolverine's own control messages keep Wolverine's default. Each put-back is a warning, and each dead letter is an error, with the message type, the try and the trace id. W12 does not cover a handler that only the new version adds to a message the old version knows: an old worker hands such a message only to the handlers it knows (W4, W5) | During a rolling deploy an old worker takes a message only the new version handles. Wolverine 6.47 drops it without a log at warning level (`NoHandlerContinuation`). Hohpe and Woolf, "Dead Letter Channel" and "Invalid Message Channel". Nygard, *Release It!*, Chapter 5 (bounded retries) | `UnknownMessageTests` |
 
 ### HTTP idempotency
 
