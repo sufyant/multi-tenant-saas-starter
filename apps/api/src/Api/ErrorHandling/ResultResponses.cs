@@ -35,10 +35,10 @@ internal static class ResultResponses
                 ? new ProducesResponseTypeMetadata(StatusCodes.Status200OK, inferred.Type.GetGenericArguments()[0], ["application/json"])
                 : new ProducesResponseTypeMetadata(StatusCodes.Status204NoContent, typeof(void)));
 
+            // Every failure is the one Problem Details schema, a 400 with the fields of a request that failed validation too (N11).
             foreach (var status in FailureStatuses)
             {
-                var problem = status == StatusCodes.Status400BadRequest ? typeof(HttpValidationProblemDetails) : typeof(ProblemDetails);
-                endpoint.Metadata.Add(new ProducesResponseTypeMetadata(status, problem, ["application/problem+json"]));
+                endpoint.Metadata.Add(new ProducesResponseTypeMetadata(status, typeof(ProblemDetails), ["application/problem+json"]));
             }
         });
 
