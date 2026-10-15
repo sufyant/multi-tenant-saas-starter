@@ -1,4 +1,5 @@
 using ControlPlane.Application.Ports;
+using ControlPlane.Contracts;
 
 namespace ControlPlane.Application.Users;
 
@@ -8,17 +9,21 @@ namespace ControlPlane.Application.Users;
 /// </summary>
 public sealed record DeleteUser(string UserId);
 
-// The command sets a state, so the same event applied twice gives the same row (I1). A user the catalog does not know changes nothing.
+// The command sets a state, so the same event applied twice gives the same row (I1), and only the first deletion is announced. A user
+// the catalog does not know changes nothing. Audit records hold no name or email address (K3), so the erased copy is all there is to
+// erase.
 public static class DeleteUserHandler
 {
-    public static async Task HandleAsync(DeleteUser command, IUserCatalog users, TimeProvider time, CancellationToken cancellationToken)
+    public static async Task<UserDeleted?> HandleAsync(DeleteUser command, IUserCatalog users, TimeProvider time, CancellationToken cancellationToken)
     {
         if (await users.FindUserForUpdateAsync(command.UserId, cancellationToken) is not { } user)
         {
-            return;
+            return null;
         }
 
-        user.Delete(time.GetUtcNow());
+        var now = time.GetUtcNow();
+        var first = user.Delete(now);
         await users.SaveChangesAsync(cancellationToken);
+        return first ? new UserDeleted(Guid.CreateVersion7(now), now, user.Id) : null;
     }
 }

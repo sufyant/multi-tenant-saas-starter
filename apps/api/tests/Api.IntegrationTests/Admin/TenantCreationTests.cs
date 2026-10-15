@@ -22,6 +22,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
     public ValueTask InitializeAsync()
@@ -45,7 +46,8 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         (await TenantStatusAsync(tenantId)).ShouldBe("Active");
         (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
         _api.Email.Sent.Where(email => email.To == owner).ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{invitationId}");
-        (await AuditEntriesAsync(tenantId)).ShouldBe($"tenant.created by {await _catalog.UserIdOfAsync(admin)}");
+        (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{await _catalog.UserIdOfAsync(admin)}|Tenant|{tenantId}|Acme Ltd");
+        (await _audit.TenantLogAsync(tenantId)).ShouldBe($"{tenantId}:tenant.created|Platform|-|Tenant|{tenantId}|Acme Ltd");
         (await SagaStateAsync(tenantId)).ShouldBe("Completed");
     }
 
@@ -108,7 +110,8 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
         (await SagaStateAsync(tenantId)).ShouldBe("Cancelled");
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
-        (await AuditEntriesAsync(tenantId)).ShouldBeNull();
+        (await _audit.TenantLogAsync(tenantId)).ShouldBeNull();
+        (await _audit.PlatformLogAsync(tenantId)).ShouldBeNull();
     }
 
     // After the pivot nothing is undone: the tenant stays active, the invitation nobody received is cancelled, and a person is told.
@@ -215,10 +218,6 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 
     private Task<string?> SagaStateAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'");
-
-    private Task<string?> AuditEntriesAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>(
-            $"SELECT string_agg(operation || ' by ' || actor_id, ', ') FROM audit.entries WHERE tenant_id = '{tenantId}'");
 
     // A database trigger that refuses the statement on matching rows, as a real failure of that statement would.
     private async Task RefuseAsync(string table, string statement, string when)

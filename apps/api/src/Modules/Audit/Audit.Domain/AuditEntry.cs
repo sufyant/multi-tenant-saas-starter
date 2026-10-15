@@ -3,27 +3,110 @@ using SharedKernel;
 namespace Audit.Domain;
 
 /// <summary>
-/// One record of the audit log: who did what, when, in which tenant. Records are business data kept for years, and they are
-/// never changed once written.
+/// One record of an audit log: who did what to what, and when. It holds no personal name and no email address (K3): the actor and a
+/// target person are catalog user ids, and the read side resolves their names through ControlPlane. A target that is not a person
+/// keeps its name as it was at that moment. Records are business data kept for years, and they are never changed once written.
 /// </summary>
-internal sealed class AuditEntry(Guid id, DateTimeOffset occurredAt, string actorId, AuditEntryKind kind, string operation, string? details)
-    : ITenantEntity
+internal abstract class AuditRecord
 {
     public const int ActorIdMaxLength = 255;
 
     public const int OperationMaxLength = 500;
 
-    public Guid Id { get; private init; } = id;
+    public const int TargetNameMaxLength = 100;
 
-    public DateTimeOffset OccurredAt { get; private init; } = occurredAt;
+    // For EF Core, which reads a record back.
+    protected AuditRecord()
+    {
+        Operation = null!;
+    }
 
-    public string ActorId { get; private init; } = actorId;
+    protected AuditRecord(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details)
+    {
+        (Id, OccurredAt, Operation, Details) = (id, occurredAt, operation, details);
+        (ActorKind, ActorId) = (actor.Kind, actor.UserId?.ToString());
+        (TargetKind, TargetId, TargetName) = (target.Kind, target.Id, target.Name);
+    }
 
-    public AuditEntryKind Kind { get; private init; } = kind;
+    public Guid Id { get; private init; }
 
-    public string Operation { get; private init; } = operation;
+    public DateTimeOffset OccurredAt { get; private init; }
 
-    public string? Details { get; private init; } = details;
+    /// <summary>Who acted. A record written before K3 has none: its actor is the system admin whose id is in <see cref="ActorId"/>.</summary>
+    public AuditActorKind? ActorKind { get; private init; }
+
+    /// <summary>The catalog user id of an actor that is a user; none for the platform or the identity provider.</summary>
+    public string? ActorId { get; private init; }
+
+    public AuditEntryKind Kind { get; private init; } = AuditEntryKind.Command;
+
+    public string Operation { get; private init; }
+
+    public AuditTargetKind? TargetKind { get; private init; }
+
+    public Guid? TargetId { get; private init; }
+
+    /// <summary>The target's name at that moment, only when the target is not a person: a tenant's name.</summary>
+    public string? TargetName { get; private init; }
+
+    public string? Details { get; private init; }
+}
+
+/// <summary>A record of a tenant's own log, under that tenant (row level security).</summary>
+internal sealed class AuditEntry : AuditRecord, ITenantEntity
+{
+    private AuditEntry()
+    {
+    }
+
+    public AuditEntry(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details = null)
+        : base(id, occurredAt, actor, operation, target, details)
+    {
+    }
+}
+
+/// <summary>A record of the platform's log: what system admins and the identity provider did, above tenants.</summary>
+internal sealed class PlatformAuditEntry : AuditRecord
+{
+    private PlatformAuditEntry()
+    {
+    }
+
+    public PlatformAuditEntry(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details = null)
+        : base(id, occurredAt, actor, operation, target, details)
+    {
+    }
+}
+
+/// <summary>Who acted. A user is named by their catalog user id; the platform and the identity provider are named by their kind.</summary>
+internal sealed record AuditActor(AuditActorKind Kind, Guid? UserId)
+{
+    public static readonly AuditActor Platform = new(AuditActorKind.Platform, null);
+
+    public static readonly AuditActor IdentityProvider = new(AuditActorKind.IdentityProvider, null);
+
+    public static AuditActor User(Guid userId) => new(AuditActorKind.User, userId);
+}
+
+/// <summary>What the action was done to. A person carries no name (K3).</summary>
+internal sealed record AuditTarget(AuditTargetKind Kind, Guid Id, string? Name)
+{
+    public static AuditTarget Tenant(Guid tenantId, string? name) => new(AuditTargetKind.Tenant, tenantId, name);
+
+    public static AuditTarget User(Guid userId) => new(AuditTargetKind.User, userId, null);
+}
+
+internal enum AuditActorKind
+{
+    User,
+    Platform,
+    IdentityProvider,
+}
+
+internal enum AuditTargetKind
+{
+    Tenant,
+    User,
 }
 
 internal enum AuditEntryKind

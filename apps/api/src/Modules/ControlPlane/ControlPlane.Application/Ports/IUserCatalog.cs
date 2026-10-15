@@ -16,6 +16,9 @@ public interface IUserCatalog
     /// <summary>The user with this catalog id, locked for the rest of the transaction, so two changes of their state run one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The catalog id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
+    internal Task<Guid?> FindUserIdAsync(string externalUserId, CancellationToken cancellationToken);
+
     /// <summary>Whether the user is on the staff list.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 

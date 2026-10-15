@@ -1,4 +1,6 @@
 using System.Net;
+using ControlPlane.Contracts;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
@@ -15,6 +17,7 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
     private static readonly DateTimeOffset Later = new(2026, 10, 2, 9, 0, 0, TimeSpan.Zero);
 
     private readonly Catalog _catalog = new(database);
+    private readonly AuditLogs _audit = new(database);
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero));
     private ApiFactory _api = null!;
 
@@ -131,6 +134,71 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
             .ShouldBe(1);
     }
 
+    // K3: a change that comes from Clerk goes to the platform's log, with the identity provider as the actor and no name in it.
+    [Fact]
+    public async Task ReceiveClerkEvent_UserUpdatedWithANewName_IsRecordedInThePlatformLogByTheIdentityProvider()
+    {
+        var user = await _catalog.AddUserAsync();
+        var userId = await _catalog.UserIdOfAsync(user);
+
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserUpdated(user, "ada@example.com", "Ada", "Lovelace", Later))));
+
+        (await _audit.PlatformLogAsync(userId)).ShouldBe($"user.profile_updated|IdentityProvider|-|User|{userId}|-");
+    }
+
+    // Only a real change of the copy is recorded: a repeated delivery, or a later one with the same email address and name, is not.
+    [Fact]
+    public async Task ReceiveClerkEvent_SameProfileAgain_IsRecordedOnce()
+    {
+        var user = await _catalog.AddUserAsync();
+        var userId = await _catalog.UserIdOfAsync(user);
+        var payload = ClerkDeliveries.UserUpdated(user, "ada@example.com", "Ada", "Lovelace", Earlier);
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(payload)));
+
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(payload)));
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserUpdated(user, "ada@example.com", "Ada", "Lovelace", Later))));
+
+        (await _audit.PlatformLogAsync(userId)).ShouldBe($"user.profile_updated|IdentityProvider|-|User|{userId}|-");
+    }
+
+    // The sender retries a delivery; only the first deletion is recorded.
+    [Fact]
+    public async Task ReceiveClerkEvent_UserDeletedTwice_IsRecordedOnceInThePlatformLog()
+    {
+        var user = await _catalog.AddUserAsync();
+        var userId = await _catalog.UserIdOfAsync(user);
+
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserDeleted(user))));
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserDeleted(user))));
+
+        (await _audit.PlatformLogAsync(userId)).ShouldBe($"user.deleted|IdentityProvider|-|User|{userId}|-");
+    }
+
+    // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's copy erases the user from
+    // every audit table, and the read side, through ControlPlane's contract, names them "Deleted user". The records stay.
+    [Fact]
+    public async Task ReceiveClerkEvent_UserDeleted_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser()
+    {
+        var marker = Guid.NewGuid().ToString("N");
+        var user = await _catalog.AddUserAsync();
+        var userId = await _catalog.UserIdOfAsync(user);
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(
+            ClerkDeliveries.UserUpdated(user, $"{marker}@example.com", $"Ada{marker}", $"Lovelace{marker}", Later))));
+        var before = await NamesAsync(userId);
+        var copied = await RowsHoldingAsync("control_plane", marker);
+        _time.Advance(TimeSpan.FromMinutes(1));
+
+        await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserDeleted(user))));
+
+        before[userId].ShouldBe(new UserName($"Ada{marker} Lovelace{marker}", $"{marker}@example.com"));
+        copied.ShouldBe(1);
+        (await RowsHoldingAsync("audit", marker)).ShouldBe(0);
+        (await RowsHoldingAsync("control_plane", marker)).ShouldBe(0);
+        (await NamesAsync(userId))[userId].ShouldBe(new UserName(UserName.Deleted, null));
+        (await _audit.PlatformLogAsync(userId)).ShouldBe(
+            $"user.profile_updated|IdentityProvider|-|User|{userId}|-, user.deleted|IdentityProvider|-|User|{userId}|-");
+    }
+
     // A change Clerk made before the deletion, delivered after it, does not bring the erased copy back.
     [Fact]
     public async Task ReceiveClerkEvent_UserUpdatedAfterUserDeleted_KeepsTheCopyErased()
@@ -194,6 +262,21 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
         received.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
         (await _catalog.ProfileOfAsync(user)).ShouldBe(new StoredProfile(null, null, null, null, null));
     }
+
+    private async Task<IReadOnlyDictionary<Guid, UserName>> NamesAsync(Guid userId)
+    {
+        await using var scope = _api.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IUserNames>().FindAsync([userId], Cancellation);
+    }
+
+    // The rows of every table in the schema whose text holds the marker, read as the superuser.
+    private Task<long> RowsHoldingAsync(string schema, string marker) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"""
+            SELECT coalesce(sum((xpath('/row/n/text()', query_to_xml(
+                format('SELECT count(*) AS n FROM %I.%I r WHERE r::text LIKE %L', schemaname, tablename, '%{marker}%'), false, true, '')))[1]::text::bigint), 0)::bigint
+            FROM pg_tables WHERE schemaname = '{schema}'
+            """);
 
     // The delivery carries no Authorization header: the webhook has no user authentication.
     private Task<HttpResponseMessage> SendAsync(HttpRequestMessage delivery) => _api.CreateClient().SendAsync(delivery, Cancellation);

@@ -5,6 +5,7 @@ using System.Text.Json;
 using ControlPlane.Application.Ports;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
+using Npgsql;
 using Tenancy;
 
 namespace Api.IntegrationTests.Me;
@@ -15,6 +16,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly AuditLogs _audit = new(database);
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 4, 9, 0, 0, TimeSpan.Zero));
     private ApiFactory _api = null!;
 
@@ -45,6 +47,42 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
             JOIN control_plane.tenants ON tenants.id = memberships.tenant_id JOIN control_plane.users ON users.id = memberships.user_id
             WHERE tenants.slug = '{slug}' AND users.external_id = '{invitee}'
             """)).ShouldBe(1);
+    }
+
+    // K3: the new member acted, and the record names only their catalog user id.
+    [Fact]
+    public async Task AcceptInvitation_InvitedPerson_IsRecordedInTheTenantLogAsJoined()
+    {
+        var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+
+        await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, code));
+
+        var tenantId = await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'");
+        var userId = await _catalog.UserIdOfAsync(invitee);
+        (await _audit.TenantLogAsync(userId)).ShouldBe($"{tenantId}:member.joined|User|{userId}|User|{userId}|-");
+        (await _audit.PlatformLogAsync(userId)).ShouldBeNull();
+    }
+
+    // K6: accepting changes the tenant aggregate, a membership and an invitation, so it locks the tenant row first. A suspension that
+    // holds the row makes the acceptance wait, and the acceptance then finds the tenant suspended.
+    [Fact]
+    public async Task AcceptInvitation_WhileASuspensionHoldsTheTenant_WaitsAndIsThenAConflict()
+    {
+        var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+        await using var suspension = new NpgsqlConnection(database.SuperuserConnectionString);
+        await suspension.OpenAsync(Cancellation);
+        await using var holding = await suspension.BeginTransactionAsync(Cancellation);
+        await using var suspend = new NpgsqlCommand($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE slug = '{slug}'", suspension, holding);
+        await suspend.ExecuteNonQueryAsync(Cancellation);
+
+        var accepting = AcceptAsync(invitee, code);
+        await Waiting.UntilAsync(async () => accepting.IsCompleted || await WaitsForTheTenantRowAsync());
+        await holding.CommitAsync(Cancellation);
+        var accepted = await accepting;
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(accepted)).ShouldBe("tenant.suspended");
+        (await MembersAsync(slug)).ShouldBe(0);
     }
 
     // A7: a new catalog user starts with a copy of the profile that the identity provider gave in the same call as the verified
@@ -381,6 +419,10 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     private Task<long> MembersAsync(string slug) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id WHERE tenants.slug = '{slug}'");
+
+    private async Task<bool> WaitsForTheTenantRowAsync() =>
+        await database.ScalarAsSuperuserAsync<long>(
+            "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%control_plane.tenants%FOR UPDATE%'") > 0;
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);

@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Audit.Application.Tenants;
+using Audit.Application.Users;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Invitations.InvitationEmail;
@@ -120,6 +122,30 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendTenant), typeof(SuspendTenantHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantSuspended), typeof(RecordTenantSuspendedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
+    }
+
+    // O3, K3: a user's suspension is announced from the web host without a tenant, and its Audit handler runs in the worker, once, and
+    // writes the platform's log.
+    [Fact]
+    public async Task SuspendUser_OnAWebAndAWorkerHost_WritesOnePlatformEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var userId = await catalog.UserIdOfAsync(await catalog.AddUserAsync());
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var suspended = await admin.PostAsync($"/v1/admin/users/{userId}/suspend", null, Cancellation);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.suspended") > 0);
+
+        suspended.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendUser), typeof(SuspendUserHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(UserSuspended), typeof(RecordUserChangesHandler))]);
+        (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
     }
 
     // O3: a reactivation is announced from the web host, and its Audit handler runs in the worker, once.
@@ -247,6 +273,10 @@ public sealed class HostRoleTests(Database database)
     private Task<long> AuditEntriesAsync(string databaseName, Guid tenantId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", databaseName);
+
+    private Task<long> PlatformEntriesAsync(string databaseName, Guid targetId, string operation) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM audit.platform_entries WHERE target_id = '{targetId}' AND operation = '{operation}'", databaseName);
 
     private Task<long> ProbesAsync(string databaseName, string value) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM probes.probes WHERE value = '{value}'", databaseName);

@@ -27,6 +27,7 @@ public static class ControlPlaneInfrastructure
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IUserNames, UserNames>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<SystemAdminSettings>, SystemAdminSettings.Validation>();

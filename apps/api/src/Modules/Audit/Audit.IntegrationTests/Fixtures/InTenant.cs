@@ -8,10 +8,11 @@ using Wolverine;
 namespace Audit.IntegrationTests.Fixtures;
 
 // Runs work the way Wolverine runs a handler: the message carries the tenant, the module's DbContext begins the transaction, which
-// declares that tenant, and the work is saved and committed unless it throws.
+// declares that tenant, and the work is saved and committed unless it throws. A message without a tenant (null) declares nothing, as
+// for an event about a catalog user.
 internal static class InTenant
 {
-    public static async Task RunAsync(IServiceProvider services, Guid tenantId, Func<IServiceProvider, Task> work)
+    public static async Task RunAsync(IServiceProvider services, Guid? tenantId, Func<IServiceProvider, Task> work)
     {
         await using var scope = services.CreateAsyncScope();
         var audit = Audit(scope, tenantId);
@@ -23,8 +24,8 @@ internal static class InTenant
         await transaction.CommitAsync(TestContext.Current.CancellationToken);
     }
 
-    // Runs SQL as the application role inside the tenant's transaction, so row level security applies.
-    public static async Task<T> SqlAsync<T>(IServiceProvider services, Guid tenantId, Func<NpgsqlCommand, Task<T>> run, string sql)
+    // Runs SQL as the application role inside the tenant's transaction, or one that declares nothing, so row level security applies.
+    public static async Task<T> SqlAsync<T>(IServiceProvider services, Guid? tenantId, Func<NpgsqlCommand, Task<T>> run, string sql)
     {
         await using var scope = services.CreateAsyncScope();
         var audit = Audit(scope, tenantId);
@@ -35,9 +36,9 @@ internal static class InTenant
         return await run(command);
     }
 
-    private static AuditDbContext Audit(AsyncServiceScope scope, Guid tenantId)
+    private static AuditDbContext Audit(AsyncServiceScope scope, Guid? tenantId)
     {
-        scope.ServiceProvider.GetRequiredService<IMessageContext>().TenantId = tenantId.ToString();
+        scope.ServiceProvider.GetRequiredService<IMessageContext>().TenantId = tenantId?.ToString();
         return scope.ServiceProvider.GetRequiredService<AuditDbContext>();
     }
 }

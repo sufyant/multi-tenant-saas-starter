@@ -20,11 +20,9 @@ public interface ITenantCatalog
 {
     internal Guid TenantId { get; }
 
-    internal Task<Tenant> FindTenantAsync(CancellationToken cancellationToken);
-
     /// <summary>
-    /// The active tenant, locked for the rest of the transaction, so the steps of its creation, and its suspension and reactivation,
-    /// run one at a time. Null when no tenant has the active tenant's id.
+    /// The active tenant, locked for the rest of the transaction, so the steps of its creation, its suspension and reactivation, and
+    /// every change to its memberships and invitations run one at a time (K6). Null when no tenant has the active tenant's id.
     /// </summary>
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
 
