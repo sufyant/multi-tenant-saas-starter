@@ -209,3 +209,22 @@ clerk webhooks listen --token "$(clerk webhooks token)" --forward-to http://127.
 
 A delivery without a valid signature, or older than five minutes, answers `400` and changes nothing.
 
+
+## 12. Change a request or response type
+
+The C# types are the source of every client's types (N11). A change reaches the frontend in three steps. Run them from the repository root.
+
+1. Change the type at the end of its endpoint file (N7).
+2. Build the API. The build writes `apps/api/openapi/v1.json`.
+
+   ```sh
+   dotnet build apps/api/Api.slnx
+   ```
+
+3. Generate the client types. The command reads the committed `openapi/v1.json`, so it needs no .NET.
+
+   ```sh
+   pnpm api:generate
+   ```
+
+Commit `apps/api/openapi/v1.json` and `packages/api-client/src/schema.ts` with the change. `pnpm check-types` then shows each frontend call that the change breaks. CI fails when either file is not current (`packages/api-client/README.md`).
