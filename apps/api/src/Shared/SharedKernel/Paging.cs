@@ -133,11 +133,11 @@ public static class ListFilter
     public static IReadOnlyList<string> ValuesOf<TValue>()
         where TValue : struct, Enum => JsonEnum<TValue>.Names;
 
-    /// <summary>The value the client chose; null when the filter is left out.</summary>
+    /// <summary>The value the client chose; null when the filter is left out or empty, as an empty sort or search is.</summary>
     public static Result<TValue?> Read<TValue>(ListFilter<TValue>? filter, string name)
         where TValue : struct, Enum
     {
-        if (filter is not { } sent)
+        if (filter is not { Text.Length: > 0 } sent)
         {
             return (TValue?)null;
         }

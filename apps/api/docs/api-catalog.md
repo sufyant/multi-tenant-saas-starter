@@ -121,7 +121,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - `page` starts at 1. `pageSize` is 1 to 100, 50 when left out.
 - `sort` is one field from the list's allowed fields. A leading `-` sorts it descending: `sort=-name`. Left out or empty, the list's default applies, ascending. We allow one field, not a comma list. Every sort ends with the id as the last key, so two items with the same value never change places between two pages. A field that an item can leave empty (`email`, `lastName`) puts those items last in both directions. Source: JSON:API 1.1, "Sorting".
 - `q` is a case-insensitive "contains" match on the list's search fields. `%`, `_` and `\` in it match themselves. It is trimmed. An empty `q` is no filter. It is at most 100 characters.
-- A filter takes one value: the value of the same field in the response.
+- A filter takes one value: the value of the same field in the response. An empty filter value is no filter, as an empty `sort` or `q` is.
 - An unknown sort field answers 400 `paging.sort_invalid`, an unknown filter value 400 `paging.filter_invalid`, and a `q` over 100 characters 400 `paging.q_invalid`. They join the `paging.*` codes.
 - `sort` and each filter are enums in the OpenAPI document. `SharedKernel` reads and checks `page`, `pageSize`, `sort` and `q` in one place (`ListRequest`, `ListSort`, `ListFilter`). Minimal API binds an enum by its C# name and ignores the JSON name the document shows, so the sort and filter parameters bind any text and `ListRequest` checks it. A test sends each value the document lists (`ListParameterBindingTests`).
 - The audit logs are the exception: a cursor, and no total.

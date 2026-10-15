@@ -130,12 +130,21 @@ public class ListRequestTests
         filter.Value.ShouldBeNull();
     }
 
+    // A value the query string sends empty is a filter left out.
+    [Fact]
+    public void ReadFilter_AnEmptyValue_GivesNoValue()
+    {
+        var filter = ListFilter.Read<ThingStatus>(new ListFilter<ThingStatus>(string.Empty), "status");
+
+        filter.Value.ShouldBeNull();
+    }
+
     [Theory]
     [InlineData("OnHold")]
     [InlineData("Active")]
     [InlineData("1")]
     [InlineData("deleted")]
-    [InlineData("")]
+    [InlineData(" ")]
     public void ReadFilter_AnUnknownValue_IsRejected(string text)
     {
         var filter = ListFilter.Read<ThingStatus>(new ListFilter<ThingStatus>(text), "status");

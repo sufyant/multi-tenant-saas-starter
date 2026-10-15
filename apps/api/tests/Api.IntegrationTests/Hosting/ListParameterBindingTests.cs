@@ -6,84 +6,97 @@ using Tenancy;
 namespace Api.IntegrationTests.Hosting;
 
 // K5: sort and each filter of a list are enums in the OpenAPI document, so a generated client sends their values. Minimal API binds an
-// enum by its C# name and ignores the JSON name the document shows; each value the document lists must bind.
+// enum by its C# name and ignores the JSON name the document shows; each value the document lists must bind. One case for each list.
 public sealed class ListParameterBindingTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
     private ApiFactory _api = null!;
+    private JsonElement _document;
 
-    public ValueTask InitializeAsync()
+    public static TheoryData<string, string> Lists => new()
+    {
+        { "ListTenants", "admin" },
+        { "ListUsers", "admin" },
+        { "ListMyTenants", "user" },
+        { "ListMembers", "member" },
+    };
+
+    public async ValueTask InitializeAsync()
     {
         _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
-        return ValueTask.CompletedTask;
+        _document = await _api.CreateClient().GetFromJsonAsync<JsonElement>("/openapi/v1.json", Cancellation);
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Fact]
-    public async Task CallList_EachValueTheDocumentListsForAnEnumParameter_IsAccepted()
+    public void DescribeLists_EveryListOfTheDocument_IsACaseOfTheBindingTest()
     {
-        var document = await _api.CreateClient().GetFromJsonAsync<JsonElement>("/openapi/v1.json", Cancellation);
+        var documented = ListsOf(_document).Select(list => list.Id);
 
-        var calls = await StatusOfEachDocumentedValueAsync(document);
+        documented.ShouldBe(Lists.Select(list => list.Data.Item1), ignoreOrder: true);
+    }
+
+    [Theory]
+    [MemberData(nameof(Lists))]
+    public async Task CallList_EachValueTheDocumentListsForAnEnumParameter_IsAccepted(string operationId, string caller)
+    {
+        var (path, operation) = ListsOf(_document).Single(list => list.Id == operationId).Value;
+        var (client, url) = await CallerAsync(caller, path);
+
+        var calls = await StatusOfEachEnumValueAsync(client, url, EnumParametersOf(operation));
 
         calls.ShouldNotBeEmpty();
         calls.Where(call => call.Status != HttpStatusCode.OK).Select(call => $"{call.Request}: {call.Status}").ShouldBeEmpty();
     }
 
-    private async Task<List<(string Request, HttpStatusCode Status)>> StatusOfEachDocumentedValueAsync(JsonElement document)
+    private static async Task<List<(string Request, HttpStatusCode Status)>> StatusOfEachEnumValueAsync(
+        HttpClient client,
+        string url,
+        IEnumerable<string> queries)
     {
         var calls = new List<(string, HttpStatusCode)>();
-        foreach (var (path, operation) in Lists(document))
+        foreach (var query in queries)
         {
-            var (client, url) = await CallerOfAsync(path);
-            foreach (var (name, values) in EnumParametersOf(document, operation))
-            {
-                foreach (var value in values)
-                {
-                    var request = $"{url}?{name}={Uri.EscapeDataString(value)}";
-                    calls.Add((request, (await client.GetAsync(request, Cancellation)).StatusCode));
-                }
-            }
+            calls.Add(($"{url}?{query}", (await client.GetAsync($"{url}?{query}", Cancellation)).StatusCode));
         }
 
         return calls;
     }
 
     // A caller who may read the list: a system admin, a user, or a member of a new tenant.
-    private async Task<(HttpClient Client, string Url)> CallerOfAsync(string path)
+    private async Task<(HttpClient Client, string Url)> CallerAsync(string caller, string path) => caller switch
     {
-        if (path.StartsWith("/v1/admin/", StringComparison.Ordinal))
-        {
-            return (_api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true), path);
-        }
+        "admin" => (_api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true), path),
+        "user" => (_api.CreateClient(await _catalog.AddUserAsync()), path),
+        _ => await MemberOfANewTenantAsync(path),
+    };
 
-        if (path.StartsWith("/v1/me/", StringComparison.Ordinal))
-        {
-            return (_api.CreateClient(await _catalog.AddUserAsync()), path);
-        }
-
+    private async Task<(HttpClient Client, string Url)> MemberOfANewTenantAsync(string path)
+    {
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         return (_api.CreateClient(member), path.Replace("{tenantId}", tenant.Id.ToString(), StringComparison.Ordinal));
     }
 
-    private static IEnumerable<(string Path, JsonElement Operation)> Lists(JsonElement document) =>
+    private static IEnumerable<(string Id, (string Path, JsonElement Operation) Value)> ListsOf(JsonElement document) =>
         document.GetProperty("paths").EnumerateObject()
-            .SelectMany(path => path.Value.EnumerateObject().Select(operation => (path.Name, operation.Value)))
-            .Where(list => list.Value.GetProperty("operationId").GetString()!.StartsWith("List", StringComparison.Ordinal));
+            .SelectMany(path => path.Value.EnumerateObject().Select(operation => (Id: operation.Value.GetProperty("operationId").GetString()!, Value: (path.Name, operation.Value))))
+            .Where(list => list.Id.StartsWith("List", StringComparison.Ordinal));
 
-    private static IEnumerable<(string Name, List<string> Values)> EnumParametersOf(JsonElement document, JsonElement operation) =>
+    // Each value of each enum query parameter, as a query string.
+    private IEnumerable<string> EnumParametersOf(JsonElement operation) =>
         operation.GetProperty("parameters").EnumerateArray()
             .Where(parameter => parameter.GetProperty("in").GetString() == "query")
-            .Select(parameter => (parameter.GetProperty("name").GetString()!, Resolve(document, parameter.GetProperty("schema"))))
-            .Where(parameter => parameter.Item2.TryGetProperty("enum", out _))
-            .Select(parameter => (parameter.Item1, parameter.Item2.GetProperty("enum").EnumerateArray().Select(value => value.GetString()!).ToList()));
+            .Select(parameter => (Name: parameter.GetProperty("name").GetString()!, Schema: Resolve(parameter.GetProperty("schema"))))
+            .Where(parameter => parameter.Schema.TryGetProperty("enum", out _))
+            .SelectMany(parameter => parameter.Schema.GetProperty("enum").EnumerateArray()
+                .Select(value => $"{parameter.Name}={Uri.EscapeDataString(value.GetString()!)}"));
 
-    private static JsonElement Resolve(JsonElement document, JsonElement schema) =>
+    private JsonElement Resolve(JsonElement schema) =>
         schema.TryGetProperty("$ref", out var reference)
-            ? document.GetProperty("components").GetProperty("schemas").GetProperty(reference.GetString()!.Split('/')[^1])
+            ? _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.GetString()!.Split('/')[^1])
             : schema;
 }

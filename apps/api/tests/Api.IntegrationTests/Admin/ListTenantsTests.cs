@@ -145,6 +145,18 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         string.Join(", ", Names(page).Select(name => name[(_marker.Length + 1)..])).ShouldBe(names);
     }
 
+    // The query string sends a value left empty; like an empty search or sort, it is no filter.
+    [Fact]
+    public async Task ListTenants_AnEmptyStatus_IsNoFilter()
+    {
+        await _catalog.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
+        await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+
+        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/tenants?q={_marker}&status=", Cancellation);
+
+        Names(page).ShouldBe([$"{_marker} Bravo", $"{_marker} Charlie"]);
+    }
+
     // Every sort ends with the id, so two tenants of the same name keep their places from one page to the next.
     [Theory]
     [InlineData("name")]
