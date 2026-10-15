@@ -138,6 +138,102 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
+    [Theory]
+    [InlineData("acme", "Acme Global")]
+    [InlineData("ACME gl", "Acme Global")]
+    [InlineData("orbit", "Bravo Ltd")]
+    [InlineData("ORBIT-", "Bravo Ltd")]
+    public async Task ListMyTenants_ASearch_FindsTheTenantsWhoseNameOrSlugContainsItInAnyCase(string q, string found)
+    {
+        var random = Guid.NewGuid().ToString("N")[..8];
+        var user = await MemberOfAsync(
+            await _catalog.AddTenantAsync(name: "Acme Global", slug: $"alpha-{random}"),
+            await _catalog.AddTenantAsync(name: "Bravo Ltd", slug: $"orbit-{random}"),
+            await _catalog.AddTenantAsync(name: "Charlie Ltd", slug: $"charlie-{random}"));
+
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/tenants?q={Uri.EscapeDataString(q)}", Cancellation);
+
+        Tenants(page).Select(tenant => tenant.Name).ShouldBe([found]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData("0%", "100% Ltd")]
+    [InlineData("a_b", "a_b Ltd")]
+    [InlineData(@"c\d", @"c\d Ltd")]
+    public async Task ListMyTenants_ASearchWithAWildcard_MatchesTheCharacterItself(string q, string found)
+    {
+        var user = await MemberOfAsync(
+            await _catalog.AddTenantAsync(name: "100% Ltd"),
+            await _catalog.AddTenantAsync(name: "1000 Ltd"),
+            await _catalog.AddTenantAsync(name: "a_b Ltd"),
+            await _catalog.AddTenantAsync(name: "axb Ltd"),
+            await _catalog.AddTenantAsync(name: @"c\d Ltd"),
+            await _catalog.AddTenantAsync(name: "cd Ltd"));
+
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/tenants?q={Uri.EscapeDataString(q)}", Cancellation);
+
+        Tenants(page).Select(tenant => tenant.Name).ShouldBe([found]);
+    }
+
+    [Theory]
+    [InlineData("name", "Alpha Ltd, Bravo Ltd, Charlie Ltd")]
+    [InlineData("-name", "Charlie Ltd, Bravo Ltd, Alpha Ltd")]
+    public async Task ListMyTenants_ASortField_OrdersByItInItsDirection(string sort, string names)
+    {
+        var user = await MemberOfAsync(
+            await _catalog.AddTenantAsync(name: "Bravo Ltd"),
+            await _catalog.AddTenantAsync(name: "Alpha Ltd"),
+            await _catalog.AddTenantAsync(name: "Charlie Ltd"));
+
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/tenants?sort={sort}", Cancellation);
+
+        string.Join(", ", Tenants(page).Select(tenant => tenant.Name)).ShouldBe(names);
+    }
+
+    [Theory]
+    [InlineData("name")]
+    [InlineData("-name")]
+    public async Task ListMyTenants_TwoTenantsWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
+    {
+        var random = Guid.NewGuid().ToString();
+        var later = await _catalog.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
+        var earlier = await _catalog.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
+        var client = _api.CreateClient(await MemberOfAsync(later, earlier));
+
+        var first = await client.GetFromJsonAsync<JsonElement>($"/v1/me/tenants?sort={sort}&pageSize=1&page=1", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/me/tenants?sort={sort}&pageSize=1&page=2", Cancellation);
+
+        Tenants(first).Concat(Tenants(second)).Select(tenant => tenant.Id).ShouldBe([earlier.Id, later.Id]);
+    }
+
+    [Theory]
+    [InlineData("sort=age", "paging.sort_invalid")]
+    [InlineData("sort=slug", "paging.sort_invalid")]
+    [InlineData("sort=-Name", "paging.sort_invalid")]
+    [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
+    public async Task ListMyTenants_AnUnknownSortOrALongSearch_IsRejected(string query, string code)
+    {
+        var user = await _catalog.AddUserAsync();
+
+        var response = await _api.CreateClient(user).GetAsync($"/v1/me/tenants?{query}", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
+    }
+
+    // A new user who is a member of each tenant.
+    private async Task<string> MemberOfAsync(params (Guid Id, string Slug)[] tenants)
+    {
+        var user = await _catalog.AddUserAsync();
+        foreach (var tenant in tenants)
+        {
+            await _catalog.AddMemberAsync(tenant.Id, user);
+        }
+
+        return user;
+    }
+
     private static List<(Guid Id, string Name, string Slug)> Tenants(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray()
