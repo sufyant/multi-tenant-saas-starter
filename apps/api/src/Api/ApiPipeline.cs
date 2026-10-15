@@ -10,7 +10,6 @@ using Api.Networking;
 using Api.Observability;
 using Api.Persistence;
 using Api.RateLimiting;
-using Api.Tenant;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
@@ -200,12 +199,4 @@ internal static class ApiPipeline
 
         return app;
     }
-
-    // Every API route lives under a version segment; expected failures returned as results become Problem Details here.
-    // The group grants no access: each endpoint states its own (A5).
-    public static RouteGroupBuilder MapV1(this IEndpointRouteBuilder endpoints) =>
-        endpoints.MapGroup("/v1")
-            .AddEndpointFilter<ResultEndpointFilter>()
-            .DescribeResults()
-            .RequireUserRateLimit();
 }

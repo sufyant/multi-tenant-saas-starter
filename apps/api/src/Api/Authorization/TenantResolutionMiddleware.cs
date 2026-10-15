@@ -1,16 +1,14 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using Api.Authentication;
-using Api.Authorization;
-using Api.Admin;
-using Api.Me;
+using Api.Routing;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
 using Serilog.Context;
 using Wolverine;
 
-namespace Api.Tenant;
+namespace Api.Authorization;
 
 // Resolves the tenant of a request and what the caller may do there, never from the client's word alone. On a me or a tenant route
 // ControlPlane first says whether the user may act at all: a suspended user is refused (A9). On a tenant route the tenant then comes
@@ -52,7 +50,7 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
         Guid? tenantId = null;
         if (tenantScoped
             && access.Refusal is null
-            && Guid.TryParse(context.GetRouteValue(TenantRoutes.TenantIdParameter) as string, out var requested))
+            && Guid.TryParse(context.GetRouteValue(RouteGroups.TenantIdParameter) as string, out var requested))
         {
             var found = await directory.FindMembershipAsync(requested, userId, context.RequestAborted);
             access.Membership = found is { IsSuccess: true } ? found.Value : null;

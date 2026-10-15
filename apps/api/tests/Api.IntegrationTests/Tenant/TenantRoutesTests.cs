@@ -1,4 +1,4 @@
-using Api.Tenant;
+using Api.Routing;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

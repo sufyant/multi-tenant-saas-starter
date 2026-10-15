@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
-using Api.Admin;
-using Api.Tenant;
+using Api.Routing;
 using ControlPlane.Application.Ports;
 using ControlPlane.Infrastructure;
 using Microsoft.AspNetCore.Builder;
