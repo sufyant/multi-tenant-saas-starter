@@ -1,0 +1,58 @@
+using System.Diagnostics;
+using System.Globalization;
+using Microsoft.Extensions.Options;
+using Wolverine;
+using Wolverine.Postgresql.Transport;
+using Wolverine.Runtime;
+using Wolverine.Runtime.Interop;
+using Wolverine.Transports;
+
+namespace Api.Messaging;
+
+// How far apart, and how often, a node puts back a message it has no handler for (Messaging:UnknownMessages, W12).
+internal sealed class UnknownMessageSettings
+{
+    public const string Section = "Messaging:UnknownMessages";
+
+    public TimeSpan Delay { get; set; } = TimeSpan.FromSeconds(30);
+
+    public int Tries { get; set; } = 10;
+}
+
+// W12: during a rolling deploy an old worker takes a message only the new version handles. Wolverine runs this before it marks the
+// message as handled. A message from the PostgreSQL queue goes back to the queue's scheduled table, with the same id, so a worker that
+// knows it takes it later; the tries travel in a header. After the last try, or from a durable local queue, where the mark that follows
+// would overwrite a put-back, the message goes to the dead letter queue. Wolverine's own control messages keep its default.
+internal sealed partial class UnknownMessages(
+    IOptions<UnknownMessageSettings> settings, TimeProvider time, ILogger<UnknownMessages> logger) : IMissingHandler
+{
+    public const string TriesHeader = "unknown-message-tries";
+
+    public async ValueTask HandleAsync(IEnvelopeLifecycle context, IWolverineRuntime root)
+    {
+        var envelope = context.Envelope!;
+        var scheme = envelope.Destination?.Scheme;
+        var tries = envelope.Headers.TryGetValue(TriesHeader, out var value) ? int.Parse(value!, CultureInfo.InvariantCulture) : 0;
+        var traceId = Activity.Current?.TraceId.ToString();
+
+        if (scheme == PostgresqlTransport.ProtocolName && tries < settings.Value.Tries)
+        {
+            envelope.Headers[TriesHeader] = (tries + 1).ToString(CultureInfo.InvariantCulture);
+            await context.ReScheduleAsync(time.GetUtcNow() + settings.Value.Delay);
+            LogPutBack(envelope.MessageType, tries + 1, settings.Value.Tries, settings.Value.Delay, traceId);
+            return;
+        }
+
+        if (scheme == PostgresqlTransport.ProtocolName || scheme == TransportConstants.Local)
+        {
+            LogDeadLetter(envelope.MessageType, tries, traceId);
+            await context.MoveToDeadLetterQueueAsync(new UnknownMessageTypeNameException($"No handler for message type '{envelope.MessageType}'"));
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No handler for {MessageType} on this node. It is put back for try {Try} of {Tries}, in {Delay}. Trace {TraceId}")]
+    private partial void LogPutBack(string? messageType, int @try, int tries, TimeSpan delay, string? traceId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "No node handled {MessageType} after {Tries} tries. It is moved to the dead letter queue. Trace {TraceId}")]
+    private partial void LogDeadLetter(string? messageType, int tries, string? traceId);
+}
