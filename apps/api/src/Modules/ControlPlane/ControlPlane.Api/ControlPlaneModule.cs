@@ -16,6 +16,9 @@ public static class ControlPlaneModule
     /// <summary>The assembly with the module's handlers and validators, for the host to give Wolverine.</summary>
     public static Assembly HandlerAssembly => typeof(AcceptInvitationHandler).Assembly;
 
+    /// <summary>The values a status in a response can have, for the host to list in the OpenAPI document (N7).</summary>
+    public static IReadOnlyList<string> ResponseStatuses => ResponseStatus.Values;
+
     /// <summary>
     /// Maps the module's endpoints into the host's route groups, one for each audience. Each endpoint on an admin or tenant route
     /// names the permission it needs, and each webhook endpoint declares that it checks its sender's signature (A5); each sends one

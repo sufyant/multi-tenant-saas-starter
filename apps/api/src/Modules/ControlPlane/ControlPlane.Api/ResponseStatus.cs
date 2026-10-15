@@ -6,13 +6,20 @@ namespace ControlPlane.Api;
 /// </summary>
 internal static class ResponseStatus
 {
-    public static string Of(string status) => status switch
-    {
-        "Provisioning" => "provisioning",
-        "Active" => "active",
-        "Suspended" => "suspended",
-        "Cancelled" => "cancelled",
-        "Deleted" => "deleted",
-        _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Every status of ControlPlane has a response value."),
-    };
+    // ControlPlane's name of each status and the value the API answers with. The OpenAPI document reads its values from here (N7).
+    private static readonly (string Name, string Value)[] Statuses =
+    [
+        ("Provisioning", "provisioning"),
+        ("Active", "active"),
+        ("Suspended", "suspended"),
+        ("Cancelled", "cancelled"),
+        ("Deleted", "deleted"),
+    ];
+
+    public static IReadOnlyList<string> Values { get; } = [.. Statuses.Select(status => status.Value)];
+
+    public static string Of(string status) =>
+        Array.Find(Statuses, known => known.Name == status) is { Value: { } value }
+            ? value
+            : throw new ArgumentOutOfRangeException(nameof(status), status, "Every status of ControlPlane has a response value.");
 }
