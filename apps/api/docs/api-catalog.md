@@ -9,21 +9,26 @@ Audit: **T** = the tenant's audit log, **P** = the platform audit log.
 
 The signed-in user, acting for themselves. No permission; the user reaches only their own data (N6).
 
+- `GetMe` has no status. A suspended user gets 403 `user.suspended` on every `me` endpoint (A9), and a deleted user cannot sign in, so the status would always be "active".
+- A person becomes a catalog user only through an invitation or as the first system admin. `GetMe` answers a signed-in person the catalog does not know with 404 `user.not_found`. The web shows "no access yet".
+
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| new | GET | `/v1/me` | `GetMe` (profile copy, status, system admin or not) | signed in | none | none | Clerk, through the webhook's copy | 20c |
-| changes | GET | `/v1/me/tenants` | `ListMyTenants` (list contract; `q`: name, slug) | signed in | none | none | none | 20c |
+| new | GET | `/v1/me` | `GetMe` (catalog id, profile copy, system admin or not; no status; a person the catalog does not know gets 404 `user.not_found`) | signed in | none | none | Clerk, through the webhook's copy | 20c |
+| changes | GET | `/v1/me/tenants` | `ListMyTenants` (list contract; `q`: name, slug; no filter; `sort`: `name`) | signed in | none | none | none | 20c |
 | changes | POST | `/v1/me/invitations/accept` | `AcceptInvitation` (writes an audit entry) | signed in; the email must match | T `member.joined` | none | Clerk: verified emails | 20b |
 
 ## Tenant: `/v1/tenants/{tenantId}`
 
 A member of the tenant. Each endpoint names a permission. To a non-member the tenant does not exist (T3).
 
+- `ListMembers` keeps a member whose user was deleted, with an empty email address and empty names. The screen shows "Deleted user", as for audit (K3). What happens to a deleted Owner is a later decision.
+
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | new | GET | `/v1/tenants/{tenantId}` | `GetMyTenant` (answers `MyTenantResponse`) | `tenant.profile.read`; every role | none | none | none | 20c |
 | new | PATCH | `/v1/tenants/{tenantId}` | `RenameTenant` (name only; the slug never changes) | `tenant.profile.update`; Owner, Admin | T `tenant.renamed` | none | none | 20h |
-| changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; list contract; `q`: email, name; filter `role`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c |
+| changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; a deleted user stays, with an empty email and names; list contract; `q`: email, first name, last name; filter `role`; `sort`: `role`, `email`, `lastName`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c |
 | new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` | none | none | 20e |
 | new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` | `tenant.members.delete`; Owner, Admin; the last Owner cannot be removed (K1) | T `member.removed` | none | none | 20e |
 | new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; replaces a pending invitation to the same email; daily limit) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
@@ -38,13 +43,13 @@ A system admin with a second factor (A6). Every action writes to the platform au
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | changes | POST | `/v1/admin/tenants` | `CreateTenant` (saga; Idempotency-Key; adds the platform entry) | `admin.tenants.create` | P `tenant.created`, T `tenant.created` | owner invitation email | Resend | 20b |
-| changes | GET | `/v1/admin/tenants` | `ListTenants` (list contract; `q`: name, slug; filter `status`) | `admin.tenants.read` | none | none | none | 20c |
-| new | GET | `/v1/admin/tenants/{tenantId}` | `GetTenant` (answers `TenantResponse`) | `admin.tenants.read` | none | none | none | 20c |
+| changes | GET | `/v1/admin/tenants` | `ListTenants` (list contract; `q`: name, slug; filter `status`; `sort`: `name`, `slug`) | `admin.tenants.read` | none | none | none | 20c |
+| new | GET | `/v1/admin/tenants/{tenantId}` | `GetTenant` (answers `TenantResponse`; 404 `tenant.not_found` for an id no tenant has) | `admin.tenants.read` | none | none | none | 20c |
 | changes | POST | `/v1/admin/tenants/{tenantId}/suspend` | `SuspendTenant` (platform entry in 20b; reason in 20h) | `admin.tenants.suspend` | P `tenant.suspended`, T `tenant.suspended` | none | none | 20b, 20h |
 | changes | POST | `/v1/admin/tenants/{tenantId}/reactivate` | `ReactivateTenant` (adds the platform entry) | `admin.tenants.reactivate` | P `tenant.reactivated`, T `tenant.reactivated` | none | none | 20b |
 | new | POST | `/v1/admin/tenants/{tenantId}/close` | `CloseTenant` (members cannot enter; data stays; K4) | `admin.tenants.close` | P `tenant.closed`, T `tenant.closed` | none | none | 20h |
 | new | POST | `/v1/admin/tenants/{tenantId}/reopen` | `ReopenTenant` (only before the period ends) | `admin.tenants.reopen` | P `tenant.reopened`, T `tenant.reopened` | none | none | 20h |
-| changes | GET | `/v1/admin/users` | `ListUsers` (list contract; `q`: email, name; filter `status`) | `admin.users.read` | none | none | Clerk, through the copy | 20c |
+| changes | GET | `/v1/admin/users` | `ListUsers` (list contract; `q`: email, first name, last name; filter `status`; `sort`: `email`, `lastName`) | `admin.users.read` | none | none | Clerk, through the copy | 20c |
 | changes | POST | `/v1/admin/users/{userId}/suspend` | `SuspendUser` (adds the platform entry) | `admin.users.suspend` | P `user.suspended` | none | none; Clerk is not told, the API refuses the user on each request (A9) | 20b |
 | changes | POST | `/v1/admin/users/{userId}/reactivate` | `ReactivateUser` (adds the platform entry) | `admin.users.reactivate` | P `user.reactivated` | none | none | 20b |
 | new | GET | `/v1/admin/audit-log` | `ListPlatformAuditEntries` (cursor) | `admin.audit.read` | none | none | none | 20f |
@@ -101,7 +106,8 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 - provisioning → active ⇄ suspended → closed → deleted. A failed creation goes provisioning → cancelled.
 - A suspension has a reason. Today it is text the system admin writes. A billing reason comes with billing.
-- closed: members cannot enter, the data stays, and the tenant can be reopened within a configured period (proposed: 30 days).
+- closed: members cannot enter, the data stays, and the tenant can be reopened within a configured period, 30 days by default.
+- The slug never changes.
 - deleted (removing the data) is not in this catalog. Export and deletion are designed in a later step.
 - The billing state is not copied into the tenant's state. The tenant only reacts to a subscription event.
 
@@ -111,9 +117,24 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - Error codes are an enum in the OpenAPI document. No client writes them by hand.
 - 401 and 429 are declared on every operation.
 - A second shape of a resource carries its audience in the name: admin `GetTenant`, member `GetMyTenant`.
-- Every list uses one contract: `page`, `pageSize` (50, at most 100), `sort`, `q`, and allowed filters. The answer is `{ items, page, pageSize, total }`. A test enforces it.
+- Every list uses one contract: `page`, `pageSize` (50, at most 100), `sort`, `q`, and allowed filters. The answer is `{ items, page, pageSize, total }`. A test enforces it (`ListContractTests`).
+- `page` starts at 1. `pageSize` is 1 to 100, 50 when left out.
+- `sort` is one field from the list's allowed fields. A leading `-` sorts it descending: `sort=-name`. Left out or empty, the list's default applies, ascending. We allow one field, not a comma list. Every sort ends with the id as the last key, so two items with the same value never change places between two pages. A field that an item can leave empty (`email`, `lastName`) puts those items last in both directions. Source: JSON:API 1.1, "Sorting".
+- `q` is a case-insensitive "contains" match on the list's search fields. `%`, `_` and `\` in it match themselves. It is trimmed. An empty `q` is no filter. It is at most 100 characters.
+- A filter takes one value: the value of the same field in the response.
+- An unknown sort field answers 400 `paging.sort_invalid`, an unknown filter value 400 `paging.filter_invalid`, and a `q` over 100 characters 400 `paging.q_invalid`. They join the `paging.*` codes.
+- `sort` and each filter are enums in the OpenAPI document. `SharedKernel` reads and checks `page`, `pageSize`, `sort` and `q` in one place (`ListRequest`, `ListSort`, `ListFilter`). Minimal API binds an enum by its C# name and ignores the JSON name the document shows, so the sort and filter parameters bind any text and `ListRequest` checks it. A test sends each value the document lists (`ListParameterBindingTests`).
 - The audit logs are the exception: a cursor, and no total.
-- Every field that is searched or sorted has an index.
+- Every field that is searched or sorted has an index. A searched field has a trigram GIN index (PostgreSQL `pg_trgm`), because a B-tree index cannot serve a "contains" match. A sorted field has a B-tree index. Source: PostgreSQL documentation, "pg_trgm", "Index Support".
+
+| List | `q` matches | Filters | Sort fields (default first) | Indexes |
+| --- | --- | --- | --- | --- |
+| `ListMyTenants` | name, slug | none | `name` | tenants: trigram on name and slug; B-tree on name |
+| `ListTenants` | name, slug | `status` | `name`, `slug` | tenants: trigram on name and slug; B-tree on name; the unique slug index |
+| `ListUsers` | email, first name, last name | `status` | `email`, `lastName` | users: trigram on email, first name and last name; B-tree on email and last name |
+| `ListMembers` | email, first name, last name | `role` | `role` (Owner, Admin, Member), `email`, `lastName` | the users indexes; memberships: the primary key and the B-tree on role id |
+
+- The member search starts from the active tenant's memberships, which row level security keeps to the tenant, and joins each member's user. It never starts from the users table, which is not under row level security (R6).
 
 ### K6. Concurrency
 
@@ -123,11 +144,10 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - Locks are taken in one order: the aggregate root first. A lock lives only inside one transaction, never across two HTTP requests.
 - Sources: Kleppmann, *Designing Data-Intensive Applications*, chapter 7, "Write Skew and Phantoms". Fowler, *Patterns of Enterprise Application Architecture*, "Coarse-Grained Lock". Evans, *Domain-Driven Design*, chapter 6, "Aggregates". Vernon, "Effective Aggregate Design". PostgreSQL documentation, "Explicit Locking".
 
-## Proposals waiting for approval
+### K7. Permission names
 
-- New permission names: `tenant.profile.*`, `tenant.invitations.*`, `tenant.members.update|delete`, `tenant.audit.read`, `admin.tenants.close|reopen`, `admin.audit.read`.
-- The slug never changes.
-- A closed tenant can be reopened for 30 days, a setting.
+- The new permission names are approved: `tenant.profile.*`, `tenant.invitations.*`, `tenant.members.update` and `tenant.members.delete`, `tenant.audit.read`, `admin.tenants.close` and `admin.tenants.reopen`, and `admin.audit.read` (N6).
+- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role.
 
 ## Later
 

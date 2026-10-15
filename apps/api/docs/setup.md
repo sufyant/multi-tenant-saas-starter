@@ -10,6 +10,7 @@ The API needs PostgreSQL 18 and the two roles of R2 and R7: an owner role for th
 - The script is safe to run again. A rerun sets the passwords given and changes nothing else. If either role is a superuser, can bypass RLS, can create databases or can create roles, the script stops and names the role and the attribute.
 - `ConnectionStrings:Messaging` is needed when `ConnectionStrings:Database` goes through a pooler in transaction mode. Wolverine's message store holds session-level advisory locks, so the setting then names a direct or session-mode connection of the application role.
 - `ConnectionStrings:Migrations` names a direct connection of the owner role. Only the `migrate` command gets it (R3).
+- A ControlPlane migration creates the extension `pg_trgm` for the search of the lists (K5 in `api-catalog.md`). It is a trusted extension, so the owner role creates it with the `CREATE` privilege on the database that `db/bootstrap.sql` grants. No other grant is needed. The provider's PostgreSQL must offer the standard extensions (`contrib`); the official image, Railway and Neon do.
 
 ### Railway
 
