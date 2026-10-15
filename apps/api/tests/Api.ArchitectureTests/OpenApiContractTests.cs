@@ -75,6 +75,21 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         properties.GetProperty("code").GetProperty("type").GetString().ShouldBe("string");
     }
 
+    // OpenAPI 3.1, "Path Templating": each parameter in a path is declared as a path parameter. The tenant group, not the endpoint,
+    // names {tenantId}, so the endpoint alone would leave it out.
+    [Fact]
+    public void BuildOpenApiDocument_ParameterInAPath_IsARequiredPathParameter()
+    {
+        var inPaths = Operations()
+            .SelectMany(operation => PathParameter().Matches(operation.Path).Select(name => $"{operation.Method} {operation.Path} {name.Groups[1].Value}"));
+
+        var declared = Operations()
+            .SelectMany(operation => DeclaredPathParametersOf(operation.Value).Select(name => $"{operation.Method} {operation.Path} {name}"));
+
+        inPaths.ShouldNotBeEmpty();
+        declared.ShouldBe(inPaths, ignoreOrder: true);
+    }
+
     // The webhook group is left out of the document (N5), and so are the endpoints outside /v1, such as the document itself.
     private static bool InTheDocument(RouteEndpoint endpoint) =>
         endpoint.RoutePattern.RawText!.StartsWith("/v1/", StringComparison.Ordinal)
@@ -97,11 +112,21 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             ? problem.GetProperty("schema").GetProperty("$ref").GetString()!
             : "<no application/problem+json>";
 
+    private static IEnumerable<string> DeclaredPathParametersOf(JsonElement operation) =>
+        operation.TryGetProperty("parameters", out var parameters)
+            ? parameters.EnumerateArray()
+                .Where(parameter => parameter.GetProperty("in").GetString() == "path" && parameter.GetProperty("required").GetBoolean())
+                .Select(parameter => parameter.GetProperty("name").GetString()!)
+            : [];
+
     private IEnumerable<(string Method, string Path, JsonElement Value)> Operations() =>
         _document.GetProperty("paths").EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject().Select(operation => (operation.Name, path.Name, operation.Value)));
 
     private JsonElement.ObjectEnumerator Schemas() => _document.GetProperty("components").GetProperty("schemas").EnumerateObject();
+
+    [GeneratedRegex(@"\{(\w+)\}")]
+    private static partial Regex PathParameter();
 
     [GeneratedRegex(@"\{(\w+):[^}]+\}")]
     private static partial Regex RouteConstraint();

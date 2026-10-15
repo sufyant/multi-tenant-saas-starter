@@ -128,7 +128,7 @@ internal static class ApiPipeline
 
         builder.Services.AddUserRateLimiting();
         builder.Services.AddHealthChecks();
-        builder.Services.AddOpenApi(options => options.AddOperationTransformer((operation, context, _) =>
+        builder.Services.AddOpenApi(options => options.DescribeContract().AddOperationTransformer((operation, context, _) =>
         {
             if (context.Description.ActionDescriptor.EndpointMetadata.OfType<IdempotencyKeyRequired>().Any())
             {
