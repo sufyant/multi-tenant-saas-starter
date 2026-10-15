@@ -41,12 +41,12 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Tenants(page).ShouldBe(
         [
-            (alpha.Id, "Alpha Ltd", alpha.Slug, "Provisioning"),
-            (bravo.Id, "Bravo Ltd", bravo.Slug, "Cancelled"),
-            (charlie.Id, "Charlie Ltd", charlie.Slug, "Suspended"),
-            (delta.Id, "Delta Ltd", delta.Slug, "Active"),
-            (echoEarlier.Id, "Echo Ltd", echoEarlier.Slug, "Active"),
-            (echoLater.Id, "Echo Ltd", echoLater.Slug, "Active"),
+            (alpha.Id, "Alpha Ltd", alpha.Slug, "provisioning"),
+            (bravo.Id, "Bravo Ltd", bravo.Slug, "cancelled"),
+            (charlie.Id, "Charlie Ltd", charlie.Slug, "suspended"),
+            (delta.Id, "Delta Ltd", delta.Slug, "active"),
+            (echoEarlier.Id, "Echo Ltd", echoEarlier.Slug, "active"),
+            (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
@@ -63,7 +63,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
         var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>("/v1/admin/tenants?page=2&pageSize=2", Cancellation);
 
-        Tenants(page).ShouldBe([(third.Id, "Third Ltd", third.Slug, "Active")]);
+        Tenants(page).ShouldBe([(third.Id, "Third Ltd", third.Slug, "active")]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
         page.GetProperty("pageSize").GetInt32().ShouldBe(2);
         page.GetProperty("total").GetInt32().ShouldBe(3);

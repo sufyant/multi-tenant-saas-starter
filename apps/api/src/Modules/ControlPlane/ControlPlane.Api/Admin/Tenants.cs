@@ -69,7 +69,7 @@ public static class Tenants
         CancellationToken cancellationToken) =>
         (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReactivateTenant(user.Id()), cancellationToken)).Map(ToResponse);
 
-    private static TenantResponse ToResponse(TenantDetails tenant) => new(tenant.Id, tenant.Name, tenant.Slug, tenant.Status);
+    private static TenantResponse ToResponse(TenantDetails tenant) => new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.Of(tenant.Status));
 }
 
 /// <summary>A new tenant, and the email address of its first owner, who is invited once the tenant is ready.</summary>

@@ -25,11 +25,11 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
-    [InlineData("Active", "suspend", "Suspended")]
-    [InlineData("Active", "reactivate", "Active")]
-    [InlineData("Suspended", "suspend", "Suspended")]
-    [InlineData("Suspended", "reactivate", "Active")]
-    public async Task SuspendOrReactivateTenant_ActiveOrSuspended_AnswersTheTenantInItsNewStatus(string status, string action, string expected)
+    [InlineData("Active", "suspend", "Suspended", "suspended")]
+    [InlineData("Active", "reactivate", "Active", "active")]
+    [InlineData("Suspended", "suspend", "Suspended", "suspended")]
+    [InlineData("Suspended", "reactivate", "Active", "active")]
+    public async Task SuspendOrReactivateTenant_ActiveOrSuspended_AnswersTheTenantInItsNewStatus(string status, string action, string stored, string answered)
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
@@ -40,8 +40,8 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
         body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(tenant.Id);
         body.GetProperty("slug").GetString().ShouldBe(tenant.Slug);
-        body.GetProperty("status").GetString().ShouldBe(expected);
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(expected);
+        body.GetProperty("status").GetString().ShouldBe(answered);
+        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(stored);
     }
 
     // A tenant whose creation has not passed its pivot, or never will, is neither suspended nor reactivated.

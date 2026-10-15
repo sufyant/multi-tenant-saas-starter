@@ -50,7 +50,7 @@ public static class Invitations
         var account = await identity.FindAccountAsync(user.Id(), cancellationToken);
         var accepted = await bus.InvokeForTenantAsync<Result<TenantSummary>>(
             code.TenantId.ToString(), new AcceptInvitation(code.Secret, user.Id(), account.VerifiedEmails, account.Profile), cancellationToken);
-        return accepted.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, tenant.Status));
+        return accepted.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.Of(tenant.Status)));
     }
 }
 

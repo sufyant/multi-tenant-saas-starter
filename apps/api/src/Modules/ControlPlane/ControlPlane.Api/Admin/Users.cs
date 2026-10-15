@@ -41,7 +41,7 @@ public static class Users
         (await bus.InvokeAsync<Result<UserDetails>>(new ReactivateUser(userId), cancellationToken)).Map(ToResponse);
 
     private static UserResponse ToResponse(UserDetails user) =>
-        new(user.Id, user.Email, user.FirstName, user.LastName, user.Status, user.IsSystemAdmin);
+        new(user.Id, user.Email, user.FirstName, user.LastName, ResponseStatus.Of(user.Status), user.IsSystemAdmin);
 }
 
 /// <summary>

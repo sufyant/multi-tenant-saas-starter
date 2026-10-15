@@ -87,7 +87,7 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
 
         page.GetProperty("items").EnumerateArray()
             .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("status").GetString()))
-            .ShouldBe([(active.Id, "Active"), (suspended.Id, "Suspended")]);
+            .ShouldBe([(active.Id, "active"), (suspended.Id, "suspended")]);
         page.GetProperty("total").GetInt32().ShouldBe(2);
     }
 

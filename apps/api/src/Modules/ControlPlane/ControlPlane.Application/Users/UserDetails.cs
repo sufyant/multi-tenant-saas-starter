@@ -3,7 +3,7 @@ using ControlPlane.Domain.Users;
 namespace ControlPlane.Application.Users;
 
 /// <summary>
-/// A catalog user as the system admin sees them: the copy of their profile, their status (active, suspended or deleted) and whether
+/// A catalog user as the system admin sees them: the copy of their profile, their status (Active, Suspended or Deleted) and whether
 /// they are a system admin. The id is the catalog's, not the identity provider's.
 /// </summary>
 public sealed record UserDetails(Guid Id, string? Email, string? FirstName, string? LastName, string Status, bool IsSystemAdmin)
@@ -14,8 +14,8 @@ public sealed record UserDetails(Guid Id, string? Email, string? FirstName, stri
 
     private static string StatusOf(User user) => (user.DeletedAt, user.SuspendedAt) switch
     {
-        ({ }, _) => "deleted",
-        (_, { }) => "suspended",
-        _ => "active",
+        ({ }, _) => "Deleted",
+        (_, { }) => "Suspended",
+        _ => "Active",
     };
 }

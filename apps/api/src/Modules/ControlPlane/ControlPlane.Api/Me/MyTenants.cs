@@ -28,7 +28,7 @@ public static class MyTenants
         }
 
         var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), paging.Value), cancellationToken);
-        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, tenant.Status)));
+        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.Of(tenant.Status))));
     }
 }
 
