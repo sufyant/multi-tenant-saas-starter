@@ -79,9 +79,12 @@ public static class CancelInvitationHandler
 {
     public static void Configure(HandlerChain chain) => chain.OnAnyException().RetryTimes(3);
 
-    // An invitation already cancelled or accepted stays as it is: an owner who accepted before the cancel arrived keeps the tenant.
+    // An invitation already cancelled or accepted stays as it is: an owner who accepted before the cancel arrived keeps the tenant. The
+    // invitation belongs to the tenant aggregate, so the tenant row is locked first (K6).
     public static async Task HandleAsync(CancelInvitation step, ITenantCatalog catalog, CancellationToken cancellationToken)
     {
+        _ = await catalog.FindTenantForUpdateAsync(cancellationToken)
+            ?? throw new InvalidOperationException("An invitation is cancelled in the tenant its creation added.");
         (await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
         await catalog.SaveChangesAsync(cancellationToken);
     }

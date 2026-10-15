@@ -233,6 +233,27 @@ public sealed class TenantCreationTests(Database database)
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
     }
 
+    // K6: the invitation belongs to the tenant aggregate, so the compensation locks the tenant row first, then the invitation. While
+    // another transaction holds the tenant row, the compensation waits.
+    [Fact]
+    public async Task CancelInvitation_WhileAnotherTransactionHoldsTheTenant_WaitsForIt()
+    {
+        var (tenantId, invitationId) = await StartAsync();
+        await using var other = new NpgsqlConnection(database.ConnectionStringFor(DatabaseRoles.Application));
+        await other.OpenAsync(Cancellation);
+        await using var holding = await other.BeginTransactionAsync(Cancellation);
+        await using var lockTenant = new NpgsqlCommand($"SELECT 1 FROM control_plane.tenants WHERE id = '{tenantId}' FOR UPDATE", other, holding);
+        await lockTenant.ExecuteNonQueryAsync(Cancellation);
+
+        var cancelling = Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
+        var waited = await WaitsForATenantLockAsync(cancelling);
+        await holding.CommitAsync(Cancellation);
+        await cancelling;
+
+        waited.ShouldBeTrue();
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
+    }
+
     // S7: the owner accepted before the cancel arrived, and the acceptance stands.
     [Fact]
     public async Task CancelInvitation_AlreadyAccepted_ChangesNothing()
@@ -247,6 +268,24 @@ public sealed class TenantCreationTests(Database database)
 
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{ready.InvitationId}'")).ShouldBe("Accepted");
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
+    }
+
+    // True once a transaction waits for a lock on a tenant row; false when the work finishes first, so it never waited.
+    private async Task<bool> WaitsForATenantLockAsync(Task work)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (!work.IsCompleted && DateTime.UtcNow < deadline)
+        {
+            if (await ScalarAsync<long>(
+                "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE '%control_plane.tenants%FOR UPDATE%'") > 0)
+            {
+                return true;
+            }
+
+            await Task.Delay(20, Cancellation);
+        }
+
+        return false;
     }
 
     private async Task<(Guid TenantId, Guid InvitationId)> StartAsync()
