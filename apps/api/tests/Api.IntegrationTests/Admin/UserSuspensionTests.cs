@@ -13,6 +13,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
     public ValueTask InitializeAsync()
@@ -56,6 +57,26 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("suspended");
         (await SuspendedAtAsync(user)).ShouldBe(first);
+    }
+
+    // K3: a user belongs to no tenant, so only the platform's log records it, by the system admin who acted. A repeat changes nothing
+    // and is not recorded again.
+    [Fact]
+    public async Task SuspendAndReactivateUser_EachChange_IsRecordedOnceInThePlatformLogByTheAdmin()
+    {
+        var user = await _catalog.AddUserAsync();
+        var id = await _catalog.UserIdOfAsync(user);
+        var admin = await _catalog.AddSystemAdminAsync();
+        var client = _api.CreateClient(admin, secondFactor: true);
+
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/reactivate", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/reactivate", null, Cancellation));
+
+        var adminId = await _catalog.UserIdOfAsync(admin);
+        (await _audit.PlatformLogAsync(id)).ShouldBe($"user.suspended|User|{adminId}|User|{id}|-, user.reactivated|User|{adminId}|User|{id}|-");
+        (await _audit.TenantLogAsync(id)).ShouldBeNull();
     }
 
     [Fact]

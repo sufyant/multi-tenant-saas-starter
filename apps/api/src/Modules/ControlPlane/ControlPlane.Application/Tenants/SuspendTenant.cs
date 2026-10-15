@@ -36,6 +36,6 @@ public static class SuspendTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantSuspended(Guid.CreateVersion7(now), now, tenant.Id, admin.Id));
+        return (TenantDetails.Of(tenant), new TenantSuspended(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
     }
 }

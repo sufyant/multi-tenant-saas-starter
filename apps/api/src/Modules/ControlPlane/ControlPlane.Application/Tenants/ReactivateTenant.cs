@@ -36,6 +36,6 @@ public static class ReactivateTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantReactivated(Guid.CreateVersion7(now), now, tenant.Id, admin.Id));
+        return (TenantDetails.Of(tenant), new TenantReactivated(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
     }
 }

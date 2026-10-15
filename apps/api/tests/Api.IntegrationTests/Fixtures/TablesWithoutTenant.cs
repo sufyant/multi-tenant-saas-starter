@@ -4,7 +4,7 @@ namespace Api.IntegrationTests.Fixtures;
 // be isolated; DatabaseTables checks every table of the database against this list.
 internal static class TablesWithoutTenant
 {
-    // ControlPlane's data above tenants.
+    // ControlPlane's data above tenants, the platform's audit log, and the host's idempotency keys.
     public static readonly IReadOnlySet<string> Tables = new HashSet<string>(StringComparer.Ordinal)
     {
         "control_plane.tenants",
@@ -12,6 +12,7 @@ internal static class TablesWithoutTenant
         "control_plane.roles",
         "control_plane.system_admins",
         "api.idempotency_keys",
+        "audit.platform_entries",
     };
 
     // Every table in these schemas: Wolverine's message storage.

@@ -27,6 +27,9 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
         return found.SingleOrDefault();
     }
 
+    async Task<Guid?> IUserCatalog.FindUserIdAsync(string externalUserId, CancellationToken cancellationToken) =>
+        await controlPlane.Users.Where(user => user.ExternalId == externalUserId).Select(user => (Guid?)user.Id).SingleOrDefaultAsync(cancellationToken);
+
     Task<bool> IUserCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 

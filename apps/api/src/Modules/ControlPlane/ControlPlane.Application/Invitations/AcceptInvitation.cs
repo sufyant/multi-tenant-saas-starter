@@ -1,5 +1,6 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Contracts;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -18,17 +19,20 @@ public sealed record AcceptInvitation(string Secret, string UserId, IReadOnlyLis
 // Every rejection returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class AcceptInvitationHandler
 {
-    public static async Task<Result<TenantSummary>> HandleAsync(
+    public static async Task<(Result<TenantSummary>, MemberJoined?)> HandleAsync(
         AcceptInvitation command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        // A cancelled invitation answers like one that does not exist.
-        if (await catalog.FindInvitationForUpdateAsync(InvitationToken.Hash(command.Secret), cancellationToken) is not { } invitation
+        // K6: a membership and an invitation belong to the tenant aggregate, so the tenant row is locked first, before the invitation.
+        // A suspension then runs before or after the acceptance, never between its check and its change. A code that names no tenant
+        // answers like an invitation that does not exist, and so does a cancelled invitation.
+        if (await catalog.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
+            || await catalog.FindInvitationForUpdateAsync(InvitationToken.Hash(command.Secret), cancellationToken) is not { } invitation
             || invitation.Status == InvitationStatus.Cancelled)
         {
-            return Errors.InvitationNotFound;
+            return (Errors.InvitationNotFound, null);
         }
 
         var now = time.GetUtcNow();
@@ -37,33 +41,32 @@ public static class AcceptInvitationHandler
         // T5: provider staff enter through the system door, never as tenant members.
         if (existing is not null && await catalog.IsSystemAdminAsync(existing.Id, cancellationToken))
         {
-            return Error.Unprocessable("invitation.staff_cannot_join", "Provider staff cannot join a tenant.");
+            return (Error.Unprocessable("invitation.staff_cannot_join", "Provider staff cannot join a tenant."), null);
         }
 
         if (existing is not null && await catalog.FindMembershipAsync(existing.Id, cancellationToken) is not null)
         {
-            return Error.Conflict("membership.exists", "You are already a member of this tenant.");
+            return (Error.Conflict("membership.exists", "You are already a member of this tenant."), null);
         }
 
         var allowed = invitation.CheckAcceptance(command.VerifiedEmails, now);
         if (!allowed.IsSuccess)
         {
-            return allowed.Error;
+            return (allowed.Error, null);
         }
 
         // Only the invited person with a live invitation learns that the tenant is suspended (as T3). The invitation stays pending,
         // so it can be accepted once the tenant is reactivated.
-        var tenant = await catalog.FindTenantAsync(cancellationToken);
         if (tenant.Status == TenantStatus.Suspended)
         {
-            return Error.Conflict("tenant.suspended", "The tenant is suspended.");
+            return (Error.Conflict("tenant.suspended", "The tenant is suspended."), null);
         }
 
         var user = existing ?? new User(Guid.CreateVersion7(now), command.UserId);
         var accepted = invitation.Accept(command.VerifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {
-            return accepted.Error;
+            return (accepted.Error, null);
         }
 
         if (existing is null)
@@ -74,6 +77,8 @@ public static class AcceptInvitationHandler
 
         catalog.AddMember(user.Id, invitation.RoleId);
         await catalog.SaveChangesAsync(cancellationToken);
-        return new TenantSummary(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString());
+        return (
+            new TenantSummary(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString()),
+            new MemberJoined(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
     }
 }

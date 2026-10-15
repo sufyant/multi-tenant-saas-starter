@@ -14,6 +14,7 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
     public ValueTask InitializeAsync()
@@ -72,8 +73,9 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");
     }
 
+    // K3: the platform's log names the system admin; the tenant's own log says only that the platform acted.
     [Fact]
-    public async Task SuspendAndReactivateTenant_EachChange_IsRecordedOnceUnderTheTenantByTheAdmin()
+    public async Task SuspendAndReactivateTenant_EachChange_IsRecordedOnceInBothLogs()
     {
         var tenant = await _catalog.AddTenantAsync();
         var admin = await _catalog.AddSystemAdminAsync();
@@ -83,11 +85,14 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/tenants/{tenant.Id}/reactivate", null, Cancellation));
 
         var adminId = await _catalog.UserIdOfAsync(admin);
-        (await AuditEntriesAsync(tenant.Id)).ShouldBe($"tenant.suspended by {adminId}, tenant.reactivated by {adminId}");
+        (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe(
+            $"tenant.suspended|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd, tenant.reactivated|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd");
+        (await _audit.TenantLogAsync(tenant.Id)).ShouldBe(
+            $"{tenant.Id}:tenant.suspended|Platform|-|Tenant|{tenant.Id}|Acme Ltd, {tenant.Id}:tenant.reactivated|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
     }
 
     [Fact]
-    public async Task SuspendTenant_Twice_IsRecordedOnce()
+    public async Task SuspendTenant_Twice_IsRecordedOnceInEachLog()
     {
         var tenant = await _catalog.AddTenantAsync();
         var admin = await AdminAsync();
@@ -96,7 +101,7 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
         var again = await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/admin/tenants/{tenant.Id}/suspend", null, Cancellation));
 
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await AuditEntryCountAsync(tenant.Id)).ShouldBe(1);
+        (await AuditEntryCountAsync(tenant.Id)).ShouldBe(2);
     }
 
     [Fact]
@@ -112,12 +117,9 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
-    private Task<string?> AuditEntriesAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>(
-            $"SELECT string_agg(operation || ' by ' || actor_id, ', ' ORDER BY occurred_at, id) FROM audit.entries WHERE tenant_id = '{tenantId}'");
-
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}'");
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();

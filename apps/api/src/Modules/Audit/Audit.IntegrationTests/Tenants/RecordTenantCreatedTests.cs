@@ -6,7 +6,8 @@ using Npgsql;
 
 namespace Audit.IntegrationTests.Tenants;
 
-// The Audit module records that a tenant was created when ControlPlane announces its activation, under that tenant.
+// The Audit module records that a tenant was created when ControlPlane announces its activation, in the tenant's transaction: in the
+// platform's log by the system admin, and in the tenant's own log by the platform, with no person in it (K3).
 public sealed class RecordTenantCreatedTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -14,16 +15,28 @@ public sealed class RecordTenantCreatedTests(Database database)
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task RecordTenantCreated_TenantActivated_WritesOneEntryUnderTheTenantByItsCreator()
+    public async Task RecordTenantCreated_TenantActivated_WritesThePlatformEntryByTheAdmin()
     {
         var activated = Activated();
 
         await InTenant.RunAsync(database.Services, activated.TenantId, scope => RecordAsync(scope, activated));
 
-        (await ReadAsync<string>(activated.TenantId, $"SELECT operation || '|' || actor_id || '|' || kind FROM audit.entries WHERE id = '{activated.EventId}'"))
-            .ShouldBe($"tenant.created|{activated.CreatedBy}|Command");
-        (await ReadAsync<bool>(activated.TenantId, $"SELECT occurred_at = '2026-10-09T09:00:00Z' FROM audit.entries WHERE id = '{activated.EventId}'"))
-            .ShouldBeTrue();
+        (await Logs.DescribeAsync(database.Services, Logs.Platform, null, activated.EventId))
+            .ShouldBe($"tenant.created|User|{activated.CreatedBy}|Tenant|{activated.TenantId}|Acme Ltd");
+    }
+
+    // The tenant's log says that the platform acted, and holds no id that names the system admin.
+    [Fact]
+    public async Task RecordTenantCreated_TenantActivated_WritesTheTenantEntryByThePlatform()
+    {
+        var activated = Activated();
+
+        await InTenant.RunAsync(database.Services, activated.TenantId, scope => RecordAsync(scope, activated));
+
+        (await Logs.DescribeAsync(database.Services, Logs.Tenant, activated.TenantId, activated.EventId))
+            .ShouldBe($"tenant.created|Platform|-|Tenant|{activated.TenantId}|Acme Ltd");
+        (await InTenant.SqlAsync(database.Services, activated.TenantId, async command => (bool)(await command.ExecuteScalarAsync(Cancellation))!,
+            $"SELECT occurred_at = '2026-10-09T09:00:00Z' FROM audit.entries WHERE id = '{activated.EventId}'")).ShouldBeTrue();
     }
 
     [Fact]
@@ -33,25 +46,28 @@ public sealed class RecordTenantCreatedTests(Database database)
 
         await InTenant.RunAsync(database.Services, activated.TenantId, scope => RecordAsync(scope, activated));
 
-        (await CountAsync(Guid.NewGuid(), activated.EventId)).ShouldBe(0);
+        (await Logs.CountAsync(database.Services, Logs.Tenant, Guid.NewGuid(), activated.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the record's id in each log, so each log holds it once.
     [Fact]
-    public async Task RecordTenantCreated_EventArrivesTwice_WritesOneEntry()
+    public async Task RecordTenantCreated_EventArrivesTwice_WritesOneEntryInEachLog()
     {
         var activated = Activated();
 
         await InTenant.RunAsync(database.Services, activated.TenantId, scope => RecordAsync(scope, activated));
         await InTenant.RunAsync(database.Services, activated.TenantId, scope => RecordAsync(scope, activated));
 
-        (await CountAsync(activated.TenantId, activated.EventId)).ShouldBe(1);
+        (await Logs.CountAsync(database.Services, Logs.Tenant, activated.TenantId, activated.EventId)).ShouldBe(1);
+        (await Logs.CountAsync(database.Services, Logs.Platform, null, activated.EventId)).ShouldBe(1);
     }
 
     // Audit records are never changed once written: the application role may add and read them, nothing more.
     [Theory]
     [InlineData("UPDATE audit.entries SET operation = 'rewritten'")]
     [InlineData("DELETE FROM audit.entries")]
+    [InlineData("UPDATE audit.platform_entries SET operation = 'rewritten'")]
+    [InlineData("DELETE FROM audit.platform_entries")]
     public async Task ChangeAuditEntry_AsTheApplication_IsRefused(string sql)
     {
         var activated = Activated();
@@ -66,9 +82,4 @@ public sealed class RecordTenantCreatedTests(Database database)
 
     private static Task RecordAsync(IServiceProvider scope, TenantActivated activated) =>
         RecordTenantCreatedHandler.HandleAsync(activated, scope.GetRequiredService<IAuditLog>(), Cancellation);
-
-    private Task<long> CountAsync(Guid tenant, Guid entryId) => ReadAsync<long>(tenant, $"SELECT count(*) FROM audit.entries WHERE id = '{entryId}'");
-
-    private Task<T> ReadAsync<T>(Guid tenant, string sql) =>
-        InTenant.SqlAsync(database.Services, tenant, async command => (T)(await command.ExecuteScalarAsync(Cancellation))!, sql);
 }

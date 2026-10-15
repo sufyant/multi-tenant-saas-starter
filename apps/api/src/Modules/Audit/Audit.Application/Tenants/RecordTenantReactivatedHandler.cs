@@ -4,22 +4,18 @@ using ControlPlane.Contracts;
 
 namespace Audit.Application.Tenants;
 
-// The audit record of a tenant's reactivation, written when ControlPlane announces it, under that tenant. The system admin who
-// reactivated the tenant acted.
+// The audit records of a tenant's reactivation, written when ControlPlane announces it, under that tenant. The system admin who
+// reactivated the tenant acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3).
 public static class RecordTenantReactivatedHandler
 {
     private const string TenantReactivated = "tenant.reactivated";
 
-    // An event may arrive twice; its id is the entry's id, so an entry already stored is not stored again.
-    public static async Task HandleAsync(TenantReactivated reactivated, IAuditLog log, CancellationToken cancellationToken)
+    public static Task HandleAsync(TenantReactivated reactivated, IAuditLog log, CancellationToken cancellationToken)
     {
-        if (await log.ContainsAsync(reactivated.EventId, cancellationToken))
-        {
-            return;
-        }
-
-        await log.AddAsync(
-            new AuditEntry(reactivated.EventId, reactivated.OccurredAt, reactivated.ReactivatedBy.ToString(), AuditEntryKind.Command, TenantReactivated, null),
+        var tenant = AuditTarget.Tenant(reactivated.TenantId, reactivated.TenantName);
+        return log.RecordAsync(
+            new PlatformAuditEntry(reactivated.EventId, reactivated.OccurredAt, AuditActor.User(reactivated.ReactivatedBy), TenantReactivated, tenant),
+            new AuditEntry(reactivated.EventId, reactivated.OccurredAt, AuditActor.Platform, TenantReactivated, tenant),
             cancellationToken);
     }
 }

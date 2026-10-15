@@ -82,11 +82,12 @@ internal static class Handlers
             account = await scope.ServiceProvider.GetRequiredService<IIdentityProvider>().FindAccountAsync(userId, Cancellation);
         }
 
-        return await InTenant.RunAsync(services, TenantIdOf(code), scope => AcceptInvitationHandler.HandleAsync(
+        var (accepted, _) = await InTenant.RunAsync(services, TenantIdOf(code), scope => AcceptInvitationHandler.HandleAsync(
             new AcceptInvitation(SecretOf(code), userId, account.VerifiedEmails, account.Profile),
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
+        return accepted;
     }
 
     // The invitation code an accept link carries: `<tenantId>.<secret>`.

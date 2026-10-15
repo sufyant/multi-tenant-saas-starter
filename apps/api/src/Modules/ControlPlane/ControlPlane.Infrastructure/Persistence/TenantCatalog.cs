@@ -30,12 +30,6 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     private Guid ActiveTenant =>
         controlPlane.MessageTenantId ?? throw new InvalidOperationException("Tenant-owned catalog rows are reached only inside a tenant.");
 
-    Task<Tenant> ITenantCatalog.FindTenantAsync(CancellationToken cancellationToken)
-    {
-        var tenantId = ActiveTenant;
-        return controlPlane.Tenants.AsNoTracking().SingleAsync(t => t.Id == tenantId, cancellationToken);
-    }
-
     async Task<Tenant?> ITenantCatalog.FindTenantForUpdateAsync(CancellationToken cancellationToken)
     {
         var found = await controlPlane.Tenants

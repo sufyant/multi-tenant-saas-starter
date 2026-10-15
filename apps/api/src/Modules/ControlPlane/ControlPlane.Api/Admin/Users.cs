@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
+using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;
@@ -35,11 +37,11 @@ public static class Users
     }
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
-    private static async Task<Result<UserResponse>> SuspendUser(Guid userId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserDetails>>(new SuspendUser(userId), cancellationToken)).Map(ToResponse);
+    private static async Task<Result<UserResponse>> SuspendUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        (await bus.InvokeAsync<Result<UserDetails>>(new SuspendUser(userId, user.Id()), cancellationToken)).Map(ToResponse);
 
-    private static async Task<Result<UserResponse>> ReactivateUser(Guid userId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserDetails>>(new ReactivateUser(userId), cancellationToken)).Map(ToResponse);
+    private static async Task<Result<UserResponse>> ReactivateUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        (await bus.InvokeAsync<Result<UserDetails>>(new ReactivateUser(userId, user.Id()), cancellationToken)).Map(ToResponse);
 
     private static UserResponse ToResponse(UserDetails user) =>
         new(user.Id, user.Email, user.FirstName, user.LastName, ResponseStatus.OfUser(user.Status), user.IsSystemAdmin);
