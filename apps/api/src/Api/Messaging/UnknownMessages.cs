@@ -19,10 +19,8 @@ internal sealed class UnknownMessageSettings
     public int Tries { get; set; } = 10;
 }
 
-// W12: during a rolling deploy an old worker takes a message only the new version handles. Wolverine runs this before it marks the
-// message as handled. A message from the PostgreSQL queue goes back to the queue's scheduled table, with the same id, so a worker that
-// knows it takes it later; the tries travel in a header. After the last try, or from a durable local queue, where the mark that follows
-// would overwrite a put-back, the message goes to the dead letter queue. Wolverine's own control messages keep its default.
+// W12. Wolverine marks the message as handled after this runs, so only the PostgreSQL queue, whose put-back leaves the inbox, can put
+// a message back; a durable local queue dead-letters it.
 internal sealed partial class UnknownMessages(
     IOptions<UnknownMessageSettings> settings, TimeProvider time, ILogger<UnknownMessages> logger) : IMissingHandler
 {

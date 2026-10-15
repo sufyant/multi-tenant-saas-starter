@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
@@ -57,6 +58,7 @@ public sealed class UnknownMessageTests(Database database)
         ]);
         deploy.LogOf(RollingDeploy.Old, LogLevel.Error).ShouldHaveSingleItem().ShouldStartWith(
             $"No node handled \"{typeof(RecordHandling).FullName}\" after 2 tries. It is moved to the dead letter queue");
+        deploy.LogOf(RollingDeploy.Old, LogLevel.Warning).ShouldAllBe(message => Regex.IsMatch(message, "Trace \"[0-9a-f]{32}\"$"));
         (await deploy.DeadLettersAsync()).ShouldBe(1);
     }
 

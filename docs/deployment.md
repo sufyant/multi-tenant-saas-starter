@@ -384,7 +384,7 @@ Staging runs each migration before production does, against its own database.
 
 Sources: Humble and Farley, *Continuous Delivery*, chapter 12 ("Managing Data"). Ambler and Sadalage, *Refactoring Databases*, the transition period.
 
-The same is true for messages. During a rolling deploy, the old and the new worker run side by side for a short time. An old worker that takes a message only the new version knows puts it back in the queue, every 30 seconds, up to 10 times (W12 in `apps/api/docs/ARCHITECTURE.md`). The new worker handles it once the old one stops. A message that no worker handles in those 5 minutes goes to the dead letter queue, never to nothing. Wolverine logs each put-back as an error, "was rescheduled to queue". These lines are expected during a deploy. An old worker still runs an old handler for a message it knows, and it does not run a handler that only the new version has.
+The same is true for messages. During a rolling deploy, the old and the new worker run side by side for a short time. An old worker that takes a message only the new version knows puts it back in the queue, every 30 seconds, up to 10 times (W12 in `apps/api/docs/ARCHITECTURE.md`). A new worker can take it on any of those tries, and takes it at the latest once the old one stops. A message that no worker handles in those 5 minutes goes to the dead letter queue, never to nothing. Wolverine logs each put-back as an error, "was rescheduled to queue". These lines are expected during a deploy. An old worker still runs an old handler for a message it knows, and it does not run a handler that only the new version has.
 
 ## 9. The database connections
 
