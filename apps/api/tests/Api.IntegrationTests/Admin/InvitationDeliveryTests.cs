@@ -5,8 +5,10 @@ using System.Text.Json;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Tenancy;
+using Wolverine.Runtime;
 using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Admin;
@@ -121,6 +123,62 @@ public sealed class InvitationDeliveryTests(Database database)
         api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe(next);
         messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReady { Email: var email } && email == refused)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
+    }
+
+    // Wolverine records a scheduled retry as requeued first and writes the time of the next try on the envelope after that. A log line
+    // between the two, slow on purpose here, holds the gap open, so the session ends while the time is not written yet.
+    [Fact]
+    public async Task SendInvitation_TheTimeOfTheNextTryIsWrittenLate_IsStillScheduledAMinuteAway()
+    {
+        await using var api = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            settings: new Dictionary<string, string?>
+            {
+                ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
+                ["Notifications:InvitationEmailRetryDelays:1"] = "00:02:00",
+                ["Notifications:InvitationEmailRetryDelays:2"] = "00:03:00",
+            },
+            configureServices: services => services.AddLogging(logging => logging.AddProvider(new SlowRescheduleLog())));
+        var refused = $"{Guid.NewGuid():N}@example.com";
+        var next = $"{Guid.NewGuid():N}@example.com";
+        api.Email.Refuses = refused;
+
+        var startedAt = DateTimeOffset.UtcNow;
+
+        var messages = await api.TrackMessagesAsync(
+            async () =>
+            {
+                await InviteOwnerAsync(api, refused);
+                await InviteOwnerAsync(api, next);
+            },
+            until: new SentAndRescheduled(sent: next, rescheduled: refused));
+
+        messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReady { Email: var email } && email == refused)
+            .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
+    }
+
+    // Holds up Wolverine's log line about a rescheduled envelope, which it writes after it records the retry and before it sets the time.
+    private sealed class SlowRescheduleLog : ILoggerProvider, ILogger
+    {
+        private static readonly TimeSpan Delay = TimeSpan.FromSeconds(1);
+
+        public ILogger CreateLogger(string categoryName) => this;
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (eventId.Id == WolverineRuntime.RescheduledEventId)
+            {
+                Thread.Sleep(Delay);
+            }
+        }
+
+        public void Dispose()
+        {
+        }
     }
 
     // The session ends once the next invitation is sent and the refused one is put back to wait for its next try.
