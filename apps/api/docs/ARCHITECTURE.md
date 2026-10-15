@@ -1,6 +1,6 @@
 # Architecture: multi-tenant SaaS starter template (API)
 
-Last updated: 2026-10-14
+Last updated: 2026-10-15
 
 This document is the single source of truth for the API in `apps/api/`. If the code does not agree with this document, the code changes. No other file overrides it.
 
@@ -32,7 +32,7 @@ The first template runs one flow from start to end: tenant creation.
 | The first system admin comes from configuration | The first person who creates a tenant cannot get on the staff list in another way |
 | Tenant creation process (saga, three steps) | The approved flow |
 | One handler that sends the invitation email (Notifications) | Step three of the process |
-| The handlers that write the "tenant created", "tenant suspended" and "tenant reactivated" records (Audit) | The uses of the Audit module |
+| The handlers that write the audit record of every command, in the tenant's log and the platform's log (Audit, K3) | The uses of the Audit module |
 | The endpoint that accepts an invitation | Without it, the first Owner cannot exist |
 | `GET /v1/me/tenants` | The user sees their tenants after sign-in |
 | A copy of each user's email address and name, and `POST /v1/webhooks/clerk`, which keeps it fresh (A7, A8) | The admin screens of step 19d list users by email address and name, not by the identity provider's id |
@@ -40,6 +40,8 @@ The first template runs one flow from start to end: tenant creation.
 | `GET /v1/admin/tenants` and `GET /v1/admin/users` | The admin app lists every tenant and every user |
 | `POST /v1/admin/tenants/{tenantId}/suspend` and `.../reactivate` | A system admin stops a tenant's members, and lets them in again (section 6) |
 | `POST /v1/admin/users/{userId}/suspend` and `.../reactivate` | A system admin stops a user in every tenant, and lets them in again (A9) |
+
+The catalog of every endpoint of the core API is `docs/api-catalog.md`: who may call it, the audit record it writes, the notification it sends, the external system it reaches and the step that builds it. A change to an endpoint changes the catalog in the same pull request.
 
 Out of scope: member invitation by an Owner, custom roles and role assignment, member removal, tenant deletion, support access, in-app notifications, adding a second system admin.
 
@@ -165,6 +167,14 @@ Its new lease fences the old handler: if that handler can no longer update its c
 
 Sources: [Stripe](https://docs.stripe.com/api/idempotent_requests), [Brandur Leach](https://brandur.org/idempotency-keys), [IETF draft 07](https://greenbytes.de/tech/specs/draft-ietf-httpapi-idempotency-key-header-07.html), [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2).
 
+### Concurrency
+
+| # | Rule | Source |
+| --- | --- | --- |
+| K6 | A command that changes data first locks the root row of the aggregate it changes (`SELECT ... FOR UPDATE`). Updating a tenant locks that tenant's row; updating an invoice would lock that invoice's row, never the tenant's. A change to a membership or an invitation locks the tenant row, because they belong to the tenant aggregate (M1). A rule that only keeps a value unique uses a database constraint (a unique index), not a lock. Locks are taken in one order: the aggregate root first. A lock lives only inside one transaction, never across two HTTP requests. Today `SuspendTenant`, `ReactivateTenant` and `AcceptInvitation` lock the tenant row, and `AcceptInvitation` then locks the invitation. `SuspendUser`, `ReactivateUser`, `UpdateUserProfile` and `DeleteUser` lock the user row. `CreateTenant` adds a new tenant, and the slug's unique index decides between two creations. Test: `AcceptInvitation_WhileASuspensionHoldsTheTenant_WaitsAndIsThenAConflict` | Kleppmann, *Designing Data-Intensive Applications*, Chapter 7, "Write Skew and Phantoms". Fowler, PoEAA, "Coarse-Grained Lock". Evans, Chapter 6, "Aggregates". Vernon, "Effective Aggregate Design". PostgreSQL documentation, "Explicit Locking" |
+
+K6 keeps the id it has in the catalog, so the rule has one name in both documents.
+
 ### Saga rules
 
 | # | Rule | Source |
@@ -225,12 +235,12 @@ A tenant has two descriptive fields. `name` is free text, cannot be empty, has a
 | R3 | Migrations run with a separate account. That account is not used at run time. The application does not start while a module misses a migration, and to check it the application account may read each module's migration history table | Twelve-Factor, Factor XII |
 | R4 | The tenant is declared at the start of each transaction. A connection-level setting is not permitted. A transaction declares a tenant or a user, never both. A transaction declares one tenant only. | PostgreSQL connection pool behaviour |
 | R5 | If the tenant is not declared, a query returns no data | Nygard, Chapter 5 (Fail Fast) |
-| R6 | Tables without a tenant are on an explicit list: `control_plane.tenants`, `control_plane.users`, `control_plane.roles`, `control_plane.system_admins`, and `api.idempotency_keys`. A test checks every table. The wolverine schema and the migration history tables are exempt by pattern. The wolverine tables hold message bodies, invitation links included, and are not under RLS (see Deviations). | Ford, Parsons, Kua, Chapter 2 |
+| R6 | Tables without a tenant are on an explicit list: `control_plane.tenants`, `control_plane.users`, `control_plane.roles`, `control_plane.system_admins`, `api.idempotency_keys`, and `audit.platform_entries`, the platform's audit log, which has row level security of its own (R11). A test checks every table. The wolverine schema and the migration history tables are exempt by pattern. The wolverine tables hold message bodies, invitation links included, and are not under RLS (see Deviations). | Ford, Parsons, Kua, Chapter 2 |
 | R7 | There are only two database accounts: migration and application. Running code has no path that bypasses RLS | Golding, Chapter 9 |
 | R8 | A background handler gets the tenant from the message and declares it in the same way | Requirement 7 |
 | R9 | Each tenant table is tested with real PostgreSQL: read, update, insert for another tenant | Khorikov, Chapter 10 |
 | R10 | At startup the application checks its own account. If the account, or a role it is a member of, is a superuser, can bypass RLS or owns a table, the application does not start. The readiness check asks the same. | Nygard, Chapter 5 (Fail Fast). PostgreSQL documentation, Privileges |
-| R11 | The membership table has one more policy, `own_memberships`: `FOR SELECT` only, on `user_id` = the declared user (`app.user_id`, set in the transaction like the tenant). It serves `GET /v1/me/tenants`. Any policy other than `tenant_isolation` must be on an explicit list, and a test fails on any other | Postgres combines permissive policies with OR. A write policy would widen access |
+| R11 | The membership table has one more policy, `own_memberships`: `FOR SELECT` only, on `user_id` = the declared user (`app.user_id`, set in the transaction like the tenant). It serves `GET /v1/me/tenants`. The platform's audit log, `audit.platform_entries`, has row level security, forced, with two policies: `platform_read`, `FOR SELECT` only when the transaction declares neither a tenant nor a user, and `platform_insert`, `FOR INSERT WITH CHECK (true)`, so Audit can add the platform's record in a tenant's transaction. No tenant route and no me route can read it. The application role has `SELECT` and `INSERT` only. Any policy other than `tenant_isolation` must be on an explicit list, and a test fails on any other. Tests: `DatabaseTables`, `PlatformAuditLogTests` | Postgres combines permissive policies with OR. A write policy would widen access |
 | R12 | Deferred (see Deferred): the system admin sees tenant and member counts from ControlPlane's own summary data. The tenant list of step 19d has no member counts. Memberships are under RLS and the list reads across tenants, so a count needs that summary data, which does not exist yet | Golding, Chapter 2 |
 
 Work across tenants goes through the tenant list and declares each tenant in turn. RLS does not protect a cache or data that leaves the database. An EF Core query filter is not added as a second layer. RLS is the single source of truth.
@@ -248,7 +258,7 @@ The code checks permissions, not roles. Provider staff enter through a separate 
 | A5 | Each endpoint carries one of four explicit states: public, signed-in only, requires a permission, checks a signature. An endpoint without a state breaks the architecture test. Each endpoint on the tenant path requires a permission. Each endpoint on the webhooks path has no user and declares `SignatureChecked`, and only those endpoints do. The webhooks group takes a request body of at most 1 MB (`RequestSizeLimitAttribute`), so a larger body answers 413 before its signature is checked (API4) | OWASP API Top 10, API5 |
 | A6 | The system door requires a second factor. The rule is in ControlPlane. The host only translates the identity provider's field into a neutral value. Tenant users are not affected | OWASP ASVS, item 4.3.1 |
 | A7 | A catalog user keeps a copy of their primary email address, first name and last name. The identity provider owns these fields; T6 does not change. The path that creates a catalog user (accepting an invitation, the first system admin's first visit) fills the copy from the same Backend API call that returns the verified addresses. The webhook `POST /v1/webhooks/clerk` keeps it fresh: `user.updated` becomes `UpdateUserProfile`, which sets the copy of a known user, and an event older than the copy's `ProfileUpdatedAt` is ignored. `user.created`, any other type, and an event for a user the catalog does not know change nothing | Clerk, "Sync data to your app with webhooks" |
-| A8 | The copy holds only what a screen needs: no image, no phone number, no metadata. `user.deleted` becomes its own command, `DeleteUser`, which erases the email address and the name and sets `DeletedAt`. The row stays, because memberships and audit entries point to it. An update that arrives after the deletion is ignored | GDPR, Article 5(1)(c) (data minimisation). Clerk, "Sync data to your app with webhooks" |
+| A8 | The copy holds only what a screen needs: no image, no phone number, no metadata. `user.deleted` becomes its own command, `DeleteUser`, which erases the email address and the name and sets `DeletedAt`. The row stays, because memberships and audit entries point to it. An audit record holds no name and no email address, so nothing else is erased: the read side shows the user as "Deleted user" (K3). An update that arrives after the deletion is ignored | GDPR, Article 5(1)(c) (data minimisation). Clerk, "Sync data to your app with webhooks" |
 | A9 | A system admin can suspend a catalog user. A suspended user gets 403 `user.suspended` on every `me` and `tenant` endpoint, accepting an invitation included. The check runs on every request, in one place: `TenantResolutionMiddleware` asks ControlPlane (`IUserDirectory`) for an endpoint with the `me` or the tenant metadata, and authorization turns the user away. It runs before the membership, so a suspended user who is also in a suspended tenant gets `user.suspended`. No endpoint can go around it: a test fails for a `me` or tenant endpoint without its group's metadata, or with anonymous access (`SuspendedUserRoutesTests`). The admin door is not checked: a system admin cannot be suspended (409 `user.is_system_admin`), so the staff keep their door. The identity provider is not told; the user can still sign in, and our tables refuse them | OWASP API Top 10, API1 and API5 (one check no endpoint skips, as T7). NIST SP 800-53 Rev. 5, AC-2 (disable accounts) |
 
 Tenant users and staff sign in with the same identity provider instance. Our tables decide which door a person can use. Terms: "system admin" (Golding), "built-in roles" and "custom roles".
@@ -261,9 +271,13 @@ There are three modules. A system admin creates the tenant and the first Owner c
 | --- | --- |
 | ControlPlane | Tenant record, system admins, users, memberships, roles and permissions, invitations, tenant creation, tenant and user suspension |
 | Notifications | It hears an event and sends a message to a person. In the first template, only the invitation email |
-| Audit | It hears an event and writes the record of "who did what and when" |
+| Audit | It hears an event and writes the record of "who did what to what, and when", in the tenant's log, the platform's log, or both (K3) |
 
 Source: Golding, Chapter 2 (control plane). Khononov, Chapter 3 (when you are not sure, keep the boundary wide).
+
+| # | Rule | Source |
+| --- | --- | --- |
+| M1 | In ControlPlane, memberships and invitations belong to the tenant aggregate. "A tenant always has at least one Owner" is the tenant's rule (catalog, K1). The code keeps its types and folders as they are; the aggregate decides what a change locks (K6). Test: the test of K6 | Evans, Chapter 6, "Aggregates". Vernon, "Effective Aggregate Design" |
 
 ### Tenant creation process
 
@@ -284,7 +298,7 @@ Tenant creation messages (N1 to N3):
 | `CreateTenant` | `POST /v1/admin/tenants` | ControlPlane, `CreateTenantHandler` (step 1, starts the saga) | Yes |
 | `ActivateTenant` | Step 1 | ControlPlane, `ActivateTenantHandler` (step 2, pivot) | Yes |
 | `ActivationTimedOut` | Step 1, scheduled | ControlPlane, `TenantCreationSaga` | Yes |
-| `TenantActivated` | Step 2 | Audit, `RecordTenantCreatedHandler` | Yes |
+| `TenantActivated` | Step 2 | Audit, `RecordTenantCreatedHandler` (`tenant.created`, both logs) | Yes |
 | `ActivateTenantReply` | Step 2 | ControlPlane, `TenantCreationSaga` | Yes |
 | `OwnerInvitationReady` | Step 2 | Notifications, `SendInvitationEmailHandler` (step 3, calls the email service) | No |
 | `InvitationEmailTimedOut` | Saga, scheduled | ControlPlane, `TenantCreationSaga` | Yes |
@@ -323,18 +337,39 @@ A system admin suspends a tenant and reactivates it. This is not a saga: one mod
 | --- | --- | --- | --- |
 | `SuspendTenant` | `POST /v1/admin/tenants/{tenantId}/suspend` | ControlPlane, `SuspendTenantHandler` | Yes |
 | `ReactivateTenant` | `POST /v1/admin/tenants/{tenantId}/reactivate` | ControlPlane, `ReactivateTenantHandler` | Yes |
-| `TenantSuspended` | `SuspendTenantHandler`, on a change of status | Audit, `RecordTenantSuspendedHandler` (`tenant.suspended`) | Yes |
-| `TenantReactivated` | `ReactivateTenantHandler`, on a change of status | Audit, `RecordTenantReactivatedHandler` (`tenant.reactivated`) | Yes |
+| `TenantSuspended` | `SuspendTenantHandler`, on a change of status | Audit, `RecordTenantSuspendedHandler` (`tenant.suspended`, both logs) | Yes |
+| `TenantReactivated` | `ReactivateTenantHandler`, on a change of status | Audit, `RecordTenantReactivatedHandler` (`tenant.reactivated`, both logs) | Yes |
 
 - A request that changes nothing publishes nothing, so Audit records each change once.
 - A member who calls a tenant route gets 403 `tenant.suspended`. A non-member still gets 404 (T3): only a member learns that the tenant is suspended.
 - `GET /v1/me/tenants` lists active and suspended tenants, each with its status. Provisioning and cancelled tenants stay hidden.
-- Accepting an invitation to a suspended tenant answers 409 `tenant.suspended` only for a valid invitation and the right person, as T3. The order is: not found or cancelled (404), staff (422 `invitation.staff_cannot_join`), already a member (409 `membership.exists`), the invitation's own checks (`invitation.not_pending`, `invitation.expired`, `invitation.email_mismatch`), then `tenant.suspended`, then the change. A stranger with the link keeps the invitation's own answer, and an expired invitation stays dead after a reactivation. The invitation's checks are a pure method (`CheckAcceptance`) that `Accept` also uses, so the refusal comes before any change (W7). The invitation stays pending and can be accepted after the reactivation.
+- Accepting an invitation to a suspended tenant answers 409 `tenant.suspended` only for a valid invitation and the right person, as T3. The order is: not found or cancelled (404), staff (422 `invitation.staff_cannot_join`), already a member (409 `membership.exists`), the invitation's own checks (`invitation.not_pending`, `invitation.expired`, `invitation.email_mismatch`), then `tenant.suspended`, then the change. The acceptance locks the tenant row before the invitation (K6), so a suspension commits before the check or after the change, never between them. A stranger with the link keeps the invitation's own answer, and an expired invitation stays dead after a reactivation. The invitation's checks are a pure method (`CheckAcceptance`) that `Accept` also uses, so the refusal comes before any change (W7). The invitation stays pending and can be accepted after the reactivation.
 - Messages already in flight for the tenant still run.
 - A suspended tenant is past the pivot: a late compensation does not cancel it.
 - Reactivation gives the members their access back as before.
 
 Source: Golding, Chapter 2 (control plane, tenant management).
+
+### Audit
+
+| # | Rule | Source |
+| --- | --- | --- |
+| K3 | Every command writes audit. A command is a message that an endpoint or a webhook sends, and that changes state. A query (`List...`, `Get...`) and a step inside the saga are not commands. Each command publishes, through the outbox, one event that Audit handles, named in the past tense, in `ControlPlane.Contracts`. A command that changes nothing publishes nothing, so a repeated request writes no second record. An audit record holds who acted, the operation (`member.joined`, `user.suspended`), the target's kind and id, and when. It stores no personal name and no email address: the actor is a catalog user id, a target person is an id, and only a target that is not a person keeps its name of that moment (a tenant's name). A `member.invited` record stores the invitation id, not the email address. The read side resolves names in one batch through `IUserNames` in `ControlPlane.Contracts` (API composition); Audit never reads `control_plane` tables. When a user is deleted, `DeleteUser` erases the catalog's copy, so the read side shows "Deleted user", and no audit record changes. A record is never changed once written: the application role has `SELECT` and `INSERT` only. Tests: `CommandAuditTests`, `ChangeAuditEntry_AsTheApplication_IsRefused`, `ReceiveClerkEvent_UserDeleted_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser` | GDPR, Articles 4(5) and 25 (pseudonymisation). GDPR, Article 17. Richardson, *Microservices Patterns*, "API composition" |
+
+K3 has two logs. The tenant's log is `audit.entries`, under row level security as every tenant table (R1). The platform's log is `audit.platform_entries`, without a tenant column (R6, R11). A system admin's action goes to the platform's log, with the admin's catalog user id. When it changes a tenant, the same Audit handler also writes the tenant's log, in the same transaction: there the actor kind is `Platform` and there is no actor id. A change that comes from the identity provider goes to the platform's log, with the actor kind `IdentityProvider`. The event's id is the record's id in each log, so an event that arrives twice gives one record in each log. A record written before K3 has no actor kind and no target: it was a system admin's action on its tenant, and the read side shows it as the platform's Sources: Golding, Chapter 2 (control plane). Hohpe and Woolf, Chapter 10 (Idempotent Receiver).
+
+K3 keeps the id it has in the catalog. The audit records of the commands:
+
+| Command | Event | Audit handler | Log | Operation | Actor |
+| --- | --- | --- | --- | --- | --- |
+| `CreateTenant` | `TenantActivated` (saga step 2) | `RecordTenantCreatedHandler` | platform and tenant | `tenant.created` | the system admin; `Platform` in the tenant's log |
+| `SuspendTenant` | `TenantSuspended` | `RecordTenantSuspendedHandler` | platform and tenant | `tenant.suspended` | as above |
+| `ReactivateTenant` | `TenantReactivated` | `RecordTenantReactivatedHandler` | platform and tenant | `tenant.reactivated` | as above |
+| `SuspendUser` | `UserSuspended` | `RecordUserChangesHandler` | platform | `user.suspended` | the system admin |
+| `ReactivateUser` | `UserReactivated` | `RecordUserChangesHandler` | platform | `user.reactivated` | the system admin |
+| `UpdateUserProfile` | `UserProfileUpdated`, only when the email address or the name changed | `RecordUserChangesHandler` | platform | `user.profile_updated` | the identity provider |
+| `DeleteUser` | `UserDeleted`, only for the first deletion | `RecordUserChangesHandler` | platform | `user.deleted` | the identity provider |
+| `AcceptInvitation` | `MemberJoined` | `RecordMemberJoinedHandler` | tenant | `member.joined` | the user who joined |
 
 ## 7. Side tools and configuration
 
@@ -521,7 +556,6 @@ These parts are not in the first template. Each one comes in when its written co
 | Read model | A report appears that needs a join across modules |
 | Pre-generated handler code | Startup time becomes a problem or the RuntimeCompilation package is not wanted in production. Try it first |
 | Features | Member invitation, custom roles, member removal, tenant deletion, support access, in-app notifications, a second system admin |
-| An audit log of system admin actions above tenants, such as a user's suspension | A product or audit requirement asks for it. An audit entry belongs to a tenant (`AuditEntry` is a tenant entity, under RLS), and a user is above tenants, so the log needs a table outside RLS of its own |
 | The tenant creation state ("needs attention") in the admin's tenant list | The admin app needs it. The saga record belongs to the tenant (RLS), and the list reads across tenants, so the state needs a copy outside RLS or a read that declares each tenant in turn |
 | Member counts in the admin's tenant list (R12) | The admin app needs them. They come from ControlPlane's own summary data |
 

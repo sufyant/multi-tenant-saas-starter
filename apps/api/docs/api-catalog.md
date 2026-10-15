@@ -87,12 +87,15 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 ### K3. Audit
 
 - Every command that changes state writes one audit entry. An architecture test enforces it. Reads write nothing.
-- An entry keeps the names of the actor and the target as they were at that moment.
-- When a user is deleted, their name and email in audit entries become "Deleted user". The entry stays (GDPR Article 17).
-- Every action of a system admin goes to the platform log. When it changes a tenant, it also goes to that tenant's log, with "Platform" in place of the person.
+- An audit entry stores no personal name or email address. It stores the actor's catalog user id, the target's kind and id, and the target's name only when the target is not a person. A tenant's name stays in the entry.
+- A `member.invited` entry stores the invitation id, not the email address.
+- The read side resolves names in one batch through an interface in `ControlPlane.Contracts` (API composition). Audit never reads `control_plane` tables directly.
+- When a user is deleted, `DeleteUser` erases the catalog's copy of their profile, so the read side shows "Deleted user". No audit entry changes, and the entry stays (GDPR Article 17).
+- Every action of a system admin goes to the platform log. When it changes a tenant, it also goes to that tenant's log, with "Platform" in place of the person. In the tenant log, a system admin's action has the actor kind "platform" and no actor id.
 - A change that comes from Clerk goes to the platform log, with "Clerk" as the actor.
 - The platform log is a table of its own. The row level security of the tenant table does not change.
 - The code, the table and the endpoint say `audit`. The screen label is "Activity".
+- Sources: GDPR Articles 4(5) and 25 (pseudonymisation). Richardson, *Microservices Patterns*, "API composition".
 
 ### K4. Tenant lifecycle
 

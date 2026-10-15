@@ -46,7 +46,7 @@ ConnectionStrings__Migrations="Host=localhost;Port=5432;Database=app;Username=ap
   dotnet Api.dll migrate
 # ... Migrated the api schema: 1 migrations applied
 # ... Migrated the control_plane schema: 3 migrations applied
-# ... Migrated the audit schema: 2 migrations applied
+# ... Migrated the audit schema: 3 migrations applied
 # ... Migration finished: the schemas api, control_plane, audit and the message storage in wolverine are up to date
 ```
 
