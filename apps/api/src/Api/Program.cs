@@ -1,10 +1,7 @@
 using System.Reflection;
 using Api;
 using Api.Hosting;
-using Api.Admin;
-using Api.Me;
-using Api.Tenant;
-using Api.Webhooks;
+using Api.Routing;
 using Api.Persistence;
 using Audit.Api;
 using Audit.Infrastructure;

@@ -1,3 +1,4 @@
+using Api.Routing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.Extensions.Options;
@@ -75,7 +76,7 @@ internal static class AccessPolicies
             var metadata = context.GetEndpoint()?.Metadata;
             var access = context.RequestServices.GetRequiredService<RequestAccess>();
 
-            return metadata?.GetMetadata<Tenant.TenantScopedEndpoint>() is not null && access.Membership is null;
+            return metadata?.GetMetadata<TenantScopedEndpoint>() is not null && access.Membership is null;
         }
     }
 }

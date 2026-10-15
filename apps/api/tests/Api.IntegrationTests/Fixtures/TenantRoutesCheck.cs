@@ -1,5 +1,5 @@
 using Api.Authorization;
-using Api.Tenant;
+using Api.Routing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
