@@ -126,8 +126,8 @@ public sealed class InvitationDeliveryTests(Database database)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
 
-    // Wolverine records a scheduled retry as requeued first and writes the time of the next try on the envelope after that. A log line
-    // between the two, slow on purpose here, holds the gap open, so the session ends while the time is not written yet.
+    // A log line inside the gap that StopAndDrainAsync describes, slow on purpose here, holds it open, so the session always ends
+    // before the time is written.
     [Fact]
     public async Task SendInvitation_TheTimeOfTheNextTryIsWrittenLate_IsStillScheduledAMinuteAway()
     {
@@ -159,8 +159,9 @@ public sealed class InvitationDeliveryTests(Database database)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
 
-    // The session can end before the refused invitation's handler has written the time of its next try on the envelope. Stopping the
-    // application drains its queues: it waits for every handler that still runs, so the retry is complete before the test reads it.
+    // Wolverine records a scheduled retry as requeued first and writes the time of the next try on the envelope after that (6.47,
+    // MessageContext.ReScheduleAsync). So the session can end in that gap. Stopping the application drains its queues: it waits for
+    // every handler that still runs, so the retry is complete before the test reads it.
     private static Task StopAndDrainAsync(ApiFactory api) => api.Services.GetRequiredService<IHost>().StopAsync(Cancellation);
 
     // Holds up Wolverine's log line about a rescheduled envelope, which it writes after it records the retry and before it sets the time.
