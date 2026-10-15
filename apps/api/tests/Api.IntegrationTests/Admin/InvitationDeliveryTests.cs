@@ -119,6 +119,7 @@ public sealed class InvitationDeliveryTests(Database database)
                 await InviteOwnerAsync(api, next);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
+        await StopAndDrainAsync(api);
 
         api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe(next);
         messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReady { Email: var email } && email == refused)
@@ -152,10 +153,15 @@ public sealed class InvitationDeliveryTests(Database database)
                 await InviteOwnerAsync(api, next);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
+        await StopAndDrainAsync(api);
 
         messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReady { Email: var email } && email == refused)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
+
+    // The session can end before the refused invitation's handler has written the time of its next try on the envelope. Stopping the
+    // application drains its queues: it waits for every handler that still runs, so the retry is complete before the test reads it.
+    private static Task StopAndDrainAsync(ApiFactory api) => api.Services.GetRequiredService<IHost>().StopAsync(Cancellation);
 
     // Holds up Wolverine's log line about a rescheduled envelope, which it writes after it records the retry and before it sets the time.
     private sealed class SlowRescheduleLog : ILoggerProvider, ILogger
