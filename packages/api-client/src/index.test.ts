@@ -121,7 +121,7 @@ describe("createApiClient", () => {
   });
 
   it("knows the status values of a response", () => {
-    // @ts-expect-error A status that ResponseStatus does not list is not a status.
+    // @ts-expect-error A value that TenantResponseStatus does not list is not a tenant status.
     const status: components["schemas"]["TenantResponse"]["status"] =
       "archived";
 

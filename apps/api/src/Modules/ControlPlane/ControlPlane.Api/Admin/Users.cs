@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;
@@ -41,11 +42,25 @@ public static class Users
         (await bus.InvokeAsync<Result<UserDetails>>(new ReactivateUser(userId), cancellationToken)).Map(ToResponse);
 
     private static UserResponse ToResponse(UserDetails user) =>
-        new(user.Id, user.Email, user.FirstName, user.LastName, ResponseStatus.Of(user.Status), user.IsSystemAdmin);
+        new(user.Id, user.Email, user.FirstName, user.LastName, ResponseStatus.OfUser(user.Status), user.IsSystemAdmin);
 }
 
 /// <summary>
 /// A catalog user: the catalog's id, not the identity provider's, the copy of their profile, their status (active, suspended or
 /// deleted) and whether they are a system admin.
 /// </summary>
-public sealed record UserResponse(Guid Id, string? Email, string? FirstName, string? LastName, string Status, bool IsSystemAdmin);
+public sealed record UserResponse(Guid Id, string? Email, string? FirstName, string? LastName, UserResponseStatus Status, bool IsSystemAdmin);
+
+/// <summary>The status of a catalog user. A deleted user is one the identity provider no longer knows.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<UserResponseStatus>))]
+public enum UserResponseStatus
+{
+    [JsonStringEnumMemberName("active")]
+    Active,
+
+    [JsonStringEnumMemberName("suspended")]
+    Suspended,
+
+    [JsonStringEnumMemberName("deleted")]
+    Deleted,
+}

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Tenants;
 using Microsoft.AspNetCore.Builder;
@@ -28,7 +29,7 @@ public static class MyTenants
         }
 
         var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), paging.Value), cancellationToken);
-        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.Of(tenant.Status))));
+        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status))));
     }
 }
 
@@ -36,4 +37,15 @@ public static class MyTenants
 /// A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
 /// active, or suspended when its members cannot enter it.
 /// </summary>
-public sealed record MyTenantResponse(Guid Id, string Name, string Slug, string Status);
+public sealed record MyTenantResponse(Guid Id, string Name, string Slug, MyTenantResponseStatus Status);
+
+/// <summary>The status of a tenant as its members see it: active, or suspended when they cannot enter it.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<MyTenantResponseStatus>))]
+public enum MyTenantResponseStatus
+{
+    [JsonStringEnumMemberName("active")]
+    Active,
+
+    [JsonStringEnumMemberName("suspended")]
+    Suspended,
+}

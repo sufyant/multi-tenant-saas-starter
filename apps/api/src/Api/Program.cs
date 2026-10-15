@@ -20,7 +20,6 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
     var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
-    builder.Services.DescribeResponseStatuses(ControlPlaneModule.ResponseStatuses);
     builder.Services.AddControlPlaneInfrastructure(role.ServesTheApi());
     builder.Services.AddNotificationsInfrastructure();
     builder.Services.AddAuditInfrastructure();

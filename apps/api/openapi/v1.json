@@ -824,7 +824,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1104,17 +1105,17 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "provisioning",
-              "active",
-              "suspended",
-              "cancelled",
-              "deleted"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/MyTenantResponseStatus"
           }
         },
         "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended when its members cannot enter it."
+      },
+      "MyTenantResponseStatus": {
+        "enum": [
+          "active",
+          "suspended"
+        ],
+        "description": "The status of a tenant as its members see it: active, or suspended when they cannot enter it."
       },
       "ProblemDetails": {
         "type": "object",
@@ -1192,17 +1193,19 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "provisioning",
-              "active",
-              "suspended",
-              "cancelled",
-              "deleted"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/TenantResponseStatus"
           }
         },
-        "description": "A tenant and its status: provisioning, active, suspended or cancelled."
+        "description": "A tenant and its status."
+      },
+      "TenantResponseStatus": {
+        "enum": [
+          "provisioning",
+          "active",
+          "suspended",
+          "cancelled"
+        ],
+        "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or cancelled."
       },
       "UserResponse": {
         "required": [
@@ -1238,20 +1241,21 @@
             ]
           },
           "status": {
-            "enum": [
-              "provisioning",
-              "active",
-              "suspended",
-              "cancelled",
-              "deleted"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/UserResponseStatus"
           },
           "isSystemAdmin": {
             "type": "boolean"
           }
         },
         "description": "A catalog user: the catalog's id, not the identity provider's, the copy of their profile, their status (active, suspended or\ndeleted) and whether they are a system admin."
+      },
+      "UserResponseStatus": {
+        "enum": [
+          "active",
+          "suspended",
+          "deleted"
+        ],
+        "description": "The status of a catalog user. A deleted user is one the identity provider no longer knows."
       }
     }
   },

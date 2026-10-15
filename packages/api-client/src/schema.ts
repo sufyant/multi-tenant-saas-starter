@@ -213,9 +213,13 @@ export interface components {
             id: string;
             name: string;
             slug: string;
-            /** @enum {string} */
-            status: "provisioning" | "active" | "suspended" | "cancelled" | "deleted";
+            status: components["schemas"]["MyTenantResponseStatus"];
         };
+        /**
+         * @description The status of a tenant as its members see it: active, or suspended when they cannot enter it.
+         * @enum {unknown}
+         */
+        MyTenantResponseStatus: "active" | "suspended";
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -232,15 +236,19 @@ export interface components {
             /** @description The trace id of the request, for the logs. */
             traceId?: string;
         };
-        /** @description A tenant and its status: provisioning, active, suspended or cancelled. */
+        /** @description A tenant and its status. */
         TenantResponse: {
             /** Format: uuid */
             id: string;
             name: string;
             slug: string;
-            /** @enum {string} */
-            status: "provisioning" | "active" | "suspended" | "cancelled" | "deleted";
+            status: components["schemas"]["TenantResponseStatus"];
         };
+        /**
+         * @description The status of a tenant: provisioning until its creation ends, then active, suspended or cancelled.
+         * @enum {unknown}
+         */
+        TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled";
         /**
          * @description A catalog user: the catalog's id, not the identity provider's, the copy of their profile, their status (active, suspended or
          *     deleted) and whether they are a system admin.
@@ -251,10 +259,14 @@ export interface components {
             email: null | string;
             firstName: null | string;
             lastName: null | string;
-            /** @enum {string} */
-            status: "provisioning" | "active" | "suspended" | "cancelled" | "deleted";
+            status: components["schemas"]["UserResponseStatus"];
             isSystemAdmin: boolean;
         };
+        /**
+         * @description The status of a catalog user. A deleted user is one the identity provider no longer knows.
+         * @enum {unknown}
+         */
+        UserResponseStatus: "active" | "suspended" | "deleted";
     };
     responses: never;
     parameters: never;

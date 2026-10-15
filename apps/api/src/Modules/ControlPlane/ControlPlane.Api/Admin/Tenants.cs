@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
@@ -69,11 +70,28 @@ public static class Tenants
         CancellationToken cancellationToken) =>
         (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReactivateTenant(user.Id()), cancellationToken)).Map(ToResponse);
 
-    private static TenantResponse ToResponse(TenantDetails tenant) => new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.Of(tenant.Status));
+    private static TenantResponse ToResponse(TenantDetails tenant) => new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status));
 }
 
 /// <summary>A new tenant, and the email address of its first owner, who is invited once the tenant is ready.</summary>
 public sealed record CreateTenantRequest(string Name, string Slug, string OwnerEmail);
 
-/// <summary>A tenant and its status: provisioning, active, suspended or cancelled.</summary>
-public sealed record TenantResponse(Guid Id, string Name, string Slug, string Status);
+/// <summary>A tenant and its status.</summary>
+public sealed record TenantResponse(Guid Id, string Name, string Slug, TenantResponseStatus Status);
+
+/// <summary>The status of a tenant: provisioning until its creation ends, then active, suspended or cancelled.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<TenantResponseStatus>))]
+public enum TenantResponseStatus
+{
+    [JsonStringEnumMemberName("provisioning")]
+    Provisioning,
+
+    [JsonStringEnumMemberName("active")]
+    Active,
+
+    [JsonStringEnumMemberName("suspended")]
+    Suspended,
+
+    [JsonStringEnumMemberName("cancelled")]
+    Cancelled,
+}
