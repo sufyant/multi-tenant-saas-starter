@@ -185,9 +185,9 @@ public sealed class Database : IAsyncLifetime
 
     // Runs the SQL as the role in a transaction that declares the tenant first, the way the application does; returns the rows
     // it changed.
-    public async Task<int> ExecuteInTenantAsync(Guid tenantId, string sql, string? role = null)
+    public async Task<int> ExecuteInTenantAsync(Guid tenantId, string sql, string? role = null, string database = MainDatabase)
     {
-        await using var connection = new NpgsqlConnection(ConnectionStringFor(role ?? DatabaseRoles.Application));
+        await using var connection = new NpgsqlConnection(ConnectionStringFor(role ?? DatabaseRoles.Application, database));
         await connection.OpenAsync();
         await using var transaction = await connection.BeginTransactionAsync();
         await DeclareTenantAsync(connection, transaction, tenantId);

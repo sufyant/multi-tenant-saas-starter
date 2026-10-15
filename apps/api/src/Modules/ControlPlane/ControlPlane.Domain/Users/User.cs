@@ -22,6 +22,9 @@ internal sealed class User(Guid id, string externalId)
     /// <summary>When the identity provider deleted the user. The row stays: memberships and audit entries point to it.</summary>
     public DateTimeOffset? DeletedAt { get; private set; }
 
+    /// <summary>When a system admin suspended the user. A suspended user is refused on every me and tenant endpoint (A9).</summary>
+    public DateTimeOffset? SuspendedAt { get; private set; }
+
     /// <summary>
     /// Takes the identity provider's profile, unless the copy holds a later change or the user is deleted. The same change
     /// taken twice gives the same copy.
@@ -42,4 +45,9 @@ internal sealed class User(Guid id, string externalId)
         (Email, FirstName, LastName) = (null, null, null);
         DeletedAt ??= now;
     }
+
+    /// <summary>Suspends the user. A second suspension keeps the first time. The identity provider is not told.</summary>
+    public void Suspend(DateTimeOffset now) => SuspendedAt ??= now;
+
+    public void Reactivate() => SuspendedAt = null;
 }

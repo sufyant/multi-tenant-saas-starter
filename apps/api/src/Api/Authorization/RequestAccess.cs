@@ -1,12 +1,15 @@
 using ControlPlane.Contracts;
+using SharedKernel;
 
 namespace Api.Authorization;
 
 // What the caller of this request may do, resolved once per request with the tenant: their membership on a
-// tenant route, their system permissions on an admin route.
+// tenant route, their system permissions on an admin route, or ControlPlane's reason to refuse them on a me or tenant route.
 internal sealed class RequestAccess
 {
     public TenantMembership? Membership { get; set; }
+
+    public Error? Refusal { get; set; }
 
     public IReadOnlySet<string>? SystemPermissions { get; set; }
 

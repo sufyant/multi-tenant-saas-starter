@@ -82,7 +82,12 @@ internal sealed class Invitation : ITenantEntity
         return true;
     }
 
-    public Result Accept(IEnumerable<string> verifiedEmails, Guid userId, DateTimeOffset now)
+    /// <summary>
+    /// Whether the invitation can be accepted now by someone with these verified email addresses: it is pending, it has not expired,
+    /// and one of the addresses is the invited one. It changes nothing, so a caller can check more after it and still refuse
+    /// without a change.
+    /// </summary>
+    public Result CheckAcceptance(IEnumerable<string> verifiedEmails, DateTimeOffset now)
     {
         if (Status != InvitationStatus.Pending)
         {
@@ -94,9 +99,18 @@ internal sealed class Invitation : ITenantEntity
             return Error.Conflict("invitation.expired", "The invitation has expired; ask for a new one.");
         }
 
-        if (!verifiedEmails.Any(email => string.Equals(email.Trim(), Email, StringComparison.OrdinalIgnoreCase)))
+        return verifiedEmails.Any(email => string.Equals(email.Trim(), Email, StringComparison.OrdinalIgnoreCase))
+            ? Result.Success()
+            : Error.Forbidden("invitation.email_mismatch", "The invitation was sent to an email address you have not verified.");
+    }
+
+    /// <summary>Uses up the invitation for the user, after the same checks as <see cref="CheckAcceptance"/>.</summary>
+    public Result Accept(IEnumerable<string> verifiedEmails, Guid userId, DateTimeOffset now)
+    {
+        var allowed = CheckAcceptance(verifiedEmails, now);
+        if (!allowed.IsSuccess)
         {
-            return Error.Forbidden("invitation.email_mismatch", "The invitation was sent to an email address you have not verified.");
+            return allowed;
         }
 
         Status = InvitationStatus.Accepted;

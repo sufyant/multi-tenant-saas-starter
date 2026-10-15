@@ -6,7 +6,8 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Me;
 
-// GET /v1/me/tenants runs without a tenant (T4): the caller's active tenants, read through the policy on their own memberships.
+// GET /v1/me/tenants runs without a tenant (T4): the caller's active and suspended tenants, read through the policy on their own
+// memberships.
 public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -37,7 +38,7 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Tenants(page).ShouldBe([(alpha.Id, "Alpha Ltd", alpha.Slug), (beta.Id, "Beta Ltd", beta.Slug)]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
@@ -57,18 +58,37 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         Tenants(page).ShouldBe([(earlier.Id, "Same Ltd", earlier.Slug), (later.Id, "Same Ltd", later.Slug)]);
     }
 
-    [Fact]
-    public async Task ListMyTenants_ATenantThatIsNotActive_IsNotListed()
+    [Theory]
+    [InlineData("Provisioning")]
+    [InlineData("Cancelled")]
+    public async Task ListMyTenants_ATenantProvisioningOrCancelled_IsNotListed(string status)
     {
         var active = await _catalog.AddTenantAsync(name: "Active Ltd");
-        var provisioning = await _catalog.AddTenantAsync(status: "Provisioning", name: "Provisioning Ltd");
+        var hidden = await _catalog.AddTenantAsync(status: status, name: "Hidden Ltd");
         var user = await _catalog.AddMemberAsync(active.Id);
-        await _catalog.AddMemberAsync(provisioning.Id, user);
+        await _catalog.AddMemberAsync(hidden.Id, user);
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
         Tenants(page).ShouldBe([(active.Id, "Active Ltd", active.Slug)]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    // The member of a suspended tenant still sees it, with its status, so a client can tell them why they cannot enter it.
+    [Fact]
+    public async Task ListMyTenants_ASuspendedTenant_IsListedWithItsStatus()
+    {
+        var active = await _catalog.AddTenantAsync(name: "Active Ltd");
+        var suspended = await _catalog.AddTenantAsync(status: "Suspended", name: "Suspended Ltd");
+        var user = await _catalog.AddMemberAsync(active.Id);
+        await _catalog.AddMemberAsync(suspended.Id, user);
+
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
+
+        page.GetProperty("items").EnumerateArray()
+            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("status").GetString()))
+            .ShouldBe([(active.Id, "active"), (suspended.Id, "suspended")]);
+        page.GetProperty("total").GetInt32().ShouldBe(2);
     }
 
     // Someone signed in with the identity provider who has never joined a tenant has no catalog user yet.

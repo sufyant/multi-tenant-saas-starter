@@ -13,7 +13,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
 public sealed class UserTenants(ControlPlaneDbContext controlPlane) : IUserTenants
 {
-    async Task<ListPage<Tenant>> IUserTenants.ListActiveAsync(string externalUserId, PageRequest paging, CancellationToken cancellationToken)
+    async Task<ListPage<Tenant>> IUserTenants.ListActiveOrSuspendedAsync(string externalUserId, PageRequest paging, CancellationToken cancellationToken)
     {
         var userId = await controlPlane.Users
             .Where(user => user.ExternalId == externalUserId)
@@ -28,7 +28,7 @@ public sealed class UserTenants(ControlPlaneDbContext controlPlane) : IUserTenan
         var tenants =
             from membership in controlPlane.Memberships
             join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
-            where tenant.Status == TenantStatus.Active
+            where tenant.Status == TenantStatus.Active || tenant.Status == TenantStatus.Suspended
             select tenant;
 
         var total = await tenants.CountAsync(cancellationToken);

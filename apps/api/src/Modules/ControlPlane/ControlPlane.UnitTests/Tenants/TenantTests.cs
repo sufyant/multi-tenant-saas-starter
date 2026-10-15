@@ -138,4 +138,99 @@ public class TenantTests
         tenant.Status.ShouldBe(TenantStatus.Active);
         tenant.CancellationReason.ShouldBeNull();
     }
+
+    [Fact]
+    public void SuspendTenant_Active_IsSuspended()
+    {
+        var tenant = Active();
+
+        var suspended = tenant.Suspend();
+
+        suspended.Value.ShouldBeTrue();
+        tenant.Status.ShouldBe(TenantStatus.Suspended);
+    }
+
+    // Suspending sets a state: a repeat changes nothing and reports no change, so nothing is announced twice.
+    [Fact]
+    public void SuspendTenant_Suspended_StaysSuspendedWithoutAChange()
+    {
+        var tenant = Active();
+        tenant.Suspend();
+
+        var suspended = tenant.Suspend();
+
+        suspended.Value.ShouldBeFalse();
+        tenant.Status.ShouldBe(TenantStatus.Suspended);
+    }
+
+    [Fact]
+    public void ReactivateTenant_Suspended_IsActive()
+    {
+        var tenant = Active();
+        tenant.Suspend();
+
+        var reactivated = tenant.Reactivate();
+
+        reactivated.Value.ShouldBeTrue();
+        tenant.Status.ShouldBe(TenantStatus.Active);
+    }
+
+    [Fact]
+    public void ReactivateTenant_Active_StaysActiveWithoutAChange()
+    {
+        var tenant = Active();
+
+        var reactivated = tenant.Reactivate();
+
+        reactivated.Value.ShouldBeFalse();
+        tenant.Status.ShouldBe(TenantStatus.Active);
+    }
+
+    // A tenant whose creation has not passed its pivot, or never will, is neither suspended nor reactivated.
+    [Fact]
+    public void SuspendOrReactivateTenant_Provisioning_IsRejected()
+    {
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+
+        var suspended = tenant.Suspend();
+        var reactivated = tenant.Reactivate();
+
+        suspended.Error.Code.ShouldBe("tenant.not_active");
+        reactivated.Error.Code.ShouldBe("tenant.not_active");
+        tenant.Status.ShouldBe(TenantStatus.Provisioning);
+    }
+
+    [Fact]
+    public void SuspendOrReactivateTenant_Cancelled_IsRejected()
+    {
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        tenant.Cancel("activation_failed");
+
+        var suspended = tenant.Suspend();
+        var reactivated = tenant.Reactivate();
+
+        suspended.Error.Code.ShouldBe("tenant.not_active");
+        reactivated.Error.Code.ShouldBe("tenant.not_active");
+        tenant.Status.ShouldBe(TenantStatus.Cancelled);
+    }
+
+    // A suspended tenant is past the pivot: a late compensation does not cancel it.
+    [Fact]
+    public void CancelTenant_Suspended_StaysSuspended()
+    {
+        var tenant = Active();
+        tenant.Suspend();
+
+        var cancelled = tenant.Cancel("activation_failed");
+
+        cancelled.ShouldBeFalse();
+        tenant.Status.ShouldBe(TenantStatus.Suspended);
+    }
+
+    private static Tenant Active()
+    {
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        tenant.Activate();
+        return tenant;
+    }
 }

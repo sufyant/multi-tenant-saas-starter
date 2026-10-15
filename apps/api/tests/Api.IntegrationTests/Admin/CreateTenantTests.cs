@@ -36,7 +36,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = owner }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("Provisioning");
+        (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("provisioning");
         (await StatusOfAsync(slug)).ShouldBe("Active");
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
     }
@@ -80,7 +80,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);
-        tenant.GetProperty("status").GetString().ShouldBe("Provisioning");
+        tenant.GetProperty("status").GetString().ShouldBe("provisioning");
         (await database.ScalarAsync<string>($"SELECT name FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe("Acme Ltd");
     }
 
@@ -238,6 +238,23 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await again.Content.ReadAsStringAsync(Cancellation)).ShouldBe(await first.Content.ReadAsStringAsync(Cancellation));
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
         (await CountAsync($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
+    }
+
+    // The saved result holds the status as ControlPlane names it. The endpoint maps it to the API's lowercase value when it builds the
+    // answer, so the first answer and its replay are the same.
+    [Fact]
+    public async Task CreateTenant_ReplayedAnswer_HasTheLowercaseStatus()
+    {
+        var admin = await AdminAsync();
+        var body = new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" };
+        var key = Guid.NewGuid().ToString();
+        await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(body, key));
+
+        var again = await admin.CreateTenantAsync(body, key);
+
+        again.Headers.GetValues("Idempotent-Replayed").ShouldBe(["true"]);
+        (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("provisioning");
+        (await CountAsync($"SELECT count(*) FROM api.idempotency_keys WHERE key = '{key}' AND result::text LIKE '%Provisioning%'")).ShouldBe(1);
     }
 
     [Fact]

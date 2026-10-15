@@ -3,14 +3,16 @@ using System.Text.Json;
 namespace Api.IntegrationTests.Fixtures;
 
 // Writes catalog rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
-// name, the way the catalog stores them. A membership belongs to a tenant, so it is written with its tenant declared.
-internal sealed class Catalog(Database database)
+// name, the way the catalog stores them. A membership belongs to a tenant, so it is written with its tenant declared. The rows go
+// into the main database unless the test names a database of its own.
+internal sealed class Catalog(Database database, string databaseName = Database.MainDatabase)
 {
     public async Task<(Guid Id, string Slug)> AddTenantAsync(string status = "Active", string? slug = null, string name = "Acme Ltd", Guid? tenantId = null)
     {
         var id = tenantId ?? Guid.NewGuid();
         slug ??= $"tenant-{id:N}"[..20];
-        await database.ScalarAsync<object>($"INSERT INTO control_plane.tenants (id, name, slug, status) VALUES ('{id}', '{name}', '{slug}', '{status}')");
+        await database.ScalarAsync<object>(
+            $"INSERT INTO control_plane.tenants (id, name, slug, status) VALUES ('{id}', '{name}', '{slug}', '{status}')", database: databaseName);
 
         return (id, slug);
     }
@@ -24,31 +26,51 @@ internal sealed class Catalog(Database database)
             INSERT INTO control_plane.memberships (tenant_id, user_id, role_id)
             SELECT '{tenantId}', users.id, roles.id FROM control_plane.users, control_plane.roles
             WHERE users.external_id = '{externalId}' AND roles.built_in = '{role}'
-            """);
+            """,
+            database: databaseName);
 
         return externalId;
     }
 
-    public async Task<string> AddUserAsync(Guid? id = null)
+    // A user with the copy of a profile: an email address and a name, each of which may be missing.
+    public async Task<string> AddUserAsync(Guid? id = null, string? email = null, string? firstName = null, string? lastName = null)
     {
         var externalId = $"user_{Guid.NewGuid():N}";
-        await database.ScalarAsync<object>($"INSERT INTO control_plane.users (id, external_id) VALUES ('{id ?? Guid.NewGuid()}', '{externalId}')");
+        await database.ScalarAsync<object>(
+            $"INSERT INTO control_plane.users (id, external_id, email, first_name, last_name) VALUES ('{id ?? Guid.NewGuid()}', '{externalId}', {Text(email)}, {Text(firstName)}, {Text(lastName)})",
+            database: databaseName);
 
         return externalId;
     }
 
     // The catalog's own id of a user, which the API answers with; the identity provider's id is what a token carries.
     public Task<Guid> UserIdOfAsync(string externalId) =>
-        database.ScalarAsync<Guid>($"SELECT id FROM control_plane.users WHERE external_id = '{externalId}'");
+        database.ScalarAsync<Guid>($"SELECT id FROM control_plane.users WHERE external_id = '{externalId}'", database: databaseName);
 
-    public async Task<string> AddSystemAdminAsync()
+    public async Task<string> AddSystemAdminAsync(string? email = null)
     {
-        var externalId = await AddUserAsync();
+        var externalId = await AddUserAsync(email: email);
         await database.ScalarAsync<object>(
-            $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}'");
+            $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}'",
+            database: databaseName);
 
         return externalId;
     }
+
+    // Marks the user the way the identity provider's deletion does: the copy erased, the time of the deletion set.
+    public Task DeleteUserAsync(string externalId) =>
+        database.ScalarAsync<object>(
+            $"UPDATE control_plane.users SET email = NULL, first_name = NULL, last_name = NULL, deleted_at = now() WHERE external_id = '{externalId}'",
+            database: databaseName);
+
+    public Task SuspendUserAsync(string externalId) =>
+        database.ScalarAsync<object>($"UPDATE control_plane.users SET suspended_at = now() WHERE external_id = '{externalId}'", database: databaseName);
+
+    public Task<string?> TenantStatusOfAsync(Guid tenantId) =>
+        database.ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'", database: databaseName);
+
+    public Task SetTenantStatusAsync(Guid tenantId, string status) =>
+        database.ScalarAsync<object>($"UPDATE control_plane.tenants SET status = '{status}' WHERE id = '{tenantId}'", database: databaseName);
 
     public Task<long> CountAsync(string sql) => database.ScalarAsync<long>(sql);
 
@@ -65,6 +87,8 @@ internal sealed class Catalog(Database database)
 
         return JsonSerializer.Deserialize<StoredProfile>(json!, JsonSerializerOptions.Web)!;
     }
+
+    private static string Text(string? value) => value is null ? "NULL" : $"'{value}'";
 }
 
 internal sealed record StoredProfile(string? Email, string? FirstName, string? LastName, DateTimeOffset? UpdatedAt, DateTimeOffset? DeletedAt);

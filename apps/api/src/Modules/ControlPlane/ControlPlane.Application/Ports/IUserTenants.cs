@@ -10,6 +10,8 @@ namespace ControlPlane.Application.Ports;
 /// <remarks>Public only because Wolverine's generated code passes it to public handlers.</remarks>
 public interface IUserTenants
 {
-    /// <summary>A page of the active tenants the user is a member of, by name, then id; none for a user the catalog does not know.</summary>
-    internal Task<ListPage<Tenant>> ListActiveAsync(string externalUserId, PageRequest paging, CancellationToken cancellationToken);
+    /// <summary>
+    /// A page of the active and suspended tenants the user is a member of, by name, then id; none for a user the catalog does not know.
+    /// </summary>
+    internal Task<ListPage<Tenant>> ListActiveOrSuspendedAsync(string externalUserId, PageRequest paging, CancellationToken cancellationToken);
 }

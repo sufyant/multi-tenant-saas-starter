@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -187,6 +188,21 @@ public sealed class TenantCreationTests(Database database)
         cancelled.ShouldBeNull();
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
         (await ScalarAsync<bool>($"SELECT cancellation_reason IS NULL FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBeTrue();
+        (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
+    }
+
+    // A suspended tenant is past the pivot too: a late compensation leaves it and its owner's invitation as they are.
+    [Fact]
+    public async Task CancelTenant_Suspended_ChangesNothingAndReportsNoCancellation()
+    {
+        var (tenantId, invitationId) = await StartAsync();
+        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, AcceptLink()));
+        await ScalarAsync<object>($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE id = '{tenantId}'");
+
+        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+
+        cancelled.ShouldBeNull();
+        (await StatusOfAsync(tenantId)).ShouldBe("Suspended");
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
     }
 

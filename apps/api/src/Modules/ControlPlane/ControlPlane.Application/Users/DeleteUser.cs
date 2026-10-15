@@ -11,7 +11,7 @@ public sealed record DeleteUser(string UserId);
 // The command sets a state, so the same event applied twice gives the same row (I1). A user the catalog does not know changes nothing.
 public static class DeleteUserHandler
 {
-    public static async Task HandleAsync(DeleteUser command, IUserProfiles users, TimeProvider time, CancellationToken cancellationToken)
+    public static async Task HandleAsync(DeleteUser command, IUserCatalog users, TimeProvider time, CancellationToken cancellationToken)
     {
         if (await users.FindUserForUpdateAsync(command.UserId, cancellationToken) is not { } user)
         {

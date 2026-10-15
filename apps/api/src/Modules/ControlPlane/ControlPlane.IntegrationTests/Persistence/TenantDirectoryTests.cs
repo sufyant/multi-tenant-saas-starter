@@ -1,6 +1,7 @@
 using ControlPlane.Contracts;
 using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.DependencyInjection;
+using SharedKernel;
 
 namespace ControlPlane.IntegrationTests.Persistence;
 
@@ -15,7 +16,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
-        membership.ShouldNotBeNull().TenantId.ShouldBe(tenant.Id);
+        membership.ShouldNotBeNull().Value.TenantId.ShouldBe(tenant.Id);
     }
 
     [Fact]
@@ -63,7 +64,31 @@ public sealed class TenantDirectoryTests(Database database)
         membership.ShouldBeNull();
     }
 
-    private async Task<TenantMembership?> FindMembershipAsync(Guid tenantId, string externalUserId)
+    [Fact]
+    public async Task ResolveTenant_MemberOfASuspendedTenant_IsRefusedBecauseTheTenantIsSuspended()
+    {
+        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Suspended);
+        var user = await Catalog.AddUserAsync(database.Services);
+        await Catalog.AddMemberAsync(database.Services, tenant, user);
+
+        var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
+
+        membership.ShouldNotBeNull().Error.Code.ShouldBe("tenant.suspended");
+    }
+
+    // T3: a stranger cannot tell a suspended tenant from one that does not exist.
+    [Fact]
+    public async Task ResolveTenant_StrangerToASuspendedTenant_FindsNothing()
+    {
+        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Suspended);
+        var user = await Catalog.AddUserAsync(database.Services);
+
+        var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
+
+        membership.ShouldBeNull();
+    }
+
+    private async Task<Result<TenantMembership>?> FindMembershipAsync(Guid tenantId, string externalUserId)
     {
         await using var scope = database.Services.CreateAsyncScope();
 

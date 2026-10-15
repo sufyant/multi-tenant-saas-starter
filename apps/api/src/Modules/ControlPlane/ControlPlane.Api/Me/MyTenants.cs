@@ -13,7 +13,7 @@ public static class MyTenants
 {
     public static void Map(RouteGroupBuilder me) => me.MapGet("/tenants", ListMyTenants);
 
-    // T4: the user's own tenants, read without a tenant.
+    // T4: the user's own active and suspended tenants, read without a tenant.
     private static async Task<Result<ListPage<MyTenantResponse>>> ListMyTenants(
         int? page,
         int? pageSize,
@@ -28,9 +28,12 @@ public static class MyTenants
         }
 
         var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), paging.Value), cancellationToken);
-        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug)));
+        return tenants.Map(list => list.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.Of(tenant.Status))));
     }
 }
 
-/// <summary>A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join.</summary>
-public sealed record MyTenantResponse(Guid Id, string Name, string Slug);
+/// <summary>
+/// A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
+/// active, or suspended when its members cannot enter it.
+/// </summary>
+public sealed record MyTenantResponse(Guid Id, string Name, string Slug, string Status);

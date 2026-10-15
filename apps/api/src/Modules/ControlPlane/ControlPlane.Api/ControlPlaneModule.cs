@@ -24,6 +24,7 @@ public static class ControlPlaneModule
     public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder me, RouteGroupBuilder tenant, RouteGroupBuilder webhooks)
     {
         Tenants.Map(admin);
+        Users.Map(admin);
         MyTenants.Map(me);
         Invitations.Map(me);
         Members.Map(tenant);

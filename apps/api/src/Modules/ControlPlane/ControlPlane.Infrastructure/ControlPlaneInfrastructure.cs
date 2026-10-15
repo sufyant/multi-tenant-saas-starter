@@ -26,6 +26,7 @@ public static class ControlPlaneInfrastructure
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<SystemAdminSettings>, SystemAdminSettings.Validation>();
@@ -34,7 +35,7 @@ public static class ControlPlaneInfrastructure
         // handler needs its transaction (W1).
         services.AddScoped<ITenantCatalog, TenantCatalog>();
         services.AddScoped<IUserTenants, UserTenants>();
-        services.AddScoped<IUserProfiles, UserProfiles>();
+        services.AddScoped<IUserCatalog, UserCatalog>();
 
         services.AddOptions<InvitationSettings>()
             .BindConfiguration(InvitationSettings.Section)
