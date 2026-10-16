@@ -1,3 +1,4 @@
+using ControlPlane.Domain.Roles;
 using SharedKernel;
 
 namespace ControlPlane.Domain.Tenants;
@@ -11,5 +12,17 @@ internal sealed class Membership(Guid tenantId, Guid userId, Guid roleId) : ITen
 
     public Guid UserId { get; private init; } = userId;
 
-    public Guid RoleId { get; private init; } = roleId;
+    public Guid RoleId { get; private set; } = roleId;
+
+    /// <summary>Gives the membership the role. Only <see cref="Tenant.ChangeMemberRole"/> calls it, after the tenant's rules.</summary>
+    internal bool Assign(Role role)
+    {
+        if (RoleId == role.Id)
+        {
+            return false;
+        }
+
+        RoleId = role.Id;
+        return true;
+    }
 }

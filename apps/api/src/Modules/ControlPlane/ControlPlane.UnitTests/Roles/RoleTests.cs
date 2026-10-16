@@ -40,4 +40,15 @@ public class RoleTests
 
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
+
+    // Changing a role and removing a member are the Owners' and the Admins' work (K1, K7).
+    [Theory]
+    [InlineData("tenant.members.update")]
+    [InlineData("tenant.members.delete")]
+    public void ManageMembers_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot(string permission)
+    {
+        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains(permission)).Select(role => role.BuiltIn);
+
+        holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
+    }
 }
