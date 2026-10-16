@@ -24,9 +24,10 @@ public sealed class InviteMemberValidator : AbstractValidator<InviteMember>
 }
 
 // K6: an invitation belongs to the tenant aggregate, so the tenant row is locked first; two invitations at once then run one after the
-// other, and neither passes the daily limit nor leaves a second pending invitation. The checks run in the catalog's order: the role
-// rule, a member's address, the daily limit. Every rejection returns before the handler changes anything, because Wolverine commits a
-// failed Result too (W7). The secret is born here; only its hash is stored, and the link that carries it goes on in the event.
+// other, and neither passes the daily limit nor leaves a second pending invitation. The checks run in the catalog's order: an inviter
+// who is no longer a member, the role rule, a member's address, the daily limit. Every rejection returns before the handler changes
+// anything, because Wolverine commits a failed Result too (W7). The secret is born here; only its hash is stored, and the link that
+// carries it goes on in the event.
 public static class InviteMemberHandler
 {
     private static readonly TimeSpan LimitWindow = TimeSpan.FromHours(24);
@@ -42,8 +43,14 @@ public static class InviteMemberHandler
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
         var inviter = await catalog.FindUserAsync(command.InviterId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
-        var membership = await catalog.FindMembershipAsync(inviter.Id, cancellationToken)
-            ?? throw new InvalidOperationException("The tenant door lets only a member in.");
+
+        // The door let the inviter in, but a change that held the lock before may have removed them: to a non-member the tenant does not
+        // exist (T3).
+        if (await catalog.FindMembershipAsync(inviter.Id, cancellationToken) is not { } membership)
+        {
+            return (Errors.TenantNotFound, null);
+        }
+
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Name == command.Role);
 
         var allowed = Invitation.CheckInviter(BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId), role);

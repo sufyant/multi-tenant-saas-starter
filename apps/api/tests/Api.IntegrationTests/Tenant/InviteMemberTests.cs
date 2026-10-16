@@ -323,6 +323,27 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(DailyLimit);
     }
 
+    // K6, T3: an Owner removes an Admin while the Admin's invitation waits for the tenant's lock. The invitation then runs for a user who
+    // is no longer a member, to whom the tenant does not exist, and creates nothing.
+    [Fact]
+    public async Task InviteMember_ByAnAdminRemovedWhileItWaited_IsNotFoundAndCreatesNothing()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
+        var adminId = await _catalog.UserIdOfAsync(admin);
+
+        var responses = await database.OneAfterTheOtherAsync(
+            tenant.Id,
+            () => _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, adminId),
+            () => _api.CreateClient(admin).InviteMemberAsync(tenant.Id, NewEmail()));
+
+        responses[0].StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        responses[1].StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await CodeOfAsync(responses[1])).ShouldBe("tenant.not_found");
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
+    }
+
     // I1, I5: the same key with the same request answers with the invitation the first one created, and sends no second email.
     [Fact]
     public async Task InviteMember_TheSameIdempotencyKeyTwice_CreatesOneInvitationAndSendsOneEmail()

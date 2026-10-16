@@ -1,0 +1,77 @@
+using System.Text.Json;
+using Audit.Application.Members;
+using Audit.Application.Ports;
+using ControlPlane.Contracts;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Audit.IntegrationTests.Members;
+
+// The Audit module records a role change and a removal in the tenant's own log, under that tenant: the member who acted, and the member
+// acted on, by id (K3). The details hold the roles, never a name or an email address.
+public sealed class RecordMemberChangesTests(Database database)
+{
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    private static readonly DateTimeOffset OccurredAt = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task RecordMemberRoleChanged_MemberRoleChanged_WritesTheTenantEntryWithTheOldAndTheNewRole()
+    {
+        var changed = RoleChanged();
+
+        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
+            RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await Logs.DescribeAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId))
+            .ShouldBe($"member.role_changed|User|{changed.ChangedBy}|User|{changed.UserId}|-");
+        var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId))!).RootElement;
+        details.GetProperty("oldRole").GetString().ShouldBe("Owner");
+        details.GetProperty("newRole").GetString().ShouldBe("Admin");
+        (await Logs.CountAsync(database.Services, Logs.Platform, null, changed.EventId)).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task RecordMemberRemoved_MemberRemoved_WritesTheTenantEntryWithTheRoleTheMemberHad()
+    {
+        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Admin");
+
+        await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
+            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await Logs.DescribeAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId))
+            .ShouldBe($"member.removed|User|{removed.RemovedBy}|User|{removed.UserId}|-");
+        var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId))!).RootElement;
+        details.GetProperty("role").GetString().ShouldBe("Admin");
+        (await Logs.CountAsync(database.Services, Logs.Platform, null, removed.EventId)).ShouldBe(0);
+    }
+
+    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    [Fact]
+    public async Task RecordMemberRoleChanged_EventArrivesTwice_WritesOneEntry()
+    {
+        var changed = RoleChanged();
+
+        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
+            RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
+            RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await Logs.CountAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId)).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task RecordMemberRemoved_EventArrivesTwice_WritesOneEntry()
+    {
+        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Member");
+
+        await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
+            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+        await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
+            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await Logs.CountAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId)).ShouldBe(1);
+    }
+
+    private static MemberRoleChanged RoleChanged() =>
+        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Owner", "Admin");
+}

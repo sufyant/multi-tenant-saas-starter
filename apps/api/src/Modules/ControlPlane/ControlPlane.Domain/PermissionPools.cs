@@ -25,6 +25,10 @@ internal static class PermissionPools
 
     public const string TenantMembersRead = "tenant.members.read";
 
+    public const string TenantMembersUpdate = "tenant.members.update";
+
+    public const string TenantMembersDelete = "tenant.members.delete";
+
     public const string TenantProfileRead = "tenant.profile.read";
 
     public const string TenantInvitationsCreate = "tenant.invitations.create";
@@ -36,6 +40,8 @@ internal static class PermissionPools
     public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,
         TenantMembersRead,
+        TenantMembersUpdate,
+        TenantMembersDelete,
         TenantProfileRead,
         TenantInvitationsCreate,
         TenantInvitationsRead,

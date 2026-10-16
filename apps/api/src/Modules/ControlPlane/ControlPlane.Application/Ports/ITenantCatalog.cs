@@ -41,6 +41,12 @@ public interface ITenantCatalog
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// How many memberships of the active tenant hold the Owner role, a deleted user's included. The caller holds the tenant's lock, which
+    /// every change to a membership takes first, so the count stays true until the transaction ends (K6).
+    /// </summary>
+    internal Task<int> CountOwnersAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// A page of the active tenant's members of the role or every role, with the copy of their profile, whose email address or name
     /// contains the search: by the sort field, then by user id. The search starts from the tenant's memberships, never from the users.
     /// </summary>
@@ -81,10 +87,14 @@ public interface ITenantCatalog
 
     internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
 
+    internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>Whether the user is on the staff list. The staff list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
     internal void AddMember(Guid userId, Guid roleId);
+
+    internal void Remove(Membership membership);
 
     /// <summary>
     /// Adds the active tenant itself, which its creation adds, unless another tenant has its slug. The slug's unique index

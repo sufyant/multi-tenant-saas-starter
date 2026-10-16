@@ -89,6 +89,10 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<Membership?> ITenantCatalog.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
 
+    // Row level security keeps the count to the active tenant. It joins no user, so a deleted user's Owner membership counts too.
+    Task<int> ITenantCatalog.CountOwnersAsync(CancellationToken cancellationToken) =>
+        Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
+
     // Row level security keeps the list to the active tenant; the query names no tenant. The users table is not under row level security
     // (R6), so the query starts from the memberships and joins each member's user: a user of another tenant never enters it.
     async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role)>> ITenantCatalog.ListMembersAsync(
@@ -219,10 +223,15 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<User?> ITenantCatalog.FindUserAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.Users.SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
 
+    Task<User?> ITenantCatalog.FindUserAsync(Guid userId, CancellationToken cancellationToken) =>
+        controlPlane.Users.SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
+
     Task<bool> ITenantCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
     public void AddMember(Guid userId, Guid roleId) => controlPlane.Memberships.Add(new Membership(ActiveTenant, userId, roleId));
+
+    void ITenantCatalog.Remove(Membership membership) => controlPlane.Memberships.Remove(OfActiveTenant(membership, membership.TenantId));
 
     // An insert of a slug that another tenant creation has inserted but not yet committed waits for it, and is skipped if it commits.
     async Task<bool> ITenantCatalog.TryAddAsync(Tenant tenant, CancellationToken cancellationToken)
