@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Api.IntegrationTests.RateLimiting;
 
@@ -25,6 +27,7 @@ public sealed class RateLimitingTests(Database database) : IAsyncLifetime
         rejected.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
         rejected.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
         rejected.Headers.RetryAfter.ShouldNotBeNull();
+        (await rejected.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("code").GetString().ShouldBe("rate_limit.exceeded");
     }
 
     [Fact]

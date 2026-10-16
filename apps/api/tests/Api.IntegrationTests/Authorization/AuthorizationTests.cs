@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Api.IntegrationTests.Authorization;
 
@@ -22,6 +24,7 @@ public sealed class AuthorizationTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
+        (await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("code").GetString().ShouldBe("auth.forbidden");
     }
 
     // A tenant the user cannot enter looks the same as one that does not exist, also behind a permission.

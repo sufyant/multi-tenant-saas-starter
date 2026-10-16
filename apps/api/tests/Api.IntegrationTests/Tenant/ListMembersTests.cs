@@ -214,12 +214,13 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
             (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", "Owner"),
             (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, "Member"),
         ]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["userId", "email", "firstName", "lastName", "role"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted"], ignoreOrder: true);
+        Deleted(page).ShouldBe([false, false]);
     }
 
-    // The screen shows "Deleted user", as for audit (K3).
+    // The screen shows "Deleted user", as for audit (K3): the member says deleted, as the audit logs do.
     [Fact]
-    public async Task ListMembers_AMemberWhoseUserWasDeleted_StaysWithoutEmailOrNames()
+    public async Task ListMembers_AMemberWhoseUserWasDeleted_StaysWithoutEmailOrNamesAndSaysDeleted()
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
@@ -229,6 +230,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member", Cancellation);
 
         Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, "Member")]);
+        Deleted(page).ShouldBe([true]);
     }
 
     // R6: the users table is not under row level security. The search starts from the active tenant's memberships, so a user of
@@ -375,6 +377,9 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
             item.GetProperty("lastName").GetString(),
             item.GetProperty("role").GetString()!)),
     ];
+
+    private static List<bool> Deleted(JsonElement page) =>
+        [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("deleted").GetBoolean())];
 
     private static List<(Guid UserId, string Role)> Members(JsonElement page) =>
         [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("userId").GetGuid(), item.GetProperty("role").GetString()!))];

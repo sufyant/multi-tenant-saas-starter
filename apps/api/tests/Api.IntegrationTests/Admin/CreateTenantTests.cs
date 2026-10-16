@@ -35,7 +35,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = owner }));
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("provisioning");
         (await StatusOfAsync(slug)).ShouldBe("Active");
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
@@ -74,7 +74,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await _api.WaitingForMessagesAsync(() =>
             admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" }));
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         var tenant = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
@@ -121,12 +121,12 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     // OWASP API8: a field the request leaves out, or sends as null, is a validation problem, never a server error.
     [Theory]
-    [InlineData("""{"name":"Acme Ltd","ownerEmail":"ali@acme.com"}""", "Slug")]
-    [InlineData("""{"name":"Acme Ltd","slug":null,"ownerEmail":"ali@acme.com"}""", "Slug")]
-    [InlineData("""{"name":"Acme Ltd","slug":"acme-ltd"}""", "OwnerEmail")]
-    [InlineData("""{"name":"Acme Ltd","slug":"acme-ltd","ownerEmail":null}""", "OwnerEmail")]
-    [InlineData("""{"slug":"acme-ltd","ownerEmail":"ali@acme.com"}""", "Name")]
-    [InlineData("""{"name":null,"slug":"acme-ltd","ownerEmail":"ali@acme.com"}""", "Name")]
+    [InlineData("""{"name":"Acme Ltd","ownerEmail":"ali@acme.com"}""", "slug")]
+    [InlineData("""{"name":"Acme Ltd","slug":null,"ownerEmail":"ali@acme.com"}""", "slug")]
+    [InlineData("""{"name":"Acme Ltd","slug":"acme-ltd"}""", "ownerEmail")]
+    [InlineData("""{"name":"Acme Ltd","slug":"acme-ltd","ownerEmail":null}""", "ownerEmail")]
+    [InlineData("""{"slug":"acme-ltd","ownerEmail":"ali@acme.com"}""", "name")]
+    [InlineData("""{"name":null,"slug":"acme-ltd","ownerEmail":"ali@acme.com"}""", "name")]
     public async Task CreateTenant_WithoutARequiredField_IsAValidationProblem(string body, string field)
     {
         var admin = await AdminAsync();
@@ -134,7 +134,29 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await admin.CreateTenantAsync(new StringContent(body, Encoding.UTF8, "application/json"));
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await created.Content.ReadFromJsonAsync<HttpValidationProblemDetails>(Cancellation))!.Errors.Keys.ShouldBe([field]);
+        var problem = await created.Content.ReadFromJsonAsync<HttpValidationProblemDetails>(Cancellation);
+        problem!.Extensions["code"]?.ToString().ShouldBe("request.validation_failed");
+        problem.Errors.ShouldBe(new Dictionary<string, string[]> { [field] = ["required"] });
+    }
+
+    public static TheoryData<string, string> OwnerEmailsThatBreakARule => new()
+    {
+        { "not an email", "email_invalid" },
+        { new string('x', 320) + "@acme.com", "too_long" },
+    };
+
+    // A screen writes its own text for each rule a field broke, so the answer names the rule's code, never a message.
+    [Theory]
+    [MemberData(nameof(OwnerEmailsThatBreakARule))]
+    public async Task CreateTenant_AnOwnerEmailThatBreaksARule_ListsTheRulesCode(string ownerEmail, string code)
+    {
+        var admin = await AdminAsync();
+
+        var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await created.Content.ReadFromJsonAsync<HttpValidationProblemDetails>(Cancellation))!.Errors
+            .ShouldBe(new Dictionary<string, string[]> { ["ownerEmail"] = [code] });
     }
 
     // A body the endpoint cannot read at all is a bad request in every environment, never a server error.
@@ -161,7 +183,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await _api.WaitingForMessagesAsync(() =>
             admin.CreateTenantAsync(new { name, slug = Slug(), ownerEmail = "ali@acme.com" }));
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("name").GetString().ShouldBe(name);
     }
 
@@ -187,7 +209,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await admin.PostAsJsonAsync(TenantRequests.Path, new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" }, Cancellation);
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency_key_invalid");
+        (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency.key_invalid");
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
     }
 
@@ -207,7 +229,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await admin.SendAsync(request, Cancellation);
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency_key_invalid");
+        (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency.key_invalid");
     }
 
     [Fact]
@@ -217,7 +239,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }, new string('~', 255));
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     [Fact]
@@ -232,7 +254,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var again = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(body, key));
 
         var tenantId = await IdOfAsync(first);
-        again.StatusCode.ShouldBe(HttpStatusCode.OK);
+        again.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await IdOfAsync(again)).ShouldBe(tenantId);
         again.Headers.GetValues("Idempotent-Replayed").ShouldBe(["true"]);
         (await again.Content.ReadAsStringAsync(Cancellation)).ShouldBe(await first.Content.ReadAsStringAsync(Cancellation));
@@ -268,7 +290,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var reused = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = otherSlug, ownerEmail = "ali@acme.com" }, key);
 
         reused.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
-        (await reused.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency_key_reused");
+        (await reused.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency.key_reused");
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{otherSlug}'")).ShouldBe(0);
     }
 
@@ -282,8 +304,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         var created = await Task.WhenAll(admin.CreateTenantAsync(body, key), admin.CreateTenantAsync(body, key));
 
-        created.Select(response => response.StatusCode).ShouldContain(HttpStatusCode.OK);
-        created.Select(response => response.StatusCode).ShouldAllBe(status => status == HttpStatusCode.OK || status == HttpStatusCode.Conflict);
+        created.Select(response => response.StatusCode).ShouldContain(HttpStatusCode.Created);
+        created.Select(response => response.StatusCode).ShouldAllBe(status => status == HttpStatusCode.Created || status == HttpStatusCode.Conflict);
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 
@@ -300,8 +322,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var byFirst = await first.CreateTenantAsync(new { name = "Acme Ltd", slug = firstSlug, ownerEmail = "ali@acme.com" }, key);
         var bySecond = await second.CreateTenantAsync(new { name = "Globex", slug = secondSlug, ownerEmail = "hank@globex.com" }, key);
 
-        byFirst.StatusCode.ShouldBe(HttpStatusCode.OK);
-        bySecond.StatusCode.ShouldBe(HttpStatusCode.OK);
+        byFirst.StatusCode.ShouldBe(HttpStatusCode.Created);
+        bySecond.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await IdOfAsync(bySecond)).ShouldNotBe(await IdOfAsync(byFirst));
     }
 
@@ -319,7 +341,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await api.WaitingForMessagesAsync(
             () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await _catalog.ProfileOfAsync(admin, name)).ShouldBe(new StoredProfile(ApiFactory.FirstSystemAdminEmail, "Grace", "Hopper", updatedAt, null));
     }
 

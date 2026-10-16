@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -260,6 +262,7 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
 
         payload.Length.ShouldBe((1024 * 1024) + 1);
         received.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
+        (await received.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString().ShouldBe("request.too_large");
         (await _catalog.ProfileOfAsync(user)).ShouldBe(new StoredProfile(null, null, null, null, null));
     }
 

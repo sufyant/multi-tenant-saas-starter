@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.IntegrationTests.ErrorHandling;
@@ -41,6 +43,7 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
     [InlineData("Conflict", HttpStatusCode.Conflict)]
     [InlineData("Forbidden", HttpStatusCode.Forbidden)]
     [InlineData("Unprocessable", HttpStatusCode.UnprocessableEntity)]
+    [InlineData("TooManyRequests", HttpStatusCode.TooManyRequests)]
     public async Task AnswerResult_ExpectedFailure_ReturnsProblemDetailsWithItsStatusAndCode(string errorType, HttpStatusCode status)
     {
         var response = await _client.PostAsync($"/v1/failures/{errorType}", null, TestContext.Current.CancellationToken);
@@ -54,15 +57,43 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
         problem.Extensions.ShouldContainKey("traceId");
     }
 
+    // A validation answer names each field as the request's JSON does, with codes for a screen to write its own text, never messages.
     [Fact]
-    public async Task AnswerResult_InvalidCommand_ReturnsValidationProblemDetailsListingTheFields()
+    public async Task AnswerResult_InvalidCommand_ListsAFieldCodeForEachField()
     {
         var response = await _client.PostAsJsonAsync("/v1/greetings", new { name = "" }, TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
-        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>(TestContext.Current.CancellationToken);
-        problem!.Errors.Keys.ShouldBe(["Name"]);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
+        problem.GetProperty("errors").GetRawText().ShouldBe("""{"name":["required"]}""");
+    }
+
+    // A request the endpoint cannot read at all carries a code too.
+    [Fact]
+    public async Task AnswerResult_UnreadableBody_IsAnInvalidRequest()
+    {
+        var response = await _client.PostAsync(
+            "/v1/greetings", new StringContent("{", Encoding.UTF8, "application/json"), TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await CodeOfAsync(response)).ShouldBe("request.invalid");
+    }
+
+    // Every error answer the host writes carries a code, also one no endpoint returned.
+    [Theory]
+    [InlineData("GET", "/v1/nowhere", "text/plain", HttpStatusCode.NotFound, "route.not_found")]
+    [InlineData("DELETE", "/v1/greetings", "application/json", HttpStatusCode.MethodNotAllowed, "route.method_not_allowed")]
+    [InlineData("POST", "/v1/greetings", "text/plain", HttpStatusCode.UnsupportedMediaType, "request.unsupported_media_type")]
+    public async Task AnswerRequest_TheHostRefusesIt_AnswersProblemDetailsWithACode(string method, string path, string contentType, HttpStatusCode status, string code)
+    {
+        using var request = new HttpRequestMessage(new HttpMethod(method), path) { Content = new StringContent("{}", Encoding.UTF8, contentType) };
+
+        var response = await _client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(status);
+        (await CodeOfAsync(response)).ShouldBe(code);
     }
 
     [Fact]
@@ -75,6 +106,7 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
         problem!.Status.ShouldBe(500);
         problem.Extensions.ShouldContainKey("traceId");
+        problem.Extensions["code"]!.ToString().ShouldBe("server.error");
     }
 
     [Fact]
@@ -87,4 +119,7 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
         body.ShouldNotContain(nameof(InvalidOperationException));
         body.ShouldNotContain("ExplodeHandler");
     }
+
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("code").GetString();
 }

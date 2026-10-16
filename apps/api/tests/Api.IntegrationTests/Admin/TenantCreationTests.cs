@@ -203,7 +203,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created)
     {
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
     }
 

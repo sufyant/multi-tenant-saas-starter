@@ -8,12 +8,13 @@ using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
+using SharedKernel;
 
 namespace Api.ArchitectureTests;
 
 // N11: the committed OpenAPI document is the contract every client is generated from. Each operation has its endpoint's name as its
 // id, each status in a response lists exactly the values of its own enum (N7), each path parameter is declared, and each error
-// answer is the one Problem Details schema with its code. OpenApiDocumentFileTests checks that the committed file is the one the
+// answer is the one Problem Details schema, whose code is the one enum of error codes (K5). OpenApiDocumentFileTests checks that the committed file is the one the
 // build writes.
 public sealed partial class OpenApiContractTests : IAsyncLifetime
 {
@@ -82,12 +83,67 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         errors.Where(error => error.Schema != ProblemDetailsSchema).Select(error => $"{error.Name}: {error.Schema}").ShouldBeEmpty();
     }
 
+    // K5: the codes are one enum in the document, the values of ErrorCode, so a generated client knows each code an error can carry.
     [Fact]
-    public void BuildOpenApiDocument_ProblemDetailsSchema_DeclaresTheErrorCode()
+    public void BuildOpenApiDocument_CodeOfProblemDetails_IsTheErrorCodeEnum()
     {
-        var properties = Schemas().Single(schema => schema.Name == "ProblemDetails").Value.GetProperty("properties");
+        var code = Schemas().Single(schema => schema.Name == "ProblemDetails").Value.GetProperty("properties").GetProperty("code");
 
-        properties.GetProperty("code").GetProperty("type").GetString().ShouldBe("string");
+        code.TryGetProperty("$ref", out var reference).ShouldBeTrue();
+        reference.GetString().ShouldBe("#/components/schemas/ErrorCode");
+        EnumOf(Resolve(code)).ShouldBe(JsonValuesOf(typeof(ErrorCode)));
+    }
+
+    // A validation answer lists codes for each field, never messages, and the field codes are an enum too.
+    [Fact]
+    public void BuildOpenApiDocument_FieldsOfAValidationProblem_AreTheFieldErrorCodeEnum()
+    {
+        var errors = Schemas().Single(schema => schema.Name == "ProblemDetails").Value.GetProperty("properties").GetProperty("errors");
+
+        var codes = errors.GetProperty("additionalProperties").GetProperty("items");
+
+        codes.TryGetProperty("$ref", out var reference).ShouldBeTrue();
+        reference.GetString().ShouldBe("#/components/schemas/FieldErrorCode");
+        EnumOf(Resolve(codes)).ShouldBe(JsonValuesOf(typeof(FieldErrorCode)));
+    }
+
+    // K5: every code is an area and a reason, in lower snake case: tenant.not_found.
+    [Fact]
+    public void DeclareErrorCodes_EveryCode_IsAnAreaAndAReason()
+    {
+        var codes = JsonNamesOf(typeof(ErrorCode));
+
+        codes.ShouldNotBeEmpty();
+        codes.Where(code => !AreaAndReason().IsMatch(code)).ShouldBeEmpty();
+    }
+
+    // K5: every /v1 route can answer 401 and 429, so every operation declares both.
+    [Fact]
+    public void BuildOpenApiDocument_EveryOperation_DeclaresUnauthorizedAndTooManyRequests()
+    {
+        string[] statuses = ["401", "429"];
+
+        var missing = Operations()
+            .SelectMany(operation => statuses
+                .Where(status => !operation.Value.GetProperty("responses").TryGetProperty(status, out _))
+                .Select(status => $"{operation.Method} {operation.Path} {status}"));
+
+        Operations().ShouldNotBeEmpty();
+        missing.ShouldBeEmpty();
+    }
+
+    // K5 and I1: an endpoint that takes Idempotency-Key creates a resource, so it answers 201.
+    [Fact]
+    public void BuildOpenApiDocument_OperationThatTakesAnIdempotencyKey_DeclaresCreated()
+    {
+        var creating = Operations().Where(operation => HeaderParametersOf(operation.Value).Contains("Idempotency-Key")).ToList();
+
+        var without = creating
+            .Where(operation => !operation.Value.GetProperty("responses").TryGetProperty("201", out _))
+            .Select(operation => $"{operation.Method} {operation.Path}");
+
+        creating.ShouldNotBeEmpty();
+        without.ShouldBeEmpty();
     }
 
     // OpenAPI 3.1, "Path Templating": each parameter in a path is a required path parameter. The tenant group, not the endpoint,
@@ -131,10 +187,16 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     // The values an enum has in JSON: the name its member declares, else the member's own name.
     private static string JsonValuesOf(Type type) =>
-        type.IsEnum
-            ? string.Join(", ", type.GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Select(member => member.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? member.Name))
-            : $"<{type.Name}, not an enum>";
+        type.IsEnum ? string.Join(", ", JsonNamesOf(type)) : $"<{type.Name}, not an enum>";
+
+    private static IEnumerable<string> JsonNamesOf(Type type) =>
+        type.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(member => member.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? member.Name);
+
+    private static IEnumerable<string> HeaderParametersOf(JsonElement operation) =>
+        operation.TryGetProperty("parameters", out var parameters)
+            ? parameters.EnumerateArray().Where(parameter => parameter.GetProperty("in").GetString() == "header").Select(parameter => parameter.GetProperty("name").GetString()!)
+            : [];
 
     private static string ProblemSchemaOf(JsonElement response) =>
         response.TryGetProperty("content", out var content) && content.TryGetProperty("application/problem+json", out var problem)
@@ -164,6 +226,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     [GeneratedRegex("^[A-Z][A-Za-z]+$")]
     private static partial Regex PascalCaseName();
+
+    [GeneratedRegex("^[a-z]+(_[a-z]+)*\\.[a-z]+(_[a-z]+)*$")]
+    private static partial Regex AreaAndReason();
 
     [GeneratedRegex(@"\{(\w+):[^}]+\}")]
     private static partial Regex RouteConstraint();
