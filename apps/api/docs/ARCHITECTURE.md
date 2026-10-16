@@ -463,6 +463,7 @@ The test is written first. Tests run with real PostgreSQL. We do not fake our ow
 3. Tests connect with the application account. Migrations run with the separate account. If not, RLS tests have no meaning.
 4. Only external services are faked: the identity service and email. A fake is a hand-written implementation of our interface. Source: Khorikov, Chapter 9. Time is faked with FakeTimeProvider. Tokens in tests are signed with a test key the host is given.
 5. Each test creates its own tenant.
+6. A test host on the shared database runs no idempotency cleanup. The cleanup deletes every expired row on its database, by the clock of its host. A test that moves a fake clock past the retention would delete the idempotency rows of other tests. `ApiFactory` and `PipelineHost` remove the cleanup from a host on the shared database (`SharedDatabaseCleanupTests`). A test of the cleanup runs on a database of its own. Source: Meszaros, *xUnit Test Patterns*, Chapter 6 (Interacting Tests) and Chapter 18 (Shared Fixture).
 
 Unit test standard:
 
