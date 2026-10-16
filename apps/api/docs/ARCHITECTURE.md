@@ -79,7 +79,7 @@ Each module is five projects. Another module sees only the `Contracts` project.
 
 - Two controls enforce the boundary: project references (compilation) and architecture tests. Source: Ford, Parsons, Kua, Chapter 2.
 - The `Api` project cannot reach the `DbContext`. Source: Evans, Chapter 4.
-- A read across modules is a plain method call. The interface is in `A.Contracts`. Its implementation is an `internal sealed` class inside A. Source: Gamma et al., Chapter 4 (Facade). Evans, Chapter 14 (Open Host Service).
+- A read across modules is a plain method call. The interface is in `A.Contracts`. Its implementation is an `internal sealed` class inside A. The exception is an implementation that another module's handler takes: it is public and sealed, so that Wolverine builds it on its module's DbContext (W1, W9). Today that is `UserNames` only. Source: Gamma et al., Chapter 4 (Facade). Evans, Chapter 14 (Open Host Service).
 - The shared kernel stays small and carries no business concept. Source: Evans, Chapter 14.
 - Test projects are next to their module. Tests of the host and system-wide tests (architecture, end to end) stay in the top tests folder (N9).
 - Names, folders, routes and permissions follow section 10.
@@ -276,7 +276,7 @@ There are three modules. A system admin creates the tenant and the first Owner c
 | --- | --- |
 | ControlPlane | Tenant record, system admins, users, memberships, roles and permissions, invitations, tenant creation, tenant and user suspension |
 | Notifications | It hears an event and sends a message to a person. In the first template, only the invitation emails: to a new tenant's first Owner, and to a person a member invited |
-| Audit | It hears an event and writes the record of "who did what to what, and when", in the tenant's log, the platform's log, or both (K3) |
+| Audit | It hears an event and writes the record of "who did what to what, and when", in the tenant's log, the platform's log, or both (K3). It serves the two logs to their readers (section 6, "Reading the audit logs") |
 
 Source: Golding, Chapter 2 (control plane). Khononov, Chapter 3 (when you are not sure, keep the boundary wide).
 
@@ -437,10 +437,11 @@ An Owner or an Admin reads the tenant's log, "Activity" on the screen (`tenant.a
 | --- | --- | --- | --- |
 | `ListAuditEntries` | `GET /v1/tenants/{tenantId}/audit-log` | Audit, `ListAuditEntriesHandler` | Yes, the tenant's (R1) |
 | `ListPlatformAuditEntries` | `GET /v1/admin/audit-log` | Audit, `ListPlatformAuditEntriesHandler` | Yes; it declares neither a tenant nor a user (R11) |
+| `GetAuditEntryNames` | both endpoints, after the page | Audit, `GetAuditEntryNamesHandler` (`IUserNames`) | Yes, ControlPlane's |
 
 - The lists page by a cursor, newest first, by `occurred_at` and then `id`, both descending (catalog, K5). The cursor holds the last item's pair, so a record written between two requests moves no item to another page. A query selects one more record than the limit; when it finds it, the answer's `nextCursor` points after the last item, else it is null.
 - The cursor is base64url of a version, the moment in UTC ticks, the id and a 4-byte SHA-256 checksum of those. A cursor that does not decode, or whose checksum does not match, answers 400 `paging.cursor_invalid`. The checksum is not a secret: a forged cursor only moves the page within what row level security lets the caller read.
-- The names come from ControlPlane, in one call for each page (K3, API composition). The implementation of `IUserNames` is internal, so Wolverine resolves it from the message's scope (`AlwaysUseServiceLocationFor`). The handler's transaction is Audit's (W1); the names are read outside it, from `control_plane.users`, which has no row level security (R6).
+- The names come from ControlPlane, in one call for each page (K3, API composition). The endpoint sends two queries, because Wolverine gives a handler the transaction of one DbContext and the records and the names live in two modules (W1). Wolverine builds `UserNames` in the second handler, on ControlPlane's DbContext, so it is public and sealed: the one contract implementation that is not internal (section 2, W9; `ContractsShapeTests`).
 - An actor is a user, with their name now; the platform, "Platform"; or the identity provider, "Identity provider". A record written before K3 has no actor kind and reads as the platform's (K3). A deleted user reads "Deleted user", and an id the catalog does not know has no name. A user without a name reads "Unnamed user"; the answer holds no email address.
 - The permission catalogue is in `ControlPlane.Contracts`, which `Audit.Api` does not reference (section 2). The endpoints state the names again; `EndpointAccessTests` fails for an endpoint whose permission the catalogue does not hold.
 - Tests: `ListAuditEntriesTests`, `ListPlatformAuditEntriesTests`, `AuditActorIdMigrationTests`, `CursorRequestTests`, `ListContractTests`.
