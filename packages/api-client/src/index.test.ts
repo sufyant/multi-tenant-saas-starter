@@ -36,6 +36,8 @@ describe("createApiClient", () => {
       name: "Acme",
       slug: "acme",
       status: "active",
+      suspensionReason: null,
+      closedAt: null,
     };
     const fetch = answer({ items: [tenant], page: 1, pageSize: 20, total: 1 });
     const client = createApiClient({
@@ -105,6 +107,7 @@ describe("createApiClient", () => {
       "/v1/admin/tenants/{tenantId}/suspend",
       {
         params: { path: { tenantId } },
+        body: { reason: "Unpaid invoices" },
       },
     );
 

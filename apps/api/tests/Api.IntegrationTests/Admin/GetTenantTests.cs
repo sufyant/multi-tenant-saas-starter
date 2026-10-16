@@ -27,6 +27,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [InlineData("Active", "active")]
     [InlineData("Suspended", "suspended")]
     [InlineData("Cancelled", "cancelled")]
+    [InlineData("Closed", "closed")]
     public async Task GetTenant_ATenantInAnyStatus_ReturnsItWithItsStatus(string stored, string answered)
     {
         var tenant = await _catalog.AddTenantAsync(status: stored, name: "Admin View Ltd");
@@ -37,7 +38,19 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Admin View Ltd", tenant.Slug, answered));
-        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
+        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
+    }
+
+    // The system admin sees why a tenant is suspended, and when it was closed; a member never does.
+    [Fact]
+    public async Task GetTenant_ClosedAfterASuspension_ShowsTheReasonAndTheMomentOfTheClosure()
+    {
+        var closedAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
+        var tenant = await _catalog.AddTenantAsync(status: "Closed", suspensionReason: "Unpaid invoices", closedAt: closedAt);
+
+        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/tenants/{tenant.Id}", Cancellation);
+
+        (found.GetProperty("suspensionReason").GetString(), found.GetProperty("closedAt").GetDateTimeOffset()).ShouldBe(("Unpaid invoices", closedAt));
     }
 
     [Fact]

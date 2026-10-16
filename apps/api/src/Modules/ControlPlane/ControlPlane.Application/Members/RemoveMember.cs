@@ -33,6 +33,14 @@ public static class RemoveMemberHandler
             return (Errors.TenantNotFound, null);
         }
 
+        // The door let the actor into an active tenant, but a system admin may have suspended or closed it while this request waited for
+        // the lock: under the lock, a tenant that is no longer active is refused (K6).
+        var access = Tenant.CheckMemberAccess(tenant.Status);
+        if (!access.IsSuccess)
+        {
+            return (access, null);
+        }
+
         if (await catalog.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
             return (Errors.MembershipNotFound, null);

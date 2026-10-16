@@ -14,6 +14,12 @@ public static class Permissions
 
     public const string AdminTenantsReactivate = "admin.tenants.reactivate";
 
+    public const string AdminTenantsUpdate = "admin.tenants.update";
+
+    public const string AdminTenantsClose = "admin.tenants.close";
+
+    public const string AdminTenantsReopen = "admin.tenants.reopen";
+
     public const string AdminUsersRead = "admin.users.read";
 
     public const string AdminUsersSuspend = "admin.users.suspend";

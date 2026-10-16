@@ -12,8 +12,8 @@ namespace ControlPlane.Application.Ports;
 public interface IUserTenants
 {
     /// <summary>
-    /// A page of the active and suspended tenants the user is a member of, whose name or slug contains the search, by the sort field,
-    /// then id; none for a user the catalog does not know.
+    /// A page of the active, suspended and closed tenants the user is a member of, whose name or slug contains the search, by the sort
+    /// field, then id; none for a user the catalog does not know.
     /// </summary>
-    internal Task<ListPage<Tenant>> ListActiveOrSuspendedAsync(string externalUserId, ListRequest<ListMyTenantsSort> list, CancellationToken cancellationToken);
+    internal Task<ListPage<Tenant>> ListPastCreationAsync(string externalUserId, ListRequest<ListMyTenantsSort> list, CancellationToken cancellationToken);
 }

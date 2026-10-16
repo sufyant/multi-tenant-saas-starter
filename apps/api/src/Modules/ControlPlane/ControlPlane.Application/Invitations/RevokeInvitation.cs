@@ -1,5 +1,6 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
+using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
 namespace ControlPlane.Application.Invitations;
@@ -8,9 +9,9 @@ namespace ControlPlane.Application.Invitations;
 public sealed record RevokeInvitation(string RevokerId, Guid InvitationId);
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row is
-// locked first; a revoker who is no longer a member finds no tenant (T3); then the invitation is locked. Row level security hides
-// another tenant's invitation, so its id is not found. Every rejection returns before the handler changes anything, because Wolverine
-// commits a failed Result too (W7).
+// locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
+// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. Every rejection returns before
+// the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class RevokeInvitationHandler
 {
     public static async Task<(Result, InvitationRevoked?)> HandleAsync(
@@ -29,6 +30,14 @@ public static class RevokeInvitationHandler
         if (await catalog.FindMembershipAsync(revoker.Id, cancellationToken) is null)
         {
             return (Errors.TenantNotFound, null);
+        }
+
+        // The door let the revoker into an active tenant, but a system admin may have suspended or closed it while this request waited for
+        // the lock: under the lock, a tenant that is no longer active is refused (K6).
+        var access = Tenant.CheckMemberAccess(tenant.Status);
+        if (!access.IsSuccess)
+        {
+            return (access, null);
         }
 
         if (await catalog.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)

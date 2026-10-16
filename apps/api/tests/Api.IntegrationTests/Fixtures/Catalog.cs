@@ -7,12 +7,22 @@ namespace Api.IntegrationTests.Fixtures;
 // into the main database unless the test names a database of its own.
 internal sealed class Catalog(Database database, string databaseName = Database.MainDatabase)
 {
-    public async Task<(Guid Id, string Slug)> AddTenantAsync(string status = "Active", string? slug = null, string name = "Acme Ltd", Guid? tenantId = null)
+    public async Task<(Guid Id, string Slug)> AddTenantAsync(
+        string status = "Active",
+        string? slug = null,
+        string name = "Acme Ltd",
+        Guid? tenantId = null,
+        string? suspensionReason = null,
+        DateTimeOffset? closedAt = null)
     {
         var id = tenantId ?? Guid.NewGuid();
         slug ??= $"tenant-{id:N}"[..20];
         await database.ScalarAsync<object>(
-            $"INSERT INTO control_plane.tenants (id, name, slug, status) VALUES ('{id}', '{name}', '{slug}', '{status}')", database: databaseName);
+            $"""
+            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at)
+            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))})
+            """,
+            database: databaseName);
 
         return (id, slug);
     }

@@ -3,6 +3,7 @@ using ControlPlane.Contracts;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Tenants;
 using FluentValidation;
 using SharedKernel;
 
@@ -29,7 +30,7 @@ public sealed class InviteMemberValidator : AbstractValidator<InviteMember>
 
 // K6: an invitation belongs to the tenant aggregate, so the tenant row is locked first; two invitations at once then run one after the
 // other, and neither passes the daily limit nor leaves a second pending invitation. The checks run in the catalog's order: an inviter
-// who is no longer a member, the role rule, a member's address, the daily limit. Every rejection returns before the handler changes
+// who is no longer a member, a tenant that is no longer active, the role rule, a member's address, the daily limit. Every rejection returns before the handler changes
 // anything, because Wolverine commits a failed Result too (W7). The secret is born here; only its hash is stored, and the link that
 // carries it goes on in the event.
 public static class InviteMemberHandler
@@ -53,6 +54,14 @@ public static class InviteMemberHandler
         if (await catalog.FindMembershipAsync(inviter.Id, cancellationToken) is not { } membership)
         {
             return (Errors.TenantNotFound, null);
+        }
+
+        // The door let the inviter into an active tenant, but a system admin may have suspended or closed it while this request waited for
+        // the lock: under the lock, a tenant that is no longer active is refused (K6).
+        var access = Tenant.CheckMemberAccess(tenant.Status);
+        if (!access.IsSuccess)
+        {
+            return (access.Error, null);
         }
 
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Name == command.Role);

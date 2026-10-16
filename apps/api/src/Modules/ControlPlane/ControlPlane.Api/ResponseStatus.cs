@@ -16,14 +16,16 @@ internal static class ResponseStatus
         "Active" => TenantResponseStatus.Active,
         "Suspended" => TenantResponseStatus.Suspended,
         "Cancelled" => TenantResponseStatus.Cancelled,
+        "Closed" => TenantResponseStatus.Closed,
         _ => throw Unknown(status),
     };
 
-    // A member sees only an active or a suspended tenant (T4), and an invitation is accepted only in an active one.
+    // A member sees only an active, a suspended or a closed tenant (T4), and an invitation is accepted only in an active one.
     public static MyTenantResponseStatus OfMyTenant(string status) => status switch
     {
         "Active" => MyTenantResponseStatus.Active,
         "Suspended" => MyTenantResponseStatus.Suspended,
+        "Closed" => MyTenantResponseStatus.Closed,
         _ => throw Unknown(status),
     };
 
@@ -42,6 +44,7 @@ internal static class ResponseStatus
         TenantResponseStatus.Active => "Active",
         TenantResponseStatus.Suspended => "Suspended",
         TenantResponseStatus.Cancelled => "Cancelled",
+        TenantResponseStatus.Closed => "Closed",
         _ => throw Unknown(status.ToString()),
     };
 

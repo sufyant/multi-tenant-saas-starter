@@ -76,7 +76,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         var tenant = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
+        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);

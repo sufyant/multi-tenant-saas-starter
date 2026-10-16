@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using ControlPlane.Infrastructure.Clerk;
@@ -48,6 +49,12 @@ public static class ControlPlaneInfrastructure
             .Validate(settings => settings.DailyLimitPerTenant > 0, $"{InvitationSettings.Section}:DailyLimitPerTenant must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<InvitationSettings>>().Value);
+
+        services.AddOptions<TenantSettings>()
+            .BindConfiguration(TenantSettings.Section)
+            .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantSettings.Section}:ReopenPeriod must be positive.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantSettings>>().Value);
 
         services.AddOptions<TenantCreationSettings>()
             .BindConfiguration(TenantCreationSettings.Section)
