@@ -27,7 +27,19 @@ internal static class PermissionPools
 
     public const string TenantProfileRead = "tenant.profile.read";
 
-    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(StringComparer.Ordinal, TenantMembersRead, TenantProfileRead);
+    public const string TenantInvitationsCreate = "tenant.invitations.create";
+
+    public const string TenantInvitationsRead = "tenant.invitations.read";
+
+    public const string TenantInvitationsDelete = "tenant.invitations.delete";
+
+    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(
+        StringComparer.Ordinal,
+        TenantMembersRead,
+        TenantProfileRead,
+        TenantInvitationsCreate,
+        TenantInvitationsRead,
+        TenantInvitationsDelete);
 
     public static IReadOnlySet<string> SystemPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,

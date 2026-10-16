@@ -23,4 +23,10 @@ public static class Permissions
     public const string TenantMembersRead = "tenant.members.read";
 
     public const string TenantProfileRead = "tenant.profile.read";
+
+    public const string TenantInvitationsCreate = "tenant.invitations.create";
+
+    public const string TenantInvitationsRead = "tenant.invitations.read";
+
+    public const string TenantInvitationsDelete = "tenant.invitations.delete";
 }

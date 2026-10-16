@@ -24,4 +24,9 @@ internal static class Logs
     public static Task<long> CountAsync(IServiceProvider services, string log, Guid? tenantId, Guid entryId) =>
         InTenant.SqlAsync(
             services, tenantId, async command => (long)(await command.ExecuteScalarAsync(Cancellation))!, $"SELECT count(*) FROM {log} WHERE id = '{entryId}'");
+
+    // The details of one record as JSON text; null when the record has none.
+    public static Task<string?> DetailsAsync(IServiceProvider services, string log, Guid? tenantId, Guid entryId) =>
+        InTenant.SqlAsync(
+            services, tenantId, async command => await command.ExecuteScalarAsync(Cancellation) as string, $"SELECT details::text FROM {log} WHERE id = '{entryId}'");
 }
