@@ -137,7 +137,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 | `ListTenants` | name, slug | `status` | `name`, `slug` | tenants: trigram on name and slug; B-tree on name; the unique slug index |
 | `ListUsers` | email, first name, last name | `status` | `email`, `lastName` | users: trigram on email, first name and last name; B-tree on email and last name |
 | `ListMembers` | email, first name, last name | `role` | `role` (Owner, Admin, Member), `email`, `lastName` | the users indexes; memberships: the primary key and the B-tree on role id |
-| `ListInvitations` | email | `role` | `expiresAt`, `email` | invitations: trigram on email; B-tree on expires_at; the partial unique index on tenant and `lower(email)` of pending invitations |
+| `ListInvitations` | email | `role` | `expiresAt`, `email` | invitations: trigram on email; B-tree on email and expires_at; the partial unique index on tenant and `lower(email)` of pending invitations |
 
 - The member search starts from the active tenant's memberships, which row level security keeps to the tenant, and joins each member's user. It never starts from the users table, which is not under row level security (R6).
 

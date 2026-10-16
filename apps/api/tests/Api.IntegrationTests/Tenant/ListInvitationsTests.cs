@@ -209,7 +209,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         var response = await _api.CreateClient(owner).GetAsync($"/v1/tenants/{tenant.Id}/invitations?{query}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe(code);
     }
 
     private async Task AddInvitationsAsync(Guid tenantId, params string[] emails)

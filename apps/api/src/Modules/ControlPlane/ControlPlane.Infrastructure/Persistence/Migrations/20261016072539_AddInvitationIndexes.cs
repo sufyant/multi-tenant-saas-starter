@@ -11,6 +11,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateIndex(
+                name: "ix_invitations_email",
+                schema: "control_plane",
+                table: "invitations",
+                column: "email");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_invitations_email_trgm",
                 schema: "control_plane",
                 table: "invitations",
@@ -34,6 +40,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql("DROP INDEX control_plane.ix_invitations_pending_email;");
+
+            migrationBuilder.DropIndex(
+                name: "ix_invitations_email",
+                schema: "control_plane",
+                table: "invitations");
 
             migrationBuilder.DropIndex(
                 name: "ix_invitations_email_trgm",

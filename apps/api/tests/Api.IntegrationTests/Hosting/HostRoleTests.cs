@@ -180,6 +180,29 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "member.invited")).ShouldBe(1L);
     }
 
+    // O3: a revocation is announced from the web host, and its Audit handler runs in the worker, once.
+    [Fact]
+    public async Task RevokeInvitation_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var invitation = await catalog.AddInvitationAsync(tenant.Id);
+
+        var revoked = await owner.DeleteAsync($"/v1/tenants/{tenant.Id}/invitations/{invitation}", Cancellation);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "invitation.revoked") > 0);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RevokeInvitation), typeof(RevokeInvitationHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(InvitationRevoked), typeof(RecordInvitationRevokedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "invitation.revoked")).ShouldBe(1L);
+    }
+
     // O3: a reactivation is announced from the web host, and its Audit handler runs in the worker, once.
     [Fact]
     public async Task ReactivateTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()

@@ -51,7 +51,7 @@ public sealed record MemberResponse(Guid UserId, string? Email, string? FirstNam
 /// A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
 /// and the role an invitation gives.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter<MemberRole>))]
+[JsonConverter(typeof(MemberRoleConverter))]
 public enum MemberRole
 {
     [JsonStringEnumMemberName("Owner")]
@@ -63,3 +63,8 @@ public enum MemberRole
     [JsonStringEnumMemberName("Member")]
     Member,
 }
+
+/// <summary>
+/// Reads a role by its name only. The default converter also takes a number, so <c>7</c> would bind to no role and <c>0</c> to Owner.
+/// </summary>
+public sealed class MemberRoleConverter() : JsonStringEnumConverter<MemberRole>(allowIntegerValues: false);

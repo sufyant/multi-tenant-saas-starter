@@ -127,6 +127,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("AcceptedBy")
                         .HasDatabaseName("ix_invitations_accepted_by");
 
+                    b.HasIndex("Email")
+                        .HasDatabaseName("ix_invitations_email");
+
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("ix_invitations_expires_at");
 

@@ -113,6 +113,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Theory]
     [InlineData("""{ "email": "ada@example.com" }""")]
     [InlineData("""{ "email": "ada@example.com", "role": "Guest" }""")]
+    [InlineData("""{ "email": "ada@example.com", "role": 7 }""")]
+    [InlineData("""{ "email": "ada@example.com", "role": 0 }""")]
     public async Task InviteMember_WithoutAKnownRole_IsABadRequest(string body)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -221,6 +223,37 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var pending = await _catalog.AddInvitationAsync(tenant.Id, email);
 
         (await _catalog.InvitationStatusOfAsync(pending)).ShouldBe("Pending");
+    }
+
+    // Row level security keeps the check to the tenant's own members: a member of another tenant with the address is no member here.
+    [Fact]
+    public async Task InviteMember_TheEmailOfAMemberOfAnotherTenant_CreatesTheInvitation()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var other = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var email = NewEmail();
+        await _catalog.AddMemberAsync(other.Id, await _catalog.AddUserAsync(email: email));
+
+        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, email);
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
+    // The limit counts the tenant's own invitations only.
+    [Fact]
+    public async Task InviteMember_AnotherTenantAtItsLimit_CreatesTheInvitation()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var other = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var otherOwner = _api.CreateClient(await _catalog.AddMemberAsync(other.Id, role: "Owner"));
+        (await otherOwner.InviteMemberAsync(other.Id, NewEmail())).StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await otherOwner.InviteMemberAsync(other.Id, NewEmail())).StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail());
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     // The catalog's copy of a member's address, compared without case.
@@ -342,7 +375,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     // O4: an event that arrives twice sends one email, because the email's idempotency key is the invitation's.
     [Fact]
-    public async Task SendInvitationEmail_MemberInvitedArrivesTwice_SendsOneEmail()
+    public async Task SendMemberInvitationEmail_MemberInvitedArrivesTwice_SendsOneEmail()
     {
         var invited = new MemberInvited(
             Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), Guid.NewGuid(), "Member", null, NewEmail(), "Acme Ltd",

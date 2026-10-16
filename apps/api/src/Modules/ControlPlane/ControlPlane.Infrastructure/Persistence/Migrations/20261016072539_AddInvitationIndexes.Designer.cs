@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ControlPlane.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ControlPlaneDbContext))]
-    [Migration("20261016065205_AddInvitationIndexes")]
+    [Migration("20261016072539_AddInvitationIndexes")]
     partial class AddInvitationIndexes
     {
         /// <inheritdoc />
@@ -129,6 +129,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AcceptedBy")
                         .HasDatabaseName("ix_invitations_accepted_by");
+
+                    b.HasIndex("Email")
+                        .HasDatabaseName("ix_invitations_email");
 
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("ix_invitations_expires_at");
