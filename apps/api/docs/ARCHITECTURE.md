@@ -532,8 +532,9 @@ The test is written first. Tests run with real PostgreSQL. We do not fake our ow
    - The options are in `TestingPlatformCommandLineArguments` of the test project. Under Microsoft.Testing.Platform, xUnit ignores `longRunningTestSeconds` in `xunit.runner.json`.
    - xUnit writes a line for each test that runs for 60 s or more into the diagnostic log of the run (`--long-running 60`). The slowest test takes 13 s.
    - When no test ends for 3 minutes, the hang dump extension writes a heap dump of the test process and a list of the tests in progress, then ends the run (`--hangdump-timeout 3m`).
-   - The files go to the results directory: `bin/Debug/net10.0/TestResults` of the test project on a local run, and `apps/api/TestResults` in CI. When the test step fails, CI keeps the folder for 7 days as the artifact `api-test-results`.
+   - The files go to the results directory: `bin/Debug/net10.0/TestResults` of the test project on a local run, and `apps/api/TestResults` in CI. When the test step fails, or a hang runs into the job's time limit, CI keeps the folder for 7 days as the artifact `api-test-results`.
    - Read a dump with `dotnet-dump analyze <file>`: `clrstack -all` gives every thread, `dumpasync` gives every waiting async method.
+9. A tracked session waits up to 30 s for the messages a test caused, on `ApiFactory` and on `PipelineHost` (`ApiFactory.TrackingTimeout`). Wolverine's default is 5 s. A message that fails for good runs 4 times, with pauses of 100 ms, 500 ms and 2 s, before it reaches the dead letter queue. Under load each run can take a second, so 5 s is too short.
 
 Unit test standard:
 
