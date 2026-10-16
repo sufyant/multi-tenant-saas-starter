@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
@@ -24,6 +25,15 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
         {
             _ = ActiveTenant; // Fails fast outside a tenant.
             return controlPlane.Memberships;
+        }
+    }
+
+    private IQueryable<Invitation> Invitations
+    {
+        get
+        {
+            _ = ActiveTenant; // Fails fast outside a tenant.
+            return controlPlane.Invitations;
         }
     }
 
@@ -122,6 +132,70 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .ToListAsync(cancellationToken);
 
         return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn))], list.Paging, total);
+    }
+
+    // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level
+    // security keeps to the tenant. lower() on both sides compares the address without case, in the database's own rules.
+    Task<bool> ITenantCatalog.IsMemberEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        _ = ActiveTenant; // Fails fast outside a tenant.
+        return controlPlane.Database.SqlQuery<int>(
+                $"""
+                SELECT 1 AS "Value" FROM control_plane.memberships
+                JOIN control_plane.users ON users.id = memberships.user_id
+                WHERE lower(users.email) = lower({email})
+                """)
+            .AnyAsync(cancellationToken);
+    }
+
+    Task<int> ITenantCatalog.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
+        Invitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
+
+    // The same comparison as the partial unique index, which serves the query (K2): lower(email), pending only. Row level security
+    // adds the tenant.
+    async Task<Invitation?> ITenantCatalog.FindPendingInvitationAsync(string email, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.Invitations
+            .FromSql($"SELECT * FROM control_plane.invitations WHERE lower(email) = lower({email}) AND status = 'Pending'")
+            .ToListAsync(cancellationToken);
+
+        return found.SingleOrDefault();
+    }
+
+    // Row level security keeps the list to the active tenant; the query names no tenant. Two pending invitations never share an address,
+    // so only the expiry can tie, and the id breaks every tie (K5).
+    async Task<ListPage<Invitation>> ITenantCatalog.ListPendingInvitationsAsync(
+        ListRequest<ListInvitationsSort> list,
+        BuiltInRole? role,
+        CancellationToken cancellationToken)
+    {
+        var invitations = Invitations.Where(invitation => invitation.Status == InvitationStatus.Pending);
+        if (role is { } wanted)
+        {
+            var roleId = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == wanted).Id;
+            invitations = invitations.Where(invitation => invitation.RoleId == roleId);
+        }
+
+        if (list.Search is { } search)
+        {
+            var pattern = ListQueries.ContainsPattern(search);
+            invitations = invitations.Where(invitation => EF.Functions.ILike(invitation.Email, pattern, ListQueries.Escape));
+        }
+
+        var total = await invitations.CountAsync(cancellationToken);
+        var sorted = list.Sort switch
+        {
+            ListInvitationsSort.Email => invitations.OrderBy(invitation => invitation.Email, list.Descending),
+            _ => invitations.OrderBy(invitation => invitation.ExpiresAt, list.Descending),
+        };
+        var page = await sorted
+            .ThenBy(invitation => invitation.Id)
+            .Skip(list.Paging.Skip)
+            .Take(list.Paging.PageSize)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return new ListPage<Invitation>(page, list.Paging, total);
     }
 
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken)

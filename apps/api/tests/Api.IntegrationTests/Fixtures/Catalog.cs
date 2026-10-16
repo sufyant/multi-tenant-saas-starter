@@ -66,6 +66,33 @@ internal sealed class Catalog(Database database, string databaseName = Database.
     public Task SuspendUserAsync(string externalId) =>
         database.ScalarAsync<object>($"UPDATE control_plane.users SET suspended_at = now() WHERE external_id = '{externalId}'", database: databaseName);
 
+    // An invitation of the tenant, from a new inviter, with its tenant declared. Its token hash is new, so no link names it.
+    public async Task<Guid> AddInvitationAsync(
+        Guid tenantId,
+        string? email = null,
+        string role = "Member",
+        string status = "Pending",
+        DateTimeOffset? expiresAt = null,
+        Guid? id = null)
+    {
+        var invitationId = id ?? Guid.NewGuid();
+        var inviter = await UserIdOfAsync(await AddUserAsync());
+        await database.ExecuteInTenantAsync(
+            tenantId,
+            $"""
+            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, token_hash, status)
+            SELECT '{invitationId}', '{tenantId}', '{email ?? $"{Guid.NewGuid():N}@example.com"}', roles.id, '{inviter}', now(),
+                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{Guid.NewGuid():N}{Guid.NewGuid():N}', '{status}'
+            FROM control_plane.roles WHERE roles.built_in = '{role}'
+            """,
+            database: databaseName);
+
+        return invitationId;
+    }
+
+    public Task<string?> InvitationStatusOfAsync(Guid invitationId) =>
+        database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'", databaseName);
+
     public Task<string?> TenantStatusOfAsync(Guid tenantId) =>
         database.ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'", database: databaseName);
 

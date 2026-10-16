@@ -21,6 +21,7 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
         { "ListUsers", "admin" },
         { "ListMyTenants", "user" },
         { "ListMembers", "member" },
+        { "ListInvitations", "member" },
     };
 
     public async ValueTask InitializeAsync()

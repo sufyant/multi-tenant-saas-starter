@@ -28,4 +28,16 @@ public class RoleTests
 
         roles.ShouldAllBe(role => role.Permissions.Contains("tenant.profile.read"));
     }
+
+    // The invitations are the Owners' and the Admins' work (K1); a Member holds none of their permissions.
+    [Theory]
+    [InlineData("tenant.invitations.create")]
+    [InlineData("tenant.invitations.read")]
+    [InlineData("tenant.invitations.delete")]
+    public void ManageInvitations_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot(string permission)
+    {
+        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains(permission)).Select(role => role.BuiltIn);
+
+        holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
+    }
 }

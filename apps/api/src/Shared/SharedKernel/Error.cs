@@ -15,4 +15,6 @@ public sealed record Error(string Code, string Description, ErrorType Type)
     public static Error Forbidden(string code, string description) => new(code, description, ErrorType.Forbidden);
 
     public static Error Unprocessable(string code, string description) => new(code, description, ErrorType.Unprocessable);
+
+    public static Error TooManyRequests(string code, string description) => new(code, description, ErrorType.TooManyRequests);
 }

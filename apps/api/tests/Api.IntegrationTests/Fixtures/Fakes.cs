@@ -76,6 +76,14 @@ internal sealed partial class FakeEmailChannel : IEmailChannel
         return Uri.UnescapeDataString(link.Query["?code=".Length..]);
     }
 
+    // The invitation code of the email sent for the invitation: its idempotency key is the invitation's.
+    public string CodeSentFor(Guid invitationId)
+    {
+        var link = new Uri(Link().Match(Sent.Single(sent => sent.IdempotencyKey == $"invite/{invitationId}").Text).Value);
+        link.Query.ShouldStartWith("?code=");
+        return Uri.UnescapeDataString(link.Query["?code=".Length..]);
+    }
+
     [GeneratedRegex(@"https://\S+")]
     private static partial Regex Link();
 }

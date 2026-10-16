@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Invitations;
@@ -45,6 +46,30 @@ public interface ITenantCatalog
     /// </summary>
     internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role)>> ListMembersAsync(
         ListRequest<ListMembersSort> list,
+        BuiltInRole? role,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether a member of the active tenant has this email address, in the catalog's copy of their profile, compared without case.
+    /// The search starts from the tenant's memberships, never from the users.
+    /// </summary>
+    internal Task<bool> IsMemberEmailAsync(string email, CancellationToken cancellationToken);
+
+    /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
+    internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The active tenant's pending invitation to this email address, compared without case; null when it has none. The caller holds the
+    /// tenant's lock, which every change to an invitation takes first (K6).
+    /// </summary>
+    internal Task<Invitation?> FindPendingInvitationAsync(string email, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A page of the active tenant's pending invitations, expired ones included, of the role or every role, whose email address contains
+    /// the search: by the sort field, then by id.
+    /// </summary>
+    internal Task<ListPage<Invitation>> ListPendingInvitationsAsync(
+        ListRequest<ListInvitationsSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken);
 
