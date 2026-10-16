@@ -50,7 +50,7 @@ public sealed class PlatformAuditLogTests(Database database)
         seen.ShouldBe(1);
     }
 
-    // The platform's log is new, so its actor id is a uuid from the start. The tenant's log keeps its text column until step 20f.
+    // The platform's log keeps its actor id as a uuid from the start; the tenant's log does too since step 20f.
     [Fact]
     public async Task ReadPlatformLogColumns_ActorId_IsAUuid()
     {

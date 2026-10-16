@@ -28,7 +28,11 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
         {
             entry.ToTable("entries");
             MapRecord(entry);
-            entry.Property(e => e.ActorId).HasConversion<string>().HasMaxLength(AuditRecord.ActorIdMaxLength);
+
+            // The cursor of the tenant's log reads newest first inside the tenant that row level security keeps (K5). "TenantId" is
+            // the tenant column that TenantDbContext gives every tenant entity.
+            entry.Property<Guid>("TenantId");
+            entry.HasIndex("TenantId", nameof(AuditRecord.OccurredAt), nameof(AuditRecord.Id));
         });
 
         modelBuilder.Entity<PlatformAuditEntry>(entry =>
@@ -38,6 +42,7 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
             entry.Property(e => e.ActorKind).IsRequired();
             entry.Property(e => e.TargetKind).IsRequired();
             entry.Property(e => e.TargetId).IsRequired();
+            entry.HasIndex(e => new { e.OccurredAt, e.Id });
         });
     }
 
@@ -51,6 +56,5 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
         entry.Property(e => e.TargetKind).HasConversion<string>().HasMaxLength(20);
         entry.Property(e => e.TargetName).HasMaxLength(AuditRecord.TargetNameMaxLength);
         entry.Property(e => e.Details).HasColumnType("jsonb");
-        entry.HasIndex(e => e.OccurredAt);
     }
 }
