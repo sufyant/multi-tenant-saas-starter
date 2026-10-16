@@ -56,6 +56,11 @@ internal sealed class PipelineHost : IAsyncDisposable
             ["ConnectionStrings:Database"] = database.ApplicationConnectionString,
         });
         builder.Configuration.AddInMemoryCollection(settings ?? new Dictionary<string, string?>());
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Database"] = Database.ForHost(builder.Configuration.GetConnectionString("Database"), nameof(PipelineHost)),
+            ["ConnectionStrings:Messaging"] = Database.ForHost(builder.Configuration.GetConnectionString("Messaging"), nameof(PipelineHost)),
+        });
 
         builder.AddApiPipeline(typeof(PipelineHost).Assembly);
         builder.Services.AddControlPlaneInfrastructure(servesTheApi: false);
@@ -100,5 +105,10 @@ internal sealed class PipelineHost : IAsyncDisposable
         return client;
     }
 
-    public async ValueTask DisposeAsync() => await _app.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        var database = _app.Configuration.GetConnectionString("Database");
+        await _app.DisposeAsync();
+        Database.ClearStartCheckPool(database);
+    }
 }

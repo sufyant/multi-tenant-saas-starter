@@ -32,6 +32,8 @@ internal sealed class ApiFactory(
 {
     private bool _onKestrel;
 
+    private string? _databaseConnectionString;
+
     public const string AcceptUrl = "https://app.test/invitations/accept";
 
     // No account of the fake identity provider has this address, so nobody becomes the first system admin by accident.
@@ -130,6 +132,12 @@ internal sealed class ApiFactory(
         public Task StopAsync(CancellationToken cancellationToken) => lifetime.StopAsync(cancellationToken);
     }
 
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        Database.ClearStartCheckPool(_databaseConnectionString);
+    }
+
     private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TimeSpan.FromSeconds(30));
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -157,6 +165,13 @@ internal sealed class ApiFactory(
         {
             configuration[key] = value;
         }
+
+        foreach (var key in new[] { "ConnectionStrings:Database", "ConnectionStrings:Messaging", "ConnectionStrings:Migrations" })
+        {
+            configuration[key] = Database.ForHost(configuration.GetValueOrDefault(key), nameof(ApiFactory));
+        }
+
+        _databaseConnectionString = configuration["ConnectionStrings:Database"];
 
         // A host setting given as null would read as an empty value, not as a missing one.
         foreach (var (key, value) in configuration.Where(setting => setting.Value is not null))
