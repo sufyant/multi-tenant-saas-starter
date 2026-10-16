@@ -57,7 +57,7 @@ public class MemberManagementTests
         changed.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
     }
 
-    // Decision 2: an Owner steps down when another Owner exists, and cannot as the last one.
+    // K1: an Owner steps down when another Owner exists, and cannot as the last one.
     [Fact]
     public void ChangeMemberRole_AnOwnerStepsDownWithAnotherOwner_ChangesIt()
     {
@@ -80,7 +80,7 @@ public class MemberManagementTests
         self.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
     }
 
-    // Decision 2: an Admin may become a Member, and cannot make themselves an Owner.
+    // K1: an Admin may become a Member, and cannot make themselves an Owner.
     [Fact]
     public void ChangeMemberRole_AnAdminBecomesAMember_ChangesIt()
     {
@@ -102,7 +102,7 @@ public class MemberManagementTests
         self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
     }
 
-    // Decision 4: the role the member already has changes nothing. The last Owner keeps the Owner role, which is no loss.
+    // K1 and I1: the role the member already has changes nothing. The last Owner keeps the Owner role, which is no loss.
     [Theory]
     [InlineData("Owner", 1)]
     [InlineData("Admin", 1)]
@@ -114,7 +114,7 @@ public class MemberManagementTests
         result.Value.ShouldBeFalse();
     }
 
-    // 2.1: an Admin who acts on an Owner is refused before the Owner count is looked at.
+    // Section 6, "Member management": an Admin who acts on an Owner is refused before the Owner count is looked at.
     [Fact]
     public void ChangeMemberRole_AnAdminOnTheLastOwner_IsForbiddenFirst()
     {
@@ -168,7 +168,7 @@ public class MemberManagementTests
         result.Error.Type.ShouldBe(ErrorType.Conflict);
     }
 
-    // 2.1: removing yourself is refused before any other check, also for the last Owner.
+    // Section 6, "Member management": removing yourself is refused before any other check, also for the last Owner.
     [Fact]
     public void RemoveMember_TheLastOwnerThemselves_IsForbiddenFirst()
     {

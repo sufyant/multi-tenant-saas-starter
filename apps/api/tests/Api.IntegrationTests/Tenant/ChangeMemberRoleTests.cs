@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
@@ -74,7 +75,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Owner");
     }
 
-    // 2.1, check 4: an Admin does not touch an Owner, whatever role it would give.
+    // section 6, \"Member management\", check 4: an Admin does not touch an Owner, whatever role it would give.
     [Theory]
     [InlineData("Admin")]
     [InlineData("Member")]
@@ -106,7 +107,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
     }
 
-    // Decision 2: an Owner steps down when another Owner exists.
+    // K1: an Owner steps down when another Owner exists.
     [Fact]
     public async Task ChangeMemberRole_AnOwnerStepsDownWithAnotherOwner_ChangesIt()
     {
@@ -121,7 +122,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Admin");
     }
 
-    // 2.1, check 5: the last Owner keeps the role.
+    // section 6, \"Member management\", check 5: the last Owner keeps the role.
     [Fact]
     public async Task ChangeMemberRole_TheLastOwnerStepsDown_IsAConflictAndKeepsTheRole()
     {
@@ -136,7 +137,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Owner");
     }
 
-    // Decision 3: an Owner whose user the identity provider deleted still counts, so the other Owner may step down.
+    // K1: an Owner whose user the identity provider deleted still counts, so the other Owner may step down.
     [Fact]
     public async Task ChangeMemberRole_TheOtherOwnerIsADeletedUser_CountsThatOwner()
     {
@@ -152,7 +153,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Admin");
     }
 
-    // Decision 2: an Admin may become a Member, and cannot make themselves an Owner.
+    // K1: an Admin may become a Member, and cannot make themselves an Owner.
     [Fact]
     public async Task ChangeMemberRole_AnAdminBecomesAMember_ChangesIt()
     {
@@ -180,7 +181,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, adminId)).ShouldBe("Admin");
     }
 
-    // Decision 4 and I1: setting a state twice changes nothing, so the second request answers 200 and writes no second record.
+    // K1 and I1: setting a state twice changes nothing, so the second request answers 200 and writes no second record.
     [Fact]
     public async Task ChangeMemberRole_TheSameRoleTwice_AnswersOkAndRecordsOnce()
     {
@@ -238,7 +239,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     }
 
     // K6: the only two Owners demote each other at the same moment. The tenant row lock runs the two changes one after the other. The
-    // second runs as an Admin, who may not touch an Owner (2.1, check 4), so one Owner remains.
+    // second runs as an Admin, who may not touch an Owner (section 6, \"Member management\", check 4), so one Owner remains.
     [Fact]
     public async Task ChangeMemberRole_TheOnlyTwoOwnersDemoteEachOtherAtOnce_LeaveOneOwner()
     {
@@ -248,13 +249,55 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var oneId = await _catalog.UserIdOfAsync(one);
         var otherId = await _catalog.UserIdOfAsync(other);
 
-        var statuses = await database.AtOnceAsync(
+        var responses = await database.AtOnceAsync(
             tenant.Id,
             () => _api.CreateClient(one).ChangeMemberRoleAsync(tenant.Id, otherId, "Admin"),
             () => _api.CreateClient(other).ChangeMemberRoleAsync(tenant.Id, oneId, "Admin"));
 
-        statuses.Order().ShouldBe([HttpStatusCode.OK, HttpStatusCode.Forbidden]);
+        responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.OK, HttpStatusCode.Forbidden]);
+        (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.Forbidden))).ShouldBe("membership.owner_requires_owner");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
+    }
+
+    // Section 6, "Member management", check 1: an Owner removes another Owner while that Owner's role change waits for the tenant's lock.
+    // The change then runs for a user who is no longer a member, to whom the tenant does not exist (T3).
+    [Fact]
+    public async Task ChangeMemberRole_ByAnOwnerRemovedWhileItWaited_IsNotFoundAndChangesNothing()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var remover = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var removed = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var removedId = await _catalog.UserIdOfAsync(removed);
+        var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
+
+        var responses = await database.OneAfterTheOtherAsync(
+            tenant.Id,
+            () => _api.CreateClient(remover).RemoveMemberAsync(tenant.Id, removedId),
+            () => _api.CreateClient(removed).ChangeMemberRoleAsync(tenant.Id, member, "Admin"));
+
+        responses[0].StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        responses[1].StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await CodeOfAsync(responses[1])).ShouldBe("tenant.not_found");
+        (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
+    }
+
+    // The role is required and is a name: a request without one, with an unknown one or with a number is refused, and never falls back
+    // to the enum's first value, Owner.
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{ "role": "Root" }""")]
+    [InlineData("""{ "role": 0 }""")]
+    public async Task ChangeMemberRole_WithoutAValidRole_IsABadRequestAndKeepsTheRole(string body)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
+
+        var changed = await _api.CreateClient(owner).PatchAsync(
+            $"/v1/tenants/{tenant.Id}/members/{member}", new StringContent(body, Encoding.UTF8, "application/json"), Cancellation);
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
     }
 
     // K3: an entry holds ids and roles, never the member's name or email address.

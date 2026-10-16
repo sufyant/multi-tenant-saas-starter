@@ -58,7 +58,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, other)).ShouldBe(0);
     }
 
-    // 2.1, check 3.
+    // section 6, \"Member management\", check 3.
     [Theory]
     [InlineData("Owner")]
     [InlineData("Admin")]
@@ -76,7 +76,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, actorId)).ShouldBe(1);
     }
 
-    // 2.1, check 4.
+    // section 6, \"Member management\", check 4.
     [Fact]
     public async Task RemoveMember_AnAdminRemovesAnOwner_IsForbiddenAndTheOwnerStays()
     {
@@ -162,12 +162,13 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var oneId = await _catalog.UserIdOfAsync(one);
         var otherId = await _catalog.UserIdOfAsync(other);
 
-        var statuses = await database.AtOnceAsync(
+        var responses = await database.AtOnceAsync(
             tenant.Id,
             () => _api.CreateClient(one).RemoveMemberAsync(tenant.Id, otherId),
             () => _api.CreateClient(other).RemoveMemberAsync(tenant.Id, oneId));
 
-        statuses.Order().ShouldBe([HttpStatusCode.NoContent, HttpStatusCode.NotFound]);
+        responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.NoContent, HttpStatusCode.NotFound]);
+        (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.NotFound))).ShouldBe("tenant.not_found");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
     }
 

@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http.Json;
 using Npgsql;
 
@@ -15,12 +14,29 @@ internal static class MemberRequests
     // Two requests at the same moment (K6). A holder takes the tenant's row and every membership row of the tenant, then sends both
     // requests and lets go only when both wait behind it. With the tenant lock in the handlers, both wait for the tenant row and then run
     // one after the other. Without it, both read the memberships and count the Owners, then wait to write a membership row; both then
-    // write on what they read.
-    public static async Task<HttpStatusCode[]> AtOnceAsync(
+    // write on what they read. The answers come in the order of the arguments.
+    public static Task<HttpResponseMessage[]> AtOnceAsync(
         this Database database,
         Guid tenantId,
         Func<Task<HttpResponseMessage>> one,
-        Func<Task<HttpResponseMessage>> other)
+        Func<Task<HttpResponseMessage>> other) =>
+        database.WhileHeldAsync(tenantId, one, other, inOrder: false);
+
+    // As AtOnceAsync, but the second request is sent only when the first waits behind the holder. A waiter for a row keeps its place in
+    // the queue, so the first request takes the tenant's lock first.
+    public static Task<HttpResponseMessage[]> OneAfterTheOtherAsync(
+        this Database database,
+        Guid tenantId,
+        Func<Task<HttpResponseMessage>> first,
+        Func<Task<HttpResponseMessage>> second) =>
+        database.WhileHeldAsync(tenantId, first, second, inOrder: true);
+
+    private static async Task<HttpResponseMessage[]> WhileHeldAsync(
+        this Database database,
+        Guid tenantId,
+        Func<Task<HttpResponseMessage>> one,
+        Func<Task<HttpResponseMessage>> other,
+        bool inOrder)
     {
         var cancellation = TestContext.Current.CancellationToken;
         await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
@@ -35,12 +51,17 @@ internal static class MemberRequests
             holding);
         await hold.ExecuteNonQueryAsync(cancellation);
 
-        var requests = new[] { one(), other() };
+        var first = one();
+        if (inOrder)
+        {
+            await Waiting.UntilAsync(async () => first.IsCompleted || await database.WaitingBehindAsync(holder.ProcessID) == 1);
+        }
+
+        var requests = new[] { first, other() };
         await Waiting.UntilAsync(async () => requests.All(request => request.IsCompleted) || await database.WaitingBehindAsync(holder.ProcessID) == 2);
         await holding.CommitAsync(cancellation);
-        var responses = await Task.WhenAll(requests);
 
-        return [.. responses.Select(response => response.StatusCode)];
+        return await Task.WhenAll(requests);
     }
 
     // How many sessions wait behind the holder's session: for its lock, or behind a session that waits for it.
