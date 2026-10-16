@@ -29,8 +29,8 @@ A member of the tenant. Each endpoint names a permission. To a non-member the te
 | new | GET | `/v1/tenants/{tenantId}` | `GetMyTenant` (answers `MyTenantResponse`) | `tenant.profile.read`; every role | none | none | none | 20c |
 | new | PATCH | `/v1/tenants/{tenantId}` | `RenameTenant` (name only; the slug never changes) | `tenant.profile.update`; Owner, Admin | T `tenant.renamed` | none | none | 20h |
 | changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; a deleted user stays, with an empty email and names; list contract; `q`: email, first name, last name; filter `role`; `sort`: `role`, `email`, `lastName`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c |
-| new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` | none | none | 20e |
-| new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` | `tenant.members.delete`; Owner, Admin; the last Owner cannot be removed (K1) | T `member.removed` | none | none | 20e |
+| new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` (body `{ "role" }`, a `MemberRole`; answers 200 `MemberResponse`; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a member the tenant has not (404 `membership.not_found`), the Owner role from an Admin or an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the role the member has answers 200 and writes nothing) | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` (details: the old and the new role) | none | none | 20e |
+| new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` (204; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a member the tenant has not (404 `membership.not_found`), yourself (403 `membership.cannot_remove_self`), an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the member loses access at once (T7)) | `tenant.members.delete`; Owner, Admin; only an Owner removes an Owner; the last Owner cannot be removed (K1) | T `member.removed` (details: the role the member had) | none | none | 20e |
 | new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; answers 201 `InvitationResponse`; locks the tenant row, then checks the role rule (403 `invitation.owner_requires_owner`), a member's address (409 `membership.exists`) and the daily limit (429 `invitation.daily_limit_reached`); replaces a pending invitation to the same email (K2)) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
 | new | GET | `/v1/tenants/{tenantId}/invitations` | `ListInvitations` (pending invitations, expired ones included; list contract; `q`: email; filter `role`; `sort`: `expiresAt`, `email`) | `tenant.invitations.read`; Owner, Admin | none | none | none | 20d |
 | new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (204; the link stops working at once; a cancelled invitation answers 204 again and writes nothing; an accepted one answers 409 `invitation.not_pending`; an id the tenant has not, 404 `invitation.not_found`) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | none | 20d |
@@ -76,8 +76,12 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - An Owner and an Admin invite members, change roles and remove members.
 - Only an Owner gives or takes the Owner role. Only an Owner removes an Owner.
 - A tenant always has at least one Owner. The last Owner cannot be removed or lose the role.
-- A member cannot leave a tenant by themselves. An Owner or an Admin removes them.
-- These rules live in Domain. A permission says who passes the door; a Domain rule says what can happen to an Owner.
+- A member cannot leave a tenant by themselves. An Owner or an Admin removes them. A member cannot remove themselves.
+- A member may change their own role under the same rules. An Owner may step down when another Owner exists. An Admin may become a Member. An Admin cannot become an Owner.
+- The Owner count includes every Owner membership, also one whose user the identity provider deleted. So a tenant whose other Owners are all deleted users still lets its last active Owner step down or be removed, and can be left with only deleted Owners. What happens to a deleted Owner is a later decision.
+- Setting the role a member already has answers 200 and publishes nothing, so it writes no audit entry (I1).
+- A removed member loses access at once: the tenant door reads the membership on every request (T7). No cache is added.
+- These rules live in Domain, on the tenant (`Tenant.ChangeMemberRole`, `Tenant.CheckRemoval`), because "at least one Owner" is the tenant's rule (M1). A permission says who passes the door; a Domain rule says what can happen to an Owner.
 - Every command that changes the tenant, a membership or an invitation locks the tenant row first (K6).
 
 ### K2. Invitations
@@ -152,11 +156,11 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 ### K7. Permission names
 
 - The new permission names are approved: `tenant.profile.*`, `tenant.invitations.*`, `tenant.members.update` and `tenant.members.delete`, `tenant.audit.read`, `admin.tenants.close` and `admin.tenants.reopen`, and `admin.audit.read` (N6).
-- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role. Step 20d adds `tenant.invitations.create`, `tenant.invitations.read` and `tenant.invitations.delete`, for the Owner and Admin roles only.
+- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role. Step 20d adds `tenant.invitations.create`, `tenant.invitations.read` and `tenant.invitations.delete`, for the Owner and Admin roles only. Step 20e adds `tenant.members.update` and `tenant.members.delete`, for the Owner and Admin roles only.
 
 ## Later
 
-- What happens when Clerk deletes a tenant's last Owner.
+- What happens when Clerk deletes a tenant's last Owner. Until then, a deleted user's Owner membership counts as an Owner (K1).
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.
 
