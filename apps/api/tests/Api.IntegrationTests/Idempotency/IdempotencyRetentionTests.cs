@@ -29,7 +29,12 @@ public sealed class IdempotencyRetentionTests(Database database)
     {
         var clock = new FakeTimeProvider();
         await using var host = await PipelineHost.StartAsync(
-            new Dictionary<string, string?> { ["Host:Role"] = "worker", ["Api:IdempotencyKeyRetention"] = TimeSpan.FromHours(retentionHours).ToString("c", System.Globalization.CultureInfo.InvariantCulture) },
+            new Dictionary<string, string?>
+            {
+                ["Host:Role"] = "worker",
+                ["ConnectionStrings:Database"] = await OwnDatabaseAsync(),
+                ["Api:IdempotencyKeyRetention"] = TimeSpan.FromHours(retentionHours).ToString("c", System.Globalization.CultureInfo.InvariantCulture),
+            },
             services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(clock)));
         var subject = Guid.NewGuid().ToString();
         await using var scope = host.Services.CreateAsyncScope();
@@ -52,7 +57,7 @@ public sealed class IdempotencyRetentionTests(Database database)
     {
         var clock = new FakeTimeProvider();
         await using var host = await PipelineHost.StartAsync(
-            new Dictionary<string, string?> { ["Host:Role"] = "web" },
+            new Dictionary<string, string?> { ["Host:Role"] = "web", ["ConnectionStrings:Database"] = await OwnDatabaseAsync() },
             services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(clock)));
         var subject = Guid.NewGuid().ToString();
         await using var scope = host.Services.CreateAsyncScope();
@@ -64,6 +69,14 @@ public sealed class IdempotencyRetentionTests(Database database)
 
         (await context.IdempotencyKeys.CountAsync(row => row.Subject == subject, TestContext.Current.CancellationToken)).ShouldBe(1);
         host.Services.GetServices<Microsoft.Extensions.Hosting.IHostedService>().Select(service => service.GetType().Name).ShouldNotContain("IdempotencyCleanup");
+    }
+
+    // Section 9, rule 6.
+    private async Task<string> OwnDatabaseAsync()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await database.CreateProbesAsync(name);
+        return database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name);
     }
 
     private static IdempotencyKey Row(string subject, string key, DateTimeOffset createdAt, DateTimeOffset? lockedUntil = null) => new()

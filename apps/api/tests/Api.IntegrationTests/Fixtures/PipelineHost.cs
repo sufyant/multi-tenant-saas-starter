@@ -72,6 +72,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         // is empty, which depends on the order the tests run in.
         builder.Services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(new FakeIdentityProvider()));
         configureServices?.Invoke(builder.Services);
+        Database.RemoveIdempotencyCleanupOnTheMainDatabase(builder.Services, builder.Configuration.GetConnectionString("Database"));
 
         var app = builder.Build();
         app.UseApiPipeline();

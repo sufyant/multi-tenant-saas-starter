@@ -1,3 +1,4 @@
+using Api.Idempotency;
 using Api.Persistence;
 using Audit.Infrastructure;
 using ControlPlane.Infrastructure;
@@ -63,6 +64,20 @@ public sealed class Database : IAsyncLifetime
         }
 
         return connection.ConnectionString;
+    }
+
+    // Section 9, rule 6. ApiFactory and PipelineHost call this as they compose a host.
+    public static void RemoveIdempotencyCleanupOnTheMainDatabase(IServiceCollection services, string? connectionString)
+    {
+        if (connectionString is null || new NpgsqlConnectionStringBuilder(connectionString).Database != MainDatabase)
+        {
+            return;
+        }
+
+        foreach (var cleanup in services.Where(service => service.ImplementationType == typeof(IdempotencyCleanup)).ToList())
+        {
+            services.Remove(cleanup);
+        }
     }
 
     // A database set up the way a deployment is, for a test that must not disturb the main one.

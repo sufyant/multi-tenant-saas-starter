@@ -184,6 +184,7 @@ internal sealed class ApiFactory(
             }
 
             configureServices?.Invoke(services);
+            Database.RemoveIdempotencyCleanupOnTheMainDatabase(services, configuration["ConnectionStrings:Database"]);
         });
     }
 }
