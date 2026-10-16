@@ -53,7 +53,7 @@ public sealed class HostRoleTests(Database database)
         var tenantId = await IdOfAsync(created);
         await Waiting.UntilAsync(async () => await SagaStateAsync(name, tenantId) == "Completed");
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         runs.In("web").ShouldBe([FirstStep]);
         runs.In("worker").Distinct().ShouldBe(HandlersAfterTheFirstStep, ignoreOrder: true);
         (await SagaStateAsync(name, tenantId)).ShouldBe("Completed");
