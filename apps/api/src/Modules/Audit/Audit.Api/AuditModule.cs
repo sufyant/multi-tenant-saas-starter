@@ -1,5 +1,6 @@
 using System.Reflection;
 using Audit.Application.Tenants;
+using Microsoft.AspNetCore.Routing;
 
 namespace Audit.Api;
 
@@ -8,4 +9,15 @@ public static class AuditModule
 {
     /// <summary>The assembly with the module's handlers, for the host to give Wolverine.</summary>
     public static Assembly HandlerAssembly => typeof(RecordTenantCreatedHandler).Assembly;
+
+    /// <summary>
+    /// Maps the module's endpoints into the host's route groups: the platform's audit log for system admins, and each tenant's log for
+    /// its members. Each names the permission it needs (A5). It reads a page of the log, then has its users named: two
+    /// queries, each in the transaction of one module's DbContext (W1).
+    /// </summary>
+    public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder tenant)
+    {
+        Admin.AuditLog.Map(admin);
+        Tenant.AuditLog.Map(tenant);
+    }
 }

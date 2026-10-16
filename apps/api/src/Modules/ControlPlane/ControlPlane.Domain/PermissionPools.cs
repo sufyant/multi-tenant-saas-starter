@@ -23,6 +23,8 @@ internal static class PermissionPools
 
     public const string AdminUsersReactivate = "admin.users.reactivate";
 
+    public const string AdminAuditRead = "admin.audit.read";
+
     public const string TenantMembersRead = "tenant.members.read";
 
     public const string TenantMembersUpdate = "tenant.members.update";
@@ -37,6 +39,8 @@ internal static class PermissionPools
 
     public const string TenantInvitationsDelete = "tenant.invitations.delete";
 
+    public const string TenantAuditRead = "tenant.audit.read";
+
     public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,
         TenantMembersRead,
@@ -45,7 +49,8 @@ internal static class PermissionPools
         TenantProfileRead,
         TenantInvitationsCreate,
         TenantInvitationsRead,
-        TenantInvitationsDelete);
+        TenantInvitationsDelete,
+        TenantAuditRead);
 
     public static IReadOnlySet<string> SystemPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,
@@ -55,5 +60,6 @@ internal static class PermissionPools
         AdminTenantsReactivate,
         AdminUsersRead,
         AdminUsersSuspend,
-        AdminUsersReactivate);
+        AdminUsersReactivate,
+        AdminAuditRead);
 }

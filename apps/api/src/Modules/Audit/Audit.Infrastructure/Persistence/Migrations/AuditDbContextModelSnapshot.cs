@@ -29,9 +29,8 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("ActorId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
                         .HasColumnName("actor_id");
 
                     b.Property<string>("ActorKind")
@@ -82,11 +81,11 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_entries");
 
-                    b.HasIndex("OccurredAt")
-                        .HasDatabaseName("ix_entries_occurred_at");
-
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_entries_tenant_id");
+
+                    b.HasIndex("TenantId", "OccurredAt", "Id")
+                        .HasDatabaseName("ix_entries_tenant_id_occurred_at_id");
 
                     b.ToTable("entries", "audit");
                 });
@@ -145,8 +144,8 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_platform_entries");
 
-                    b.HasIndex("OccurredAt")
-                        .HasDatabaseName("ix_platform_entries_occurred_at");
+                    b.HasIndex("OccurredAt", "Id")
+                        .HasDatabaseName("ix_platform_entries_occurred_at_id");
 
                     b.ToTable("platform_entries", "audit");
                 });

@@ -1,10 +1,12 @@
 using Api.Idempotency;
 using Api.Persistence;
 using Audit.Infrastructure;
+using Audit.Infrastructure.Persistence;
 using ControlPlane.Infrastructure;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -206,6 +208,21 @@ public sealed class Database : IAsyncLifetime
 
         return name;
     }
+
+    // A database set up the way a deployment is, then with Audit taken back to the migration before the one named: the schema the
+    // version before that migration runs on.
+    public async Task<string> CreateDatabaseBeforeAuditMigrationAsync(string migration)
+    {
+        var name = await CreateMigratedDatabaseAsync();
+        await using var audit = new AuditDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<AuditDbContext>(AuditDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        await audit.GetService<IMigrator>().MigrateAsync(audit.Database.GetMigrations().TakeWhile(applied => applied != migration).Last());
+
+        return name;
+    }
+
+    // Runs the migration step on a database of a test's own, as a deploy does.
+    public Task MigrateDatabaseAsync(string database) => MigrateAsync(database);
 
     // As when the database goes away under a running application: nobody can connect any more, and open sessions end.
     public async Task CloseAsync(string database)

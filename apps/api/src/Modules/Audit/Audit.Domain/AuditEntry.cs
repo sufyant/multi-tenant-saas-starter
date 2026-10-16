@@ -9,8 +9,6 @@ namespace Audit.Domain;
 /// </summary>
 internal abstract class AuditRecord
 {
-    public const int ActorIdMaxLength = 255;
-
     public const int OperationMaxLength = 500;
 
     public const int TargetNameMaxLength = 100;
@@ -35,10 +33,7 @@ internal abstract class AuditRecord
     /// <summary>Who acted. A record written before K3 has none: its actor is the system admin whose id is in <see cref="ActorId"/>.</summary>
     public AuditActorKind? ActorKind { get; private init; }
 
-    /// <summary>
-    /// The catalog user id of an actor that is a user; none for the platform or the identity provider. The tenant's log keeps it as
-    /// text, as written before K3; step 20f converts that column.
-    /// </summary>
+    /// <summary>The catalog user id of an actor that is a user; none for the platform or the identity provider.</summary>
     public Guid? ActorId { get; private init; }
 
     public AuditEntryKind Kind { get; private init; } = AuditEntryKind.Command;

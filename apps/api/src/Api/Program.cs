@@ -37,7 +37,9 @@ try
     if (role.ServesTheApi())
     {
         var v1 = app.MapV1();
-        ControlPlaneModule.MapEndpoints(v1.MapAdmin(), v1.MapMe(), v1.MapTenant(), v1.MapWebhooks());
+        var (admin, tenant) = (v1.MapAdmin(), v1.MapTenant());
+        ControlPlaneModule.MapEndpoints(admin, v1.MapMe(), tenant, v1.MapWebhooks());
+        AuditModule.MapEndpoints(admin, tenant);
         app.MapApiDocuments();
     }
 }

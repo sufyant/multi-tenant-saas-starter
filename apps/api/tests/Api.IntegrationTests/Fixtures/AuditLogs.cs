@@ -2,7 +2,7 @@ namespace Api.IntegrationTests.Fixtures;
 
 // What the two audit logs hold about one target, read as the superuser (K3). Each record reads
 // "operation|actor kind|actor id|target kind|target id|target name", with "-" for an empty value, oldest first and joined by ", ".
-// A record of the tenant's log starts with its tenant id.
+// A record of the tenant's log starts with its tenant id. A test that reads the logs through the API adds its records here.
 internal sealed class AuditLogs(Database database)
 {
     public Task<string?> TenantLogAsync(Guid targetId) =>
@@ -22,6 +22,49 @@ internal sealed class AuditLogs(Database database)
     public Task<long> TenantRecordsHoldingAsync(Guid tenantId, string text) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries AS entry WHERE entry.tenant_id = '{tenantId}' AND entry::text ILIKE '%{text}%'");
+
+    // Adds a record to a tenant's log as the superuser, whom row level security does not bind, so the tenant column is written by hand.
+    // A null actor kind is a record written before K3.
+    public async Task<Guid> AddTenantEntryAsync(
+        Guid tenantId,
+        DateTimeOffset occurredAt,
+        string? actorKind = "Platform",
+        Guid? actorId = null,
+        string operation = "tenant.suspended",
+        string? targetKind = null,
+        Guid? targetId = null,
+        string? targetName = null,
+        string? details = null)
+    {
+        var id = Guid.CreateVersion7();
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO audit.entries (id, tenant_id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name, details)
+            VALUES ('{id}', '{tenantId}', '{occurredAt:O}', {Text(actorKind)}, {Text(actorId)}, 'Command', '{operation}', {Text(targetKind)},
+                {Text(targetId)}, {Text(targetName)}, {Text(details)})
+            """);
+        return id;
+    }
+
+    public async Task<Guid> AddPlatformEntryAsync(
+        DateTimeOffset occurredAt,
+        string actorKind,
+        Guid? actorId,
+        string targetKind,
+        Guid targetId,
+        string operation = "user.suspended",
+        string? targetName = null)
+    {
+        var id = Guid.CreateVersion7();
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name)
+            VALUES ('{id}', '{occurredAt:O}', '{actorKind}', {Text(actorId)}, 'Command', '{operation}', '{targetKind}', '{targetId}', {Text(targetName)})
+            """);
+        return id;
+    }
+
+    private static string Text(object? value) => value is null ? "NULL" : $"'{value}'";
 
     private const string Record =
         "concat_ws('|', operation, actor_kind, coalesce(actor_id::text, '-'), target_kind, target_id, coalesce(target_name, '-'))";

@@ -6,7 +6,8 @@ using Tenancy;
 namespace Api.IntegrationTests.Hosting;
 
 // K5: sort and each filter of a list are enums in the OpenAPI document, so a generated client sends their values. Minimal API binds an
-// enum by its C# name and ignores the JSON name the document shows; each value the document lists must bind. One case for each list.
+// enum by its C# name and ignores the JSON name the document shows; each value the document lists must bind. One case for each list
+// of the page contract; a list with a cursor (the audit logs) has no sort and no filter.
 public sealed class ListParameterBindingTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -85,7 +86,8 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
     private static IEnumerable<(string Id, (string Path, JsonElement Operation) Value)> ListsOf(JsonElement document) =>
         document.GetProperty("paths").EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject().Select(operation => (Id: operation.Value.GetProperty("operationId").GetString()!, Value: (path.Name, operation.Value))))
-            .Where(list => list.Id.StartsWith("List", StringComparison.Ordinal));
+            .Where(list => list.Id.StartsWith("List", StringComparison.Ordinal))
+            .Where(list => !list.Value.Value.GetProperty("parameters").EnumerateArray().Any(parameter => parameter.GetProperty("name").GetString() == "cursor"));
 
     // Each value of each enum query parameter, as a query string.
     private IEnumerable<string> EnumParametersOf(JsonElement operation) =>

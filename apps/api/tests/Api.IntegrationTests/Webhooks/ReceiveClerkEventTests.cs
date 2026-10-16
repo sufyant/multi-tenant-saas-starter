@@ -175,7 +175,7 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
     }
 
     // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's copy erases the user from
-    // every audit table, and the read side, through ControlPlane's contract, names them "Deleted user". The records stay.
+    // every audit table, and the read side, through ControlPlane's contract, gives them no name and marks them deleted. The records stay.
     [Fact]
     public async Task ReceiveClerkEvent_UserDeleted_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser()
     {
@@ -190,11 +190,11 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserDeleted(user))));
 
-        before[userId].ShouldBe(new UserName($"Ada{marker} Lovelace{marker}", $"{marker}@example.com"));
+        before[userId].ShouldBe(new UserName($"Ada{marker} Lovelace{marker}", Deleted: false));
         copied.ShouldBe(1);
         (await RowsHoldingAsync("audit", marker)).ShouldBe(0);
         (await RowsHoldingAsync("control_plane", marker)).ShouldBe(0);
-        (await NamesAsync(userId))[userId].ShouldBe(new UserName(UserName.Deleted, null));
+        (await NamesAsync(userId))[userId].ShouldBe(new UserName(null, Deleted: true));
         (await _audit.PlatformLogAsync(userId)).ShouldBe(
             $"user.profile_updated|IdentityProvider|-|User|{userId}|-, user.deleted|IdentityProvider|-|User|{userId}|-");
     }

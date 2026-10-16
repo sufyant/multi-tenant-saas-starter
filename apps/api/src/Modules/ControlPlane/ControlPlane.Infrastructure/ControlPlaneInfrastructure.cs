@@ -27,6 +27,9 @@ public static class ControlPlaneInfrastructure
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IUserDirectory, UserDirectory>();
+
+        // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
+        // DbContext and in its transaction (W1).
         services.AddScoped<IUserNames, UserNames>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();

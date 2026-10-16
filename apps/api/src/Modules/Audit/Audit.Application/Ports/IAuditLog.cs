@@ -1,8 +1,11 @@
 using Audit.Domain;
+using SharedKernel;
 
 namespace Audit.Application.Ports;
 
-/// <summary>The audit logs: the active tenant's log and the platform's log, written in the handler's one transaction.</summary>
+/// <summary>
+/// The audit logs: the active tenant's log and the platform's log, written in the handler's one transaction, and read a page at a time.
+/// </summary>
 /// <remarks>
 /// Public only because Wolverine's generated code passes it to public handlers; its members speak domain types, so they
 /// are internal to the module.
@@ -16,4 +19,16 @@ public interface IAuditLog
     /// finds the records stored.
     /// </summary>
     internal Task RecordAsync(PlatformAuditEntry? platform, AuditEntry? tenant, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The records of the active tenant's log after the cursor's place, newest first, by the moment and then the id, both descending: one
+    /// more than the limit when there are, so the caller knows a next page exists. Row level security keeps the log to the tenant.
+    /// </summary>
+    internal Task<IReadOnlyList<AuditRecord>> ReadTenantLogAsync(CursorRequest page, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The records of the platform's log, in the same order and the same way. Only a transaction that declares neither a tenant nor a
+    /// user reads them (R11).
+    /// </summary>
+    internal Task<IReadOnlyList<AuditRecord>> ReadPlatformLogAsync(CursorRequest page, CancellationToken cancellationToken);
 }
