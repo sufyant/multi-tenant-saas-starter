@@ -28,7 +28,9 @@ internal static class ApiProcess
 
         foreach (var (name, value) in environment)
         {
-            start.Environment[name] = value;
+            start.Environment[name] = name.StartsWith("ConnectionStrings__", StringComparison.Ordinal)
+                ? Database.ForHost(value, nameof(ApiProcess))
+                : value;
         }
 
         var testCancelled = TestContext.Current.CancellationToken;
