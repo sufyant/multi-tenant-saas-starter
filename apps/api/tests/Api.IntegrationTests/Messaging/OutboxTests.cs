@@ -23,7 +23,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
         var tenant = Guid.NewGuid();
         var value = $"written-{Guid.NewGuid():N}";
 
-        await _host.Host.TrackActivity().ExecuteAndWaitAsync(context =>
+        await _host.Tracking().ExecuteAndWaitAsync(context =>
             context.InvokeForTenantAsync<Result>(tenant.ToString(), new WriteProbeAndAnnounce(value)));
 
         (await ReadProbesAsync(tenant)).ShouldBe([$"announced:{value}", value]);
@@ -38,7 +38,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
 
         Exception? thrown = null;
 
-        var session = await _host.Host.TrackActivity().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(async Task (IMessageContext context) =>
+        var session = await _host.Tracking().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(async Task (IMessageContext context) =>
             thrown = await Record.ExceptionAsync(() => context.InvokeForTenantAsync(tenant.ToString(), new WriteProbeThenFail(value), Cancellation)));
 
         thrown.ShouldBeOfType<InvalidOperationException>();
@@ -54,7 +54,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
         var tenant = Guid.NewGuid();
         var value = $"stopped-{Guid.NewGuid():N}";
 
-        var session = await _host.Host.TrackActivity().ExecuteAndWaitAsync(context =>
+        var session = await _host.Tracking().ExecuteAndWaitAsync(context =>
             context.InvokeForTenantAsync(tenant.ToString(), new WriteProbeUnlessRejected(value, Reject: true)));
 
         session.Executed.MessagesOf<ProbeAnnounced>().ShouldBeEmpty();
@@ -68,7 +68,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
         var tenant = Guid.NewGuid();
         var value = $"allowed-{Guid.NewGuid():N}";
 
-        await _host.Host.TrackActivity().ExecuteAndWaitAsync(context =>
+        await _host.Tracking().ExecuteAndWaitAsync(context =>
             context.InvokeForTenantAsync(tenant.ToString(), new WriteProbeUnlessRejected(value, Reject: false)));
 
         (await ReadProbesAsync(tenant)).ShouldBe([value, $"announced:{value}"]);
@@ -78,7 +78,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CascadeMessage_WithoutATenant_IsHandledWithoutOne()
     {
-        var session = await _host.Host.TrackActivity().ExecuteAndWaitAsync(context => context.InvokeAsync(new ReadProbesLater()));
+        var session = await _host.Tracking().ExecuteAndWaitAsync(context => context.InvokeAsync(new ReadProbesLater()));
 
         session.Executed.SingleMessage<ReadProbes>().ShouldNotBeNull();
     }

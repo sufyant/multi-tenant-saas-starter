@@ -37,7 +37,7 @@ public sealed class DefaultRetryTests(Database database)
         await using var host = await PipelineHost.StartAsync();
         var command = new SpecificRetryProbe(Guid.NewGuid());
 
-        await host.Host.TrackActivity().DoNotAssertOnExceptionsDetected().SendMessageAndWaitAsync(command);
+        await host.Tracking().DoNotAssertOnExceptionsDetected().SendMessageAndWaitAsync(command);
 
         host.Services.GetRequiredService<RetryAttempts>().Count(command.Id).ShouldBe(2);
     }

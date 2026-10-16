@@ -138,7 +138,10 @@ internal sealed class ApiFactory(
         Database.ClearStartCheckPool(_databaseConnectionString);
     }
 
-    private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TimeSpan.FromSeconds(30));
+    // How long a test waits for the messages it caused. Wolverine's default of 5 s is shorter than a retry policy's pauses under load.
+    public static readonly TimeSpan TrackingTimeout = TimeSpan.FromSeconds(30);
+
+    private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TrackingTimeout);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
