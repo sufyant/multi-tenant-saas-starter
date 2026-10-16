@@ -220,7 +220,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
         (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
     }
 
-    // K6, rule 4 of step 20h: an invitation passed the tenant door while the tenant was active, then waited for the tenant's lock while
+    // K6: an invitation passed the tenant door while the tenant was active, then waited for the tenant's lock while
     // a system admin closed the tenant. Under the lock it finds the tenant closed, refuses, and leaves no pending invitation on it.
     [Fact]
     public async Task CloseTenantAndInviteMember_AtOnceWithTheClosureFirst_LeaveNoPendingInvitation()
@@ -279,6 +279,31 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
         (await MembersOfAsync(tenant.Id)).ShouldBe(members);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(1);
         (await PendingInvitationsOfAsync(tenant.Id)).ShouldBe(0);
+    }
+
+    // K6: the same under a suspension, which a member is told as tenant.suspended.
+    [Theory]
+    [InlineData("InviteMember")]
+    [InlineData("RevokeInvitation")]
+    [InlineData("ChangeMemberRole")]
+    [InlineData("RemoveMember")]
+    public async Task TenantCommand_WaitingWhileTheTenantIsSuspended_IsForbiddenAndChangesNothing(string command)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
+        var invitation = await _catalog.AddInvitationAsync(tenant.Id);
+        var members = await MembersOfAsync(tenant.Id);
+        var admin = await AdminAsync();
+
+        var responses = await database.OneAfterTheOtherAsync(
+            tenant.Id, () => admin.SuspendTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation));
+
+        responses[1].StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(responses[1])).ShouldBe("tenant.suspended");
+        (await MembersOfAsync(tenant.Id)).ShouldBe(members);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe(1);
+        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
     }
 
     private static Task<HttpResponseMessage> Send(string command, HttpClient owner, Guid tenantId, Guid member, Guid invitation) => command switch

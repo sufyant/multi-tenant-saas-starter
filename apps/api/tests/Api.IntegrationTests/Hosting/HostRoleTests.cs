@@ -151,6 +151,50 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
     }
 
+    // O3: a new name is announced from the web host, and its Audit handler runs in the worker, once, in both logs.
+    [Fact]
+    public async Task RenameTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInEachLogInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await new Catalog(database, name).AddTenantAsync();
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var renamed = await admin.RenameTenantAsync(tenant.Id, "Globex Corp");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.renamed") > 0);
+
+        renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RenameTenant), typeof(RenameTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantRenamed), typeof(RecordTenantRenamedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.renamed")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.renamed")).ShouldBe(1L);
+    }
+
+    // O3: a reopening is announced from the web host, and its Audit handler runs in the worker, once, in both logs.
+    [Fact]
+    public async Task ReopenTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInEachLogInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await new Catalog(database, name).AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var reopened = await admin.ReopenTenantAsync(tenant.Id);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.reopened") > 0);
+
+        reopened.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ReopenTenant), typeof(ReopenTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantReopened), typeof(RecordTenantReopenedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
+    }
+
     // O3, K3: a user's suspension is announced from the web host without a tenant, and its Audit handler runs in the worker, once, and
     // writes the platform's log.
     [Fact]
