@@ -4,7 +4,7 @@ These steps take an empty machine to a created tenant and an accepted invitation
 
 ## 1. What you need
 
-- The .NET SDK named in `apps/api/global.json` (10.0.102 or a later 10.0 feature band).
+- The .NET SDK named in `apps/api/global.json` (10.0.402 or a later 10.0 feature band).
 - PostgreSQL 18 and `psql`.
 - An identity provider instance for development. It must serve OpenID Connect discovery (`/.well-known/openid-configuration` and its key set) over HTTPS with a certificate the machine trusts, and its Backend API. You need:
   - its issuer URL (`Authentication:Clerk:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
