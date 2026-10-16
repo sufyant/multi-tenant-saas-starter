@@ -50,12 +50,20 @@ public sealed class Database : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
     public string ConnectionStringFor(string role, string database = MainDatabase) =>
-        new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
+        Of(new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Username = role, Password = Password }, database);
+
+    // A pool keeps its idle connections for five minutes by default, after its test has ended. A test's own database is used by that
+    // test alone, so its pools close idle connections within seconds; else they add up to more than max_connections (53300).
+    private static string Of(NpgsqlConnectionStringBuilder connection, string database)
+    {
+        connection.Database = database;
+        if (database != MainDatabase)
         {
-            Username = role,
-            Password = Password,
-            Database = database,
-        }.ConnectionString;
+            (connection.ConnectionIdleLifetime, connection.ConnectionPruningInterval) = (2, 1);
+        }
+
+        return connection.ConnectionString;
+    }
 
     // A database set up the way a deployment is, for a test that must not disturb the main one.
     public async Task<string> CreateMigratedDatabaseAsync()
@@ -174,8 +182,7 @@ public sealed class Database : IAsyncLifetime
     // What is really in a table: the container's superuser is bound by no policy, so it sees the rows of every tenant.
     public async Task<T?> ScalarAsSuperuserAsync<T>(string sql, string database = MainDatabase)
     {
-        await using var connection = new NpgsqlConnection(
-            new NpgsqlConnectionStringBuilder(SuperuserConnectionString) { Database = database }.ConnectionString);
+        await using var connection = new NpgsqlConnection(Of(new NpgsqlConnectionStringBuilder(SuperuserConnectionString), database));
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(sql, connection);
         var value = await command.ExecuteScalarAsync();
