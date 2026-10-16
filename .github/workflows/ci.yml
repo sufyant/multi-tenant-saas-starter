@@ -110,7 +110,18 @@ jobs:
       - run: dotnet build Api.slnx
 
       # The tests start PostgreSQL 18 in Docker. The runner has Docker.
-      - run: dotnet test --solution Api.slnx --no-build
+      # A hung run of Api.IntegrationTests writes a dump, the tests in progress and its diagnostic log to the results directory
+      # (section 9, rule 8 of apps/api/docs/ARCHITECTURE.md).
+      - run: dotnet test --solution Api.slnx --no-build --results-directory TestResults
+
+      - name: Keep the evidence of a failed test run
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: api-test-results
+          path: apps/api/TestResults
+          if-no-files-found: ignore
+          retention-days: 7
 
   # The image jobs test the images, not the business logic. The api job runs the test suite.
   # Grype and PostgreSQL are pinned by digest. Dependabot does not update an image in a run step
