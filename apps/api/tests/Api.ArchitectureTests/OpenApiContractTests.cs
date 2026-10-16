@@ -84,10 +84,14 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // K5: the codes are one enum in the document, the values of ErrorCode, so a generated client knows each code an error can carry.
+    // Every error answer has one, so the member is required.
     [Fact]
-    public void BuildOpenApiDocument_CodeOfProblemDetails_IsTheErrorCodeEnum()
+    public void BuildOpenApiDocument_CodeOfProblemDetails_IsTheRequiredErrorCodeEnum()
     {
-        var code = Schemas().Single(schema => schema.Name == "ProblemDetails").Value.GetProperty("properties").GetProperty("code");
+        var problem = Schemas().Single(schema => schema.Name == "ProblemDetails").Value;
+        var code = problem.GetProperty("properties").GetProperty("code");
+
+        problem.GetProperty("required").EnumerateArray().Select(member => member.GetString()).ShouldContain("code");
 
         code.TryGetProperty("$ref", out var reference).ShouldBeTrue();
         reference.GetString().ShouldBe("#/components/schemas/ErrorCode");

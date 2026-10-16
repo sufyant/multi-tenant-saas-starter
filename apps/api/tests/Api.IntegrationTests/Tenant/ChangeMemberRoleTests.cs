@@ -43,6 +43,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         body.GetProperty("email").GetString().ShouldBe("ada@example.com");
         body.GetProperty("lastName").GetString().ShouldBe("Lovelace");
         body.GetProperty("role").GetString().ShouldBe("Admin");
+        body.GetProperty("deleted").GetBoolean().ShouldBeFalse();
         (await RoleOfAsync(tenant.Id, memberId)).ShouldBe("Admin");
         (await _audit.TenantLogAsync(memberId))
             .ShouldBe($"{tenant.Id}:member.role_changed|User|{await _catalog.UserIdOfAsync(actor)}|User|{memberId}|-");
