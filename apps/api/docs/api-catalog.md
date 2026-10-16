@@ -34,7 +34,7 @@ A member of the tenant. Each endpoint names a permission. To a non-member the te
 | new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; answers 201 `InvitationResponse`; locks the tenant row, then checks an inviter who is no longer a member (404 `tenant.not_found`), the role rule (403 `invitation.owner_requires_owner`), a member's address (409 `membership.exists`) and the daily limit (429 `invitation.daily_limit_reached`); replaces a pending invitation to the same email (K2)) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
 | new | GET | `/v1/tenants/{tenantId}/invitations` | `ListInvitations` (pending invitations, expired ones included; list contract; `q`: email; filter `role`; `sort`: `expiresAt`, `email`) | `tenant.invitations.read`; Owner, Admin | none | none | none | 20d |
 | new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (204; locks the tenant row; a revoker who is no longer a member answers 404 `tenant.not_found`; the link stops working at once; a cancelled invitation answers 204 again and writes nothing; an accepted one answers 409 `invitation.not_pending`; an id the tenant has not, 404 `invitation.not_found`) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | none | 20d |
-| new | GET | `/v1/tenants/{tenantId}/audit-log` | `ListAuditEntries` (cursor contract of K5; newest first; names resolved on read, no email address; the screen calls it "Activity") | `tenant.audit.read`; Owner, Admin | none | none | none | 20f |
+| new | GET | `/v1/tenants/{tenantId}/audit-log` | `ListAuditEntries` (cursor contract of K5; newest first; real names resolved on read, else null, and `deleted` for a user; no label and no email address; the screen calls it "Activity") | `tenant.audit.read`; Owner, Admin | none | none | none | 20f |
 
 ## Admin: `/v1/admin`
 
@@ -52,7 +52,7 @@ A system admin with a second factor (A6). Every action writes to the platform au
 | changes | GET | `/v1/admin/users` | `ListUsers` (list contract; `q`: email, first name, last name; filter `status`; `sort`: `email`, `lastName`) | `admin.users.read` | none | none | Clerk, through the copy | 20c |
 | changes | POST | `/v1/admin/users/{userId}/suspend` | `SuspendUser` (adds the platform entry) | `admin.users.suspend` | P `user.suspended` | none | none; Clerk is not told, the API refuses the user on each request (A9) | 20b |
 | changes | POST | `/v1/admin/users/{userId}/reactivate` | `ReactivateUser` (adds the platform entry) | `admin.users.reactivate` | P `user.reactivated` | none | none | 20b |
-| new | GET | `/v1/admin/audit-log` | `ListPlatformAuditEntries` (cursor contract of K5; newest first; names resolved on read, no email address) | `admin.audit.read` | none | none | none | 20f |
+| new | GET | `/v1/admin/audit-log` | `ListPlatformAuditEntries` (cursor contract of K5; newest first; real names resolved on read, else null, and `deleted` for a user; no label and no email address) | `admin.audit.read` | none | none | none | 20f |
 
 ## Webhooks: `/v1/webhooks`
 
@@ -103,7 +103,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - An audit entry stores no personal name or email address. It stores the actor's catalog user id, the target's kind and id, and the target's name only when the target is not a person. A tenant's name stays in the entry.
 - A `member.invited` entry stores the invitation id, not the email address.
 - The read side resolves names in one batch through an interface in `ControlPlane.Contracts` (API composition). Audit never reads `control_plane` tables directly.
-- When a user is deleted, `DeleteUser` erases the catalog's copy of their profile, so the read side shows "Deleted user". No audit entry changes, and the entry stays (GDPR Article 17).
+- When a user is deleted, `DeleteUser` erases the catalog's copy of their profile, so the read side gives the user no name and marks them deleted, and the screen shows "Deleted user". No audit entry changes, and the entry stays (GDPR Article 17).
 - Every action of a system admin goes to the platform log. When it changes a tenant, it also goes to that tenant's log, with "Platform" in place of the person. In the tenant log, a system admin's action has the actor kind "platform" and no actor id.
 - A change that comes from Clerk goes to the platform log, with "Clerk" as the actor.
 - The platform log is a table of its own. The row level security of the tenant table does not change.

@@ -161,9 +161,10 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("paging.cursor_invalid");
     }
 
-    // K3: the actor and a target person are ids; their names come from the catalog when the log is read. The platform stands for a system
-    // admin in a tenant's log. A deleted user reads "Deleted user", and an id the catalog does not know has no name. A tenant keeps its
-    // name of that moment; an invitation has none.
+    // K3: the actor and a target person are ids; their names come from the catalog when the log is read. A name is only a person's real
+    // name: the platform, which stands for a system admin in a tenant's log, has none, and the screen names it from its kind. A deleted
+    // user has no name and is marked deleted; an id the catalog does not know has no name. A tenant keeps its name of that moment; an
+    // invitation has none.
     [Fact]
     public async Task ListAuditEntries_ActorsAndTargets_AreNamedOnRead()
     {
@@ -183,9 +184,9 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
 
         Described(page).ShouldBe(
         [
-            $"invitation.revoked|user|{unknown}|-|invitation|{invitation}|-",
-            $"tenant.suspended|platform|-|Platform|tenant|{tenant.Id}|Acme Then",
-            $"member.removed|user|{ada}|Ada Lovelace|user|{deleted}|Deleted user",
+            $"invitation.revoked|user|{unknown}|-|false|invitation|{invitation}|-|-",
+            $"tenant.suspended|platform|-|-|-|tenant|{tenant.Id}|Acme Then|-",
+            $"member.removed|user|{ada}|Ada Lovelace|false|user|{deleted}|-|true",
         ]);
     }
 
@@ -202,7 +203,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         (details.GetProperty("oldRole").GetString(), details.GetProperty("newRole").GetString()).ShouldBe(("Member", "Admin"));
     }
 
-    // The screen shows names; an email address is a person's data that Activity does not need, even for a user without a name.
+    // The screen shows names; an email address is a person's data that Activity does not need, even for a user without a name, who gets
+    // no name at all.
     [Fact]
     public async Task ListAuditEntries_UsersWithAndWithoutAName_AnswerNoEmailAddress()
     {
@@ -216,7 +218,7 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         var answer = await _api.CreateClient(owner).GetStringAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
 
         answer.ShouldNotContain(marker);
-        Described(JsonElement.Parse(answer)).ShouldBe([$"member.role_changed|user|{named}|Ada Lovelace|user|{unnamed}|Unnamed user"]);
+        Described(JsonElement.Parse(answer)).ShouldBe([$"member.role_changed|user|{named}|Ada Lovelace|false|user|{unnamed}|-|false"]);
     }
 
     // The tenant's records, one minute apart, oldest first.
@@ -239,14 +241,22 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
 
     private static IEnumerable<Guid> Ids(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid());
 
-    // Each entry as "operation|actor kind|actor user id|actor name|target kind|target id|target name", with "-" for an empty value.
+    // Each entry as "operation|actor kind|actor user id|actor name|actor deleted|target kind|target id|target name|target deleted", with
+    // "-" for an empty value.
     internal static IEnumerable<string> Described(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item =>
     {
         var actor = item.GetProperty("actor");
         var target = item.GetProperty("target");
         return string.Join('|', item.GetProperty("operation").GetString(), actor.GetProperty("kind").GetString(), TextOf(actor.GetProperty("userId")),
-            TextOf(actor.GetProperty("displayName")), target.GetProperty("kind").GetString(), target.GetProperty("id").GetString(), TextOf(target.GetProperty("name")));
+            TextOf(actor.GetProperty("displayName")), TextOf(actor.GetProperty("deleted")), target.GetProperty("kind").GetString(),
+            target.GetProperty("id").GetString(), TextOf(target.GetProperty("name")), TextOf(target.GetProperty("deleted")));
     });
 
-    private static string TextOf(JsonElement value) => value.ValueKind == JsonValueKind.Null ? "-" : value.GetString()!;
+    private static string TextOf(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Null => "-",
+        JsonValueKind.True => "true",
+        JsonValueKind.False => "false",
+        _ => value.GetString()!,
+    };
 }

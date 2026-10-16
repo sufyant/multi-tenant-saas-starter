@@ -79,8 +79,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("paging.cursor_invalid");
     }
 
-    // K3: in the platform's log a system admin is a user, by name; a change from the identity provider has that actor. A deleted user
-    // reads "Deleted user"; a tenant keeps its name of that moment.
+    // K3: in the platform's log a system admin is a user, by name; a change from the identity provider has that actor, with no name: the
+    // screen names it from its kind. A deleted user has no name and is marked deleted; a tenant keeps its name of that moment.
     [Fact]
     public async Task ListPlatformAuditEntries_ActorsAndTargets_AreNamedOnRead()
     {
@@ -97,8 +97,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
 
         ListAuditEntriesTests.Described(page).ShouldBe(
         [
-            $"tenant.suspended|user|{grace}|Grace Hopper|tenant|{tenant}|Globex",
-            $"user.deleted|identityProvider|-|Identity provider|user|{deleted}|Deleted user",
+            $"tenant.suspended|user|{grace}|Grace Hopper|false|tenant|{tenant}|Globex|-",
+            $"user.deleted|identityProvider|-|-|-|user|{deleted}|-|true",
         ]);
     }
 
@@ -113,7 +113,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         var answer = await _api.CreateClient(admin, secondFactor: true).GetStringAsync("/v1/admin/audit-log?limit=1", Cancellation);
 
         answer.ShouldNotContain(marker);
-        ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|Unnamed user|user|{target}|Ada"]);
+        ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|-|false|user|{target}|Ada|false"]);
     }
 
     private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>

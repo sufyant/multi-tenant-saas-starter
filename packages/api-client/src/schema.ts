@@ -285,14 +285,17 @@ export interface components {
             code: string;
         };
         /**
-         * @description Who acted: a user, by catalog user id and name; the platform, that is a system admin seen from a tenant's log; or the identity
-         *     provider. The name is null for a user the catalog does not know.
+         * @description Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.
+         *     `displayName` is a user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know,
+         *     and for the platform and the identity provider, which the screen names from `kind` in its own language. `deleted` is set
+         *     for a user only.
          */
         AuditActorResponse: {
             kind: components["schemas"]["AuditActorResponseKind"];
             /** Format: uuid */
             userId: null | string;
             displayName: null | string;
+            deleted: null | boolean;
         };
         /**
          * @description The kind of actor of an audit record.
@@ -301,7 +304,7 @@ export interface components {
         AuditActorResponseKind: "user" | "platform" | "identityProvider";
         /**
          * @description One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record
-         *     keeps (a JSON object, or null). Names are resolved when the log is read: a deleted user reads "Deleted user". It holds no email
+         *     keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
          *     address.
          */
         AuditEntryResponse: {
@@ -315,14 +318,15 @@ export interface components {
             target: null | components["schemas"]["AuditTargetResponse"];
         };
         /**
-         * @description What the action was done to: a tenant with its name at that moment, a user with their name now, or an invitation, which has no
-         *     name. A record written before the audit kept targets has none.
+         * @description What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
+         *     has no name. `deleted` is set for a user only. A record written before the audit kept targets has none.
          */
         AuditTargetResponse: {
             kind: components["schemas"]["AuditTargetResponseKind"];
             /** Format: uuid */
             id: string;
             name: null | string;
+            deleted: null | boolean;
         };
         /**
          * @description The kind of target of an audit record.

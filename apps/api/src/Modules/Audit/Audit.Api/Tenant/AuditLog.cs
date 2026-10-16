@@ -40,7 +40,7 @@ public static class AuditLog
 
 /// <summary>
 /// One record of an audit log: when, the operation (<c>member.invited</c>), who acted, what it was done to, and the details the record
-/// keeps (a JSON object, or null). Names are resolved when the log is read: a deleted user reads "Deleted user". It holds no email
+/// keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
 /// address.
 /// </summary>
 public sealed record AuditEntryResponse(
@@ -52,16 +52,18 @@ public sealed record AuditEntryResponse(
     AuditTargetResponse? Target);
 
 /// <summary>
-/// Who acted: a user, by catalog user id and name; the platform, that is a system admin seen from a tenant's log; or the identity
-/// provider. The name is null for a user the catalog does not know.
+/// Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.
+/// <c>displayName</c> is a user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know,
+/// and for the platform and the identity provider, which the screen names from <c>kind</c> in its own language. <c>deleted</c> is set
+/// for a user only.
 /// </summary>
-public sealed record AuditActorResponse(AuditActorResponseKind Kind, Guid? UserId, string? DisplayName);
+public sealed record AuditActorResponse(AuditActorResponseKind Kind, Guid? UserId, string? DisplayName, bool? Deleted);
 
 /// <summary>
-/// What the action was done to: a tenant with its name at that moment, a user with their name now, or an invitation, which has no
-/// name. A record written before the audit kept targets has none.
+/// What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
+/// has no name. <c>deleted</c> is set for a user only. A record written before the audit kept targets has none.
 /// </summary>
-public sealed record AuditTargetResponse(AuditTargetResponseKind Kind, Guid Id, string? Name);
+public sealed record AuditTargetResponse(AuditTargetResponseKind Kind, Guid Id, string? Name, bool? Deleted);
 
 /// <summary>The kind of actor of an audit record.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<AuditActorResponseKind>))]
@@ -99,6 +101,8 @@ internal static class AuditEntryResponses
         entry.OccurredAt,
         entry.Operation,
         entry.Details is { } details ? JsonElement.Parse(details) : null,
-        new AuditActorResponse(Enum.Parse<AuditActorResponseKind>(entry.Actor.Kind), entry.Actor.UserId, entry.Actor.DisplayName),
-        entry.Target is { } target ? new AuditTargetResponse(Enum.Parse<AuditTargetResponseKind>(target.Kind), target.Id, target.Name) : null));
+        new AuditActorResponse(Enum.Parse<AuditActorResponseKind>(entry.Actor.Kind), entry.Actor.UserId, entry.Actor.DisplayName, entry.Actor.Deleted),
+        entry.Target is { } target
+            ? new AuditTargetResponse(Enum.Parse<AuditTargetResponseKind>(target.Kind), target.Id, target.Name, target.Deleted)
+            : null));
 }
