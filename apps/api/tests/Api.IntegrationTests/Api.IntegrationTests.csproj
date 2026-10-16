@@ -2,12 +2,18 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Section 9, rule 8. The slowest test takes 13 s. xUnit reports a test that runs for 60 s into the diagnostic log. A run in which
+         no test ends for 3 minutes is hung: the platform writes a dump of the test process and the tests in progress to the
+         results directory, then ends the run. Under Microsoft.Testing.Platform, xUnit ignores longRunningTestSeconds in
+         xunit.runner.json, so the options are here. -->
+    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --long-running 60 --xunit-diagnostics on --diagnostic --diagnostic-verbosity Information --hangdump --hangdump-timeout 3m --hangdump-type Heap</TestingPlatformCommandLineArguments>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit.v3" />

@@ -55,6 +55,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Microsoft.CodeAnalysis.VisualBasic.Workspaces | MIT |
 | Microsoft.CodeAnalysis.Workspaces.Common | MIT |
 | Microsoft.CodeAnalysis.Workspaces.MSBuild | MIT |
+| Microsoft.Diagnostics.NETCore.Client | MIT |
 | Microsoft.EntityFrameworkCore | MIT |
 | Microsoft.EntityFrameworkCore.Abstractions | MIT |
 | Microsoft.EntityFrameworkCore.Analyzers | MIT |
@@ -105,6 +106,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Microsoft.IdentityModel.Protocols.OpenIdConnect | MIT |
 | Microsoft.IdentityModel.Tokens | MIT |
 | Microsoft.OpenApi | MIT |
+| Microsoft.Testing.Extensions.HangDump | MIT |
 | Microsoft.Testing.Extensions.Telemetry | MIT |
 | Microsoft.Testing.Extensions.TrxReport.Abstractions | MIT |
 | Microsoft.Testing.Platform | MIT |

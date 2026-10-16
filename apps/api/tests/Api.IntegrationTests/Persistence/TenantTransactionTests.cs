@@ -104,7 +104,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     {
         var tenant = Guid.NewGuid();
 
-        await _host.Host.TrackActivity().ExecuteAndWaitAsync(context =>
+        await _host.Tracking().ExecuteAndWaitAsync(context =>
             context.InvokeForTenantAsync(tenant.ToString(), new WriteTenantSettingLater()));
 
         (await ReadProbesAsync(tenant)).ShouldBe([$"setting:{tenant}"]);
@@ -115,7 +115,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     {
         var tenant = Guid.NewGuid();
 
-        await _host.Host.ExecuteAndWaitAsync(context => context.InvokeForTenantAsync(tenant.ToString(), new WriteProbeLater("cascaded")));
+        await _host.Tracking().ExecuteAndWaitAsync(context => context.InvokeForTenantAsync(tenant.ToString(), new WriteProbeLater("cascaded")));
 
         (await ReadProbesAsync(tenant)).ShouldBe(["cascaded"]);
     }
@@ -125,7 +125,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     {
         var tenant = Guid.NewGuid();
 
-        await _host.Host.ExecuteAndWaitAsync(
+        await _host.Tracking().ExecuteAndWaitAsync(
             context => context.PublishAsync(new WriteProbe("published"), new DeliveryOptions { TenantId = tenant.ToString() }).AsTask());
 
         (await ReadProbesAsync(tenant)).ShouldBe(["published"]);
@@ -196,7 +196,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         var tenant = Guid.NewGuid();
         var value = $"ping-{Guid.NewGuid():N}";
 
-        await _host.Host.TrackActivity().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(context =>
+        await _host.Tracking().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(context =>
             context.PublishAsync(new ProbePinged(value), new DeliveryOptions { TenantId = tenant.ToString() }).AsTask());
 
         (await ReadProbesAsync(tenant)).ShouldBe([$"recorded:{value}"]);

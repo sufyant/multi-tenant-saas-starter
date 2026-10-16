@@ -13,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Notifications.Infrastructure;
 using Tenancy;
 using Wolverine.EntityFrameworkCore;
+using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Fixtures;
 
@@ -92,6 +93,9 @@ internal sealed class PipelineHost : IAsyncDisposable
 
         return new PipelineHost(app);
     }
+
+    // A session that waits as long as ApiFactory's (ApiFactory.TrackingTimeout).
+    public TrackedSessionConfiguration Tracking() => _app.TrackActivity().Timeout(ApiFactory.TrackingTimeout);
 
     public HttpClient CreateClient() => _app.GetTestClient();
 
