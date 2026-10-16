@@ -95,11 +95,14 @@ public sealed class InvitationDeliveryTests(Database database)
     }
 
     // A pause of a minute or more is a scheduled retry, not a wait inside the handler, so the queue goes on with the next invitation.
+    // The retry stays scheduled after the test, so the test runs on a database of its own (section 9, rule 10).
     [Fact]
     public async Task SendInvitation_TheNextTryIsAMinuteAway_IsScheduledWhileTheQueueHandlesTheNextInvitation()
     {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var catalog = new Catalog(database, name);
         await using var api = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application),
+            database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
             {
                 ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
@@ -115,8 +118,8 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(
             async () =>
             {
-                await InviteOwnerAsync(api, refused);
-                await InviteOwnerAsync(api, next);
+                await InviteOwnerAsync(api, refused, catalog);
+                await InviteOwnerAsync(api, next, catalog);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
@@ -127,12 +130,14 @@ public sealed class InvitationDeliveryTests(Database database)
     }
 
     // A log line inside the gap that StopAndDrainAsync describes, slow on purpose here, holds it open, so the session always ends
-    // before the time is written.
+    // before the time is written. A database of its own, as above.
     [Fact]
     public async Task SendInvitation_TheTimeOfTheNextTryIsWrittenLate_IsStillScheduledAMinuteAway()
     {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var catalog = new Catalog(database, name);
         await using var api = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application),
+            database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
             {
                 ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
@@ -149,8 +154,8 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(
             async () =>
             {
-                await InviteOwnerAsync(api, refused);
-                await InviteOwnerAsync(api, next);
+                await InviteOwnerAsync(api, refused, catalog);
+                await InviteOwnerAsync(api, next, catalog);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
@@ -229,9 +234,11 @@ public sealed class InvitationDeliveryTests(Database database)
         });
 
     // Creating a tenant invites its first owner.
-    private async Task<HttpResponseMessage> InviteOwnerAsync(ApiFactory api, string email)
+    private Task<HttpResponseMessage> InviteOwnerAsync(ApiFactory api, string email) => InviteOwnerAsync(api, email, _catalog);
+
+    private static async Task<HttpResponseMessage> InviteOwnerAsync(ApiFactory api, string email, Catalog catalog)
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await catalog.AddSystemAdminAsync();
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
 
         return await api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email });
