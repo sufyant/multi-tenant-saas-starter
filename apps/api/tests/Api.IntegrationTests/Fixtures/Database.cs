@@ -46,9 +46,74 @@ public sealed class Database : IAsyncLifetime
 
         await MigrateAsync(MainDatabase);
         await CreateProbesAsync(MainDatabase);
+        _watch = WatchConnectionsAsync(_stopWatching.Token);
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    // Section 9, rule 7: the run fails when it held more connections at once than the budget, and names their owners.
+    public async ValueTask DisposeAsync()
+    {
+        await _stopWatching.CancelAsync();
+        var (budget, peak, owners) = await _watch;
+        await _container.DisposeAsync();
+
+        peak.ShouldBeLessThanOrEqualTo(
+            budget,
+            $"The run held {peak} PostgreSQL connections at once, over its budget of {budget} ({ConnectionBudget:P0} of max_connections). " +
+            $"Owners at the peak: {owners}.");
+    }
+
+    // The share of max_connections a run may hold at once (section 9, rule 7).
+    public const double ConnectionBudget = 0.7;
+
+    private const string OwnersQuery =
+        """
+        SELECT coalesce(nullif(application_name, ''), 'unnamed') || ' ' || coalesce(state, 'starting'), count(*)
+        FROM pg_stat_activity
+        WHERE backend_type = 'client backend' AND pid <> pg_backend_pid()
+        GROUP BY 1
+        ORDER BY 2 DESC
+        """;
+
+    private readonly CancellationTokenSource _stopWatching = new();
+    private Task<(long Budget, long Peak, string Owners)> _watch = null!;
+
+    // Counts the server's client connections every 100 ms on a connection of its own, and keeps the highest count. A superuser keeps
+    // a reserved slot, so the watch still connects when the server is full. The bursts it must see last half a second or more.
+    private async Task<(long Budget, long Peak, string Owners)> WatchConnectionsAsync(CancellationToken stop)
+    {
+        await using var connection = new NpgsqlConnection(
+            new NpgsqlConnectionStringBuilder(SuperuserConnectionString) { ApplicationName = "connection-watch" }.ConnectionString);
+        await connection.OpenAsync(CancellationToken.None);
+        await using var maxConnections = new NpgsqlCommand("SELECT current_setting('max_connections')::int", connection);
+        var budget = (long)((int)(await maxConnections.ExecuteScalarAsync(CancellationToken.None))! * ConnectionBudget);
+
+        (long Total, string Owners) peak = (0, "none");
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stop))
+            {
+                List<(string Owner, long Count)> owners = [];
+                await using var command = new NpgsqlCommand(OwnersQuery, connection);
+                await using var reader = await command.ExecuteReaderAsync(CancellationToken.None);
+                while (await reader.ReadAsync(CancellationToken.None))
+                {
+                    owners.Add((reader.GetString(0), reader.GetInt64(1)));
+                }
+
+                var total = owners.Sum(owner => owner.Count);
+                if (total > peak.Total)
+                {
+                    peak = (total, string.Join(", ", owners.Take(15).Select(owner => $"{owner.Owner} {owner.Count}")));
+                }
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        {
+        }
+
+        return (budget, peak.Total, peak.Owners);
+    }
 
     public string ConnectionStringFor(string role, string database = MainDatabase) =>
         Of(new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Username = role, Password = Password }, database);
