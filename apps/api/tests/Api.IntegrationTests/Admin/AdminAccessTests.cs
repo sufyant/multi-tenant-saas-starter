@@ -28,6 +28,7 @@ public sealed class AdminAccessTests(Database database) : IAsyncLifetime
     public static TheoryData<string, string, string> Endpoints => new()
     {
         { "GET", "/v1/admin/tenants", "admin.tenants.read" },
+        { "GET", "/v1/admin/tenants/{tenantId:guid}", "admin.tenants.read" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/suspend", "admin.tenants.suspend" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/reactivate", "admin.tenants.reactivate" },
         { "GET", "/v1/admin/users", "admin.users.read" },
@@ -38,6 +39,7 @@ public sealed class AdminAccessTests(Database database) : IAsyncLifetime
     public static TheoryData<string, string> Routes => new()
     {
         { "GET", "/v1/admin/tenants" },
+        { "GET", "/v1/admin/tenants/{tenantId:guid}" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/suspend" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/reactivate" },
         { "GET", "/v1/admin/users" },

@@ -198,6 +198,184 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
+    // The email address and the names come from the catalog's copy of each user's profile (A7).
+    [Fact]
+    public async Task ListMembers_AsAMember_ReturnsEachMemberWithTheirEmailAndNames()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "ada@math.org", firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var member = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "grace@navy.mil", firstName: "Grace"));
+
+        var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
+
+        var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        Profiles(page).ShouldBe(
+        [
+            (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", "Owner"),
+            (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, "Member"),
+        ]);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["userId", "email", "firstName", "lastName", "role"], ignoreOrder: true);
+    }
+
+    // The screen shows "Deleted user", as for audit (K3).
+    [Fact]
+    public async Task ListMembers_AMemberWhoseUserWasDeleted_StaysWithoutEmailOrNames()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var deleted = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "gone@example.com", firstName: "Gone", lastName: "Away"));
+        await _catalog.DeleteUserAsync(deleted);
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member", Cancellation);
+
+        Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, "Member")]);
+    }
+
+    // R6: the users table is not under row level security. The search starts from the active tenant's memberships, so a user of
+    // another tenant whose email address matches stays out of the list.
+    [Fact]
+    public async Task ListMembers_ASearchThatMatchesOnlyAUserOfAnotherTenant_FindsNoOne()
+    {
+        var needle = $"needle-{Guid.NewGuid():N}@example.com";
+        var tenant = await _catalog.AddTenantAsync();
+        var other = await _catalog.AddTenantAsync();
+        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await _catalog.AddMemberAsync(other.Id, await _catalog.AddUserAsync(email: needle), role: "Owner");
+
+        var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(needle)}", Cancellation);
+
+        Members(page).ShouldBeEmpty();
+        page.GetProperty("total").GetInt32().ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("MATH.org", "m1@math.org")]
+    [InlineData("grace", "m2@navy.mil")]
+    [InlineData("LOVEL", "m1@math.org")]
+    public async Task ListMembers_ASearch_FindsTheMembersWhoseEmailOrNameContainsItInAnyCase(string q, string found)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "m1@math.org", firstName: "Ada", lastName: "Lovelace"));
+        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "m2@navy.mil", firstName: "Grace", lastName: "Hopper"));
+
+        var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(q)}", Cancellation);
+
+        Profiles(page).Select(member => member.Email).ShouldBe([found]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    [Theory]
+    [InlineData("r%c", "Per%cent")]
+    [InlineData("r_s", "Under_score")]
+    [InlineData(@"k\s", @"Back\slash")]
+    public async Task ListMembers_ASearchWithAWildcard_MatchesTheCharacterItself(string q, string found)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await AddMembersAsync(tenant.Id, "Per%cent", "Perxcent", "Under_score", "Underxscore", @"Back\slash", "Backslash");
+
+        var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(q)}", Cancellation);
+
+        Profiles(page).Select(member => member.LastName).ShouldBe([found]);
+    }
+
+    [Theory]
+    [InlineData("Owner")]
+    [InlineData("Admin")]
+    [InlineData("Member")]
+    public async Task ListMembers_ARoleFilter_ReturnsTheMembersOfThatRoleOnly(string role)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
+        await _catalog.AddMemberAsync(tenant.Id, role: "Member");
+
+        var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role={role}", Cancellation);
+
+        Members(page).Select(member => member.Role).ShouldBe([role]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    // A member without a last name comes last in both directions, as one without an email address does.
+    [Theory]
+    [InlineData("role", "c@t.org, a@t.org, b@t.org")]
+    [InlineData("-role", "b@t.org, a@t.org, c@t.org")]
+    [InlineData("email", "a@t.org, b@t.org, c@t.org")]
+    [InlineData("-email", "c@t.org, b@t.org, a@t.org")]
+    [InlineData("lastName", "c@t.org, b@t.org, a@t.org")]
+    [InlineData("-lastName", "b@t.org, c@t.org, a@t.org")]
+    public async Task ListMembers_ASortField_OrdersByItInItsDirection(string sort, string emails)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "c@t.org", lastName: "Young"), role: "Owner");
+        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "a@t.org"), role: "Admin");
+        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "b@t.org", lastName: "Zed"), role: "Member");
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?sort={sort}", Cancellation);
+
+        string.Join(", ", Profiles(page).Select(member => member.Email)).ShouldBe(emails);
+    }
+
+    [Theory]
+    [InlineData("role")]
+    [InlineData("-role")]
+    [InlineData("email")]
+    [InlineData("-email")]
+    [InlineData("lastName")]
+    [InlineData("-lastName")]
+    public async Task ListMembers_TwoMembersWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var random = Guid.NewGuid().ToString();
+        var (lower, higher) = (Guid.Parse($"0{random[1..]}"), Guid.Parse($"f{random[1..]}"));
+        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(higher, email: "same@t.org", lastName: "Same"));
+        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(lower, email: "same@t.org", lastName: "Same"));
+        var client = _api.CreateClient(caller);
+
+        var first = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member&sort={sort}&pageSize=1&page=1", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member&sort={sort}&pageSize=1&page=2", Cancellation);
+
+        Members(first).Concat(Members(second)).Select(member => member.UserId).ShouldBe([lower, higher]);
+    }
+
+    [Theory]
+    [InlineData("sort=age", "paging.sort_invalid")]
+    [InlineData("sort=Role", "paging.sort_invalid")]
+    [InlineData("sort=userId", "paging.sort_invalid")]
+    [InlineData("role=owner", "paging.filter_invalid")]
+    [InlineData("role=Guest", "paging.filter_invalid")]
+    [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
+    public async Task ListMembers_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var member = await _catalog.AddMemberAsync(tenant.Id);
+
+        var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members?{query}", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
+    }
+
+    private async Task AddMembersAsync(Guid tenantId, params string[] lastNames)
+    {
+        foreach (var lastName in lastNames)
+        {
+            await _catalog.AddMemberAsync(tenantId, await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: lastName));
+        }
+    }
+
+    private static List<(Guid UserId, string? Email, string? FirstName, string? LastName, string Role)> Profiles(JsonElement page) =>
+    [
+        .. page.GetProperty("items").EnumerateArray().Select(item => (
+            item.GetProperty("userId").GetGuid(),
+            item.GetProperty("email").GetString(),
+            item.GetProperty("firstName").GetString(),
+            item.GetProperty("lastName").GetString(),
+            item.GetProperty("role").GetString()!)),
+    ];
+
     private static List<(Guid UserId, string Role)> Members(JsonElement page) =>
         [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("userId").GetGuid(), item.GetProperty("role").GetString()!))];
 }

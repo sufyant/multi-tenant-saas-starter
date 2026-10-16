@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/tenants/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetTenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/tenants/{tenantId}/suspend": {
         parameters: {
             query?: never;
@@ -100,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/tenants": {
         parameters: {
             query?: never;
@@ -126,6 +158,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["AcceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyTenant"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -198,15 +246,33 @@ export interface components {
             /** Format: int32 */
             total?: number | string;
         };
-        /** @description A member of the tenant: the user's id and their role, Owner, Admin or Member. */
+        /**
+         * @description A member of the tenant: the user's id, the copy of their email address and name, and their role, Owner, Admin or Member. The email
+         *     address and the names are empty when the identity provider deleted the user; the screen shows "Deleted user".
+         */
         MemberResponse: {
             /** Format: uuid */
             userId: string;
+            email: null | string;
+            firstName: null | string;
+            lastName: null | string;
             role: string;
         };
         /**
-         * @description A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
-         *     active, or suspended when its members cannot enter it.
+         * @description The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, and whether they are a system admin.
+         *     It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
+         */
+        MeResponse: {
+            /** Format: uuid */
+            id: string;
+            email: null | string;
+            firstName: null | string;
+            lastName: null | string;
+            isSystemAdmin: boolean;
+        };
+        /**
+         * @description A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a
+         *     member reads by its id. Its status is active, or suspended when its members cannot enter it.
          */
         MyTenantResponse: {
             /** Format: uuid */
@@ -281,6 +347,9 @@ export interface operations {
             query?: {
                 page?: number | string;
                 pageSize?: number | string;
+                sort?: "name" | "-name" | "slug" | "-slug";
+                q?: string;
+                status?: "provisioning" | "active" | "suspended" | "cancelled";
             };
             header?: never;
             path?: never;
@@ -358,6 +427,73 @@ export interface operations {
                 "application/json": components["schemas"]["CreateTenantRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -554,6 +690,9 @@ export interface operations {
             query?: {
                 page?: number | string;
                 pageSize?: number | string;
+                sort?: "email" | "-email" | "lastName" | "-lastName";
+                q?: string;
+                status?: "active" | "suspended" | "deleted";
             };
             header?: never;
             path?: never;
@@ -751,11 +890,78 @@ export interface operations {
             };
         };
     };
+    GetMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListMyTenants: {
         parameters: {
             query?: {
                 page?: number | string;
                 pageSize?: number | string;
+                sort?: "name" | "-name";
+                q?: string;
             };
             header?: never;
             path?: never;
@@ -888,11 +1094,81 @@ export interface operations {
             };
         };
     };
+    GetMyTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListMembers: {
         parameters: {
             query?: {
                 page?: number | string;
                 pageSize?: number | string;
+                sort?: "role" | "-role" | "email" | "-email" | "lastName" | "-lastName";
+                q?: string;
+                role?: "Owner" | "Admin" | "Member";
             };
             header?: never;
             path: {

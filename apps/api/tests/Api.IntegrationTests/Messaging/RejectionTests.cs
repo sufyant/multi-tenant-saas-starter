@@ -103,7 +103,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
-    // A query has nothing to reject: the endpoint has checked the paging. It changes nothing and sends nothing either.
+    // A query has nothing to reject: the endpoint has checked the list request. It changes nothing and sends nothing either.
     [Fact]
     public async Task ListMembers_PageBeyondTheEnd_ChangesNoRowAndSendsNoMessage()
     {
@@ -111,7 +111,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         await _catalog.AddMemberAsync(tenant.Id);
 
         var (result, session) = await InvokeForTenantAsync<Result<ListPage<MemberSummary>>>(
-            tenant.Id, new ListMembers(PageRequest.Create(2, 50).Value));
+            tenant.Id, new ListMembers(ListRequest.Create<ListMembersSort>(2, 50, null, null).Value, Role: null));
 
         result.Value.Items.ShouldBeEmpty();
         (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
@@ -125,7 +125,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var result = default(Result<ListPage<TenantSummary>>)!;
 
         var session = await _api.TrackMessagesAsync(async () =>
-            result = await Bus().InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user, PageRequest.Create(null, null).Value), Cancellation));
+            result = await Bus().InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user, ListRequest.Create<ListMyTenantsSort>(null, null, null, null).Value), Cancellation));
 
         result.Value.Items.ShouldBeEmpty();
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);

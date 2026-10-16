@@ -25,8 +25,10 @@ public static class ControlPlaneModule
     {
         Tenants.Map(admin);
         Users.Map(admin);
+        MyProfile.Map(me);
         MyTenants.Map(me);
         Invitations.Map(me);
+        Profile.Map(tenant);
         Members.Map(tenant);
         ClerkEvents.Map(webhooks);
     }

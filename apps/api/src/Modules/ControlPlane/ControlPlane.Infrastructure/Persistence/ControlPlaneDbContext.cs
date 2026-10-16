@@ -38,12 +38,19 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     {
         modelBuilder.HasDefaultSchema(Schema);
 
+        // K5: every field a list searches has a trigram index, which serves a "contains" match; every field it sorts by has a B-tree
+        // index. pg_trgm is a trusted extension, so the migration account creates it with the database's CREATE privilege.
+        modelBuilder.HasPostgresExtension("pg_trgm");
+
         modelBuilder.Entity<Tenant>(tenant =>
         {
             tenant.Property(t => t.Id).ValueGeneratedNever();
             tenant.Property(t => t.Name).HasMaxLength(Tenant.NameMaxLength);
             tenant.Property(t => t.Slug).HasMaxLength(63);
             tenant.HasIndex(t => t.Slug).IsUnique();
+            tenant.HasIndex(t => t.Name);
+            tenant.HasIndex(t => t.Name, "ix_tenants_name_trgm").HasDatabaseName("ix_tenants_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            tenant.HasIndex(t => t.Slug, "ix_tenants_slug_trgm").HasDatabaseName("ix_tenants_slug_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
             tenant.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
             tenant.Property(t => t.CancellationReason).HasMaxLength(Tenant.CancellationReasonMaxLength);
         });
@@ -53,6 +60,11 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             user.Property(u => u.Id).ValueGeneratedNever();
             user.Property(u => u.ExternalId).HasMaxLength(255);
             user.HasIndex(u => u.ExternalId).IsUnique();
+            user.HasIndex(u => u.Email);
+            user.HasIndex(u => u.LastName);
+            user.HasIndex(u => u.Email, "ix_users_email_trgm").HasDatabaseName("ix_users_email_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            user.HasIndex(u => u.FirstName, "ix_users_first_name_trgm").HasDatabaseName("ix_users_first_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            user.HasIndex(u => u.LastName, "ix_users_last_name_trgm").HasDatabaseName("ix_users_last_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
         });
 
         modelBuilder.Entity<Role>(role =>

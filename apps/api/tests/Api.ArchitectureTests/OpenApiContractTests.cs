@@ -116,8 +116,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private static string MethodOf(RouteEndpoint endpoint) =>
         endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()!.HttpMethods.Single().ToLowerInvariant();
 
-    // The document leaves the route constraints out of a path: {tenantId:guid} is {tenantId}.
-    private static string DocumentPathOf(RouteEndpoint endpoint) => RouteConstraint().Replace(endpoint.RoutePattern.RawText!, "{$1}");
+    // The document leaves the route constraints out of a path: {tenantId:guid} is {tenantId}. A group's own endpoint, such as GET /v1/me,
+    // keeps the group's trailing slash in its raw route; the document and the router leave it out.
+    private static string DocumentPathOf(RouteEndpoint endpoint) => RouteConstraint().Replace(endpoint.RoutePattern.RawText!, "{$1}").TrimEnd('/');
 
     private static string FormatOf(RoutePatternParameterPart parameter) =>
         parameter.ParameterPolicies.Any(policy => policy.Content == "guid") ? "uuid" : "-";

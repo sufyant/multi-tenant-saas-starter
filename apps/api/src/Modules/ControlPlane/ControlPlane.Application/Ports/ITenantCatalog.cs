@@ -1,3 +1,5 @@
+using ControlPlane.Application.Members;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -26,13 +28,25 @@ public interface ITenantCatalog
     /// </summary>
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
 
-    /// <summary>A page of every tenant, in every status, by name, then id. It needs no active tenant.</summary>
-    internal Task<ListPage<Tenant>> ListTenantsAsync(PageRequest paging, CancellationToken cancellationToken);
+    /// <summary>The active tenant, without a lock, for a read. Null when no tenant has the active tenant's id.</summary>
+    internal Task<Tenant?> FindTenantAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A page of every tenant whose name or slug contains the search, in the status or every status, by the sort field, then id. It
+    /// needs no active tenant.
+    /// </summary>
+    internal Task<ListPage<Tenant>> ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken);
 
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
-    /// <summary>A page of the active tenant's members with their roles, by role (Owner, Admin, Member), then by user id.</summary>
-    internal Task<ListPage<(Guid UserId, BuiltInRole Role)>> ListMembersAsync(PageRequest paging, CancellationToken cancellationToken);
+    /// <summary>
+    /// A page of the active tenant's members of the role or every role, with the copy of their profile, whose email address or name
+    /// contains the search: by the sort field, then by user id. The search starts from the tenant's memberships, never from the users.
+    /// </summary>
+    internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role)>> ListMembersAsync(
+        ListRequest<ListMembersSort> list,
+        BuiltInRole? role,
+        CancellationToken cancellationToken);
 
     /// <summary>The invitation with this token hash, locked for the rest of the transaction so it is accepted only once.</summary>
     internal Task<Invitation?> FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken);

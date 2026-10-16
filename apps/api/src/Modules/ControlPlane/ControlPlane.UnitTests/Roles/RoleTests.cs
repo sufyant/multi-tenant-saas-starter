@@ -20,4 +20,12 @@ public class RoleTests
 
         roles.ShouldAllBe(role => role.Permissions.Contains("tenant.members.read"));
     }
+
+    [Fact]
+    public void ReadTenantProfile_EveryBuiltInRole_HoldsThePermission()
+    {
+        var roles = BuiltInRoles.All;
+
+        roles.ShouldAllBe(role => role.Permissions.Contains("tenant.profile.read"));
+    }
 }

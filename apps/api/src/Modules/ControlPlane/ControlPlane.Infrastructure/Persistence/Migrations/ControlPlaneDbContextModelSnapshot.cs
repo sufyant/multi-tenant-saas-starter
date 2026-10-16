@@ -21,6 +21,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("ControlPlane.Application.Tenants.TenantCreation.TenantCreationSaga", b =>
@@ -262,9 +263,24 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_tenants");
 
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_tenants_name");
+
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasDatabaseName("ix_tenants_slug");
+
+                    b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
+                        .HasDatabaseName("ix_tenants_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm")
+                        .HasDatabaseName("ix_tenants_slug_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("tenants", "control_plane");
                 });
@@ -308,9 +324,33 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
+                    b.HasIndex("Email")
+                        .HasDatabaseName("ix_users_email");
+
                     b.HasIndex("ExternalId")
                         .IsUnique()
                         .HasDatabaseName("ix_users_external_id");
+
+                    b.HasIndex("LastName")
+                        .HasDatabaseName("ix_users_last_name");
+
+                    b.HasIndex(new[] { "Email" }, "ix_users_email_trgm")
+                        .HasDatabaseName("ix_users_email_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_users_email_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_users_email_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "FirstName" }, "ix_users_first_name_trgm")
+                        .HasDatabaseName("ix_users_first_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "FirstName" }, "ix_users_first_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "FirstName" }, "ix_users_first_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm")
+                        .HasDatabaseName("ix_users_last_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("users", "control_plane");
                 });

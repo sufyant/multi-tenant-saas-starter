@@ -1,3 +1,4 @@
+using ControlPlane.Application.Users;
 using ControlPlane.Domain.Users;
 using SharedKernel;
 
@@ -16,6 +17,9 @@ public interface IUserCatalog
     /// <summary>The user with this catalog id, locked for the rest of the transaction, so two changes of their state run one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The user with this identity provider id, without a lock, for a read.</summary>
+    internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
+
     /// <summary>The catalog id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
     internal Task<Guid?> FindUserIdAsync(string externalUserId, CancellationToken cancellationToken);
 
@@ -23,9 +27,10 @@ public interface IUserCatalog
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of every user, with whether each is a system admin: by email address, users without one last, then by id.
+    /// A page of every user in the status or every status, whose email address or name contains the search, with whether each is a
+    /// system admin: by the sort field, users without a value for it last, then by id.
     /// </summary>
-    internal Task<ListPage<(User User, bool IsSystemAdmin)>> ListUsersAsync(PageRequest paging, CancellationToken cancellationToken);
+    internal Task<ListPage<(User User, bool IsSystemAdmin)>> ListUsersAsync(ListRequest<ListUsersSort> list, string? status, CancellationToken cancellationToken);
 
     internal Task SaveChangesAsync(CancellationToken cancellationToken);
 }
