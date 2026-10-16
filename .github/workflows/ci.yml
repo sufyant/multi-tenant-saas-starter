@@ -114,8 +114,9 @@ jobs:
       # (section 9, rule 8 of apps/api/docs/ARCHITECTURE.md).
       - run: dotnet test --solution Api.slnx --no-build --results-directory TestResults
 
+      # A hang that runs into timeout-minutes cancels the job, so the step runs on a cancel too.
       - name: Keep the evidence of a failed test run
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: api-test-results
