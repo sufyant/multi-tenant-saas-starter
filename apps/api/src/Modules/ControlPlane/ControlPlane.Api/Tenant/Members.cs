@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
+using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Members;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;
@@ -11,8 +13,12 @@ namespace ControlPlane.Api.Tenant;
 /// <summary>The members of the tenant in the route.</summary>
 public static class Members
 {
-    public static void Map(RouteGroupBuilder tenant) =>
+    public static void Map(RouteGroupBuilder tenant)
+    {
         tenant.MapGet("/members", ListMembers).RequireAuthorization(Permissions.TenantMembersRead);
+        tenant.MapPatch("/members/{userId:guid}", ChangeMemberRole).RequireAuthorization(Permissions.TenantMembersUpdate);
+        tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete);
+    }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the list to it.
     private static async Task<Result<ListPage<MemberResponse>>> ListMembers(
@@ -37,9 +43,34 @@ public static class Members
         }
 
         var members = await bus.InvokeAsync<Result<ListPage<MemberSummary>>>(new ListMembers(list.Value, filter.Value?.ToString()), cancellationToken);
-        return members.Map(found => found.Map(member => new MemberResponse(member.UserId, member.Email, member.FirstName, member.LastName, member.Role)));
+        return members.Map(found => found.Map(ToResponse));
     }
+
+    // Changing a role sets a state, so it takes no idempotency key (I1): the role the member already has answers 200 again.
+    private static async Task<Result<MemberResponse>> ChangeMemberRole(
+        Guid userId,
+        ChangeMemberRoleRequest request,
+        ClaimsPrincipal user,
+        IMessageBus bus,
+        CancellationToken cancellationToken)
+    {
+        var changed = await bus.InvokeAsync<Result<MemberSummary>>(new ChangeMemberRole(user.Id(), userId, request.Role.ToString()), cancellationToken);
+        return changed.Map(ToResponse);
+    }
+
+    // Removing sets a state, so it takes no idempotency key (I1).
+    private static async Task<Result> RemoveMember(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        await bus.InvokeAsync<Result>(new RemoveMember(user.Id(), userId), cancellationToken);
+
+    private static MemberResponse ToResponse(MemberSummary member) =>
+        new(member.UserId, member.Email, member.FirstName, member.LastName, member.Role);
 }
+
+/// <summary>
+/// The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum's
+/// first value.
+/// </summary>
+public sealed record ChangeMemberRoleRequest([property: JsonRequired] MemberRole Role);
 
 /// <summary>
 /// A member of the tenant: the user's id, the copy of their email address and name, and their role, Owner, Admin or Member. The email
@@ -49,7 +80,7 @@ public sealed record MemberResponse(Guid UserId, string? Email, string? FirstNam
 
 /// <summary>
 /// A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
-/// and the role an invitation gives.
+/// the role an invitation gives, and the role a member is given.
 /// </summary>
 [JsonConverter(typeof(MemberRoleConverter))]
 public enum MemberRole

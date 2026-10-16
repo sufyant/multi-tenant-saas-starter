@@ -2,9 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Audit.Application.Invitations;
+using Audit.Application.Members;
 using Audit.Application.Tenants;
 using Audit.Application.Users;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
@@ -201,6 +203,52 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(RevokeInvitation), typeof(RevokeInvitationHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(InvitationRevoked), typeof(RecordInvitationRevokedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "invitation.revoked")).ShouldBe(1L);
+    }
+
+    // O3: a role change is announced from the web host, and its Audit handler runs in the worker, once.
+    [Fact]
+    public async Task ChangeMemberRole_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await catalog.UserIdOfAsync(await catalog.AddMemberAsync(tenant.Id));
+
+        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "Admin");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0);
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRole), typeof(ChangeMemberRoleHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChanged), typeof(RecordMemberRoleChangedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+    }
+
+    // O3: a removal is announced from the web host, and its Audit handler runs in the worker, once.
+    [Fact]
+    public async Task RemoveMember_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await catalog.UserIdOfAsync(await catalog.AddMemberAsync(tenant.Id));
+
+        var removed = await owner.RemoveMemberAsync(tenant.Id, member);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
+
+        removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RemoveMember), typeof(RemoveMemberHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRemoved), typeof(RecordMemberRemovedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
     }
 
     // O3: a reactivation is announced from the web host, and its Audit handler runs in the worker, once.
