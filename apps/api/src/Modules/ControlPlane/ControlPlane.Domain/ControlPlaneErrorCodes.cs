@@ -34,11 +34,17 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode MembershipOwnerRequiresOwner = ErrorCode.Declare("membership.owner_requires_owner");
 
+    public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
+
     public static readonly ErrorCode TenantNameInvalid = ErrorCode.Declare("tenant.name_invalid");
 
     public static readonly ErrorCode TenantNotActive = ErrorCode.Declare("tenant.not_active");
 
+    public static readonly ErrorCode TenantNotClosed = ErrorCode.Declare("tenant.not_closed");
+
     public static readonly ErrorCode TenantNotFound = ErrorCode.Declare("tenant.not_found");
+
+    public static readonly ErrorCode TenantReopenPeriodEnded = ErrorCode.Declare("tenant.reopen_period_ended");
 
     public static readonly ErrorCode TenantSlugInvalid = ErrorCode.Declare("tenant.slug_invalid");
 
