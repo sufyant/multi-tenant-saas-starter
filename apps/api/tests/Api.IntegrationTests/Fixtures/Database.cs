@@ -209,13 +209,14 @@ public sealed class Database : IAsyncLifetime
         return name;
     }
 
-    // A database set up the way a deployment is, then with Audit's last migration reverted: the schema the previous version runs on.
-    public async Task<string> CreateDatabaseBeforeTheLastAuditMigrationAsync()
+    // A database set up the way a deployment is, then with Audit taken back to the migration before the one named: the schema the
+    // version before that migration runs on.
+    public async Task<string> CreateDatabaseBeforeAuditMigrationAsync(string migration)
     {
         var name = await CreateMigratedDatabaseAsync();
         await using var audit = new AuditDbContext(
             TenancyServiceCollectionExtensions.ModuleDbContextOptions<AuditDbContext>(AuditDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
-        await audit.GetService<IMigrator>().MigrateAsync(audit.Database.GetMigrations().SkipLast(1).Last());
+        await audit.GetService<IMigrator>().MigrateAsync(audit.Database.GetMigrations().TakeWhile(applied => applied != migration).Last());
 
         return name;
     }

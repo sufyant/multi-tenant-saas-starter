@@ -23,22 +23,25 @@ public sealed record AuditActorSummary(string Kind, Guid? UserId, string? Displa
 public sealed record AuditTargetSummary(string Kind, Guid Id, string? Name);
 
 // API composition (Richardson, "API composition"): the records come from the audit log, and the names of the people they point to from
-// ControlPlane, in one call for the whole page.
+// ControlPlane, in one call for the whole page. They are two queries: Wolverine gives a handler the transaction of one DbContext, and
+// each of the two modules has its own (W1).
 internal static class AuditEntrySummaries
 {
     private const string Platform = "Platform";
 
     private const string IdentityProvider = "Identity provider";
 
-    /// <summary>The page of the records found, with each user, actor or target, named by the catalog now.</summary>
-    public static async Task<CursorPage<AuditEntrySummary>> PageOfAsync(
-        IReadOnlyList<AuditRecord> found,
-        CursorRequest request,
+    /// <summary>The page of the records found, with no user named yet.</summary>
+    public static CursorPage<AuditEntrySummary> PageOf(IReadOnlyList<AuditRecord> found, CursorRequest request) =>
+        CursorPage.Of(found, request, record => new CursorPosition(record.OccurredAt, record.Id))
+            .Map(record => new AuditEntrySummary(record.Id, record.OccurredAt, record.Operation, record.Details, ActorOf(record), TargetOf(record)));
+
+    /// <summary>The page with each user, actor or target, named by the catalog now.</summary>
+    public static async Task<CursorPage<AuditEntrySummary>> NamedAsync(
+        CursorPage<AuditEntrySummary> page,
         IUserNames userNames,
         CancellationToken cancellationToken)
     {
-        var page = CursorPage.Of(found, request, record => new CursorPosition(record.OccurredAt, record.Id))
-            .Map(record => new AuditEntrySummary(record.Id, record.OccurredAt, record.Operation, record.Details, ActorOf(record), TargetOf(record)));
         var people = page.Items
             .SelectMany(entry => new[] { entry.Actor.UserId, entry.Target is { Kind: nameof(AuditTargetKind.User) } target ? target.Id : null })
             .OfType<Guid>()

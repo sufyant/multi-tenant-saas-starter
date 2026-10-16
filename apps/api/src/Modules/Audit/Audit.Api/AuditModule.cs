@@ -12,7 +12,8 @@ public static class AuditModule
 
     /// <summary>
     /// Maps the module's endpoints into the host's route groups: the platform's audit log for system admins, and each tenant's log for
-    /// its members. Each names the permission it needs (A5) and sends one query.
+    /// its members. Each names the permission it needs (A5). It reads a page of the log, then has its users named: two
+    /// queries, each in the transaction of one module's DbContext (W1).
     /// </summary>
     public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder tenant)
     {

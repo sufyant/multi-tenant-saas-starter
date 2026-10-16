@@ -69,7 +69,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     }
 
     [Fact]
-    public async Task ListPlatformAuditEntries_AChangedCursor_IsRejected()
+    public async Task ListPlatformAuditEntries_ACursorThatDoesNotDecode_IsRejected()
     {
         var admin = await _catalog.AddSystemAdminAsync();
 

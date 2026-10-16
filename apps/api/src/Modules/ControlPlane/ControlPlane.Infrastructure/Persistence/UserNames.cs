@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 namespace ControlPlane.Infrastructure.Persistence;
 
 // Reads the copy of the users' profiles in control_plane.users, which belongs to no tenant (R6), for a page of ids in one query. A
-// deleted user's copy is erased (A8), so their name is "Deleted user" wherever an id points to them (K3).
-internal sealed class UserNames(ControlPlaneDbContext controlPlane) : IUserNames
+// deleted user's copy is erased (A8), so their name is "Deleted user" wherever an id points to them (K3). Public only so that
+// Wolverine's generated code builds it for Audit's handler on this module's DbContext, in that DbContext's transaction (W1, W9).
+public sealed class UserNames(ControlPlaneDbContext controlPlane) : IUserNames
 {
     public async Task<IReadOnlyDictionary<Guid, UserName>> FindAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken)
     {

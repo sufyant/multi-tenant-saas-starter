@@ -9,7 +9,7 @@ internal static class TenantTables
     {
         ["audit.entries"] = new(
             ApplicationMayUpdate: false,
-            tenant => $"INSERT INTO audit.entries (id, occurred_at, actor_id, kind, operation, tenant_id) VALUES (gen_random_uuid(), now(), 'user_isolation', 'Command', 'Isolation', '{tenant}')"),
+            tenant => $"INSERT INTO audit.entries (id, occurred_at, actor_id, kind, operation, tenant_id) VALUES (gen_random_uuid(), now(), gen_random_uuid(), 'Command', 'Isolation', '{tenant}')"),
         ["control_plane.invitations"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""

@@ -29,7 +29,10 @@ public class ContractsShapeTests
     }
 
     // Section 2: another module reaches a contract only through its interface. The class behind it is internal sealed, in the
-    // Infrastructure project of the module that publishes the contract.
+    // Infrastructure project of the module that publishes the contract. A class that another module's handler takes is public and
+    // sealed, so that Wolverine's generated code builds it on the handler's DbContext (W1, W9).
+    private static readonly string[] BuiltByWolverine = ["ControlPlane.Infrastructure.Persistence.UserNames"];
+
     [Theory]
     [MemberData(nameof(Modules))]
     public void ImplementContract_InInfrastructure_IsInternalSealed(string module)
@@ -38,7 +41,7 @@ public class ContractsShapeTests
 
         var exposed = Solution.Load($"{module}.Infrastructure").GetTypes()
             .Where(type => type.IsClass && type.GetInterfaces().Any(contract => contracts.Contains(contract.Assembly.GetName().Name!)))
-            .Where(type => !(type.IsNotPublic || type.IsNestedAssembly) || !type.IsSealed)
+            .Where(type => !(type.IsNotPublic || type.IsNestedAssembly || BuiltByWolverine.Contains(type.FullName)) || !type.IsSealed)
             .Select(type => type.FullName);
 
         exposed.ShouldBeEmpty();

@@ -8,7 +8,7 @@ public sealed class AuditActorIdMigrationTests(Database database)
     [Fact]
     public async Task MigrateAuditLog_AnActorIdWrittenAsText_ReadsBackAsTheSameUuid()
     {
-        var name = await database.CreateDatabaseBeforeTheLastAuditMigrationAsync();
+        var name = await database.CreateDatabaseBeforeAuditMigrationAsync(Migration);
         var (entry, actor) = (Guid.CreateVersion7(), Guid.CreateVersion7());
         await database.ScalarAsSuperuserAsync<object>(
             $"""
@@ -28,7 +28,7 @@ public sealed class AuditActorIdMigrationTests(Database database)
     [Fact]
     public async Task MigrateAuditLog_AnActorIdThatIsNotAUuid_StopsTheMigrationAndChangesNothing()
     {
-        var name = await database.CreateDatabaseBeforeTheLastAuditMigrationAsync();
+        var name = await database.CreateDatabaseBeforeAuditMigrationAsync(Migration);
         await database.ScalarAsSuperuserAsync<object>(
             $"""
             INSERT INTO audit.entries (id, tenant_id, occurred_at, actor_id, kind, operation)
@@ -40,6 +40,8 @@ public sealed class AuditActorIdMigrationTests(Database database)
 
         (await database.ScalarAsSuperuserAsync<string>(ActorIdType, name)).ShouldBe("character varying");
     }
+
+    private const string Migration = "20261016201929_ActorIdUuidAndCursorIndexes";
 
     private const string ActorIdType =
         "SELECT data_type FROM information_schema.columns WHERE table_schema = 'audit' AND table_name = 'entries' AND column_name = 'actor_id'";
