@@ -557,6 +557,10 @@ The test is written first. Tests run with real PostgreSQL. We do not fake our ow
    - The files go to the results directory: `bin/Debug/net10.0/TestResults` of the test project on a local run, and `apps/api/TestResults` in CI. When the test step fails, or a hang runs into the job's time limit, CI keeps the folder for 7 days as the artifact `api-test-results`.
    - Read a dump with `dotnet-dump analyze <file>`: `clrstack -all` gives every thread, `dumpasync` gives every waiting async method.
 9. A tracked session waits up to 30 s for the messages a test caused, on `ApiFactory` and on `PipelineHost` (`ApiFactory.TrackingTimeout`). Wolverine's default is 5 s. A message that fails for good runs 4 times, with pauses of 100 ms, 500 ms and 2 s, before it reaches the dead letter queue. Under load each run can take a second, so 5 s is too short.
+10. A test that leaves a message scheduled runs on a database of its own. Every Wolverine node runs the scheduled messages of its database when their time comes, whichever node scheduled them. In Balanced mode Wolverine 6.47 starts the scheduled jobs on every node, with or without the durability agent (`WolverineRuntime.startAgentsAsync`). On the shared database, a host of another test runs the message, with its own fakes, inside its own tracked session. Source: Meszaros, *xUnit Test Patterns*, Chapter 6 (Interacting Tests) and Chapter 18 (Shared Fixture).
+   - Example: `InvitationDeliveryTests` schedules an invitation's next try a minute away. A minute later, a host of `TenantCreationTests` ran it while its email service was down, and the test saw two dead letters instead of one.
+   - The two tests of `InvitationDeliveryTests` with a pause of a minute run on a database of their own.
+   - The timeouts that the tenant creation process schedules come after 10 minutes, 10 minutes and 2 hours. A run ends before them.
 
 Unit test standard:
 
