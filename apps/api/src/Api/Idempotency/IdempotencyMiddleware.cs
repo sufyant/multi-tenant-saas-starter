@@ -8,7 +8,7 @@ internal sealed class IdempotencyMiddleware(RequestDelegate next)
     public const string Header = "Idempotency-Key";
     public const string TraceItem = "IdempotencyTraceId";
 
-    private static readonly Error KeyInvalid = Error.Validation(ErrorCode.IdempotencyKeyInvalid, $"The {Header} header must hold 1 to 255 visible ASCII characters.");
+    private static readonly Error KeyInvalid = Error.Validation(HostErrorCodes.IdempotencyKeyInvalid, $"The {Header} header must hold 1 to 255 visible ASCII characters.");
 
     public async Task InvokeAsync(HttpContext context)
     {

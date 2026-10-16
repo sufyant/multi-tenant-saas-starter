@@ -38,7 +38,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var (result, session) = await InvokeForTenantAsync<Result<TenantDetails>>(
             tenantId, new CreateTenant(admin, " ", Slug(), Email()));
 
-        result.Error.Code.ShouldBe(ErrorCode.TenantNameInvalid);
+        result.Error.Code.Value.ShouldBe("tenant.name_invalid");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
@@ -53,7 +53,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var (result, session) = await InvokeForTenantAsync<Result<TenantDetails>>(
             tenantId, new CreateTenant(admin, "Acme Ltd", existing.Slug, Email()));
 
-        result.Error.Code.ShouldBe(ErrorCode.TenantSlugTaken);
+        result.Error.Code.Value.ShouldBe("tenant.slug_taken");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
@@ -67,7 +67,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
             tenant.Id, new AcceptInvitation("no-such-secret", user, [Email()], FakeIdentityProvider.NoProfile));
 
-        result.Error.Code.ShouldBe(ErrorCode.InvitationNotFound);
+        result.Error.Code.Value.ShouldBe("invitation.not_found");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
@@ -81,7 +81,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
             tenantId, new AcceptInvitation(secret, user, [Email()], FakeIdentityProvider.NoProfile));
 
-        result.Error.Code.ShouldBe(ErrorCode.InvitationEmailMismatch);
+        result.Error.Code.Value.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
@@ -97,7 +97,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
             tenantId, new AcceptInvitation(secret, member, [email], FakeIdentityProvider.NoProfile));
 
-        result.Error.Code.ShouldBe(ErrorCode.MembershipExists);
+        result.Error.Code.Value.ShouldBe("membership.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
         (await database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
         session.Sent.AllMessages().ShouldBeEmpty();

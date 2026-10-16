@@ -49,7 +49,7 @@ public class ListRequestTests
     {
         var list = ListRequest.Create<ThingSort>(null, null, Sort(sort), null);
 
-        list.Error.Code.ShouldBe(ErrorCode.PagingSortInvalid);
+        list.Error.Code.ShouldBe(PagingErrorCodes.SortInvalid);
     }
 
     [Fact]
@@ -83,18 +83,18 @@ public class ListRequestTests
     {
         var list = ListRequest.Create<ThingSort>(null, null, null, new string('a', 101));
 
-        list.Error.Code.ShouldBe(ErrorCode.PagingQInvalid);
+        list.Error.Code.ShouldBe(PagingErrorCodes.QInvalid);
     }
 
     [Theory]
-    [InlineData(0, null, ErrorCode.PagingPageInvalid)]
-    [InlineData(null, 0, ErrorCode.PagingPageSizeInvalid)]
-    [InlineData(null, 101, ErrorCode.PagingPageSizeInvalid)]
-    public void CreateList_PagingOutsideItsRange_IsRejectedWithThePagingCode(int? page, int? pageSize, ErrorCode code)
+    [InlineData(0, null, "paging.page_invalid")]
+    [InlineData(null, 0, "paging.page_size_invalid")]
+    [InlineData(null, 101, "paging.page_size_invalid")]
+    public void CreateList_PagingOutsideItsRange_IsRejectedWithThePagingCode(int? page, int? pageSize, string code)
     {
         var list = ListRequest.Create<ThingSort>(page, pageSize, null, null);
 
-        list.Error.Code.ShouldBe(code);
+        list.Error.Code.Value.ShouldBe(code);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public class ListRequestTests
     {
         var filter = ListFilter.Read<ThingStatus>(new ListFilter<ThingStatus>(text), "status");
 
-        filter.Error.Code.ShouldBe(ErrorCode.PagingFilterInvalid);
+        filter.Error.Code.ShouldBe(PagingErrorCodes.FilterInvalid);
     }
 
     [Fact]

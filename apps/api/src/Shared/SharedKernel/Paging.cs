@@ -22,12 +22,12 @@ public sealed record PageRequest(int Page, int PageSize)
     {
         if (page is < 1)
         {
-            return Error.Validation(ErrorCode.PagingPageInvalid, "The page starts at 1.");
+            return Error.Validation(PagingErrorCodes.PageInvalid, "The page starts at 1.");
         }
 
         if (pageSize is < 1 or > MaxPageSize)
         {
-            return Error.Validation(ErrorCode.PagingPageSizeInvalid, $"The page size is 1 to {MaxPageSize}.");
+            return Error.Validation(PagingErrorCodes.PageSizeInvalid, $"The page size is 1 to {MaxPageSize}.");
         }
 
         return new PageRequest(page ?? 1, pageSize ?? DefaultPageSize);
@@ -76,13 +76,13 @@ public static class ListRequest
         var sortField = text.Length == 0 ? JsonEnum<TSort>.First : JsonEnum<TSort>.Find(field);
         if (sortField is not { } chosen)
         {
-            return Error.Validation(ErrorCode.PagingSortInvalid, $"The sort is one of: {string.Join(", ", ListSort.ValuesOf<TSort>())}.");
+            return Error.Validation(PagingErrorCodes.SortInvalid, $"The sort is one of: {string.Join(", ", ListSort.ValuesOf<TSort>())}.");
         }
 
         var search = q?.Trim();
         if (search?.Length > SearchMaxLength)
         {
-            return Error.Validation(ErrorCode.PagingQInvalid, $"The search is at most {SearchMaxLength} characters, not counting the spaces around it.");
+            return Error.Validation(PagingErrorCodes.QInvalid, $"The search is at most {SearchMaxLength} characters, not counting the spaces around it.");
         }
 
         return new ListRequest<TSort>(paging.Value, chosen, descending, string.IsNullOrEmpty(search) ? null : search);
@@ -144,7 +144,7 @@ public static class ListFilter
 
         return JsonEnum<TValue>.Find(sent.Text) is { } value
             ? value
-            : Error.Validation(ErrorCode.PagingFilterInvalid, $"The filter {name} is one of: {string.Join(", ", ValuesOf<TValue>())}.");
+            : Error.Validation(PagingErrorCodes.FilterInvalid, $"The filter {name} is one of: {string.Join(", ", ValuesOf<TValue>())}.");
     }
 }
 

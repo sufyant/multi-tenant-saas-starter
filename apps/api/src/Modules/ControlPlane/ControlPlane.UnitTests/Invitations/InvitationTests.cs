@@ -1,3 +1,4 @@
+using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
@@ -68,7 +69,7 @@ public class InvitationTests
 
         var accepted = invitation.Accept(["ada@example.com"], AccepterId, Now);
 
-        accepted.Error.Code.ShouldBe(ErrorCode.InvitationNotPending);
+        accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
     }
 
@@ -111,7 +112,7 @@ public class InvitationTests
 
         var second = invitation.Accept(["ada@example.com"], AccepterId, Now);
 
-        second.Error.Code.ShouldBe(ErrorCode.InvitationNotPending);
+        second.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
     }
 
     [Fact]
@@ -121,7 +122,7 @@ public class InvitationTests
 
         var accepted = invitation.Accept(["ada@example.com"], AccepterId, Now.AddDays(7));
 
-        accepted.Error.Code.ShouldBe(ErrorCode.InvitationExpired);
+        accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationExpired);
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
@@ -133,7 +134,7 @@ public class InvitationTests
 
         var accepted = invitation.Accept(["grace@example.com"], AccepterId, Now);
 
-        accepted.Error.Code.ShouldBe(ErrorCode.InvitationEmailMismatch);
+        accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
@@ -157,7 +158,7 @@ public class InvitationTests
 
         var allowed = invitation.CheckAcceptance(["grace@example.com"], Now);
 
-        allowed.Error.Code.ShouldBe(ErrorCode.InvitationEmailMismatch);
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
@@ -167,7 +168,7 @@ public class InvitationTests
     {
         var allowed = Invitation.CheckInviter(BuiltInRoles.Admin, BuiltInRoles.Owner);
 
-        allowed.Error.Code.ShouldBe(ErrorCode.InvitationOwnerRequiresOwner);
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner);
         allowed.Error.Type.ShouldBe(SharedKernel.ErrorType.Forbidden);
     }
 

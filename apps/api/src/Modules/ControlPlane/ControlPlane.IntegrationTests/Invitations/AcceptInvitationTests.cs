@@ -2,6 +2,7 @@ using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
@@ -54,7 +55,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, stranger);
 
-        accepted.Error.Code.ShouldBe(ErrorCode.InvitationEmailMismatch);
+        accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{stranger}'")).ShouldBe(0);
     }
 
@@ -70,7 +71,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var reused = await Handlers.AcceptAsync(database.Services, code, second);
 
-        reused.Error.Code.ShouldBe(ErrorCode.InvitationNotPending);
+        reused.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
         (await FindMembershipAsync(tenantId, second)).ShouldBeNull();
     }
 
@@ -86,7 +87,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(services, code, invitee);
 
-        accepted.Error.Code.ShouldBe(ErrorCode.InvitationExpired);
+        accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationExpired);
         (await FindMembershipAsync(tenantId, invitee)).ShouldBeNull();
     }
 
@@ -102,7 +103,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, invitee);
 
-        accepted.Error.Code.ShouldBe(ErrorCode.InvitationNotFound);
+        accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
         (await FindMembershipAsync(tenantId, invitee)).ShouldBeNull();
     }
 

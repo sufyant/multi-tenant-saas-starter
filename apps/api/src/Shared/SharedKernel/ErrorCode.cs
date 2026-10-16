@@ -1,146 +1,31 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SharedKernel;
 
 /// <summary>
-/// Every code an error answer of the API can carry, in one list (K5). The OpenAPI document declares these values as one enum, so a
-/// generated client knows each code, and a screen writes its own text for each one. Each value is <c>area.reason</c> in JSON.
+/// The code of an error answer, <c>area.reason</c> in lower snake case (K5). A screen writes its own text for each code. Each owner
+/// declares its codes in one static class whose name ends with <c>ErrorCodes</c>: <see cref="PagingErrorCodes"/> here, the host's
+/// <c>HostErrorCodes</c>, and each module's in its Domain project, such as <c>ControlPlaneErrorCodes</c>. The OpenAPI document joins
+/// them into one enum. Only such a class calls <see cref="Declare"/> (ErrorCodeTests).
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter<ErrorCode>))]
-public enum ErrorCode
+[JsonConverter(typeof(ErrorCodeJsonConverter))]
+public readonly record struct ErrorCode
 {
-    [JsonStringEnumMemberName("auth.unauthenticated")]
-    AuthUnauthenticated,
+    private ErrorCode(string value) => Value = value;
 
-    [JsonStringEnumMemberName("auth.forbidden")]
-    AuthForbidden,
+    public string Value { get; }
 
-    [JsonStringEnumMemberName("idempotency.key_invalid")]
-    IdempotencyKeyInvalid,
+    /// <summary>Declares a code, as a static readonly field of an <c>...ErrorCodes</c> class.</summary>
+    public static ErrorCode Declare(string value) => new(value);
 
-    [JsonStringEnumMemberName("idempotency.key_in_progress")]
-    IdempotencyKeyInProgress,
+    public override string ToString() => Value;
 
-    [JsonStringEnumMemberName("idempotency.key_reused")]
-    IdempotencyKeyReused,
+    // A saved idempotent result keeps the code as its text, so it replays to the same answer (I5).
+    private sealed class ErrorCodeJsonConverter : JsonConverter<ErrorCode>
+    {
+        public override ErrorCode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new(reader.GetString()!);
 
-    [JsonStringEnumMemberName("invitation.code_required")]
-    InvitationCodeRequired,
-
-    [JsonStringEnumMemberName("invitation.daily_limit_reached")]
-    InvitationDailyLimitReached,
-
-    [JsonStringEnumMemberName("invitation.email_mismatch")]
-    InvitationEmailMismatch,
-
-    [JsonStringEnumMemberName("invitation.expired")]
-    InvitationExpired,
-
-    [JsonStringEnumMemberName("invitation.not_found")]
-    InvitationNotFound,
-
-    [JsonStringEnumMemberName("invitation.not_pending")]
-    InvitationNotPending,
-
-    [JsonStringEnumMemberName("invitation.owner_requires_owner")]
-    InvitationOwnerRequiresOwner,
-
-    [JsonStringEnumMemberName("invitation.staff_cannot_join")]
-    InvitationStaffCannotJoin,
-
-    [JsonStringEnumMemberName("membership.cannot_remove_self")]
-    MembershipCannotRemoveSelf,
-
-    [JsonStringEnumMemberName("membership.exists")]
-    MembershipExists,
-
-    [JsonStringEnumMemberName("membership.last_owner")]
-    MembershipLastOwner,
-
-    [JsonStringEnumMemberName("membership.not_found")]
-    MembershipNotFound,
-
-    [JsonStringEnumMemberName("membership.owner_requires_owner")]
-    MembershipOwnerRequiresOwner,
-
-    [JsonStringEnumMemberName("paging.cursor_invalid")]
-    PagingCursorInvalid,
-
-    [JsonStringEnumMemberName("paging.filter_invalid")]
-    PagingFilterInvalid,
-
-    [JsonStringEnumMemberName("paging.limit_invalid")]
-    PagingLimitInvalid,
-
-    [JsonStringEnumMemberName("paging.page_invalid")]
-    PagingPageInvalid,
-
-    [JsonStringEnumMemberName("paging.page_size_invalid")]
-    PagingPageSizeInvalid,
-
-    [JsonStringEnumMemberName("paging.q_invalid")]
-    PagingQInvalid,
-
-    [JsonStringEnumMemberName("paging.sort_invalid")]
-    PagingSortInvalid,
-
-    [JsonStringEnumMemberName("rate_limit.exceeded")]
-    RateLimitExceeded,
-
-    /// <summary>A request the endpoint cannot read, such as a body that is not JSON, or a value of the wrong type.</summary>
-    [JsonStringEnumMemberName("request.invalid")]
-    RequestInvalid,
-
-    [JsonStringEnumMemberName("request.timeout")]
-    RequestTimeout,
-
-    [JsonStringEnumMemberName("request.too_large")]
-    RequestTooLarge,
-
-    [JsonStringEnumMemberName("request.unsupported_media_type")]
-    RequestUnsupportedMediaType,
-
-    /// <summary>Fields of the request failed validation; <c>errors</c> lists a <see cref="FieldErrorCode"/> for each.</summary>
-    [JsonStringEnumMemberName("request.validation_failed")]
-    RequestValidationFailed,
-
-    [JsonStringEnumMemberName("route.method_not_allowed")]
-    RouteMethodNotAllowed,
-
-    [JsonStringEnumMemberName("route.not_found")]
-    RouteNotFound,
-
-    [JsonStringEnumMemberName("server.error")]
-    ServerError,
-
-    [JsonStringEnumMemberName("tenant.name_invalid")]
-    TenantNameInvalid,
-
-    [JsonStringEnumMemberName("tenant.not_active")]
-    TenantNotActive,
-
-    [JsonStringEnumMemberName("tenant.not_found")]
-    TenantNotFound,
-
-    [JsonStringEnumMemberName("tenant.slug_invalid")]
-    TenantSlugInvalid,
-
-    [JsonStringEnumMemberName("tenant.slug_taken")]
-    TenantSlugTaken,
-
-    [JsonStringEnumMemberName("tenant.suspended")]
-    TenantSuspended,
-
-    [JsonStringEnumMemberName("user.is_system_admin")]
-    UserIsSystemAdmin,
-
-    [JsonStringEnumMemberName("user.not_found")]
-    UserNotFound,
-
-    [JsonStringEnumMemberName("user.suspended")]
-    UserSuspended,
-
-    /// <summary>A webhook's signature is missing, wrong or too old. Only the webhooks answer it, and they are not in the document (N5).</summary>
-    [JsonStringEnumMemberName("webhook.signature_invalid")]
-    WebhookSignatureInvalid,
+        public override void Write(Utf8JsonWriter writer, ErrorCode value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
+    }
 }

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Application;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
@@ -19,10 +20,6 @@ public static class Invitations
     /// </summary>
     public const string AcceptRateLimit = "invitation-accept";
 
-    private static readonly Error InvitationNotFound = Error.NotFound(ErrorCode.InvitationNotFound, "The invitation was not found.");
-
-    private static readonly Error InvitationCodeRequired = Error.Validation(ErrorCode.InvitationCodeRequired, "The request has no invitation code.");
-
     public static void Map(RouteGroupBuilder me) =>
         me.MapPost("/invitations/accept", AcceptInvitation).RequireRateLimiting(AcceptRateLimit);
 
@@ -39,12 +36,12 @@ public static class Invitations
     {
         if (string.IsNullOrWhiteSpace(request.Code))
         {
-            return InvitationCodeRequired;
+            return Errors.InvitationCodeRequired;
         }
 
         if (InvitationCode.Parse(request.Code) is not { } code)
         {
-            return InvitationNotFound;
+            return Errors.InvitationNotFound;
         }
 
         var account = await identity.FindAccountAsync(user.Id(), cancellationToken);

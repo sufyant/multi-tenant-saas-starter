@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Users;
+using ControlPlane.Domain;
 using Microsoft.Extensions.Options;
 using SharedKernel;
 using Svix;
@@ -14,7 +15,7 @@ namespace ControlPlane.Infrastructure.Clerk;
 // only through an invitation or as the first system admin, and those paths fill the copy themselves.
 internal sealed class ClerkIdentityProviderWebhook(IOptions<ClerkOptions> options) : IIdentityProviderWebhook
 {
-    private static readonly Error SignatureInvalid = Error.Validation(ErrorCode.WebhookSignatureInvalid, "The webhook signature is missing, wrong or too old.");
+    private static readonly Error SignatureInvalid = Error.Validation(ControlPlaneErrorCodes.WebhookSignatureInvalid, "The webhook signature is missing, wrong or too old.");
 
     private readonly Lazy<Webhook> _webhook = new(() => new Webhook(options.Value.WebhookSigningSecret!));
 

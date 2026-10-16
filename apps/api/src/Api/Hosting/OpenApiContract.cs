@@ -85,7 +85,7 @@ internal static class OpenApiContract
         }
 
         document.Components.Schemas[nameof(ErrorCode)] = EnumSchema(
-            Problems.Codes, "The error's code, area.reason. A client shows its own text for it, never the English detail.");
+            DeclaredErrorCodes, "The error's code, area.reason. A client shows its own text for it, never the English detail.");
         document.Components.Schemas[nameof(FieldErrorCode)] = EnumSchema(Problems.FieldCodes, "Why one field of a request failed validation.");
 
         problem.Properties ??= new Dictionary<string, IOpenApiSchema>();
@@ -104,6 +104,41 @@ internal static class OpenApiContract
         problem.Required ??= new HashSet<string>();
         problem.Required.Add(Problems.CodeMember);
         return Task.CompletedTask;
+    }
+
+    // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
+    // Domain project. The document joins them into one enum. Only an assembly that references SharedKernel can declare a code, so the
+    // search starts at the host and follows only those references. ErrorCodeTests checks that it finds every declared code.
+    private static IReadOnlyList<string> DeclaredErrorCodes { get; } = FindDeclaredErrorCodes();
+
+    private static List<string> FindDeclaredErrorCodes()
+    {
+        var kernel = typeof(ErrorCode).Assembly.GetName().Name;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Queue<Assembly>([typeof(OpenApiContract).Assembly]);
+        var codes = new List<string>();
+        while (pending.TryDequeue(out var assembly))
+        {
+            if (!seen.Add(assembly.GetName().Name!))
+            {
+                continue;
+            }
+
+            codes.AddRange(assembly.GetTypes()
+                .Where(type => type is { IsAbstract: true, IsSealed: true } && type.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
+                .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                .Where(field => field.FieldType == typeof(ErrorCode))
+                .Select(field => ((ErrorCode)field.GetValue(null)!).Value));
+            foreach (var referenced in assembly.GetReferencedAssemblies().Where(name => !seen.Contains(name.Name!)).Select(Assembly.Load))
+            {
+                if (referenced.GetName().Name == kernel || referenced.GetReferencedAssemblies().Any(name => name.Name == kernel))
+                {
+                    pending.Enqueue(referenced);
+                }
+            }
+        }
+
+        return [.. codes.Distinct().Order(StringComparer.Ordinal)];
     }
 
     private static OpenApiSchema EnumSchema(IReadOnlyList<string> values, string description) =>

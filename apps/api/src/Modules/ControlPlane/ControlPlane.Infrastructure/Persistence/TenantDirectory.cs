@@ -1,5 +1,6 @@
 using ControlPlane.Application;
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -14,7 +15,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 // outside a handler that begins a transaction of its own (W1).
 internal sealed class TenantDirectory(ControlPlaneDbContext controlPlane) : ITenantDirectory
 {
-    private static readonly Error Suspended = Error.Forbidden(ErrorCode.TenantSuspended, "The tenant is suspended.");
+    private static readonly Error Suspended = Error.Forbidden(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended.");
 
     public async Task<Result<TenantMembership>> FindMembershipAsync(Guid tenantId, string externalUserId, CancellationToken cancellationToken)
     {

@@ -10,9 +10,9 @@ internal sealed class Tenant
     public const int CancellationReasonMaxLength = 50;
 
     private static readonly Error OwnerRequiresOwner =
-        Error.Forbidden(ErrorCode.MembershipOwnerRequiresOwner, "Only an Owner can give or take the Owner role, or remove an Owner.");
+        Error.Forbidden(ControlPlaneErrorCodes.MembershipOwnerRequiresOwner, "Only an Owner can give or take the Owner role, or remove an Owner.");
 
-    private static readonly Error LastOwner = Error.Conflict(ErrorCode.MembershipLastOwner, "A tenant always has at least one Owner.");
+    private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MembershipLastOwner, "A tenant always has at least one Owner.");
 
     private Tenant(Guid id, string name, string slug)
     {
@@ -41,13 +41,13 @@ internal sealed class Tenant
         var trimmed = name.Trim();
         if (trimmed.Length is < 1 or > NameMaxLength)
         {
-            return Error.Validation(ErrorCode.TenantNameInvalid, $"A name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
+            return Error.Validation(ControlPlaneErrorCodes.TenantNameInvalid, $"A name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
         }
 
         return IsUrlSafe(slug)
             ? new Tenant(id, trimmed, slug)
             : Error.Validation(
-                ErrorCode.TenantSlugInvalid,
+                ControlPlaneErrorCodes.TenantSlugInvalid,
                 "A slug is 3 to 63 lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
     }
 
@@ -112,7 +112,7 @@ internal sealed class Tenant
     {
         if (actor.UserId == target.UserId)
         {
-            return Error.Forbidden(ErrorCode.MembershipCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
+            return Error.Forbidden(ControlPlaneErrorCodes.MembershipCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
         }
 
         if (IsOwner(target) && !IsOwner(actor))
@@ -129,7 +129,7 @@ internal sealed class Tenant
     {
         if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
         {
-            return Error.Conflict(ErrorCode.TenantNotActive, "Only an active or a suspended tenant can be suspended or reactivated.");
+            return Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended or reactivated.");
         }
 
         if (Status != from)

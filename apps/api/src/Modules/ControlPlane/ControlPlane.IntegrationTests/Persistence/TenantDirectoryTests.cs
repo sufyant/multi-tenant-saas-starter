@@ -1,4 +1,5 @@
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 using SharedKernel;
@@ -29,7 +30,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
-        membership.Error.Code.ShouldBe(ErrorCode.TenantNotFound);
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
     }
 
     [Fact]
@@ -39,7 +40,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(Guid.CreateVersion7(), user.ExternalId);
 
-        membership.Error.Code.ShouldBe(ErrorCode.TenantNotFound);
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
     }
 
     [Fact]
@@ -49,7 +50,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(tenant.Id, Unique.ExternalId());
 
-        membership.Error.Code.ShouldBe(ErrorCode.TenantNotFound);
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
     }
 
     [Fact]
@@ -61,7 +62,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
-        membership.Error.Code.ShouldBe(ErrorCode.TenantNotFound);
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
-        membership.Error.Code.ShouldBe(ErrorCode.TenantSuspended);
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSuspended);
     }
 
     // T3: a stranger cannot tell a suspended tenant from one that does not exist: both answer the handlers' tenant.not_found.
@@ -85,7 +86,7 @@ public sealed class TenantDirectoryTests(Database database)
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
-        membership.Error.Code.ShouldBe(ErrorCode.TenantNotFound);
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
     }
 
     private async Task<Result<TenantMembership>> FindMembershipAsync(Guid tenantId, string externalUserId)

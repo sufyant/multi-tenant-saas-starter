@@ -1,5 +1,6 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using FluentValidation;
@@ -65,13 +66,13 @@ public static class InviteMemberHandler
         var email = command.Email.Trim();
         if (await catalog.IsMemberEmailAsync(email, cancellationToken))
         {
-            return (Error.Conflict(ErrorCode.MembershipExists, "Someone with this email address is already a member of this tenant."), null);
+            return (Error.Conflict(ControlPlaneErrorCodes.MembershipExists, "Someone with this email address is already a member of this tenant."), null);
         }
 
         var now = time.GetUtcNow();
         if (await catalog.CountInvitationsSinceAsync(now - LimitWindow, cancellationToken) >= invitations.DailyLimitPerTenant)
         {
-            return (Error.TooManyRequests(ErrorCode.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours."), null);
+            return (Error.TooManyRequests(ControlPlaneErrorCodes.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours."), null);
         }
 
         // K2: the new invitation replaces a pending one to the same address. The replaced one is saved as cancelled first, so the

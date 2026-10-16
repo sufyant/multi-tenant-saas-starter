@@ -83,7 +83,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         errors.Where(error => error.Schema != ProblemDetailsSchema).Select(error => $"{error.Name}: {error.Schema}").ShouldBeEmpty();
     }
 
-    // K5: the codes are one enum in the document, the values of ErrorCode, so a generated client knows each code an error can carry.
+    // K5: the codes are one enum in the document, every code an owner declares, so a generated client knows each code an error can carry.
     // Every error answer has one, so the member is required.
     [Fact]
     public void BuildOpenApiDocument_CodeOfProblemDetails_IsTheRequiredErrorCodeEnum()
@@ -95,7 +95,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         code.TryGetProperty("$ref", out var reference).ShouldBeTrue();
         reference.GetString().ShouldBe("#/components/schemas/ErrorCode");
-        EnumOf(Resolve(code)).ShouldBe(JsonValuesOf(typeof(ErrorCode)));
+        EnumOf(Resolve(code)).ShouldBe(string.Join(", ", ErrorCodeDeclarations.All.Select(declared => declared.Value).Distinct().Order(StringComparer.Ordinal)));
     }
 
     // A validation answer lists codes for each field, never messages, and the field codes are an enum too.
@@ -115,7 +115,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [Fact]
     public void DeclareErrorCodes_EveryCode_IsAnAreaAndAReason()
     {
-        var codes = JsonNamesOf(typeof(ErrorCode));
+        var codes = ErrorCodeDeclarations.All.Select(declared => declared.Value);
 
         codes.ShouldNotBeEmpty();
         codes.Where(code => !AreaAndReason().IsMatch(code)).ShouldBeEmpty();

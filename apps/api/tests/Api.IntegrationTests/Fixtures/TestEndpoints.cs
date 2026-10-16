@@ -96,7 +96,7 @@ public sealed record Fail(ErrorType Type);
 
 public static class FailHandler
 {
-    public static Result Handle(Fail command) => new Error(ErrorCode.TenantNotFound, "The test asked for a failure.", command.Type);
+    public static Result Handle(Fail command) => new Error(ErrorCode.Declare("test.failure"), "The test asked for a failure.", command.Type);
 }
 
 public sealed record Explode;

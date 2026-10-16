@@ -1,4 +1,5 @@
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -8,7 +9,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 // HTTP pipeline before any message is sent, and one read needs no transaction of its own.
 internal sealed class UserDirectory(ControlPlaneDbContext controlPlane) : IUserDirectory
 {
-    private static readonly Error Suspended = Error.Forbidden(ErrorCode.UserSuspended, "Your account is suspended.");
+    private static readonly Error Suspended = Error.Forbidden(ControlPlaneErrorCodes.UserSuspended, "Your account is suspended.");
 
     public async Task<Result> CheckActiveAsync(string externalUserId, CancellationToken cancellationToken) =>
         await controlPlane.Users.AnyAsync(user => user.ExternalId == externalUserId && user.SuspendedAt != null, cancellationToken)

@@ -2533,10 +2533,10 @@
       },
       "ErrorCode": {
         "enum": [
-          "auth.unauthenticated",
           "auth.forbidden",
-          "idempotency.key_invalid",
+          "auth.unauthenticated",
           "idempotency.key_in_progress",
+          "idempotency.key_invalid",
           "idempotency.key_reused",
           "invitation.code_required",
           "invitation.daily_limit_reached",

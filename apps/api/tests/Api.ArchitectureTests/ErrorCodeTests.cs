@@ -1,13 +1,15 @@
 using FluentValidation;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SharedKernel;
 
 namespace Api.ArchitectureTests;
 
 // K5: a screen writes a text for each code of the one enum, so no answer may carry a code the enum does not hold. An Error takes an
-// ErrorCode, so the compiler holds the codes of every result. What is left is the code member of Problem Details itself: only the
-// host's Problems file writes it, and it writes only ErrorCode values. OpenApiContract names it too, to describe it in the document.
-// Read from the source tree, as RouteGroupPlaceTests does.
+// ErrorCode, and only a static readonly field of an ...ErrorCodes class declares one, so every code of a result is a declared code,
+// and the document lists every declared code (OpenApiContractTests). What is left is the code member of Problem Details itself:
+// only the host's Problems file writes it, and it writes only ErrorCode values. OpenApiContract names it too, to describe it in the
+// document. Read from the source tree, as RouteGroupPlaceTests does.
 public sealed class ErrorCodeTests
 {
     private static readonly string ProblemsFile = Path.Combine("src", "Api", "ErrorHandling", "Problems.cs");
@@ -27,6 +29,37 @@ public sealed class ErrorCodeTests
             .Select(file => Path.GetRelativePath(Solution.Root, file));
 
         writers.ShouldBe([ProblemsFile, OpenApiContractFile], ignoreOrder: true);
+    }
+
+    // Each owner declares its codes in one static class whose name ends with ErrorCodes (SharedKernel, the host, each module's Domain).
+    [Fact]
+    public void DeclareErrorCode_EveryProductionSourceFile_DeclaresOnlyStaticReadonlyFieldsOfAnErrorCodesClass()
+    {
+        var sourceFolder = Path.Combine(Solution.Root, "src") + Path.DirectorySeparatorChar;
+
+        var elsewhere = Solution.ProductionProjects
+            .Where(project => Solution.FolderOf(project).StartsWith(sourceFolder, StringComparison.Ordinal))
+            .SelectMany(Solution.SourceFilesOf)
+            .SelectMany(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file)).GetRoot().DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .Where(call => call.Expression.ToString() == "ErrorCode.Declare")
+                .Where(call => !IsAnErrorCodesField(call))
+                .Select(call => $"{Path.GetRelativePath(Solution.Root, file)}: {call}"));
+
+        ErrorCodeDeclarations.All.ShouldNotBeEmpty();
+        elsewhere.ShouldBeEmpty();
+    }
+
+    // One code has one owner, so the screen's text for it means one thing.
+    [Fact]
+    public void DeclareErrorCode_EveryCode_HasOneDeclaration()
+    {
+        var twice = ErrorCodeDeclarations.All
+            .GroupBy(declared => declared.Value)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key}: {string.Join(", ", group.Select(declared => declared.Owner))}");
+
+        twice.ShouldBeEmpty();
     }
 
     // A validation answer lists a field code for each failed rule, so every rule of every validator states one.
@@ -49,4 +82,10 @@ public sealed class ErrorCodeTests
         validators.ShouldNotBeEmpty();
         withoutCode.ShouldBeEmpty();
     }
+
+    private static bool IsAnErrorCodesField(InvocationExpressionSyntax call) =>
+        call.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault() is { } field
+        && field.Modifiers.Any(modifier => modifier.Text == "static")
+        && field.Modifiers.Any(modifier => modifier.Text == "readonly")
+        && field.Ancestors().OfType<ClassDeclarationSyntax>().FirstOrDefault()?.Identifier.Text.EndsWith("ErrorCodes", StringComparison.Ordinal) == true;
 }

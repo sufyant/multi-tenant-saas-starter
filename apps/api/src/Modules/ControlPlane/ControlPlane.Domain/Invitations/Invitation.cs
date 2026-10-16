@@ -76,7 +76,7 @@ internal sealed class Invitation : ITenantEntity
     /// </summary>
     public static Result CheckInviter(Role inviter, Role role) =>
         role.BuiltIn == BuiltInRole.Owner && inviter.BuiltIn != BuiltInRole.Owner
-            ? Error.Forbidden(ErrorCode.InvitationOwnerRequiresOwner, "Only an Owner can invite an Owner.")
+            ? Error.Forbidden(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner, "Only an Owner can invite an Owner.")
             : Result.Success();
 
     /// <summary>Withdraws a pending invitation, as when nobody could be told of it. A used or withdrawn one stays as it is.</summary>
@@ -97,7 +97,7 @@ internal sealed class Invitation : ITenantEntity
     /// </summary>
     public Result<bool> Revoke() => Status switch
     {
-        InvitationStatus.Accepted => Error.Conflict(ErrorCode.InvitationNotPending, "The invitation has already been used."),
+        InvitationStatus.Accepted => Error.Conflict(ControlPlaneErrorCodes.InvitationNotPending, "The invitation has already been used."),
         _ => Cancel(),
     };
 
@@ -110,17 +110,17 @@ internal sealed class Invitation : ITenantEntity
     {
         if (Status != InvitationStatus.Pending)
         {
-            return Error.Conflict(ErrorCode.InvitationNotPending, "The invitation has already been used.");
+            return Error.Conflict(ControlPlaneErrorCodes.InvitationNotPending, "The invitation has already been used.");
         }
 
         if (now >= ExpiresAt)
         {
-            return Error.Conflict(ErrorCode.InvitationExpired, "The invitation has expired; ask for a new one.");
+            return Error.Conflict(ControlPlaneErrorCodes.InvitationExpired, "The invitation has expired; ask for a new one.");
         }
 
         return verifiedEmails.Any(email => string.Equals(email.Trim(), Email, StringComparison.OrdinalIgnoreCase))
             ? Result.Success()
-            : Error.Forbidden(ErrorCode.InvitationEmailMismatch, "The invitation was sent to an email address you have not verified.");
+            : Error.Forbidden(ControlPlaneErrorCodes.InvitationEmailMismatch, "The invitation was sent to an email address you have not verified.");
     }
 
     /// <summary>Uses up the invitation for the user, after the same checks as <see cref="CheckAcceptance"/>.</summary>

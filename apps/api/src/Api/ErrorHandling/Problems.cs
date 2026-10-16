@@ -6,7 +6,7 @@ using SharedKernel;
 
 namespace Api.ErrorHandling;
 
-// K5: every error answer is Problem Details with a code of ErrorCode, and a client shows its own text for the code, never the English
+// K5: every error answer is Problem Details with an ErrorCode, and a client shows its own text for the code, never the English
 // detail. This is the one file that writes the code member (ErrorCodeTests). An answer from an Error carries the Error's code; any
 // other answer the host writes, such as the 401 of authentication or the 429 of the rate limiter, gets the code of its status here.
 internal static class Problems
@@ -17,9 +17,6 @@ internal static class Problems
 
     public const string TraceIdMember = "traceId";
 
-    /// <summary>The JSON names of every error code: the values of the one enum the OpenAPI document declares.</summary>
-    public static IReadOnlyList<string> Codes { get; } = [.. Enum.GetValues<ErrorCode>().Select(NameOf)];
-
     /// <summary>The JSON names of every field code of a validation answer.</summary>
     public static IReadOnlyList<string> FieldCodes { get; } = [.. Enum.GetValues<FieldErrorCode>().Select(NameOf)];
 
@@ -28,18 +25,18 @@ internal static class Problems
         TypedResults.Problem(
             statusCode: StatusCodeFor(error.Type),
             detail: error.Description,
-            extensions: new Dictionary<string, object?> { [CodeMember] = NameOf(error.Code) });
+            extensions: new Dictionary<string, object?> { [CodeMember] = error.Code.Value });
 
     /// <summary>The answer to a request whose fields failed validation: the field codes for each field, by its JSON name.</summary>
     public static HttpValidationProblemDetails ForFields(IDictionary<string, string[]> errors) =>
-        new(errors) { Status = StatusCodes.Status400BadRequest, Extensions = { [CodeMember] = NameOf(ErrorCode.RequestValidationFailed) } };
+        new(errors) { Status = StatusCodes.Status400BadRequest, Extensions = { [CodeMember] = HostErrorCodes.RequestValidationFailed.Value } };
 
     // Every Problem Details the host writes passes here, from a result, the status code pages or the exception handler. One without a
     // code gets the code of its status. Each gets the trace id; a replayed idempotent answer keeps the first request's (I5).
     public static void Describe(ProblemDetailsContext context)
     {
         var problem = context.ProblemDetails;
-        problem.Extensions.TryAdd(CodeMember, NameOf(CodeOf(problem.Status ?? context.HttpContext.Response.StatusCode)));
+        problem.Extensions.TryAdd(CodeMember, CodeOf(problem.Status ?? context.HttpContext.Response.StatusCode).Value);
         problem.Extensions[TraceIdMember] =
             context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
     }
@@ -63,15 +60,15 @@ internal static class Problems
     // server error. A 401 says nothing about why the token failed (API8).
     private static ErrorCode CodeOf(int status) => status switch
     {
-        StatusCodes.Status401Unauthorized => ErrorCode.AuthUnauthenticated,
-        StatusCodes.Status403Forbidden => ErrorCode.AuthForbidden,
-        StatusCodes.Status404NotFound => ErrorCode.RouteNotFound,
-        StatusCodes.Status405MethodNotAllowed => ErrorCode.RouteMethodNotAllowed,
-        StatusCodes.Status408RequestTimeout => ErrorCode.RequestTimeout,
-        StatusCodes.Status413PayloadTooLarge => ErrorCode.RequestTooLarge,
-        StatusCodes.Status415UnsupportedMediaType => ErrorCode.RequestUnsupportedMediaType,
-        StatusCodes.Status429TooManyRequests => ErrorCode.RateLimitExceeded,
-        < StatusCodes.Status500InternalServerError => ErrorCode.RequestInvalid,
-        _ => ErrorCode.ServerError,
+        StatusCodes.Status401Unauthorized => HostErrorCodes.AuthUnauthenticated,
+        StatusCodes.Status403Forbidden => HostErrorCodes.AuthForbidden,
+        StatusCodes.Status404NotFound => HostErrorCodes.RouteNotFound,
+        StatusCodes.Status405MethodNotAllowed => HostErrorCodes.RouteMethodNotAllowed,
+        StatusCodes.Status408RequestTimeout => HostErrorCodes.RequestTimeout,
+        StatusCodes.Status413PayloadTooLarge => HostErrorCodes.RequestTooLarge,
+        StatusCodes.Status415UnsupportedMediaType => HostErrorCodes.RequestUnsupportedMediaType,
+        StatusCodes.Status429TooManyRequests => HostErrorCodes.RateLimitExceeded,
+        < StatusCodes.Status500InternalServerError => HostErrorCodes.RequestInvalid,
+        _ => HostErrorCodes.ServerError,
     };
 }

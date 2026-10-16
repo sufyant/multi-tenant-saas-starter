@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -56,7 +57,7 @@ public static class CreateTenantHandler
 
         if (!await catalog.TryAddAsync(tenant.Value, cancellationToken))
         {
-            return (Error.Conflict(ErrorCode.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
+            return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
         }
 
         var now = time.GetUtcNow();
