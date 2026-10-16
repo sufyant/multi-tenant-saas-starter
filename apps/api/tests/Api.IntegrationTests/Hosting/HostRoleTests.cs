@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Audit.Application.Invitations;
 using Audit.Application.Tenants;
 using Audit.Application.Users;
+using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
@@ -146,6 +148,36 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendUser), typeof(SuspendUserHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(UserSuspended), typeof(RecordUserChangesHandler))]);
         (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
+    }
+
+    // O3, W4, W5: an invitation is created in the web host. Its event has two handlers, Audit's and Notifications', and both run in the
+    // worker, once; Notifications hands the email on to a command of its own, whose retries may be scheduled.
+    [Fact]
+    public async Task InviteMember_OnAWebAndAWorkerHost_RecordsAndEmailsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test");
+        await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteMember), typeof(InviteMemberHandler))]);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(MemberInvited), typeof(RecordMemberInvitedHandler)),
+                new HandlerRun(typeof(MemberInvited), typeof(QueueMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(SendMemberInvitationEmail), typeof(SendMemberInvitationEmailHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
+        (await AuditEntriesAsync(name, tenant.Id, "member.invited")).ShouldBe(1L);
     }
 
     // O3: a reactivation is announced from the web host, and its Audit handler runs in the worker, once.

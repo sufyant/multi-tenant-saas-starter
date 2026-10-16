@@ -160,6 +160,31 @@ public class InvitationTests
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
+    // K1: only an Owner gives the Owner role, so only an Owner invites an Owner.
+    [Fact]
+    public void InviteMember_AnAdminForTheOwnerRole_IsForbidden()
+    {
+        var allowed = Invitation.CheckInviter(BuiltInRoles.Admin, BuiltInRoles.Owner);
+
+        allowed.Error.Code.ShouldBe("invitation.owner_requires_owner");
+        allowed.Error.Type.ShouldBe(SharedKernel.ErrorType.Forbidden);
+    }
+
+    [Theory]
+    [InlineData("Owner", "Owner")]
+    [InlineData("Owner", "Admin")]
+    [InlineData("Owner", "Member")]
+    [InlineData("Admin", "Admin")]
+    [InlineData("Admin", "Member")]
+    public void InviteMember_ARoleTheInviterMayGive_IsAllowed(string inviter, string invited)
+    {
+        var allowed = Invitation.CheckInviter(RoleOf(inviter), RoleOf(invited));
+
+        allowed.IsSuccess.ShouldBeTrue();
+    }
+
+    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.Name == role);
+
     private static Invitation Invite(string email) =>
         Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, InviterId, Now, Lifetime, Token);
 }
