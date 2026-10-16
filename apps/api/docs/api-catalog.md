@@ -22,13 +22,13 @@ The signed-in user, acting for themselves. No permission; the user reaches only 
 
 A member of the tenant. Each endpoint names a permission. To a non-member the tenant does not exist (T3).
 
-- `ListMembers` keeps a member whose user was deleted, with an empty email address and empty names. The screen shows "Deleted user", as for audit (K3). What happens to a deleted Owner is a later decision.
+- `ListMembers` keeps a member whose user was deleted, with an empty email address, empty names and `deleted: true`, as the audit logs say `deleted`. The screen shows "Deleted user", as for audit (K3). What happens to a deleted Owner is a later decision.
 
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | new | GET | `/v1/tenants/{tenantId}` | `GetMyTenant` (answers `MyTenantResponse`) | `tenant.profile.read`; every role | none | none | none | 20c |
 | new | PATCH | `/v1/tenants/{tenantId}` | `RenameTenant` (name only; the slug never changes) | `tenant.profile.update`; Owner, Admin | T `tenant.renamed` | none | none | 20h |
-| changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; a deleted user stays, with an empty email and names; list contract; `q`: email, first name, last name; filter `role`; `sort`: `role`, `email`, `lastName`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c |
+| changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; a deleted user stays, with an empty email and names and `deleted: true`; list contract; `q`: email, first name, last name; filter `role`; `sort`: `role`, `email`, `lastName`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c, 20g |
 | new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` (body `{ "role" }`, a `MemberRole`; answers 200 `MemberResponse`; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a member the tenant has not (404 `membership.not_found`), the Owner role from an Admin or an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the role the member has answers 200 and writes nothing) | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` (details: the old and the new role) | none | none | 20e |
 | new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` (204; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a member the tenant has not (404 `membership.not_found`), yourself (403 `membership.cannot_remove_self`), an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the member loses access at once (T7)) | `tenant.members.delete`; Owner, Admin; only an Owner removes an Owner; the last Owner cannot be removed (K1) | T `member.removed` (details: the role the member had) | none | none | 20e |
 | new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; answers 201 `InvitationResponse`; locks the tenant row, then checks an inviter who is no longer a member (404 `tenant.not_found`), the role rule (403 `invitation.owner_requires_owner`), a member's address (409 `membership.exists`) and the daily limit (429 `invitation.daily_limit_reached`); replaces a pending invitation to the same email (K2)) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
@@ -42,7 +42,7 @@ A system admin with a second factor (A6). Every action writes to the platform au
 
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| changes | POST | `/v1/admin/tenants` | `CreateTenant` (saga; Idempotency-Key; adds the platform entry) | `admin.tenants.create` | P `tenant.created`, T `tenant.created` | owner invitation email | Resend | 20b |
+| changes | POST | `/v1/admin/tenants` | `CreateTenant` (saga; Idempotency-Key; answers 201 `TenantResponse`; adds the platform entry) | `admin.tenants.create` | P `tenant.created`, T `tenant.created` | owner invitation email | Resend | 20b, 20g |
 | changes | GET | `/v1/admin/tenants` | `ListTenants` (list contract; `q`: name, slug; filter `status`; `sort`: `name`, `slug`) | `admin.tenants.read` | none | none | none | 20c |
 | new | GET | `/v1/admin/tenants/{tenantId}` | `GetTenant` (answers `TenantResponse`; 404 `tenant.not_found` for an id no tenant has) | `admin.tenants.read` | none | none | none | 20c |
 | changes | POST | `/v1/admin/tenants/{tenantId}/suspend` | `SuspendTenant` (platform entry in 20b; reason in 20h) | `admin.tenants.suspend` | P `tenant.suspended`, T `tenant.suspended` | none | none | 20b, 20h |
@@ -121,9 +121,14 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K5. Contract
 
-- An endpoint that creates a resource takes `Idempotency-Key`. One that sets a state does not (I1).
-- Error codes are an enum in the OpenAPI document. No client writes them by hand.
-- 401 and 429 are declared on every operation.
+- An endpoint that creates a resource takes `Idempotency-Key`. One that sets a state does not (I1). An endpoint that takes the key answers 201 with its body (RFC 9110, section 15.3.2). A test fails for one that does not declare 201 (`OpenApiContractTests`).
+- Every error answer is Problem Details (RFC 9457) with a `code`. A client shows its own text from `code`, never from `detail`, which stays English for developers and logs. The API sends no error text in another language.
+- Every code has the form `area.reason`, in lower snake case: `tenant.not_found`. A test enforces it.
+- Error codes are one enum in the OpenAPI document, the schema `ErrorCode`, for every operation. No client writes them by hand. The one source is the C# enum `ErrorCode` in `SharedKernel`: an `Error` takes it, so the compiler refuses a code the list does not hold, and only `Api/ErrorHandling/Problems.cs` writes the code member of an answer (`ErrorCodeTests`). Answers no endpoint gives have codes of their own: `auth.unauthenticated` (401), `auth.forbidden` (403 without a refusal), `rate_limit.exceeded` (429 of the rate limiter), `request.invalid` (a body or a value the endpoint cannot read), `request.validation_failed`, `route.not_found`, `route.method_not_allowed`, `request.unsupported_media_type`, `request.too_large`, `request.timeout` and `server.error`.
+- A validation answer keeps `errors`: each field, by its JSON name, lists field codes, the schema `FieldErrorCode`: `required`, `email_invalid`, `too_long`. Each validator rule states its field code; a test fails for a rule without one.
+- The webhook's code, `webhook.signature_invalid`, is in the one enum, although the webhooks are not in the document (N5). One list with no exception is simpler to keep than a filter. The cost: a screen holds one text it never shows.
+- The tenant door answers a stranger with the handlers' own `tenant.not_found`, so its body is the same apart from the trace id (T3, `TenantNotFoundTests`).
+- 401 and 429 are declared on every operation. A test enforces it.
 - A second shape of a resource carries its audience in the name: admin `GetTenant`, member `GetMyTenant`.
 - Every list uses one contract: `page`, `pageSize` (50, at most 100), `sort`, `q`, and allowed filters. The answer is `{ items, page, pageSize, total }`. A test enforces it (`ListContractTests`).
 - `page` starts at 1. `pageSize` is 1 to 100, 50 when left out.
@@ -176,5 +181,5 @@ Each step is one prompt and one pull request. They run in order, because each to
 | 20d | Invitations: `InviteMember`, `ListInvitations`, `RevokeInvitation`. The daily limit and one pending invitation per email. |
 | 20e | Member management: `ChangeMemberRole`, `RemoveMember`, the Owner rules of K1, the tenant row lock and a race test with two requests at once. |
 | 20f | Reading the audit logs: the tenant's and the platform's, with a cursor. `audit.entries.actor_id` becomes uuid, as in the platform log. |
-| 20g | The rest of the contract: the error code enum, 401 and 429. No endpoint. |
+| 20g | The rest of the contract: a code on every error answer, the error code enum and the field codes, 401 and 429 on every operation, 201 for `CreateTenant`, `deleted` in `ListMembers`. No endpoint. |
 | 20h | Tenant lifecycle: `RenameTenant`, a reason for suspension, `CloseTenant`, `ReopenTenant`, the closed state. Closing cancels pending invitations. |
