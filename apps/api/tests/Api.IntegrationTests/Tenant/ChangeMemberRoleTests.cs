@@ -75,7 +75,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Owner");
     }
 
-    // section 6, \"Member management\", check 4: an Admin does not touch an Owner, whatever role it would give.
+    // section 6, "Member management", check 4: an Admin does not touch an Owner, whatever role it would give.
     [Theory]
     [InlineData("Admin")]
     [InlineData("Member")]
@@ -122,7 +122,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Admin");
     }
 
-    // section 6, \"Member management\", check 5: the last Owner keeps the role.
+    // section 6, "Member management", check 5: the last Owner keeps the role.
     [Fact]
     public async Task ChangeMemberRole_TheLastOwnerStepsDown_IsAConflictAndKeepsTheRole()
     {
@@ -239,7 +239,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     }
 
     // K6: the only two Owners demote each other at the same moment. The tenant row lock runs the two changes one after the other. The
-    // second runs as an Admin, who may not touch an Owner (section 6, \"Member management\", check 4), so one Owner remains.
+    // second runs as an Admin, who may not touch an Owner (section 6, "Member management", check 4), so one Owner remains.
     [Fact]
     public async Task ChangeMemberRole_TheOnlyTwoOwnersDemoteEachOtherAtOnce_LeaveOneOwner()
     {

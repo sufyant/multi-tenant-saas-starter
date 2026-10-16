@@ -58,7 +58,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, other)).ShouldBe(0);
     }
 
-    // section 6, \"Member management\", check 3.
+    // section 6, "Member management", check 3.
     [Theory]
     [InlineData("Owner")]
     [InlineData("Admin")]
@@ -76,7 +76,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, actorId)).ShouldBe(1);
     }
 
-    // section 6, \"Member management\", check 4.
+    // section 6, "Member management", check 4.
     [Fact]
     public async Task RemoveMember_AnAdminRemovesAnOwner_IsForbiddenAndTheOwnerStays()
     {

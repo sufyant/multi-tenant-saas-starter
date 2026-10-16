@@ -388,7 +388,7 @@ An Owner or an Admin changes a member's role and removes a member (catalog, K1).
 | `MemberRemoved` | `RemoveMemberHandler` | Audit, `RecordMemberRemovedHandler` (`member.removed`, tenant log) | Yes |
 
 - Both commands lock the tenant row (K6). They then read the actor's and the target's memberships and count the Owners, in this order:
-  1. The actor is no longer a member, because a change that held the lock before removed them: 404 `tenant.not_found`, as the tenant door answers a non-member (T3). `InviteMember` and `RevokeInvitation` check the same first (section 6, "Member invitation").
+  1. The actor is no longer a member, because a change that held the lock before removed them: 404 `tenant.not_found`. The tenant door answers a non-member 404 too (T3), but without a code. `InviteMember` and `RevokeInvitation` check the same first (section 6, "Member invitation").
   2. No target membership in the tenant: 404 `membership.not_found`. Row level security hides another tenant's members.
   3. `RemoveMember` on yourself: 403 `membership.cannot_remove_self`.
   4. An Admin who acts on an Owner, or who gives the Owner role: 403 `membership.owner_requires_owner`.
