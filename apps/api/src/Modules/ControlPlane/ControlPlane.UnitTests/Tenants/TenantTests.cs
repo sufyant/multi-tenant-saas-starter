@@ -1,4 +1,5 @@
 using ControlPlane.Domain.Tenants;
+using SharedKernel;
 
 namespace ControlPlane.UnitTests.Tenants;
 
@@ -36,7 +37,7 @@ public class TenantTests
         var tenant = Tenant.Create(Id, "Acme Ltd", slug);
 
         tenant.IsSuccess.ShouldBeFalse();
-        tenant.Error.Code.ShouldBe("tenant.slug_invalid");
+        tenant.Error.Code.ShouldBe(ErrorCode.TenantSlugInvalid);
     }
 
     [Fact]
@@ -66,7 +67,7 @@ public class TenantTests
         var tenant = Tenant.Create(Id, name, "acme");
 
         tenant.IsSuccess.ShouldBeFalse();
-        tenant.Error.Code.ShouldBe("tenant.name_invalid");
+        tenant.Error.Code.ShouldBe(ErrorCode.TenantNameInvalid);
     }
 
     [Fact]
@@ -195,8 +196,8 @@ public class TenantTests
         var suspended = tenant.Suspend();
         var reactivated = tenant.Reactivate();
 
-        suspended.Error.Code.ShouldBe("tenant.not_active");
-        reactivated.Error.Code.ShouldBe("tenant.not_active");
+        suspended.Error.Code.ShouldBe(ErrorCode.TenantNotActive);
+        reactivated.Error.Code.ShouldBe(ErrorCode.TenantNotActive);
         tenant.Status.ShouldBe(TenantStatus.Provisioning);
     }
 
@@ -209,8 +210,8 @@ public class TenantTests
         var suspended = tenant.Suspend();
         var reactivated = tenant.Reactivate();
 
-        suspended.Error.Code.ShouldBe("tenant.not_active");
-        reactivated.Error.Code.ShouldBe("tenant.not_active");
+        suspended.Error.Code.ShouldBe(ErrorCode.TenantNotActive);
+        reactivated.Error.Code.ShouldBe(ErrorCode.TenantNotActive);
         tenant.Status.ShouldBe(TenantStatus.Cancelled);
     }
 

@@ -15,13 +15,13 @@ public enum ErrorCode
     [JsonStringEnumMemberName("auth.forbidden")]
     AuthForbidden,
 
-    [JsonStringEnumMemberName("idempotency_key_invalid")]
+    [JsonStringEnumMemberName("idempotency.key_invalid")]
     IdempotencyKeyInvalid,
 
-    [JsonStringEnumMemberName("idempotency_key_in_progress")]
+    [JsonStringEnumMemberName("idempotency.key_in_progress")]
     IdempotencyKeyInProgress,
 
-    [JsonStringEnumMemberName("idempotency_key_reused")]
+    [JsonStringEnumMemberName("idempotency.key_reused")]
     IdempotencyKeyReused,
 
     [JsonStringEnumMemberName("invitation.code_required")]

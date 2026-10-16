@@ -59,7 +59,7 @@ public static class WriteProbeThenRejectHandler
     public static Result Handle(WriteProbeThenReject command, ProbeDbContext probes)
     {
         probes.Probes.Add(new Probe { Value = command.Value });
-        return Error.Conflict("probe.rejected", "The handler rejected the probe after writing it.");
+        return Error.Conflict(ErrorCode.MembershipExists, "The handler rejected the probe after writing it.");
     }
 }
 

@@ -53,7 +53,7 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
         problem!.Status.ShouldBe((int)status);
         problem.Detail.ShouldBe("The test asked for a failure.");
-        problem.Extensions["code"]!.ToString().ShouldBe("test.failure");
+        problem.Extensions["code"]!.ToString().ShouldBe("tenant.not_found");
         problem.Extensions.ShouldContainKey("traceId");
     }
 

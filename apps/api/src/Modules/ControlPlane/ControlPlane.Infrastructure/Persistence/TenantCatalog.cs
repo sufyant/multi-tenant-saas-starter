@@ -95,7 +95,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
 
     // Row level security keeps the list to the active tenant; the query names no tenant. The users table is not under row level security
     // (R6), so the query starts from the memberships and joins each member's user: a user of another tenant never enters it.
-    async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role)>> ITenantCatalog.ListMembersAsync(
+    async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted)>> ITenantCatalog.ListMembersAsync(
         ListRequest<ListMembersSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken)
@@ -104,7 +104,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             from membership in Memberships
             join memberRole in controlPlane.Roles on membership.RoleId equals memberRole.Id
             join user in controlPlane.Users on membership.UserId equals user.Id
-            select new { membership.UserId, user.Email, user.FirstName, user.LastName, memberRole.BuiltIn };
+            select new { membership.UserId, user.Email, user.FirstName, user.LastName, memberRole.BuiltIn, Deleted = user.DeletedAt != null };
         if (role is { } wanted)
         {
             members = members.Where(member => member.BuiltIn == wanted);
@@ -135,7 +135,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .Take(list.Paging.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn))], list.Paging, total);
+        return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn, member.Deleted))], list.Paging, total);
     }
 
     // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level

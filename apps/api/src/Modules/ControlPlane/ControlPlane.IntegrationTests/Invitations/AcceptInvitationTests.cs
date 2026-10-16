@@ -5,6 +5,7 @@ using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
+using SharedKernel;
 
 namespace ControlPlane.IntegrationTests.Invitations;
 
@@ -53,7 +54,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, stranger);
 
-        accepted.Error.Code.ShouldBe("invitation.email_mismatch");
+        accepted.Error.Code.ShouldBe(ErrorCode.InvitationEmailMismatch);
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{stranger}'")).ShouldBe(0);
     }
 
@@ -69,7 +70,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var reused = await Handlers.AcceptAsync(database.Services, code, second);
 
-        reused.Error.Code.ShouldBe("invitation.not_pending");
+        reused.Error.Code.ShouldBe(ErrorCode.InvitationNotPending);
         (await FindMembershipAsync(tenantId, second)).ShouldBeNull();
     }
 
@@ -85,7 +86,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(services, code, invitee);
 
-        accepted.Error.Code.ShouldBe("invitation.expired");
+        accepted.Error.Code.ShouldBe(ErrorCode.InvitationExpired);
         (await FindMembershipAsync(tenantId, invitee)).ShouldBeNull();
     }
 
@@ -101,7 +102,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, invitee);
 
-        accepted.Error.Code.ShouldBe("invitation.not_found");
+        accepted.Error.Code.ShouldBe(ErrorCode.InvitationNotFound);
         (await FindMembershipAsync(tenantId, invitee)).ShouldBeNull();
     }
 
@@ -118,8 +119,9 @@ public sealed class AcceptInvitationTests(Database database)
     {
         await using var scope = database.Services.CreateAsyncScope();
 
-        return (await scope.ServiceProvider.GetRequiredService<ITenantDirectory>()
-            .FindMembershipAsync(tenantId, externalUserId, TestContext.Current.CancellationToken))?.Value;
+        var found = await scope.ServiceProvider.GetRequiredService<ITenantDirectory>()
+            .FindMembershipAsync(tenantId, externalUserId, TestContext.Current.CancellationToken);
+        return found.IsSuccess ? found.Value : null;
     }
 
     private Task<T> ScalarAsync<T>(string sql) => database.ScalarAsSuperuserAsync<T>(sql);

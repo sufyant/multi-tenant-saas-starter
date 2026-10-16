@@ -19,7 +19,10 @@ public sealed class InviteMemberValidator : AbstractValidator<InviteMember>
     public InviteMemberValidator()
     {
         // The same check of an address as a tenant's first owner has. The invitation trims it.
-        RuleFor(command => command.Email).NotEmpty().EmailAddress().MaximumLength(Invitation.EmailMaxLength);
+        RuleFor(command => command.Email)
+            .NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required))
+            .EmailAddress().WithErrorCode(nameof(FieldErrorCode.EmailInvalid))
+            .MaximumLength(Invitation.EmailMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 }
 
@@ -62,13 +65,13 @@ public static class InviteMemberHandler
         var email = command.Email.Trim();
         if (await catalog.IsMemberEmailAsync(email, cancellationToken))
         {
-            return (Error.Conflict("membership.exists", "Someone with this email address is already a member of this tenant."), null);
+            return (Error.Conflict(ErrorCode.MembershipExists, "Someone with this email address is already a member of this tenant."), null);
         }
 
         var now = time.GetUtcNow();
         if (await catalog.CountInvitationsSinceAsync(now - LimitWindow, cancellationToken) >= invitations.DailyLimitPerTenant)
         {
-            return (Error.TooManyRequests("invitation.daily_limit_reached", "The tenant has sent as many invitations as it may in 24 hours."), null);
+            return (Error.TooManyRequests(ErrorCode.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours."), null);
         }
 
         // K2: the new invitation replaces a pending one to the same address. The replaced one is saved as cancelled first, so the

@@ -134,9 +134,9 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await admin.CreateTenantAsync(new StringContent(body, Encoding.UTF8, "application/json"));
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        var problem = await created.Content.ReadFromJsonAsync<HttpValidationProblemDetails>(Cancellation);
-        problem!.Extensions["code"]?.ToString().ShouldBe("request.validation_failed");
-        problem.Errors.ShouldBe(new Dictionary<string, string[]> { [field] = ["required"] });
+        var problem = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
+        problem.GetProperty("errors").GetRawText().ShouldBe($$"""{"{{field}}":["required"]}""");
     }
 
     public static TheoryData<string, string> OwnerEmailsThatBreakARule => new()
@@ -155,8 +155,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail });
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await created.Content.ReadFromJsonAsync<HttpValidationProblemDetails>(Cancellation))!.Errors
-            .ShouldBe(new Dictionary<string, string[]> { ["ownerEmail"] = [code] });
+        (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("errors").GetRawText()
+            .ShouldBe($$"""{"ownerEmail":["{{code}}"]}""");
     }
 
     // A body the endpoint cannot read at all is a bad request in every environment, never a server error.

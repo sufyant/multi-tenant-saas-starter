@@ -25,7 +25,7 @@ public sealed record CursorRequest(int Limit, CursorPosition? After)
     {
         if (limit is < 1 or > MaxLimit)
         {
-            return Error.Validation("paging.limit_invalid", $"The limit is 1 to {MaxLimit}.");
+            return Error.Validation(ErrorCode.PagingLimitInvalid, $"The limit is 1 to {MaxLimit}.");
         }
 
         if (string.IsNullOrEmpty(cursor))
@@ -35,7 +35,7 @@ public sealed record CursorRequest(int Limit, CursorPosition? After)
 
         return Cursor.Decode(cursor) is { } after
             ? new CursorRequest(limit ?? DefaultLimit, after)
-            : Error.Validation("paging.cursor_invalid", "The cursor is not one this list gave.");
+            : Error.Validation(ErrorCode.PagingCursorInvalid, "The cursor is not one this list gave.");
     }
 }
 

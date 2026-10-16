@@ -19,9 +19,9 @@ public static class Invitations
     /// </summary>
     public const string AcceptRateLimit = "invitation-accept";
 
-    private static readonly Error InvitationNotFound = Error.NotFound("invitation.not_found", "The invitation was not found.");
+    private static readonly Error InvitationNotFound = Error.NotFound(ErrorCode.InvitationNotFound, "The invitation was not found.");
 
-    private static readonly Error InvitationCodeRequired = Error.Validation("invitation.code_required", "The request has no invitation code.");
+    private static readonly Error InvitationCodeRequired = Error.Validation(ErrorCode.InvitationCodeRequired, "The request has no invitation code.");
 
     public static void Map(RouteGroupBuilder me) =>
         me.MapPost("/invitations/accept", AcceptInvitation).RequireRateLimiting(AcceptRateLimit);

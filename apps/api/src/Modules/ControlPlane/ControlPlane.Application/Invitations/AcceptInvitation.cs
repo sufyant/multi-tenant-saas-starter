@@ -41,12 +41,12 @@ public static class AcceptInvitationHandler
         // T5: provider staff enter through the system door, never as tenant members.
         if (existing is not null && await catalog.IsSystemAdminAsync(existing.Id, cancellationToken))
         {
-            return (Error.Unprocessable("invitation.staff_cannot_join", "Provider staff cannot join a tenant."), null);
+            return (Error.Unprocessable(ErrorCode.InvitationStaffCannotJoin, "Provider staff cannot join a tenant."), null);
         }
 
         if (existing is not null && await catalog.FindMembershipAsync(existing.Id, cancellationToken) is not null)
         {
-            return (Error.Conflict("membership.exists", "You are already a member of this tenant."), null);
+            return (Error.Conflict(ErrorCode.MembershipExists, "You are already a member of this tenant."), null);
         }
 
         var allowed = invitation.CheckAcceptance(command.VerifiedEmails, now);
@@ -59,7 +59,7 @@ public static class AcceptInvitationHandler
         // so it can be accepted once the tenant is reactivated.
         if (tenant.Status == TenantStatus.Suspended)
         {
-            return (Error.Conflict("tenant.suspended", "The tenant is suspended."), null);
+            return (Error.Conflict(ErrorCode.TenantSuspended, "The tenant is suspended."), null);
         }
 
         var user = existing ?? new User(Guid.CreateVersion7(now), command.UserId);

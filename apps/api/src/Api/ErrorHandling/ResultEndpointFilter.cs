@@ -21,10 +21,7 @@ internal sealed class ResultEndpointFilter : IEndpointFilter
     {
         if (!result.IsSuccess)
         {
-            return TypedResults.Problem(
-                statusCode: StatusCodeFor(result.Error.Type),
-                detail: result.Error.Description,
-                extensions: new Dictionary<string, object?> { ["code"] = result.Error.Code });
+            return Problems.For(result.Error);
         }
 
         // Result<T> is generic, and the filter runs for endpoints of every T.
@@ -37,15 +34,4 @@ internal sealed class ResultEndpointFilter : IEndpointFilter
         var value = type.GetProperty(nameof(Result<object>.Value))!.GetValue(result);
         return creates ? TypedResults.Created((string?)null, value) : TypedResults.Ok(value);
     }
-
-    private static int StatusCodeFor(ErrorType type) => type switch
-    {
-        ErrorType.Validation => StatusCodes.Status400BadRequest,
-        ErrorType.NotFound => StatusCodes.Status404NotFound,
-        ErrorType.Conflict => StatusCodes.Status409Conflict,
-        ErrorType.Forbidden => StatusCodes.Status403Forbidden,
-        ErrorType.Unprocessable => StatusCodes.Status422UnprocessableEntity,
-        ErrorType.TooManyRequests => StatusCodes.Status429TooManyRequests,
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Every error type maps to a status code."),
-    };
 }

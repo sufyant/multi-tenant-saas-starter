@@ -12,8 +12,8 @@ namespace Api.Authorization;
 
 // Resolves the tenant of a request and what the caller may do there, never from the client's word alone. On a me or a tenant route
 // ControlPlane first says whether the user may act at all: a suspended user is refused (A9). On a tenant route the tenant then comes
-// from the id in the path and the user's membership, with the permissions of the member's role, or ControlPlane's reason to refuse a
-// member; on an admin route ControlPlane answers with the user's system permissions, given whether the session verified a second
+// from the id in the path and the user's membership, with the permissions of the member's role, or ControlPlane's reason to refuse:
+// tenant.suspended to a member, tenant.not_found to anyone else (T3); on an admin route ControlPlane answers with the user's system permissions, given whether the session verified a second
 // factor (A6). It rejects nothing: authorization turns away the callers it finds no access for.
 internal sealed class TenantResolutionMiddleware(RequestDelegate next)
 {
@@ -53,8 +53,8 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
             && Guid.TryParse(context.GetRouteValue(RouteGroups.TenantIdParameter) as string, out var requested))
         {
             var found = await directory.FindMembershipAsync(requested, userId, context.RequestAborted);
-            access.Membership = found is { IsSuccess: true } ? found.Value : null;
-            access.Refusal = found is { IsSuccess: false } ? found.Error : null;
+            access.Membership = found.IsSuccess ? found.Value : null;
+            access.Refusal = found.IsSuccess ? null : found.Error;
             tenantId = access.Membership?.TenantId;
         }
 

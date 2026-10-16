@@ -39,7 +39,7 @@ public class CursorRequestTests
     {
         var request = CursorRequest.Create(null, limit);
 
-        request.Error.ShouldBe(Error.Validation("paging.limit_invalid", "The limit is 1 to 100."));
+        request.Error.ShouldBe(Error.Validation(ErrorCode.PagingLimitInvalid, "The limit is 1 to 100."));
     }
 
     [Theory]
@@ -50,7 +50,7 @@ public class CursorRequestTests
     {
         var request = CursorRequest.Create(cursor, null);
 
-        request.Error.Code.ShouldBe("paging.cursor_invalid");
+        request.Error.Code.ShouldBe(ErrorCode.PagingCursorInvalid);
     }
 
     [Theory]
@@ -63,7 +63,7 @@ public class CursorRequestTests
 
         var request = CursorRequest.Create(cursor, null);
 
-        request.Error.Code.ShouldBe("paging.cursor_invalid");
+        request.Error.Code.ShouldBe(ErrorCode.PagingCursorInvalid);
     }
 
     [Fact]

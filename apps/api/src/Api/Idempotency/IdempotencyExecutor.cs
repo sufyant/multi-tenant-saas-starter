@@ -51,7 +51,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
 
             if (existing.Method != request.Method || existing.Route != route || existing.RequestHash != fingerprint)
             {
-                return Error.Unprocessable("idempotency_key_reused", "This idempotency key was used for another request.");
+                return Error.Unprocessable(ErrorCode.IdempotencyKeyReused, "This idempotency key was used for another request.");
             }
 
             if (existing.Result is { } saved)
@@ -76,7 +76,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
                 break;
             }
 
-            return Error.Conflict("idempotency_key_in_progress", "The first request with this idempotency key is still running.");
+            return Error.Conflict(ErrorCode.IdempotencyKeyInProgress, "The first request with this idempotency key is still running.");
         }
 
         var traceId = Activity.Current?.Id ?? context.TraceIdentifier;

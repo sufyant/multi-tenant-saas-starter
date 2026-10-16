@@ -47,10 +47,11 @@ public interface ITenantCatalog
     internal Task<int> CountOwnersAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of the active tenant's members of the role or every role, with the copy of their profile, whose email address or name
-    /// contains the search: by the sort field, then by user id. The search starts from the tenant's memberships, never from the users.
+    /// A page of the active tenant's members of the role or every role, with the copy of their profile and whether the user was deleted,
+    /// whose email address or name contains the search: by the sort field, then by user id. The search starts from the tenant's
+    /// memberships, never from the users.
     /// </summary>
-    internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role)>> ListMembersAsync(
+    internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted)>> ListMembersAsync(
         ListRequest<ListMembersSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken);
