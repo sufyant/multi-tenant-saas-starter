@@ -8,8 +8,9 @@ namespace ControlPlane.Application.Invitations;
 public sealed record RevokeInvitation(string RevokerId, Guid InvitationId);
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row is
-// locked first, then the invitation. Row level security hides another tenant's invitation, so its id is not found. Every rejection
-// returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// locked first; a revoker who is no longer a member finds no tenant (T3); then the invitation is locked. Row level security hides
+// another tenant's invitation, so its id is not found. Every rejection returns before the handler changes anything, because Wolverine
+// commits a failed Result too (W7).
 public static class RevokeInvitationHandler
 {
     public static async Task<(Result, InvitationRevoked?)> HandleAsync(
@@ -20,6 +21,16 @@ public static class RevokeInvitationHandler
     {
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
+        var revoker = await catalog.FindUserAsync(command.RevokerId, cancellationToken)
+            ?? throw new InvalidOperationException("A member is always a catalog user.");
+
+        // The door let the revoker in, but a change that held the lock before may have removed them: to a non-member the tenant does not
+        // exist (T3).
+        if (await catalog.FindMembershipAsync(revoker.Id, cancellationToken) is null)
+        {
+            return (Errors.TenantNotFound, null);
+        }
+
         if (await catalog.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)
         {
             return (Errors.InvitationNotFound, null);
@@ -31,8 +42,6 @@ public static class RevokeInvitationHandler
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null);
         }
 
-        var revoker = await catalog.FindUserAsync(command.RevokerId, cancellationToken)
-            ?? throw new InvalidOperationException("A member is always a catalog user.");
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
