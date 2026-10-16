@@ -51,7 +51,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var members = await owner.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/members", Cancellation);
         var strangerMembers = await stranger.GetAsync($"/v1/tenants/{tenantId}/members", Cancellation);
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         acceptLink.GetLeftPart(UriPartial.Path).ShouldBe("https://app.test/invitations/accept");
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid().ShouldBe(tenantId);

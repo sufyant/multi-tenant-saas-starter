@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Reflection;
 using Api.Authentication;
 using Api.Authorization;
@@ -71,8 +70,7 @@ internal static class ApiPipeline
         builder.Services.AddTrustedProxies();
         builder.Services.AddAccessAuthorization();
 
-        builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
-            context.ProblemDetails.Extensions["traceId"] = context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? Activity.Current?.Id ?? context.HttpContext.TraceIdentifier);
+        builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = Problems.Describe);
         builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 
         // A request an endpoint cannot read answers 400 in every environment. Development would otherwise throw, and the exception

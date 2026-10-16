@@ -51,7 +51,7 @@ public static class ChangeMemberRoleHandler
 
         var user = await catalog.FindUserAsync(target.UserId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
-        var member = new MemberSummary(user.Id, user.Email, user.FirstName, user.LastName, role.Name);
+        var member = new MemberSummary(user.Id, user.Email, user.FirstName, user.LastName, role.Name, user.DeletedAt is not null);
         if (!changed.Value)
         {
             return (member, null);

@@ -5,6 +5,7 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
@@ -16,7 +17,10 @@ public static class Tenants
 {
     public static void Map(RouteGroupBuilder admin)
     {
-        admin.MapPost("/tenants", CreateTenant).WithMetadata(new IdempotencyKeyRequired()).RequireAuthorization(Permissions.AdminTenantsCreate);
+        admin.MapPost("/tenants", CreateTenant)
+            .WithMetadata(new IdempotencyKeyRequired())
+            .RequireAuthorization(Permissions.AdminTenantsCreate)
+            .Produces<TenantResponse>(StatusCodes.Status201Created);
         admin.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.AdminTenantsRead);
         admin.MapGet("/tenants/{tenantId:guid}", GetTenant).RequireAuthorization(Permissions.AdminTenantsRead);
         admin.MapPost("/tenants/{tenantId:guid}/suspend", SuspendTenant).RequireAuthorization(Permissions.AdminTenantsSuspend);
@@ -24,7 +28,8 @@ public static class Tenants
     }
 
     // Tenant creation runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client
-    // gives each new tenant an idempotency key; the same key with the same request answers with the tenant the first one created.
+    // gives each new tenant an idempotency key; the same key with the same request answers with the tenant the first one created. The
+    // endpoint declares 201, so the host answers a new tenant with 201, and a replayed request maps its saved result the same way (I5).
     private static async Task<Result<TenantResponse>> CreateTenant(
         CreateTenantRequest request,
         ClaimsPrincipal user,

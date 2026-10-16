@@ -4,10 +4,12 @@ using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using SharedKernel;
 using Tenancy;
 using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 
@@ -82,7 +84,7 @@ public sealed class TenantCreationTests(Database database)
 
         var started = await Handlers.CreateTenantAsync(database.Services, Guid.CreateVersion7(), admin.ExternalId, existing.Slug, Unique.Email());
 
-        started.Result.Error.Code.ShouldBe("tenant.slug_taken");
+        started.Result.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugTaken);
         started.Saga.ShouldBeNull();
         started.Activate.ShouldBeNull();
         started.Timeout.ShouldBeNull();
@@ -104,7 +106,7 @@ public sealed class TenantCreationTests(Database database)
         await WaitUntilBlockedAsync(secondProcessId);
         await firstTransaction.CommitAsync(Cancellation);
 
-        (await second).Error.Code.ShouldBe("tenant.slug_taken");
+        (await second).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugTaken);
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 

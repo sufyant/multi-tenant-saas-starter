@@ -19,8 +19,7 @@ public static class Invitations
         tenant.MapPost("/invitations", InviteMember)
             .WithMetadata(new IdempotencyKeyRequired())
             .RequireAuthorization(Permissions.TenantInvitationsCreate)
-            .Produces<InvitationResponse>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+            .Produces<InvitationResponse>(StatusCodes.Status201Created);
         tenant.MapGet("/invitations", ListInvitations).RequireAuthorization(Permissions.TenantInvitationsRead);
         tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete);
     }

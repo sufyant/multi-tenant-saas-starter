@@ -42,7 +42,7 @@ public sealed class IdempotencyTests(Database database)
 
         var response = await client.CreateTenantAsync(new { name = "Acme", slug = $"first-{Guid.NewGuid():N}", ownerEmail = "private@example.com" }, key);
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await database.ScalarAsync<long>($"SELECT count(*) FROM api.idempotency_keys WHERE subject = '{admin}' AND key = '{key}' AND locked_until IS NULL AND result IS NOT NULL AND length(request_hash) = 64")).ShouldBe(1);
         (await database.ScalarAsync<string>($"SELECT result FROM api.idempotency_keys WHERE subject = '{admin}' AND key = '{key}'"))!.ShouldNotContain("private@example.com");
     }
@@ -61,7 +61,7 @@ public sealed class IdempotencyTests(Database database)
         var corrected = await client.CreateTenantAsync(new { name = "Acme", slug, ownerEmail = "owner@example.com" }, key);
 
         invalid.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        corrected.StatusCode.ShouldBe(HttpStatusCode.OK);
+        corrected.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await database.ScalarAsync<long>($"SELECT count(*) FROM api.idempotency_keys WHERE key = '{key}'")).ShouldBe(1);
     }
 
@@ -77,7 +77,7 @@ public sealed class IdempotencyTests(Database database)
         var corrected = await client.CreateTenantAsync(new { name = "Acme", slug, ownerEmail = "owner@example.com" }, key);
 
         invalid.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        corrected.StatusCode.ShouldBe(HttpStatusCode.OK);
+        corrected.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await database.ScalarAsync<long>($"SELECT count(*) FROM api.idempotency_keys WHERE key = '{key}'")).ShouldBe(1);
     }
 

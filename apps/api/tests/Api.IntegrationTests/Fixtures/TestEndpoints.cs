@@ -77,7 +77,7 @@ public sealed record Greeting(string Text);
 
 public sealed class GreetValidator : AbstractValidator<Greet>
 {
-    public GreetValidator() => RuleFor(command => command.Name).NotEmpty();
+    public GreetValidator() => RuleFor(command => command.Name).NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required));
 }
 
 public static class GreetHandler
@@ -96,7 +96,7 @@ public sealed record Fail(ErrorType Type);
 
 public static class FailHandler
 {
-    public static Result Handle(Fail command) => new Error("test.failure", "The test asked for a failure.", command.Type);
+    public static Result Handle(Fail command) => new Error(ErrorCode.Declare("test.failure"), "The test asked for a failure.", command.Type);
 }
 
 public sealed record Explode;

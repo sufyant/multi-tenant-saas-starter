@@ -19,10 +19,10 @@ public enum ListMembersSort
 public sealed record ListMembers(ListRequest<ListMembersSort> List, string? Role);
 
 /// <summary>
-/// A member: the catalog user, the catalog's copy of their profile (A7), and the built-in role they hold in the tenant. The profile is
-/// empty when the identity provider deleted the user (A8).
+/// A member: the catalog user, the catalog's copy of their profile (A7), the built-in role they hold in the tenant, and whether the
+/// identity provider deleted the user. The profile is empty when it did (A8).
 /// </summary>
-public sealed record MemberSummary(Guid UserId, string? Email, string? FirstName, string? LastName, string Role);
+public sealed record MemberSummary(Guid UserId, string? Email, string? FirstName, string? LastName, string Role, bool Deleted);
 
 public static class ListMembersHandler
 {
@@ -31,5 +31,5 @@ public static class ListMembersHandler
         ITenantCatalog catalog,
         CancellationToken cancellationToken) =>
         (await catalog.ListMembersAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
-            .Map(member => new MemberSummary(member.UserId, member.Email, member.FirstName, member.LastName, member.Role.ToString()));
+            .Map(member => new MemberSummary(member.UserId, member.Email, member.FirstName, member.LastName, member.Role.ToString(), member.Deleted));
 }

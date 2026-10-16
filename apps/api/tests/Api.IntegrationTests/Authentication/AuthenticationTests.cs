@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Api.IntegrationTests.Authentication;
 
@@ -37,6 +38,19 @@ public sealed class AuthenticationTests : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
+        response.Headers.WwwAuthenticate.ToString().ShouldBe("Bearer");
+        (await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("code").GetString().ShouldBe("auth.unauthenticated");
+    }
+
+    // API8: a refused token gets the answer of no token at all, apart from the trace id, so the body does not say why either.
+    [Fact]
+    public async Task Authenticate_TokenSignedWithAnUntrustedKey_AnswersAsWithoutAToken()
+    {
+        var refused = await WhoAmIAsync(TestTokens.For("user_ada", trusted: false));
+        var anonymous = await _host.CreateClient().GetAsync("/v1/whoami", TestContext.Current.CancellationToken);
+
+        (await ProblemBodies.WithoutTraceIdAsync(refused)).ShouldBe(await ProblemBodies.WithoutTraceIdAsync(anonymous));
+        refused.Headers.WwwAuthenticate.ToString().ShouldBe(anonymous.Headers.WwwAuthenticate.ToString());
     }
 
     [Fact]

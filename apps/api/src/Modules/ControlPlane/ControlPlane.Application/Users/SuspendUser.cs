@@ -1,5 +1,6 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
+using ControlPlane.Domain;
 using SharedKernel;
 
 namespace ControlPlane.Application.Users;
@@ -28,7 +29,7 @@ public static class SuspendUserHandler
 
         if (await users.IsSystemAdminAsync(user.Id, cancellationToken))
         {
-            return (Error.Conflict("user.is_system_admin", "A system admin cannot be suspended."), null);
+            return (Error.Conflict(ControlPlaneErrorCodes.UserIsSystemAdmin, "A system admin cannot be suspended."), null);
         }
 
         var now = time.GetUtcNow();

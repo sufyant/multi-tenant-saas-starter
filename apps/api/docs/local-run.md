@@ -152,7 +152,7 @@ curl -X POST http://127.0.0.1:5080/v1/admin/tenants \
   -d '{"name":"Acme","slug":"acme","ownerEmail":"owner@acme.test"}'
 ```
 
-The answer is `200` with the tenant in `Provisioning`. The first request takes a few seconds, while Wolverine generates its handler code. Within seconds the worker takes the tenant creation to its end, and the worker's log shows the invitation email:
+The answer is `201` with the tenant in `Provisioning`. The first request takes a few seconds, while Wolverine generates its handler code. Within seconds the worker takes the tenant creation to its end, and the worker's log shows the invitation email:
 
 ```text
 Email to owner@acme.test is not sent in Development: You are invited to Acme

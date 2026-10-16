@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -22,9 +23,12 @@ public sealed class CreateTenantValidator : AbstractValidator<CreateTenant>
     public CreateTenantValidator()
     {
         // The tenant checks the name and the slug itself; a request without one never reaches it.
-        RuleFor(command => command.Name).NotNull();
-        RuleFor(command => command.Slug).NotNull();
-        RuleFor(command => command.OwnerEmail).NotEmpty().EmailAddress().MaximumLength(Invitation.EmailMaxLength);
+        RuleFor(command => command.Name).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
+        RuleFor(command => command.Slug).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
+        RuleFor(command => command.OwnerEmail)
+            .NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required))
+            .EmailAddress().WithErrorCode(nameof(FieldErrorCode.EmailInvalid))
+            .MaximumLength(Invitation.EmailMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 }
 
@@ -53,7 +57,7 @@ public static class CreateTenantHandler
 
         if (!await catalog.TryAddAsync(tenant.Value, cancellationToken))
         {
-            return (Error.Conflict("tenant.slug_taken", "Another tenant already has this slug."), null, null, null);
+            return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
         }
 
         var now = time.GetUtcNow();

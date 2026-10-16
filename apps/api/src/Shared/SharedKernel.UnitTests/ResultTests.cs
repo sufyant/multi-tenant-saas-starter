@@ -2,7 +2,7 @@ namespace SharedKernel.UnitTests;
 
 public class ResultTests
 {
-    private static readonly Error TenantNotFound = Error.NotFound("tenant.not_found", "The tenant was not found.");
+    private static readonly Error TenantNotFound = Error.NotFound(ErrorCode.Declare("tenant.not_found"), "The tenant was not found.");
 
     [Fact]
     public void CreateResult_FromAValue_CarriesTheValue()

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
+using Api.ErrorHandling;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
@@ -11,14 +12,14 @@ namespace Api.Hosting;
 
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
-// sort and filters, and the members of the one error schema. They change the document only; the JSON on the wire stays as it is.
+// sort and filters, and the members of the one error schema with the enums of the error codes. They change the document only; the JSON on the wire stays as it is.
 internal static class OpenApiContract
 {
     public static OpenApiOptions DescribeContract(this OpenApiOptions options) =>
         options.AddOperationTransformer(NameOperation)
             .AddOperationTransformer(DeclarePathParameters)
             .AddOperationTransformer(DescribeListParameters)
-            .AddSchemaTransformer(DescribeProblemDetails);
+            .AddDocumentTransformer(DescribeProblemDetails);
 
     // N7: an endpoint is a method with the action's name, so the method's name is the operation id.
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
@@ -73,32 +74,73 @@ internal static class OpenApiContract
         return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
     }
 
-    // Every error answer is Problem Details (ResultResponses). The host adds three members to it: the error's code when an endpoint
-    // returns a failed result, the fields of a request that failed validation, and the trace id of every error.
-    private static Task DescribeProblemDetails(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+    // K5: every error answer is Problem Details (ResultResponses) with a code. The host adds three members to its schema: the code, one
+    // of the one enum of error codes; the field codes of a request that failed validation, an enum too; and the trace id. The enums are
+    // schemas of their own, so a generated client has a type for each and can check that a screen has a text for every code.
+    private static Task DescribeProblemDetails(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
-        if (context.JsonTypeInfo.Type != typeof(ProblemDetails) || context.JsonPropertyInfo is not null)
+        if (document.Components?.Schemas?.TryGetValue(nameof(ProblemDetails), out var found) != true || found is not OpenApiSchema problem)
         {
             return Task.CompletedTask;
         }
 
-        schema.Properties ??= new Dictionary<string, IOpenApiSchema>();
-        schema.Properties["code"] = new OpenApiSchema
-        {
-            Type = JsonSchemaType.String,
-            Description = "The error's code, such as tenant.not_found. Present when an endpoint refuses the request itself.",
-        };
-        schema.Properties["errors"] = new OpenApiSchema
+        document.Components.Schemas[nameof(ErrorCode)] = EnumSchema(
+            DeclaredErrorCodes, "The error's code, area.reason. A client shows its own text for it, never the English detail.");
+        document.Components.Schemas[nameof(FieldErrorCode)] = EnumSchema(Problems.FieldCodes, "Why one field of a request failed validation.");
+
+        problem.Properties ??= new Dictionary<string, IOpenApiSchema>();
+        problem.Properties[Problems.CodeMember] = new OpenApiSchemaReference(nameof(ErrorCode), document);
+        problem.Properties[Problems.ErrorsMember] = new OpenApiSchema
         {
             Type = JsonSchemaType.Object,
-            AdditionalProperties = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchema { Type = JsonSchemaType.String } },
-            Description = "The messages for each field of a request that failed validation.",
+            AdditionalProperties = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchemaReference(nameof(FieldErrorCode), document) },
+            Description = "The field codes for each field of a request that failed validation, by the field's JSON name.",
         };
-        schema.Properties["traceId"] = new OpenApiSchema
+        problem.Properties[Problems.TraceIdMember] = new OpenApiSchema
         {
             Type = JsonSchemaType.String,
             Description = "The trace id of the request, for the logs.",
         };
+        problem.Required ??= new HashSet<string>();
+        problem.Required.Add(Problems.CodeMember);
         return Task.CompletedTask;
     }
+
+    // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
+    // Domain project. The document joins them into one enum. Only an assembly that references SharedKernel can declare a code, so the
+    // search starts at the host and follows only those references. ErrorCodeTests checks that it finds every declared code.
+    private static IReadOnlyList<string> DeclaredErrorCodes { get; } = FindDeclaredErrorCodes();
+
+    private static List<string> FindDeclaredErrorCodes()
+    {
+        var kernel = typeof(ErrorCode).Assembly.GetName().Name;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Queue<Assembly>([typeof(OpenApiContract).Assembly]);
+        var codes = new List<string>();
+        while (pending.TryDequeue(out var assembly))
+        {
+            if (!seen.Add(assembly.GetName().Name!))
+            {
+                continue;
+            }
+
+            codes.AddRange(assembly.GetTypes()
+                .Where(type => type is { IsAbstract: true, IsSealed: true } && type.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
+                .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                .Where(field => field.FieldType == typeof(ErrorCode))
+                .Select(field => ((ErrorCode)field.GetValue(null)!).Value));
+            foreach (var referenced in assembly.GetReferencedAssemblies().Where(name => !seen.Contains(name.Name!)).Select(Assembly.Load))
+            {
+                if (referenced.GetName().Name == kernel || referenced.GetReferencedAssemblies().Any(name => name.Name == kernel))
+                {
+                    pending.Enqueue(referenced);
+                }
+            }
+        }
+
+        return [.. codes.Distinct().Order(StringComparer.Ordinal)];
+    }
+
+    private static OpenApiSchema EnumSchema(IReadOnlyList<string> values, string description) =>
+        new() { Type = JsonSchemaType.String, Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))], Description = description };
 }

@@ -65,7 +65,7 @@ public sealed class TwoWorkerTests(Database database)
         await workers.CrashAsync(dead);
         await workers.WaitForSagaStateAsync(tenantId, "Completed");
 
-        created.StatusCode.ShouldBe(HttpStatusCode.OK);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await workers.SagaStateAsync(tenantId)).ShouldBe("Completed");
         workers.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
         workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)));

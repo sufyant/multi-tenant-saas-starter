@@ -9,13 +9,17 @@ namespace Api.ErrorHandling;
 // the OpenAPI document describes the real responses.
 internal static class ResultResponses
 {
+    // K5: every /v1 route can answer 401 (authentication) and 429 (the rate limiter, and ErrorType.TooManyRequests), so every
+    // operation declares both.
     private static readonly int[] FailureStatuses =
     [
         StatusCodes.Status400BadRequest,
+        StatusCodes.Status401Unauthorized,
         StatusCodes.Status403Forbidden,
         StatusCodes.Status404NotFound,
         StatusCodes.Status409Conflict,
         StatusCodes.Status422UnprocessableEntity,
+        StatusCodes.Status429TooManyRequests,
     ];
 
     public static TBuilder DescribeResults<TBuilder>(this TBuilder builder)

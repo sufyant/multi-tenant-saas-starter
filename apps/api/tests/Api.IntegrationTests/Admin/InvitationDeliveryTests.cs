@@ -32,7 +32,7 @@ public sealed class InvitationDeliveryTests(Database database)
 
         var response = await api.WaitingForMessagesAsync(() => InviteOwnerAsync(api, email));
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
         api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record => record.Message.Contains(email, StringComparison.Ordinal));
     }
 
@@ -45,7 +45,7 @@ public sealed class InvitationDeliveryTests(Database database)
 
         var response = await api.WaitingForMessagesAsync(() => InviteOwnerAsync(api, email));
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitationId = await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE email = '{email}'");
         var sent = resend.Requests.ShouldHaveSingleItem();
         sent.Uri.ShouldBe(new Uri("https://api.resend.test/emails"));

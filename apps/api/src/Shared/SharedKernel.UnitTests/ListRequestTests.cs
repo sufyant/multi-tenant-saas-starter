@@ -49,7 +49,7 @@ public class ListRequestTests
     {
         var list = ListRequest.Create<ThingSort>(null, null, Sort(sort), null);
 
-        list.Error.Code.ShouldBe("paging.sort_invalid");
+        list.Error.Code.ShouldBe(PagingErrorCodes.SortInvalid);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class ListRequestTests
     {
         var list = ListRequest.Create<ThingSort>(null, null, null, new string('a', 101));
 
-        list.Error.Code.ShouldBe("paging.q_invalid");
+        list.Error.Code.ShouldBe(PagingErrorCodes.QInvalid);
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public class ListRequestTests
     {
         var list = ListRequest.Create<ThingSort>(page, pageSize, null, null);
 
-        list.Error.Code.ShouldBe(code);
+        list.Error.Code.Value.ShouldBe(code);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public class ListRequestTests
     {
         var filter = ListFilter.Read<ThingStatus>(new ListFilter<ThingStatus>(text), "status");
 
-        filter.Error.Code.ShouldBe("paging.filter_invalid");
+        filter.Error.Code.ShouldBe(PagingErrorCodes.FilterInvalid);
     }
 
     [Fact]

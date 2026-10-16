@@ -1,4 +1,4 @@
-using Api.Routing;
+using Api.ErrorHandling;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.Extensions.Options;
@@ -44,8 +44,9 @@ internal static class AccessPolicies
             ?? new AuthorizationPolicyBuilder().RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(policyName)).Build();
     }
 
-    // A caller ControlPlane refused is told why, in the error shape of every other refusal. A tenant route the caller cannot enter
-    // answers 404, so it looks the same as a tenant that does not exist.
+    // A caller ControlPlane refused is told why, in the error shape of every other refusal and with the refusal's own status. A tenant
+    // route the caller cannot enter answers ControlPlane's tenant.not_found, the handlers' own answer, so it looks the same as a
+    // tenant that does not exist (T3). Any other refused caller gets the default 401 or 403, and Problems gives it its code.
     private sealed class AccessDeniedHandler : IAuthorizationMiddlewareResultHandler
     {
         private readonly AuthorizationMiddlewareResultHandler _default = new();
@@ -54,29 +55,11 @@ internal static class AccessPolicies
         {
             if (authorizeResult.Forbidden && context.RequestServices.GetRequiredService<RequestAccess>().Refusal is { } refusal)
             {
-                await TypedResults.Problem(
-                        statusCode: StatusCodes.Status403Forbidden,
-                        detail: refusal.Description,
-                        extensions: new Dictionary<string, object?> { ["code"] = refusal.Code })
-                    .ExecuteAsync(context);
-                return;
-            }
-
-            if (authorizeResult.Forbidden && TenantNotFound(context))
-            {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                await Problems.For(refusal).ExecuteAsync(context);
                 return;
             }
 
             await _default.HandleAsync(next, context, policy, authorizeResult);
-        }
-
-        private static bool TenantNotFound(HttpContext context)
-        {
-            var metadata = context.GetEndpoint()?.Metadata;
-            var access = context.RequestServices.GetRequiredService<RequestAccess>();
-
-            return metadata?.GetMetadata<TenantScopedEndpoint>() is not null && access.Membership is null;
         }
     }
 }

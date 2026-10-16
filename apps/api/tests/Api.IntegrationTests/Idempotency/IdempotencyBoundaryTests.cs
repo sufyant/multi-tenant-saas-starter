@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Api.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -134,7 +135,9 @@ public sealed class IdempotencyBoundaryTests(Database database)
         }
 
         concurrent.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await concurrent.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString().ShouldBe("idempotency.key_in_progress");
         changed.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+        (await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString().ShouldBe("idempotency.key_reused");
         (await first).StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
