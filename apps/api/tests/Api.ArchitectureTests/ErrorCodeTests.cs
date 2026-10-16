@@ -42,7 +42,7 @@ public sealed class ErrorCodeTests
             .SelectMany(Solution.SourceFilesOf)
             .SelectMany(file => CSharpSyntaxTree.ParseText(File.ReadAllText(file)).GetRoot().DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
-                .Where(call => call.Expression.ToString() == "ErrorCode.Declare")
+                .Where(call => call.Expression.ToString() is "Declare" || call.Expression.ToString().EndsWith("ErrorCode.Declare", StringComparison.Ordinal))
                 .Where(call => !IsAnErrorCodesField(call))
                 .Select(call => $"{Path.GetRelativePath(Solution.Root, file)}: {call}"));
 
@@ -87,5 +87,7 @@ public sealed class ErrorCodeTests
         call.Ancestors().OfType<FieldDeclarationSyntax>().FirstOrDefault() is { } field
         && field.Modifiers.Any(modifier => modifier.Text == "static")
         && field.Modifiers.Any(modifier => modifier.Text == "readonly")
-        && field.Ancestors().OfType<ClassDeclarationSyntax>().FirstOrDefault()?.Identifier.Text.EndsWith("ErrorCodes", StringComparison.Ordinal) == true;
+        && field.Ancestors().OfType<ClassDeclarationSyntax>().FirstOrDefault() is { } owner
+        && owner.Modifiers.Any(modifier => modifier.Text == "static")
+        && owner.Identifier.Text.EndsWith("ErrorCodes", StringComparison.Ordinal);
 }

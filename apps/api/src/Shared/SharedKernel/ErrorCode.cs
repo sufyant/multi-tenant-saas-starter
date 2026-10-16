@@ -7,10 +7,11 @@ namespace SharedKernel;
 /// The code of an error answer, <c>area.reason</c> in lower snake case (K5). A screen writes its own text for each code. Each owner
 /// declares its codes in one static class whose name ends with <c>ErrorCodes</c>: <see cref="PagingErrorCodes"/> here, the host's
 /// <c>HostErrorCodes</c>, and each module's in its Domain project, such as <c>ControlPlaneErrorCodes</c>. The OpenAPI document joins
-/// them into one enum. Only such a class calls <see cref="Declare"/> (ErrorCodeTests).
+/// them into one enum. Only such a class calls <see cref="Declare"/> (ErrorCodeTests). It is a class with no public constructor, so no
+/// code exists that nobody declared, not even a default one.
 /// </summary>
 [JsonConverter(typeof(ErrorCodeJsonConverter))]
-public readonly record struct ErrorCode
+public sealed record ErrorCode
 {
     private ErrorCode(string value) => Value = value;
 
