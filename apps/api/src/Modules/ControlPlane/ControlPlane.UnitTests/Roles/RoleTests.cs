@@ -51,4 +51,13 @@ public class RoleTests
 
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
+
+    // Activity, the tenant's audit log, is the Owners' and the Admins' to read (catalog, step 20f; K7).
+    [Fact]
+    public void ReadAuditLog_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot()
+    {
+        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains("tenant.audit.read")).Select(role => role.BuiltIn);
+
+        holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
+    }
 }

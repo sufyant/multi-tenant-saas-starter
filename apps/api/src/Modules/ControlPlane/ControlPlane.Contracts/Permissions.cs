@@ -20,6 +20,8 @@ public static class Permissions
 
     public const string AdminUsersReactivate = "admin.users.reactivate";
 
+    public const string AdminAuditRead = "admin.audit.read";
+
     public const string TenantMembersRead = "tenant.members.read";
 
     public const string TenantMembersUpdate = "tenant.members.update";
@@ -33,4 +35,6 @@ public static class Permissions
     public const string TenantInvitationsRead = "tenant.invitations.read";
 
     public const string TenantInvitationsDelete = "tenant.invitations.delete";
+
+    public const string TenantAuditRead = "tenant.audit.read";
 }

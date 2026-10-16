@@ -3,12 +3,18 @@ using System.Text.Json;
 namespace Api.ArchitectureTests;
 
 // K5: every list uses one contract, read from the committed OpenAPI document. A List operation takes page, pageSize, sort and q, and
-// only filters whose values are an enum; its sort is an enum; its answer holds exactly items, page, pageSize and total.
+// only filters whose values are an enum; its sort is an enum; its answer holds exactly items, page, pageSize and total. The audit logs
+// are the one exception: a List operation with a cursor takes exactly cursor and limit and answers exactly items and nextCursor, and
+// only those two operations may.
 public sealed class ListContractTests : IAsyncLifetime
 {
     private const string DocumentFile = "openapi/v1.json";
 
     private static readonly string[] ContractParameters = ["page", "pageSize", "sort", "q"];
+
+    private static readonly string[] CursorParameters = ["cursor", "limit"];
+
+    private static readonly string[] CursorLists = ["ListAuditEntries", "ListPlatformAuditEntries"];
 
     private JsonElement _document;
 
@@ -23,44 +29,78 @@ public sealed class ListContractTests : IAsyncLifetime
     [Fact]
     public void BuildOpenApiDocument_EveryList_TakesPagingSortAndSearch()
     {
-        var missing = Lists().SelectMany(list => ContractParameters
+        var missing = PageLists().SelectMany(list => ContractParameters
             .Where(name => !QueryParametersOf(list.Operation).Any(parameter => parameter.Name == name))
             .Select(name => $"{list.Id}: no {name}"));
 
-        Lists().ShouldNotBeEmpty();
+        PageLists().ShouldNotBeEmpty();
         missing.ShouldBeEmpty();
     }
 
     [Fact]
     public void BuildOpenApiDocument_EveryOtherQueryParameterOfAList_IsAnEnumFilter()
     {
-        var notEnums = Lists().SelectMany(list => QueryParametersOf(list.Operation)
+        var notEnums = PageLists().SelectMany(list => QueryParametersOf(list.Operation)
             .Where(parameter => !ContractParameters.Contains(parameter.Name) && !IsEnum(parameter.Schema))
             .Select(parameter => $"{list.Id}: {parameter.Name}"));
 
-        Lists().ShouldNotBeEmpty();
+        PageLists().ShouldNotBeEmpty();
         notEnums.ShouldBeEmpty();
     }
 
     [Fact]
     public void BuildOpenApiDocument_SortOfEveryList_IsAnEnum()
     {
-        var notEnums = Lists()
+        var notEnums = PageLists()
             .Where(list => !QueryParametersOf(list.Operation).Any(parameter => parameter.Name == "sort" && IsEnum(parameter.Schema)))
             .Select(list => list.Id);
 
-        Lists().ShouldNotBeEmpty();
+        PageLists().ShouldNotBeEmpty();
         notEnums.ShouldBeEmpty();
     }
 
     [Fact]
     public void BuildOpenApiDocument_AnswerOfEveryList_HoldsExactlyItemsPagePageSizeAndTotal()
     {
-        var answers = Lists().Select(list => $"{list.Id}: {string.Join(", ", AnswerPropertiesOf(list.Operation).Order(StringComparer.Ordinal))}");
+        var answers = PageLists().Select(list => $"{list.Id}: {string.Join(", ", AnswerPropertiesOf(list.Operation).Order(StringComparer.Ordinal))}");
 
         answers.ShouldNotBeEmpty();
-        answers.ShouldBe(Lists().Select(list => $"{list.Id}: items, page, pageSize, total"));
+        answers.ShouldBe(PageLists().Select(list => $"{list.Id}: items, page, pageSize, total"));
     }
+
+    [Fact]
+    public void BuildOpenApiDocument_ListsWithACursor_AreTheAuditLogsOnly()
+    {
+        var withACursor = CursorListsOf().Select(list => list.Id);
+
+        withACursor.ShouldBe(CursorLists, ignoreOrder: true);
+    }
+
+    [Fact]
+    public void BuildOpenApiDocument_EveryListWithACursor_TakesExactlyCursorAndLimit()
+    {
+        var parameters = CursorListsOf().Select(list => $"{list.Id}: {string.Join(", ", QueryParametersOf(list.Operation).Select(parameter => parameter.Name).Order(StringComparer.Ordinal))}");
+
+        parameters.ShouldNotBeEmpty();
+        parameters.ShouldBe(CursorListsOf().Select(list => $"{list.Id}: cursor, limit"));
+    }
+
+    [Fact]
+    public void BuildOpenApiDocument_AnswerOfEveryListWithACursor_HoldsExactlyItemsAndNextCursor()
+    {
+        var answers = CursorListsOf().Select(list => $"{list.Id}: {string.Join(", ", AnswerPropertiesOf(list.Operation).Order(StringComparer.Ordinal))}");
+
+        answers.ShouldNotBeEmpty();
+        answers.ShouldBe(CursorListsOf().Select(list => $"{list.Id}: items, nextCursor"));
+    }
+
+    // A list follows the page contract unless it takes a cursor.
+    private IEnumerable<(string Id, JsonElement Operation)> PageLists() => Lists().Where(list => !TakesACursor(list.Operation));
+
+    private IEnumerable<(string Id, JsonElement Operation)> CursorListsOf() => Lists().Where(list => TakesACursor(list.Operation));
+
+    private static bool TakesACursor(JsonElement operation) =>
+        QueryParametersOf(operation).Any(parameter => CursorParameters.Contains(parameter.Name));
 
     private IEnumerable<(string Id, JsonElement Operation)> Lists() =>
         _document.GetProperty("paths").EnumerateObject()

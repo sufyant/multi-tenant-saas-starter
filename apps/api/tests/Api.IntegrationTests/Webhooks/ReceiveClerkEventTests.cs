@@ -190,11 +190,11 @@ public sealed class ReceiveClerkEventTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => SendAsync(ClerkDeliveries.Signed(ClerkDeliveries.UserDeleted(user))));
 
-        before[userId].ShouldBe(new UserName($"Ada{marker} Lovelace{marker}", $"{marker}@example.com"));
+        before[userId].ShouldBe(new UserName($"Ada{marker} Lovelace{marker}"));
         copied.ShouldBe(1);
         (await RowsHoldingAsync("audit", marker)).ShouldBe(0);
         (await RowsHoldingAsync("control_plane", marker)).ShouldBe(0);
-        (await NamesAsync(userId))[userId].ShouldBe(new UserName(UserName.Deleted, null));
+        (await NamesAsync(userId))[userId].ShouldBe(new UserName(UserName.Deleted));
         (await _audit.PlatformLogAsync(userId)).ShouldBe(
             $"user.profile_updated|IdentityProvider|-|User|{userId}|-, user.deleted|IdentityProvider|-|User|{userId}|-");
     }

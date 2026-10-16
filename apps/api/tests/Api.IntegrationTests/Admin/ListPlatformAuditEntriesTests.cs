@@ -1,0 +1,130 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Api.IntegrationTests.Tenant;
+using Microsoft.AspNetCore.Mvc;
+using Tenancy;
+
+namespace Api.IntegrationTests.Admin;
+
+// GET /v1/admin/audit-log: the platform's audit log, for the system admin, newest first through a cursor (K5's exception). The log is
+// one table that every test shares, so each test adds records far in the future, after those of the tests before it: they are the newest,
+// and the first page holds them.
+public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLifetime
+{
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    private readonly DateTimeOffset _start = FarFuture();
+    private readonly Catalog _catalog = new(database);
+    private readonly AuditLogs _audit = new(database);
+    private ApiFactory _api = null!;
+
+    public ValueTask InitializeAsync()
+    {
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync() => await _api.DisposeAsync();
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_AsASystemAdmin_ReturnsTheNewestEntriesFirst()
+    {
+        var admin = await _catalog.AddSystemAdminAsync();
+        var older = await AddEntryAsync(_start);
+        var newer = await AddEntryAsync(_start.AddTicks(10));
+
+        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/admin/audit-log?limit=2", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        Ids(page).ShouldBe([newer, older]);
+        page.EnumerateObject().Select(field => field.Name).ShouldBe(["items", "nextCursor"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_AsATenantOwner_IsForbidden()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+
+        var response = await _api.CreateClient(owner, secondFactor: true).GetAsync("/v1/admin/audit-log", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_TwoPages_ComeInOrder()
+    {
+        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var oldest = await AddEntryAsync(_start);
+        var middle = await AddEntryAsync(_start.AddTicks(10));
+        var newest = await AddEntryAsync(_start.AddTicks(20));
+
+        var first = await client.GetFromJsonAsync<JsonElement>("/v1/admin/audit-log?limit=2", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/admin/audit-log?limit=1&cursor={first.GetProperty("nextCursor").GetString()}", Cancellation);
+
+        Ids(first).ShouldBe([newest, middle]);
+        Ids(second).ShouldBe([oldest]);
+    }
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_AChangedCursor_IsRejected()
+    {
+        var admin = await _catalog.AddSystemAdminAsync();
+
+        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/admin/audit-log?cursor=AQ", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("paging.cursor_invalid");
+    }
+
+    // K3: in the platform's log a system admin is a user, by name; a change from the identity provider has that actor. A deleted user
+    // reads "Deleted user"; a tenant keeps its name of that moment.
+    [Fact]
+    public async Task ListPlatformAuditEntries_ActorsAndTargets_AreNamedOnRead()
+    {
+        var admin = await _catalog.AddSystemAdminAsync();
+        var grace = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(firstName: "Grace", lastName: "Hopper"));
+        var deletedUser = await _catalog.AddUserAsync(firstName: "Gone", lastName: "Away");
+        await _catalog.DeleteUserAsync(deletedUser);
+        var deleted = await _catalog.UserIdOfAsync(deletedUser);
+        var tenant = Guid.CreateVersion7();
+        await _audit.AddPlatformEntryAsync(_start, "IdentityProvider", null, "User", deleted, "user.deleted");
+        await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", grace, "Tenant", tenant, "tenant.suspended", "Globex");
+
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/admin/audit-log?limit=2", Cancellation);
+
+        ListAuditEntriesTests.Described(page).ShouldBe(
+        [
+            $"tenant.suspended|user|{grace}|Grace Hopper|tenant|{tenant}|Globex",
+            $"user.deleted|identityProvider|-|Identity provider|user|{deleted}|Deleted user",
+        ]);
+    }
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_AUserWithAnEmailAddress_AnswersNoEmailAddress()
+    {
+        var marker = Guid.NewGuid().ToString("N");
+        var admin = await _catalog.AddSystemAdminAsync(email: $"admin-{marker}@example.com");
+        var target = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"target-{marker}@example.com", firstName: "Ada"));
+        await _audit.AddPlatformEntryAsync(_start, "User", await _catalog.UserIdOfAsync(admin), "User", target);
+
+        var answer = await _api.CreateClient(admin, secondFactor: true).GetStringAsync("/v1/admin/audit-log?limit=1", Cancellation);
+
+        answer.ShouldNotContain(marker);
+        ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|Unnamed user|user|{target}|Ada"]);
+    }
+
+    private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>
+        _audit.AddPlatformEntryAsync(occurredAt, "User", Guid.CreateVersion7(), "User", Guid.CreateVersion7());
+
+    // 500 years from now, in whole microseconds, as PostgreSQL keeps a moment. A later test starts later.
+    private static DateTimeOffset FarFuture()
+    {
+        var moment = DateTimeOffset.UtcNow.AddYears(500);
+        return moment.AddTicks(-(moment.Ticks % 10));
+    }
+
+    private static IEnumerable<Guid> Ids(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid());
+}

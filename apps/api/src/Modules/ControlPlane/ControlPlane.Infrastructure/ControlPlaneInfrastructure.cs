@@ -28,6 +28,11 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<IUserNames, UserNames>();
+
+        // Another module's handler names users through this contract: the Audit handlers that read a log. Wolverine's generated code
+        // cannot build the internal implementation, so it resolves it from the message's scope. The handler's transaction is then the
+        // one of its own module's DbContext; the names are read outside it, from a table without row level security (R6).
+        services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IUserNames>());
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<SystemAdminSettings>, SystemAdminSettings.Validation>();
