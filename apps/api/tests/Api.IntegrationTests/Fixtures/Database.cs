@@ -58,8 +58,7 @@ public sealed class Database : IAsyncLifetime
             Database = database,
         }.ConnectionString;
 
-    // Section 9, rule 6. The cleanup deletes every expired row on its database, by its host's clock. A test's fake clock would delete the
-    // rows of other tests, so a host on the main database runs no cleanup. ApiFactory and PipelineHost call this as they compose a host.
+    // Section 9, rule 6. ApiFactory and PipelineHost call this as they compose a host.
     public static void RemoveIdempotencyCleanupOnTheMainDatabase(IServiceCollection services, string? connectionString)
     {
         if (connectionString is null || new NpgsqlConnectionStringBuilder(connectionString).Database != MainDatabase)

@@ -71,7 +71,7 @@ public sealed class IdempotencyRetentionTests(Database database)
         host.Services.GetServices<Microsoft.Extensions.Hosting.IHostedService>().Select(service => service.GetType().Name).ShouldNotContain("IdempotencyCleanup");
     }
 
-    // A host on the main database runs no cleanup (section 9, rule 6), so a test of the cleanup runs on a database of its own.
+    // Section 9, rule 6.
     private async Task<string> OwnDatabaseAsync()
     {
         var name = await database.CreateMigratedDatabaseAsync();

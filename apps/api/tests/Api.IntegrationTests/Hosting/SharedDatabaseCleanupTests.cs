@@ -5,7 +5,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Hosting;
 
-// Section 9, rule 6: a host on the shared database runs no idempotency cleanup.
+// Section 9, rule 6.
 public sealed class SharedDatabaseCleanupTests(Database database)
 {
     [Fact]
