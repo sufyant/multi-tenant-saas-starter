@@ -31,9 +31,9 @@ A member of the tenant. Each endpoint names a permission. To a non-member the te
 | changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; a deleted user stays, with an empty email and names; list contract; `q`: email, first name, last name; filter `role`; `sort`: `role`, `email`, `lastName`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c |
 | new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` | none | none | 20e |
 | new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` | `tenant.members.delete`; Owner, Admin; the last Owner cannot be removed (K1) | T `member.removed` | none | none | 20e |
-| new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; replaces a pending invitation to the same email; daily limit) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
-| new | GET | `/v1/tenants/{tenantId}/invitations` | `ListInvitations` (pending invitations) | `tenant.invitations.read`; Owner, Admin | none | none | none | 20d |
-| new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (the link stops working at once) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | none | 20d |
+| new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; answers 201 `InvitationResponse`; locks the tenant row, then checks the role rule (403 `invitation.owner_requires_owner`), a member's address (409 `membership.exists`) and the daily limit (429 `invitation.daily_limit_reached`); replaces a pending invitation to the same email (K2)) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
+| new | GET | `/v1/tenants/{tenantId}/invitations` | `ListInvitations` (pending invitations, expired ones included; list contract; `q`: email; filter `role`; `sort`: `expiresAt`, `email`) | `tenant.invitations.read`; Owner, Admin | none | none | none | 20d |
+| new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (204; the link stops working at once; a cancelled invitation answers 204 again and writes nothing; an accepted one answers 409 `invitation.not_pending`; an id the tenant has not, 404 `invitation.not_found`) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | none | 20d |
 | new | GET | `/v1/tenants/{tenantId}/audit-log` | `ListAuditEntries` (cursor; the screen calls it "Activity") | `tenant.audit.read`; Owner, Admin | none | none | none | 20f |
 
 ## Admin: `/v1/admin`
@@ -67,7 +67,7 @@ An external system, proven by its signature. Not in the OpenAPI document (N5).
 ControlPlane changes its data and writes an event to the outbox in the same transaction. Audit and Notifications take the event from their own queues. An endpoint never writes an email or an audit entry itself. When one event gives an entry in both logs, Audit writes both in one transaction.
 
 - `SuspendTenant` → ControlPlane (state and event) → `TenantSuspended` → Audit: platform log "Sufyan suspended Acme", and Acme's log "The platform suspended this tenant".
-- `InviteMember` → ControlPlane (invitation and event) → `MemberInvited` → Audit: tenant log; Notifications → Resend: the invitation email.
+- `InviteMember` → ControlPlane (invitation and event) → `MemberInvited` → Audit: tenant log; Notifications → its own command `SendMemberInvitationEmail` → Resend: the invitation email. The event has two handlers, so a scheduled retry of it could run in a web host (W5); the command has one, and it has the retries of the owner invitation email.
 
 ## Decided rules
 
@@ -82,11 +82,15 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K2. Invitations
 
-- A new invitation to an email with a pending invitation in the same tenant replaces it. The old link stops working at once.
+- A new invitation to an email with a pending invitation in the same tenant replaces it. The old link stops working at once. The emails are compared without case.
+- A replaced or a revoked invitation becomes `Cancelled`. Accepting it answers 404 `invitation.not_found`. There is no other status.
+- A replacement is one command and one audit record: `member.invited`, with the replaced invitation's id in its details. It writes no `invitation.revoked` record (K3).
 - "Send again" is not an endpoint of its own.
 - An invitation lives `ControlPlane:Invitations:Lifetime`, 7 days today.
-- A tenant has at most one pending invitation to an email. A unique index keeps it.
-- Each tenant may send `ControlPlane:Invitations:DailyLimitPerTenant` invitations a day, 50 by default. It may become a platform setting later.
+- A tenant has at most one pending invitation to an email. A partial unique index on the tenant and `lower(email)` of pending invitations keeps it. The tenant row lock is the first guard; the index is the second (K6).
+- Each tenant may create `ControlPlane:Invitations:DailyLimitPerTenant` invitations in any 24 hours, 50 by default. The window rolls: it counts every invitation the tenant created in the last 24 hours, cancelled and replaced ones included, so a replacement does not get around it. Over the limit, `InviteMember` answers 429 `invitation.daily_limit_reached` (RFC 6585), without a `Retry-After` header. It may become a platform setting later.
+- An email that already belongs to a member, in the catalog's copy of the profile and compared without case, answers 409 `membership.exists`.
+- The invitation email has the retries of the owner invitation email. After the last try the message goes to the dead letter queue. The invitation stays pending; the inviter can invite again, which replaces it.
 - Closing a tenant cancels its pending invitations. An invitation to a suspended tenant cannot be accepted (409).
 
 ### K3. Audit
@@ -133,6 +137,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 | `ListTenants` | name, slug | `status` | `name`, `slug` | tenants: trigram on name and slug; B-tree on name; the unique slug index |
 | `ListUsers` | email, first name, last name | `status` | `email`, `lastName` | users: trigram on email, first name and last name; B-tree on email and last name |
 | `ListMembers` | email, first name, last name | `role` | `role` (Owner, Admin, Member), `email`, `lastName` | the users indexes; memberships: the primary key and the B-tree on role id |
+| `ListInvitations` | email | `role` | `expiresAt`, `email` | invitations: trigram on email; B-tree on expires_at; the partial unique index on tenant and `lower(email)` of pending invitations |
 
 - The member search starts from the active tenant's memberships, which row level security keeps to the tenant, and joins each member's user. It never starts from the users table, which is not under row level security (R6).
 
@@ -147,7 +152,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 ### K7. Permission names
 
 - The new permission names are approved: `tenant.profile.*`, `tenant.invitations.*`, `tenant.members.update` and `tenant.members.delete`, `tenant.audit.read`, `admin.tenants.close` and `admin.tenants.reopen`, and `admin.audit.read` (N6).
-- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role.
+- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role. Step 20d adds `tenant.invitations.create`, `tenant.invitations.read` and `tenant.invitations.delete`, for the Owner and Admin roles only.
 
 ## Later
 
