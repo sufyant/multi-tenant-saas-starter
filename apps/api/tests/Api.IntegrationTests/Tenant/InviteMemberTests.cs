@@ -347,7 +347,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invited = new MemberInvited(
             Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), Guid.NewGuid(), "Member", null, NewEmail(), "Acme Ltd",
             new Uri($"{ApiFactory.AcceptUrl}?code=x"));
-        var bus = _api.Services.GetRequiredService<IMessageBus>();
+        using var scope = _api.Services.CreateScope();
+        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
         var inTheTenant = new DeliveryOptions { TenantId = invited.TenantId.ToString() };
 
         await _api.WaitingForMessagesAsync(async () => { await bus.PublishAsync(invited, inTheTenant); return 0; });
@@ -382,16 +383,25 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         await lockTenant.ExecuteNonQueryAsync(Cancellation);
 
         var requests = new[] { one(), other() };
-        await Waiting.UntilAsync(async () => requests.All(request => request.IsCompleted) || await BlockedByAsync(holder.ProcessID) == 2);
+        await Waiting.UntilAsync(async () => requests.All(request => request.IsCompleted) || await WaitingBehindAsync(holder.ProcessID) == 2);
         await holding.CommitAsync(Cancellation);
         var responses = await Task.WhenAll(requests);
 
         return [.. responses.Select(response => response.StatusCode)];
     }
 
-    // How many sessions wait for a lock that the holder's session holds.
-    private Task<long> BlockedByAsync(int holder) =>
-        database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))");
+    // How many sessions wait behind the holder's session: for its lock, or behind a session that waits for it. A second waiter for a row
+    // waits for the first one, which holds the row's place in the queue.
+    private Task<long> WaitingBehindAsync(int holder) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"""
+            WITH RECURSIVE waiting AS (
+                SELECT pid FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))
+                UNION
+                SELECT activity.pid FROM pg_stat_activity AS activity JOIN waiting ON waiting.pid = ANY(pg_blocking_pids(activity.pid))
+            )
+            SELECT count(*) FROM waiting
+            """);
 
     private (string Invitee, string Email) InviteeWithAnAccount()
     {

@@ -30,10 +30,15 @@ internal static class ResultResponses
                 return;
             }
 
+            // An endpoint that declares 201 keeps it in place of 200 (ResultEndpointFilter).
             endpoint.Metadata.Remove(inferred);
-            endpoint.Metadata.Add(inferred.Type!.IsGenericType
-                ? new ProducesResponseTypeMetadata(StatusCodes.Status200OK, inferred.Type.GetGenericArguments()[0], ["application/json"])
-                : new ProducesResponseTypeMetadata(StatusCodes.Status204NoContent, typeof(void)));
+            var creates = endpoint.Metadata.OfType<IProducesResponseTypeMetadata>().Any(response => response.StatusCode == StatusCodes.Status201Created);
+            if (!creates)
+            {
+                endpoint.Metadata.Add(inferred.Type!.IsGenericType
+                    ? new ProducesResponseTypeMetadata(StatusCodes.Status200OK, inferred.Type.GetGenericArguments()[0], ["application/json"])
+                    : new ProducesResponseTypeMetadata(StatusCodes.Status204NoContent, typeof(void)));
+            }
 
             // Every failure is the one Problem Details schema, a 400 with the fields of a request that failed validation too (N11).
             foreach (var status in FailureStatuses)

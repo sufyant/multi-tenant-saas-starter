@@ -127,6 +127,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("AcceptedBy")
                         .HasDatabaseName("ix_invitations_accepted_by");
 
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_invitations_expires_at");
+
                     b.HasIndex("InvitedBy")
                         .HasDatabaseName("ix_invitations_invited_by");
 
@@ -139,6 +142,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("TokenHash")
                         .IsUnique()
                         .HasDatabaseName("ix_invitations_token_hash");
+
+                    b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm")
+                        .HasDatabaseName("ix_invitations_email_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("invitations", "control_plane");
                 });

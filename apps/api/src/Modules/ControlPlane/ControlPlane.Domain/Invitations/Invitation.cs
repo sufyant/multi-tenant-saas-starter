@@ -70,6 +70,15 @@ internal sealed class Invitation : ITenantEntity
         string token) =>
         new(id, tenantId, email.Trim(), role.Id, invitedBy, now, now + lifetime, InvitationToken.Hash(token));
 
+    /// <summary>
+    /// Whether a member of the inviter's role may invite someone with the role (K1): only an Owner gives the Owner role. It changes
+    /// nothing, so a caller checks it before any change.
+    /// </summary>
+    public static Result CheckInviter(Role inviter, Role role) =>
+        role.BuiltIn == BuiltInRole.Owner && inviter.BuiltIn != BuiltInRole.Owner
+            ? Error.Forbidden("invitation.owner_requires_owner", "Only an Owner can invite an Owner.")
+            : Result.Success();
+
     /// <summary>Withdraws a pending invitation, as when nobody could be told of it. A used or withdrawn one stays as it is.</summary>
     public bool Cancel()
     {
@@ -81,6 +90,16 @@ internal sealed class Invitation : ITenantEntity
         Status = InvitationStatus.Cancelled;
         return true;
     }
+
+    /// <summary>
+    /// A member withdraws the invitation, so its link stops working at once (K2). A pending one, expired or not, is cancelled: true. A
+    /// cancelled one stays as it is: false, as setting a state twice changes nothing (I1). A used one cannot be revoked.
+    /// </summary>
+    public Result<bool> Revoke() => Status switch
+    {
+        InvitationStatus.Accepted => Error.Conflict("invitation.not_pending", "The invitation has already been used."),
+        _ => Cancel(),
+    };
 
     /// <summary>
     /// Whether the invitation can be accepted now by someone with these verified email addresses: it is pending, it has not expired,
