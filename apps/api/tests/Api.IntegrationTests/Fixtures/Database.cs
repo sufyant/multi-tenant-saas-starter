@@ -52,10 +52,19 @@ public sealed class Database : IAsyncLifetime
     // Section 9, rule 7: the run fails when it held more connections at once than the budget, and names their owners.
     public async ValueTask DisposeAsync()
     {
+        // A start that failed before the watch began has no watch, and the container goes in any case.
         await _stopWatching.CancelAsync();
-        var (budget, peak, owners) = await _watch;
-        await _container.DisposeAsync();
+        (long Budget, long Peak, string Owners) watched;
+        try
+        {
+            watched = _watch is null ? (long.MaxValue, 0, "none") : await _watch;
+        }
+        finally
+        {
+            await _container.DisposeAsync();
+        }
 
+        var (budget, peak, owners) = watched;
         peak.ShouldBeLessThanOrEqualTo(
             budget,
             $"The run held {peak} PostgreSQL connections at once, over its budget of {budget} ({ConnectionBudget:P0} of max_connections). " +
@@ -75,10 +84,10 @@ public sealed class Database : IAsyncLifetime
         """;
 
     private readonly CancellationTokenSource _stopWatching = new();
-    private Task<(long Budget, long Peak, string Owners)> _watch = null!;
+    private Task<(long Budget, long Peak, string Owners)>? _watch;
 
-    // Counts the server's client connections every 100 ms on a connection of its own, and keeps the highest count. A superuser keeps
-    // a reserved slot, so the watch still connects when the server is full. The bursts it must see last half a second or more.
+    // Counts the server's client connections every 100 ms on a connection of its own, and keeps the highest count. It opens that
+    // connection before the first test and keeps it to the end. The bursts it must see last half a second or more.
     private async Task<(long Budget, long Peak, string Owners)> WatchConnectionsAsync(CancellationToken stop)
     {
         await using var connection = new NpgsqlConnection(
@@ -120,7 +129,7 @@ public sealed class Database : IAsyncLifetime
 
     // A pool keeps its idle connections for five minutes by default, after its test has ended. A test's own database is used by that
     // test alone, so its pools close idle connections within seconds; else they add up to more than max_connections (53300).
-    // A direct call of the fixture names itself "fixture" only: a pool is chosen by its connection string, so a name per test class would
+    // A direct call of the fixture, as any role, names itself "fixture" only: a pool is chosen by its connection string, so a name per test class would
     // split the one pool these calls share into one per class.
     private static string Of(NpgsqlConnectionStringBuilder connection, string database)
     {
@@ -250,7 +259,7 @@ public sealed class Database : IAsyncLifetime
     }
 
     public string SuperuserConnectionString =>
-        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = MainDatabase }.ConnectionString;
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = MainDatabase, ApplicationName = "fixture" }.ConnectionString;
 
     // A role the bootstrap script never creates, for proving that the application refuses to run as one. It holds the application
     // role's privileges, so only its attributes set it apart.
@@ -269,7 +278,7 @@ public sealed class Database : IAsyncLifetime
     public async Task<string> CreateEmptyDatabaseAsync()
     {
         var name = $"empty_{Guid.NewGuid():N}";
-        await using (var connection = new NpgsqlConnection(_container.GetConnectionString()))
+        await using (var connection = new NpgsqlConnection(SuperuserConnectionString))
         {
             await connection.OpenAsync();
             await using var create = new NpgsqlCommand($"CREATE DATABASE {name}", connection);
