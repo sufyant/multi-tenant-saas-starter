@@ -25,11 +25,11 @@ public sealed class Database : IAsyncLifetime
     private const string Password = "test-password";
     public const string MainDatabase = "api";
 
-    // The tests run the application in many hosts at once, each with its own pools for requests and messages; together
-    // they need more connections than PostgreSQL's default of 100.
+    // The tests run the application in many hosts at once, each with its own pools for requests and messages. The limit covers
+    // their worst case within the connection budget (section 9, rule 7).
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18")
         .WithDatabase(MainDatabase)
-        .WithCommand("-c", "max_connections=300")
+        .WithCommand("-c", "max_connections=1800")
         .Build();
 
     private readonly SemaphoreSlim _bootstrap = new(1, 1);
