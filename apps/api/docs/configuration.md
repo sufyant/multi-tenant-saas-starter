@@ -28,12 +28,12 @@ Each process checks its settings when it starts. If a required setting is missin
 | `RateLimiting:InvitationAccept:Window` | Optional | `00:01:00` | The window of the invitation accept limit |
 | `ControlPlane:FirstSystemAdminEmail` | Required while the staff list is empty | none | The verified email address of the first system admin, who is granted on their first request to `/v1/admin/...` |
 | `ControlPlane:ActivationTimeout` | Optional | `00:10:00` | From the start of a tenant creation until the tenant is active; then the tenant creation needs attention |
-| `ControlPlane:InvitationEmailTimeout` | Optional | `02:00:00` | From the tenant's activation until the invitation email is sent. Must be longer than the Notifications retry delays together |
+| `ControlPlane:InvitationEmailTimeout` | Optional | `02:00:00` | From the tenant's activation until the invitation email is sent. Must be longer than the Clerk and the Notifications retry delays together |
 | `ControlPlane:CancellationTimeout` | Optional | `00:10:00` | From the start of a cancellation until the tenant is cancelled; then the tenant creation needs attention |
 | `ControlPlane:Clerk:SecretKey` | Required | none | The identity provider's Backend API secret key |
 | `ControlPlane:Clerk:BackendApiUrl` | Optional | `https://api.clerk.com/v1/` | The identity provider's Backend API URL, ending in `/` |
 | `ControlPlane:Clerk:Timeout` | Optional | `00:00:10` | How long a Backend API call may take |
-| `ControlPlane:Clerk:WebhookSigningSecret` | Required in the roles `web` and `all`. A worker does not read it | none | The signing secret of the webhook endpoint in the Clerk dashboard, `whsec_` and a base64 key. The web process checks the signature of each webhook delivery with it |
+| `ControlPlane:Clerk:RetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of a call to the identity provider that failed: letting an invited address sign up, withdrawing it, deleting a user. Positive, and each longer than the one before. Configured pauses replace the defaults. After the last try the message goes to the dead letter queue |
 | `ControlPlane:Invitations:AcceptUrl` | Required | none | The frontend page that accepts an invitation. The invitation code is added as the `code` parameter |
 | `ControlPlane:Invitations:Lifetime` | Optional | `7.00:00:00` | How long an invitation can be accepted |
 | `ControlPlane:Invitations:DailyLimitPerTenant` | Optional | `50` | How many invitations a tenant may create in any 24 hours, cancelled and replaced ones included. Positive |

@@ -9,8 +9,8 @@ These steps take an empty machine to a created tenant and an accepted invitation
 - An identity provider instance for development. It must serve OpenID Connect discovery (`/.well-known/openid-configuration` and its key set) over HTTPS with a certificate the machine trusts, and its Backend API. You need:
   - its issuer URL (`Authentication:Clerk:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
   - a way to get a session token for a user. The token carries `sub`, `sid`, `iss`, `exp` and `nbf`; a token without `sid`, such as a JWT template's token, is refused. A token for the system door also carries `fva` with a verified second factor (for example `[0,0]`).
-  - open sign-up with email verification at sign-up: the Owner signs up like any other user. The application calls the Backend API only to read a user's verified email addresses when they accept an invitation.
-  - a user whose verified email address is the one you put in `ControlPlane:FirstSystemAdminEmail`. That user becomes the first system admin on their first request to `/v1/admin/...` (section 6).
+  - invite-only sign-up (Restricted), as `.clerk/development.json` sets it. The application lets an invited address without an account sign up through Clerk's invitation, and reads a user's verified email addresses when they accept an invitation (`docs/setup.md`).
+  - a user whose verified email address is the one you put in `ControlPlane:FirstSystemAdminEmail`. In Restricted mode you create that account yourself (`docs/setup.md`, "The first system admin"). That user becomes the first system admin on their first request to `/v1/admin/...` (section 6).
 
 ## 2. Database
 
@@ -88,12 +88,15 @@ RateLimiting__InvitationAccept__PermitLimit=10
 RateLimiting__InvitationAccept__Window=00:01:00
 ControlPlane__FirstSystemAdminEmail=<first system admin's email>
 ControlPlane__ActivationTimeout=00:10:00
-ControlPlane__InvitationEmailTimeout=02:00:00   # longer than the Notifications retry delays together
+ControlPlane__InvitationEmailTimeout=02:00:00   # longer than the Clerk and the Notifications retry delays together
 ControlPlane__CancellationTimeout=00:10:00
 ControlPlane__Clerk__SecretKey=<Backend API secret key>
 ControlPlane__Clerk__BackendApiUrl=<Backend API URL, ending in />
 ControlPlane__Clerk__Timeout=00:00:10
-ControlPlane__Clerk__WebhookSigningSecret=<signing secret of the webhook endpoint, whsec_...>   # web only; section 11
+ControlPlane__Clerk__RetryDelays__0=00:00:10
+ControlPlane__Clerk__RetryDelays__1=00:01:00
+ControlPlane__Clerk__RetryDelays__2=00:05:00
+ControlPlane__Clerk__RetryDelays__3=00:15:00
 ControlPlane__Invitations__AcceptUrl=https://app.localhost/invitations/accept
 ControlPlane__Invitations__Lifetime=7.00:00:00
 Notifications__InvitationEmailRetryDelays__0=00:00:10
@@ -152,24 +155,24 @@ curl -X POST http://127.0.0.1:5080/v1/admin/tenants \
   -d '{"name":"Acme","slug":"acme","ownerEmail":"owner@acme.test"}'
 ```
 
-The answer is `201` with the tenant in `Provisioning`. The first request takes a few seconds, while Wolverine generates its handler code. Within seconds the worker takes the tenant creation to its end, and the worker's log shows the invitation email:
+The answer is `201` with the tenant in `Provisioning`. Within seconds the worker takes the tenant creation to its end, and the worker's log shows the invitation email. For an owner without an account, the link is Clerk's invitation link:
 
 ```text
 Email to owner@acme.test is not sent in Development: You are invited to Acme
 ...
-https://app.localhost/invitations/accept?code=<tenantId>.<secret>
+https://<instance>.clerk.accounts.dev/v1/tickets/accept?ticket=<ticket>
 ```
 
-The link is always our accept link. Tenant creation creates nothing at the identity provider: an owner without an account signs up there like any other user, with the invited email address verified, and then accepts.
+Clerk's invitation leads to our accept link, `https://app.localhost/invitations/accept?code=<tenantId>.<secret>`, and adds `__clerk_ticket`. The person signs up there with the ticket, which verifies the invited address. For an owner who already has an account, the email carries our accept link itself. Clerk sends no email of its own.
 
 ## 8. Accept the invitation
 
-As the owner, signed in with the invited email address verified:
+As the owner, signed in with the invited email address verified. A person the catalog does not know gives their first and last name; the catalog keeps them, and Clerk keeps none (A7):
 
 ```sh
 curl -X POST http://127.0.0.1:5080/v1/me/invitations/accept \
   -H "Authorization: Bearer <owner token>" -H "Content-Type: application/json" \
-  -d '{"code":"<tenantId>.<secret>"}'
+  -d '{"code":"<tenantId>.<secret>","firstName":"Ada","lastName":"Lovelace"}'
 curl http://127.0.0.1:5080/v1/me/tenants -H "Authorization: Bearer <owner token>"
 curl http://127.0.0.1:5080/v1/tenants/<tenantId>/members -H "Authorization: Bearer <owner token>"
 ```
@@ -195,22 +198,7 @@ docker run --rm --add-host=host.docker.internal:host-gateway --env-file api.env 
 
 `-e Host__Role` overrides the role in `api.env`. The checks of section 6 work on the same ports.
 
-## 11. Receive the identity provider's webhook
-
-The web process keeps the catalog's copy of each user's email address and name fresh from Clerk's webhook, `POST /v1/webhooks/clerk` (A7). Clerk cannot reach `127.0.0.1`, so the Clerk CLI opens a relay and forwards each delivery to the web process. The headers stay the same, so the signature stays valid.
-
-```sh
-clerk webhooks listen --token "$(clerk webhooks token)" --forward-to http://127.0.0.1:5080/v1/webhooks/clerk
-```
-
-1. The command prints a relay URL. In the Clerk dashboard of the development instance, add a webhook endpoint with that URL. Subscribe it to `user.updated` and `user.deleted`.
-2. Copy the endpoint's signing secret into `ControlPlane__Clerk__WebhookSigningSecret` and restart the web process.
-3. Change the name of a user who has accepted an invitation, or use the endpoint's "Testing" tab in the dashboard. The web process answers `204`, and the user's row in `control_plane.users` shows the new name.
-
-A delivery without a valid signature, or older than five minutes, answers `400` and changes nothing.
-
-
-## 12. Change a request or response type
+## 11. Change a request or response type
 
 The C# types are the source of every client's types (N11). A change reaches the frontend in three steps. Run them from the repository root.
 
