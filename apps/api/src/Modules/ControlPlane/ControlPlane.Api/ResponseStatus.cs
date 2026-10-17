@@ -7,7 +7,8 @@ namespace ControlPlane.Api;
 /// <summary>
 /// Maps each of ControlPlane's statuses to the status enum of a response (N7), and the status a list filter names back to ControlPlane's
 /// (K5). Every response maps its status here when it is built, so a saved idempotent result, which holds ControlPlane's name, replays to
-/// the same answer. A status a response cannot carry is a fault, not an answer.
+/// the same answer. A status a response cannot carry is a fault, not an answer. An invitation's state maps to the one enum of every
+/// response (N7), whose description says which values it holds.
 /// </summary>
 internal static class ResponseStatus
 {
@@ -47,7 +48,6 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
-    // One enum holds the state of every invitation in a response: the preview's, the Owner invitation's and the invitation list's.
     public static InvitationResponseState OfInvitation(string state) => state switch
     {
         "Pending" => InvitationResponseState.Pending,
