@@ -33,7 +33,8 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var actor = await _catalog.AddMemberAsync(tenant.Id, role: actorRole);
-        var member = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace"));
+        var joined = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
+        var member = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace"), joinedAt: joined);
         var memberId = await _catalog.UserIdOfAsync(member);
 
         var changed = await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, memberId, "admin"));
@@ -45,6 +46,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         body.GetProperty("lastName").GetString().ShouldBe("Lovelace");
         body.GetProperty("role").GetString().ShouldBe("admin");
         body.GetProperty("deleted").GetBoolean().ShouldBeFalse();
+        body.GetProperty("joinedAt").GetDateTimeOffset().ShouldBe(joined);
         (await RoleOfAsync(tenant.Id, memberId)).ShouldBe("Admin");
         (await _audit.TenantLogAsync(memberId))
             .ShouldBe($"{tenant.Id}:member.role_changed|User|{await _catalog.UserIdOfAsync(actor)}|User|{memberId}|-");

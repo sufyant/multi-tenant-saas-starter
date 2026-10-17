@@ -67,6 +67,18 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         preview.GetProperty("state").GetString().ShouldBe(state);
     }
 
+    // The invitation of a suspended tenant stays pending, and accepting it answers 409 tenant.suspended until the tenant is reactivated.
+    [Fact]
+    public async Task GetInvitationPreview_AnInvitationOfASuspendedTenant_IsPending()
+    {
+        var tenant = await _catalog.AddTenantAsync(status: "Suspended");
+        var invitation = await InvitationAsync(tenant.Id);
+
+        var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        preview.GetProperty("state").GetString().ShouldBe("pending");
+    }
+
     // A system admin invited the tenant's Owner: the screen names the platform, never the system admin.
     [Fact]
     public async Task GetInvitationPreview_AnInvitationThePlatformSent_NamesThePlatformAsTheInviter()

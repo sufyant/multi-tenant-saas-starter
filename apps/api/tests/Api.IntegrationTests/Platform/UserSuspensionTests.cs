@@ -83,13 +83,16 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReactivateUser_SuspendedUser_IsActiveAgain()
     {
-        var user = await _catalog.AddUserAsync();
+        var created = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
+        var user = await _catalog.AddUserAsync(createdAt: created);
         await _catalog.SuspendUserAsync(user);
 
         var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (body.GetProperty("status").GetString(), body.GetProperty("membershipCount").GetInt32(), body.GetProperty("createdAt").GetDateTimeOffset())
+            .ShouldBe(("active", 0, created));
         (await SuspendedAtAsync(user)).ShouldBeNull();
     }
 
