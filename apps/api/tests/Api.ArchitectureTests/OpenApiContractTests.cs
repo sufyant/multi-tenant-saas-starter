@@ -72,6 +72,15 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
+    // Step 20k: a built-in role is one lower-case word, as every other enum of the document.
+    [Fact]
+    public void BuildOpenApiDocument_MemberRole_ListsTheLowerCaseRoles()
+    {
+        var documented = EnumOf(Resolve(Schemas().Single(found => found.Name == "MemberRole").Value));
+
+        documented.ShouldBe("owner, admin, member");
+    }
+
     // Decision 1 of step 20j: one list of languages, the schema Language, with the tags of the enum. Every field that holds a language
     // refers to it, so a generated client has one type for it, and no schema copies the list.
     [Fact]

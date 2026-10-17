@@ -23,5 +23,17 @@ internal sealed class Role
 
     public IReadOnlySet<string> Permissions => BuiltInRoles.PermissionsOf(BuiltIn);
 
-    public static Role CreateBuiltIn(Guid id, BuiltInRole role) => new(id, role.ToString(), role);
+    public static Role CreateBuiltIn(Guid id, BuiltInRole role) => new(id, NameOf(role), role);
+
+    /// <summary>
+    /// The name of a built-in role outside the domain: in requests, responses, events and audit details, in lower case, as every other
+    /// enum of the API (catalog, K5). It is the one place a built-in role becomes text.
+    /// </summary>
+    public static string NameOf(BuiltInRole role) => role switch
+    {
+        BuiltInRole.Owner => "owner",
+        BuiltInRole.Admin => "admin",
+        BuiltInRole.Member => "member",
+        _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Every built-in role has a name."),
+    };
 }

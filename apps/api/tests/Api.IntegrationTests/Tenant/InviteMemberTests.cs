@@ -51,7 +51,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         invitation.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "email", "role", "invitedBy", "createdAt", "expiresAt"], ignoreOrder: true);
         invitation.GetProperty("email").GetString().ShouldBe(email);
-        invitation.GetProperty("role").GetString().ShouldBe("Member");
+        invitation.GetProperty("role").GetString().ShouldBe("member");
         invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _catalog.UserIdOfAsync(inviter));
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
@@ -119,7 +119,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
 
-        var invited = await _api.CreateClient(admin).InviteMemberAsync(tenant.Id, NewEmail(), role: "Owner");
+        var invited = await _api.CreateClient(admin).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(invited)).ShouldBe("invitation.owner_requires_owner");
@@ -132,16 +132,16 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
 
-        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail(), role: "Owner");
+        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("role").GetString().ShouldBe("Owner");
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("role").GetString().ShouldBe("owner");
     }
 
     [Theory]
-    [InlineData("not-an-email", "Member")]
-    [InlineData("", "Member")]
-    [InlineData("   ", "Member")]
+    [InlineData("not-an-email", "member")]
+    [InlineData("", "member")]
+    [InlineData("   ", "member")]
     public async Task InviteMember_AnEmailThatIsNoEmailAddress_IsABadRequest(string email, string role)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -161,7 +161,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [InlineData("""{ "email": "ada@example.com", "role": "Owner, Admin" }""")]
     [InlineData("""{ "email": "ada@example.com", "role": "Admin, Member" }""")]
     [InlineData("""{ "email": "ada@example.com", "role": " Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "admin" }""")]
+    [InlineData("""{ "email": "ada@example.com", "role": "Admin" }""")]
+    [InlineData("""{ "email": "ada@example.com", "role": "OWNER" }""")]
     public async Task InviteMember_WithoutAKnownRole_IsABadRequest(string body)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -220,12 +221,12 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var email = NewEmail();
         var first = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email)));
 
-        var second = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email, role: "Admin")));
+        var second = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email, role: "admin")));
 
         (await _audit.TenantLogAsync(first)).ShouldBe($"{tenant.Id}:member.invited|User|{inviterId}|Invitation|{first}|-");
         (await _audit.TenantLogAsync(second)).ShouldBe($"{tenant.Id}:member.invited|User|{inviterId}|Invitation|{second}|-");
-        Details(await _audit.TenantDetailsAsync(first)).ShouldBe(("Member", null));
-        Details(await _audit.TenantDetailsAsync(second)).ShouldBe(("Admin", first.ToString()));
+        Details(await _audit.TenantDetailsAsync(first)).ShouldBe(("member", null));
+        Details(await _audit.TenantDetailsAsync(second)).ShouldBe(("admin", first.ToString()));
         (await _audit.PlatformLogAsync(second)).ShouldBeNull();
     }
 

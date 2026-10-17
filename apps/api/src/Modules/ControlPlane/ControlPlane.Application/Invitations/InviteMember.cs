@@ -65,7 +65,7 @@ public static class InviteMemberHandler
             return (access.Error, null, null, null);
         }
 
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.Name == command.Role);
+        var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
 
         var allowed = Invitation.CheckInviter(BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId), role);
         if (!allowed.IsSuccess)

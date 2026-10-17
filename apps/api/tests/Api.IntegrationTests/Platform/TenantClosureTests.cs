@@ -310,7 +310,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
     {
         "InviteMember" => owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com"),
         "RevokeInvitation" => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitation}", Cancellation),
-        "ChangeMemberRole" => owner.ChangeMemberRoleAsync(tenantId, member, "Admin"),
+        "ChangeMemberRole" => owner.ChangeMemberRoleAsync(tenantId, member, "admin"),
         "RemoveMember" => owner.RemoveMemberAsync(tenantId, member),
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
     };

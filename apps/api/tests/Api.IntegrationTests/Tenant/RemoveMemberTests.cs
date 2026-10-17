@@ -25,11 +25,11 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
-    [InlineData("Owner", "Member")]
-    [InlineData("Owner", "Admin")]
-    [InlineData("Admin", "Member")]
-    [InlineData("Admin", "Admin")]
-    public async Task RemoveMember_AMemberTheActorMayRemove_RemovesItAndRecordsTheRoleItHad(string actorRole, string memberRole)
+    [InlineData("Owner", "Member", "member")]
+    [InlineData("Owner", "Admin", "admin")]
+    [InlineData("Admin", "Member", "member")]
+    [InlineData("Admin", "Admin", "admin")]
+    public async Task RemoveMember_AMemberTheActorMayRemove_RemovesItAndRecordsTheRoleItHad(string actorRole, string memberRole, string recordedRole)
     {
         var tenant = await _catalog.AddTenantAsync();
         var actor = await _catalog.AddMemberAsync(tenant.Id, role: actorRole);
@@ -41,7 +41,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, member)).ShouldBe(0);
         (await _audit.TenantLogAsync(member))
             .ShouldBe($"{tenant.Id}:member.removed|User|{await _catalog.UserIdOfAsync(actor)}|User|{member}|-");
-        (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{memberRole}}"}""");
+        (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{recordedRole}}"}""");
     }
 
     // An Owner removes another Owner when the tenant keeps one.

@@ -194,19 +194,19 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("00000000-0000-7000-8000-000000000001"),
                             BuiltIn = "Owner",
-                            Name = "Owner"
+                            Name = "owner"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-7000-8000-000000000002"),
                             BuiltIn = "Admin",
-                            Name = "Admin"
+                            Name = "admin"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-7000-8000-000000000003"),
                             BuiltIn = "Member",
-                            Name = "Member"
+                            Name = "member"
                         });
                 });
 

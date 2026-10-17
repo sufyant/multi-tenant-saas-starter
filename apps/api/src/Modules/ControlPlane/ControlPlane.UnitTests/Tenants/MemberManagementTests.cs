@@ -180,7 +180,7 @@ public class MemberManagementTests
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MembershipCannotRemoveSelf);
     }
 
-    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.Name == role);
+    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
 
     private static Membership Membership(string role) => new(TenantId, Guid.NewGuid(), RoleOf(role).Id);
 }

@@ -360,7 +360,7 @@ public sealed class HostRoleTests(Database database)
         var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
         var member = await catalog.UserIdOfAsync(await catalog.AddMemberAsync(tenant.Id));
 
-        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "Admin");
+        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "admin");
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);

@@ -22,7 +22,7 @@ public static class RecordMemberRemovedHandler
                 AuditActor.User(removed.RemovedBy),
                 MemberRemoved,
                 AuditTarget.User(removed.UserId),
-                JsonSerializer.Serialize(new Details(removed.Role), JsonSerializerOptions.Web)),
+                JsonSerializer.Serialize(new Details(RoleNames.Of(removed.Role)), JsonSerializerOptions.Web)),
             cancellationToken);
 
     public static Task HandleAsync(UserMembershipRemoved removed, IAuditLog log, CancellationToken cancellationToken) =>
@@ -34,7 +34,7 @@ public static class RecordMemberRemovedHandler
                 AuditActor.Platform,
                 MemberRemoved,
                 AuditTarget.User(removed.UserId),
-                JsonSerializer.Serialize(new Details(removed.Role), JsonSerializerOptions.Web)),
+                JsonSerializer.Serialize(new Details(RoleNames.Of(removed.Role)), JsonSerializerOptions.Web)),
             cancellationToken);
 
     private sealed record Details(string Role);

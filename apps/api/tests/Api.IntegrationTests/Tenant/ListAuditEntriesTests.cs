@@ -195,12 +195,12 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _audit.AddTenantEntryAsync(tenant.Id, Start, details: """{"oldRole":"Member","newRole":"Admin"}""");
+        await _audit.AddTenantEntryAsync(tenant.Id, Start, details: """{"oldRole":"member","newRole":"admin"}""");
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
 
         var details = page.GetProperty("items")[0].GetProperty("details");
-        (details.GetProperty("oldRole").GetString(), details.GetProperty("newRole").GetString()).ShouldBe(("Member", "Admin"));
+        (details.GetProperty("oldRole").GetString(), details.GetProperty("newRole").GetString()).ShouldBe(("member", "admin"));
     }
 
     // The screen shows names; an email address is a person's data that Activity does not need, even for a user without a name, who gets
