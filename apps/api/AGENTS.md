@@ -45,7 +45,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - A package update changes no document unless it adds or removes a package, or changes a license. `LicenseTests` fails then.
 - Health endpoints answer only on the management port (`Host:ManagementPort`, 8081). A `curl` to 8080 gets 404. (Section 8, `ManagementPortTests`)
 - A migration runs while the previous version still serves. A migration that breaks the previous version breaks production during the deploy. Expand first; contract in a later release. (`docs/deployment.md` at the repository root)
-- A folder named `System` hides .NET's `System` namespace. The admin audience is `Admin`. The other rules for names and folders are in section 10 of `ARCHITECTURE.md` ("Names and places").
+- A folder named `System` hides .NET's `System` namespace. The audience of the system admins is `Platform` (`/v1/platform`, `platform.*`): in the tenant web, "Admin" is a role. The other rules for names and folders are in section 10 of `ARCHITECTURE.md` ("Names and places").
 - Me is a Visual Basic keyword. CA1716 does not check namespaces (`.editorconfig`); it still checks types and members.
 
 ## How we design
