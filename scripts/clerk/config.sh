@@ -6,24 +6,23 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF_USAGE'
-Usage: scripts/clerk/config.sh plan|apply [development|production]
+Usage: scripts/clerk/config.sh plan [development|production]
+       scripts/clerk/config.sh apply development|production
 
   plan   Change nothing. Print, for each instance, the difference between
-         its file in .clerk/ and the live instance.
-  apply  Print the same difference, ask for each instance, then apply it.
-
-Without an instance, the script handles every file in .clerk/.
+         its file in .clerk/ and the live instance. Without an instance,
+         plan handles every file in .clerk/.
+  apply  Print the same difference for one instance, ask, then apply it.
 
 Requires: clerk, jq, and `clerk auth login` (or CLERK_PLATFORM_API_KEY).
+The Clerk application is CLERK_APP_ID if it is set, else the application
+that `clerk link` linked to this repository.
 Apply to production also requires CLERK_GOOGLE_CLIENT_ID,
 CLERK_GOOGLE_CLIENT_SECRET, CLERK_MICROSOFT_CLIENT_ID and
 CLERK_MICROSOFT_CLIENT_SECRET. The development instance uses Clerk's shared
 OAuth credentials.
 EOF_USAGE
 }
-
-# The Clerk application "AerCura". An application ID is not a secret.
-app_id="app_3IeGaXTDFceiWP2j10maEBm2HD7"
 
 mode=""
 only=""
@@ -38,6 +37,18 @@ for arg in "$@"; do
   esac
 done
 if [[ -z "$mode" ]]; then usage >&2; exit 2; fi
+if [[ "$mode" == "apply" && -z "$only" ]]; then
+  echo "apply needs an instance: development or production." >&2
+  usage >&2
+  exit 2
+fi
+
+# Without CLERK_APP_ID, the CLI uses its own link to this repository.
+if [[ -z "${CLERK_APP_ID:-}" ]] \
+  && ! clerk whoami --json 2>/dev/null | jq -e '.linked != null' >/dev/null; then
+  echo "Run clerk link first, or set CLERK_APP_ID." >&2
+  exit 1
+fi
 
 config_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.clerk" && pwd)"
 body_file="$(mktemp)"
@@ -50,7 +61,7 @@ trap 'rm -f "$body_file"' EXIT
 plan() {
   local name="$1" instance="$2" file="$3" err
   echo "== $name"
-  if ! err="$(clerk config patch --mode agent --app "$app_id" --instance "$instance" \
+  if ! err="$(clerk config patch --mode agent ${CLERK_APP_ID:+--app "$CLERK_APP_ID"} --instance "$instance" \
     --file "$file" --dry-run 2>&1 >/dev/null)"; then
     if [[ "$err" == *instance_not_found* ]]; then
       echo "No $name instance exists. Skipped."
@@ -80,7 +91,7 @@ apply() {
   else
     cp "$file" "$body_file"
   fi
-  if ! err="$(clerk config patch --mode agent --app "$app_id" --instance "$instance" \
+  if ! err="$(clerk config patch --mode agent ${CLERK_APP_ID:+--app "$CLERK_APP_ID"} --instance "$instance" \
     --file "$body_file" --yes 2>&1 >/dev/null)"; then
     err="${err//"${CLERK_GOOGLE_CLIENT_SECRET:-<none>}"/***}"
     err="${err//"${CLERK_MICROSOFT_CLIENT_SECRET:-<none>}"/***}"
