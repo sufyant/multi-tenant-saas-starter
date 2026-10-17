@@ -85,21 +85,69 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await MembersAsync(slug)).ShouldBe(0);
     }
 
-    // A7: a new catalog user starts with a copy of the profile that the identity provider gave in the same call as the verified
-    // addresses.
+    // A7: a new catalog user gets the invited address, which the identity provider verified, and the names the person typed, without the
+    // spaces around them. The identity provider keeps no name.
     [Fact]
-    public async Task AcceptInvitation_NewUser_StartsWithACopyOfTheirProfile()
+    public async Task AcceptInvitation_NewUser_StoresTheInvitedAddressAndTheTypedNames()
     {
         var invitee = $"user_{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.com";
-        var updatedAt = new DateTimeOffset(2026, 10, 3, 8, 30, 0, TimeSpan.Zero);
-        _api.Identity.AddAccount(invitee, new UserProfile(email, "Ada", "Lovelace", updatedAt), email);
         await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
+        _api.Identity.AddAccount(invitee, email.ToUpperInvariant());
 
-        var accepted = await AcceptAsync(invitee, _api.Email.CodeSentTo(email));
+        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = " Ada ", lastName = "Lovelace  " }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.ProfileOfAsync(invitee)).ShouldBe(new StoredProfile(email, "Ada", "Lovelace", updatedAt, null));
+        (await _catalog.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false));
+    }
+
+    // A person the catalog does not know gives both names; a missing one is a field that failed validation (K5). The invitation stays
+    // pending, and no user is written.
+    [Fact]
+    public async Task AcceptInvitation_NewUserWithoutNames_IsABadRequestThatNamesEachMissingField()
+    {
+        var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+
+        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
+        problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
+        problem.GetProperty("errors").GetProperty("lastName").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("", "required")]
+    [InlineData("   ", "required")]
+    [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "too_long")]
+    public async Task AcceptInvitation_NewUserWithAWrongName_IsABadRequestForThatField(string firstName, string fieldCode)
+    {
+        var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+
+        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName, lastName = "Lovelace" }, Cancellation);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe([fieldCode]);
+        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
+    }
+
+    // A user the catalog knows keeps their names: they need none to join another tenant.
+    [Fact]
+    public async Task AcceptInvitation_KnownUserWithoutNames_JoinsAndKeepsTheirNames()
+    {
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper");
+        _api.Identity.AddAccount(known, email);
+        await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
+
+        var accepted = await _api.CreateClient(known).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _catalog.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false));
     }
 
     // API4: accepting an invitation has a stricter limit of its own, ten in a minute by default, on top of the general one; the
@@ -178,7 +226,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     {
         var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
         var sameEmail = $"user_{Guid.NewGuid():N}";
-        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindAccountAsync(invitee, Cancellation)).VerifiedEmails[0]);
+        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindVerifiedEmailsAsync(invitee, Cancellation))[0]);
         (await AcceptAsync(invitee, code)).EnsureSuccessStatusCode();
         await SetStatusAsync(slug, "Suspended");
 
@@ -251,7 +299,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     {
         var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
         var sameEmail = $"user_{Guid.NewGuid():N}";
-        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindAccountAsync(invitee, Cancellation)).VerifiedEmails[0]);
+        _api.Identity.AddAccount(sameEmail, (await _api.Identity.FindVerifiedEmailsAsync(invitee, Cancellation))[0]);
         await AcceptAsync(invitee, code);
 
         var reused = await AcceptAsync(sameEmail, code);
@@ -425,7 +473,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))") > 0;
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
     // An invitation code is `<tenantId>.<secret>`.
     private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];

@@ -318,7 +318,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
     private Task<string?> MembersOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(

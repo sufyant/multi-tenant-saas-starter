@@ -48,6 +48,9 @@ internal sealed class ApiFactory(
         ["Notifications:InvitationEmailRetryDelays:0"] = "00:00:00.010",
         ["Notifications:InvitationEmailRetryDelays:1"] = "00:00:00.020",
         ["Notifications:InvitationEmailRetryDelays:2"] = "00:00:00.040",
+        ["ControlPlane:Clerk:RetryDelays:0"] = "00:00:00.010",
+        ["ControlPlane:Clerk:RetryDelays:1"] = "00:00:00.020",
+        ["ControlPlane:Clerk:RetryDelays:2"] = "00:00:00.040",
     };
 
     public HostPorts Ports => ports ?? throw new InvalidOperationException("The factory was given no ports.");
@@ -156,7 +159,6 @@ internal sealed class ApiFactory(
             ["ConnectionStrings:Migrations"] = migrationsConnectionString,
             ["ControlPlane:Invitations:AcceptUrl"] = AcceptUrl,
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
-            ["ControlPlane:Clerk:WebhookSigningSecret"] = ClerkDeliveries.SigningSecret,
             ["ControlPlane:FirstSystemAdminEmail"] = FirstSystemAdminEmail,
             ["Authentication:Clerk:Issuer"] = TestTokens.Issuer,
         };

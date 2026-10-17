@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Audit.IntegrationTests.Users;
 
 // The Audit module records the changes of a catalog user in the platform's log, in a transaction that declares nothing: a user belongs
-// to no tenant. A system admin suspends and reactivates; the identity provider updates a profile and deletes a user (K3).
+// to no tenant. A system admin suspends, reactivates, renames and deletes a user (K3).
 public sealed class RecordUserChangesTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -38,27 +38,27 @@ public sealed class RecordUserChangesTests(Database database)
     }
 
     [Fact]
-    public async Task RecordUserProfileUpdated_UserProfileUpdated_WritesThePlatformEntryByTheIdentityProvider()
+    public async Task RecordUserRenamed_UserRenamed_WritesThePlatformEntryByTheAdmin()
     {
-        var updated = new UserProfileUpdated(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7());
+        var renamed = new UserRenamed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(updated, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserChangesHandler.HandleAsync(renamed, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
-        (await Logs.DescribeAsync(database.Services, Logs.Platform, null, updated.EventId))
-            .ShouldBe($"user.profile_updated|IdentityProvider|-|User|{updated.UserId}|-");
+        (await Logs.DescribeAsync(database.Services, Logs.Platform, null, renamed.EventId))
+            .ShouldBe($"user.renamed|User|{renamed.RenamedBy}|User|{renamed.UserId}|-");
     }
 
     [Fact]
-    public async Task RecordUserDeleted_UserDeleted_WritesThePlatformEntryByTheIdentityProvider()
+    public async Task RecordUserDeleted_UserDeleted_WritesThePlatformEntryByTheAdmin()
     {
-        var deleted = new UserDeleted(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7());
+        var deleted = new UserDeleted(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
             RecordUserChangesHandler.HandleAsync(deleted, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, deleted.EventId))
-            .ShouldBe($"user.deleted|IdentityProvider|-|User|{deleted.UserId}|-");
+            .ShouldBe($"user.deleted|User|{deleted.DeletedBy}|User|{deleted.UserId}|-");
     }
 
     // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.

@@ -64,26 +64,46 @@ public class UserTests
     }
 
     [Fact]
-    public void CopyProfile_SameEmailAndNameAtALaterTime_IsNoChange()
+    public void JoinUser_NamesWithSpaces_KeepsThemTrimmed()
     {
-        var user = new User(Guid.CreateVersion7(), "user_1");
-        user.CopyProfile("ada@example.com", "Ada", "Lovelace", Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "  Ada ", " Lovelace  ");
 
-        var changed = user.CopyProfile("ada@example.com", "Ada", "Lovelace", Now.AddHours(1));
-
-        changed.ShouldBeFalse();
-        user.ProfileUpdatedAt.ShouldBe(Now.AddHours(1));
+        (user.Email, user.FirstName, user.LastName).ShouldBe(("ada@example.com", "Ada", "Lovelace"));
     }
 
     [Fact]
-    public void CopyProfile_AnotherName_IsAChange()
+    public void RenameUser_AnotherName_IsAChange()
     {
-        var user = new User(Guid.CreateVersion7(), "user_1");
-        user.CopyProfile("ada@example.com", "Ada", "Lovelace", Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace");
 
-        var changed = user.CopyProfile("ada@example.com", "Ada", "King", Now.AddHours(1));
+        var changed = user.Rename("Ada", "King");
 
-        changed.ShouldBeTrue();
+        changed.Value.ShouldBeTrue();
+        (user.FirstName, user.LastName).ShouldBe(("Ada", "King"));
+    }
+
+    // Renaming sets a state: the same names, with spaces around them, change nothing, so Audit records nothing (K3).
+    [Fact]
+    public void RenameUser_SameNamesWithSpaces_IsNoChange()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace");
+
+        var changed = user.Rename(" Ada ", "Lovelace ");
+
+        changed.Value.ShouldBeFalse();
+    }
+
+    // The deletion erased the names; a new one would bring personal data back.
+    [Fact]
+    public void RenameUser_Deleted_IsRefusedAndStaysErased()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace");
+        user.Delete(Now);
+
+        var renamed = user.Rename("Ada", "King");
+
+        renamed.Error.Code.Value.ShouldBe("user.deleted");
+        (user.FirstName, user.LastName).ShouldBe((null, null));
     }
 
     [Fact]

@@ -6,8 +6,8 @@ namespace Api.EndToEndTests.TenantCreation;
 
 // The tracer bullet: the whole tenant creation flow through HTTP against the composed application, as it is deployed: one build output
 // running as a web host and a worker host on one database (section 1). The first system admin, named by configuration, creates a
-// tenant; its first owner gets the email, signs up with the identity provider like any other user, accepts the invitation with the
-// code from the email's link and sees the tenant; another user does not find it.
+// tenant; its first owner gets the email, signs up with the identity provider through the email's link, accepts the invitation with the
+// code that link leads to and their names, and sees the tenant; another user does not find it.
 public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -44,9 +44,9 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var created = await admin.SendAsync(CreateTenant(new { name = "Acme Ltd", slug, ownerEmail }), Cancellation);
         var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
         await Waiting.UntilAsync(() => _email.Sent.Any(sent => sent.To == ownerEmail));
-        var acceptLink = LinkIn(_email.Sent.Single(sent => sent.To == ownerEmail).Text);
-        _identity.SignUp("user_e2e_owner", ownerEmail);
-        var accepted = await owner.PostAsJsonAsync("/v1/me/invitations/accept", new { code = CodeOf(acceptLink) }, Cancellation);
+        var acceptLink = _identity.SignUpThrough(LinkIn(_email.Sent.Single(sent => sent.To == ownerEmail).Text), "user_e2e_owner");
+        var accepted = await owner.PostAsJsonAsync(
+            "/v1/me/invitations/accept", new { code = CodeOf(acceptLink), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
         var myTenants = await owner.GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
         var members = await owner.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/members", Cancellation);
         var strangerMembers = await stranger.GetAsync($"/v1/tenants/{tenantId}/members", Cancellation);

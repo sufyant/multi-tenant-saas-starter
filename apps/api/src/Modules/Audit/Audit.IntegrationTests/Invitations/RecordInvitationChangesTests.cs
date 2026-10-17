@@ -70,7 +70,6 @@ public sealed class RecordInvitationChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, revoked.EventId)).ShouldBe(0);
     }
 
-    private static MemberInvited Invited(Guid? replaced) => new(
-        Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Admin", replaced,
-        "grace@navy.test", "Acme Ltd", new Uri("https://app.test/invitations/accept?code=x"));
+    private static MemberInvited Invited(Guid? replaced) =>
+        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Admin", replaced);
 }

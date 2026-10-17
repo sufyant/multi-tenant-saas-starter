@@ -62,6 +62,78 @@ public class InvitationTests
     }
 
     [Fact]
+    public void RecordSignUp_PendingInvitation_KeepsTheProviderInvitationAndSendsTheLink()
+    {
+        var invitation = Invite("ada@example.com");
+
+        var decision = invitation.RecordSignUp("inv_1");
+
+        decision.ShouldBe(SignUpDecision.Send);
+        invitation.SignUpInvitationId.ShouldBe("inv_1");
+    }
+
+    // An address with an account needs no provider invitation; the accept link goes out.
+    [Fact]
+    public void RecordSignUp_AddressWithAnAccount_SendsTheLink()
+    {
+        var invitation = Invite("ada@example.com");
+
+        var decision = invitation.RecordSignUp(null);
+
+        decision.ShouldBe(SignUpDecision.Send);
+        invitation.SignUpInvitationId.ShouldBeNull();
+    }
+
+    // The provider's answer may arrive twice; the email went out the first time.
+    [Fact]
+    public void RecordSignUp_SameProviderInvitationTwice_SendsOnce()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+
+        var decision = invitation.RecordSignUp("inv_1");
+
+        decision.ShouldBe(SignUpDecision.Ignore);
+    }
+
+    // A second provider invitation for the same invitation, from a repeated call, would let someone sign up with a link nobody has.
+    [Fact]
+    public void RecordSignUp_AnotherProviderInvitation_IsWithdrawn()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+
+        var decision = invitation.RecordSignUp("inv_2");
+
+        decision.ShouldBe(SignUpDecision.Withdraw);
+        invitation.SignUpInvitationId.ShouldBe("inv_1");
+    }
+
+    // The invitation was revoked while the provider answered: no email goes out, and the provider's invitation is withdrawn.
+    [Fact]
+    public void RecordSignUp_CancelledInvitation_WithdrawsTheProviderInvitation()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.Cancel();
+
+        var decision = invitation.RecordSignUp("inv_1");
+
+        decision.ShouldBe(SignUpDecision.Withdraw);
+        invitation.SignUpInvitationId.ShouldBeNull();
+    }
+
+    [Fact]
+    public void RecordSignUp_CancelledInvitationOfAnAddressWithAnAccount_SendsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.Cancel();
+
+        var decision = invitation.RecordSignUp(null);
+
+        decision.ShouldBe(SignUpDecision.Ignore);
+    }
+
+    [Fact]
     public void AcceptInvitation_Cancelled_IsRefused()
     {
         var invitation = Invite("ada@example.com");

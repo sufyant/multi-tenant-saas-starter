@@ -396,11 +396,10 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     // O4: an event that arrives twice sends one email, because the email's idempotency key is the invitation's.
     [Fact]
-    public async Task SendMemberInvitationEmail_MemberInvitedArrivesTwice_SendsOneEmail()
+    public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
-        var invited = new MemberInvited(
-            Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), Guid.NewGuid(), "Member", null, NewEmail(), "Acme Ltd",
-            new Uri($"{ApiFactory.AcceptUrl}?code=x"));
+        var invited = new MemberInvitationReady(
+            Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), NewEmail(), "Acme Ltd", new Uri($"{ApiFactory.AcceptUrl}?code=x"));
         using var scope = _api.Services.CreateScope();
         var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
         var inTheTenant = new DeliveryOptions { TenantId = invited.TenantId.ToString() };
@@ -466,7 +465,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     }
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
     private Task<long> InvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");

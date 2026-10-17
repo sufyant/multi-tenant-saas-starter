@@ -1,6 +1,6 @@
 using System.Reflection;
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Application.Users;
+using ControlPlane.Application.Users.UserDeletion;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +9,7 @@ using Solution = Api.ArchitectureTests.Fixtures.Solution;
 
 namespace Api.ArchitectureTests;
 
-// K3: every command publishes, through the outbox, an event that Audit handles. A command is a message that an endpoint or a webhook
-// sends: a message type with a handler that a module's Api or Infrastructure project creates, other than a query (List..., Get...).
+// K3: every command publishes, through the outbox, an event that Audit handles. A command is a message that an endpoint sends: a message type with a handler that a module's Api or Infrastructure project creates, other than a query (List..., Get...).
 // A handler publishes the messages it returns, so the test follows the types each handler returns, through the handlers of those
 // types (the first step of a saga, for one), until it reaches a message that an Audit handler handles. Read from Wolverine's own
 // handler graph of the application composed as a worker, and from the module sources.

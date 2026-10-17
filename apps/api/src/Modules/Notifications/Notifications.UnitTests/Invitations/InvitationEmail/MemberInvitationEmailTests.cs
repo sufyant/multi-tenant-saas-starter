@@ -5,8 +5,8 @@ using Notifications.Application.Ports;
 
 namespace Notifications.UnitTests.Invitations.InvitationEmail;
 
-// The Notifications module emails a person a member invited. It hears MemberInvited, which Audit hears too, and hands the email on to a
-// command of its own, so the email's retries may be scheduled (W5).
+// The Notifications module emails a person a member invited. It hears MemberInvitationReady, which only it hears, so the email's retries
+// may be scheduled (W5).
 public sealed class MemberInvitationEmailTests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -16,19 +16,11 @@ public sealed class MemberInvitationEmailTests
 
     private readonly RecordingEmailChannel _channel = new();
 
-    [Fact]
-    public void QueueMemberInvitationEmail_MemberInvited_AsksForTheEmailToTheInvitedAddress()
-    {
-        var send = QueueMemberInvitationEmailHandler.Handle(Invited());
-
-        send.ShouldBe(new SendMemberInvitationEmail(InvitationId, "grace@navy.test", "Acme Ltd", Link));
-    }
-
     // The same text as the owner invitation: the tenant's name and the link.
     [Fact]
     public async Task SendMemberInvitationEmail_Asked_EmailsTheTenantsNameAndTheLink()
     {
-        await SendMemberInvitationEmailHandler.HandleAsync(new SendMemberInvitationEmail(InvitationId, "grace@navy.test", "Acme Ltd", Link), _channel, Cancellation);
+        await SendMemberInvitationEmailHandler.HandleAsync(Ready(), _channel, Cancellation);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
         email.To.ShouldBe("grace@navy.test");
@@ -40,17 +32,16 @@ public sealed class MemberInvitationEmailTests
     [Fact]
     public async Task SendMemberInvitationEmail_AskedTwice_SendsUnderTheInvitationsIdempotencyKey()
     {
-        var send = QueueMemberInvitationEmailHandler.Handle(Invited());
+        var ready = Ready();
 
-        await SendMemberInvitationEmailHandler.HandleAsync(send, _channel, Cancellation);
-        await SendMemberInvitationEmailHandler.HandleAsync(send, _channel, Cancellation);
+        await SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
+        await SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
 
         _channel.Sent.Select(email => email.IdempotencyKey).ShouldBe([$"invite/{InvitationId}", $"invite/{InvitationId}"]);
     }
 
-    private static MemberInvited Invited() => new(
-        Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, Guid.CreateVersion7(), "Member", null,
-        "grace@navy.test", "Acme Ltd", Link);
+    private static MemberInvitationReady Ready() =>
+        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link);
 
     private sealed class RecordingEmailChannel : IEmailChannel
     {

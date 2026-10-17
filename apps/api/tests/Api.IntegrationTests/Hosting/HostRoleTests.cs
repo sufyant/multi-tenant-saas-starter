@@ -6,6 +6,7 @@ using Audit.Application.Members;
 using Audit.Application.Tenants;
 using Audit.Application.Users;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
@@ -219,8 +220,8 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
     }
 
-    // O3, W4, W5: an invitation is created in the web host. Its event has two handlers, Audit's and Notifications', and both run in the
-    // worker, once; Notifications hands the email on to a command of its own, whose retries may be scheduled.
+    // O3, W4, W5: an invitation is created in the web host. Audit records its event in the worker, once. The identity provider's sign-up
+    // runs in the worker, once, then the email: each message has one handler, so its retries may be scheduled.
     [Fact]
     public async Task InviteMember_OnAWebAndAWorkerHost_RecordsAndEmailsOnceInTheWorker()
     {
@@ -241,8 +242,9 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldBe(
             [
                 new HandlerRun(typeof(MemberInvited), typeof(RecordMemberInvitedHandler)),
-                new HandlerRun(typeof(MemberInvited), typeof(QueueMemberInvitationEmailHandler)),
-                new HandlerRun(typeof(SendMemberInvitationEmail), typeof(SendMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(OpenMemberSignUp), typeof(OpenSignUpHandler)),
+                new HandlerRun(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
+                new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
             ],
             ignoreOrder: true);
         worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
