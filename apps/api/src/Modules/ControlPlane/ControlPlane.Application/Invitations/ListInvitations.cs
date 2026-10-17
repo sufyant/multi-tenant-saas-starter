@@ -22,7 +22,11 @@ public static class ListInvitationsHandler
     public static async Task<Result<ListPage<InvitationSummary>>> HandleAsync(
         ListInvitations query,
         ITenantCatalog catalog,
-        CancellationToken cancellationToken) =>
-        (await catalog.ListPendingInvitationsAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
-            .Map(found => InvitationSummary.Of(found.Invitation, found.Inviter));
+        TimeProvider time,
+        CancellationToken cancellationToken)
+    {
+        var now = time.GetUtcNow();
+        return (await catalog.ListPendingInvitationsAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
+            .Map(found => InvitationSummary.Of(found.Invitation, found.Inviter, now));
+    }
 }

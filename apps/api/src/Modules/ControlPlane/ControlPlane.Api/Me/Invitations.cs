@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Api.Tenant;
 using ControlPlane.Application;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
@@ -92,7 +93,7 @@ public static class Invitations
                 found.Inviter.Name?.Deleted),
             found.Role,
             found.ExpiresAt,
-            ResponseStatus.OfInvitationPreview(found.State)));
+            ResponseStatus.OfInvitation(found.State)));
     }
 }
 
@@ -107,15 +108,15 @@ public sealed record GetInvitationPreviewRequest(string Code);
 
 /// <summary>
 /// What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
-/// gives (<c>owner</c>, <c>admin</c> or <c>member</c>), when it expires, and its state at the moment of the request. Only a caller with
-/// the invited address gets it.
+/// gives (<c>owner</c>, <c>admin</c> or <c>member</c>), when it expires, and its state at the moment of the request: <c>pending</c>,
+/// <c>expired</c>, <c>accepted</c> or <c>cancelled</c>. Only a caller with the invited address gets it.
 /// </summary>
 public sealed record InvitationPreviewResponse(
     string TenantName,
     InviterNameResponse InviterName,
     string Role,
     DateTimeOffset ExpiresAt,
-    InvitationPreviewResponseState State);
+    InvitationResponseState State);
 
 /// <summary>
 /// Who invited: a user, with the names the catalog holds now and <c>deleted</c> for a user a system admin deleted, or the platform,
@@ -132,24 +133,4 @@ public enum InviterNameResponseKind
 
     [JsonStringEnumMemberName("platform")]
     Platform,
-}
-
-/// <summary>
-/// The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
-/// (revoked, replaced, or cancelled with its tenant).
-/// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter<InvitationPreviewResponseState>))]
-public enum InvitationPreviewResponseState
-{
-    [JsonStringEnumMemberName("pending")]
-    Pending,
-
-    [JsonStringEnumMemberName("expired")]
-    Expired,
-
-    [JsonStringEnumMemberName("accepted")]
-    Accepted,
-
-    [JsonStringEnumMemberName("cancelled")]
-    Cancelled,
 }

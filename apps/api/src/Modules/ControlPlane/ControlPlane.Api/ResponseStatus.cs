@@ -1,5 +1,6 @@
 using ControlPlane.Api.Platform;
 using ControlPlane.Api.Me;
+using ControlPlane.Api.Tenant;
 
 namespace ControlPlane.Api;
 
@@ -46,12 +47,13 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
-    public static InvitationPreviewResponseState OfInvitationPreview(string state) => state switch
+    // One enum holds the state of every invitation in a response: the preview's, the Owner invitation's and the invitation list's.
+    public static InvitationResponseState OfInvitation(string state) => state switch
     {
-        "Pending" => InvitationPreviewResponseState.Pending,
-        "Expired" => InvitationPreviewResponseState.Expired,
-        "Accepted" => InvitationPreviewResponseState.Accepted,
-        "Cancelled" => InvitationPreviewResponseState.Cancelled,
+        "Pending" => InvitationResponseState.Pending,
+        "Expired" => InvitationResponseState.Expired,
+        "Accepted" => InvitationResponseState.Accepted,
+        "Cancelled" => InvitationResponseState.Cancelled,
         _ => throw Unknown(state),
     };
 
@@ -60,14 +62,6 @@ internal static class ResponseStatus
         "User" => InviterNameResponseKind.User,
         "Platform" => InviterNameResponseKind.Platform,
         _ => throw Unknown(kind),
-    };
-
-    public static OwnerInvitationResponseState OfOwnerInvitation(string state) => state switch
-    {
-        "Pending" => OwnerInvitationResponseState.Pending,
-        "Expired" => OwnerInvitationResponseState.Expired,
-        "Cancelled" => OwnerInvitationResponseState.Cancelled,
-        _ => throw Unknown(state),
     };
 
     // A filter's value is the status of a response; the query names ControlPlane's status.
