@@ -51,7 +51,9 @@ On Clerk:
 
 ### Clerk settings as code
 
-The Clerk instance settings are code, as the Railway settings are. Each Clerk instance has one file in `.clerk/` at the repository root. A file holds only the settings below, as a partial instance config (`clerk config schema` lists the keys). Change a setting in its file, in a pull request. The maintainer then applies it. Nobody changes a setting in the Clerk dashboard.
+The Clerk instance settings are code, as the Railway settings are. Each Clerk instance has one file in `.clerk/` at the repository root. A file holds only the settings below, as a partial instance config (`clerk config schema` lists the keys). Change a setting in its file, in a pull request. The maintainer then applies it. Nobody changes a setting in the Clerk dashboard, except for the manual steps below.
+
+The files hold the settings of step 20i. The lines marked "Changes in step 20i." above describe the API before step 20i.
 
 | Instance | File | Serves |
 | --- | --- | --- |
@@ -70,7 +72,7 @@ The settings:
 | Sign-up mode | `auth_access_control.sign_up_mode` | `restricted`: only an invitation lets a person sign up |
 | Email sign-in and verification | `auth_email.sign_in_strategies`, `auth_email.verification_strategies` | `email_code` only, no magic link |
 | Password | `auth_password.enabled`, `auth_password.required` | off |
-| Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | on, for sign-in and sign-up |
+| Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | on. A new person still needs an invitation |
 | First and last name | `user_model.first_name`, `user_model.last_name` | off. The API keeps the names |
 | Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | on |
 | Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | on |
