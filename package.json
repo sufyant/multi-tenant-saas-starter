@@ -19,7 +19,9 @@
     "github:apply": "scripts/github/apply-settings.sh",
     "github:check": "scripts/github/apply-settings.sh --check",
     "railway:plan": "railway config plan",
-    "railway:apply": "railway config apply"
+    "railway:apply": "railway config apply",
+    "clerk:plan": "scripts/clerk/config.sh plan",
+    "clerk:apply": "scripts/clerk/config.sh apply"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
