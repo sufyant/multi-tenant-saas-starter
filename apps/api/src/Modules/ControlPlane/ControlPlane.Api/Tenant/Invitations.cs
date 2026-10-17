@@ -15,10 +15,16 @@ namespace ControlPlane.Api.Tenant;
 /// <summary>The invitations of the tenant in the route, which its Owners and Admins manage.</summary>
 public static class Invitations
 {
+    // RFC 9110, section 15.3.2: a 201 without Location leaves the target URI to identify the new resource. The API has no GET for one
+    // invitation, so it sends no Location. InviteOwner answers the same way.
+    internal const string NoLocation =
+        "Answers 201 with the invitation and without Location: the API has no GET for one invitation, so the request's target URI identifies it (RFC 9110, section 15.3.2).";
+
     public static void Map(RouteGroupBuilder tenant)
     {
         tenant.MapPost("/invitations", InviteMember)
             .WithMetadata(new IdempotencyKeyRequired())
+            .WithDescription(NoLocation)
             .RequireAuthorization(Permissions.TenantInvitationsCreate)
             .Produces<InvitationResponse>(StatusCodes.Status201Created);
         tenant.MapGet("/invitations", ListInvitations).RequireAuthorization(Permissions.TenantInvitationsRead);

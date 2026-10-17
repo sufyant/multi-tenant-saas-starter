@@ -9,15 +9,17 @@ internal sealed class ResultEndpointFilter : IEndpointFilter
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var returned = await next(context);
+        var endpoint = context.HttpContext.GetEndpoint();
 
-        return returned is Result result ? ToHttpResult(result, Creates(context.HttpContext.GetEndpoint())) : returned;
+        return returned is Result result ? ToHttpResult(result, Creates(endpoint), endpoint?.Metadata.GetMetadata<CreatedLocation>()) : returned;
     }
 
-    // An endpoint that creates a resource declares 201, and its success answers 201 with the value (RFC 9110, section 15.3.2).
+    // An endpoint that creates a resource declares 201, and its success answers 201 with the value (RFC 9110, section 15.3.2). Where a
+    // GET reads the new resource, the endpoint names its address, and the 201 sends it in Location; a replay sends the same (I5).
     private static bool Creates(Endpoint? endpoint) =>
         endpoint?.Metadata.OfType<IProducesResponseTypeMetadata>().Any(response => response.StatusCode == StatusCodes.Status201Created) == true;
 
-    private static IResult ToHttpResult(Result result, bool creates)
+    private static IResult ToHttpResult(Result result, bool creates, CreatedLocation? location)
     {
         if (!result.IsSuccess)
         {
@@ -32,6 +34,6 @@ internal sealed class ResultEndpointFilter : IEndpointFilter
         }
 
         var value = type.GetProperty(nameof(Result<object>.Value))!.GetValue(result);
-        return creates ? TypedResults.Created((string?)null, value) : TypedResults.Ok(value);
+        return creates ? TypedResults.Created(location?.For(value!), value) : TypedResults.Ok(value);
     }
 }

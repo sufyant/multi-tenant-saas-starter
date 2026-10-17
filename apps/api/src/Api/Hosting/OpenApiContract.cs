@@ -1,10 +1,14 @@
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Api.ErrorHandling;
+using Api.Idempotency;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi;
 using SharedKernel;
 
@@ -12,16 +16,31 @@ namespace Api.Hosting;
 
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
-// sort and filters, the values of an enum with a converter of its own, and the members of the one error schema with the enums of the
-// error codes. They change the document only; the JSON on the wire stays as it is.
+// sort and filters, the values of an enum with a converter of its own, the idempotency key and the headers of an answer, the bearer
+// scheme, and the members of the one error schema with the enums of the error codes. They change the document only. The one rule here
+// that the wire follows is how JSON reads a number, because the document describes the numbers from it.
 internal static class OpenApiContract
 {
-    public static OpenApiOptions DescribeContract(this OpenApiOptions options) =>
-        options.AddOperationTransformer(NameOperation)
-            .AddOperationTransformer(DeclarePathParameters)
-            .AddOperationTransformer(DescribeListParameters)
-            .AddSchemaTransformer(DescribeEnumValues)
-            .AddDocumentTransformer(DescribeProblemDetails);
+    private const string BearerScheme = "bearer";
+
+    // An idempotent operation replays a saved result: its success or a business rejection. A request that failed validation (400) or
+    // authentication (401) saves none (I5, I6).
+    private static readonly string[] NeverReplayed = ["400", "401"];
+
+    public static IServiceCollection AddApiContract(this IServiceCollection services) =>
+        services
+            // A number is a JSON number, never a string: the web defaults read one from a string, and the document would then call each
+            // number an integer or a string.
+            .ConfigureHttpJsonOptions(options => options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict)
+            .AddOpenApi(options => options
+                .AddOperationTransformer(NameOperation)
+                .AddOperationTransformer(DeclarePathParameters)
+                .AddOperationTransformer(DescribeListParameters)
+                .AddOperationTransformer(DescribeIdempotency)
+                .AddOperationTransformer(DescribeLocation)
+                .AddSchemaTransformer(DescribeEnumValues)
+                .AddDocumentTransformer(RequireBearerToken)
+                .AddDocumentTransformer(DescribeProblemDetails));
 
     // N7: an endpoint is a method with the action's name, so the method's name is the operation id.
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
@@ -76,6 +95,57 @@ internal static class OpenApiContract
         return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
     }
 
+    // I1, I2 and I5: an idempotent operation requires its key, and each answer it can replay may carry Idempotent-Replayed: true.
+    private static Task DescribeIdempotency(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (!context.Description.ActionDescriptor.EndpointMetadata.OfType<IdempotencyKeyRequired>().Any())
+        {
+            return Task.CompletedTask;
+        }
+
+        operation.Parameters ??= [];
+        operation.Parameters.Add(new OpenApiParameter
+        {
+            Name = IdempotencyMiddleware.Header,
+            In = ParameterLocation.Header,
+            Required = true,
+            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = IdempotencyMiddleware.MaxLength, Pattern = "^[!-~]+$" },
+        });
+        foreach (var (status, answer) in operation.Responses ?? [])
+        {
+            if (!NeverReplayed.Contains(status) && answer is OpenApiResponse response)
+            {
+                response.Headers ??= new Dictionary<string, IOpenApiHeader>();
+                response.Headers[IdempotencyExecutor.ReplayedHeader] = new OpenApiHeader
+                {
+                    Description = "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                    Schema = new OpenApiSchema { Type = JsonSchemaType.String, Enum = [JsonValue.Create("true")] },
+                };
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // RFC 9110, section 10.2.2: where a GET reads the resource an endpoint creates, its 201 names the resource in Location
+    // (ResultEndpointFilter).
+    private static Task DescribeLocation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (context.Description.ActionDescriptor.EndpointMetadata.OfType<CreatedLocation>().Any()
+            && operation.Responses?.GetValueOrDefault(StatusCodes.Status201Created.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse created)
+        {
+            created.Headers ??= new Dictionary<string, IOpenApiHeader>();
+            created.Headers[HeaderNames.Location] = new OpenApiHeader
+            {
+                Description = "The address of the new resource, where a GET reads it.",
+                Required = true,
+                Schema = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uri-reference" },
+            };
+        }
+
+        return Task.CompletedTask;
+    }
+
     // The generator knows the values of the default enum converter only. An enum with a converter of its own, such as Language and
     // MemberRole, which read an exact name only (ExactNameEnumConverter), would so have a schema without values, and a nullable field of
     // it no schema at all. So the schema is a string with the JSON names, the names the converter reads, and a nullable field refers to
@@ -100,10 +170,30 @@ internal static class OpenApiContract
         }
     }
 
+    // A1: every /v1 route needs a bearer token from the identity provider. The anonymous routes, the document and the API reference, are
+    // outside /v1 and so outside the document (OpenApiContractTests), so no operation sets the requirement aside.
+    private static Task RequireBearerToken(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes[BearerScheme] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "A session token of the identity provider, in the Authorization header.",
+        };
+        document.Security = [new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference(BearerScheme, document)] = [] }];
+        return Task.CompletedTask;
+    }
+
     // K5: every error answer is Problem Details (ResultResponses) with a code. The host adds four members to its schema: the code, one
     // of the one enum of error codes; the field codes of a request that failed validation, an enum too; the trace id; and the tenants an
     // error is about, which only some errors name. The enums are
-    // schemas of their own, so a generated client has a type for each and can check that a screen has a text for every code.
+    // schemas of their own, so a generated client has a type for each and can check that a screen has a text for every code. Every
+    // answer carries the code and the trace id, so both are required; the field codes and the tenants may be absent, so a client reads
+    // them as may be null. Every operation also declares Problem Details as its default answer, for a status it does not list, such as
+    // 405, 408, 413, 415 or 500 (Problems).
     private static Task DescribeProblemDetails(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         if (document.Components?.Schemas?.TryGetValue(nameof(ProblemDetails), out var found) != true || found is not OpenApiSchema problem)
@@ -119,7 +209,7 @@ internal static class OpenApiContract
         problem.Properties[Problems.CodeMember] = new OpenApiSchemaReference(nameof(ErrorCode), document);
         problem.Properties[Problems.ErrorsMember] = new OpenApiSchema
         {
-            Type = JsonSchemaType.Object,
+            Type = JsonSchemaType.Object | JsonSchemaType.Null,
             AdditionalProperties = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchemaReference(nameof(FieldErrorCode), document) },
             Description = "The field codes for each field of a request that failed validation, by the field's JSON name.",
         };
@@ -130,12 +220,27 @@ internal static class OpenApiContract
         };
         problem.Properties[Problems.TenantIdsMember] = new OpenApiSchema
         {
-            Type = JsonSchemaType.Array,
+            Type = JsonSchemaType.Array | JsonSchemaType.Null,
             Items = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uuid" },
             Description = "The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of.",
         };
         problem.Required ??= new HashSet<string>();
         problem.Required.Add(Problems.CodeMember);
+        problem.Required.Add(Problems.TraceIdMember);
+
+        foreach (var (_, operation) in document.Paths.Values.SelectMany(path => path.Operations ?? []))
+        {
+            operation.Responses ??= [];
+            operation.Responses["default"] = new OpenApiResponse
+            {
+                Description = "Any other error answer.",
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    ["application/problem+json"] = new() { Schema = new OpenApiSchemaReference(nameof(ProblemDetails), document) },
+                },
+            };
+        }
+
         return Task.CompletedTask;
     }
 

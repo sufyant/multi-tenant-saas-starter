@@ -31,15 +31,19 @@ public sealed record PageRequest(int Page, int PageSize)
     }
 }
 
-/// <summary>One page of a list, and how many items the whole list holds.</summary>
+/// <summary>
+/// One page of a list, and how many items the whole list holds. The record has one constructor, so the OpenAPI document marks each
+/// member required.
+/// </summary>
 public sealed record ListPage<T>(IReadOnlyList<T> Items, int Page, int PageSize, int Total)
 {
-    public ListPage(IReadOnlyList<T> items, PageRequest request, int total)
-        : this(items, request.Page, request.PageSize, total)
-    {
-    }
-
     public ListPage<TOut> Map<TOut>(Func<T, TOut> map) => new([.. Items.Select(map)], Page, PageSize, Total);
+}
+
+public static class ListPage
+{
+    /// <summary>The page the request asked for, with its items and the size of the whole list.</summary>
+    public static ListPage<T> Of<T>(IReadOnlyList<T> items, PageRequest request, int total) => new(items, request.Page, request.PageSize, total);
 }
 
 /// <summary>

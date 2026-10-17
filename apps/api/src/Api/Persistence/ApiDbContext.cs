@@ -18,7 +18,7 @@ public sealed class ApiDbContext(DbContextOptions<ApiDbContext> options) : DbCon
         {
             key.HasKey(row => new { row.Subject, row.Key });
             key.Property(row => row.Subject).HasMaxLength(255);
-            key.Property(row => row.Key).HasMaxLength(255);
+            key.Property(row => row.Key).HasMaxLength(IdempotencyMiddleware.MaxLength);
             key.Property(row => row.Method).HasMaxLength(16);
             key.Property(row => row.RequestHash).HasMaxLength(64);
             key.Property(row => row.Result).HasColumnType("jsonb");

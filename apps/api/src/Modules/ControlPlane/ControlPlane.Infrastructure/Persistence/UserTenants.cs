@@ -24,7 +24,7 @@ public sealed class UserTenants(ControlPlaneDbContext controlPlane) : IUserTenan
             .SingleOrDefaultAsync(cancellationToken);
         if (userId is not { } id)
         {
-            return new([], list.Paging, 0);
+            return ListPage.Of<(Tenant, Role)>([], list.Paging, 0);
         }
 
         await controlPlane.DeclareUserAsync(id, cancellationToken);
@@ -51,6 +51,6 @@ public sealed class UserTenants(ControlPlaneDbContext controlPlane) : IUserTenan
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(row => (row.Tenant, row.Role))], list.Paging, total);
+        return ListPage.Of([.. page.Select(row => (row.Tenant, row.Role))], list.Paging, total);
     }
 }

@@ -90,7 +90,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(row => (row.Tenant, (User?)row.Owner))], list.Paging, total);
+        return ListPage.Of([.. page.Select(row => (row.Tenant, (User?)row.Owner))], list.Paging, total);
     }
 
     // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
@@ -175,7 +175,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .Take(list.Paging.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn, member.Deleted, member.JoinedAt))], list.Paging, total);
+        return ListPage.Of([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn, member.Deleted, member.JoinedAt))], list.Paging, total);
     }
 
     // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level
@@ -245,7 +245,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(row => (row.Invitation, row.Inviter))], list.Paging, total);
+        return ListPage.Of([.. page.Select(row => (row.Invitation, row.Inviter))], list.Paging, total);
     }
 
     // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none.

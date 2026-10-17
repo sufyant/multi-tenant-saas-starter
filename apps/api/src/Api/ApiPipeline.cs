@@ -12,7 +12,6 @@ using Api.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
-using Microsoft.OpenApi;
 using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
@@ -30,8 +29,6 @@ namespace Api;
 internal static class ApiPipeline
 {
     private const string HealthPath = "/health";
-
-    private const string IdempotencyKeyHeader = "Idempotency-Key";
 
     // FluentValidation validators are found only in the handler assemblies known when validation is switched on, so they are
     // passed here rather than added to Wolverine's discovery afterwards. Returns the role the host runs as, or null when the setting
@@ -135,26 +132,11 @@ internal static class ApiPipeline
         builder.Services.AddCors(cors => cors.AddDefaultPolicy(policy => policy
             .WithOrigins(host.Cors.AllowedOrigins)
             .WithMethods(HttpMethods.Get, HttpMethods.Post)
-            .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyKeyHeader)));
+            .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyMiddleware.Header)));
 
         builder.Services.AddUserRateLimiting();
         builder.Services.AddHealthChecks();
-        builder.Services.AddOpenApi(options => options.DescribeContract().AddOperationTransformer((operation, context, _) =>
-        {
-            if (context.Description.ActionDescriptor.EndpointMetadata.OfType<IdempotencyKeyRequired>().Any())
-            {
-                operation.Parameters ??= [];
-                operation.Parameters.Add(new OpenApiParameter
-                {
-                    Name = IdempotencyMiddleware.Header,
-                    In = ParameterLocation.Header,
-                    Required = true,
-                    Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 255, Pattern = "^[!-~]+$" },
-                });
-            }
-
-            return Task.CompletedTask;
-        }));
+        builder.Services.AddApiContract();
 
         return role;
     }

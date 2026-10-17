@@ -20,7 +20,7 @@ public static class Tenants
     public static void Map(RouteGroupBuilder platform)
     {
         platform.MapPost("/tenants", CreateTenant)
-            .WithMetadata(new IdempotencyKeyRequired())
+            .WithMetadata(new IdempotencyKeyRequired(), CreatedLocation.Of<TenantResponse>(tenant => $"/v1/platform/tenants/{tenant.Id}"))
             .RequireAuthorization(Permissions.PlatformTenantsCreate)
             .Produces<TenantResponse>(StatusCodes.Status201Created);
         platform.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.PlatformTenantsRead);
@@ -32,13 +32,15 @@ public static class Tenants
         platform.MapPost("/tenants/{tenantId:guid}/reopen", ReopenTenant).RequireAuthorization(Permissions.PlatformTenantsReopen);
         platform.MapPost("/tenants/{tenantId:guid}/owner-invitation", InviteOwner)
             .WithMetadata(new IdempotencyKeyRequired())
+            .WithDescription(Invitations.NoLocation)
             .RequireAuthorization(Permissions.PlatformTenantsInviteOwner)
             .Produces<InvitationResponse>(StatusCodes.Status201Created);
     }
 
     // Tenant creation runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client
     // gives each new tenant an idempotency key; the same key with the same request answers with the tenant the first one created. The
-    // endpoint declares 201, so the host answers a new tenant with 201, and a replayed request maps its saved result the same way (I5).
+    // endpoint declares 201, so the host answers a new tenant with 201 and its address, where GetTenant reads it, and a replayed request
+    // maps its saved result the same way (I5).
     private static async Task<Result<TenantResponse>> CreateTenant(
         CreateTenantRequest request,
         ClaimsPrincipal user,

@@ -109,6 +109,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Answers 201 with the invitation and without Location: the API has no GET for one invitation, so the request's target URI identifies it (RFC 9110, section 15.3.2). */
         post: operations["InviteOwner"];
         delete?: never;
         options?: never;
@@ -253,6 +254,7 @@ export interface paths {
         };
         get: operations["ListInvitations"];
         put?: never;
+        /** @description Answers 201 with the invitation and without Location: the API has no GET for one invitation, so the request's target URI identifies it (RFC 9110, section 15.3.2). */
         post: operations["InviteMember"];
         delete?: never;
         options?: never;
@@ -552,49 +554,49 @@ export interface components {
          */
         Language: "en" | "tr" | "ar";
         ListPageOfInvitationResponse: {
-            items?: components["schemas"]["InvitationResponse"][];
+            items: components["schemas"]["InvitationResponse"][];
             /** Format: int32 */
-            page?: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize?: number | string;
+            pageSize: number;
             /** Format: int32 */
-            total?: number | string;
+            total: number;
         };
         ListPageOfMemberResponse: {
-            items?: components["schemas"]["MemberResponse"][];
+            items: components["schemas"]["MemberResponse"][];
             /** Format: int32 */
-            page?: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize?: number | string;
+            pageSize: number;
             /** Format: int32 */
-            total?: number | string;
+            total: number;
         };
         ListPageOfMyTenantResponse: {
-            items?: components["schemas"]["MyTenantResponse"][];
+            items: components["schemas"]["MyTenantResponse"][];
             /** Format: int32 */
-            page?: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize?: number | string;
+            pageSize: number;
             /** Format: int32 */
-            total?: number | string;
+            total: number;
         };
         ListPageOfTenantListItemResponse: {
-            items?: components["schemas"]["TenantListItemResponse"][];
+            items: components["schemas"]["TenantListItemResponse"][];
             /** Format: int32 */
-            page?: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize?: number | string;
+            pageSize: number;
             /** Format: int32 */
-            total?: number | string;
+            total: number;
         };
         ListPageOfUserResponse: {
-            items?: components["schemas"]["UserResponse"][];
+            items: components["schemas"]["UserResponse"][];
             /** Format: int32 */
-            page?: number | string;
+            page: number;
             /** Format: int32 */
-            pageSize?: number | string;
+            pageSize: number;
             /** Format: int32 */
-            total?: number | string;
+            total: number;
         };
         /**
          * @description A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, whether the
@@ -687,18 +689,18 @@ export interface components {
             type?: null | string;
             title?: null | string;
             /** Format: int32 */
-            status?: null | number | string;
+            status?: null | number;
             detail?: null | string;
             instance?: null | string;
             code: components["schemas"]["ErrorCode"];
             /** @description The field codes for each field of a request that failed validation, by the field's JSON name. */
-            errors?: {
+            errors?: null | {
                 [key: string]: components["schemas"]["FieldErrorCode"][];
             };
             /** @description The trace id of the request, for the logs. */
-            traceId?: string;
+            traceId: string;
             /** @description The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of. */
-            tenantIds?: string[];
+            tenantIds?: null | string[];
         };
         /** @description A tenant's new name. The slug never changes. */
         RenameTenantRequest: {
@@ -726,9 +728,9 @@ export interface components {
             /** Format: date-time */
             reopenableUntil: null | string;
             /** Format: int32 */
-            memberCount: number | string;
+            memberCount: number;
             /** Format: int32 */
-            ownerCount: number | string;
+            ownerCount: number;
             owners: components["schemas"]["TenantOwnerResponse"][];
             ownerInvitation: null | components["schemas"]["OwnerInvitationResponse"];
         };
@@ -748,9 +750,9 @@ export interface components {
             /** Format: date-time */
             reopenableUntil: null | string;
             /** Format: int32 */
-            memberCount: number | string;
+            memberCount: number;
             /** Format: int32 */
-            ownerCount: number | string;
+            ownerCount: number;
             firstOwner: null | components["schemas"]["TenantOwnerResponse"];
             ownerInvitation: null | components["schemas"]["OwnerInvitationResponse"];
         };
@@ -794,7 +796,7 @@ export interface components {
             status: components["schemas"]["UserResponseStatus"];
             isSystemAdmin: boolean;
             /** Format: int32 */
-            membershipCount: number | string;
+            membershipCount: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -845,7 +847,7 @@ export interface components {
             status: components["schemas"]["UserResponseStatus"];
             isSystemAdmin: boolean;
             /** Format: int32 */
-            membershipCount: number | string;
+            membershipCount: number;
             /** Format: date-time */
             createdAt: string;
         };
@@ -866,8 +868,8 @@ export interface operations {
     ListTenants: {
         parameters: {
             query?: {
-                page?: number | string;
-                pageSize?: number | string;
+                page?: number;
+                pageSize?: number;
                 sort?: "name" | "-name" | "slug" | "-slug";
                 q?: string;
                 status?: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
@@ -950,6 +952,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     CreateTenant: {
@@ -970,6 +981,10 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
+                    /** @description The address of the new resource, where a GET reads it. */
+                    Location: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -997,6 +1012,8 @@ export interface operations {
             /** @description Forbidden */
             403: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1006,6 +1023,8 @@ export interface operations {
             /** @description Not Found */
             404: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1015,6 +1034,8 @@ export interface operations {
             /** @description Conflict */
             409: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1024,6 +1045,8 @@ export interface operations {
             /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1032,6 +1055,17 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1117,6 +1151,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1213,6 +1256,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     SuspendTenant: {
@@ -1295,6 +1347,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1387,6 +1448,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     CloseTenant: {
@@ -1465,6 +1535,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1557,6 +1636,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     InviteOwner: {
@@ -1579,6 +1667,8 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1606,6 +1696,8 @@ export interface operations {
             /** @description Forbidden */
             403: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1615,6 +1707,8 @@ export interface operations {
             /** @description Not Found */
             404: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1624,6 +1718,8 @@ export interface operations {
             /** @description Conflict */
             409: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1633,6 +1729,8 @@ export interface operations {
             /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1641,6 +1739,17 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1653,8 +1762,8 @@ export interface operations {
     ListUsers: {
         parameters: {
             query?: {
-                page?: number | string;
-                pageSize?: number | string;
+                page?: number;
+                pageSize?: number;
                 sort?: "email" | "-email" | "lastName" | "-lastName";
                 q?: string;
                 status?: "active" | "suspended" | "deleted";
@@ -1730,6 +1839,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1822,6 +1940,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     DeleteUser: {
@@ -1898,6 +2025,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1994,6 +2130,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     SuspendUser: {
@@ -2072,6 +2217,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2164,13 +2318,22 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     ListPlatformAuditEntries: {
         parameters: {
             query?: {
                 cursor?: string;
-                limit?: number | string;
+                limit?: number;
                 tenantId?: string;
             };
             header?: never;
@@ -2244,6 +2407,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2336,13 +2508,22 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     ListMembers: {
         parameters: {
             query?: {
-                page?: number | string;
-                pageSize?: number | string;
+                page?: number;
+                pageSize?: number;
                 sort?: "role" | "-role" | "email" | "-email" | "lastName" | "-lastName";
                 q?: string;
                 role?: "owner" | "admin" | "member";
@@ -2427,6 +2608,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     RemoveMember: {
@@ -2504,6 +2694,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2601,13 +2800,22 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     ListInvitations: {
         parameters: {
             query?: {
-                page?: number | string;
-                pageSize?: number | string;
+                page?: number;
+                pageSize?: number;
                 sort?: "expiresAt" | "-expiresAt" | "email" | "-email";
                 q?: string;
                 role?: "owner" | "admin" | "member";
@@ -2692,6 +2900,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     InviteMember: {
@@ -2714,6 +2931,8 @@ export interface operations {
             /** @description Created */
             201: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2741,6 +2960,8 @@ export interface operations {
             /** @description Forbidden */
             403: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2750,6 +2971,8 @@ export interface operations {
             /** @description Not Found */
             404: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2759,6 +2982,8 @@ export interface operations {
             /** @description Conflict */
             409: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2768,6 +2993,8 @@ export interface operations {
             /** @description Unprocessable Entity */
             422: {
                 headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2776,6 +3003,17 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2867,13 +3105,22 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     ListAuditEntries: {
         parameters: {
             query?: {
                 cursor?: string;
-                limit?: number | string;
+                limit?: number;
             };
             header?: never;
             path: {
@@ -2948,6 +3195,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3031,6 +3287,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3125,13 +3390,22 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     ListMyTenants: {
         parameters: {
             query?: {
-                page?: number | string;
-                pageSize?: number | string;
+                page?: number;
+                pageSize?: number;
                 sort?: "name" | "-name";
                 q?: string;
             };
@@ -3206,6 +3480,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3300,6 +3583,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Any other error answer. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     GetInvitationPreview: {
@@ -3380,6 +3672,15 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Any other error answer. */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
