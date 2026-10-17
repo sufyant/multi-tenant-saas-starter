@@ -29,3 +29,7 @@ generated_code = true
 
 [src/Api/Persistence/Migrations/*.cs]
 generated_code = true
+
+# Wolverine's handler code is written by `codegen write` (W10); analyzers treat it as generated code.
+[src/Api/Internal/Generated/**.cs]
+generated_code = true
