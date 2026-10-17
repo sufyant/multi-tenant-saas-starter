@@ -41,7 +41,7 @@ public static class MyTenants
 /// </summary>
 public sealed record MyTenantResponse(Guid Id, string Name, string Slug, MyTenantResponseStatus Status);
 
-/// <summary>The status of a tenant as its members see it: active, or suspended when they cannot enter it.</summary>
+/// <summary>The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<MyTenantResponseStatus>))]
 public enum MyTenantResponseStatus
 {
@@ -50,4 +50,7 @@ public enum MyTenantResponseStatus
 
     [JsonStringEnumMemberName("suspended")]
     Suspended,
+
+    [JsonStringEnumMemberName("closed")]
+    Closed,
 }

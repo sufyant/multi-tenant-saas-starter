@@ -24,7 +24,7 @@ public interface ITenantCatalog
     internal Guid TenantId { get; }
 
     /// <summary>
-    /// The active tenant, locked for the rest of the transaction, so the steps of its creation, its suspension and reactivation, and
+    /// The active tenant, locked for the rest of the transaction, so the steps of its creation, every change of its status or name, and
     /// every change to its memberships and invitations run one at a time (K6). Null when no tenant has the active tenant's id.
     /// </summary>
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
@@ -70,6 +70,12 @@ public interface ITenantCatalog
     /// tenant's lock, which every change to an invitation takes first (K6).
     /// </summary>
     internal Task<Invitation?> FindPendingInvitationAsync(string email, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Every pending invitation of the active tenant, expired ones included. The caller holds the tenant's lock, which every change to an
+    /// invitation takes first (K6).
+    /// </summary>
+    internal Task<IReadOnlyList<Invitation>> FindPendingInvitationsAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// A page of the active tenant's pending invitations, expired ones included, of the role or every role, whose email address contains

@@ -33,7 +33,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["RenameTenant"];
         trace?: never;
     };
     "/v1/admin/tenants/{tenantId}/suspend": {
@@ -62,6 +62,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ReactivateTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/tenants/{tenantId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CloseTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/tenants/{tenantId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReopenTenant"];
         delete?: never;
         options?: never;
         head?: never;
@@ -354,7 +386,7 @@ export interface components {
          * @description The error's code, area.reason. A client shows its own text for it, never the English detail.
          * @enum {string}
          */
-        ErrorCode: "auth.forbidden" | "auth.unauthenticated" | "idempotency.key_in_progress" | "idempotency.key_invalid" | "idempotency.key_reused" | "invitation.code_required" | "invitation.daily_limit_reached" | "invitation.email_mismatch" | "invitation.expired" | "invitation.not_found" | "invitation.not_pending" | "invitation.owner_requires_owner" | "invitation.staff_cannot_join" | "membership.cannot_remove_self" | "membership.exists" | "membership.last_owner" | "membership.not_found" | "membership.owner_requires_owner" | "paging.cursor_invalid" | "paging.filter_invalid" | "paging.limit_invalid" | "paging.page_invalid" | "paging.page_size_invalid" | "paging.q_invalid" | "paging.sort_invalid" | "rate_limit.exceeded" | "request.invalid" | "request.timeout" | "request.too_large" | "request.unsupported_media_type" | "request.validation_failed" | "route.method_not_allowed" | "route.not_found" | "server.error" | "tenant.name_invalid" | "tenant.not_active" | "tenant.not_found" | "tenant.slug_invalid" | "tenant.slug_taken" | "tenant.suspended" | "user.is_system_admin" | "user.not_found" | "user.suspended" | "webhook.signature_invalid";
+        ErrorCode: "auth.forbidden" | "auth.unauthenticated" | "idempotency.key_in_progress" | "idempotency.key_invalid" | "idempotency.key_reused" | "invitation.code_required" | "invitation.daily_limit_reached" | "invitation.email_mismatch" | "invitation.expired" | "invitation.not_found" | "invitation.not_pending" | "invitation.owner_requires_owner" | "invitation.staff_cannot_join" | "membership.cannot_remove_self" | "membership.exists" | "membership.last_owner" | "membership.not_found" | "membership.owner_requires_owner" | "paging.cursor_invalid" | "paging.filter_invalid" | "paging.limit_invalid" | "paging.page_invalid" | "paging.page_size_invalid" | "paging.q_invalid" | "paging.sort_invalid" | "rate_limit.exceeded" | "request.invalid" | "request.timeout" | "request.too_large" | "request.unsupported_media_type" | "request.validation_failed" | "route.method_not_allowed" | "route.not_found" | "server.error" | "tenant.closed" | "tenant.name_invalid" | "tenant.not_active" | "tenant.not_closed" | "tenant.not_found" | "tenant.reopen_period_ended" | "tenant.slug_invalid" | "tenant.slug_taken" | "tenant.suspended" | "user.is_system_admin" | "user.not_found" | "user.suspended" | "webhook.signature_invalid";
         /**
          * @description Why one field of a request failed validation.
          * @enum {string}
@@ -474,10 +506,10 @@ export interface components {
             status: components["schemas"]["MyTenantResponseStatus"];
         };
         /**
-         * @description The status of a tenant as its members see it: active, or suspended when they cannot enter it.
+         * @description The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.
          * @enum {unknown}
          */
-        MyTenantResponseStatus: "active" | "suspended";
+        MyTenantResponseStatus: "active" | "suspended" | "closed";
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -493,19 +525,33 @@ export interface components {
             /** @description The trace id of the request, for the logs. */
             traceId?: string;
         };
-        /** @description A tenant and its status. */
+        /** @description A tenant's new name. The slug never changes. */
+        RenameTenantRequest: {
+            name: string;
+        };
+        /** @description Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it. */
+        SuspendTenantRequest: {
+            reason: string;
+        };
+        /**
+         * @description A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its
+         *     closure while it is closed. Only a system admin sees this shape.
+         */
         TenantResponse: {
             /** Format: uuid */
             id: string;
             name: string;
             slug: string;
             status: components["schemas"]["TenantResponseStatus"];
+            suspensionReason: null | string;
+            /** Format: date-time */
+            closedAt: null | string;
         };
         /**
-         * @description The status of a tenant: provisioning until its creation ends, then active, suspended or cancelled.
+         * @description The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.
          * @enum {unknown}
          */
-        TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled";
+        TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
          * @description A catalog user: the catalog's id, not the identity provider's, the copy of their profile, their status (active, suspended or
          *     deleted) and whether they are a system admin.
@@ -540,7 +586,7 @@ export interface operations {
                 pageSize?: number | string;
                 sort?: "name" | "-name" | "slug" | "-slug";
                 q?: string;
-                status?: "provisioning" | "active" | "suspended" | "cancelled";
+                status?: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
             };
             header?: never;
             path?: never;
@@ -796,7 +842,185 @@ export interface operations {
             };
         };
     };
+    RenameTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     SuspendTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReactivateTenant: {
         parameters: {
             query?: never;
             header?: never;
@@ -881,7 +1105,92 @@ export interface operations {
             };
         };
     };
-    ReactivateTenant: {
+    CloseTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReopenTenant: {
         parameters: {
             query?: never;
             header?: never;

@@ -37,6 +37,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ControlPlane:Invitations:AcceptUrl` | Required | none | The frontend page that accepts an invitation. The invitation code is added as the `code` parameter |
 | `ControlPlane:Invitations:Lifetime` | Optional | `7.00:00:00` | How long an invitation can be accepted |
 | `ControlPlane:Invitations:DailyLimitPerTenant` | Optional | `50` | How many invitations a tenant may create in any 24 hours, cancelled and replaced ones included. Positive |
+| `ControlPlane:Tenants:ReopenPeriod` | Optional | `30.00:00:00` | How long after its closure a system admin can reopen a tenant (K4). Positive |
 | `Notifications:InvitationEmailRetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of an invitation email, to a tenant's first owner or to a person a member invited. Each is positive and longer than the one before |
 | `Notifications:Resend:ApiKey` | Required outside Development. **Development:** may be empty | none | Resend's API key. In Development without it, or without `From`, email is written to the log. With both set, email is really sent, in Development too |
 | `Notifications:Resend:From` | Required outside Development. **Development:** may be empty | none | The sender, such as `App <no-reply@example.com>`, on a domain verified at Resend |

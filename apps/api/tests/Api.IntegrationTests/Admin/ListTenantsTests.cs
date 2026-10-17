@@ -49,7 +49,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             (echoEarlier.Id, "Echo Ltd", echoEarlier.Slug, "active"),
             (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(6);
@@ -116,12 +116,14 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("active", "Bravo")]
     [InlineData("suspended", "Charlie")]
     [InlineData("cancelled", "Delta")]
+    [InlineData("closed", "Echo")]
     public async Task ListTenants_AStatusFilter_ReturnsTheTenantsInThatStatusOnly(string status, string found)
     {
         await _catalog.AddTenantAsync(status: "Provisioning", name: $"{_marker} Alpha");
         await _catalog.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
         await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
         await _catalog.AddTenantAsync(status: "Cancelled", name: $"{_marker} Delta");
+        await _catalog.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
 
         var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/tenants?q={_marker}&status={status}", Cancellation);
 
@@ -179,7 +181,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("sort=Name", "paging.sort_invalid")]
     [InlineData("sort=name,slug", "paging.sort_invalid")]
     [InlineData("status=Active", "paging.filter_invalid")]
-    [InlineData("status=closed", "paging.filter_invalid")]
+    [InlineData("status=deleted", "paging.filter_invalid")]
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListTenants_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
     {
@@ -190,6 +192,18 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+    // The system admin sees why each tenant is suspended in the list too.
+    [Fact]
+    public async Task ListTenants_ASuspendedTenant_ShowsItsReason()
+    {
+        await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Alpha", suspensionReason: "Unpaid invoices");
+        await _catalog.AddTenantAsync(name: $"{_marker} Bravo");
+
+        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/tenants?q={_marker}", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("suspensionReason").GetString()).ShouldBe(["Unpaid invoices", null]);
+    }
 
     private static List<(Guid Id, string Name, string Slug, string Status)> Tenants(JsonElement page) =>
     [

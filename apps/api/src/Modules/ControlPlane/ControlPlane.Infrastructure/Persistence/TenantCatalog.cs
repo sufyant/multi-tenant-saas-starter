@@ -155,6 +155,10 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<int> ITenantCatalog.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         Invitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
 
+    // Row level security keeps the invitations to the active tenant; the query names no tenant.
+    async Task<IReadOnlyList<Invitation>> ITenantCatalog.FindPendingInvitationsAsync(CancellationToken cancellationToken) =>
+        await Invitations.Where(invitation => invitation.Status == InvitationStatus.Pending).ToListAsync(cancellationToken);
+
     // The same comparison as the partial unique index, which serves the query (K2): lower(email), pending only. Row level security
     // adds the tenant.
     async Task<Invitation?> ITenantCatalog.FindPendingInvitationAsync(string email, CancellationToken cancellationToken)

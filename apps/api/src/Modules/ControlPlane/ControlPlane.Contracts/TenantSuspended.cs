@@ -9,4 +9,8 @@ namespace ControlPlane.Contracts;
 /// <param name="TenantName">
 /// The tenant's name at that moment, for its audit record. Null only in an event published before the name was added.
 /// </param>
-public sealed record TenantSuspended(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid SuspendedBy, string? TenantName);
+/// <param name="Reason">
+/// The system admin's reason, for the platform's audit record only: a member never sees it. Null only in an event published before the
+/// reason was added.
+/// </param>
+public sealed record TenantSuspended(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid SuspendedBy, string? TenantName, string? Reason);

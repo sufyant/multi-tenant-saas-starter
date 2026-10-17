@@ -18,6 +18,11 @@ internal sealed class AuditLogs(Database database)
         database.ScalarAsSuperuserAsync<string>(
             $"SELECT string_agg(coalesce(details::text, '-'), ', ' ORDER BY occurred_at, id) FROM audit.entries WHERE target_id = '{targetId}'");
 
+    // The details of the platform's records about the target, oldest first and joined by ", ".
+    public Task<string?> PlatformDetailsAsync(Guid targetId) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(coalesce(details::text, '-'), ', ' ORDER BY occurred_at, id) FROM audit.platform_entries WHERE target_id = '{targetId}'");
+
     // How many records of the tenant's log hold the text anywhere in their row, details included.
     public Task<long> TenantRecordsHoldingAsync(Guid tenantId, string text) =>
         database.ScalarAsSuperuserAsync<long>(

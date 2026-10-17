@@ -89,6 +89,30 @@ public sealed class TenantDirectoryTests(Database database)
         membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
     }
 
+    [Fact]
+    public async Task ResolveTenant_MemberOfAClosedTenant_IsRefusedBecauseTheTenantIsClosed()
+    {
+        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Closed);
+        var user = await Catalog.AddUserAsync(database.Services);
+        await Catalog.AddMemberAsync(database.Services, tenant, user);
+
+        var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantClosed);
+    }
+
+    // T3: a stranger cannot tell a closed tenant from one that does not exist.
+    [Fact]
+    public async Task ResolveTenant_StrangerToAClosedTenant_IsRefusedAsATenantThatDoesNotExist()
+    {
+        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Closed);
+        var user = await Catalog.AddUserAsync(database.Services);
+
+        var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
+    }
+
     private async Task<Result<TenantMembership>> FindMembershipAsync(Guid tenantId, string externalUserId)
     {
         await using var scope = database.Services.CreateAsyncScope();

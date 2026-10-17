@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
@@ -29,8 +30,11 @@ public sealed class AdminAccessTests(Database database) : IAsyncLifetime
     {
         { "GET", "/v1/admin/tenants", "admin.tenants.read" },
         { "GET", "/v1/admin/tenants/{tenantId:guid}", "admin.tenants.read" },
+        { "PATCH", "/v1/admin/tenants/{tenantId:guid}", "admin.tenants.update" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/suspend", "admin.tenants.suspend" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/reactivate", "admin.tenants.reactivate" },
+        { "POST", "/v1/admin/tenants/{tenantId:guid}/close", "admin.tenants.close" },
+        { "POST", "/v1/admin/tenants/{tenantId:guid}/reopen", "admin.tenants.reopen" },
         { "GET", "/v1/admin/users", "admin.users.read" },
         { "POST", "/v1/admin/users/{userId:guid}/suspend", "admin.users.suspend" },
         { "POST", "/v1/admin/users/{userId:guid}/reactivate", "admin.users.reactivate" },
@@ -40,8 +44,11 @@ public sealed class AdminAccessTests(Database database) : IAsyncLifetime
     {
         { "GET", "/v1/admin/tenants" },
         { "GET", "/v1/admin/tenants/{tenantId:guid}" },
+        { "PATCH", "/v1/admin/tenants/{tenantId:guid}" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/suspend" },
         { "POST", "/v1/admin/tenants/{tenantId:guid}/reactivate" },
+        { "POST", "/v1/admin/tenants/{tenantId:guid}/close" },
+        { "POST", "/v1/admin/tenants/{tenantId:guid}/reopen" },
         { "GET", "/v1/admin/users" },
         { "POST", "/v1/admin/users/{userId:guid}/suspend" },
         { "POST", "/v1/admin/users/{userId:guid}/reactivate" },
@@ -96,7 +103,8 @@ public sealed class AdminAccessTests(Database database) : IAsyncLifetime
             endpoint.RoutePattern.RawText == route
             && endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()!.HttpMethods.Contains(method));
 
-    // The route, with an active tenant and a user who is not a system admin in its place.
+    // The route, with an active tenant and a user who is not a system admin in its place. Every request carries a body that renaming
+    // and suspending read; the other endpoints read none.
     private async Task<HttpRequestMessage> RequestAsync(string method, string route)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -104,6 +112,6 @@ public sealed class AdminAccessTests(Database database) : IAsyncLifetime
         var path = route.Replace("{tenantId:guid}", tenant.Id.ToString(), StringComparison.Ordinal)
             .Replace("{userId:guid}", user.ToString(), StringComparison.Ordinal);
 
-        return new HttpRequestMessage(new HttpMethod(method), path);
+        return new HttpRequestMessage(new HttpMethod(method), path) { Content = JsonContent.Create(new { name = "Globex Corp", reason = "Unpaid invoices" }) };
     }
 }

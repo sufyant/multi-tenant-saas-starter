@@ -18,4 +18,17 @@ internal static class TenantRequests
 
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
+
+    // The system admin's changes of a tenant's name and status. Each sets a state, so it takes no idempotency key (I1).
+    public static Task<HttpResponseMessage> RenameTenantAsync(this HttpClient client, Guid tenantId, string name) =>
+        client.PatchAsJsonAsync($"{Path}/{tenantId}", new { name }, TestContext.Current.CancellationToken);
+
+    public static Task<HttpResponseMessage> SuspendTenantAsync(this HttpClient client, Guid tenantId, string reason = "Unpaid invoices") =>
+        client.PostAsJsonAsync($"{Path}/{tenantId}/suspend", new { reason }, TestContext.Current.CancellationToken);
+
+    public static Task<HttpResponseMessage> CloseTenantAsync(this HttpClient client, Guid tenantId) =>
+        client.PostAsync($"{Path}/{tenantId}/close", null, TestContext.Current.CancellationToken);
+
+    public static Task<HttpResponseMessage> ReopenTenantAsync(this HttpClient client, Guid tenantId) =>
+        client.PostAsync($"{Path}/{tenantId}/reopen", null, TestContext.Current.CancellationToken);
 }

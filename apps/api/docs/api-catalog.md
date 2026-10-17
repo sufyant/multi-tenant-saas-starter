@@ -15,25 +15,27 @@ The signed-in user, acting for themselves. No permission; the user reaches only 
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | new | GET | `/v1/me` | `GetMe` (catalog id, profile copy, system admin or not; no status; a person the catalog does not know gets 404 `user.not_found`) | signed in | none | none | Clerk, through the webhook's copy | 20c |
-| changes | GET | `/v1/me/tenants` | `ListMyTenants` (list contract; `q`: name, slug; no filter; `sort`: `name`) | signed in | none | none | none | 20c |
+| changes | GET | `/v1/me/tenants` | `ListMyTenants` (list contract; `q`: name, slug; no filter; `sort`: `name`; active, suspended and closed tenants, each with its status; never the suspension's reason) | signed in | none | none | none | 20c, 20h |
 | changes | POST | `/v1/me/invitations/accept` | `AcceptInvitation` (writes an audit entry) | signed in; the email must match | T `member.joined` | none | Clerk: verified emails | 20b |
 
 ## Tenant: `/v1/tenants/{tenantId}`
 
 A member of the tenant. Each endpoint names a permission. To a non-member the tenant does not exist (T3).
 
+- The organisation's name is locked in the tenant app: only the platform renames a tenant (`RenameTenant`, admin). The tenant path has no `PATCH /v1/tenants/{tenantId}` and no `tenant.profile.update` (the maintainer's decision in step 20h).
+- A member of a suspended tenant gets 403 `tenant.suspended`, and a member of a closed one 403 `tenant.closed`, at the door and again under the tenant's lock in every command (K6). A non-member gets 404 `tenant.not_found` (T3).
+
 - `ListMembers` keeps a member whose user was deleted, with an empty email address, empty names and `deleted: true`, as the audit logs say `deleted`. The screen shows "Deleted user", as for audit (K3). What happens to a deleted Owner is a later decision.
 
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | new | GET | `/v1/tenants/{tenantId}` | `GetMyTenant` (answers `MyTenantResponse`) | `tenant.profile.read`; every role | none | none | none | 20c |
-| new | PATCH | `/v1/tenants/{tenantId}` | `RenameTenant` (name only; the slug never changes) | `tenant.profile.update`; Owner, Admin | T `tenant.renamed` | none | none | 20h |
 | changes | GET | `/v1/tenants/{tenantId}/members` | `ListMembers` (adds email and names; a deleted user stays, with an empty email and names and `deleted: true`; list contract; `q`: email, first name, last name; filter `role`; `sort`: `role`, `email`, `lastName`) | `tenant.members.read`; every role | none | none | Clerk, through the copy | 20c, 20g |
-| new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` (body `{ "role" }`, a `MemberRole`; answers 200 `MemberResponse`; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a member the tenant has not (404 `membership.not_found`), the Owner role from an Admin or an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the role the member has answers 200 and writes nothing) | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` (details: the old and the new role) | none | none | 20e |
-| new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` (204; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a member the tenant has not (404 `membership.not_found`), yourself (403 `membership.cannot_remove_self`), an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the member loses access at once (T7)) | `tenant.members.delete`; Owner, Admin; only an Owner removes an Owner; the last Owner cannot be removed (K1) | T `member.removed` (details: the role the member had) | none | none | 20e |
-| new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; answers 201 `InvitationResponse`; locks the tenant row, then checks an inviter who is no longer a member (404 `tenant.not_found`), the role rule (403 `invitation.owner_requires_owner`), a member's address (409 `membership.exists`) and the daily limit (429 `invitation.daily_limit_reached`); replaces a pending invitation to the same email (K2)) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
+| new | PATCH | `/v1/tenants/{tenantId}/members/{userId}` | `ChangeMemberRole` (body `{ "role" }`, a `MemberRole`; answers 200 `MemberResponse`; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a tenant that is no longer active (403 `tenant.suspended` or `tenant.closed`), a member the tenant has not (404 `membership.not_found`), the Owner role from an Admin or an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the role the member has answers 200 and writes nothing) | `tenant.members.update`; Owner, Admin; the Owner role only from an Owner (K1) | T `member.role_changed` (details: the old and the new role) | none | none | 20e |
+| new | DELETE | `/v1/tenants/{tenantId}/members/{userId}` | `RemoveMember` (204; no Idempotency-Key, it sets a state; locks the tenant row, then checks: an actor who is no longer a member (404 `tenant.not_found`), a tenant that is no longer active (403 `tenant.suspended` or `tenant.closed`), a member the tenant has not (404 `membership.not_found`), yourself (403 `membership.cannot_remove_self`), an Admin on an Owner (403 `membership.owner_requires_owner`), the last Owner (409 `membership.last_owner`); the member loses access at once (T7)) | `tenant.members.delete`; Owner, Admin; only an Owner removes an Owner; the last Owner cannot be removed (K1) | T `member.removed` (details: the role the member had) | none | none | 20e |
+| new | POST | `/v1/tenants/{tenantId}/invitations` | `InviteMember` (Idempotency-Key; answers 201 `InvitationResponse`; locks the tenant row, then checks an inviter who is no longer a member (404 `tenant.not_found`), a tenant that is no longer active (403 `tenant.suspended` or `tenant.closed`), the role rule (403 `invitation.owner_requires_owner`), a member's address (409 `membership.exists`) and the daily limit (429 `invitation.daily_limit_reached`); replaces a pending invitation to the same email (K2)) | `tenant.invitations.create`; Owner, Admin; only an Owner invites an Owner | T `member.invited` | invitation email | Resend, through Notifications | 20d |
 | new | GET | `/v1/tenants/{tenantId}/invitations` | `ListInvitations` (pending invitations, expired ones included; list contract; `q`: email; filter `role`; `sort`: `expiresAt`, `email`) | `tenant.invitations.read`; Owner, Admin | none | none | none | 20d |
-| new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (204; locks the tenant row; a revoker who is no longer a member answers 404 `tenant.not_found`; the link stops working at once; a cancelled invitation answers 204 again and writes nothing; an accepted one answers 409 `invitation.not_pending`; an id the tenant has not, 404 `invitation.not_found`) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | none | 20d |
+| new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (204; locks the tenant row; a revoker who is no longer a member answers 404 `tenant.not_found`; a tenant that is no longer active, 403 `tenant.suspended` or `tenant.closed`; the link stops working at once; a cancelled invitation answers 204 again and writes nothing; an accepted one answers 409 `invitation.not_pending`; an id the tenant has not, 404 `invitation.not_found`) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | none | 20d |
 | new | GET | `/v1/tenants/{tenantId}/audit-log` | `ListAuditEntries` (cursor contract of K5; newest first; real names resolved on read, else null, and `deleted` for a user; no label and no email address; the screen calls it "Activity") | `tenant.audit.read`; Owner, Admin | none | none | none | 20f |
 
 ## Admin: `/v1/admin`
@@ -43,12 +45,13 @@ A system admin with a second factor (A6). Every action writes to the platform au
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | changes | POST | `/v1/admin/tenants` | `CreateTenant` (saga; Idempotency-Key; answers 201 `TenantResponse`; adds the platform entry) | `admin.tenants.create` | P `tenant.created`, T `tenant.created` | owner invitation email | Resend | 20b, 20g |
-| changes | GET | `/v1/admin/tenants` | `ListTenants` (list contract; `q`: name, slug; filter `status`; `sort`: `name`, `slug`) | `admin.tenants.read` | none | none | none | 20c |
-| new | GET | `/v1/admin/tenants/{tenantId}` | `GetTenant` (answers `TenantResponse`; 404 `tenant.not_found` for an id no tenant has) | `admin.tenants.read` | none | none | none | 20c |
-| changes | POST | `/v1/admin/tenants/{tenantId}/suspend` | `SuspendTenant` (platform entry in 20b; reason in 20h) | `admin.tenants.suspend` | P `tenant.suspended`, T `tenant.suspended` | none | none | 20b, 20h |
-| changes | POST | `/v1/admin/tenants/{tenantId}/reactivate` | `ReactivateTenant` (adds the platform entry) | `admin.tenants.reactivate` | P `tenant.reactivated`, T `tenant.reactivated` | none | none | 20b |
-| new | POST | `/v1/admin/tenants/{tenantId}/close` | `CloseTenant` (members cannot enter; data stays; K4) | `admin.tenants.close` | P `tenant.closed`, T `tenant.closed` | none | none | 20h |
-| new | POST | `/v1/admin/tenants/{tenantId}/reopen` | `ReopenTenant` (only before the period ends) | `admin.tenants.reopen` | P `tenant.reopened`, T `tenant.reopened` | none | none | 20h |
+| changes | GET | `/v1/admin/tenants` | `ListTenants` (list contract; `q`: name, slug; filter `status`, `closed` included; `sort`: `name`, `slug`; each item with `suspensionReason` and `closedAt`) | `admin.tenants.read` | none | none | none | 20c, 20h |
+| changes | GET | `/v1/admin/tenants/{tenantId}` | `GetTenant` (answers `TenantResponse`, with `suspensionReason` and `closedAt`; 404 `tenant.not_found` for an id no tenant has) | `admin.tenants.read` | none | none | none | 20c, 20h |
+| new | PATCH | `/v1/admin/tenants/{tenantId}` | `RenameTenant` (body `{ "name" }`, 1 to 100 characters, trimmed; the slug never changes; answers 200 `TenantResponse`; no Idempotency-Key, it sets a state; locks the tenant row; the name the tenant has answers 200 and writes nothing; an active or a suspended tenant only, else 409 `tenant.not_active`; a wrong name 400 `tenant.name_invalid`) | `admin.tenants.update` | P `tenant.renamed`, T `tenant.renamed` (details: the old and the new name) | none | none | 20h |
+| changes | POST | `/v1/admin/tenants/{tenantId}/suspend` | `SuspendTenant` (body `{ "reason" }`, required, 1 to 500 characters, trimmed, else 400 `request.validation_failed` with `required` or `too_long`; answers 200 `TenantResponse`; a suspended tenant answers 200, keeps its first reason and writes nothing; a provisioning, cancelled or closed tenant 409 `tenant.not_active`) | `admin.tenants.suspend` | P `tenant.suspended` (details: the reason), T `tenant.suspended` (no reason: a member never sees it) | none | none | 20b, 20h |
+| changes | POST | `/v1/admin/tenants/{tenantId}/reactivate` | `ReactivateTenant` (adds the platform entry; clears the suspension's reason; a closed tenant 409 `tenant.not_active`) | `admin.tenants.reactivate` | P `tenant.reactivated`, T `tenant.reactivated` | none | none | 20b, 20h |
+| new | POST | `/v1/admin/tenants/{tenantId}/close` | `CloseTenant` (active or suspended → closed; stores `closedAt`; members cannot enter; data stays; cancels every pending invitation in the same transaction; answers 200 `TenantResponse`; a closed tenant answers 200 and writes nothing; a provisioning or cancelled tenant 409 `tenant.not_active`; K4) | `admin.tenants.close` | P `tenant.closed`, T `tenant.closed` | none | none | 20h |
+| new | POST | `/v1/admin/tenants/{tenantId}/reopen` | `ReopenTenant` (closed → active while `closedAt` plus `ControlPlane:Tenants:ReopenPeriod` is in the future, else 409 `tenant.reopen_period_ended`; clears `closedAt` and the suspension's reason; the cancelled invitations stay cancelled; an active tenant answers 200 and writes nothing; any other 409 `tenant.not_closed`) | `admin.tenants.reopen` | P `tenant.reopened`, T `tenant.reopened` | none | none | 20h |
 | changes | GET | `/v1/admin/users` | `ListUsers` (list contract; `q`: email, first name, last name; filter `status`; `sort`: `email`, `lastName`) | `admin.users.read` | none | none | Clerk, through the copy | 20c |
 | changes | POST | `/v1/admin/users/{userId}/suspend` | `SuspendUser` (adds the platform entry) | `admin.users.suspend` | P `user.suspended` | none | none; Clerk is not told, the API refuses the user on each request (A9) | 20b |
 | changes | POST | `/v1/admin/users/{userId}/reactivate` | `ReactivateUser` (adds the platform entry) | `admin.users.reactivate` | P `user.reactivated` | none | none | 20b |
@@ -66,7 +69,7 @@ An external system, proven by its signature. Not in the OpenAPI document (N5).
 
 ControlPlane changes its data and writes an event to the outbox in the same transaction. Audit and Notifications take the event from their own queues. An endpoint never writes an email or an audit entry itself. When one event gives an entry in both logs, Audit writes both in one transaction.
 
-- `SuspendTenant` → ControlPlane (state and event) → `TenantSuspended` → Audit: platform log "Sufyan suspended Acme", and Acme's log "The platform suspended this tenant".
+- `SuspendTenant` → ControlPlane (state and event) → `TenantSuspended` → Audit: platform log "Sufyan suspended Acme", with the reason, and Acme's log "The platform suspended this tenant", without it.
 - `InviteMember` → ControlPlane (invitation and event) → `MemberInvited` → Audit: tenant log; Notifications → its own command `SendMemberInvitationEmail` → Resend: the invitation email. The event has two handlers, so a scheduled retry of it could run in a web host (W5); the command has one, and it has the retries of the owner invitation email.
 
 ## Decided rules
@@ -95,7 +98,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - Each tenant may create `ControlPlane:Invitations:DailyLimitPerTenant` invitations in any 24 hours, 50 by default. The window rolls: it counts every invitation the tenant created in the last 24 hours, cancelled and replaced ones included, so a replacement does not get around it. Over the limit, `InviteMember` answers 429 `invitation.daily_limit_reached` (RFC 6585), without a `Retry-After` header. It may become a platform setting later.
 - An email that already belongs to a member, in the catalog's copy of the profile and compared without case, answers 409 `membership.exists`.
 - The invitation email has the retries of the owner invitation email. After the last try the message goes to the dead letter queue. The invitation stays pending; the inviter can invite again, which replaces it.
-- Closing a tenant cancels its pending invitations. An invitation to a suspended tenant cannot be accepted (409).
+- Closing a tenant cancels its pending invitations, in the same transaction. Accepting one then answers 404 `invitation.not_found`, as a revoked one, also after a reopening. An invitation to a suspended tenant cannot be accepted (409).
 
 ### K3. Audit
 
@@ -112,9 +115,10 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K4. Tenant lifecycle
 
-- provisioning → active ⇄ suspended → closed → deleted. A failed creation goes provisioning → cancelled.
-- A suspension has a reason. Today it is text the system admin writes. A billing reason comes with billing.
-- closed: members cannot enter, the data stays, and the tenant can be reopened within a configured period, 30 days by default.
+- provisioning → active ⇄ suspended → closed → deleted. A failed creation goes provisioning → cancelled. Active and suspended both go to closed, and a reopening goes closed → active.
+- A suspension has a reason. Today it is text the system admin writes: 1 to 500 characters, trimmed. The admin side shows it (`GetTenant`, `ListTenants`); a member never sees it, and only the platform's audit entry holds it. Reactivating and reopening clear it. A billing reason comes with billing.
+- closed: members cannot enter (403 `tenant.closed`), the data stays, and closing cancels the pending invitations. The tenant can be reopened while `closedAt` plus `ControlPlane:Tenants:ReopenPeriod`, 30 days by default, is in the future. Nothing ends the period by itself: no job runs when it ends.
+- Only the platform renames a tenant (`RenameTenant`, admin). The organisation's name is locked in the tenant app.
 - The slug never changes.
 - deleted (removing the data) is not in this catalog. Export and deletion are designed in a later step.
 - The billing state is not copied into the tenant's state. The tenant only reacts to a subscription event.
@@ -161,8 +165,8 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K7. Permission names
 
-- The new permission names are approved: `tenant.profile.*`, `tenant.invitations.*`, `tenant.members.update` and `tenant.members.delete`, `tenant.audit.read`, `admin.tenants.close` and `admin.tenants.reopen`, and `admin.audit.read` (N6).
-- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role. Step 20d adds `tenant.invitations.create`, `tenant.invitations.read` and `tenant.invitations.delete`, for the Owner and Admin roles only. Step 20e adds `tenant.members.update` and `tenant.members.delete`, for the Owner and Admin roles only. Step 20f adds `tenant.audit.read`, for the Owner and Admin roles only, and `admin.audit.read`, for system admins.
+- The new permission names are approved: `tenant.profile.read`, `tenant.invitations.*`, `tenant.members.update` and `tenant.members.delete`, `tenant.audit.read`, `admin.tenants.update`, `admin.tenants.close` and `admin.tenants.reopen`, and `admin.audit.read` (N6).
+- Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role. Step 20d adds `tenant.invitations.create`, `tenant.invitations.read` and `tenant.invitations.delete`, for the Owner and Admin roles only. Step 20e adds `tenant.members.update` and `tenant.members.delete`, for the Owner and Admin roles only. Step 20f adds `tenant.audit.read`, for the Owner and Admin roles only, and `admin.audit.read`, for system admins. Step 20h adds `admin.tenants.update`, `admin.tenants.close` and `admin.tenants.reopen`, for system admins.
 
 ## Later
 
@@ -182,4 +186,4 @@ Each step is one prompt and one pull request. They run in order, because each to
 | 20e | Member management: `ChangeMemberRole`, `RemoveMember`, the Owner rules of K1, the tenant row lock and a race test with two requests at once. |
 | 20f | Reading the audit logs: the tenant's and the platform's, with a cursor. `audit.entries.actor_id` becomes uuid, as in the platform log. |
 | 20g | The rest of the contract: a code on every error answer, the error code enum and the field codes, 401 and 429 on every operation, 201 for `CreateTenant`, `deleted` in `ListMembers`. No endpoint. |
-| 20h | Tenant lifecycle: `RenameTenant`, a reason for suspension, `CloseTenant`, `ReopenTenant`, the closed state. Closing cancels pending invitations. |
+| 20h | Tenant lifecycle: `RenameTenant` (admin only), a reason for suspension, `CloseTenant`, `ReopenTenant`, the closed state. Closing cancels pending invitations. Every tenant command refuses a tenant that is no longer active, under the tenant's lock. |

@@ -23,8 +23,11 @@ public static class Tenants
             .Produces<TenantResponse>(StatusCodes.Status201Created);
         admin.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.AdminTenantsRead);
         admin.MapGet("/tenants/{tenantId:guid}", GetTenant).RequireAuthorization(Permissions.AdminTenantsRead);
+        admin.MapPatch("/tenants/{tenantId:guid}", RenameTenant).RequireAuthorization(Permissions.AdminTenantsUpdate);
         admin.MapPost("/tenants/{tenantId:guid}/suspend", SuspendTenant).RequireAuthorization(Permissions.AdminTenantsSuspend);
         admin.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.AdminTenantsReactivate);
+        admin.MapPost("/tenants/{tenantId:guid}/close", CloseTenant).RequireAuthorization(Permissions.AdminTenantsClose);
+        admin.MapPost("/tenants/{tenantId:guid}/reopen", ReopenTenant).RequireAuthorization(Permissions.AdminTenantsReopen);
     }
 
     // Tenant creation runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client
@@ -76,13 +79,25 @@ public static class Tenants
     private static async Task<Result<TenantResponse>> GetTenant(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
         (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new GetTenant(), cancellationToken)).Map(ToResponse);
 
-    // Suspension and reactivation run inside the tenant the route names (W3). They set a state, so they take no idempotency key (I1).
-    private static async Task<Result<TenantResponse>> SuspendTenant(
+    // A change of a tenant's name or status runs inside the tenant the route names (W3). Each sets a state, so it takes no idempotency
+    // key (I1).
+    private static async Task<Result<TenantResponse>> RenameTenant(
         Guid tenantId,
+        RenameTenantRequest request,
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new SuspendTenant(user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new RenameTenant(user.Id(), request.Name), cancellationToken))
+            .Map(ToResponse);
+
+    private static async Task<Result<TenantResponse>> SuspendTenant(
+        Guid tenantId,
+        SuspendTenantRequest request,
+        ClaimsPrincipal user,
+        IMessageBus bus,
+        CancellationToken cancellationToken) =>
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new SuspendTenant(user.Id(), request.Reason), cancellationToken))
+            .Map(ToResponse);
 
     private static async Task<Result<TenantResponse>> ReactivateTenant(
         Guid tenantId,
@@ -91,16 +106,40 @@ public static class Tenants
         CancellationToken cancellationToken) =>
         (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReactivateTenant(user.Id()), cancellationToken)).Map(ToResponse);
 
-    private static TenantResponse ToResponse(TenantDetails tenant) => new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status));
+    private static async Task<Result<TenantResponse>> CloseTenant(
+        Guid tenantId,
+        ClaimsPrincipal user,
+        IMessageBus bus,
+        CancellationToken cancellationToken) =>
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new CloseTenant(user.Id()), cancellationToken)).Map(ToResponse);
+
+    private static async Task<Result<TenantResponse>> ReopenTenant(
+        Guid tenantId,
+        ClaimsPrincipal user,
+        IMessageBus bus,
+        CancellationToken cancellationToken) =>
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReopenTenant(user.Id()), cancellationToken)).Map(ToResponse);
+
+    private static TenantResponse ToResponse(TenantDetails tenant) =>
+        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status), tenant.SuspensionReason, tenant.ClosedAt);
 }
 
 /// <summary>A new tenant, and the email address of its first owner, who is invited once the tenant is ready.</summary>
 public sealed record CreateTenantRequest(string Name, string Slug, string OwnerEmail);
 
-/// <summary>A tenant and its status.</summary>
-public sealed record TenantResponse(Guid Id, string Name, string Slug, TenantResponseStatus Status);
+/// <summary>A tenant's new name. The slug never changes.</summary>
+public sealed record RenameTenantRequest(string Name);
 
-/// <summary>The status of a tenant: provisioning until its creation ends, then active, suspended or cancelled.</summary>
+/// <summary>Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it.</summary>
+public sealed record SuspendTenantRequest(string Reason);
+
+/// <summary>
+/// A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its
+/// closure while it is closed. Only a system admin sees this shape.
+/// </summary>
+public sealed record TenantResponse(Guid Id, string Name, string Slug, TenantResponseStatus Status, string? SuspensionReason, DateTimeOffset? ClosedAt);
+
+/// <summary>The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<TenantResponseStatus>))]
 public enum TenantResponseStatus
 {
@@ -115,4 +154,7 @@ public enum TenantResponseStatus
 
     [JsonStringEnumMemberName("cancelled")]
     Cancelled,
+
+    [JsonStringEnumMemberName("closed")]
+    Closed,
 }

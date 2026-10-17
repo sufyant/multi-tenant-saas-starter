@@ -90,7 +90,8 @@ jobs:
   api:
     name: "API: build and test"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Temporary: 20, not 10, while Api.IntegrationTests runs in three processes one after the other (see the test steps).
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: apps/api
@@ -112,7 +113,24 @@ jobs:
       # The tests start PostgreSQL 18 in Docker. The runner has Docker.
       # A hung run of Api.IntegrationTests writes a dump, the tests in progress and its diagnostic log to the results directory
       # (section 9, rule 8 of apps/api/docs/ARCHITECTURE.md).
-      - run: dotnet test --solution Api.slnx --no-build --results-directory TestResults
+      #
+      # Temporary bulkhead, until the memory that each test host keeps is fixed: one process of Api.IntegrationTests grows by
+      # 25 to 50 MB for every test and ran the runner out of memory (pull request #59). So it runs in three processes, split by
+      # namespace. The first step runs every other project and the namespaces the next two steps do not name, so a new namespace
+      # is never left out. Remove the split, and set timeout-minutes back to 10, when one process fits again.
+      - run: >-
+          dotnet test --solution Api.slnx --no-build --results-directory TestResults --
+          --filter-not-namespace Api.IntegrationTests.Admin --filter-not-namespace Api.IntegrationTests.Tenant
+          --filter-not-namespace Api.IntegrationTests.Me --filter-not-namespace Api.IntegrationTests.Webhooks
+
+      - run: >-
+          dotnet test --project tests/Api.IntegrationTests --no-build --results-directory TestResults --
+          --filter-namespace Api.IntegrationTests.Admin
+
+      - run: >-
+          dotnet test --project tests/Api.IntegrationTests --no-build --results-directory TestResults --
+          --filter-namespace Api.IntegrationTests.Tenant --filter-namespace Api.IntegrationTests.Me
+          --filter-namespace Api.IntegrationTests.Webhooks
 
       # A hang that runs into timeout-minutes cancels the job, so the step runs on a cancel too.
       - name: Keep the evidence of a failed test run
