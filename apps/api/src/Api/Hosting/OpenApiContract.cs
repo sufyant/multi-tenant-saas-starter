@@ -78,8 +78,8 @@ internal static class OpenApiContract
 
     // The generator knows the values of the default enum converter only. An enum with a converter of its own, such as Language and
     // MemberRole, which read an exact name only (ExactNameEnumConverter), would so have a schema without values, and a nullable field of
-    // it no schema at all. So the schema states the JSON names, the names the converter reads, and a nullable field refers to the schema
-    // and may be null. OpenApiContractTests fails for a field that holds a language and does not refer to the schema Language.
+    // it no schema at all. So the schema is a string with the JSON names, the names the converter reads, and a nullable field refers to
+    // the schema and may be null. OpenApiContractTests fails for a field that holds a language and does not refer to the schema Language.
     private static async Task DescribeEnumValues(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         var type = context.JsonTypeInfo.Type;
@@ -87,6 +87,7 @@ internal static class OpenApiContract
         {
             var values = (IReadOnlyList<string>)typeof(ListFilter).GetMethod(nameof(ListFilter.ValuesOf))!
                 .MakeGenericMethod(type).Invoke(null, null)!;
+            schema.Type = JsonSchemaType.String;
             schema.Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))];
         }
         else if (Nullable.GetUnderlyingType(type) is { IsEnum: true } underlying && schema is { Type: null, Enum: null, OneOf: null })

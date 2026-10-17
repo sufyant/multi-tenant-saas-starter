@@ -3331,6 +3331,7 @@
           "tr",
           "ar"
         ],
+        "type": "string",
         "description": "A language the web speaks, by its BCP 47 language tag."
       },
       "ListPageOfInvitationResponse": {
@@ -3556,6 +3557,7 @@
           "Admin",
           "Member"
         ],
+        "type": "string",
         "description": "A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,\nthe role an invitation gives, and the role a member is given."
       },
       "MeResponse": {
