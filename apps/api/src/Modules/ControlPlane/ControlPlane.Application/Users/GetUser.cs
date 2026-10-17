@@ -33,6 +33,7 @@ public sealed record UserMembershipDetails(
     DateTimeOffset JoinedAt,
     bool SoleOwner);
 
+// A version before step 20l reactivates a user by clearing the moment only, so who suspended a user is read only while they are suspended.
 public static class GetUserHandler
 {
     public static async Task<Result<UserWithMemberships>> HandleAsync(GetUser query, IUserCatalog users, CancellationToken cancellationToken)
@@ -42,7 +43,7 @@ public static class GetUserHandler
             return Errors.UserNotFound;
         }
 
-        var suspendedBy = user.SuspendedBy is { } adminId ? await users.FindUserAsync(adminId, cancellationToken) : null;
+        var suspendedBy = (user.SuspendedAt, user.SuspendedBy) is ({ }, { } adminId) ? await users.FindUserAsync(adminId, cancellationToken) : null;
         var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
         return new UserWithMemberships(
             UserDetails.Of(user, isSystemAdmin),
