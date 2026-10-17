@@ -2,6 +2,7 @@ using ControlPlane.Contracts;
 using Notifications.Application;
 using Notifications.Application.Invitations.InvitationEmail;
 using Notifications.Application.Ports;
+using SharedKernel;
 
 namespace Notifications.UnitTests.Invitations.InvitationEmail;
 
@@ -16,7 +17,7 @@ public sealed class MemberInvitationEmailTests
 
     private readonly RecordingEmailChannel _channel = new();
 
-    // The same text as the owner invitation: the tenant's name and the link.
+    // The same text as the owner invitation: the tenant's name, the link and how long it works.
     [Fact]
     public async Task SendMemberInvitationEmail_Asked_EmailsTheTenantsNameAndTheLink()
     {
@@ -25,7 +26,7 @@ public sealed class MemberInvitationEmailTests
         var email = _channel.Sent.ShouldHaveSingleItem();
         email.To.ShouldBe("grace@navy.test");
         email.Subject.ShouldBe("You are invited to Acme Ltd");
-        email.Text.ShouldBe($"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}");
+        email.Text.ShouldBe($"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}\n\nThe link works for 7 days.");
     }
 
     // The key is the invitation's, so an event that arrives twice does not send a second email (O4).
@@ -41,7 +42,8 @@ public sealed class MemberInvitationEmailTests
     }
 
     private static MemberInvitationReady Ready() =>
-        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link);
+        new(
+            Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 
     private sealed class RecordingEmailChannel : IEmailChannel
     {

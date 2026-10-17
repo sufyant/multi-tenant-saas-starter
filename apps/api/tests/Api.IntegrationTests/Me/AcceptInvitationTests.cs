@@ -128,6 +128,37 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await _catalog.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false));
     }
 
+    // Decision 6 of step 20j: a new user starts with the language of the invitation they accept, and with no time zone.
+    [Fact]
+    public async Task AcceptInvitation_NewUser_StartsWithTheInvitationsLanguage()
+    {
+        var invitee = $"user_{Guid.NewGuid():N}";
+        var email = $"{Guid.NewGuid():N}@example.com";
+        await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email, language: "tr"));
+        _api.Identity.AddAccount(invitee, email);
+
+        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _catalog.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false, "tr", null));
+    }
+
+    // A user the catalog knows keeps the language and the time zone they chose.
+    [Fact]
+    public async Task AcceptInvitation_KnownUser_KeepsTheirLanguageAndTimeZone()
+    {
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper", language: "ar", timeZone: "Asia/Dubai");
+        _api.Identity.AddAccount(known, email);
+        await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email, language: "tr"));
+
+        var accepted = await _api.CreateClient(known).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _catalog.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false, "ar", "Asia/Dubai"));
+    }
+
     // A person the catalog does not know gives both names; a missing one is a field that failed validation (K5). The invitation stays
     // pending, and no user is written.
     [Fact]
@@ -474,11 +505,11 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         return (slug, invitee, _api.Email.CodeSentTo(email));
     }
 
-    private async Task<string> CreateTenantWithOwnerAsync(string ownerEmail)
+    private async Task<string> CreateTenantWithOwnerAsync(string ownerEmail, string language = "en")
     {
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
         var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-        (await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail })).EnsureSuccessStatusCode();
+        (await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail, language })).EnsureSuccessStatusCode();
 
         return slug;
     }

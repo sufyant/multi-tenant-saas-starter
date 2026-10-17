@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
+using SharedKernel;
 using Tenancy;
 using Wolverine;
 
@@ -55,6 +56,48 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
         (await _catalog.InvitationStatusOfAsync(invitation.GetProperty("id").GetGuid())).ShouldBe("Pending");
+    }
+
+    // Decision 5 of step 20j: without a language, the invitation speaks the inviter's own, and its email does too.
+    [Fact]
+    public async Task InviteMember_WithoutALanguage_InvitesInTheInvitersLanguage()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var inviter = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(language: "tr"), role: "Owner");
+        var email = NewEmail();
+
+        var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await _catalog.InvitationLanguageOfAsync(email)).ShouldBe("tr");
+        _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("Acme Ltd adlı kuruluşa davet edildiniz");
+    }
+
+    [Fact]
+    public async Task InviteMember_WithALanguage_InvitesInIt()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var inviter = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(language: "tr"), role: "Owner");
+        var email = NewEmail();
+
+        var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email, language: "ar"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await _catalog.InvitationLanguageOfAsync(email)).ShouldBe("ar");
+        _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
+    }
+
+    // The language is one of the list, by its tag, as in PATCH /v1/me/preferences.
+    [Fact]
+    public async Task InviteMember_WithALanguageNotOfTheList_IsABadRequestAndInvitesNobody()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var inviter = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+
+        var invited = await _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, NewEmail(), language: "fr");
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
 
     [Fact]
@@ -400,7 +443,15 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
         var invited = new MemberInvitationReady(
-            Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), NewEmail(), "Acme Ltd", new Uri($"{ApiFactory.AcceptUrl}?code=x"));
+            Guid.CreateVersion7(),
+            _time.GetUtcNow(),
+            Guid.NewGuid(),
+            Guid.CreateVersion7(),
+            NewEmail(),
+            "Acme Ltd",
+            new Uri($"{ApiFactory.AcceptUrl}?code=x"),
+            Language.En,
+            TimeSpan.FromDays(7));
         using var scope = _api.Services.CreateScope();
         var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
         var inTheTenant = new DeliveryOptions { TenantId = invited.TenantId.ToString() };

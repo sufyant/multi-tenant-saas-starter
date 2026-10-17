@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
+using SharedKernel;
 using Wolverine;
 
 namespace ControlPlane.UnitTests.Tenants.TenantCreation;
@@ -349,7 +350,8 @@ public class TenantCreationTests
 
     private static ActivateTenantReply Activated() => new(TenantId);
 
-    private static OwnerInvitationReady InvitationReady() => new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink);
+    private static OwnerInvitationReady InvitationReady() =>
+        new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink, Language.En, TimeSpan.FromDays(7));
 
     private static OpenOwnerSignUp OwnerSignUp() => new(TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink, Now.AddDays(7));
 

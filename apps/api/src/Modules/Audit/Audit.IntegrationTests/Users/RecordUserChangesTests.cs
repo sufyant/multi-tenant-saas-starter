@@ -6,7 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Audit.IntegrationTests.Users;
 
 // The Audit module records the changes of a catalog user in the platform's log, in a transaction that declares nothing: a user belongs
-// to no tenant. A system admin suspends, reactivates, renames and deletes a user (K3).
+// to no tenant. A system admin suspends, reactivates, renames and deletes a user, and a user changes their own preferences
+// (K3).
 public sealed class RecordUserChangesTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -47,6 +48,20 @@ public sealed class RecordUserChangesTests(Database database)
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, renamed.EventId))
             .ShouldBe($"user.renamed|User|{renamed.RenamedBy}|User|{renamed.UserId}|-");
+    }
+
+    // A user changes their own preferences, so they are the actor and the target. The entry holds no value: details are empty.
+    [Fact]
+    public async Task RecordUserPreferencesChanged_PreferencesChanged_WritesThePlatformEntryByTheUserWithoutValues()
+    {
+        var changed = new UserPreferencesChanged(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7());
+
+        await InTenant.RunAsync(database.Services, null, scope =>
+            RecordUserChangesHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await Logs.DescribeAsync(database.Services, Logs.Platform, null, changed.EventId))
+            .ShouldBe($"user.preferences_changed|User|{changed.UserId}|User|{changed.UserId}|-");
+        (await Logs.DetailsAsync(database.Services, Logs.Platform, null, changed.EventId)).ShouldBeNull();
     }
 
     [Fact]

@@ -20,6 +20,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 {
     private const string DocumentFile = "openapi/v1.json";
     private const string ProblemDetailsSchema = "#/components/schemas/ProblemDetails";
+    private const string LanguageSchema = "#/components/schemas/Language";
 
     private readonly ComposedApplication _application = new();
     private JsonElement _document;
@@ -69,6 +70,29 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // Decision 1 of step 20j: one list of languages, the schema Language, with the tags of the enum. Every field that holds a language
+    // refers to it, so a generated client has one type for it, and no schema copies the list.
+    [Fact]
+    public void BuildOpenApiDocument_EveryFieldThatHoldsALanguage_IsTheOneLanguageEnum()
+    {
+        var expected = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
+            .SelectMany(type => type.GetProperties().Where(HoldsALanguage).Select(property => $"{type.Name}.{JsonNamingPolicy.CamelCase.ConvertName(property.Name)}"));
+
+        var documented = Schemas()
+            .Where(schema => schema.Value.TryGetProperty("properties", out _))
+            .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
+                .Where(property => ReferencesIn(property.Value).Contains(LanguageSchema))
+                .Select(property => $"{schema.Name}.{property.Name}"));
+        var language = Schemas().Single(schema => schema.Name == "Language").Value;
+        var copies = Schemas().Where(schema => schema.Name != "Language" && EnumOf(schema.Value) == EnumOf(language)).Select(schema => schema.Name);
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+        EnumOf(language).ShouldBe(JsonValuesOf(typeof(Language)));
+        copies.ShouldBeEmpty();
     }
 
     [Fact]
@@ -213,6 +237,18 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .Where(parameter => parameter.GetProperty("in").GetString() == "path" && parameter.GetProperty("required").GetBoolean())
                 .Select(parameter => $"{parameter.GetProperty("name").GetString()} {FormatOf(parameter.GetProperty("schema"))}")
             : [];
+
+    private static bool HoldsALanguage(PropertyInfo property) =>
+        (Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType) == typeof(Language);
+
+    // Every schema a schema refers to, inside a oneOf of a nullable value too.
+    private static IEnumerable<string> ReferencesIn(JsonElement schema) => schema.ValueKind switch
+    {
+        JsonValueKind.Object => schema.EnumerateObject()
+            .SelectMany(member => member.Name == "$ref" ? [member.Value.GetString()!] : ReferencesIn(member.Value)),
+        JsonValueKind.Array => schema.EnumerateArray().SelectMany(ReferencesIn),
+        _ => [],
+    };
 
     private static string FormatOf(JsonElement schema) => schema.TryGetProperty("format", out var format) ? format.GetString()! : "-";
 

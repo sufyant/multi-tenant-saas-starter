@@ -4,6 +4,7 @@ using Notifications.Application.Ports;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
 using Microsoft.Extensions.Time.Testing;
+using SharedKernel;
 
 namespace Notifications.UnitTests.Invitations.InvitationEmail;
 
@@ -65,7 +66,7 @@ public sealed class InvitationEmailTests
     }
 
     private static OwnerInvitationReady Ready() =>
-        new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link);
+        new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 
     private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReady ready) =>
         SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);

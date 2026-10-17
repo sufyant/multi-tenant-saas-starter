@@ -42,13 +42,25 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         return externalId;
     }
 
-    // A user with an email address and names, each of which may be missing.
-    public async Task<string> AddUserAsync(Guid? id = null, string? email = null, string? firstName = null, string? lastName = null)
+    // A user with an email address and names, each of which may be missing. Without a language the column's default applies: English.
+    public async Task<string> AddUserAsync(
+        Guid? id = null,
+        string? email = null,
+        string? firstName = null,
+        string? lastName = null,
+        string? language = null,
+        string? timeZone = null)
     {
         var externalId = $"user_{Guid.NewGuid():N}";
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.users (id, external_id, email, first_name, last_name) VALUES ('{id ?? Guid.NewGuid()}', '{externalId}', {Text(email)}, {Text(firstName)}, {Text(lastName)})",
             database: databaseName);
+        if (language is not null || timeZone is not null)
+        {
+            await database.ScalarAsync<object>(
+                $"UPDATE control_plane.users SET language = '{language ?? "en"}', time_zone = {Text(timeZone)} WHERE external_id = '{externalId}'",
+                database: databaseName);
+        }
 
         return externalId;
     }
@@ -57,9 +69,9 @@ internal sealed class Catalog(Database database, string databaseName = Database.
     public Task<Guid> UserIdOfAsync(string externalId) =>
         database.ScalarAsync<Guid>($"SELECT id FROM control_plane.users WHERE external_id = '{externalId}'", database: databaseName);
 
-    public async Task<string> AddSystemAdminAsync(string? email = null)
+    public async Task<string> AddSystemAdminAsync(string? email = null, string? language = null)
     {
-        var externalId = await AddUserAsync(email: email);
+        var externalId = await AddUserAsync(email: email, language: language);
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}'",
             database: databaseName);
@@ -111,12 +123,22 @@ internal sealed class Catalog(Database database, string databaseName = Database.
 
     public Task<long> CountAsync(string sql) => database.ScalarAsync<long>(sql);
 
-    // The catalog's email address and names of a user, and whether the user is marked deleted.
+    // The language of the invitation to the address; each test invites an address of its own.
+    public Task<string?> InvitationLanguageOfAsync(string email) =>
+        database.ScalarAsSuperuserAsync<string>($"SELECT language FROM control_plane.invitations WHERE email = '{email}'", databaseName);
+
+    // The row's version: PostgreSQL gives a row a new one on every write, so the same version means nothing wrote the row.
+    public Task<string?> UserRowVersionOfAsync(string externalId) =>
+        database.ScalarAsSuperuserAsync<string>($"SELECT xmin::text FROM control_plane.users WHERE external_id = '{externalId}'", databaseName);
+
+    // The catalog's email address, names and preferences of a user, and whether the user is marked deleted.
     public async Task<StoredUser> UserOfAsync(string externalId, string? databaseName = null)
     {
         var json = await database.ScalarAsSuperuserAsync<string>(
             $"""
-            SELECT json_build_object('email', email, 'firstName', first_name, 'lastName', last_name, 'deleted', deleted_at IS NOT NULL)::text
+            SELECT json_build_object(
+                'email', email, 'firstName', first_name, 'lastName', last_name, 'deleted', deleted_at IS NOT NULL, 'language', language,
+                'timeZone', time_zone)::text
             FROM control_plane.users WHERE external_id = '{externalId}'
             """,
             databaseName ?? Database.MainDatabase);
@@ -127,4 +149,4 @@ internal sealed class Catalog(Database database, string databaseName = Database.
     private static string Text(string? value) => value is null ? "NULL" : $"'{value}'";
 }
 
-internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted);
+internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted, string Language = "en", string? TimeZone = null);
