@@ -370,6 +370,14 @@ Add a shared variable to the API services without apply:
 
 Steps 2 and 3 are safe before the merge, because the running version ignores a variable it does not read. The order matters when the same pull request adds code that needs the variable at start: without the variable, the staging deploy fails.
 
+Remove a shared variable from the API services without apply:
+
+1. Remove its name from `sharedVariables` in `.railway/railway.ts`, in the pull request that stops reading it. `pnpm railway:plan` then also shows "Delete variable" for `api-web` and `api-worker`.
+2. Merge, and let the deploy finish in each environment. The version before it may still need the variable to start.
+3. Then, in the Railway dashboard, open Shared Variables, untick `api-web` and `api-worker` for the variable, and delete it.
+
+Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way.
+
 ## 8. Migrations and the running version
 
 `deploy.yml` runs the migration while the old version still serves. The new version starts after the migration. So every migration must work with the version before it. A migration that breaks the previous version breaks production during the deploy.

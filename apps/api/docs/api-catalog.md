@@ -16,7 +16,7 @@ The signed-in user, acting for themselves. No permission; the user reaches only 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | new | GET | `/v1/me` | `GetMe` (catalog id, email address and names, system admin or not; no status; a person the catalog does not know gets 404 `user.not_found`) | signed in | none | none | none | 20c, 20i |
 | changes | GET | `/v1/me/tenants` | `ListMyTenants` (list contract; `q`: name, slug; no filter; `sort`: `name`; active, suspended and closed tenants, each with its status; never the suspension's reason) | signed in | none | none | none | 20c, 20h |
-| changes | POST | `/v1/me/invitations/accept` | `AcceptInvitation` (body `{ "code", "firstName", "lastName" }`; the names are required for a person the catalog does not know, 1 to 100 characters each, trimmed, else 400 `request.validation_failed` with `required` or `too_long`; a known user sends none; the new user's email address is the invited one; writes an audit entry) | signed in; the email must match | T `member.joined` | none | Clerk: verified emails | 20b, 20i |
+| changes | POST | `/v1/me/invitations/accept` | `AcceptInvitation` (body `{ "code", "firstName", "lastName" }`; the names are required for a person the catalog does not know, 1 to 100 characters each, trimmed, else 400 `request.validation_failed` with `required` or `too_long`; a known user sends none; the new user's email address is the invited one; a deleted user 403 `user.deleted`, also when a deletion commits while the request waits for the user's row; writes an audit entry) | signed in; the email must match | T `member.joined` | none | Clerk: verified emails | 20b, 20i |
 
 ## Tenant: `/v1/tenants/{tenantId}`
 
@@ -164,6 +164,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ## Later
 
+- Drop `control_plane.users.profile_updated_at`. Step 20i stopped using it and kept it, so the version that serves during the deploy can still read users (`docs/deployment.md` at the repository root, section 8).
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.
 
