@@ -16,13 +16,14 @@ public sealed class CorsTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 
+    // The allowed methods are those of the host's endpoints. The test endpoints use PUT, which the API's endpoints do not.
     [Fact]
     public async Task Preflight_FromAnAllowedOrigin_GetsTheCorsHeaders()
     {
         var response = await PreflightAsync(_host, AllowedOrigin);
 
         response.Headers.GetValues("Access-Control-Allow-Origin").ShouldBe([AllowedOrigin]);
-        response.Headers.GetValues("Access-Control-Allow-Methods").Single().Split(',').ShouldBe(["GET", "POST"], ignoreOrder: true);
+        response.Headers.GetValues("Access-Control-Allow-Methods").Single().Split(',').ShouldBe(MappedMethods.Of(_host.Services), ignoreOrder: true);
         response.Headers.GetValues("Access-Control-Allow-Headers").Single().Split(',').Select(header => header.Trim().ToLowerInvariant())
             .ShouldBe(["authorization", "content-type", "idempotency-key"], ignoreOrder: true);
         response.Headers.Contains("Access-Control-Allow-Credentials").ShouldBeFalse();
