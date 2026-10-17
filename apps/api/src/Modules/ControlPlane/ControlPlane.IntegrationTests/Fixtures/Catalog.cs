@@ -40,7 +40,7 @@ internal static class Catalog
     }
 
     public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, Role? role = null) =>
-        SaveInTenantAsync(services, tenant.Id, catalog => catalog.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id)));
+        SaveInTenantAsync(services, tenant.Id, catalog => catalog.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow)));
 
     public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, Role role)
     {

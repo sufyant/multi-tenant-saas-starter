@@ -35,6 +35,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
 
+    public static readonly ErrorCode TenantHasOwner = ErrorCode.Declare("tenant.has_owner");
+
     public static readonly ErrorCode TenantNameInvalid = ErrorCode.Declare("tenant.name_invalid");
 
     public static readonly ErrorCode TenantNotActive = ErrorCode.Declare("tenant.not_active");

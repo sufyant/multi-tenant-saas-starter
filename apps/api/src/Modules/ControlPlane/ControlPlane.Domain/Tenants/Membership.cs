@@ -6,13 +6,16 @@ namespace ControlPlane.Domain.Tenants;
 /// <summary>
 /// A user's membership in a tenant, with the role it is assigned; authorization comes from here, not from the user record.
 /// </summary>
-internal sealed class Membership(Guid tenantId, Guid userId, Guid roleId) : ITenantEntity
+internal sealed class Membership(Guid tenantId, Guid userId, Guid roleId, DateTimeOffset joinedAt) : ITenantEntity
 {
     public Guid TenantId { get; private init; } = tenantId;
 
     public Guid UserId { get; private init; } = userId;
 
     public Guid RoleId { get; private set; } = roleId;
+
+    /// <summary>When the user joined the tenant. The Owner who joined first is the one the platform's tenant list names.</summary>
+    public DateTimeOffset JoinedAt { get; private init; } = joinedAt;
 
     /// <summary>Gives the membership the role. Only <see cref="Tenant.ChangeMemberRole"/> calls it, after the tenant's rules.</summary>
     internal bool Assign(Role role)

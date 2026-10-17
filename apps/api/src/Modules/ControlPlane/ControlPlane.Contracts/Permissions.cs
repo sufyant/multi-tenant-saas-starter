@@ -20,6 +20,8 @@ public static class Permissions
 
     public const string PlatformTenantsReopen = "platform.tenants.reopen";
 
+    public const string PlatformTenantsInviteOwner = "platform.tenants.invite_owner";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";

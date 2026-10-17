@@ -37,7 +37,7 @@ public sealed class TenantCatalogTests(Database database)
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
             var catalog = ((TenantCatalog)scope.GetRequiredService<ITenantCatalog>());
-            catalog.AddMember(user.Id, BuiltInRoles.Member.Id);
+            catalog.AddMember(user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow);
             await catalog.SaveChangesAsync(Cancellation);
             return SharedKernel.Result.Success();
         });

@@ -43,6 +43,8 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
             entry.Property(e => e.TargetKind).IsRequired();
             entry.Property(e => e.TargetId).IsRequired();
             entry.HasIndex(e => new { e.OccurredAt, e.Id });
+            // K5: the tenant filter of the platform's log reads the entries about one target, in the order of the log.
+            entry.HasIndex(e => new { e.TargetKind, e.TargetId, e.OccurredAt, e.Id });
         });
     }
 

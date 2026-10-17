@@ -35,8 +35,14 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
     async Task<IReadOnlyList<AuditRecord>> IAuditLog.ReadTenantLogAsync(CursorRequest page, CancellationToken cancellationToken) =>
         await PageOf(audit.Entries, page).ToListAsync(cancellationToken);
 
-    async Task<IReadOnlyList<AuditRecord>> IAuditLog.ReadPlatformLogAsync(CursorRequest page, CancellationToken cancellationToken) =>
-        await PageOf(audit.PlatformEntries, page).ToListAsync(cancellationToken);
+    // An entry about a tenant has the tenant as its target. The index on the target and the order serves the filter (K5).
+    async Task<IReadOnlyList<AuditRecord>> IAuditLog.ReadPlatformLogAsync(CursorRequest page, Guid? tenantId, CancellationToken cancellationToken) =>
+        await PageOf(
+                tenantId is { } tenant
+                    ? audit.PlatformEntries.Where(entry => entry.TargetKind == AuditTargetKind.Tenant && entry.TargetId == tenant)
+                    : audit.PlatformEntries,
+                page)
+            .ToListAsync(cancellationToken);
 
     // Newest first, by the moment and then the id. The cursor's place is compared as one row value, (occurred_at, id) < (at, id), which
     // the index on the same columns serves (K5).

@@ -19,6 +19,24 @@ internal static class TenantRequests
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
+    // POST /v1/platform/tenants/{tenantId}/owner-invitation creates an invitation, so it is safe to repeat only under the key the client
+    // gives it (I1).
+    public static async Task<HttpResponseMessage> InviteOwnerAsync(
+        this HttpClient client,
+        Guid tenantId,
+        string email,
+        string? language = null,
+        string? idempotencyKey = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{Path}/{tenantId}/owner-invitation")
+        {
+            Content = language is null ? JsonContent.Create(new { email }) : JsonContent.Create(new { email, language }),
+        };
+        request.Headers.Add("Idempotency-Key", idempotencyKey ?? Guid.NewGuid().ToString());
+
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
     // The system admin's changes of a tenant's name and status. Each sets a state, so it takes no idempotency key (I1).
     public static Task<HttpResponseMessage> RenameTenantAsync(this HttpClient client, Guid tenantId, string name) =>
         client.PatchAsJsonAsync($"{Path}/{tenantId}", new { name }, TestContext.Current.CancellationToken);

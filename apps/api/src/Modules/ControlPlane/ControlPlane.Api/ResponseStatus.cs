@@ -37,6 +37,14 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
+    public static OwnerInvitationResponseState OfOwnerInvitation(string state) => state switch
+    {
+        "Pending" => OwnerInvitationResponseState.Pending,
+        "Expired" => OwnerInvitationResponseState.Expired,
+        "Cancelled" => OwnerInvitationResponseState.Cancelled,
+        _ => throw Unknown(state),
+    };
+
     // A filter's value is the status of a response; the query names ControlPlane's status.
     public static string OfTenant(TenantResponseStatus status) => status switch
     {

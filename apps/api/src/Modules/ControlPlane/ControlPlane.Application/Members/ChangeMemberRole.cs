@@ -65,6 +65,7 @@ public static class ChangeMemberRoleHandler
             return (member, null);
         }
 
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

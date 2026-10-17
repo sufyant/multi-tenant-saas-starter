@@ -116,6 +116,39 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|-|false|user|{target}|Ada|false"]);
     }
 
+    // The Activity tab of an organisation: the platform's entries about that tenant, newest first, a page at a time. An entry about
+    // another tenant or about a user is left out. The platform never reads the tenant's own log here.
+    [Fact]
+    public async Task ListPlatformAuditEntries_ATenantFilter_ReturnsTheEntriesAboutThatTenantOnly()
+    {
+        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var (tenant, other) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        var created = await _audit.AddPlatformEntryAsync(_start, "User", Guid.CreateVersion7(), "Tenant", tenant, "tenant.created", "Acme Ltd");
+        await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", Guid.CreateVersion7(), "Tenant", other, "tenant.created", "Globex");
+        await _audit.AddPlatformEntryAsync(_start.AddTicks(20), "User", Guid.CreateVersion7(), "User", tenant);
+        var suspended = await _audit.AddPlatformEntryAsync(_start.AddTicks(30), "User", Guid.CreateVersion7(), "Tenant", tenant, "tenant.suspended", "Acme Ltd");
+        await _audit.AddTenantEntryAsync(tenant, _start.AddTicks(40), targetKind: "Tenant", targetId: tenant);
+
+        var first = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}&limit=1", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/audit-log?tenantId={tenant}&limit=1&cursor={first.GetProperty("nextCursor").GetString()}", Cancellation);
+
+        Ids(first).ShouldBe([suspended]);
+        Ids(second).ShouldBe([created]);
+        second.GetProperty("nextCursor").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
+    {
+        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+        var response = await client.GetAsync("/v1/platform/audit-log?tenantId=acme", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("request.invalid");
+    }
+
     private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>
         _audit.AddPlatformEntryAsync(occurredAt, "User", Guid.CreateVersion7(), "User", Guid.CreateVersion7());
 

@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Api.Tenant;
+using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
@@ -28,6 +30,10 @@ public static class Tenants
         platform.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.PlatformTenantsReactivate);
         platform.MapPost("/tenants/{tenantId:guid}/close", CloseTenant).RequireAuthorization(Permissions.PlatformTenantsClose);
         platform.MapPost("/tenants/{tenantId:guid}/reopen", ReopenTenant).RequireAuthorization(Permissions.PlatformTenantsReopen);
+        platform.MapPost("/tenants/{tenantId:guid}/owner-invitation", InviteOwner)
+            .WithMetadata(new IdempotencyKeyRequired())
+            .RequireAuthorization(Permissions.PlatformTenantsInviteOwner)
+            .Produces<InvitationResponse>(StatusCodes.Status201Created);
     }
 
     // Tenant creation runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client
@@ -47,8 +53,9 @@ public static class Tenants
         return created.Map(ToResponse);
     }
 
-    // The list reads across tenants, so it runs without one.
-    private static async Task<Result<ListPage<TenantResponse>>> ListTenants(
+    // The list reads across tenants, so it runs without one. Each item comes from the tenant's row, with its summary (R12), and the user
+    // of its first Owner: one query for the page.
+    private static async Task<Result<ListPage<TenantListItemResponse>>> ListTenants(
         int? page,
         int? pageSize,
         ListSort<ListTenantsSort>? sort,
@@ -69,15 +76,30 @@ public static class Tenants
             return filter.Error;
         }
 
-        var tenants = await bus.InvokeAsync<Result<ListPage<TenantDetails>>>(
+        var tenants = await bus.InvokeAsync<Result<ListPage<TenantListItem>>>(
             new ListTenants(list.Value, filter.Value is { } chosen ? ResponseStatus.OfTenant(chosen) : null),
             cancellationToken);
         return tenants.Map(found => found.Map(ToResponse));
     }
 
     // One tenant is read inside the tenant the route names, as suspension does (W3); an id no tenant has is not found.
-    private static async Task<Result<TenantResponse>> GetTenant(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new GetTenant(), cancellationToken)).Map(ToResponse);
+    private static async Task<Result<TenantDetailResponse>> GetTenant(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
+        (await bus.InvokeForTenantAsync<Result<TenantWithOwners>>(tenantId.ToString(), new GetTenant(), cancellationToken)).Map(ToResponse);
+
+    // The platform invites an Owner into a tenant without one. It runs inside the tenant the route names, which the idempotency executor
+    // declares (W3), under the request's idempotency key (I1). The server chooses the invitation's id. The endpoint declares 201, so the
+    // host answers a new invitation with 201, and a replayed request maps its saved result the same way (I5).
+    private static async Task<Result<InvitationResponse>> InviteOwner(
+        Guid tenantId,
+        InviteOwnerRequest request,
+        ClaimsPrincipal user,
+        IIdempotencyExecutor idempotency,
+        CancellationToken cancellationToken)
+    {
+        var invited = await idempotency.ExecuteAsync<InvitationSummary>(
+            new InviteOwner(user.Id(), request.Email, request.Language), tenantId.ToString(), cancellationToken);
+        return invited.Map(Invitations.ToResponse);
+    }
 
     // A change of a tenant's name or status runs inside the tenant the route names (W3). Each sets a state, so it takes no idempotency
     // key (I1).
@@ -122,6 +144,37 @@ public static class Tenants
 
     private static TenantResponse ToResponse(TenantDetails tenant) =>
         new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status), tenant.SuspensionReason, tenant.ClosedAt);
+
+    private static TenantListItemResponse ToResponse(TenantListItem item) => new(
+        item.Tenant.Id,
+        item.Tenant.Name,
+        item.Tenant.Slug,
+        ResponseStatus.OfTenant(item.Tenant.Status),
+        item.Tenant.SuspensionReason,
+        item.Tenant.ClosedAt,
+        item.ReopenableUntil,
+        item.MemberCount,
+        item.OwnerCount,
+        item.FirstOwner is { } owner ? ToResponse(owner) : null,
+        item.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
+
+    private static TenantDetailResponse ToResponse(TenantWithOwners tenant) => new(
+        tenant.Tenant.Id,
+        tenant.Tenant.Name,
+        tenant.Tenant.Slug,
+        ResponseStatus.OfTenant(tenant.Tenant.Status),
+        tenant.Tenant.SuspensionReason,
+        tenant.Tenant.ClosedAt,
+        tenant.ReopenableUntil,
+        tenant.MemberCount,
+        tenant.OwnerCount,
+        [.. tenant.Owners.Select(ToResponse)],
+        tenant.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
+
+    private static TenantOwnerResponse ToResponse(OwnerDetails owner) => new(owner.UserId, owner.FirstName, owner.LastName, owner.Email);
+
+    private static OwnerInvitationResponse ToResponse(OwnerInvitationDetails invitation) =>
+        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfOwnerInvitation(invitation.State));
 }
 
 /// <summary>
@@ -129,6 +182,12 @@ public static class Tenants
 /// invitation email: without one, the system admin's own.
 /// </summary>
 public sealed record CreateTenantRequest(string Name, string Slug, string OwnerEmail, Language? Language = null);
+
+/// <summary>
+/// The address of the Owner the platform invites into a tenant without one, and the language of the invitation's email: without one, the
+/// system admin's own.
+/// </summary>
+public sealed record InviteOwnerRequest(string Email, Language? Language = null);
 
 /// <summary>A tenant's new name. The slug never changes.</summary>
 public sealed record RenameTenantRequest(string Name);
@@ -141,6 +200,57 @@ public sealed record SuspendTenantRequest(string Reason);
 /// closure while it is closed. Only a system admin sees this shape.
 /// </summary>
 public sealed record TenantResponse(Guid Id, string Name, string Slug, TenantResponseStatus Status, string? SuspensionReason, DateTimeOffset? ClosedAt);
+
+/// <summary>
+/// A tenant in the platform's list: as <see cref="TenantResponse"/>, with until when a closed tenant can be reopened, its members and Owners
+/// counted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+/// </summary>
+public sealed record TenantListItemResponse(
+    Guid Id,
+    string Name,
+    string Slug,
+    TenantResponseStatus Status,
+    string? SuspensionReason,
+    DateTimeOffset? ClosedAt,
+    DateTimeOffset? ReopenableUntil,
+    int MemberCount,
+    int OwnerCount,
+    TenantOwnerResponse? FirstOwner,
+    OwnerInvitationResponse? OwnerInvitation);
+
+/// <summary>One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first.</summary>
+public sealed record TenantDetailResponse(
+    Guid Id,
+    string Name,
+    string Slug,
+    TenantResponseStatus Status,
+    string? SuspensionReason,
+    DateTimeOffset? ClosedAt,
+    DateTimeOffset? ReopenableUntil,
+    int MemberCount,
+    int OwnerCount,
+    IReadOnlyList<TenantOwnerResponse> Owners,
+    OwnerInvitationResponse? OwnerInvitation);
+
+/// <summary>An Owner of a tenant: the catalog user's id, names and address.</summary>
+public sealed record TenantOwnerResponse(Guid UserId, string? FirstName, string? LastName, string? Email);
+
+/// <summary>The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request.</summary>
+public sealed record OwnerInvitationResponse(string Email, DateTimeOffset ExpiresAt, OwnerInvitationResponseState State);
+
+/// <summary>The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<OwnerInvitationResponseState>))]
+public enum OwnerInvitationResponseState
+{
+    [JsonStringEnumMemberName("pending")]
+    Pending,
+
+    [JsonStringEnumMemberName("expired")]
+    Expired,
+
+    [JsonStringEnumMemberName("cancelled")]
+    Cancelled,
+}
 
 /// <summary>The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<TenantResponseStatus>))]

@@ -70,7 +70,8 @@ public static class Invitations
     private static async Task<Result> RevokeInvitation(Guid invitationId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         await bus.InvokeAsync<Result>(new RevokeInvitation(user.Id(), invitationId), cancellationToken);
 
-    private static InvitationResponse ToResponse(InvitationSummary invitation) =>
+    // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
+    internal static InvitationResponse ToResponse(InvitationSummary invitation) =>
         new(invitation.Id, invitation.Email, invitation.Role, invitation.InvitedBy, invitation.CreatedAt, invitation.ExpiresAt);
 }
 

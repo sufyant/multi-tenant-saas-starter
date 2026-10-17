@@ -13,6 +13,7 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -39,6 +40,7 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Cancelled");
         (await _audit.TenantLogAsync(invitation))
             .ShouldBe($"{tenant.Id}:invitation.revoked|User|{await _catalog.UserIdOfAsync(revoker)}|Invitation|{invitation}|-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // An expired invitation is still pending until someone revokes it.

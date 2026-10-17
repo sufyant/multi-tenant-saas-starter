@@ -65,6 +65,15 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             tenant.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
             tenant.Property(t => t.CancellationReason).HasMaxLength(Tenant.CancellationReasonMaxLength);
             tenant.Property(t => t.SuspensionReason).HasMaxLength(Tenant.SuspensionReasonMaxLength);
+
+            // R12: the summary the platform's tenant list reads across tenants, where row level security hides the memberships and the
+            // invitations. Tenant.Summarize writes it under the tenant's lock; a version that does not know it inserts tenants with no
+            // summary, which the defaults make empty.
+            tenant.Property(t => t.MemberCount).HasDefaultValue(0);
+            tenant.Property(t => t.OwnerCount).HasDefaultValue(0);
+            tenant.HasOne<User>().WithMany().HasForeignKey(t => t.FirstOwnerId).OnDelete(DeleteBehavior.Restrict);
+            tenant.Property(t => t.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
+            tenant.Property(t => t.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
         });
 
         modelBuilder.Entity<User>(user =>
@@ -98,6 +107,9 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             membership.HasOne<Tenant>().WithMany().HasForeignKey(m => m.TenantId);
             membership.HasOne<User>().WithMany().HasForeignKey(m => m.UserId);
             membership.HasOne<Role>().WithMany().HasForeignKey(m => m.RoleId).OnDelete(DeleteBehavior.Restrict);
+
+            // A version that does not know the column adds a membership at the moment of its insert.
+            membership.Property(m => m.JoinedAt).HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<Invitation>(invitation =>

@@ -36,7 +36,17 @@ public interface ITenantCatalog
     /// A page of every tenant whose name or slug contains the search, in the status or every status, by the sort field, then id. It
     /// needs no active tenant.
     /// </summary>
-    internal Task<ListPage<Tenant>> ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken);
+    internal Task<ListPage<(Tenant Tenant, User? FirstOwner)>> ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// What the active tenant's own rows say for its summary: its members, its Owners, the Owner who joined first, and its latest Owner
+    /// invitation. It saves the pending changes first, so it reads the rows as the transaction leaves them. The caller holds the tenant's
+    /// lock (K6).
+    /// </summary>
+    internal Task<TenantRows> ReadRowsAsync(CancellationToken cancellationToken);
+
+    /// <summary>The users who hold the Owner role in the active tenant, in the order they joined, then by user id.</summary>
+    internal Task<IReadOnlyList<User>> ListOwnersAsync(CancellationToken cancellationToken);
 
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
@@ -105,7 +115,7 @@ public interface ITenantCatalog
     /// <summary>Whether the user is on the staff list. The staff list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
-    internal void AddMember(Guid userId, Guid roleId);
+    internal void AddMember(Guid userId, Guid roleId, DateTimeOffset joinedAt);
 
     internal void Remove(Membership membership);
 

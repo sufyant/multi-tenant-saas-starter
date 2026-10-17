@@ -49,6 +49,7 @@ public static class CloseTenantHandler
 
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
             ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (TenantDetails.Of(tenant), new TenantClosed(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);

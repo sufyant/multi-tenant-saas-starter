@@ -238,6 +238,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at")
+                        .HasDefaultValueSql("now()");
+
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid")
                         .HasColumnName("role_id");
@@ -269,11 +275,41 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("closed_at");
 
+                    b.Property<Guid?>("FirstOwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("first_owner_id");
+
+                    b.Property<int>("MemberCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("member_count");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
+
+                    b.Property<int>("OwnerCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("owner_count");
+
+                    b.Property<string>("OwnerInvitationEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("owner_invitation_email");
+
+                    b.Property<DateTimeOffset?>("OwnerInvitationExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("owner_invitation_expires_at");
+
+                    b.Property<string>("OwnerInvitationStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("owner_invitation_status");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -294,6 +330,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_tenants");
+
+                    b.HasIndex("FirstOwnerId")
+                        .HasDatabaseName("ix_tenants_first_owner_id");
 
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_tenants_name");
@@ -456,6 +495,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("FirstOwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_tenants_users_first_owner_id");
                 });
 #pragma warning restore 612, 618
         }

@@ -17,6 +17,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -50,6 +51,8 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(id)).ShouldBe(
             $"{first.Id}:member.removed|Platform|-|User|{id}|-, {second.Id}:member.removed|Platform|-|User|{id}|-");
         _api.Identity.Deleted.ShouldBe([user]);
+        await _summaries.ShouldMatchTheRowsAsync(first.Id);
+        await _summaries.ShouldMatchTheRowsAsync(second.Id);
     }
 
     // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's user erases them from every

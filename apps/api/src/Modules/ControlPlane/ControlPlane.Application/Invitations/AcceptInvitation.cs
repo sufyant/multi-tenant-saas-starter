@@ -112,7 +112,8 @@ public static class AcceptInvitationHandler
             catalog.Add(user);
         }
 
-        catalog.AddMember(user.Id, invitation.RoleId);
+        catalog.AddMember(user.Id, invitation.RoleId, now);
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
         return (
             new TenantSummary(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString()),

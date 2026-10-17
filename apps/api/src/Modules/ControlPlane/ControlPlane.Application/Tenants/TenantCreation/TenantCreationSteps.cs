@@ -69,6 +69,7 @@ public static partial class CancelTenantHandler
         }
 
         (await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
         return new CancelTenantReply(step.TenantId);
     }
@@ -85,10 +86,11 @@ public static class CancelInvitationHandler
     // invitation belongs to the tenant aggregate, so the tenant row is locked first (K6). A cancelled invitation's sign-up is withdrawn.
     public static async Task<WithdrawSignUp?> HandleAsync(CancelInvitation step, ITenantCatalog catalog, CancellationToken cancellationToken)
     {
-        _ = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation is cancelled in the tenant its creation added.");
         var invitation = await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken);
         var cancelled = invitation?.Cancel() == true;
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
         return cancelled && invitation!.SignUpInvitationId is { } signUp ? new WithdrawSignUp(signUp) : null;
     }

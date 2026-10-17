@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
 namespace Api.IntegrationTests.Platform;
@@ -13,12 +14,13 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly string _marker = Guid.NewGuid().ToString("N")[..12];
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
     private Catalog _catalog = new(database);
     private ApiFactory _api = null!;
 
     public ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time);
         return ValueTask.CompletedTask;
     }
 
@@ -49,7 +51,9 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             (echoEarlier.Id, "Echo Ltd", echoEarlier.Slug, "active"),
             (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "reopenableUntil", "memberCount", "ownerCount", "firstOwner", "ownerInvitation"],
+            ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(6);
@@ -205,6 +209,40 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("suspensionReason").GetString()).ShouldBe(["Unpaid invoices", null]);
     }
 
+    // Each item counts the tenant's members and Owners, names the Owner who joined first, and, while the tenant has no Owner, its latest
+    // Owner invitation, whose state "expired" comes from its expiry at the moment of the request. A closed tenant says until when it can
+    // be reopened. The tenants are made through the API, so their summary comes from the commands (R12).
+    [Fact]
+    public async Task ListTenants_TenantsInEachStateOfTheirOwners_AnswerTheCountsTheFirstOwnerAndTheInvitation()
+    {
+        var admin = await AdminAsync();
+        var tenants = new PlatformTenants(database, _api);
+        var (ada, grace, expired, pending, closed) = (Email(), Email(), Email(), Email(), Email());
+        var expiredTenant = await tenants.CreateAsync(admin, expired, name: $"{_marker} Delta");
+        var expiredAt = _time.GetUtcNow().AddDays(7);
+        _time.Advance(TimeSpan.FromDays(8));
+        var owned = await tenants.CreateAsync(admin, ada, name: $"{_marker} Alpha");
+        var (first, _) = await tenants.AcceptAsync(await tenants.LatestInvitationAsync(owned), ada);
+        var graces = await PlatformTenants.InvitationIdOfAsync(
+            await _api.WaitingForMessagesAsync(() => _api.CreateClient(first).InviteMemberAsync(owned, grace, role: "owner")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await tenants.AcceptAsync(graces, grace, "Grace", "Hopper");
+        var pendingTenant = await tenants.CreateAsync(admin, pending, name: $"{_marker} Bravo");
+        var closedTenant = await tenants.CreateAsync(admin, closed, name: $"{_marker} Charlie");
+        await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(closedTenant));
+        var now = _time.GetUtcNow();
+
+        var page = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        Owners(page).ShouldBe(
+        [
+            $"{owned}|2|2|{await _catalog.UserIdOfAsync(first)}|Ada|Lovelace|{ada}|-|-",
+            $"{pendingTenant}|0|0|-|{pending}|{now.AddDays(7):O}|pending|-",
+            $"{closedTenant}|0|0|-|{closed}|{now.AddDays(7):O}|cancelled|{now.AddDays(30):O}",
+            $"{expiredTenant}|0|0|-|{expired}|{expiredAt:O}|expired|-",
+        ]);
+    }
+
     private static List<(Guid Id, string Name, string Slug, string Status)> Tenants(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => (
@@ -231,6 +269,25 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             await _catalog.AddTenantAsync(name: $"{_marker} {name}");
         }
     }
+
+    // Each item as "id|memberCount|ownerCount|firstOwner|ownerInvitation|reopenableUntil": the first Owner as "userId|firstName|lastName|email",
+    // the invitation as "email|expiresAt|state", "-" for null.
+    private static List<string> Owners(JsonElement page) =>
+    [
+        .. page.GetProperty("items").EnumerateArray().Select(item => string.Join('|',
+            item.GetProperty("id").GetGuid(),
+            item.GetProperty("memberCount").GetInt32(),
+            item.GetProperty("ownerCount").GetInt32(),
+            item.GetProperty("firstOwner") is { ValueKind: JsonValueKind.Object } owner
+                ? $"{owner.GetProperty("userId").GetGuid()}|{owner.GetProperty("firstName").GetString()}|{owner.GetProperty("lastName").GetString()}|{owner.GetProperty("email").GetString()}"
+                : "-",
+            item.GetProperty("ownerInvitation") is { ValueKind: JsonValueKind.Object } invitation
+                ? $"{invitation.GetProperty("email").GetString()}|{invitation.GetProperty("expiresAt").GetDateTimeOffset():O}|{invitation.GetProperty("state").GetString()}"
+                : "-",
+            item.GetProperty("reopenableUntil") is { ValueKind: JsonValueKind.String } until ? until.GetDateTimeOffset().ToString("O") : "-")),
+    ];
+
+    private static string Email() => $"{Guid.NewGuid():N}@example.com";
 
     private static List<string> Names(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("name").GetString()!)];
 }

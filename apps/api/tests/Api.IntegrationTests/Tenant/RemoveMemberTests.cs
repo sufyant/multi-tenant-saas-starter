@@ -13,6 +13,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -42,6 +43,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(member))
             .ShouldBe($"{tenant.Id}:member.removed|User|{await _catalog.UserIdOfAsync(actor)}|User|{member}|-");
         (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{recordedRole}}"}""");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // An Owner removes another Owner when the tenant keeps one.
@@ -170,6 +172,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.NoContent, HttpStatusCode.NotFound]);
         (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.NotFound))).ShouldBe("tenant.not_found");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // K3: an entry holds ids and the role, never the member's name or email address.

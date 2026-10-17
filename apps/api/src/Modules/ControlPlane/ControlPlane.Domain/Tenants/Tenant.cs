@@ -1,3 +1,4 @@
+using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
 
@@ -48,6 +49,33 @@ internal sealed class Tenant
 
     /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed.</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
+
+    /// <summary>
+    /// How many members the tenant has. With the other values of its summary, it is what the platform's tenant list reads across tenants,
+    /// where row level security hides the memberships (R12). Only <see cref="Summarize"/> writes the summary.
+    /// </summary>
+    public int MemberCount { get; private set; }
+
+    /// <summary>How many of the members hold the Owner role, a deleted user's included (K1).</summary>
+    public int OwnerCount { get; private set; }
+
+    /// <summary>The catalog user id of the Owner who joined first. None while the tenant has no Owner.</summary>
+    public Guid? FirstOwnerId { get; private set; }
+
+    /// <summary>
+    /// The address of the tenant's latest Owner invitation, only while the tenant has no Owner: it is a person's, so it is cleared once an
+    /// Owner joins (the maintainer's decision in step 20k).
+    /// </summary>
+    public string? OwnerInvitationEmail { get; private set; }
+
+    /// <summary>When the latest Owner invitation expires, while the tenant has no Owner.</summary>
+    public DateTimeOffset? OwnerInvitationExpiresAt { get; private set; }
+
+    /// <summary>
+    /// The status of the latest Owner invitation, while the tenant has no Owner: pending or cancelled. Whether a pending one has expired
+    /// is read from its expiry when it is asked (<see cref="OwnerInvitationStateAt"/>), never stored.
+    /// </summary>
+    public InvitationStatus? OwnerInvitationStatus { get; private set; }
 
     /// <summary>The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug)
@@ -188,6 +216,45 @@ internal sealed class Tenant
         ClosedAt = null;
         SuspensionReason = null;
         return true;
+    }
+
+    /// <summary>
+    /// Takes the summary from the tenant's own rows, after a change to a membership or an invitation, under the tenant's lock (K6). It is
+    /// the one place that writes the summary. The latest Owner invitation stays only while the tenant has no Owner.
+    /// </summary>
+    public void Summarize(TenantRows rows)
+    {
+        (MemberCount, OwnerCount, FirstOwnerId) = (rows.Members, rows.Owners, rows.FirstOwnerId);
+        var invitation = rows.Owners == 0 ? rows.LatestOwnerInvitation : null;
+        (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus) = (invitation?.Email, invitation?.ExpiresAt, invitation?.Status);
+    }
+
+    /// <summary>The state of the latest Owner invitation at this moment, while the tenant has no Owner; none otherwise.</summary>
+    public OwnerInvitationState? OwnerInvitationStateAt(DateTimeOffset now) => OwnerInvitationStatus switch
+    {
+        InvitationStatus.Pending => now >= OwnerInvitationExpiresAt ? OwnerInvitationState.Expired : OwnerInvitationState.Pending,
+        InvitationStatus.Cancelled => OwnerInvitationState.Cancelled,
+        _ => null,
+    };
+
+    /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
+    public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
+
+    /// <summary>
+    /// Whether the platform may invite an Owner now: only into an active tenant that has no Owner. A tenant has no Owner only while its
+    /// first Owner has not accepted, because the last Owner always stays (K1). The caller holds the tenant's lock and counts the Owners
+    /// under it (K6), so an acceptance runs before or after. It changes nothing.
+    /// </summary>
+    public Result CheckOwnerInvitation(int owners)
+    {
+        if (Status != TenantStatus.Active)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active tenant gets an Owner invitation.");
+        }
+
+        return owners > 0
+            ? Error.Conflict(ControlPlaneErrorCodes.TenantHasOwner, "The tenant has an Owner; its Owners invite people.")
+            : Result.Success();
     }
 
     /// <summary>

@@ -14,6 +14,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -48,6 +49,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(memberId))
             .ShouldBe($"{tenant.Id}:member.role_changed|User|{await _catalog.UserIdOfAsync(actor)}|User|{memberId}|-");
         (await _audit.TenantDetailsAsync(memberId)).ShouldBe("""{"newRole": "admin", "oldRole": "member"}""");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     [Fact]
@@ -121,6 +123,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Admin");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // section 6, "Member management", check 5: the last Owner keeps the role.
@@ -258,6 +261,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.OK, HttpStatusCode.Forbidden]);
         (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.Forbidden))).ShouldBe("membership.owner_requires_owner");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // Section 6, "Member management", check 1: an Owner removes another Owner while that Owner's role change waits for the tenant's lock.

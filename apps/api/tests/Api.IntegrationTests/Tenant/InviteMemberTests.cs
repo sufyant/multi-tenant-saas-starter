@@ -21,6 +21,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     private const int DailyLimit = 2;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
     private ApiFactory _api = null!;
@@ -56,6 +57,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
         (await _catalog.InvitationStatusOfAsync(invitation.GetProperty("id").GetGuid())).ShouldBe("Pending");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // Decision 5 of step 20j: without a language, the invitation speaks the inviter's own, and its email does too.
@@ -354,6 +356,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         statuses.ShouldBe([HttpStatusCode.Created, HttpStatusCode.Created]);
         (await PendingInvitationsOfAsync(tenant.Id)).ShouldBe(1);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(2);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // K6: the limit is checked under the tenant's lock, so two requests at once cannot both take the last place.

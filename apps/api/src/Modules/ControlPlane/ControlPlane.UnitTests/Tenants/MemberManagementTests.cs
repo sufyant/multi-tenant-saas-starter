@@ -182,5 +182,5 @@ public class MemberManagementTests
 
     private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
 
-    private static Membership Membership(string role) => new(TenantId, Guid.NewGuid(), RoleOf(role).Id);
+    private static Membership Membership(string role) => new(TenantId, Guid.NewGuid(), RoleOf(role).Id, DateTimeOffset.UnixEpoch);
 }
