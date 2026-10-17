@@ -227,15 +227,16 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _api.DisposeAsync();
         _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: new FakeTimeProvider(now));
         var email = $"{_marker}@example.com";
+        var (firstSecret, secondSecret) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
         var invitee = $"user_{Guid.NewGuid():N}";
         _api.Identity.AddAccount(invitee, email);
         var first = await _catalog.AddTenantAsync();
         var second = await _catalog.AddTenantAsync();
-        await _catalog.AddInvitationAsync(first.Id, email, secret: "first-secret", expiresAt: now.AddDays(7));
-        await _catalog.AddInvitationAsync(second.Id, email, secret: "second-secret", expiresAt: now.AddDays(7));
+        await _catalog.AddInvitationAsync(first.Id, email, secret: firstSecret, expiresAt: now.AddDays(7));
+        await _catalog.AddInvitationAsync(second.Id, email, secret: secondSecret, expiresAt: now.AddDays(7));
 
-        (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(first.Id, "first-secret")))).EnsureSuccessStatusCode();
-        (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(second.Id, "second-secret")))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(first.Id, firstSecret)))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(second.Id, secondSecret)))).EnsureSuccessStatusCode();
 
         var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
         (item.GetProperty("membershipCount").GetInt32(), item.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((2, now));

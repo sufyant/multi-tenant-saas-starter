@@ -119,12 +119,13 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_OneKnownUserIntoTwoTenantsAtOnce_JoinsBothAndCountsTwo()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
+        var (firstSecret, secondSecret) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
         var known = await _catalog.AddUserAsync(email: email, firstName: "Grace");
         _api.Identity.AddAccount(known, email);
         var first = await _catalog.AddTenantAsync();
         var second = await _catalog.AddTenantAsync();
-        await _catalog.AddInvitationAsync(first.Id, email, secret: "first-secret");
-        await _catalog.AddInvitationAsync(second.Id, email, secret: "second-secret");
+        await _catalog.AddInvitationAsync(first.Id, email, secret: firstSecret);
+        await _catalog.AddInvitationAsync(second.Id, email, secret: secondSecret);
         await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
         await holder.OpenAsync(Cancellation);
         await using var holding = await holder.BeginTransactionAsync(Cancellation);
@@ -132,8 +133,8 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         await hold.ExecuteScalarAsync(Cancellation);
 
         var accepting = Task.WhenAll(
-            AcceptAsync(known, Catalog.InvitationCodeOf(first.Id, "first-secret")),
-            AcceptAsync(known, Catalog.InvitationCodeOf(second.Id, "second-secret")));
+            AcceptAsync(known, Catalog.InvitationCodeOf(first.Id, firstSecret)),
+            AcceptAsync(known, Catalog.InvitationCodeOf(second.Id, secondSecret)));
         await Waiting.UntilAsync(async () => accepting.IsCompleted || await WaitingBehindAsync(holder.ProcessID) == 2);
         await holding.CommitAsync(Cancellation);
         var accepted = await accepting;
