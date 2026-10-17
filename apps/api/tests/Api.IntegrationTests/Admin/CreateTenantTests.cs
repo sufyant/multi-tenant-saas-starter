@@ -41,6 +41,46 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
     }
 
+    // Decision 5 of step 20j: without a language, the owner's invitation speaks the system admin's own, and its email does too.
+    [Fact]
+    public async Task CreateTenant_WithoutALanguage_InvitesTheOwnerInTheSystemAdminsLanguage()
+    {
+        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(language: "ar"), secondFactor: true);
+        var owner = $"{Guid.NewGuid():N}@example.com";
+
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = owner }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await _catalog.InvitationLanguageOfAsync(owner)).ShouldBe("ar");
+        _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
+    }
+
+    [Fact]
+    public async Task CreateTenant_WithALanguage_InvitesTheOwnerInIt()
+    {
+        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(language: "ar"), secondFactor: true);
+        var owner = $"{Guid.NewGuid():N}@example.com";
+
+        var created = await _api.WaitingForMessagesAsync(
+            () => admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = owner, language = "tr" }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await _catalog.InvitationLanguageOfAsync(owner)).ShouldBe("tr");
+        _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("Acme Ltd adlı kuruluşa davet edildiniz");
+    }
+
+    [Fact]
+    public async Task CreateTenant_WithALanguageNotOfTheList_IsABadRequestAndCreatesNothing()
+    {
+        var admin = await AdminAsync();
+        var slug = Slug();
+
+        var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "owner@example.com", language = "de" });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+    }
+
     [Fact]
     public async Task CreateTenant_SlugTaken_IsAConflict()
     {
@@ -328,10 +368,10 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     }
 
     // A7: the first system admin's first visit writes their catalog user with the configured address, which the identity provider
-    // verified, and no names: the identity provider keeps none, and a system admin gives them. Their staff list is empty, so the test
-    // has a database of its own.
+    // verified, and no names: the identity provider keeps none, and a system admin gives them. No invitation chose their language, so
+    // they start with English (decision 6 of step 20j). Their staff list is empty, so the test has a database of its own.
     [Fact]
-    public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithTheConfiguredAddressAndNoNames()
+    public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithTheConfiguredAddressNoNamesAndEnglish()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
@@ -342,7 +382,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
             () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.FirstSystemAdminEmail, null, null, Deleted: false));
+        (await _catalog.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.FirstSystemAdminEmail, null, null, Deleted: false, "en", null));
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);

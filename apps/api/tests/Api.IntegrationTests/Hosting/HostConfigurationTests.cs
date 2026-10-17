@@ -60,6 +60,7 @@ public sealed class HostConfigurationTests(Database database)
     {
         { "ControlPlane:FirstSystemAdminEmail", "not an email" },
         { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
+        { "ControlPlane:Invitations:Lifetime", "23:59:59" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
         { "ControlPlane:Clerk:RetryDelays:0", "00:00:00" },
         { "ControlPlane:ActivationTimeout", "00:00:00" },

@@ -11,11 +11,11 @@ using SharedKernel;
 namespace ControlPlane.Application.Invitations;
 
 /// <summary>
-/// An Owner or an Admin invites someone to the active tenant by email, with a built-in role (<c>Owner</c>, <c>Admin</c>, <c>Member</c>).
-/// The host's idempotency layer protects the HTTP request (I1); the command carries no request key, and the server chooses the
-/// invitation's id.
+/// An Owner or an Admin invites someone to the active tenant by email, with a built-in role (<c>Owner</c>, <c>Admin</c>, <c>Member</c>),
+/// in a language for the invitation's email: without one, the inviter's own. The host's idempotency layer protects the HTTP request (I1);
+/// the command carries no request key, and the server chooses the invitation's id.
 /// </summary>
-public sealed record InviteMember(string InviterId, string Email, string Role);
+public sealed record InviteMember(string InviterId, string Email, string Role, Language? Language);
 
 public sealed class InviteMemberValidator : AbstractValidator<InviteMember>
 {
@@ -95,7 +95,8 @@ public static class InviteMemberHandler
         }
 
         var secret = InvitationToken.Generate();
-        var invitation = Invitation.Create(Guid.CreateVersion7(now), tenant.Id, email, role, inviter.Id, now, invitations.Lifetime, secret);
+        var language = command.Language ?? inviter.Language;
+        var invitation = Invitation.Create(Guid.CreateVersion7(now), tenant.Id, email, role, inviter.Id, now, invitations.Lifetime, secret, language);
         catalog.Add(invitation);
         await catalog.SaveChangesAsync(cancellationToken);
 

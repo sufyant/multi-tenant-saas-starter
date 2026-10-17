@@ -9,8 +9,8 @@ namespace ControlPlane.Application.Users;
 /// </summary>
 public sealed record GetMe(string UserId);
 
-/// <summary>The signed-in user: the catalog's id, the copy of their profile, and whether they are a system admin.</summary>
-public sealed record MeDetails(Guid Id, string? Email, string? FirstName, string? LastName, bool IsSystemAdmin);
+/// <summary>The signed-in user: the catalog's id, the copy of their profile, whether they are a system admin, and their preferences.</summary>
+public sealed record MeDetails(Guid Id, string? Email, string? FirstName, string? LastName, bool IsSystemAdmin, Language Language, string? TimeZone);
 
 public static class GetMeHandler
 {
@@ -21,6 +21,7 @@ public static class GetMeHandler
             return Errors.UserNotFound;
         }
 
-        return new MeDetails(user.Id, user.Email, user.FirstName, user.LastName, await users.IsSystemAdminAsync(user.Id, cancellationToken));
+        return new MeDetails(
+            user.Id, user.Email, user.FirstName, user.LastName, await users.IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
     }
 }

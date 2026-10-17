@@ -11,11 +11,12 @@ internal static class InvitationRequests
         Guid tenantId,
         string email,
         string role = "Member",
-        string? idempotencyKey = null)
+        string? idempotencyKey = null,
+        string? language = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/tenants/{tenantId}/invitations")
         {
-            Content = JsonContent.Create(new { email, role }),
+            Content = language is null ? JsonContent.Create(new { email, role }) : JsonContent.Create(new { email, role, language }),
         };
         request.Headers.Add("Idempotency-Key", idempotencyKey ?? Guid.NewGuid().ToString());
 

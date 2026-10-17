@@ -45,7 +45,9 @@ public static class ControlPlaneInfrastructure
         services.AddOptions<InvitationSettings>()
             .BindConfiguration(InvitationSettings.Section)
             .Validate(settings => settings.AcceptUrl is { IsAbsoluteUri: true }, $"{InvitationSettings.Section}:AcceptUrl must be the absolute URL of the page that accepts invitations.")
-            .Validate(settings => settings.Lifetime > TimeSpan.Zero, $"{InvitationSettings.Section}:Lifetime must be positive.")
+            .Validate(
+                settings => settings.Lifetime >= TimeSpan.FromDays(1),
+                $"{InvitationSettings.Section}:Lifetime must be at least one day: the invitation email says it in whole days.")
             .Validate(settings => settings.DailyLimitPerTenant > 0, $"{InvitationSettings.Section}:DailyLimitPerTenant must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<InvitationSettings>>().Value);

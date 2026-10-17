@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
@@ -5,6 +6,8 @@ using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using SharedKernel;
 using Tenancy;
 using Wolverine;
 
@@ -19,6 +22,14 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     : TenantDbContext(options, messaging)
 {
     public const string Schema = "control_plane";
+
+    // RFC 5646, section 4.4.1: a buffer of 35 characters holds any language tag a program is likely to meet.
+    private const int LanguageTagMaxLength = 35;
+
+    // A language is kept as its tag, the value it has in JSON ("en"), so a new member of the enum moves no stored value.
+    private static readonly ValueConverter<Language, string> LanguageTag = new(
+        language => JsonSerializer.Serialize(language, JsonSerializerOptions.Default).Trim('"'),
+        tag => JsonSerializer.Deserialize<Language>($"\"{tag}\"", JsonSerializerOptions.Default));
 
     internal DbSet<Tenant> Tenants => Set<Tenant>();
 
@@ -66,6 +77,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             user.HasIndex(u => u.Email, "ix_users_email_trgm").HasDatabaseName("ix_users_email_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
             user.HasIndex(u => u.FirstName, "ix_users_first_name_trgm").HasDatabaseName("ix_users_first_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
             user.HasIndex(u => u.LastName, "ix_users_last_name_trgm").HasDatabaseName("ix_users_last_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            user.Property(u => u.Language).HasConversion(LanguageTag).HasMaxLength(LanguageTagMaxLength);
+            user.Property(u => u.TimeZone).HasMaxLength(User.TimeZoneMaxLength);
         });
 
         modelBuilder.Entity<Role>(role =>
@@ -100,6 +113,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             invitation.HasIndex(i => i.Email);
             invitation.HasIndex(i => i.Email, "ix_invitations_email_trgm").HasDatabaseName("ix_invitations_email_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
             invitation.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
+            invitation.Property(i => i.Language).HasConversion(LanguageTag).HasMaxLength(LanguageTagMaxLength);
             invitation.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId);
             invitation.HasOne<Role>().WithMany().HasForeignKey(i => i.RoleId).OnDelete(DeleteBehavior.Cascade);
             invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedBy).OnDelete(DeleteBehavior.Restrict);

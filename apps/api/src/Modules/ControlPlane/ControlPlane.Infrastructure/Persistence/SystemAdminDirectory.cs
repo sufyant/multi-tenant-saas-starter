@@ -41,16 +41,17 @@ internal sealed class SystemAdminDirectory(
         controlPlane.SystemAdmins.AnyAsync(admin => controlPlane.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);
 
     // One statement writes the catalog user, if the catalog does not know them yet, with the configured address, which the identity
-    // provider verified, and no names, and the grant, and it writes the grant only while the staff list is empty: of two pods that let
-    // the same person in at the same moment, one writes it. A system admin gives the first one their names (A7).
+    // provider verified, no names and English, as no invitation chose a language, and the grant, and it writes the grant only while the
+    // staff list is empty: of two pods that let the same person in at the same moment, one writes it. A system admin gives the first one
+    // their names (A7).
     private async Task GrantTheFirstAsync(string externalUserId, string email, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
         await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH added AS (
-                INSERT INTO control_plane.users (id, external_id, email)
-                VALUES ({Guid.CreateVersion7(now)}, {externalUserId}, {email})
+                INSERT INTO control_plane.users (id, external_id, email, language)
+                VALUES ({Guid.CreateVersion7(now)}, {externalUserId}, {email}, 'en')
                 ON CONFLICT (external_id) DO NOTHING
                 RETURNING id),
             person AS (

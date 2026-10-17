@@ -25,6 +25,15 @@ public class InvitationTests
         invitation.TokenHash.ShouldNotBeNull().ShouldNotContain(Token);
     }
 
+    // Decision 5 of step 20j: the invitation keeps the language of its email, and the person who accepts it starts with it.
+    [Fact]
+    public void CreateInvitation_InArabic_KeepsTheLanguage()
+    {
+        var invitation = Invitation.Create(Id, TenantId, "ada@example.com", BuiltInRoles.Member, InviterId, Now, Lifetime, Token, Language.Ar);
+
+        invitation.Language.ShouldBe(Language.Ar);
+    }
+
     [Fact]
     public void CancelInvitation_Pending_IsCancelled()
     {
@@ -260,5 +269,5 @@ public class InvitationTests
     private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.Name == role);
 
     private static Invitation Invite(string email) =>
-        Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, InviterId, Now, Lifetime, Token);
+        Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, InviterId, Now, Lifetime, Token, Language.En);
 }

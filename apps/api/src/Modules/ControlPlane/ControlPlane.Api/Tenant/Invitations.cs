@@ -35,7 +35,7 @@ public static class Invitations
         CancellationToken cancellationToken)
     {
         var invited = await idempotency.ExecuteAsync<InvitationSummary>(
-            new InviteMember(user.Id(), request.Email, request.Role.ToString()), tenantId.ToString(), cancellationToken);
+            new InviteMember(user.Id(), request.Email, request.Role.ToString(), request.Language), tenantId.ToString(), cancellationToken);
         return invited.Map(ToResponse);
     }
 
@@ -75,10 +75,10 @@ public static class Invitations
 }
 
 /// <summary>
-/// The address to invite, and the built-in role the invitation gives. The role is required: a request without one is refused, so it
-/// never falls back to the enum's first value.
+/// The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the
+/// inviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value.
 /// </summary>
-public sealed record InviteMemberRequest(string Email, [property: JsonRequired] MemberRole Role);
+public sealed record InviteMemberRequest(string Email, [property: JsonRequired] MemberRole Role, Language? Language = null);
 
 /// <summary>
 /// A pending invitation: the invited address, its role (Owner, Admin or Member), the catalog user id of the member who invited, and when

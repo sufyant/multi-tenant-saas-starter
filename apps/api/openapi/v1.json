@@ -2625,6 +2625,106 @@
         }
       }
     },
+    "/v1/me/preferences": {
+      "patch": {
+        "tags": [
+          "MyProfile"
+        ],
+        "operationId": "ChangePreferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/tenants": {
       "get": {
         "tags": [
@@ -3027,6 +3127,25 @@
         },
         "description": "The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum's\nfirst value."
       },
+      "ChangePreferencesRequest": {
+        "required": [
+          "language",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "timeZone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The user's language, one of the list, and the IANA name of their time zone, such as `Europe/Dublin`, or null for \"not set\":\nthe web then uses the browser's. Both are required, so a client that leaves the time zone out never clears it by mistake."
+      },
       "CreateTenantRequest": {
         "required": [
           "name",
@@ -3043,9 +3162,19 @@
           },
           "ownerEmail": {
             "type": "string"
+          },
+          "language": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Language"
+              }
+            ]
           }
         },
-        "description": "A new tenant, and the email address of its first owner, who is invited once the tenant is ready."
+        "description": "A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's\ninvitation email: without one, the system admin's own."
       },
       "CursorPageOfAuditEntryResponse": {
         "required": [
@@ -3127,7 +3256,8 @@
         "enum": [
           "required",
           "email_invalid",
-          "too_long"
+          "too_long",
+          "time_zone_invalid"
         ],
         "type": "string",
         "description": "Why one field of a request failed validation."
@@ -3180,11 +3310,30 @@
           },
           "role": {
             "$ref": "#/components/schemas/MemberRole"
+          },
+          "language": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Language"
+              }
+            ]
           }
         },
-        "description": "The address to invite, and the built-in role the invitation gives. The role is required: a request without one is refused, so it\nnever falls back to the enum's first value."
+        "description": "The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the\ninviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value."
       },
       "JsonElement": { },
+      "Language": {
+        "enum": [
+          "en",
+          "tr",
+          "ar"
+        ],
+        "type": "string",
+        "description": "A language the web speaks, by its BCP 47 language tag."
+      },
       "ListPageOfInvitationResponse": {
         "type": "object",
         "properties": {
@@ -3416,7 +3565,9 @@
           "email",
           "firstName",
           "lastName",
-          "isSystemAdmin"
+          "isSystemAdmin",
+          "language",
+          "timeZone"
         ],
         "type": "object",
         "properties": {
@@ -3444,9 +3595,18 @@
           },
           "isSystemAdmin": {
             "type": "boolean"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "timeZone": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, and whether they are a system admin.\nIt has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
+        "description": "The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
       "MyTenantResponse": {
         "required": [
@@ -3480,6 +3640,25 @@
           "closed"
         ],
         "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it."
+      },
+      "PreferencesResponse": {
+        "required": [
+          "language",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "timeZone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The user's preferences, which follow them to every tenant and device. A null time zone is not set."
       },
       "ProblemDetails": {
         "required": [

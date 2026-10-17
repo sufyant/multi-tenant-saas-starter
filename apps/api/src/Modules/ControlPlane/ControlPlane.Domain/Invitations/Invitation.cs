@@ -20,7 +20,8 @@ internal sealed class Invitation : ITenantEntity
         Guid invitedBy,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
-        string tokenHash)
+        string tokenHash,
+        Language language)
     {
         Id = id;
         TenantId = tenantId;
@@ -30,6 +31,7 @@ internal sealed class Invitation : ITenantEntity
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
         TokenHash = tokenHash;
+        Language = language;
         Status = InvitationStatus.Pending;
     }
 
@@ -55,6 +57,9 @@ internal sealed class Invitation : ITenantEntity
 
     public InvitationStatus Status { get; private set; }
 
+    /// <summary>The language of the invitation's email. A person the catalog does not know starts with it when they accept.</summary>
+    public Language Language { get; private init; }
+
     public DateTimeOffset? AcceptedAt { get; private set; }
 
     public Guid? AcceptedBy { get; private set; }
@@ -73,8 +78,9 @@ internal sealed class Invitation : ITenantEntity
         Guid invitedBy,
         DateTimeOffset now,
         TimeSpan lifetime,
-        string token) =>
-        new(id, tenantId, email.Trim(), role.Id, invitedBy, now, now + lifetime, InvitationToken.Hash(token));
+        string token,
+        Language language) =>
+        new(id, tenantId, email.Trim(), role.Id, invitedBy, now, now + lifetime, InvitationToken.Hash(token), language);
 
     /// <summary>
     /// Whether a member of the inviter's role may invite someone with the role (K1): only an Owner gives the Owner role. It changes
