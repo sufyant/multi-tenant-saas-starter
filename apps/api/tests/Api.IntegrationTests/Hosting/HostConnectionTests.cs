@@ -8,7 +8,7 @@ namespace Api.IntegrationTests.Hosting;
 // requests and for messages, of at most 20 connections each. The test has a database of its own, so it counts only its host.
 public sealed class HostConnectionTests(Database database)
 {
-    private const long Limit = 2 * 20;
+    private const long Limit = 2 * Database.HostPoolSize;
 
     [Fact]
     public async Task StopApiFactory_AfterAMessage_OpensAtMostFortyConnections()
