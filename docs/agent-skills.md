@@ -30,7 +30,6 @@ CI checks the symlink rule. The step "Check the agent skills" in the `node` job 
 | `clerk-nextjs-patterns` | `clerk/skills` | MIT (declared, see below) | The web app uses Next.js with Clerk. |
 | `clerk-backend-api` | `clerk/skills` | MIT (declared, see below) | The API calls the Clerk Backend API (`ClerkIdentityProvider`). |
 | `clerk-testing` | `clerk/skills` | MIT (declared, see below) | The Playwright tests in `apps/web/e2e` run behind Clerk sign-in. |
-| `clerk-webhooks` | `clerk/skills` | MIT (declared, see below) | Clerk webhook events. The API has no webhook endpoint yet. |
 | `clerk-expo` | `clerk/skills` | MIT (declared, see below) | `apps/mobile` is planned, and `.gitignore` names Expo. |
 | `clerk-custom-ui` | `clerk/skills` | MIT (declared, see below) | The sign-in screens will carry the product's own look. |
 | `clerk-cli` | `clerk/skills` | MIT (declared, see below) | Clerk instance setup from the terminal, for the production instance. |
