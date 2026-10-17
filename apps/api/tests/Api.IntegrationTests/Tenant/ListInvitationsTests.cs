@@ -15,7 +15,8 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
     private static readonly DateTimeOffset Soon = DateTimeOffset.UtcNow.AddDays(1);
 
     private readonly Catalog _catalog = new(database);
-    private readonly FakeTimeProvider _time = new(DateTimeOffset.UtcNow);
+    // A whole second: PostgreSQL rounds a stored time to microseconds, so a clock with ticks could store an expiry after the clock's.
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
     private ApiFactory _api = null!;
 
     public ValueTask InitializeAsync()
