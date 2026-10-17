@@ -106,7 +106,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         copies.ShouldBeEmpty();
     }
 
-    // A1: the permission catalogue is one enum in the document, so a generated client knows each name and a typo does not compile.
+    // N11 and K5: the permission catalogue is one enum in the document, so a generated client knows each name and a typo does not compile.
     [Fact]
     public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfTheCatalogue()
     {
@@ -121,8 +121,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(string.Join(", ", catalogue));
     }
 
-    // Every response field that holds permission names is an array of the one schema Permission, so the web compares each name with
-    // the enum. A field is found by its name, as the response types keep the names as strings (MyTenantDetailResponse).
+    // N11 and K5: every response field that holds permission names is an array of the one schema Permission, so the web compares each
+    // name with the enum. A field is found by its name, as the response types keep the names as strings (MyTenantDetailResponse).
     [Fact]
     public void BuildOpenApiDocument_EveryResponseFieldNamedPermissions_IsAnArrayOfPermission()
     {
