@@ -120,9 +120,9 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 ### K4. Tenant lifecycle
 
 - provisioning → active ⇄ suspended → closed → deleted. A failed creation goes provisioning → cancelled. Active and suspended both go to closed, and a reopening goes closed → active.
-- A suspension has a reason. Today it is text the system admin writes: 1 to 500 characters, trimmed. The admin side shows it (`GetTenant`, `ListTenants`); a member never sees it, and only the platform's audit entry holds it. Reactivating and reopening clear it. A billing reason comes with billing.
+- A suspension has a reason. Today it is text the system admin writes: 1 to 500 characters, trimmed. The platform side shows it (`GetTenant`, `ListTenants`); a member never sees it, and only the platform's audit entry holds it. Reactivating and reopening clear it. A billing reason comes with billing.
 - closed: members cannot enter (403 `tenant.closed`), the data stays, and closing cancels the pending invitations. The tenant can be reopened while `closedAt` plus `ControlPlane:Tenants:ReopenPeriod`, 30 days by default, is in the future. Nothing ends the period by itself: no job runs when it ends.
-- Only the platform renames a tenant (`RenameTenant`, admin). The organisation's name is locked in the tenant app.
+- Only the platform renames a tenant (`RenameTenant`, platform). The organisation's name is locked in the tenant app.
 - The slug never changes.
 - deleted (removing the data) is not in this catalog. Export and deletion are designed in a later step.
 - The billing state is not copied into the tenant's state. The tenant only reacts to a subscription event.
@@ -181,7 +181,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The API sends codes and data, and the screen writes every text in its own language (K5). The API writes text only in emails, in the language of the invitation. It handles no `Accept-Language` and writes no error text in another language.
 - A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. The first system admin starts with `en`.
 - A user's `timeZone` is an IANA name, or null for "not set". The API never interprets it: the image has no time zone data (ARCHITECTURE.md, section 7). It checks the shape only, keeps the name and gives it back. The web offers the list. The API formats no date or time.
-- `InviteMember` and `CreateTenant` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant`, the system admin's. The invitation keeps it.
+- `InviteMember`, `CreateTenant` and `InviteOwner` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant` and `InviteOwner`, the system admin's. The invitation keeps it.
 - The invitation emails say how long the link works ("7 days"), from the invitation's lifetime, and show no date or time, so they need no time zone. A message to Notifications written before step 20j has no language: its email is English, without the lifetime.
 - `ChangePreferences` writes the platform entry `user.preferences_changed`, by the user and about the user, with no details: the entry holds no value (K3).
 - A system admin's deletion erases the time zone with the names (A8). The language stays.
@@ -206,6 +206,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ## Later
 
+- Run the tenant summary's backfill again, in a migration of the next release, once no version before step 20k runs: a command of that version during the deploy does not write the summary (K10; ARCHITECTURE.md, section 6, "Tenant summary").
 - Drop `control_plane.users.profile_updated_at`. Step 20i stopped using it and kept it, so the version that serves during the deploy can still read users (`docs/deployment.md` at the repository root, section 8).
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.

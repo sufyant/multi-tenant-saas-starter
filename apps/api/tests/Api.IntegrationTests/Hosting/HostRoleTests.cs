@@ -323,6 +323,42 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "member.invited")).ShouldBe(1L);
     }
 
+    // Step 20k: the platform's Owner invitation is accepted by the web host; its records in both logs, the identity provider's sign-up and
+    // the email run in the worker, once each.
+    [Fact]
+    public async Task InviteOwner_OnAWebAndAWorkerHost_RecordsInBothLogsAndEmailsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        await catalog.AddInvitationAsync(tenant.Id, role: "Owner");
+        var admin = web.CreateClient(await catalog.AddSystemAdminAsync(), secondFactor: true);
+
+        var invited = await admin.InviteOwnerAsync(tenant.Id, "grace@navy.test");
+        await Waiting.UntilAsync(async () =>
+            worker.Email.Sent.Count > 0
+            && await AuditEntriesAsync(name, tenant.Id, "tenant.owner_invited") > 0
+            && await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_invited") > 0);
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteOwner), typeof(InviteOwnerHandler))]);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(OwnerInvited), typeof(RecordOwnerInvitedHandler)),
+                new HandlerRun(typeof(OpenMemberSignUp), typeof(OpenSignUpHandler)),
+                new HandlerRun(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
+                new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.owner_invited")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_invited")).ShouldBe(1L);
+    }
+
     // O3: a revocation is announced from the web host, and its Audit handler runs in the worker, once.
     [Fact]
     public async Task RevokeInvitation_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
