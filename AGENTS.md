@@ -72,6 +72,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Never change a setting only in the GitHub interface. Change the document and the script or the JSON in a pull request. The maintainer then runs `pnpm github:apply`.
 - Never run `pnpm github:apply` yourself. You may run `pnpm github:check`.
 - Railway settings are code: `.railway/railway.ts`. Never run `pnpm railway:apply` yourself. You may run `pnpm railway:plan`.
+- Clerk settings are code: `.clerk/`. Never run `pnpm clerk:apply` yourself. You may run `pnpm clerk:plan`.
+- Never change a user or a setting in the Clerk dashboard.
 - Never create or push a `v*` tag. A release is the maintainer's decision.
 - Never approve a production deployment. It is the maintainer's decision.
 
