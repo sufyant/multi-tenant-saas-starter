@@ -6,15 +6,15 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: DeleteUserHandler57572929
+    // START: SignUpOpenedHandler254789368
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class DeleteUserHandler57572929 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class SignUpOpenedHandler254789368 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
 
-        public DeleteUserHandler57572929(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider)
+        public SignUpOpenedHandler254789368(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -24,9 +24,9 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var userCatalog = new ControlPlane.Infrastructure.Persistence.UserCatalog(controlPlaneDbContext);
+            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
             // The actual message body
-            var deleteUser = (ControlPlane.Application.Users.DeleteUser)context.Envelope.Message;
+            var signUpOpened = (ControlPlane.Application.Invitations.SignUp.SignUpOpened)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -40,11 +40,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteUserHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteUserHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.SignUp.RecordSignUpHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.SignUp.RecordSignUpHandler");
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Users.DeleteUserHandler.HandleAsync(deleteUser, userCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Invitations.SignUp.RecordSignUpHandler.HandleAsync(signUpOpened, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: DeleteUserHandler57572929
+    // END: SignUpOpenedHandler254789368
     
     
 }

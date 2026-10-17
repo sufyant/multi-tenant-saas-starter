@@ -4,13 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: SendMemberInvitationEmailHandler1499364248
+    // START: MemberInvitationReadyHandler965359384
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class SendMemberInvitationEmailHandler1499364248 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class MemberInvitationReadyHandler965359384 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
 
-        public SendMemberInvitationEmailHandler1499364248(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
+        public MemberInvitationReadyHandler965359384(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
         {
             _serviceScopeFactory = serviceScopeFactory;
         }
@@ -22,17 +22,17 @@ namespace Internal.Generated.WolverineHandlers
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var emailChannel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Notifications.Application.Ports.IEmailChannel>(serviceScope.ServiceProvider);
             // The actual message body
-            var sendMemberInvitationEmail = (Notifications.Application.Invitations.InvitationEmail.SendMemberInvitationEmail)context.Envelope.Message;
+            var memberInvitationReady = (ControlPlane.Contracts.MemberInvitationReady)context.Envelope.Message;
 
             System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Invitations.InvitationEmail.SendMemberInvitationEmailHandler");
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Invitations.InvitationEmail.SendMemberInvitationEmailHandler");
             
             // The actual message execution
-            await Notifications.Application.Invitations.InvitationEmail.SendMemberInvitationEmailHandler.HandleAsync(sendMemberInvitationEmail, emailChannel, cancellation).ConfigureAwait(false);
+            await Notifications.Application.Invitations.InvitationEmail.SendMemberInvitationEmailHandler.HandleAsync(memberInvitationReady, emailChannel, cancellation).ConfigureAwait(false);
         }
     }
 
-    // END: SendMemberInvitationEmailHandler1499364248
+    // END: MemberInvitationReadyHandler965359384
     
     
 }

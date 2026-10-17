@@ -45,7 +45,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.CloseTenantHandler.HandleAsync(closeTenant, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Tenants.CloseTenantHandler.HandleAsync(closeTenant, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -54,6 +54,10 @@ namespace Internal.Generated.WolverineHandlers
                 
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
 
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
