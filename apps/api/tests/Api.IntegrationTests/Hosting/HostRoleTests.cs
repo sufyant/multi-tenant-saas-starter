@@ -267,8 +267,31 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
     }
 
+    // O3, K3: a user changes their preferences in the web host. Audit records the change in the worker, once.
+    [Fact]
+    public async Task ChangePreferences_OnAWebAndAWorkerHost_RecordsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var user = await catalog.AddUserAsync();
+        var userId = await catalog.UserIdOfAsync(user);
+
+        var changed = await web.CreateClient(user).PatchAsJsonAsync("/v1/me/preferences", new { language = "ar", timeZone = "Asia/Dubai" }, Cancellation);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.preferences_changed") > 0);
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangePreferences), typeof(ChangePreferencesHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(UserPreferencesChanged), typeof(RecordUserChangesHandler))]);
+        (await PlatformEntriesAsync(name, userId, "user.preferences_changed")).ShouldBe(1L);
+    }
+
     // O3, W4, W5: an invitation is created in the web host. Audit records its event in the worker, once. The identity provider's sign-up
-    // runs in the worker, once, then the email: each message has one handler, so its retries may be scheduled.
+    // runs in the worker, once, then the email: each message has one handler, so its retries may be scheduled. The language and the
+    // lifetime travel through the PostgreSQL queue to the email.
     [Fact]
     public async Task InviteMember_OnAWebAndAWorkerHost_RecordsAndEmailsOnceInTheWorker()
     {
@@ -279,7 +302,7 @@ public sealed class HostRoleTests(Database database)
         _ = worker.Services;
         var catalog = new Catalog(database, name);
         var tenant = await catalog.AddTenantAsync();
-        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, await catalog.AddUserAsync(language: "tr"), role: "Owner"));
 
         var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test");
         await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);
@@ -294,7 +317,9 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
             ],
             ignoreOrder: true);
-        worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
+        var email = worker.Email.Sent.ShouldHaveSingleItem();
+        (email.To, email.Subject).ShouldBe(("grace@navy.test", "Acme Ltd adlı kuruluşa davet edildiniz"));
+        email.Text.ShouldEndWith("Bağlantı 7 gün geçerlidir.");
         (await AuditEntriesAsync(name, tenant.Id, "member.invited")).ShouldBe(1L);
     }
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Npgsql;
+using SharedKernel;
 using Tenancy;
 using Wolverine;
 using Wolverine.Tracking;
@@ -188,7 +189,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var tenantId = await IdOfAsync(created);
         var invitationId = await InvitationIdAsync(tenantId);
         var again = new OwnerInvitationReady(
-            Guid.CreateVersion7(), DateTimeOffset.UtcNow, tenantId, invitationId, owner, "Acme Ltd", _api.Email.LinkSentTo(owner));
+            Guid.CreateVersion7(), DateTimeOffset.UtcNow, tenantId, invitationId, owner, "Acme Ltd", _api.Email.LinkSentTo(owner), Language.En, TimeSpan.FromDays(7));
 
         await _api.WaitingForMessagesAsync(async () =>
         {

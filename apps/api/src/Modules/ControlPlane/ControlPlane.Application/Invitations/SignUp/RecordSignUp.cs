@@ -34,12 +34,17 @@ public static class RecordSignUpHandler
         }
 
         await catalog.SaveChangesAsync(cancellationToken);
+
+        // The email speaks the invitation's language and says how long its link works.
         var now = time.GetUtcNow();
+        var (language, lifetime) = (invitation.Language, invitation.ExpiresAt - invitation.CreatedAt);
         OutgoingMessages messages =
         [
             opened.ForFirstOwner
-                ? new OwnerInvitationReady(Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link)
-                : new MemberInvitationReady(Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link),
+                ? new OwnerInvitationReady(
+                    Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime)
+                : new MemberInvitationReady(
+                    Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime),
         ];
         if (opened.SignUpInvitationId is not null)
         {

@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["ChangePreferences"];
+        trace?: never;
+    };
     "/v1/me/tenants": {
         parameters: {
             query?: never;
@@ -393,11 +409,23 @@ export interface components {
         ChangeMemberRoleRequest: {
             role: components["schemas"]["MemberRole"];
         };
-        /** @description A new tenant, and the email address of its first owner, who is invited once the tenant is ready. */
+        /**
+         * @description The user's language, one of the list, and the IANA name of their time zone, such as `Europe/Dublin`, or null for "not set":
+         *     the web then uses the browser's. Both are required, so a client that leaves the time zone out never clears it by mistake.
+         */
+        ChangePreferencesRequest: {
+            language: components["schemas"]["Language"];
+            timeZone: null | string;
+        };
+        /**
+         * @description A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's
+         *     invitation email: without one, the system admin's own.
+         */
         CreateTenantRequest: {
             name: string;
             slug: string;
             ownerEmail: string;
+            language?: null | components["schemas"]["Language"];
         };
         CursorPageOfAuditEntryResponse: {
             items: components["schemas"]["AuditEntryResponse"][];
@@ -412,7 +440,7 @@ export interface components {
          * @description Why one field of a request failed validation.
          * @enum {string}
          */
-        FieldErrorCode: "required" | "email_invalid" | "too_long";
+        FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid";
         /**
          * @description A pending invitation: the invited address, its role (Owner, Admin or Member), the catalog user id of the member who invited, and when
          *     it was created and expires. The screen shows an expired invitation from its expiry.
@@ -430,14 +458,20 @@ export interface components {
             expiresAt: string;
         };
         /**
-         * @description The address to invite, and the built-in role the invitation gives. The role is required: a request without one is refused, so it
-         *     never falls back to the enum's first value.
+         * @description The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the
+         *     inviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value.
          */
         InviteMemberRequest: {
             email: string;
             role: components["schemas"]["MemberRole"];
+            language?: null | components["schemas"]["Language"];
         };
         JsonElement: unknown;
+        /**
+         * @description A language the web speaks, by its BCP 47 language tag.
+         * @enum {string}
+         */
+        Language: "en" | "tr" | "ar";
         ListPageOfInvitationResponse: {
             items?: components["schemas"]["InvitationResponse"][];
             /** Format: int32 */
@@ -504,8 +538,8 @@ export interface components {
          */
         MemberRole: "Owner" | "Admin" | "Member";
         /**
-         * @description The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, and whether they are a system admin.
-         *     It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
+         * @description The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, whether they are a system admin, and
+         *     their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
          */
         MeResponse: {
             /** Format: uuid */
@@ -514,6 +548,8 @@ export interface components {
             firstName: null | string;
             lastName: null | string;
             isSystemAdmin: boolean;
+            language: components["schemas"]["Language"];
+            timeZone: null | string;
         };
         /**
          * @description A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a
@@ -531,6 +567,11 @@ export interface components {
          * @enum {unknown}
          */
         MyTenantResponseStatus: "active" | "suspended" | "closed";
+        /** @description The user's preferences, which follow them to every tenant and device. A null time zone is not set. */
+        PreferencesResponse: {
+            language: components["schemas"]["Language"];
+            timeZone: null | string;
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -2540,6 +2581,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangePreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesResponse"];
                 };
             };
             /** @description Bad Request */

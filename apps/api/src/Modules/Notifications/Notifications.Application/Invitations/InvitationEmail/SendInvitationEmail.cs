@@ -4,12 +4,11 @@ using Notifications.Contracts;
 
 namespace Notifications.Application.Invitations.InvitationEmail;
 
-// Step 3 of the tenant creation: the invitation email to a new tenant's first owner. The handler takes no DbContext, so Wolverine
-// opens no transaction around the call to the email service; its retries are configured from the module's settings, and once
-// they are spent the event goes to the dead letter queue.
+// Step 3 of the tenant creation: the invitation email to a new tenant's first owner, in the invitation's language. The handler takes no
+// DbContext, so Wolverine opens no transaction around the call to the email service; its retries are configured from the module's
+// settings, and once they are spent the event goes to the dead letter queue.
 public static class SendInvitationEmailHandler
 {
-    // The idempotency key is the invitation's, so an event that arrives twice sends one email.
     public static async Task<SendInvitationEmailReply> HandleAsync(
         OwnerInvitationReady ready,
         IEmailChannel channel,
@@ -17,11 +16,7 @@ public static class SendInvitationEmailHandler
         CancellationToken cancellationToken)
     {
         await channel.SendAsync(
-            new EmailMessage(
-                ready.Email,
-                $"You are invited to {ready.TenantName}",
-                $"You have been invited to join {ready.TenantName}. Open this link to accept the invitation:\n\n{ready.Link}",
-                $"invite/{ready.InvitationId}"),
+            InvitationEmailTexts.Write(ready.Email, ready.TenantName, ready.Link, ready.Language, ready.Lifetime, ready.InvitationId),
             cancellationToken);
 
         var now = time.GetUtcNow();

@@ -15,8 +15,8 @@ namespace ControlPlane.Application.Invitations;
 /// Accepts an invitation in its tenant, the one its invitation code names: the invitation is found by the hash of the code's
 /// secret, and the catalog user, when new, and the membership are created in the same transaction as the invitation is used up.
 /// The user's verified email addresses are read from the identity provider before that transaction begins, so no call leaves the
-/// process while the invitation is locked. A new catalog user gets the invited address and the names the person typed (A7); a user the
-/// catalog knows needs no names.
+/// process while the invitation is locked. A new catalog user gets the invited address, the names the person typed (A7) and the
+/// invitation's language; a user the catalog knows needs no names and keeps their language.
 /// </summary>
 public sealed record AcceptInvitation(string Secret, string UserId, IReadOnlyList<string> VerifiedEmails, string? FirstName, string? LastName);
 
@@ -100,7 +100,7 @@ public static class AcceptInvitationHandler
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.UserId, invitation.Email, command.FirstName!, command.LastName!);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.UserId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language);
         var accepted = invitation.Accept(command.VerifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {

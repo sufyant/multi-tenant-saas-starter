@@ -100,6 +100,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("language");
+
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid")
                         .HasColumnName("role_id");
@@ -335,6 +341,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("language");
+
                     b.Property<string>("LastName")
                         .HasColumnType("text")
                         .HasColumnName("last_name");
@@ -342,6 +354,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("SuspendedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("suspended_at");
+
+                    b.Property<string>("TimeZone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("time_zone");
 
                     b.HasKey("Id")
                         .HasName("pk_users");

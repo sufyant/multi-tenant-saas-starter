@@ -14,9 +14,10 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// <summary>
 /// A system admin creates a tenant. It runs inside the tenant it creates, whose id the caller chose, so every step
 /// of the saga runs in that tenant's transaction and hands the tenant on to the next one. The host's idempotency layer protects
-/// the HTTP request (section 3). The command carries no request key.
+/// the HTTP request (section 3). The command carries no request key. The owner's invitation email is in the language given, else in
+/// the system admin's own.
 /// </summary>
-public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail);
+public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail, Language? Language);
 
 public sealed class CreateTenantValidator : AbstractValidator<CreateTenant>
 {
@@ -63,7 +64,15 @@ public static class CreateTenantHandler
         var now = time.GetUtcNow();
         var secret = InvitationToken.Generate();
         var invitation = Invitation.Create(
-            Guid.CreateVersion7(now), tenant.Value.Id, command.OwnerEmail, BuiltInRoles.Owner, admin.Id, now, invitations.Lifetime, secret);
+            Guid.CreateVersion7(now),
+            tenant.Value.Id,
+            command.OwnerEmail,
+            BuiltInRoles.Owner,
+            admin.Id,
+            now,
+            invitations.Lifetime,
+            secret,
+            command.Language ?? admin.Language);
         catalog.Add(invitation);
 
         var (saga, activate, timeout) = TenantCreationSaga.Begin(

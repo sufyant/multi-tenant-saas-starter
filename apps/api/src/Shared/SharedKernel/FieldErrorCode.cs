@@ -18,4 +18,7 @@ public enum FieldErrorCode
 
     [JsonStringEnumMemberName("too_long")]
     TooLong,
+
+    [JsonStringEnumMemberName("time_zone_invalid")]
+    TimeZoneInvalid,
 }

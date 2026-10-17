@@ -33,7 +33,22 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Me(me).ShouldBe((await _catalog.UserIdOfAsync(user), "ada@example.com", "Ada", "Lovelace", false));
-        me.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "email", "firstName", "lastName", "isSystemAdmin"], ignoreOrder: true);
+        me.EnumerateObject().Select(field => field.Name).ShouldBe(
+            ["id", "email", "firstName", "lastName", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
+    }
+
+    // The preferences follow the user to every tenant and device. A user who set no time zone has none: the web uses the browser's.
+    [Theory]
+    [InlineData(null, null, "en", null)]
+    [InlineData("ar", "Asia/Dubai", "ar", "Asia/Dubai")]
+    [InlineData("tr", null, "tr", null)]
+    public async Task GetMe_AUser_AnswersTheirLanguageAndTimeZone(string? language, string? timeZone, string answeredLanguage, string? answeredTimeZone)
+    {
+        var user = await _catalog.AddUserAsync(language: language, timeZone: timeZone);
+
+        var me = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
+
+        (me.GetProperty("language").GetString(), me.GetProperty("timeZone").GetString()).ShouldBe((answeredLanguage, answeredTimeZone));
     }
 
     // The me group checks no second factor: a system admin reads their own profile like any user.
