@@ -20,11 +20,11 @@ public static class Tenants
     public static void Map(RouteGroupBuilder platform)
     {
         platform.MapPost("/tenants", CreateTenant)
-            .WithMetadata(new IdempotencyKeyRequired(), CreatedLocation.Of<TenantResponse>(tenant => $"/v1/platform/tenants/{tenant.Id}"))
+            .WithMetadata(new IdempotencyKeyRequired(), CreatedLocation.Of<TenantResponse>(nameof(GetTenant), tenant => new { tenantId = tenant.Id }))
             .RequireAuthorization(Permissions.PlatformTenantsCreate)
             .Produces<TenantResponse>(StatusCodes.Status201Created);
         platform.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.PlatformTenantsRead);
-        platform.MapGet("/tenants/{tenantId:guid}", GetTenant).RequireAuthorization(Permissions.PlatformTenantsRead);
+        platform.MapGet("/tenants/{tenantId:guid}", GetTenant).WithName(nameof(GetTenant)).RequireAuthorization(Permissions.PlatformTenantsRead);
         platform.MapPatch("/tenants/{tenantId:guid}", RenameTenant).RequireAuthorization(Permissions.PlatformTenantsUpdate);
         platform.MapPost("/tenants/{tenantId:guid}/suspend", SuspendTenant).RequireAuthorization(Permissions.PlatformTenantsSuspend);
         platform.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.PlatformTenantsReactivate);
