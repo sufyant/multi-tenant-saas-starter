@@ -4511,7 +4511,7 @@
           "permissions": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Permission"
             }
           },
           "createdAt": {
@@ -4586,6 +4586,34 @@
           "cancelled"
         ],
         "description": "The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled."
+      },
+      "Permission": {
+        "enum": [
+          "platform.audit.read",
+          "platform.tenants.close",
+          "platform.tenants.create",
+          "platform.tenants.invite_owner",
+          "platform.tenants.reactivate",
+          "platform.tenants.read",
+          "platform.tenants.reopen",
+          "platform.tenants.suspend",
+          "platform.tenants.update",
+          "platform.users.delete",
+          "platform.users.reactivate",
+          "platform.users.read",
+          "platform.users.suspend",
+          "platform.users.update",
+          "tenant.audit.read",
+          "tenant.invitations.create",
+          "tenant.invitations.delete",
+          "tenant.invitations.read",
+          "tenant.members.delete",
+          "tenant.members.read",
+          "tenant.members.update",
+          "tenant.profile.read"
+        ],
+        "type": "string",
+        "description": "A permission of the catalogue. Every endpoint checks its own permission."
       },
       "PreferencesResponse": {
         "required": [
