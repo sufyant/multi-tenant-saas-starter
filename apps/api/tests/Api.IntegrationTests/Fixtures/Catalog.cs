@@ -16,7 +16,8 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         DateTimeOffset? closedAt = null)
     {
         var id = tenantId ?? Guid.NewGuid();
-        slug ??= $"tenant-{id:N}"[..20];
+        // Not from the id: two version 7 ids of one millisecond start with the same 13 digits, and so would their slugs.
+        slug ??= $"tenant-{Guid.NewGuid():N}"[..20];
         await database.ScalarAsync<object>(
             $"""
             INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at)
