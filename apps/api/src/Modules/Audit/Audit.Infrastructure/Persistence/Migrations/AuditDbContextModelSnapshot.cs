@@ -147,6 +147,9 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     b.HasIndex("OccurredAt", "Id")
                         .HasDatabaseName("ix_platform_entries_occurred_at_id");
 
+                    b.HasIndex("TargetKind", "TargetId", "OccurredAt", "Id")
+                        .HasDatabaseName("ix_platform_entries_target_kind_target_id_occurred_at_id");
+
                     b.ToTable("platform_entries", "audit");
                 });
 #pragma warning restore 612, 618

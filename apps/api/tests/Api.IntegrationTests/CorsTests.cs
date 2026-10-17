@@ -70,7 +70,7 @@ public sealed class CorsTests : IAsyncLifetime
 
     private static async Task<HttpResponseMessage> PreflightAsync(PipelineHost host, string origin, string requestedHeaders = "authorization,content-type,idempotency-key")
     {
-        using var request = new HttpRequestMessage(HttpMethod.Options, "/v1/admin/tenants")
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/v1/platform/tenants")
         {
             Headers =
             {

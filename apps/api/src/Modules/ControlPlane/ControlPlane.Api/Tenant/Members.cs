@@ -73,7 +73,7 @@ public static class Members
 public sealed record ChangeMemberRoleRequest([property: JsonRequired] MemberRole Role);
 
 /// <summary>
-/// A member of the tenant: the user's id, the copy of their email address and name, their role, Owner, Admin or Member, and whether the
+/// A member of the tenant: the user's id, the copy of their email address and name, their role, <c>owner</c>, <c>admin</c> or <c>member</c>, and whether the
 /// identity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows "Deleted user",
 /// as the audit logs say <c>deleted</c> (K3).
 /// </summary>
@@ -86,12 +86,12 @@ public sealed record MemberResponse(Guid UserId, string? Email, string? FirstNam
 [JsonConverter(typeof(ExactNameEnumConverter<MemberRole>))]
 public enum MemberRole
 {
-    [JsonStringEnumMemberName("Owner")]
+    [JsonStringEnumMemberName("owner")]
     Owner,
 
-    [JsonStringEnumMemberName("Admin")]
+    [JsonStringEnumMemberName("admin")]
     Admin,
 
-    [JsonStringEnumMemberName("Member")]
+    [JsonStringEnumMemberName("member")]
     Member,
 }

@@ -13,6 +13,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -25,11 +26,11 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
-    [InlineData("Owner", "Member")]
-    [InlineData("Owner", "Admin")]
-    [InlineData("Admin", "Member")]
-    [InlineData("Admin", "Admin")]
-    public async Task RemoveMember_AMemberTheActorMayRemove_RemovesItAndRecordsTheRoleItHad(string actorRole, string memberRole)
+    [InlineData("Owner", "Member", "member")]
+    [InlineData("Owner", "Admin", "admin")]
+    [InlineData("Admin", "Member", "member")]
+    [InlineData("Admin", "Admin", "admin")]
+    public async Task RemoveMember_AMemberTheActorMayRemove_RemovesItAndRecordsTheRoleItHad(string actorRole, string memberRole, string recordedRole)
     {
         var tenant = await _catalog.AddTenantAsync();
         var actor = await _catalog.AddMemberAsync(tenant.Id, role: actorRole);
@@ -41,7 +42,8 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, member)).ShouldBe(0);
         (await _audit.TenantLogAsync(member))
             .ShouldBe($"{tenant.Id}:member.removed|User|{await _catalog.UserIdOfAsync(actor)}|User|{member}|-");
-        (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{memberRole}}"}""");
+        (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{recordedRole}}"}""");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // An Owner removes another Owner when the tenant keeps one.
@@ -170,6 +172,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.NoContent, HttpStatusCode.NotFound]);
         (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.NotFound))).ShouldBe("tenant.not_found");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // K3: an entry holds ids and the role, never the member's name or email address.

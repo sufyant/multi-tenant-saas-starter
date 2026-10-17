@@ -15,7 +15,7 @@ using Tenancy;
 using Wolverine;
 using Wolverine.Tracking;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // The tenant creation saga through the system door and the real host: its three steps, its compensations, and what is left
 // for a person when the last step fails for good. Step 3 lets the owner sign up with Clerk, then sends the email. Only Clerk and the
@@ -25,6 +25,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -52,6 +53,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{await _catalog.UserIdOfAsync(admin)}|Tenant|{tenantId}|Acme Ltd");
         (await _audit.TenantLogAsync(tenantId)).ShouldBe($"{tenantId}:tenant.created|Platform|-|Tenant|{tenantId}|Acme Ltd");
         (await SagaStateAsync(tenantId)).ShouldBe("Completed");
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
     // Step 3: the owner has no account, so Clerk creates its invitation once, and the email carries its link, which leads to our accept
@@ -132,6 +134,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
         (await _audit.TenantLogAsync(tenantId)).ShouldBeNull();
         (await _audit.PlatformLogAsync(tenantId)).ShouldBeNull();
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
     // After the pivot nothing is undone: the tenant stays active, the invitation nobody received is cancelled, and a person is told.
@@ -155,6 +158,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
             && record.Id.Name == "TenantCreationNeedsAttention"
             && record.Message.Contains(tenantId.ToString(), StringComparison.Ordinal));
         alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
     // Clerk that stays down ends step 3 as an email that never goes out: the tenant stays active, the invitation nobody can use is

@@ -223,6 +223,18 @@ public sealed class Database : IAsyncLifetime
         return name;
     }
 
+    // The same for ControlPlane: the schema the version before that migration runs on.
+    public async Task<string> CreateDatabaseBeforeControlPlaneMigrationAsync(string migration)
+    {
+        var name = await CreateMigratedDatabaseAsync();
+        await using var controlPlane = new ControlPlaneDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<ControlPlaneDbContext>(
+                ControlPlaneDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        await controlPlane.GetService<IMigrator>().MigrateAsync(controlPlane.Database.GetMigrations().TakeWhile(applied => applied != migration).Last());
+
+        return name;
+    }
+
     // Runs the migration step on a database of a test's own, as a deploy does.
     public Task MigrateDatabaseAsync(string database) => MigrateAsync(database);
 

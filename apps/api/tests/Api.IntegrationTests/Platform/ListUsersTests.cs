@@ -5,9 +5,9 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
-// GET /v1/admin/users: every catalog user, for the system admin, by email address, then id. Users belong to no tenant: a test that
+// GET /v1/platform/users: every catalog user, for the system admin, by email address, then id. Users belong to no tenant: a test that
 // reads the whole list, or a status, has a database of its own, where no other test adds a user; any other test searches for a marker
 // of its own.
 public sealed class ListUsersTests(Database database) : IAsyncLifetime
@@ -43,7 +43,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         var deletedEarlier = await _catalog.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: "erin@example.com");
         await _catalog.DeleteUserAsync(deletedEarlier);
 
-        var response = await _api.CreateClient(bob, secondFactor: true).GetAsync("/v1/admin/users", Cancellation);
+        var response = await _api.CreateClient(bob, secondFactor: true).GetAsync("/v1/platform/users", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -70,7 +70,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(email: "bea@example.com");
         var last = await _catalog.AddUserAsync(email: "cem@example.com");
 
-        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/admin/users?page=2&pageSize=2", Cancellation);
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/users?page=2&pageSize=2", Cancellation);
 
         Users(page).ShouldBe([(await _catalog.UserIdOfAsync(last), "cem@example.com", null, null, "active", false)]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
@@ -84,7 +84,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     {
         var admin = await _catalog.AddSystemAdminAsync();
 
-        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync($"/v1/admin/users?{query}", Cancellation);
+        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync($"/v1/platform/users?{query}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -99,7 +99,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(email: $"{_marker}@navy.mil", firstName: $"Grace{_marker}", lastName: $"Hopper{_marker}");
 
         var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>(
-            $"/v1/admin/users?q={Uri.EscapeDataString(string.Format(CultureInfo.InvariantCulture, q, _marker))}", Cancellation);
+            $"/v1/platform/users?q={Uri.EscapeDataString(string.Format(CultureInfo.InvariantCulture, q, _marker))}", Cancellation);
 
         Users(page).Select(user => user.FirstName).ShouldBe([$"{found}{_marker}"]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
@@ -113,7 +113,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     {
         await AddUsersAsync("Per%cent", "Perxcent", "Under_score", "Underxscore", @"Back\slash", "Backslash");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/users?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
+        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
 
         Users(page).Select(user => user.LastName).ShouldBe([$"{_marker} {found}"]);
     }
@@ -134,7 +134,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.DeleteUserAsync(deleted);
         await _catalog.SuspendUserAsync(deleted);
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/users?status={status}", Cancellation);
+        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?status={status}", Cancellation);
 
         Users(page).Select(user => user.Status).ShouldBe(Enumerable.Repeat(status, count));
         page.GetProperty("total").GetInt32().ShouldBe(count);
@@ -152,7 +152,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(email: $"al{_marker}@t.org", lastName: "Zed");
         await _catalog.AddUserAsync(email: $"cy{_marker}@t.org");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/users?q={_marker}&sort={sort}", Cancellation);
+        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
 
         EmailsOf(page).ShouldBe(emails);
     }
@@ -166,7 +166,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(firstName: _marker);
         await _catalog.AddUserAsync(email: $"a{_marker}@t.org", firstName: _marker);
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/users?q={_marker}&sort={sort}", Cancellation);
+        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
 
         EmailsOf(page).ShouldBe(emails);
     }
@@ -183,8 +183,8 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: $"same{_marker}@t.org", lastName: "Same");
         var admin = await AdminAsync();
 
-        var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/users?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);
-        var second = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/users?q={_marker}&sort={sort}&pageSize=1&page=2", Cancellation);
+        var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);
+        var second = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}&pageSize=1&page=2", Cancellation);
 
         Users(first).Concat(Users(second)).Select(user => user.Id).ShouldBe([Guid.Parse($"0{random[1..]}"), Guid.Parse($"f{random[1..]}")]);
     }
@@ -198,7 +198,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListUsers_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/admin/users?{query}", Cancellation);
+        var response = await (await AdminAsync()).GetAsync($"/v1/platform/users?{query}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);

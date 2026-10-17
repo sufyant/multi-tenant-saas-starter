@@ -101,8 +101,8 @@ public sealed class InvitationSignUpTests(Database database) : IAsyncLifetime
         var (_, second) = await InviteAsync(tenantId, owner);
         var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
-        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/admin/tenants/{tenantId}/close", null, Cancellation));
-        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/admin/tenants/{tenantId}/close", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenantId}/close", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenantId}/close", null, Cancellation));
 
         _api.Identity.Withdrawn.Where(withdrawn => withdrawn == first || withdrawn == second).ShouldBe([first, second], ignoreOrder: true);
     }

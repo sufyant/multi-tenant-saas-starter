@@ -50,7 +50,7 @@ public static class ChangeMemberRoleHandler
         }
 
         var oldRole = RoleOf(target);
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.Name == command.Role);
+        var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
         var changed = Tenant.ChangeMemberRole(actor, target, role, await catalog.CountOwnersAsync(cancellationToken));
         if (!changed.IsSuccess)
         {
@@ -65,6 +65,7 @@ public static class ChangeMemberRoleHandler
             return (member, null);
         }
 
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

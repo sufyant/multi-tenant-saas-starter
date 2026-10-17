@@ -5,9 +5,9 @@ using Api.IntegrationTests.Tenant;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
-// GET /v1/admin/audit-log: the platform's audit log, for the system admin, newest first through a cursor (K5's exception). The log is
+// GET /v1/platform/audit-log: the platform's audit log, for the system admin, newest first through a cursor (K5's exception). The log is
 // one table that every test shares, so each test adds records far in the future, after those of the tests before it: they are the newest,
 // and the first page holds them.
 public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLifetime
@@ -34,7 +34,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         var older = await AddEntryAsync(_start);
         var newer = await AddEntryAsync(_start.AddTicks(10));
 
-        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/admin/audit-log?limit=2", Cancellation);
+        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/platform/audit-log?limit=2", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -48,7 +48,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         var tenant = await _catalog.AddTenantAsync();
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
 
-        var response = await _api.CreateClient(owner, secondFactor: true).GetAsync("/v1/admin/audit-log", Cancellation);
+        var response = await _api.CreateClient(owner, secondFactor: true).GetAsync("/v1/platform/audit-log", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -61,8 +61,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         var middle = await AddEntryAsync(_start.AddTicks(10));
         var newest = await AddEntryAsync(_start.AddTicks(20));
 
-        var first = await client.GetFromJsonAsync<JsonElement>("/v1/admin/audit-log?limit=2", Cancellation);
-        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/admin/audit-log?limit=1&cursor={first.GetProperty("nextCursor").GetString()}", Cancellation);
+        var first = await client.GetFromJsonAsync<JsonElement>("/v1/platform/audit-log?limit=2", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?limit=1&cursor={first.GetProperty("nextCursor").GetString()}", Cancellation);
 
         Ids(first).ShouldBe([newest, middle]);
         Ids(second).ShouldBe([oldest]);
@@ -73,7 +73,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     {
         var admin = await _catalog.AddSystemAdminAsync();
 
-        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/admin/audit-log?cursor=AQ", Cancellation);
+        var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/platform/audit-log?cursor=AQ", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("paging.cursor_invalid");
@@ -93,7 +93,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         await _audit.AddPlatformEntryAsync(_start, "IdentityProvider", null, "User", deleted, "user.deleted");
         await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", grace, "Tenant", tenant, "tenant.suspended", "Globex");
 
-        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/admin/audit-log?limit=2", Cancellation);
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/audit-log?limit=2", Cancellation);
 
         ListAuditEntriesTests.Described(page).ShouldBe(
         [
@@ -110,10 +110,43 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         var target = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"target-{marker}@example.com", firstName: "Ada"));
         await _audit.AddPlatformEntryAsync(_start, "User", await _catalog.UserIdOfAsync(admin), "User", target);
 
-        var answer = await _api.CreateClient(admin, secondFactor: true).GetStringAsync("/v1/admin/audit-log?limit=1", Cancellation);
+        var answer = await _api.CreateClient(admin, secondFactor: true).GetStringAsync("/v1/platform/audit-log?limit=1", Cancellation);
 
         answer.ShouldNotContain(marker);
         ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|-|false|user|{target}|Ada|false"]);
+    }
+
+    // The Activity tab of an organisation: the platform's entries about that tenant, newest first, a page at a time. An entry about
+    // another tenant or about a user is left out. The platform never reads the tenant's own log here.
+    [Fact]
+    public async Task ListPlatformAuditEntries_ATenantFilter_ReturnsTheEntriesAboutThatTenantOnly()
+    {
+        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var (tenant, other) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        var created = await _audit.AddPlatformEntryAsync(_start, "User", Guid.CreateVersion7(), "Tenant", tenant, "tenant.created", "Acme Ltd");
+        await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", Guid.CreateVersion7(), "Tenant", other, "tenant.created", "Globex");
+        await _audit.AddPlatformEntryAsync(_start.AddTicks(20), "User", Guid.CreateVersion7(), "User", tenant);
+        var suspended = await _audit.AddPlatformEntryAsync(_start.AddTicks(30), "User", Guid.CreateVersion7(), "Tenant", tenant, "tenant.suspended", "Acme Ltd");
+        await _audit.AddTenantEntryAsync(tenant, _start.AddTicks(40), targetKind: "Tenant", targetId: tenant);
+
+        var first = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}&limit=1", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/audit-log?tenantId={tenant}&limit=1&cursor={first.GetProperty("nextCursor").GetString()}", Cancellation);
+
+        Ids(first).ShouldBe([suspended]);
+        Ids(second).ShouldBe([created]);
+        second.GetProperty("nextCursor").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
+    {
+        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+        var response = await client.GetAsync("/v1/platform/audit-log?tenantId=acme", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("request.invalid");
     }
 
     private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>

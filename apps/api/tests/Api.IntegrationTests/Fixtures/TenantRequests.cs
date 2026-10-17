@@ -4,9 +4,9 @@ namespace Api.IntegrationTests.Fixtures;
 
 internal static class TenantRequests
 {
-    public const string Path = "/v1/admin/tenants";
+    public const string Path = "/v1/platform/tenants";
 
-    // POST /v1/admin/tenants is safe to repeat only under the key the client gives it; each call here is a new request unless the
+    // POST /v1/platform/tenants is safe to repeat only under the key the client gives it; each call here is a new request unless the
     // test gives the key.
     public static Task<HttpResponseMessage> CreateTenantAsync(this HttpClient client, object body, string? idempotencyKey = null) =>
         client.CreateTenantAsync(JsonContent.Create(body), idempotencyKey);
@@ -14,6 +14,24 @@ internal static class TenantRequests
     public static async Task<HttpResponseMessage> CreateTenantAsync(this HttpClient client, HttpContent body, string? idempotencyKey = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, Path) { Content = body };
+        request.Headers.Add("Idempotency-Key", idempotencyKey ?? Guid.NewGuid().ToString());
+
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
+    // POST /v1/platform/tenants/{tenantId}/owner-invitation creates an invitation, so it is safe to repeat only under the key the client
+    // gives it (I1).
+    public static async Task<HttpResponseMessage> InviteOwnerAsync(
+        this HttpClient client,
+        Guid tenantId,
+        string email,
+        string? language = null,
+        string? idempotencyKey = null)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{Path}/{tenantId}/owner-invitation")
+        {
+            Content = language is null ? JsonContent.Create(new { email }) : JsonContent.Create(new { email, language }),
+        };
         request.Headers.Add("Idempotency-Key", idempotencyKey ?? Guid.NewGuid().ToString());
 
         return await client.SendAsync(request, TestContext.Current.CancellationToken);

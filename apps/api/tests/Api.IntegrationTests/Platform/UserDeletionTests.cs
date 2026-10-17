@@ -7,9 +7,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
-// DELETE /v1/admin/users/{userId}: a system admin deletes a user, never the system by itself. The user leaves every tenant, each in its
+// DELETE /v1/platform/users/{userId}: a system admin deletes a user, never the system by itself. The user leaves every tenant, each in its
 // own transaction under the tenant's lock; then the catalog erases the user's email address and names (A8), and after that commit Clerk
 // deletes its user. A tenant always has at least one Owner (K1), so the tenant's last Owner is never deleted.
 public sealed class UserDeletionTests(Database database) : IAsyncLifetime
@@ -17,6 +17,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -50,6 +51,8 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(id)).ShouldBe(
             $"{first.Id}:member.removed|Platform|-|User|{id}|-, {second.Id}:member.removed|Platform|-|User|{id}|-");
         _api.Identity.Deleted.ShouldBe([user]);
+        await _summaries.ShouldMatchTheRowsAsync(first.Id);
+        await _summaries.ShouldMatchTheRowsAsync(second.Id);
     }
 
     // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's user erases them from every
@@ -64,7 +67,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         var userId = await _catalog.UserIdOfAsync(user);
         var admin = await _catalog.AddSystemAdminAsync();
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(admin, secondFactor: true)
-            .PatchAsJsonAsync($"/v1/admin/users/{userId}", new { firstName = $"Grace{marker}", lastName = $"Hopper{marker}" }, Cancellation));
+            .PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName = $"Grace{marker}", lastName = $"Hopper{marker}" }, Cancellation));
         var before = await NamesAsync(userId);
         var kept = await RowsHoldingAsync("control_plane", marker);
 
@@ -120,7 +123,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         await using var holding = await holder.BeginTransactionAsync(Cancellation);
         await ExecuteAsync(holder, holding, $"SELECT id FROM control_plane.tenants WHERE id = '{owned.Id}' FOR UPDATE");
 
-        var deleting = admin.DeleteAsync($"/v1/admin/users/{id}", Cancellation);
+        var deleting = admin.DeleteAsync($"/v1/platform/users/{id}", Cancellation);
         await Waiting.UntilAsync(async () => deleting.IsCompleted || await WaitingBehindAsync(holder.ProcessID) > 0);
         await ExecuteAsync(
             holder,
@@ -213,7 +216,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
     }
 
     private Task<HttpResponseMessage> DeleteAsync(string admin, Guid userId) =>
-        _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/admin/users/{userId}", Cancellation);
+        _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
 
     private Task<long> MembershipsOfAsync(Guid userId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'");

@@ -18,8 +18,8 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
 
     public static TheoryData<string, string> Lists => new()
     {
-        { "ListTenants", "admin" },
-        { "ListUsers", "admin" },
+        { "ListTenants", "platform" },
+        { "ListUsers", "platform" },
         { "ListMyTenants", "user" },
         { "ListMembers", "member" },
         { "ListInvitations", "member" },
@@ -71,7 +71,7 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
     // A caller who may read the list: a system admin, a user, or a member of a new tenant.
     private async Task<(HttpClient Client, string Url)> CallerAsync(string caller, string path) => caller switch
     {
-        "admin" => (_api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true), path),
+        "platform" => (_api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true), path),
         "user" => (_api.CreateClient(await _catalog.AddUserAsync()), path),
         _ => await MemberOfANewTenantAsync(path),
     };

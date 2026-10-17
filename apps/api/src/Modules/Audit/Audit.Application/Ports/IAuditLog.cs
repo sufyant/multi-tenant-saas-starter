@@ -27,8 +27,8 @@ public interface IAuditLog
     internal Task<IReadOnlyList<AuditRecord>> ReadTenantLogAsync(CursorRequest page, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The records of the platform's log, in the same order and the same way. Only a transaction that declares neither a tenant nor a
-    /// user reads them (R11).
+    /// The records of the platform's log, in the same order and the same way, or only those about the tenant: their target is the tenant.
+    /// Only a transaction that declares neither a tenant nor a user reads them (R11).
     /// </summary>
-    internal Task<IReadOnlyList<AuditRecord>> ReadPlatformLogAsync(CursorRequest page, CancellationToken cancellationToken);
+    internal Task<IReadOnlyList<AuditRecord>> ReadPlatformLogAsync(CursorRequest page, Guid? tenantId, CancellationToken cancellationToken);
 }

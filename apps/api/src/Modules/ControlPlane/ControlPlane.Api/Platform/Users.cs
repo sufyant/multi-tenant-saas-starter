@@ -10,18 +10,18 @@ using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
 
-namespace ControlPlane.Api.Admin;
+namespace ControlPlane.Api.Platform;
 
 /// <summary>The catalog users a system admin works with. Users belong to no tenant, so every command runs without one.</summary>
 public static class Users
 {
-    public static void Map(RouteGroupBuilder admin)
+    public static void Map(RouteGroupBuilder platform)
     {
-        admin.MapGet("/users", ListUsers).RequireAuthorization(Permissions.AdminUsersRead);
-        admin.MapPost("/users/{userId:guid}/suspend", SuspendUser).RequireAuthorization(Permissions.AdminUsersSuspend);
-        admin.MapPost("/users/{userId:guid}/reactivate", ReactivateUser).RequireAuthorization(Permissions.AdminUsersReactivate);
-        admin.MapPatch("/users/{userId:guid}", RenameUser).RequireAuthorization(Permissions.AdminUsersUpdate);
-        admin.MapDelete("/users/{userId:guid}", DeleteUser).RequireAuthorization(Permissions.AdminUsersDelete);
+        platform.MapGet("/users", ListUsers).RequireAuthorization(Permissions.PlatformUsersRead);
+        platform.MapPost("/users/{userId:guid}/suspend", SuspendUser).RequireAuthorization(Permissions.PlatformUsersSuspend);
+        platform.MapPost("/users/{userId:guid}/reactivate", ReactivateUser).RequireAuthorization(Permissions.PlatformUsersReactivate);
+        platform.MapPatch("/users/{userId:guid}", RenameUser).RequireAuthorization(Permissions.PlatformUsersUpdate);
+        platform.MapDelete("/users/{userId:guid}", DeleteUser).RequireAuthorization(Permissions.PlatformUsersDelete);
     }
 
     private static async Task<Result<ListPage<UserResponse>>> ListUsers(

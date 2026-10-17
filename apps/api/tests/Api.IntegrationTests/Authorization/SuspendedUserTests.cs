@@ -88,7 +88,7 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id);
         await SuspendAsync(member);
-        (await (await AdminAsync()).PostAsync($"/v1/admin/users/{await _catalog.UserIdOfAsync(member)}/reactivate", null, Cancellation))
+        (await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(member)}/reactivate", null, Cancellation))
             .EnsureSuccessStatusCode();
 
         var tenants = await _api.CreateClient(member).GetAsync("/v1/me/tenants", Cancellation);
@@ -99,7 +99,7 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     }
 
     private async Task SuspendAsync(string externalId) =>
-        (await (await AdminAsync()).PostAsync($"/v1/admin/users/{await _catalog.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
+        (await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
             .EnsureSuccessStatusCode();
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);

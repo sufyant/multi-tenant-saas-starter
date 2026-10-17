@@ -14,6 +14,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private ApiFactory _api = null!;
 
@@ -35,19 +36,20 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var member = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace"));
         var memberId = await _catalog.UserIdOfAsync(member);
 
-        var changed = await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, memberId, "Admin"));
+        var changed = await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, memberId, "admin"));
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         body.GetProperty("userId").GetGuid().ShouldBe(memberId);
         body.GetProperty("email").GetString().ShouldBe("ada@example.com");
         body.GetProperty("lastName").GetString().ShouldBe("Lovelace");
-        body.GetProperty("role").GetString().ShouldBe("Admin");
+        body.GetProperty("role").GetString().ShouldBe("admin");
         body.GetProperty("deleted").GetBoolean().ShouldBeFalse();
         (await RoleOfAsync(tenant.Id, memberId)).ShouldBe("Admin");
         (await _audit.TenantLogAsync(memberId))
             .ShouldBe($"{tenant.Id}:member.role_changed|User|{await _catalog.UserIdOfAsync(actor)}|User|{memberId}|-");
-        (await _audit.TenantDetailsAsync(memberId)).ShouldBe("""{"newRole": "Admin", "oldRole": "Member"}""");
+        (await _audit.TenantDetailsAsync(memberId)).ShouldBe("""{"newRole": "admin", "oldRole": "member"}""");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     [Fact]
@@ -57,7 +59,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
         var other = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id, role: "Admin"));
 
-        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, other, "Member");
+        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, other, "member");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenant.Id, other)).ShouldBe("Member");
@@ -70,7 +72,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
 
-        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, "Owner");
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, "owner");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Owner");
@@ -78,8 +80,8 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
 
     // section 6, "Member management", check 4: an Admin does not touch an Owner, whatever role it would give.
     [Theory]
-    [InlineData("Admin")]
-    [InlineData("Member")]
+    [InlineData("admin")]
+    [InlineData("member")]
     public async Task ChangeMemberRole_AnAdminOnAnOwner_IsForbiddenAndKeepsTheRole(string role)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -101,7 +103,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
         var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
 
-        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, member, "Owner");
+        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, member, "owner");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(changed)).ShouldBe("membership.owner_requires_owner");
@@ -117,10 +119,11 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         var ownerId = await _catalog.UserIdOfAsync(owner);
 
-        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "Admin");
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Admin");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // section 6, "Member management", check 5: the last Owner keeps the role.
@@ -131,7 +134,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         var ownerId = await _catalog.UserIdOfAsync(owner);
 
-        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "Admin");
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(changed)).ShouldBe("membership.last_owner");
@@ -148,7 +151,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         var ownerId = await _catalog.UserIdOfAsync(owner);
 
-        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "Admin");
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Admin");
@@ -162,7 +165,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
         var adminId = await _catalog.UserIdOfAsync(admin);
 
-        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, adminId, "Member");
+        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, adminId, "member");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenant.Id, adminId)).ShouldBe("Member");
@@ -175,7 +178,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
         var adminId = await _catalog.UserIdOfAsync(admin);
 
-        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, adminId, "Owner");
+        var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, adminId, "owner");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(changed)).ShouldBe("membership.owner_requires_owner");
@@ -189,12 +192,12 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
         var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
-        await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenant.Id, member, "Admin"));
+        await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 
-        var again = await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenant.Id, member, "Admin"));
+        var again = await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("role").GetString().ShouldBe("Admin");
+        (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("role").GetString().ShouldBe("admin");
         (await _audit.TenantLogAsync(member)).ShouldNotBeNull().Split(", ").ShouldHaveSingleItem();
     }
 
@@ -204,7 +207,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
 
-        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, Guid.NewGuid(), "Admin");
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, Guid.NewGuid(), "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(changed)).ShouldBe("membership.not_found");
@@ -219,7 +222,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         var stranger = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(other.Id));
 
-        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, stranger, "Admin");
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, stranger, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(changed)).ShouldBe("membership.not_found");
@@ -233,7 +236,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var member = await _catalog.AddMemberAsync(tenant.Id);
         var other = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
 
-        var changed = await _api.CreateClient(member).ChangeMemberRoleAsync(tenant.Id, other, "Admin");
+        var changed = await _api.CreateClient(member).ChangeMemberRoleAsync(tenant.Id, other, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await RoleOfAsync(tenant.Id, other)).ShouldBe("Member");
@@ -252,12 +255,13 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
 
         var responses = await database.AtOnceAsync(
             tenant.Id,
-            () => _api.CreateClient(one).ChangeMemberRoleAsync(tenant.Id, otherId, "Admin"),
-            () => _api.CreateClient(other).ChangeMemberRoleAsync(tenant.Id, oneId, "Admin"));
+            () => _api.CreateClient(one).ChangeMemberRoleAsync(tenant.Id, otherId, "admin"),
+            () => _api.CreateClient(other).ChangeMemberRoleAsync(tenant.Id, oneId, "admin"));
 
         responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.OK, HttpStatusCode.Forbidden]);
         (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.Forbidden))).ShouldBe("membership.owner_requires_owner");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // Section 6, "Member management", check 1: an Owner removes another Owner while that Owner's role change waits for the tenant's lock.
@@ -274,7 +278,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var responses = await database.OneAfterTheOtherAsync(
             tenant.Id,
             () => _api.CreateClient(remover).RemoveMemberAsync(tenant.Id, removedId),
-            () => _api.CreateClient(removed).ChangeMemberRoleAsync(tenant.Id, member, "Admin"));
+            () => _api.CreateClient(removed).ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 
         responses[0].StatusCode.ShouldBe(HttpStatusCode.NoContent);
         responses[1].StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -291,7 +295,8 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     [InlineData("""{ "role": "Owner, Admin" }""")]
     [InlineData("""{ "role": "Admin, Member" }""")]
     [InlineData("""{ "role": " Admin" }""")]
-    [InlineData("""{ "role": "admin" }""")]
+    [InlineData("""{ "role": "Admin" }""")]
+    [InlineData("""{ "role": "OWNER" }""")]
     public async Task ChangeMemberRole_WithoutAValidRole_IsABadRequestAndKeepsTheRole(string body)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -314,7 +319,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var member = await _catalog.UserIdOfAsync(
             await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "grace@example.com", firstName: "Grace", lastName: "Hopper")));
 
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, "Admin"));
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 
         (await _audit.TenantLogAsync(member)).ShouldNotBeNull();
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "@")).ShouldBe(0);

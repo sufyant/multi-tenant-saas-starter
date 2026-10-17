@@ -4,9 +4,9 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
-// PATCH /v1/admin/users/{userId}: only a system admin changes a user's names, in the catalog only (A7). The identity provider keeps no
+// PATCH /v1/platform/users/{userId}: only a system admin changes a user's names, in the catalog only (A7). The identity provider keeps no
 // name, so it is not told.
 public sealed class UserRenameTests(Database database) : IAsyncLifetime
 {
@@ -97,7 +97,7 @@ public sealed class UserRenameTests(Database database) : IAsyncLifetime
     }
 
     private Task<HttpResponseMessage> RenameAsync(string admin, Guid userId, string firstName, string lastName) =>
-        _api.CreateClient(admin, secondFactor: true).PatchAsJsonAsync($"/v1/admin/users/{userId}", new { firstName, lastName }, Cancellation);
+        _api.CreateClient(admin, secondFactor: true).PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName, lastName }, Cancellation);
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();

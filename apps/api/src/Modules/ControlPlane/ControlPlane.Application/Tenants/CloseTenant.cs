@@ -8,7 +8,7 @@ namespace ControlPlane.Application.Tenants;
 
 /// <summary>
 /// A system admin closes an active or a suspended tenant: its members cannot enter, its data stays, and it can be reopened within the
-/// reopen period (K4). It runs inside that tenant, which the admin route names, with the tenant locked.
+/// reopen period (K4). It runs inside that tenant, which the platform route names, with the tenant locked.
 /// </summary>
 public sealed record CloseTenant(string AdminId);
 
@@ -49,6 +49,7 @@ public static class CloseTenantHandler
 
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
             ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (TenantDetails.Of(tenant), new TenantClosed(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);

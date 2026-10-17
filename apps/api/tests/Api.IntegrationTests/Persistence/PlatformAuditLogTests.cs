@@ -39,7 +39,7 @@ public sealed class PlatformAuditLogTests(Database database)
         (await database.ScalarAsSuperuserAsync<long>(CountOf(entry))).ShouldBe(1);
     }
 
-    // The admin door declares nothing.
+    // The platform door declares nothing.
     [Fact]
     public async Task ReadPlatformLog_WithNothingDeclared_ReturnsTheRows()
     {

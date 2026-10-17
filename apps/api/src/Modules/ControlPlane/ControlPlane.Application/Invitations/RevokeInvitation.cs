@@ -55,6 +55,7 @@ public static class RevokeInvitationHandler
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
         }
 
+        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

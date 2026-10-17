@@ -39,9 +39,9 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Members(page).ShouldBe(
         [
-            (await _catalog.UserIdOfAsync(owner), "Owner"),
-            (await _catalog.UserIdOfAsync(admin), "Admin"),
-            (await _catalog.UserIdOfAsync(member), "Member"),
+            (await _catalog.UserIdOfAsync(owner), "owner"),
+            (await _catalog.UserIdOfAsync(admin), "admin"),
+            (await _catalog.UserIdOfAsync(member), "member"),
         ]);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
@@ -59,7 +59,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(later).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
-        Members(page).ShouldBe([(lower, "Member"), (higher, "Member")]);
+        Members(page).ShouldBe([(lower, "member"), (higher, "member")]);
     }
 
     // T2: the tenant comes from the path, whatever the query string or a header says.
@@ -76,7 +76,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?tenantId={other.Id}", Cancellation);
 
-        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(caller), "Owner")]);
+        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(caller), "owner")]);
     }
 
     // T3: a tenant the caller cannot enter looks the same as one that does not exist.
@@ -177,7 +177,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?page=2&pageSize=2", Cancellation);
 
-        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(member), "Member")]);
+        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(member), "member")]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
         page.GetProperty("pageSize").GetInt32().ShouldBe(2);
         page.GetProperty("total").GetInt32().ShouldBe(3);
@@ -211,8 +211,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Profiles(page).ShouldBe(
         [
-            (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", "Owner"),
-            (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, "Member"),
+            (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", "owner"),
+            (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, "member"),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted"], ignoreOrder: true);
         Deleted(page).ShouldBe([false, false]);
@@ -227,9 +227,9 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var deleted = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "gone@example.com", firstName: "Gone", lastName: "Away"));
         await _catalog.DeleteUserAsync(deleted);
 
-        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member", Cancellation);
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=member", Cancellation);
 
-        Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, "Member")]);
+        Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, "member")]);
         Deleted(page).ShouldBe([true]);
     }
 
@@ -283,9 +283,9 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("Owner")]
-    [InlineData("Admin")]
-    [InlineData("Member")]
+    [InlineData("owner")]
+    [InlineData("admin")]
+    [InlineData("member")]
     public async Task ListMembers_ARoleFilter_ReturnsTheMembersOfThatRoleOnly(string role)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -336,8 +336,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(lower, email: "same@t.org", lastName: "Same"));
         var client = _api.CreateClient(caller);
 
-        var first = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member&sort={sort}&pageSize=1&page=1", Cancellation);
-        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=Member&sort={sort}&pageSize=1&page=2", Cancellation);
+        var first = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=member&sort={sort}&pageSize=1&page=1", Cancellation);
+        var second = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=member&sort={sort}&pageSize=1&page=2", Cancellation);
 
         Members(first).Concat(Members(second)).Select(member => member.UserId).ShouldBe([lower, higher]);
     }
@@ -346,7 +346,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("sort=age", "paging.sort_invalid")]
     [InlineData("sort=Role", "paging.sort_invalid")]
     [InlineData("sort=userId", "paging.sort_invalid")]
-    [InlineData("role=owner", "paging.filter_invalid")]
+    [InlineData("role=Owner", "paging.filter_invalid")]
     [InlineData("role=Guest", "paging.filter_invalid")]
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListMembers_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)

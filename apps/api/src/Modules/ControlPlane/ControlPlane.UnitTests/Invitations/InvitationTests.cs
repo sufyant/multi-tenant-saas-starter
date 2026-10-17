@@ -266,7 +266,7 @@ public class InvitationTests
         allowed.IsSuccess.ShouldBeTrue();
     }
 
-    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.Name == role);
+    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
 
     private static Invitation Invite(string email) =>
         Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, InviterId, Now, Lifetime, Token, Language.En);

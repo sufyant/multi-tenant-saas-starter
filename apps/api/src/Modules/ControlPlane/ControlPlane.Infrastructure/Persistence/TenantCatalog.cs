@@ -54,8 +54,10 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<Tenant?> ITenantCatalog.FindTenantAsync(CancellationToken cancellationToken) =>
         controlPlane.Tenants.AsNoTracking().SingleOrDefaultAsync(tenant => tenant.Id == ActiveTenant, cancellationToken);
 
-    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant.
-    async Task<ListPage<Tenant>> ITenantCatalog.ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken)
+    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant. Its summary names the first Owner,
+    // and the users table is not under row level security either (R6): one query joins each tenant's first Owner, so the page is one round
+    // trip, with no query for each tenant.
+    async Task<ListPage<(Tenant Tenant, User? FirstOwner)>> ITenantCatalog.ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken)
     {
         var tenants = controlPlane.Tenants.AsQueryable();
         if (status is { } wanted)
@@ -71,20 +73,58 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
         }
 
         var total = await tenants.CountAsync(cancellationToken);
+        var rows =
+            from tenant in tenants
+            join user in controlPlane.Users on tenant.FirstOwnerId equals user.Id into owners
+            from owner in owners.DefaultIfEmpty()
+            select new { Tenant = tenant, Owner = owner };
         var sorted = list.Sort switch
         {
-            ListTenantsSort.Slug => tenants.OrderBy(tenant => tenant.Slug, list.Descending),
-            _ => tenants.OrderBy(tenant => tenant.Name, list.Descending),
+            ListTenantsSort.Slug => rows.OrderBy(row => row.Tenant.Slug, list.Descending),
+            _ => rows.OrderBy(row => row.Tenant.Name, list.Descending),
         };
         var page = await sorted
-            .ThenBy(tenant => tenant.Id)
+            .ThenBy(row => row.Tenant.Id)
             .Skip(list.Paging.Skip)
             .Take(list.Paging.PageSize)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new ListPage<Tenant>(page, list.Paging, total);
+        return new([.. page.Select(row => (row.Tenant, (User?)row.Owner))], list.Paging, total);
     }
+
+    // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
+    // which is the only time the summary keeps it.
+    async Task<TenantRows> ITenantCatalog.ReadRowsAsync(CancellationToken cancellationToken)
+    {
+        await controlPlane.SaveChangesAsync(cancellationToken);
+        var owners = Memberships.Where(membership => membership.RoleId == BuiltInRoles.Owner.Id);
+        var ownerCount = await owners.CountAsync(cancellationToken);
+
+        return new TenantRows(
+            await Memberships.CountAsync(cancellationToken),
+            ownerCount,
+            await owners.OrderBy(owner => owner.JoinedAt).ThenBy(owner => owner.UserId).Select(owner => (Guid?)owner.UserId).FirstOrDefaultAsync(cancellationToken),
+            ownerCount == 0
+                ? await Invitations
+                    .Where(invitation => invitation.RoleId == BuiltInRoles.Owner.Id)
+                    .OrderByDescending(invitation => invitation.CreatedAt)
+                    .ThenByDescending(invitation => invitation.Id)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(cancellationToken)
+                : null);
+    }
+
+    // Row level security keeps the memberships to the active tenant; the users table is not under it (R6), so the query starts from them.
+    async Task<IReadOnlyList<User>> ITenantCatalog.ListOwnersAsync(CancellationToken cancellationToken) =>
+        await (
+                from membership in Memberships
+                where membership.RoleId == BuiltInRoles.Owner.Id
+                join user in controlPlane.Users on membership.UserId equals user.Id
+                orderby membership.JoinedAt, membership.UserId
+                select user)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
     Task<Membership?> ITenantCatalog.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
@@ -242,7 +282,8 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<bool> ITenantCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
-    public void AddMember(Guid userId, Guid roleId) => controlPlane.Memberships.Add(new Membership(ActiveTenant, userId, roleId));
+    public void AddMember(Guid userId, Guid roleId, DateTimeOffset joinedAt) =>
+        controlPlane.Memberships.Add(new Membership(ActiveTenant, userId, roleId, joinedAt));
 
     void ITenantCatalog.Remove(Membership membership) => controlPlane.Memberships.Remove(OfActiveTenant(membership, membership.TenantId));
 

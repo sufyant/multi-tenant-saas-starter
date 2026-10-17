@@ -75,6 +75,11 @@ public static class CreateTenantHandler
             command.Language ?? admin.Language);
         catalog.Add(invitation);
 
+        // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to change it.
+        var added = await catalog.FindTenantForUpdateAsync(cancellationToken)
+            ?? throw new InvalidOperationException("The tenant was added in this transaction.");
+        added.Summarize(await catalog.ReadRowsAsync(cancellationToken));
+
         var (saga, activate, timeout) = TenantCreationSaga.Begin(
             tenant.Value.Id,
             invitation.Id,

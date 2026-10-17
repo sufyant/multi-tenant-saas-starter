@@ -30,14 +30,19 @@ afterEach(() => {
 });
 
 describe("createApiClient", () => {
-  it("calls an admin operation with the bearer token", async () => {
-    const tenant: components["schemas"]["TenantResponse"] = {
+  it("calls a platform operation with the bearer token", async () => {
+    const tenant: components["schemas"]["TenantListItemResponse"] = {
       id: tenantId,
       name: "Acme",
       slug: "acme",
       status: "active",
       suspensionReason: null,
       closedAt: null,
+      reopenableUntil: null,
+      memberCount: 0,
+      ownerCount: 0,
+      firstOwner: null,
+      ownerInvitation: null,
     };
     const fetch = answer({ items: [tenant], page: 1, pageSize: 20, total: 1 });
     const client = createApiClient({
@@ -45,13 +50,15 @@ describe("createApiClient", () => {
       getToken: async () => "token-1",
     });
 
-    const { data } = await client.GET("/v1/admin/tenants", {
+    const { data } = await client.GET("/v1/platform/tenants", {
       params: { query: { page: 1, pageSize: 20 } },
     });
 
     expect(data?.items?.[0]?.status).toBe("active");
     const request = sentRequest(fetch);
-    expect(request.url).toBe(`${baseUrl}/v1/admin/tenants?page=1&pageSize=20`);
+    expect(request.url).toBe(
+      `${baseUrl}/v1/platform/tenants?page=1&pageSize=20`,
+    );
     expect(request.headers.get("Authorization")).toBe("Bearer token-1");
   });
 
@@ -76,7 +83,7 @@ describe("createApiClient", () => {
 
   it("calls a tenant operation with the tenant in the path", async () => {
     const fetch = answer({
-      items: [{ userId: tenantId, role: "Owner" }],
+      items: [{ userId: tenantId, role: "owner" }],
       page: 1,
       pageSize: 20,
       total: 1,
@@ -90,7 +97,7 @@ describe("createApiClient", () => {
       params: { path: { tenantId } },
     });
 
-    expect(data?.items?.[0]?.role).toBe("Owner");
+    expect(data?.items?.[0]?.role).toBe("owner");
     expect(sentRequest(fetch).url).toBe(
       `${baseUrl}/v1/tenants/${tenantId}/members`,
     );
@@ -104,7 +111,7 @@ describe("createApiClient", () => {
     });
 
     const { error } = await client.POST(
-      "/v1/admin/tenants/{tenantId}/suspend",
+      "/v1/platform/tenants/{tenantId}/suspend",
       {
         params: { path: { tenantId } },
         body: { reason: "Unpaid invoices" },

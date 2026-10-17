@@ -1,4 +1,4 @@
-using ControlPlane.Api.Admin;
+using ControlPlane.Api.Platform;
 using ControlPlane.Api.Me;
 
 namespace ControlPlane.Api;
@@ -35,6 +35,14 @@ internal static class ResponseStatus
         "Suspended" => UserResponseStatus.Suspended,
         "Deleted" => UserResponseStatus.Deleted,
         _ => throw Unknown(status),
+    };
+
+    public static OwnerInvitationResponseState OfOwnerInvitation(string state) => state switch
+    {
+        "Pending" => OwnerInvitationResponseState.Pending,
+        "Expired" => OwnerInvitationResponseState.Expired,
+        "Cancelled" => OwnerInvitationResponseState.Cancelled,
+        _ => throw Unknown(state),
     };
 
     // A filter's value is the status of a response; the query names ControlPlane's status.

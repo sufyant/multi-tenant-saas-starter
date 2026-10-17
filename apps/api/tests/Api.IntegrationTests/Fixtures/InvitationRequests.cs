@@ -10,7 +10,7 @@ internal static class InvitationRequests
         this HttpClient client,
         Guid tenantId,
         string email,
-        string role = "Member",
+        string role = "member",
         string? idempotencyKey = null,
         string? language = null)
     {

@@ -6,7 +6,7 @@ namespace ControlPlane.Application.Tenants;
 
 /// <summary>
 /// A system admin gives a closed tenant back to its members, while its reopen period runs (K4). It runs inside that tenant, which the
-/// admin route names, with the tenant locked. The invitations the closure cancelled stay cancelled.
+/// platform route names, with the tenant locked. The invitations the closure cancelled stay cancelled.
 /// </summary>
 public sealed record ReopenTenant(string AdminId);
 

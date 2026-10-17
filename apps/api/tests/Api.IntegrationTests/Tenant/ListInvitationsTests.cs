@@ -41,7 +41,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        Invitations(page).ShouldBe([(expired, "Member"), (pending, "Admin")]);
+        Invitations(page).ShouldBe([(expired, "member"), (pending, "admin")]);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
@@ -119,9 +119,9 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("Owner")]
-    [InlineData("Admin")]
-    [InlineData("Member")]
+    [InlineData("owner")]
+    [InlineData("admin")]
+    [InlineData("member")]
     public async Task ListInvitations_ARoleFilter_ReturnsTheInvitationsOfThatRoleOnly(string role)
     {
         var tenant = await _catalog.AddTenantAsync();
@@ -198,7 +198,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
     [InlineData("page=0", "paging.page_invalid")]
     [InlineData("sort=createdAt", "paging.sort_invalid")]
     [InlineData("sort=ExpiresAt", "paging.sort_invalid")]
-    [InlineData("role=owner", "paging.filter_invalid")]
+    [InlineData("role=Owner", "paging.filter_invalid")]
     [InlineData("role=Guest", "paging.filter_invalid")]
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListInvitations_AnInvalidPageSortFilterOrSearch_IsRejected(string query, string code)

@@ -4,9 +4,9 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
-// PATCH /v1/admin/tenants/{tenantId}: only the platform renames a tenant, through the system door; the slug never changes (K4). A new
+// PATCH /v1/platform/tenants/{tenantId}: only the platform renames a tenant, through the system door; the slug never changes (K4). A new
 // name is announced, and Audit records it under the tenant with the old and the new name; the name the tenant has announces nothing.
 public sealed class TenantRenameTests(Database database) : IAsyncLifetime
 {
@@ -94,7 +94,7 @@ public sealed class TenantRenameTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await (await AdminAsync()).PatchAsJsonAsync($"/v1/admin/tenants/{tenant.Id}", new { }, Cancellation);
+        var response = await (await AdminAsync()).PatchAsJsonAsync($"/v1/platform/tenants/{tenant.Id}", new { }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);

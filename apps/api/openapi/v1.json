@@ -5,7 +5,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/v1/admin/tenants": {
+    "/v1/platform/tenants": {
       "post": {
         "tags": [
           "Tenants"
@@ -188,7 +188,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListPageOfTenantResponse"
+                  "$ref": "#/components/schemas/ListPageOfTenantListItemResponse"
                 }
               }
             }
@@ -266,7 +266,7 @@
         }
       }
     },
-    "/v1/admin/tenants/{tenantId}": {
+    "/v1/platform/tenants/{tenantId}": {
       "get": {
         "tags": [
           "Tenants"
@@ -289,7 +289,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TenantResponse"
+                  "$ref": "#/components/schemas/TenantDetailResponse"
                 }
               }
             }
@@ -476,7 +476,7 @@
         }
       }
     },
-    "/v1/admin/tenants/{tenantId}/suspend": {
+    "/v1/platform/tenants/{tenantId}/suspend": {
       "post": {
         "tags": [
           "Tenants"
@@ -587,7 +587,7 @@
         }
       }
     },
-    "/v1/admin/tenants/{tenantId}/reactivate": {
+    "/v1/platform/tenants/{tenantId}/reactivate": {
       "post": {
         "tags": [
           "Tenants"
@@ -688,7 +688,7 @@
         }
       }
     },
-    "/v1/admin/tenants/{tenantId}/close": {
+    "/v1/platform/tenants/{tenantId}/close": {
       "post": {
         "tags": [
           "Tenants"
@@ -789,7 +789,7 @@
         }
       }
     },
-    "/v1/admin/tenants/{tenantId}/reopen": {
+    "/v1/platform/tenants/{tenantId}/reopen": {
       "post": {
         "tags": [
           "Tenants"
@@ -890,7 +890,129 @@
         }
       }
     },
-    "/v1/admin/users": {
+    "/v1/platform/tenants/{tenantId}/owner-invitation": {
+      "post": {
+        "tags": [
+          "Tenants"
+        ],
+        "operationId": "InviteOwner",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteOwnerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/users": {
       "get": {
         "tags": [
           "Users"
@@ -1038,7 +1160,7 @@
         }
       }
     },
-    "/v1/admin/users/{userId}/suspend": {
+    "/v1/platform/users/{userId}/suspend": {
       "post": {
         "tags": [
           "Users"
@@ -1139,7 +1261,7 @@
         }
       }
     },
-    "/v1/admin/users/{userId}/reactivate": {
+    "/v1/platform/users/{userId}/reactivate": {
       "post": {
         "tags": [
           "Users"
@@ -1240,7 +1362,7 @@
         }
       }
     },
-    "/v1/admin/users/{userId}": {
+    "/v1/platform/users/{userId}": {
       "patch": {
         "tags": [
           "Users"
@@ -1443,7 +1565,7 @@
         }
       }
     },
-    "/v1/admin/audit-log": {
+    "/v1/platform/audit-log": {
       "get": {
         "tags": [
           "AuditLog"
@@ -1467,6 +1589,14 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1713,9 +1843,9 @@
             "in": "query",
             "schema": {
               "enum": [
-                "Owner",
-                "Admin",
-                "Member"
+                "owner",
+                "admin",
+                "member"
               ],
               "type": "string"
             }
@@ -2211,9 +2341,9 @@
             "in": "query",
             "schema": {
               "enum": [
-                "Owner",
-                "Admin",
-                "Member"
+                "owner",
+                "admin",
+                "member"
               ],
               "type": "string"
             }
@@ -3234,6 +3364,7 @@
           "route.not_found",
           "server.error",
           "tenant.closed",
+          "tenant.has_owner",
           "tenant.name_invalid",
           "tenant.not_active",
           "tenant.not_closed",
@@ -3296,7 +3427,7 @@
             "format": "date-time"
           }
         },
-        "description": "A pending invitation: the invited address, its role (Owner, Admin or Member), the catalog user id of the member who invited, and when\nit was created and expires. The screen shows an expired invitation from its expiry."
+        "description": "A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited, and when\nit was created and expires. The screen shows an expired invitation from its expiry."
       },
       "InviteMemberRequest": {
         "required": [
@@ -3323,6 +3454,28 @@
           }
         },
         "description": "The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the\ninviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value."
+      },
+      "InviteOwnerRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "language": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Language"
+              }
+            ]
+          }
+        },
+        "description": "The address of the Owner the platform invites into a tenant without one, and the language of the invitation's email: without one, the\nsystem admin's own."
       },
       "JsonElement": { },
       "Language": {
@@ -3439,13 +3592,13 @@
           }
         }
       },
-      "ListPageOfTenantResponse": {
+      "ListPageOfTenantListItemResponse": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TenantResponse"
+              "$ref": "#/components/schemas/TenantListItemResponse"
             }
           },
           "page": {
@@ -3549,13 +3702,13 @@
             "type": "boolean"
           }
         },
-        "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, Owner, Admin or Member, and whether the\nidentity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows \"Deleted user\",\nas the audit logs say `deleted` (K3)."
+        "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, and whether the\nidentity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows \"Deleted user\",\nas the audit logs say `deleted` (K3)."
       },
       "MemberRole": {
         "enum": [
-          "Owner",
-          "Admin",
-          "Member"
+          "owner",
+          "admin",
+          "member"
         ],
         "type": "string",
         "description": "A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,\nthe role an invitation gives, and the role a member is given."
@@ -3641,6 +3794,35 @@
           "closed"
         ],
         "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it."
+      },
+      "OwnerInvitationResponse": {
+        "required": [
+          "email",
+          "expiresAt",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "$ref": "#/components/schemas/OwnerInvitationResponseState"
+          }
+        },
+        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request."
+      },
+      "OwnerInvitationResponseState": {
+        "enum": [
+          "pending",
+          "expired",
+          "cancelled"
+        ],
+        "description": "The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled."
       },
       "PreferencesResponse": {
         "required": [
@@ -3766,6 +3948,212 @@
           }
         },
         "description": "Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it."
+      },
+      "TenantDetailResponse": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "suspensionReason",
+          "closedAt",
+          "reopenableUntil",
+          "memberCount",
+          "ownerCount",
+          "owners",
+          "ownerInvitation"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TenantResponseStatus"
+          },
+          "suspensionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reopenableUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "memberCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ownerCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "owners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantOwnerResponse"
+            }
+          },
+          "ownerInvitation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OwnerInvitationResponse"
+              }
+            ]
+          }
+        },
+        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first."
+      },
+      "TenantListItemResponse": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "suspensionReason",
+          "closedAt",
+          "reopenableUntil",
+          "memberCount",
+          "ownerCount",
+          "firstOwner",
+          "ownerInvitation"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TenantResponseStatus"
+          },
+          "suspensionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reopenableUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "memberCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ownerCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "firstOwner": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TenantOwnerResponse"
+              }
+            ]
+          },
+          "ownerInvitation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OwnerInvitationResponse"
+              }
+            ]
+          }
+        },
+        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply."
+      },
+      "TenantOwnerResponse": {
+        "required": [
+          "userId",
+          "firstName",
+          "lastName",
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An Owner of a tenant: the catalog user's id, names and address."
       },
       "TenantResponse": {
         "required": [

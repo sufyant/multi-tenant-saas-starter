@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // A system admin closes a tenant and reopens it within the reopen period, 30 days by default, through the system door (K4). Closing
 // cancels the tenant's pending invitations in the same transaction. A change of status is announced, and Audit records it under the
@@ -17,6 +17,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
 
     private readonly Catalog _catalog = new(database);
+    private readonly TenantSummaries _summaries = new(database);
     private readonly AuditLogs _audit = new(database);
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
     private ApiFactory _api = null!;
@@ -81,7 +82,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
     [InlineData("reopen")]
     public async Task CloseOrReopenTenant_UnknownTenant_IsNotFound(string action)
     {
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/tenants/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/tenants/{Guid.NewGuid()}/{action}", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");
@@ -120,6 +121,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
         (await _catalog.InvitationStatusOfAsync(pending)).ShouldBe("Cancelled");
         (await _catalog.InvitationStatusOfAsync(expired)).ShouldBe("Cancelled");
         (await _catalog.InvitationStatusOfAsync(accepted)).ShouldBe("Accepted");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // K2: an invitation the closure cancelled answers as a revoked one, and stays cancelled after a reopening.
@@ -237,6 +239,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(responses[1])).ShouldBe("tenant.closed");
         (await PendingInvitationsOfAsync(tenant.Id)).ShouldBe(0);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // The other order: the invitation takes the lock first and is created, then the closure cancels it.
@@ -253,6 +256,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
         (responses[0].StatusCode, responses[1].StatusCode).ShouldBe((HttpStatusCode.Created, HttpStatusCode.OK));
         (await PendingInvitationsOfAsync(tenant.Id)).ShouldBe(0);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(1);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
     // K6: every tenant command that locks the tenant row asks again, under the lock, whether the tenant is active. A command that
@@ -310,7 +314,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
     {
         "InviteMember" => owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com"),
         "RevokeInvitation" => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitation}", Cancellation),
-        "ChangeMemberRole" => owner.ChangeMemberRoleAsync(tenantId, member, "Admin"),
+        "ChangeMemberRole" => owner.ChangeMemberRoleAsync(tenantId, member, "admin"),
         "RemoveMember" => owner.RemoveMemberAsync(tenantId, member),
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
     };

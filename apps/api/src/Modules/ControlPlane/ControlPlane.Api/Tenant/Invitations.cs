@@ -70,7 +70,8 @@ public static class Invitations
     private static async Task<Result> RevokeInvitation(Guid invitationId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         await bus.InvokeAsync<Result>(new RevokeInvitation(user.Id(), invitationId), cancellationToken);
 
-    private static InvitationResponse ToResponse(InvitationSummary invitation) =>
+    // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
+    internal static InvitationResponse ToResponse(InvitationSummary invitation) =>
         new(invitation.Id, invitation.Email, invitation.Role, invitation.InvitedBy, invitation.CreatedAt, invitation.ExpiresAt);
 }
 
@@ -81,7 +82,7 @@ public static class Invitations
 public sealed record InviteMemberRequest(string Email, [property: JsonRequired] MemberRole Role, Language? Language = null);
 
 /// <summary>
-/// A pending invitation: the invited address, its role (Owner, Admin or Member), the catalog user id of the member who invited, and when
+/// A pending invitation: the invited address, its role (<c>owner</c>, <c>admin</c> or <c>member</c>), the catalog user id of the member who invited, and when
 /// it was created and expires. The screen shows an expired invitation from its expiry.
 /// </summary>
 public sealed record InvitationResponse(Guid Id, string Email, string Role, Guid InvitedBy, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt);

@@ -214,7 +214,7 @@ public sealed class HostRoleTests(Database database)
         var userId = await catalog.UserIdOfAsync(await catalog.AddUserAsync());
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var suspended = await admin.PostAsync($"/v1/admin/users/{userId}/suspend", null, Cancellation);
+        var suspended = await admin.PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation);
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.suspended") > 0);
 
         suspended.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -239,8 +239,8 @@ public sealed class HostRoleTests(Database database)
         var userId = await catalog.UserIdOfAsync(user);
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var renamed = await admin.PatchAsJsonAsync($"/v1/admin/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
-        var deleted = await admin.DeleteAsync($"/v1/admin/users/{userId}", Cancellation);
+        var renamed = await admin.PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
         await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && await PlatformEntriesAsync(name, userId, "user.deleted") > 0
             && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0 && await PlatformEntriesAsync(name, userId, "user.renamed") > 0);
 
@@ -323,6 +323,42 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "member.invited")).ShouldBe(1L);
     }
 
+    // Step 20k: the platform's Owner invitation is accepted by the web host; its records in both logs, the identity provider's sign-up and
+    // the email run in the worker, once each.
+    [Fact]
+    public async Task InviteOwner_OnAWebAndAWorkerHost_RecordsInBothLogsAndEmailsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        await catalog.AddInvitationAsync(tenant.Id, role: "Owner");
+        var admin = web.CreateClient(await catalog.AddSystemAdminAsync(), secondFactor: true);
+
+        var invited = await admin.InviteOwnerAsync(tenant.Id, "grace@navy.test");
+        await Waiting.UntilAsync(async () =>
+            worker.Email.Sent.Count > 0
+            && await AuditEntriesAsync(name, tenant.Id, "tenant.owner_invited") > 0
+            && await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_invited") > 0);
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteOwner), typeof(InviteOwnerHandler))]);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(OwnerInvited), typeof(RecordOwnerInvitedHandler)),
+                new HandlerRun(typeof(OpenMemberSignUp), typeof(OpenSignUpHandler)),
+                new HandlerRun(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
+                new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.owner_invited")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_invited")).ShouldBe(1L);
+    }
+
     // O3: a revocation is announced from the web host, and its Audit handler runs in the worker, once.
     [Fact]
     public async Task RevokeInvitation_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
@@ -360,7 +396,7 @@ public sealed class HostRoleTests(Database database)
         var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
         var member = await catalog.UserIdOfAsync(await catalog.AddMemberAsync(tenant.Id));
 
-        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "Admin");
+        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "admin");
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -404,7 +440,7 @@ public sealed class HostRoleTests(Database database)
         var tenant = await new Catalog(database, name).AddTenantAsync(status: "Suspended");
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var reactivated = await admin.PostAsync($"/v1/admin/tenants/{tenant.Id}/reactivate", null, Cancellation);
+        var reactivated = await admin.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation);
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated") > 0);
 
         reactivated.StatusCode.ShouldBe(HttpStatusCode.OK);

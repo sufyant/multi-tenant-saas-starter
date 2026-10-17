@@ -7,5 +7,5 @@ namespace ControlPlane.Contracts;
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the member who was removed.</param>
 /// <param name="RemovedBy">The catalog user id of the member who removed them, who acted.</param>
-/// <param name="Role">The built-in role the member had: <c>Owner</c>, <c>Admin</c> or <c>Member</c>.</param>
+/// <param name="Role">The built-in role the member had: <c>owner</c>, <c>admin</c> or <c>member</c>. A message written before step 20k names it as the domain does: <c>Owner</c>.</param>
 public sealed record MemberRemoved(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, Guid RemovedBy, string Role);

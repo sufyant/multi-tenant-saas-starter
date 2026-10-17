@@ -9,31 +9,33 @@ namespace ControlPlane.Domain;
 /// </summary>
 internal static class PermissionPools
 {
-    public const string AdminTenantsCreate = "admin.tenants.create";
+    public const string PlatformTenantsCreate = "platform.tenants.create";
 
-    public const string AdminTenantsRead = "admin.tenants.read";
+    public const string PlatformTenantsRead = "platform.tenants.read";
 
-    public const string AdminTenantsSuspend = "admin.tenants.suspend";
+    public const string PlatformTenantsSuspend = "platform.tenants.suspend";
 
-    public const string AdminTenantsReactivate = "admin.tenants.reactivate";
+    public const string PlatformTenantsReactivate = "platform.tenants.reactivate";
 
-    public const string AdminTenantsUpdate = "admin.tenants.update";
+    public const string PlatformTenantsUpdate = "platform.tenants.update";
 
-    public const string AdminTenantsClose = "admin.tenants.close";
+    public const string PlatformTenantsClose = "platform.tenants.close";
 
-    public const string AdminTenantsReopen = "admin.tenants.reopen";
+    public const string PlatformTenantsReopen = "platform.tenants.reopen";
 
-    public const string AdminUsersRead = "admin.users.read";
+    public const string PlatformTenantsInviteOwner = "platform.tenants.invite_owner";
 
-    public const string AdminUsersSuspend = "admin.users.suspend";
+    public const string PlatformUsersRead = "platform.users.read";
 
-    public const string AdminUsersReactivate = "admin.users.reactivate";
+    public const string PlatformUsersSuspend = "platform.users.suspend";
 
-    public const string AdminUsersUpdate = "admin.users.update";
+    public const string PlatformUsersReactivate = "platform.users.reactivate";
 
-    public const string AdminUsersDelete = "admin.users.delete";
+    public const string PlatformUsersUpdate = "platform.users.update";
 
-    public const string AdminAuditRead = "admin.audit.read";
+    public const string PlatformUsersDelete = "platform.users.delete";
+
+    public const string PlatformAuditRead = "platform.audit.read";
 
     public const string TenantMembersRead = "tenant.members.read";
 
@@ -64,17 +66,18 @@ internal static class PermissionPools
 
     public static IReadOnlySet<string> SystemPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,
-        AdminTenantsCreate,
-        AdminTenantsRead,
-        AdminTenantsSuspend,
-        AdminTenantsReactivate,
-        AdminTenantsUpdate,
-        AdminTenantsClose,
-        AdminTenantsReopen,
-        AdminUsersRead,
-        AdminUsersSuspend,
-        AdminUsersReactivate,
-        AdminUsersUpdate,
-        AdminUsersDelete,
-        AdminAuditRead);
+        PlatformTenantsCreate,
+        PlatformTenantsRead,
+        PlatformTenantsSuspend,
+        PlatformTenantsReactivate,
+        PlatformTenantsUpdate,
+        PlatformTenantsClose,
+        PlatformTenantsReopen,
+        PlatformTenantsInviteOwner,
+        PlatformUsersRead,
+        PlatformUsersSuspend,
+        PlatformUsersReactivate,
+        PlatformUsersUpdate,
+        PlatformUsersDelete,
+        PlatformAuditRead);
 }

@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // A system admin suspends and reactivates a catalog user through the system door. The identity provider is not told. A system admin
 // cannot be suspended, so the system door always stays open to staff. SuspendedUserTests follows what a suspended user meets.
@@ -30,7 +30,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         var user = await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
         var id = await _catalog.UserIdOfAsync(user);
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -49,10 +49,10 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         var user = await _catalog.AddUserAsync();
         var id = await _catalog.UserIdOfAsync(user);
         var admin = await AdminAsync();
-        await admin.PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation);
+        await admin.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
         var first = await SuspendedAtAsync(user);
 
-        var again = await admin.PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation);
+        var again = await admin.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
 
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("suspended");
@@ -69,10 +69,10 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddSystemAdminAsync();
         var client = _api.CreateClient(admin, secondFactor: true);
 
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation));
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/suspend", null, Cancellation));
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/reactivate", null, Cancellation));
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/admin/users/{id}/reactivate", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
 
         var adminId = await _catalog.UserIdOfAsync(admin);
         (await _audit.PlatformLogAsync(id)).ShouldBe($"user.suspended|User|{adminId}|User|{id}|-, user.reactivated|User|{adminId}|User|{id}|-");
@@ -85,7 +85,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         var user = await _catalog.AddUserAsync();
         await _catalog.SuspendUserAsync(user);
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
@@ -97,7 +97,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     {
         var user = await _catalog.AddUserAsync();
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
@@ -109,7 +109,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     {
         var staff = await _catalog.AddSystemAdminAsync();
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/users/{await _catalog.UserIdOfAsync(staff)}/suspend", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(staff)}/suspend", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("user.is_system_admin");
@@ -122,7 +122,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddSystemAdminAsync();
 
         var response = await _api.CreateClient(admin, secondFactor: true)
-            .PostAsync($"/v1/admin/users/{await _catalog.UserIdOfAsync(admin)}/suspend", null, Cancellation);
+            .PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(admin)}/suspend", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("user.is_system_admin");
@@ -133,7 +133,7 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     [InlineData("reactivate")]
     public async Task SuspendOrReactivateUser_UnknownUser_IsNotFound(string action)
     {
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/users/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("user.not_found");

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // A system admin creates a tenant through the system door, and the tenant creation saga runs through the outbox. TenantCreationTests
 // follows the saga itself.
@@ -124,7 +124,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await database.ScalarAsync<string>($"SELECT name FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe("Acme Ltd");
     }
 
-    // T5: the system door is /v1/admin; the old path is gone.
+    // T5: the system door is /v1/platform; the old path is gone.
     [Fact]
     public async Task CreateTenant_OnTheOldPath_IsNotFound()
     {

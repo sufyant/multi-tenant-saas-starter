@@ -27,7 +27,7 @@ public sealed partial class NamesAndPlacesTests
         schema.ShouldBe(SnakeCase(module));
     }
 
-    // N6: a permission is audience.resource.action. The audience is admin or tenant; the me audience has no permissions.
+    // N6: a permission is audience.resource.action. The audience is platform or tenant; the me audience has no permissions.
     [Fact]
     public void NamePermissions_EveryPermission_IsAudienceResourceAction()
     {
@@ -131,7 +131,7 @@ public sealed partial class NamesAndPlacesTests
 
     private static string SnakeCase(string name) => WordStart().Replace(name, "_$1").ToLowerInvariant();
 
-    [GeneratedRegex(@"^(admin|tenant)\.[a-z]+(_[a-z]+)*\.[a-z]+(_[a-z]+)*$")]
+    [GeneratedRegex(@"^(platform|tenant)\.[a-z]+(_[a-z]+)*\.[a-z]+(_[a-z]+)*$")]
     private static partial Regex AudienceResourceAction();
 
     [GeneratedRegex(@"^(?<project>.+)\.(Unit|Integration|EndToEnd|Architecture)Tests$")]

@@ -1,4 +1,6 @@
 using ControlPlane.Domain;
+using ControlPlane.Domain.Invitations;
+using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
@@ -482,6 +484,110 @@ public class TenantTests
         allowed.Error.Type.ShouldBe(ErrorType.Forbidden);
         allowed.Error.Code.ToString().ShouldBe(code);
     }
+
+    // R12: the summary says what the tenant's rows say. The latest Owner invitation stays only while the tenant has no Owner: its address
+    // is a person's (the maintainer's decision in step 20k).
+    [Fact]
+    public void SummarizeTenant_WithoutAnOwner_KeepsTheCountsAndTheLatestOwnerInvitation()
+    {
+        var tenant = Active();
+        var invitation = OwnerInvitation();
+
+        tenant.Summarize(new TenantRows(0, 0, null, invitation));
+
+        (tenant.MemberCount, tenant.OwnerCount, tenant.FirstOwnerId).ShouldBe((0, 0, null));
+        (tenant.OwnerInvitationEmail, tenant.OwnerInvitationExpiresAt, tenant.OwnerInvitationStatus)
+            .ShouldBe(("ada@example.com", Now.AddDays(7), InvitationStatus.Pending));
+    }
+
+    [Fact]
+    public void SummarizeTenant_AnOwnerJoined_KeepsTheFirstOwnerAndClearsTheOwnerInvitation()
+    {
+        var tenant = Active();
+        tenant.Summarize(new TenantRows(0, 0, null, OwnerInvitation()));
+        var owner = Guid.CreateVersion7();
+
+        tenant.Summarize(new TenantRows(3, 2, owner, OwnerInvitation()));
+
+        (tenant.MemberCount, tenant.OwnerCount, tenant.FirstOwnerId).ShouldBe((3, 2, owner));
+        (tenant.OwnerInvitationEmail, tenant.OwnerInvitationExpiresAt, tenant.OwnerInvitationStatus).ShouldBe((null, null, null));
+        tenant.OwnerInvitationStateAt(Now).ShouldBeNull();
+    }
+
+    // "Expired" is read from the expiry at the moment it is asked, never stored.
+    [Theory]
+    [InlineData(0, "Pending")]
+    [InlineData(7, "Expired")]
+    [InlineData(8, "Expired")]
+    public void ReadOwnerInvitationState_APendingInvitation_IsExpiredFromItsExpiryOn(int days, string state)
+    {
+        var tenant = Active();
+        tenant.Summarize(new TenantRows(0, 0, null, OwnerInvitation()));
+
+        tenant.OwnerInvitationStateAt(Now.AddDays(days)).ShouldBe(Enum.Parse<OwnerInvitationState>(state));
+    }
+
+    [Fact]
+    public void ReadOwnerInvitationState_ACancelledInvitation_IsCancelled()
+    {
+        var tenant = Active();
+        var invitation = OwnerInvitation();
+        invitation.Cancel();
+        tenant.Summarize(new TenantRows(0, 0, null, invitation));
+
+        tenant.OwnerInvitationStateAt(Now).ShouldBe(OwnerInvitationState.Cancelled);
+    }
+
+    [Fact]
+    public void ReadReopenableUntil_AClosedTenant_IsItsClosurePlusThePeriod()
+    {
+        var tenant = Closed();
+
+        tenant.ReopenableUntil(ReopenPeriod).ShouldBe(Now + ReopenPeriod);
+    }
+
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    [InlineData("Provisioning")]
+    public void ReadReopenableUntil_ATenantThatIsNotClosed_IsNone(string status)
+    {
+        var tenant = InStatus(status);
+
+        tenant.ReopenableUntil(ReopenPeriod).ShouldBeNull();
+    }
+
+    [Fact]
+    public void InviteOwner_AnActiveTenantWithoutAnOwner_IsAllowed()
+    {
+        var allowed = Active().CheckOwnerInvitation(owners: 0);
+
+        allowed.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void InviteOwner_ATenantWithAnOwner_IsAConflict()
+    {
+        var allowed = Active().CheckOwnerInvitation(owners: 1);
+
+        allowed.Error.Type.ShouldBe(ErrorType.Conflict);
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantHasOwner);
+    }
+
+    [Theory]
+    [InlineData("Provisioning")]
+    [InlineData("Suspended")]
+    [InlineData("Cancelled")]
+    [InlineData("Closed")]
+    public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
+    {
+        var allowed = InStatus(status).CheckOwnerInvitation(owners: 0);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+    }
+
+    private static Invitation OwnerInvitation() =>
+        Invitation.Create(Guid.CreateVersion7(), Id, "ada@example.com", BuiltInRoles.Owner, Guid.CreateVersion7(), Now, TimeSpan.FromDays(7), "secret", Language.En);
 
     private static Tenant Active()
     {

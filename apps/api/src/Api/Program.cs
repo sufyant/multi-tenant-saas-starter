@@ -52,9 +52,9 @@ try
     if (role.ServesTheApi())
     {
         var v1 = app.MapV1();
-        var (admin, tenant) = (v1.MapAdmin(), v1.MapTenant());
-        ControlPlaneModule.MapEndpoints(admin, v1.MapMe(), tenant);
-        AuditModule.MapEndpoints(admin, tenant);
+        var (platform, tenant) = (v1.MapPlatform(), v1.MapTenant());
+        ControlPlaneModule.MapEndpoints(platform, v1.MapMe(), tenant);
+        AuditModule.MapEndpoints(platform, tenant);
         app.MapApiDocuments();
     }
 }

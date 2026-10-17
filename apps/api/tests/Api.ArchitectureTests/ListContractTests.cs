@@ -4,8 +4,8 @@ namespace Api.ArchitectureTests;
 
 // K5: every list uses one contract, read from the committed OpenAPI document. A List operation takes page, pageSize, sort and q, and
 // only filters whose values are an enum; its sort is an enum; its answer holds exactly items, page, pageSize and total. The audit logs
-// are the one exception: a List operation with a cursor takes exactly cursor and limit and answers exactly items and nextCursor, and
-// only those two operations may.
+// are the one exception: a List operation with a cursor takes exactly cursor and limit, and the platform's log also the tenant it is
+// about, and answers exactly items and nextCursor, and only those two operations may.
 public sealed class ListContractTests : IAsyncLifetime
 {
     private const string DocumentFile = "openapi/v1.json";
@@ -76,13 +76,13 @@ public sealed class ListContractTests : IAsyncLifetime
         withACursor.ShouldBe(CursorLists, ignoreOrder: true);
     }
 
+    // Step 20k: the platform's log filters by the tenant an entry is about, for the Activity tab of an organisation.
     [Fact]
-    public void BuildOpenApiDocument_EveryListWithACursor_TakesExactlyCursorAndLimit()
+    public void BuildOpenApiDocument_EveryListWithACursor_TakesExactlyCursorAndLimitAndItsFilters()
     {
         var parameters = CursorListsOf().Select(list => $"{list.Id}: {string.Join(", ", QueryParametersOf(list.Operation).Select(parameter => parameter.Name).Order(StringComparer.Ordinal))}");
 
-        parameters.ShouldNotBeEmpty();
-        parameters.ShouldBe(CursorListsOf().Select(list => $"{list.Id}: cursor, limit"));
+        parameters.ShouldBe(["ListAuditEntries: cursor, limit", "ListPlatformAuditEntries: cursor, limit, tenantId"], ignoreOrder: true);
     }
 
     [Fact]
