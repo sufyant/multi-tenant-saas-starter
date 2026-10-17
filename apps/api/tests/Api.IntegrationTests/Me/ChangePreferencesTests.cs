@@ -86,7 +86,8 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     }
 
     // Both fields are required, so a client that leaves the time zone out never clears it by mistake. The language is one of the list,
-    // by its tag: an unknown tag or a number is a body the endpoint cannot read, as an unknown role is (K5).
+    // by its exact tag: an unknown tag, a list of tags, a tag with spaces or a number is a body the endpoint cannot read, as an unknown
+    // role is (K5).
     [Theory]
     [InlineData("{}")]
     [InlineData("""{ "timeZone": null }""")]
@@ -95,6 +96,10 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [InlineData("""{ "language": "TR", "timeZone": null }""")]
     [InlineData("""{ "language": 1, "timeZone": null }""")]
     [InlineData("""{ "language": null, "timeZone": null }""")]
+    [InlineData("""{ "language": "tr, ar", "timeZone": null }""")]
+    [InlineData("""{ "language": "en, tr", "timeZone": null }""")]
+    [InlineData("""{ "language": " en", "timeZone": null }""")]
+    [InlineData("""{ "language": "", "timeZone": null }""")]
     public async Task ChangePreferences_WithoutALanguageOfTheList_IsABadRequestAndKeepsThePreferences(string body)
     {
         var user = await _catalog.AddUserAsync(language: "ar", timeZone: "Asia/Dubai");
