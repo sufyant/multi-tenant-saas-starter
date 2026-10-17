@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
@@ -112,6 +113,43 @@ public class TenantCreationTests
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
         sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // SendingInvitation | Fault<OpenOwnerSignUp> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    [Fact]
+    public void OpenOwnerSignUp_FailsForGood_NeedsAttentionAndCancelsTheInvitation()
+    {
+        var saga = SendingInvitation();
+
+        var sent = saga.Handle(FaultOf(OwnerSignUp()));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // Activating | Fault<OpenOwnerSignUp> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm: the activation committed, as it
+    // sent the sign-up, but its reply has not reached the saga yet.
+    [Fact]
+    public void OpenOwnerSignUp_FailsForGoodBeforeTheActivationArrives_NeedsAttentionAndCancelsTheInvitation()
+    {
+        var saga = Activating();
+
+        var sent = saga.Handle(FaultOf(OwnerSignUp()));
+
+        saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
+        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+    }
+
+    // Completed | Fault<OpenOwnerSignUp> | unchanged | none
+    [Fact]
+    public void OpenOwnerSignUp_FaultAfterCompletion_IsIgnored()
+    {
+        var saga = Completed();
+
+        var sent = saga.Handle(FaultOf(OwnerSignUp()));
+
+        saga.State.ShouldBe(TenantCreationSagaState.Completed);
+        sent.ShouldBeEmpty();
     }
 
     // SendingInvitation | InvitationEmailTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
@@ -312,6 +350,8 @@ public class TenantCreationTests
     private static ActivateTenantReply Activated() => new(TenantId);
 
     private static OwnerInvitationReady InvitationReady() => new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink);
+
+    private static OpenOwnerSignUp OwnerSignUp() => new(TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink, Now.AddDays(7));
 
     private static SendInvitationEmailReply EmailSent() => new(EventId, Now, TenantId, InvitationId);
 

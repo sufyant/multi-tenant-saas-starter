@@ -85,6 +85,32 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await MembersAsync(slug)).ShouldBe(0);
     }
 
+    // A8, K6: a system admin's deletion holds the user's row while the user accepts an invitation, which passed the door before the
+    // deletion. The acceptance waits for the row, finds the user deleted, and adds no membership: a deleted user is never a member.
+    [Fact]
+    public async Task AcceptInvitation_WhileADeletionHoldsTheUser_WaitsAndIsRefused()
+    {
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace");
+        _api.Identity.AddAccount(known, email);
+        var slug = await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
+        await using var deletion = new NpgsqlConnection(database.SuperuserConnectionString);
+        await deletion.OpenAsync(Cancellation);
+        await using var holding = await deletion.BeginTransactionAsync(Cancellation);
+        await using var delete = new NpgsqlCommand(
+            $"UPDATE control_plane.users SET email = NULL, first_name = NULL, deleted_at = now() WHERE external_id = '{known}'", deletion, holding);
+        await delete.ExecuteNonQueryAsync(Cancellation);
+
+        var accepting = AcceptAsync(known, _api.Email.CodeSentTo(email));
+        await Waiting.UntilAsync(async () => accepting.IsCompleted || await IsBlockingAsync(deletion.ProcessID));
+        await holding.CommitAsync(Cancellation);
+        var accepted = await accepting;
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(accepted)).ShouldBe("user.deleted");
+        (await MembersAsync(slug)).ShouldBe(0);
+    }
+
     // A7: a new catalog user gets the invited address, which the identity provider verified, and the names the person typed, without the
     // spaces around them. The identity provider keeps no name.
     [Fact]
