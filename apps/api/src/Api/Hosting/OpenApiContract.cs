@@ -12,14 +12,16 @@ namespace Api.Hosting;
 
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
-// sort and filters, and the members of the one error schema with the enums of the error codes. They change the document only; the JSON on the wire stays as it is.
+// sort and filters, the members of the one error schema with the enums of the error codes, and the one list of languages. They change
+// the document only; the JSON on the wire stays as it is.
 internal static class OpenApiContract
 {
     public static OpenApiOptions DescribeContract(this OpenApiOptions options) =>
         options.AddOperationTransformer(NameOperation)
             .AddOperationTransformer(DeclarePathParameters)
             .AddOperationTransformer(DescribeListParameters)
-            .AddDocumentTransformer(DescribeProblemDetails);
+            .AddDocumentTransformer(DescribeProblemDetails)
+            .AddDocumentTransformer(DescribeLanguage);
 
     // N7: an endpoint is a method with the action's name, so the method's name is the operation id.
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
@@ -110,6 +112,20 @@ internal static class OpenApiContract
         };
         problem.Required ??= new HashSet<string>();
         problem.Required.Add(Problems.CodeMember);
+        return Task.CompletedTask;
+    }
+
+    // The one list of languages is the schema Language, which every field that holds a language refers to. The generator builds it from
+    // the field it meets first; when that field is nullable it puts null among the values and gives no type, so a client would take null
+    // for a language everywhere. The schema states the tags only; a nullable field says null itself.
+    private static Task DescribeLanguage(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas?.ContainsKey(nameof(Language)) == true)
+        {
+            document.Components.Schemas[nameof(Language)] = EnumSchema(
+                [.. Enum.GetValues<Language>().Select(Problems.NameOf)], "A language the web speaks, by its BCP 47 language tag.");
+        }
+
         return Task.CompletedTask;
     }
 

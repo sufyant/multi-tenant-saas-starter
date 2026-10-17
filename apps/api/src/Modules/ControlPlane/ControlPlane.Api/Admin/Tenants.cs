@@ -41,7 +41,7 @@ public static class Tenants
         CancellationToken cancellationToken)
     {
         var created = await idempotency.ExecuteAsync<TenantDetails>(
-            new CreateTenant(user.Id(), request.Name, request.Slug, request.OwnerEmail),
+            new CreateTenant(user.Id(), request.Name, request.Slug, request.OwnerEmail, request.Language),
             Guid.CreateVersion7(time.GetUtcNow()).ToString(),
             cancellationToken);
         return created.Map(ToResponse);
@@ -124,8 +124,11 @@ public static class Tenants
         new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status), tenant.SuspensionReason, tenant.ClosedAt);
 }
 
-/// <summary>A new tenant, and the email address of its first owner, who is invited once the tenant is ready.</summary>
-public sealed record CreateTenantRequest(string Name, string Slug, string OwnerEmail);
+/// <summary>
+/// A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's
+/// invitation email: without one, the system admin's own.
+/// </summary>
+public sealed record CreateTenantRequest(string Name, string Slug, string OwnerEmail, Language? Language = null);
 
 /// <summary>A tenant's new name. The slug never changes.</summary>
 public sealed record RenameTenantRequest(string Name);
