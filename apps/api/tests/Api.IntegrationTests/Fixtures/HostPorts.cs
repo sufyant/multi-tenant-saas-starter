@@ -8,8 +8,9 @@ namespace Api.IntegrationTests.Fixtures;
 // The public port and the management port of a host that runs on Kestrel. The ports come from 20000 to 32767, below the ephemeral
 // range of Linux (32768 to 60999) and of macOS and Windows (49152 to 65535), so no outbound connection takes one between the check and
 // the host's bind. Each process starts at a random place in the range and takes the next port each time, so it never gives a port
-// twice, and two test processes seldom meet. A port is given only if Kestrel could bind it on all interfaces a moment ago, as the host
-// binds its management port; a port that another socket holds is passed over before any host uses it.
+// twice, and two test processes seldom meet. A port is given only if Kestrel could bind it a moment ago both ways the host binds a port:
+// on all interfaces, as the management port, and on 127.0.0.1, as the public port. A port that another socket holds is passed over
+// before any host uses it.
 internal sealed record HostPorts(int Public, int Management)
 {
     private const int First = 20000;
@@ -42,11 +43,15 @@ internal sealed record HostPorts(int Public, int Management)
         throw new InvalidOperationException($"No port from {First} to {First + Count - 1} is free.");
     }
 
-    private static bool CanBind(int port)
+    // macOS lets a bind on all interfaces share a port with a listener on 127.0.0.1, where the public port listens, so both are checked.
+    private static bool CanBind(int port) =>
+        CanBind(new IPEndPoint(IPAddress.IPv6Any, port)) && CanBind(new IPEndPoint(IPAddress.Loopback, port));
+
+    private static bool CanBind(IPEndPoint endpoint)
     {
         try
         {
-            using var socket = SocketTransportOptions.CreateDefaultBoundListenSocket(new IPEndPoint(IPAddress.IPv6Any, port));
+            using var socket = SocketTransportOptions.CreateDefaultBoundListenSocket(endpoint);
             return true;
         }
         catch (SocketException exception) when (exception.SocketErrorCode == SocketError.AddressAlreadyInUse)
