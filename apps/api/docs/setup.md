@@ -37,17 +37,56 @@ The API needs these from an identity provider:
 - OpenID Connect discovery (`/.well-known/openid-configuration`) and its signing keys, served over HTTPS with a certificate the server trusts. The issuer URL is `Authentication:Clerk:Issuer`.
 - Session tokens that carry `sub` (the user) and `sid` (the session). A token without `sid` is refused (API2).
 - `fva` in the session token for the second factor: the minutes since the first and the second factor were verified, `-1` for never. The system door requires a verified second factor (A6).
-- Open sign-up with email verification at sign-up. The Owner of a new tenant signs up like any other user and then accepts the invitation with the invited address verified.
+- Open sign-up with email verification at sign-up. The Owner of a new tenant signs up like any other user and then accepts the invitation with the invited address verified. Changes in step 20i.
 - A Backend API that returns a user's verified email addresses and profile. The API calls it when a user accepts an invitation and when the first system admin enters the system door. Its URL and secret key are `ControlPlane:Clerk:BackendApiUrl` and `ControlPlane:Clerk:SecretKey`.
-- Webhooks for user changes, signed in the Svix format. The web process receives them at `POST /v1/webhooks/clerk`. The signing secret is `ControlPlane:Clerk:WebhookSigningSecret`.
+- Webhooks for user changes, signed in the Svix format. The web process receives them at `POST /v1/webhooks/clerk`. The signing secret is `ControlPlane:Clerk:WebhookSigningSecret`. Changes in step 20i.
 
 On Clerk:
 
 - Use the session token. A JWT template's token carries no `sid`, so the API refuses it.
 - Enable the second factor. The first system admin enrolls a device before their first request to `/v1/admin/...`.
-- Keep sign-up open and require email verification at sign-up.
-- The Backend API call is `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It copies the address marked primary (`primary_email_address_id`), `first_name`, `last_name` and `updated_at`.
-- Add a webhook endpoint in the Clerk dashboard for each instance, with the URL `https://<API domain>/v1/webhooks/clerk` and the events `user.updated` and `user.deleted`. Its signing secret starts with `whsec_`.
+- Keep sign-up open and require email verification at sign-up. Changes in step 20i.
+- The Backend API call is `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It copies the address marked primary (`primary_email_address_id`), `first_name`, `last_name` and `updated_at`. Changes in step 20i.
+- Add a webhook endpoint in the Clerk dashboard for each instance, with the URL `https://<API domain>/v1/webhooks/clerk` and the events `user.updated` and `user.deleted`. Its signing secret starts with `whsec_`. Changes in step 20i.
+
+### Clerk settings as code
+
+The Clerk instance settings are code, as the Railway settings are. Each Clerk instance has one file in `.clerk/` at the repository root. A file holds only the settings below, as a partial instance config (`clerk config schema` lists the keys). Change a setting in its file, in a pull request. The maintainer then applies it. Nobody changes a setting in the Clerk dashboard, except for the manual steps below.
+
+The files hold the settings of step 20i. The lines marked "Changes in step 20i." above describe the API before step 20i.
+
+| Instance | File | Serves |
+| --- | --- | --- |
+| development (`optimum-ghost-3549.clerk.accounts.dev`) | `.clerk/development.json` | local and staging |
+| production | `.clerk/production.json` | production. The instance does not exist yet |
+
+Run from the repository root, after `clerk auth login` (or with `CLERK_PLATFORM_API_KEY` set):
+
+- `pnpm clerk:plan` prints, for each instance, the difference between its file and the live instance. It changes nothing.
+- `pnpm clerk:apply` prints the same difference, asks for each instance, then applies it. Read the plan first. Add `production` or `development` to handle one instance only.
+
+The settings:
+
+| Setting | Key | Value |
+| --- | --- | --- |
+| Sign-up mode | `auth_access_control.sign_up_mode` | `restricted`: only an invitation lets a person sign up |
+| Email sign-in and verification | `auth_email.sign_in_strategies`, `auth_email.verification_strategies` | `email_code` only, no magic link |
+| Password | `auth_password.enabled`, `auth_password.required` | off |
+| Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | on. A new person still needs an invitation |
+| First and last name | `user_model.first_name`, `user_model.last_name` | off. The API keeps the names |
+| Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | on |
+| Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | on |
+
+Secrets are not in the files. The CLI gets its credentials from `clerk auth login` or `CLERK_PLATFORM_API_KEY`; it does not need the instance secret key. The development instance uses Clerk's shared Google and Microsoft credentials. An apply to production reads the OAuth credentials from `CLERK_GOOGLE_CLIENT_ID`, `CLERK_GOOGLE_CLIENT_SECRET`, `CLERK_MICROSOFT_CLIENT_ID` and `CLERK_MICROSOFT_CLIENT_SECRET`, and stops if one is missing. The script never prints them.
+
+The instance config has no key for these. The maintainer does them by hand:
+
+- Create the production instance: `clerk deploy`, in a terminal. It needs the production domain.
+- Create the OAuth applications for production: a Google OAuth client in Google Cloud Console and an app registration in Microsoft Entra ID. Their redirect URIs are in the Clerk dashboard, Configure, SSO connections, under each provider.
+- Webhooks: none. Remove the webhook endpoint in the Clerk dashboard, Configure, Webhooks, when step 20i is merged.
+- `fva` in the session token: Clerk's session token version 2 carries it. Check it in the Clerk dashboard, Configure, Sessions, and do not remove it in "Customize session token".
+
+The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --app app_3IeGaXTDFceiWP2j10maEBm2HD7 --instance <dev or prod> --email <address>`. The account has no password: the admin signs in with an email code and then enrolls an authenticator app.
 
 ## Email and tenant creation timing
 

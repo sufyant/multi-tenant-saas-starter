@@ -23,6 +23,9 @@ TestResults/
 .env.local
 .env.*.local
 
+# Clerk's keyless mode writes temporary keys here. The other files in .clerk/ are settings.
+.clerk/keyless.json
+
 # Logs
 *.log
 npm-debug.log*
