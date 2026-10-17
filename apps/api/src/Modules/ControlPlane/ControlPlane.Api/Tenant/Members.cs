@@ -1,6 +1,4 @@
-using System.Reflection;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Members;
@@ -85,7 +83,7 @@ public sealed record MemberResponse(Guid UserId, string? Email, string? FirstNam
 /// A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
 /// the role an invitation gives, and the role a member is given.
 /// </summary>
-[JsonConverter(typeof(MemberRoleConverter))]
+[JsonConverter(typeof(ExactNameEnumConverter<MemberRole>))]
 public enum MemberRole
 {
     [JsonStringEnumMemberName("Owner")]
@@ -96,26 +94,4 @@ public enum MemberRole
 
     [JsonStringEnumMemberName("Member")]
     Member,
-}
-
-/// <summary>
-/// Reads and writes a role as its exact name, the name its member declares. The default enum converter also takes a number, so <c>7</c>
-/// would bind to no role and <c>0</c> to Owner, a list of names with commas, so <c>"Admin, Member"</c> would bind to no role and
-/// <c>"Owner, Admin"</c> to Admin, and a name with spaces, so <c>" Admin"</c> would bind to Admin.
-/// </summary>
-public sealed class MemberRoleConverter : JsonConverter<MemberRole>
-{
-    private static readonly Dictionary<MemberRole, string> Names = Enum.GetValues<MemberRole>().ToDictionary(
-        role => role,
-        role => typeof(MemberRole).GetField(role.ToString())!.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()!.Name);
-
-    public override MemberRole Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        var name = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
-        return Names.SingleOrDefault(pair => pair.Value == name) is { Value: not null } found
-            ? found.Key
-            : throw new JsonException("A role is one name of the list.");
-    }
-
-    public override void Write(Utf8JsonWriter writer, MemberRole value, JsonSerializerOptions options) => writer.WriteStringValue(Names[value]);
 }
