@@ -3,6 +3,7 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Contracts;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
+using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using FluentValidation;
@@ -60,10 +61,12 @@ public static class AcceptInvitationHandler
 
         var now = time.GetUtcNow();
 
-        // A8: a system admin's deletion locks the user row and erases the user once they have no membership. The share lock waits for a
+        // A8: a system admin's deletion locks the user row and erases the user once they have no membership. The lock waits for a
         // deletion that runs, and a deleted user is refused, so a deleted user never becomes a member. The door refused them already,
-        // unless the deletion committed after it let them in.
-        var existing = await catalog.FindUserForShareAsync(command.UserId, cancellationToken);
+        // unless the deletion committed after it let them in. The acceptance counts the membership on the user row (R13), so it takes the
+        // row's update lock at once: two acceptances of one user in two tenants then run one after the other, where two share locks
+        // that both wait to update would deadlock.
+        var existing = await catalog.FindUserForUpdateAsync(command.UserId, cancellationToken);
         if (existing?.DeletedAt is not null)
         {
             return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), null);
@@ -100,7 +103,7 @@ public static class AcceptInvitationHandler
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.UserId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.UserId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language, now);
         var accepted = invitation.Accept(command.VerifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {
@@ -114,9 +117,14 @@ public static class AcceptInvitationHandler
 
         catalog.AddMember(user.Id, invitation.RoleId, now);
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
+        if (existing is not null)
+        {
+            await catalog.CountMembershipAsync(existing.Id, 1, cancellationToken);
+        }
+
         await catalog.SaveChangesAsync(cancellationToken);
         return (
-            new TenantSummary(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString()),
+            TenantSummary.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
             new MemberJoined(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
     }
 

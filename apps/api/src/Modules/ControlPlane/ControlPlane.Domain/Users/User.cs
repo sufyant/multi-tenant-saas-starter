@@ -39,11 +39,38 @@ internal sealed class User(Guid id, string externalId)
     public DateTimeOffset? SuspendedAt { get; private set; }
 
     /// <summary>
-    /// A person the catalog does not know joins through an invitation: the invited address, which the identity provider verified, and
-    /// the names they typed, without the spaces around them.
+    /// The catalog user id of the system admin who suspended the user, while the user is suspended. A suspension from before step 20l
+    /// has none.
     /// </summary>
-    public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language) =>
-        new(id, externalId) { Email = email, FirstName = firstName.Trim(), LastName = lastName.Trim(), Language = language };
+    public Guid? SuspendedBy { get; private set; }
+
+    /// <summary>
+    /// When the user joined the catalog: when they accepted their first invitation, or when the first system admin was written. A user
+    /// from before step 20l has the moment of that step's migration.
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; private init; }
+
+    /// <summary>
+    /// How many tenants the user is a member of. The memberships are under row level security, and the platform's user list reads
+    /// across tenants, so the user row keeps the count (R13). A command that adds or removes a membership changes it in its own
+    /// transaction; the database adds one or takes one away, so two tenants' commands for one user never lose a change.
+    /// </summary>
+    public int MembershipCount { get; private init; }
+
+    /// <summary>
+    /// A person the catalog does not know joins through an invitation, at this moment: the invited address, which the identity provider
+    /// verified, and the names they typed, without the spaces around them. They are the member of the tenant they join.
+    /// </summary>
+    public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language, DateTimeOffset now) =>
+        new(id, externalId)
+        {
+            Email = email,
+            FirstName = firstName.Trim(),
+            LastName = lastName.Trim(),
+            Language = language,
+            CreatedAt = now,
+            MembershipCount = 1,
+        };
 
     /// <summary>
     /// The user changes their own preferences, which follow them to every tenant and device. True when they changed. The API never
@@ -91,21 +118,25 @@ internal sealed class User(Guid id, string externalId)
     }
 
     /// <summary>
-    /// Suspends the user. A second suspension keeps the first time. The identity provider is not told. True when the user was not
-    /// suspended.
+    /// A system admin suspends the user. A second suspension keeps the first time and the first system admin. The identity provider is
+    /// not told. True when the user was not suspended.
     /// </summary>
-    public bool Suspend(DateTimeOffset now)
+    public bool Suspend(DateTimeOffset now, Guid adminId)
     {
-        var changed = SuspendedAt is null;
-        SuspendedAt ??= now;
-        return changed;
+        if (SuspendedAt is not null)
+        {
+            return false;
+        }
+
+        (SuspendedAt, SuspendedBy) = (now, adminId);
+        return true;
     }
 
-    /// <summary>Reactivates the user. True when the user was suspended.</summary>
+    /// <summary>Reactivates the user and forgets who suspended them. True when the user was suspended.</summary>
     public bool Reactivate()
     {
         var changed = SuspendedAt is not null;
-        SuspendedAt = null;
+        (SuspendedAt, SuspendedBy) = (null, null);
         return changed;
     }
 }

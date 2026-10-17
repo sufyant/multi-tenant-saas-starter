@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Api.Tenant;
 using ControlPlane.Application;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.UserDeletion;
@@ -18,6 +19,7 @@ public static class Users
     public static void Map(RouteGroupBuilder platform)
     {
         platform.MapGet("/users", ListUsers).RequireAuthorization(Permissions.PlatformUsersRead);
+        platform.MapGet("/users/{userId:guid}", GetUser).RequireAuthorization(Permissions.PlatformUsersRead);
         platform.MapPost("/users/{userId:guid}/suspend", SuspendUser).RequireAuthorization(Permissions.PlatformUsersSuspend);
         platform.MapPost("/users/{userId:guid}/reactivate", ReactivateUser).RequireAuthorization(Permissions.PlatformUsersReactivate);
         platform.MapPatch("/users/{userId:guid}", RenameUser).RequireAuthorization(Permissions.PlatformUsersUpdate);
@@ -50,6 +52,30 @@ public static class Users
             cancellationToken);
         return users.Map(found => found.Map(ToResponse));
     }
+
+    // The user's memberships are under row level security; the query declares the user (R11), as a user's deletion does.
+    private static async Task<Result<UserDetailResponse>> GetUser(Guid userId, IMessageBus bus, CancellationToken cancellationToken) =>
+        (await bus.InvokeAsync<Result<UserWithMemberships>>(new GetUser(userId), cancellationToken)).Map(found => new UserDetailResponse(
+            found.User.Id,
+            found.User.Email,
+            found.User.FirstName,
+            found.User.LastName,
+            ResponseStatus.OfUser(found.User.Status),
+            found.User.IsSystemAdmin,
+            found.User.MembershipCount,
+            found.User.CreatedAt,
+            found.SuspendedAt,
+            found.SuspendedBy is { } admin ? Tenant.Invitations.ToResponse(admin) : null,
+            [
+                .. found.Memberships.Select(membership => new UserMembershipResponse(
+                    membership.TenantId,
+                    membership.TenantName,
+                    membership.TenantSlug,
+                    ResponseStatus.OfUserMembership(membership.TenantStatus),
+                    membership.Role,
+                    membership.JoinedAt,
+                    membership.SoleOwner)),
+            ]));
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
     private static async Task<Result<UserResponse>> SuspendUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
@@ -107,15 +133,75 @@ public static class Users
         return await bus.InvokeAsync<Result>(new DeleteUser(userId, user.Id()), cancellationToken);
     }
 
-    private static UserResponse ToResponse(UserDetails user) =>
-        new(user.Id, user.Email, user.FirstName, user.LastName, ResponseStatus.OfUser(user.Status), user.IsSystemAdmin);
+    private static UserResponse ToResponse(UserDetails user) => new(
+        user.Id,
+        user.Email,
+        user.FirstName,
+        user.LastName,
+        ResponseStatus.OfUser(user.Status),
+        user.IsSystemAdmin,
+        user.MembershipCount,
+        user.CreatedAt);
 }
 
 /// <summary>
 /// A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or
-/// deleted) and whether they are a system admin.
+/// deleted), whether they are a system admin, how many organisations they are a member of, and when they joined the catalog.
 /// </summary>
-public sealed record UserResponse(Guid Id, string? Email, string? FirstName, string? LastName, UserResponseStatus Status, bool IsSystemAdmin);
+public sealed record UserResponse(
+    Guid Id,
+    string? Email,
+    string? FirstName,
+    string? LastName,
+    UserResponseStatus Status,
+    bool IsSystemAdmin,
+    int MembershipCount,
+    DateTimeOffset CreatedAt);
+
+/// <summary>
+/// One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
+/// (null when the user is not suspended, or was suspended before step 20l), and every membership by the organisation's name.
+/// </summary>
+public sealed record UserDetailResponse(
+    Guid Id,
+    string? Email,
+    string? FirstName,
+    string? LastName,
+    UserResponseStatus Status,
+    bool IsSystemAdmin,
+    int MembershipCount,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? SuspendedAt,
+    UserNameResponse? SuspendedBy,
+    IReadOnlyList<UserMembershipResponse> Memberships);
+
+/// <summary>
+/// An organisation the user is a member of: its id, name, slug and status, the user's role there (<c>owner</c>, <c>admin</c> or
+/// <c>member</c>), when they joined, and whether they are its only Owner. The suspend dialog warns with <c>soleOwner</c>, and the delete
+/// refusal names those organisations.
+/// </summary>
+public sealed record UserMembershipResponse(
+    Guid TenantId,
+    string TenantName,
+    string TenantSlug,
+    UserMembershipResponseTenantStatus TenantStatus,
+    string Role,
+    DateTimeOffset JoinedAt,
+    bool SoleOwner);
+
+/// <summary>The status of an organisation a user is a member of: active, or suspended or closed when its members cannot enter it.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<UserMembershipResponseTenantStatus>))]
+public enum UserMembershipResponseTenantStatus
+{
+    [JsonStringEnumMemberName("active")]
+    Active,
+
+    [JsonStringEnumMemberName("suspended")]
+    Suspended,
+
+    [JsonStringEnumMemberName("closed")]
+    Closed,
+}
 
 /// <summary>A user's new names: 1 to 100 characters each, trimmed.</summary>
 public sealed record RenameUserRequest(string FirstName, string LastName);

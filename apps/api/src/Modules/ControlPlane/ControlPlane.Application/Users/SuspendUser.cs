@@ -32,14 +32,14 @@ public static class SuspendUserHandler
             return (Error.Conflict(ControlPlaneErrorCodes.UserIsSystemAdmin, "A system admin cannot be suspended."), null);
         }
 
+        var admin = await users.FindUserIdAsync(command.AdminId, cancellationToken)
+            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
         var now = time.GetUtcNow();
-        if (!user.Suspend(now))
+        if (!user.Suspend(now, admin))
         {
             return (UserDetails.Of(user, isSystemAdmin: false), null);
         }
 
-        var admin = await users.FindUserIdAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
         await users.SaveChangesAsync(cancellationToken);
         return (UserDetails.Of(user, isSystemAdmin: false), new UserSuspended(Guid.CreateVersion7(now), now, user.Id, admin));
     }

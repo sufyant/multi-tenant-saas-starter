@@ -61,7 +61,7 @@ public interface ITenantCatalog
     /// whose email address or name contains the search: by the sort field, then by user id. The search starts from the tenant's
     /// memberships, never from the users.
     /// </summary>
-    internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted)>> ListMembersAsync(
+    internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted, DateTimeOffset JoinedAt)>> ListMembersAsync(
         ListRequest<ListMembersSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken);
@@ -89,12 +89,15 @@ public interface ITenantCatalog
 
     /// <summary>
     /// A page of the active tenant's pending invitations, expired ones included, of the role or every role, whose email address contains
-    /// the search: by the sort field, then by id.
+    /// the search, each with the user who invited: by the sort field, then by id.
     /// </summary>
-    internal Task<ListPage<Invitation>> ListPendingInvitationsAsync(
+    internal Task<ListPage<(Invitation Invitation, User Inviter)>> ListPendingInvitationsAsync(
         ListRequest<ListInvitationsSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken);
+
+    /// <summary>The invitation with this token hash, without a lock, for a read; null when the active tenant has none.</summary>
+    internal Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken);
 
     /// <summary>The invitation with this token hash, locked for the rest of the transaction so it is accepted only once.</summary>
     internal Task<Invitation?> FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken);
@@ -105,10 +108,18 @@ public interface ITenantCatalog
     internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The user with this identity provider id, with a share lock for the rest of the transaction: a deletion, which locks the user row
-    /// for update, runs before or after, never between a check of the user and the change (K6, A8).
+    /// The user with this identity provider id, locked for the rest of the transaction: a deletion, which locks the user row for update,
+    /// runs before or after, never between a check of the user and the change (K6, A8). The lock does not block a read, nor an insert of
+    /// a row that references the user.
     /// </summary>
-    internal Task<User?> FindUserForShareAsync(string externalUserId, CancellationToken cancellationToken);
+    internal Task<User?> FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds the change to the user's count of memberships (R13), in the database, so two tenants' commands for one user never lose one.
+    /// The caller has added or removed the membership in the active tenant, under the tenant's lock (K6). It saves the pending changes
+    /// first, so a user the transaction adds is counted too.
+    /// </summary>
+    internal Task CountMembershipAsync(Guid userId, int change, CancellationToken cancellationToken);
 
     internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 

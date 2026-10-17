@@ -12,7 +12,7 @@ internal static class Catalog
 {
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
-        var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug()).Value;
+        var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), DateTimeOffset.UtcNow).Value;
         if (status is TenantStatus.Active or TenantStatus.Suspended or TenantStatus.Closed)
         {
             tenant.Activate();
@@ -39,8 +39,13 @@ internal static class Catalog
         return user;
     }
 
+    // The user's membership count follows, as the commands keep it.
     public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, Role? role = null) =>
-        SaveInTenantAsync(services, tenant.Id, catalog => catalog.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow)));
+        SaveInTenantAsync(services, tenant.Id, catalog =>
+        {
+            catalog.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow));
+            catalog.Database.ExecuteSql($"UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE id = {user.Id}");
+        });
 
     public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, Role role)
     {

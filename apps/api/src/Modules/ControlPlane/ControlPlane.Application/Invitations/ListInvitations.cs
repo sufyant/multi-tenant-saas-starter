@@ -24,5 +24,5 @@ public static class ListInvitationsHandler
         ITenantCatalog catalog,
         CancellationToken cancellationToken) =>
         (await catalog.ListPendingInvitationsAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
-            .Map(InvitationSummary.Of);
+            .Map(found => InvitationSummary.Of(found.Invitation, found.Inviter));
 }

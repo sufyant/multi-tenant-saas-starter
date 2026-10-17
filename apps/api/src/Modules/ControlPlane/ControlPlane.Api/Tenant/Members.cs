@@ -63,7 +63,7 @@ public static class Members
         await bus.InvokeAsync<Result>(new RemoveMember(user.Id(), userId), cancellationToken);
 
     private static MemberResponse ToResponse(MemberSummary member) =>
-        new(member.UserId, member.Email, member.FirstName, member.LastName, member.Role, member.Deleted);
+        new(member.UserId, member.Email, member.FirstName, member.LastName, member.Role, member.Deleted, member.JoinedAt);
 }
 
 /// <summary>
@@ -73,11 +73,11 @@ public static class Members
 public sealed record ChangeMemberRoleRequest([property: JsonRequired] MemberRole Role);
 
 /// <summary>
-/// A member of the tenant: the user's id, the copy of their email address and name, their role, <c>owner</c>, <c>admin</c> or <c>member</c>, and whether the
-/// identity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows "Deleted user",
-/// as the audit logs say <c>deleted</c> (K3).
+/// A member of the tenant: the user's id, the copy of their email address and name, their role, <c>owner</c>, <c>admin</c> or <c>member</c>, whether the
+/// identity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
+/// the screen shows "Deleted user", as the audit logs say <c>deleted</c> (K3).
 /// </summary>
-public sealed record MemberResponse(Guid UserId, string? Email, string? FirstName, string? LastName, string Role, bool Deleted);
+public sealed record MemberResponse(Guid UserId, string? Email, string? FirstName, string? LastName, string Role, bool Deleted, DateTimeOffset JoinedAt);
 
 /// <summary>
 /// A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,

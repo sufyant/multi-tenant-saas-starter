@@ -21,7 +21,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, invitee);
 
-        accepted.Value.ShouldBe(new TenantSummary(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'"), "Active"));
+        accepted.Value.ShouldBe(new TenantSummary(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'"), "Active", "owner"));
         (await FindMembershipAsync(tenantId, invitee)).ShouldNotBeNull();
         (await ScalarAsync<string>(
             $"""

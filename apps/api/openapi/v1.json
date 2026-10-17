@@ -1160,209 +1160,106 @@
         }
       }
     },
-    "/v1/platform/users/{userId}/suspend": {
-      "post": {
-        "tags": [
-          "Users"
-        ],
-        "operationId": "SuspendUser",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/platform/users/{userId}/reactivate": {
-      "post": {
-        "tags": [
-          "Users"
-        ],
-        "operationId": "ReactivateUser",
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/platform/users/{userId}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "Users"
@@ -1491,6 +1388,208 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/users/{userId}/suspend": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "SuspendUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/users/{userId}/reactivate": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "ReactivateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1707,7 +1806,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MyTenantResponse"
+                  "$ref": "#/components/schemas/MyTenantDetailResponse"
                 }
               }
             }
@@ -3088,6 +3187,106 @@
           }
         }
       }
+    },
+    "/v1/me/invitations/preview": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "GetInvitationPreview",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetInvitationPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3393,12 +3592,63 @@
         "type": "string",
         "description": "Why one field of a request failed validation."
       },
+      "GetInvitationPreviewRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "description": "The invitation code from the invitation link."
+      },
+      "InvitationPreviewResponse": {
+        "required": [
+          "tenantName",
+          "inviterName",
+          "role",
+          "expiresAt",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantName": {
+            "type": "string"
+          },
+          "inviterName": {
+            "$ref": "#/components/schemas/InviterNameResponse"
+          },
+          "role": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "$ref": "#/components/schemas/InvitationPreviewResponseState"
+          }
+        },
+        "description": "What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation\ngives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request. Only a caller with\nthe invited address gets it."
+      },
+      "InvitationPreviewResponseState": {
+        "enum": [
+          "pending",
+          "expired",
+          "accepted",
+          "cancelled"
+        ],
+        "description": "The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant)."
+      },
       "InvitationResponse": {
         "required": [
           "id",
           "email",
           "role",
           "invitedBy",
+          "invitedByName",
           "createdAt",
           "expiresAt"
         ],
@@ -3418,6 +3668,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "invitedByName": {
+            "$ref": "#/components/schemas/UserNameResponse"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3427,7 +3680,7 @@
             "format": "date-time"
           }
         },
-        "description": "A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited, and when\nit was created and expires. The screen shows an expired invitation from its expiry."
+        "description": "A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their\nnames as the catalog holds them now, and when it was created and expires. The screen shows an expired invitation from its expiry."
       },
       "InviteMemberRequest": {
         "required": [
@@ -3476,6 +3729,46 @@
           }
         },
         "description": "The address of the Owner the platform invites into a tenant without one, and the language of the invitation's email: without one, the\nsystem admin's own."
+      },
+      "InviterNameResponse": {
+        "required": [
+          "kind",
+          "firstName",
+          "lastName",
+          "deleted"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/InviterNameResponseKind"
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deleted": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "Who invited: a user, with the names the catalog holds now and `deleted` for a user a system admin deleted, or the platform,\nwith no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do."
+      },
+      "InviterNameResponseKind": {
+        "enum": [
+          "user",
+          "platform"
+        ],
+        "description": "Who invited: a user of the tenant, or the platform, for which a system admin acted."
       },
       "JsonElement": { },
       "Language": {
@@ -3669,7 +3962,8 @@
           "firstName",
           "lastName",
           "role",
-          "deleted"
+          "deleted",
+          "joinedAt"
         ],
         "type": "object",
         "properties": {
@@ -3700,9 +3994,13 @@
           },
           "deleted": {
             "type": "boolean"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
-        "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, and whether the\nidentity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows \"Deleted user\",\nas the audit logs say `deleted` (K3)."
+        "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, whether the\nidentity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows \"Deleted user\", as the audit logs say `deleted` (K3)."
       },
       "MemberRole": {
         "enum": [
@@ -3762,12 +4060,15 @@
         },
         "description": "The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
-      "MyTenantResponse": {
+      "MyTenantDetailResponse": {
         "required": [
           "id",
           "name",
           "slug",
-          "status"
+          "status",
+          "role",
+          "permissions",
+          "createdAt"
         ],
         "type": "object",
         "properties": {
@@ -3783,9 +4084,51 @@
           },
           "status": {
             "$ref": "#/components/schemas/MyTenantResponseStatus"
+          },
+          "role": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
-        "description": "A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a\nmember reads by its id. Its status is active, or suspended when its members cannot enter it."
+        "description": "The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself."
+      },
+      "MyTenantResponse": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MyTenantResponseStatus"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user's there: `owner`, `admin` or\n`member`."
       },
       "MyTenantResponseStatus": {
         "enum": [
@@ -4205,14 +4548,19 @@
         ],
         "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled."
       },
-      "UserResponse": {
+      "UserDetailResponse": {
         "required": [
           "id",
           "email",
           "firstName",
           "lastName",
           "status",
-          "isSystemAdmin"
+          "isSystemAdmin",
+          "membershipCount",
+          "createdAt",
+          "suspendedAt",
+          "suspendedBy",
+          "memberships"
         ],
         "type": "object",
         "properties": {
@@ -4243,9 +4591,172 @@
           },
           "isSystemAdmin": {
             "type": "boolean"
+          },
+          "membershipCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "suspendedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "suspendedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserMembershipResponse"
+            }
           }
         },
-        "description": "A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted) and whether they are a system admin."
+        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended, or was suspended before step 20l), and every membership by the organisation's name."
+      },
+      "UserMembershipResponse": {
+        "required": [
+          "tenantId",
+          "tenantName",
+          "tenantSlug",
+          "tenantStatus",
+          "role",
+          "joinedAt",
+          "soleOwner"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantName": {
+            "type": "string"
+          },
+          "tenantSlug": {
+            "type": "string"
+          },
+          "tenantStatus": {
+            "$ref": "#/components/schemas/UserMembershipResponseTenantStatus"
+          },
+          "role": {
+            "type": "string"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "soleOwner": {
+            "type": "boolean"
+          }
+        },
+        "description": "An organisation the user is a member of: its id, name, slug and status, the user's role there (`owner`, `admin` or\n`member`), when they joined, and whether they are its only Owner. The suspend dialog warns with `soleOwner`, and the delete\nrefusal names those organisations."
+      },
+      "UserMembershipResponseTenantStatus": {
+        "enum": [
+          "active",
+          "suspended",
+          "closed"
+        ],
+        "description": "The status of an organisation a user is a member of: active, or suspended or closed when its members cannot enter it."
+      },
+      "UserNameResponse": {
+        "required": [
+          "firstName",
+          "lastName",
+          "deleted"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "description": "A user's names as the catalog holds them now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows \"Deleted user\". It holds no email address."
+      },
+      "UserResponse": {
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "status",
+          "isSystemAdmin",
+          "membershipCount",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserResponseStatus"
+          },
+          "isSystemAdmin": {
+            "type": "boolean"
+          },
+          "membershipCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many organisations they are a member of, and when they joined the catalog."
       },
       "UserResponseStatus": {
         "enum": [

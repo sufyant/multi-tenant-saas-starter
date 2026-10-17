@@ -89,7 +89,7 @@ public sealed class TenantCatalogTests(Database database)
     [Fact]
     public async Task AddTenant_OtherThanTheDeclaredTenant_IsRefused()
     {
-        var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug()).Value;
+        var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), DateTimeOffset.UtcNow).Value;
 
         var add = () => InTenant.ReadAsync(database.Services, Guid.CreateVersion7(), scope =>
             scope.GetRequiredService<ITenantCatalog>().TryAddAsync(other, Cancellation));

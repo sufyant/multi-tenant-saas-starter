@@ -14,7 +14,18 @@ public class TenantTests
 
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
 
+    private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
+
     private const string Reason = "Unpaid invoices";
+
+    // Settings › General shows when the organisation was created.
+    [Fact]
+    public void CreateTenant_Valid_KeepsWhenItWasCreated()
+    {
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt);
+
+        tenant.Value.CreatedAt.ShouldBe(CreatedAt);
+    }
 
     [Theory]
     [InlineData("acme")]
@@ -24,7 +35,7 @@ public class TenantTests
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk")]
     public void CreateTenant_UrlSafeSlug_IsCreatedWithThatSlug(string slug)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", slug);
+        var tenant = Tenant.Create(Id, "Acme Ltd", slug, CreatedAt);
 
         tenant.IsSuccess.ShouldBeTrue();
         tenant.Value.Slug.ShouldBe(slug);
@@ -43,7 +54,7 @@ public class TenantTests
     [InlineData("acmé")]
     public void CreateTenant_SlugNotUrlSafe_IsRejected(string slug)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", slug);
+        var tenant = Tenant.Create(Id, "Acme Ltd", slug, CreatedAt);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugInvalid);
@@ -52,7 +63,7 @@ public class TenantTests
     [Fact]
     public void CreateTenant_NameWithSpacesAround_IsKeptWithoutThem()
     {
-        var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme");
+        var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme", CreatedAt);
 
         tenant.Value.Name.ShouldBe("Acme Ltd");
     }
@@ -62,7 +73,7 @@ public class TenantTests
     {
         var name = new string('n', 100);
 
-        var tenant = Tenant.Create(Id, name, "acme");
+        var tenant = Tenant.Create(Id, name, "acme", CreatedAt);
 
         tenant.Value.Name.ShouldBe(name);
     }
@@ -73,7 +84,7 @@ public class TenantTests
     [MemberData(nameof(InvalidNames))]
     public void CreateTenant_InvalidName_IsRejected(string name)
     {
-        var tenant = Tenant.Create(Id, name, "acme");
+        var tenant = Tenant.Create(Id, name, "acme", CreatedAt);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNameInvalid);
@@ -82,7 +93,7 @@ public class TenantTests
     [Fact]
     public void CreateTenant_New_IsProvisioning()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
 
         tenant.Status.ShouldBe(TenantStatus.Provisioning);
     }
@@ -90,7 +101,7 @@ public class TenantTests
     [Fact]
     public void ActivateTenant_WhenProvisioning_IsActive()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
 
         tenant.Activate();
 
@@ -101,7 +112,7 @@ public class TenantTests
     [Fact]
     public void ActivateTenant_Cancelled_StaysCancelled()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         tenant.Cancel("identity_provider_failed");
 
         var activated = tenant.Activate();
@@ -113,7 +124,7 @@ public class TenantTests
     [Fact]
     public void CancelTenant_Provisioning_IsCancelledWithItsReason()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
 
         var cancelled = tenant.Cancel("identity_provider_failed");
 
@@ -126,7 +137,7 @@ public class TenantTests
     [Fact]
     public void CancelTenant_AlreadyCancelled_KeepsTheFirstReason()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         tenant.Cancel("identity_provider_failed");
 
         var cancelled = tenant.Cancel("registration_timed_out");
@@ -139,7 +150,7 @@ public class TenantTests
     [Fact]
     public void CancelTenant_Active_StaysActive()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         tenant.Activate();
 
         var cancelled = tenant.Cancel("activation_failed");
@@ -200,7 +211,7 @@ public class TenantTests
     [Fact]
     public void SuspendOrReactivateTenant_Provisioning_IsRejected()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
 
         var suspended = tenant.Suspend(Reason);
         var reactivated = tenant.Reactivate();
@@ -213,7 +224,7 @@ public class TenantTests
     [Fact]
     public void SuspendOrReactivateTenant_Cancelled_IsRejected()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         tenant.Cancel("activation_failed");
 
         var suspended = tenant.Suspend(Reason);
@@ -591,7 +602,7 @@ public class TenantTests
 
     private static Tenant Active()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         tenant.Activate();
         return tenant;
     }
@@ -605,7 +616,7 @@ public class TenantTests
 
     private static Tenant InStatus(string status)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme").Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         _ = status switch
         {
             "Provisioning" => true,
