@@ -29,6 +29,7 @@
     "backup_code": { "enabled": true }
   },
   "auth_attack_protection": {
-    "bot_protection": { "captcha_enabled": true }
+    "bot_protection": { "captcha_enabled": true },
+    "enumeration_protection": "strict"
   }
 }

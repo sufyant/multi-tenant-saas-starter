@@ -82,6 +82,7 @@ The settings:
 | First and last name | `user_model.first_name`, `user_model.last_name` | off. The API keeps the names |
 | Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | on |
 | Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | on |
+| User enumeration protection | `auth_attack_protection.enumeration_protection` | `strict`: sign-in never tells a visitor whether an address has an account or an invitation |
 
 Secrets are not in the files. The CLI gets its credentials from `clerk auth login` or `CLERK_PLATFORM_API_KEY`; it does not need the instance secret key. The development instance uses Clerk's shared Google and Microsoft credentials. An apply to production reads the OAuth credentials from `CLERK_GOOGLE_CLIENT_ID`, `CLERK_GOOGLE_CLIENT_SECRET`, `CLERK_MICROSOFT_CLIENT_ID` and `CLERK_MICROSOFT_CLIENT_SECRET`, and stops if one is missing. The script never prints them.
 
