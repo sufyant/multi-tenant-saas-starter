@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using ControlPlane.Api;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
@@ -109,7 +110,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     {
         var errors = Operations()
             .SelectMany(operation => operation.Value.GetProperty("responses").EnumerateObject()
-                .Where(response => int.Parse(response.Name, CultureInfo.InvariantCulture) >= 400)
+                .Where(response => response.Name == "default" || int.Parse(response.Name, CultureInfo.InvariantCulture) >= 400)
                 .Select(response => (Name: $"{operation.Method} {operation.Path} {response.Name}", Schema: ProblemSchemaOf(response.Value))));
 
         errors.ShouldNotBeEmpty();
@@ -183,6 +184,92 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         without.ShouldBeEmpty();
     }
 
+    // A field that a response always carries is required, so a generated client never checks for it. Only a field that may be null may be
+    // left out. This covers every schema an answer refers to, the error answers too.
+    [Fact]
+    public void BuildOpenApiDocument_EveryPropertyOfAResponseSchema_IsRequiredUnlessNullable()
+    {
+        var optional = ResponseSchemas()
+            .SelectMany(schema => PropertiesOf(schema.Value)
+                .Where(property => !RequiredOf(schema.Value).Contains(property.Name) && !IsNullable(property.Value))
+                .Select(property => $"{schema.Name}.{property.Name}"));
+
+        ResponseSchemas().ShouldNotBeEmpty();
+        optional.ShouldBeEmpty();
+    }
+
+    // The API reads and writes a number as a JSON number only (JsonNumberHandling.Strict), so no schema says it may be a string.
+    [Fact]
+    public void BuildOpenApiDocument_NoSchema_IsAnIntegerAndStringUnion()
+    {
+        var integers = ObjectsIn(_document, "#").Where(found => TypesOf(found.Value).Contains("integer")).ToList();
+
+        var unions = integers.Where(found => TypesOf(found.Value).Contains("string")).Select(found => found.Path);
+
+        integers.ShouldNotBeEmpty();
+        unions.ShouldBeEmpty();
+    }
+
+    // Every /v1 route needs a bearer token (A1), so the document declares the scheme once and requires it for every operation. The
+    // anonymous routes, the document and the API reference, are outside /v1 and so outside the document.
+    [Fact]
+    public void BuildOpenApiDocument_EveryOperation_RequiresTheBearerScheme()
+    {
+        var anonymous = DocumentedEndpoints()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+            .Select(endpoint => $"{MethodOf(endpoint)} {DocumentPathOf(endpoint)}");
+
+        var overriding = Operations().Where(operation => operation.Value.TryGetProperty("security", out _)).Select(operation => $"{operation.Method} {operation.Path}");
+
+        SecuritySchemeOf("bearer").ShouldBe("http bearer");
+        SecurityRequirementsOf(_document).ShouldBe("bearer");
+        anonymous.ShouldBeEmpty();
+        overriding.ShouldBeEmpty();
+    }
+
+    // An operation can answer statuses it does not list, such as 405, 408, 413, 415 or 500. Each is Problem Details too (K5).
+    [Fact]
+    public void BuildOpenApiDocument_EveryOperation_DeclaresProblemDetailsAsTheDefaultAnswer()
+    {
+        var without = Operations()
+            .Where(operation => DefaultSchemaOf(operation.Value) != ProblemDetailsSchema)
+            .Select(operation => $"{operation.Method} {operation.Path}: {DefaultSchemaOf(operation.Value)}");
+
+        Operations().ShouldNotBeEmpty();
+        without.ShouldBeEmpty();
+    }
+
+    // I5: a replayed answer carries Idempotent-Replayed. A replay gives a saved result: the success, or a business rejection. A request
+    // that failed validation (400) or authentication (401) saves nothing, and neither does a server failure.
+    [Fact]
+    public void BuildOpenApiDocument_OperationThatTakesAnIdempotencyKey_DeclaresIdempotentReplayedOnEveryAnswerItReplays()
+    {
+        string[] neverReplayed = ["400", "401", "default"];
+        var creating = Operations().Where(operation => HeaderParametersOf(operation.Value).Contains("Idempotency-Key")).ToList();
+
+        var without = creating
+            .SelectMany(operation => operation.Value.GetProperty("responses").EnumerateObject()
+                .Where(response => !neverReplayed.Contains(response.Name) && !ResponseHeadersOf(response.Value).Contains("Idempotent-Replayed"))
+                .Select(response => $"{operation.Method} {operation.Path} {response.Name}"));
+
+        creating.ShouldNotBeEmpty();
+        without.ShouldBeEmpty();
+    }
+
+    // RFC 9110, section 15.3.2: a 201 names the new resource in Location where a GET reads it. CreateTenant has GetTenant. An invitation
+    // has no GET of its own, so its 201 sends no Location and its description says so.
+    [Fact]
+    public void BuildOpenApiDocument_CreatedAnswer_DeclaresLocationOnlyWhereAGetReadsTheResource()
+    {
+        var created = Operations().Where(operation => operation.Value.GetProperty("responses").TryGetProperty("201", out _)).ToList();
+
+        var located = created.Where(operation => ResponseHeadersOf(operation.Value.GetProperty("responses").GetProperty("201")).Contains("Location"));
+        var unexplained = created.Except(located).Where(operation => !DescriptionOf(operation.Value).Contains("Location", StringComparison.Ordinal));
+
+        located.Select(operation => OperationIdOf(operation.Value)).ShouldBe(["CreateTenant"]);
+        unexplained.Select(operation => OperationIdOf(operation.Value)).ShouldBeEmpty();
+    }
+
     // OpenAPI 3.1, "Path Templating": each parameter in a path is a required path parameter. The tenant group, not the endpoint,
     // names {tenantId}, so the endpoint alone would leave it out. A {name:guid} parameter is a uuid, as on the platform routes.
     [Fact]
@@ -234,6 +321,77 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         operation.TryGetProperty("parameters", out var parameters)
             ? parameters.EnumerateArray().Where(parameter => parameter.GetProperty("in").GetString() == "header").Select(parameter => parameter.GetProperty("name").GetString()!)
             : [];
+
+    private static IEnumerable<string> ResponseHeadersOf(JsonElement response) =>
+        response.TryGetProperty("headers", out var headers) ? headers.EnumerateObject().Select(header => header.Name) : [];
+
+    private static string DescriptionOf(JsonElement operation) =>
+        operation.TryGetProperty("description", out var description) ? description.GetString()! : string.Empty;
+
+    private static string DefaultSchemaOf(JsonElement operation) =>
+        operation.GetProperty("responses").TryGetProperty("default", out var answer) ? ProblemSchemaOf(answer) : "<no default>";
+
+    private string SecuritySchemeOf(string name) =>
+        _document.GetProperty("components").TryGetProperty("securitySchemes", out var schemes) && schemes.TryGetProperty(name, out var scheme)
+            ? $"{scheme.GetProperty("type").GetString()} {scheme.GetProperty("scheme").GetString()}"
+            : "<no scheme>";
+
+    private static string SecurityRequirementsOf(JsonElement element) =>
+        element.TryGetProperty("security", out var requirements)
+            ? string.Join(", ", requirements.EnumerateArray().SelectMany(requirement => requirement.EnumerateObject().Select(scheme => scheme.Name)))
+            : "<no security>";
+
+    private static List<JsonProperty> PropertiesOf(JsonElement schema) =>
+        schema.TryGetProperty("properties", out var properties) ? [.. properties.EnumerateObject()] : [];
+
+    private static HashSet<string> RequiredOf(JsonElement schema) =>
+        schema.TryGetProperty("required", out var required) ? [.. required.EnumerateArray().Select(name => name.GetString()!)] : [];
+
+    // A schema may be null when its type lists null, or when one of its options is null, as a nullable reference to an enum is.
+    private static bool IsNullable(JsonElement schema) =>
+        TypesOf(schema).Contains("null")
+        || (schema.TryGetProperty("oneOf", out var options) && options.EnumerateArray().Any(option => TypesOf(option).Contains("null")));
+
+    // A member named type is the schema's type only when it is a name or a list of names; in properties it may be a property's schema.
+    private static IEnumerable<string> TypesOf(JsonElement schema) =>
+        !schema.TryGetProperty("type", out var type) ? [] : type.ValueKind switch
+        {
+            JsonValueKind.Array => type.EnumerateArray().Select(name => name.GetString()!),
+            JsonValueKind.String => [type.GetString()!],
+            _ => [],
+        };
+
+    // Every object in the document, by its JSON pointer.
+    private static IEnumerable<(string Path, JsonElement Value)> ObjectsIn(JsonElement element, string path) => element.ValueKind switch
+    {
+        JsonValueKind.Object => element.EnumerateObject()
+            .SelectMany(member => ObjectsIn(member.Value, $"{path}/{member.Name}"))
+            .Prepend((path, element)),
+        JsonValueKind.Array => element.EnumerateArray().SelectMany((item, index) => ObjectsIn(item, $"{path}/{index}")),
+        _ => [],
+    };
+
+    // The schemas an answer refers to, and the schemas they refer to in turn.
+    private List<(string Name, JsonElement Value)> ResponseSchemas()
+    {
+        var pending = new Queue<string>(Operations().SelectMany(operation => ReferencesIn(operation.Value.GetProperty("responses"))));
+        var found = new SortedSet<string>(StringComparer.Ordinal);
+        while (pending.TryDequeue(out var reference))
+        {
+            if (found.Add(reference))
+            {
+                foreach (var next in ReferencesIn(SchemaAt(reference)))
+                {
+                    pending.Enqueue(next);
+                }
+            }
+        }
+
+        return [.. found.Select(reference => (reference.Split('/')[^1], SchemaAt(reference)))];
+    }
+
+    private JsonElement SchemaAt(string reference) =>
+        _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.Split('/')[^1]);
 
     private static string ProblemSchemaOf(JsonElement response) =>
         response.TryGetProperty("content", out var content) && content.TryGetProperty("application/problem+json", out var problem)
