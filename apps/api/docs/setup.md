@@ -57,13 +57,17 @@ The files hold the settings of step 20i. The lines marked "Changes in step 20i."
 
 | Instance | File | Serves |
 | --- | --- | --- |
-| development (`optimum-ghost-3549.clerk.accounts.dev`) | `.clerk/development.json` | local and staging |
-| production | `.clerk/production.json` | production. The instance does not exist yet |
+| development | `.clerk/development.json` | local and staging |
+| production | `.clerk/production.json` | production. `clerk deploy` creates it (see the manual steps below) |
 
-Run from the repository root, after `clerk auth login` (or with `CLERK_PLATFORM_API_KEY` set):
+Each Clerk application has these two instances. The repository names no application: each maintainer links their own checkout to their own application.
 
-- `pnpm clerk:plan` prints, for each instance, the difference between its file and the live instance. It changes nothing.
-- `pnpm clerk:apply` prints the same difference, asks for each instance, then applies it. Read the plan first. Add `production` or `development` to handle one instance only.
+1. `clerk auth login` (or set `CLERK_PLATFORM_API_KEY`).
+2. `clerk link`, from the repository root. It asks for the application and stores the link in the CLI's own settings, not in the repository, as `railway link` does. Instead of a link, `CLERK_APP_ID` can name the application, for example in CI.
+3. `pnpm clerk:plan` prints, for each instance, the difference between its file and the live instance. It changes nothing. Add `development` or `production` to plan one instance only.
+4. `pnpm clerk:apply development` or `pnpm clerk:apply production` prints the same difference for that instance, asks, then applies it. It needs the instance name. Read the plan first.
+
+Without a link and without `CLERK_APP_ID`, the script stops and says so.
 
 The settings:
 
@@ -86,7 +90,7 @@ The instance config has no key for these. The maintainer does them by hand:
 - Webhooks: none. Remove the webhook endpoint in the Clerk dashboard, Configure, Webhooks, when step 20i is merged.
 - `fva` in the session token: Clerk's session token version 2 carries it. Check it in the Clerk dashboard, Configure, Sessions, and do not remove it in "Customize session token".
 
-The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --app app_3IeGaXTDFceiWP2j10maEBm2HD7 --instance <dev or prod> --email <address>`. The account has no password: the admin signs in with an email code and then enrolls an authenticator app.
+The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --instance <dev or prod> --email <address>` in the linked checkout. The account has no password: the admin signs in with an email code and then enrolls an authenticator app.
 
 ## Email and tenant creation timing
 
