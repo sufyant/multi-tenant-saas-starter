@@ -101,7 +101,6 @@ The table holds names only. A value never goes into the repository.
 | `Authentication__Clerk__AuthorizedParties__0` | Railway shared variable | own value | own value |
 | `ControlPlane__FirstSystemAdminEmail` | Railway shared variable | own value | own value |
 | `ControlPlane__Clerk__SecretKey` | Railway shared variable, sealed | own value | own value |
-| `ControlPlane__Clerk__WebhookSigningSecret` | Railway shared variable, sealed. Its value comes from the webhook endpoint in the Clerk dashboard | own value | own value |
 | `ControlPlane__Invitations__AcceptUrl` | Railway shared variable | own value | own value |
 | `Notifications__Resend__ApiKey` | Railway shared variable, sealed | own value | own value |
 | `Notifications__Resend__From` | Railway shared variable | own value | own value |
