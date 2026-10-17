@@ -46,7 +46,49 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "createdAt", "expiresAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt"], ignoreOrder: true);
+    }
+
+    // The inviter's name is resolved on read, as the audit names are (K3): a rename shows, and a deleted inviter has no name and says
+    // deleted. invitedBy stays the catalog user id.
+    [Fact]
+    public async Task ListInvitations_EachInvitation_NamesItsInviterAsTheCatalogNamesThemNow()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var ada = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(firstName: "Ada", lastName: "Byron"), role: "Admin");
+        var gone = await _catalog.AddUserAsync(firstName: "Gone", lastName: "Away");
+        var byAda = await _catalog.AddInvitationAsync(tenant.Id, email: "a@example.com", invitedBy: ada);
+        var byGone = await _catalog.AddInvitationAsync(tenant.Id, email: "b@example.com", invitedBy: gone);
+        await database.ScalarAsync<object>($"UPDATE control_plane.users SET last_name = 'Lovelace' WHERE external_id = '{ada}'");
+        await _catalog.DeleteUserAsync(gone);
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/invitations?sort=email", Cancellation);
+
+        page.GetProperty("items").EnumerateArray()
+            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("invitedBy").GetGuid(), item.GetProperty("invitedByName").ToString()))
+            .ShouldBe(
+            [
+                (byAda, await _catalog.UserIdOfAsync(ada), """{"firstName":"Ada","lastName":"Lovelace","deleted":false}"""),
+                (byGone, await _catalog.UserIdOfAsync(gone), """{"firstName":null,"lastName":null,"deleted":true}"""),
+            ]);
+    }
+
+    // The page is one query, with each inviter's user joined: a longer page sends no more commands (K5).
+    [Fact]
+    public async Task ListInvitations_ALongerPage_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await AddInvitationsAsync(tenant.Id, "a@example.com", "b@example.com", "c@example.com");
+        var url = $"/v1/tenants/{tenant.Id}/invitations";
+
+        var one = await commands.CountAsync(() => _api.CreateClient(owner), client => client.GetAsync($"{url}?pageSize=1", Cancellation));
+        var three = await commands.CountAsync(() => _api.CreateClient(owner), client => client.GetAsync($"{url}?pageSize=3", Cancellation));
+
+        three.ShouldBe(one);
+        one.ShouldBeGreaterThan(0);
     }
 
     [Fact]

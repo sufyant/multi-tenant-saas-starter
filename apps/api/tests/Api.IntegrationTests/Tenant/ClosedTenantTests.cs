@@ -69,7 +69,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         var listed = page.GetProperty("items").EnumerateArray()
             .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("name").GetString(), item.GetProperty("status").GetString()));
         listed.ShouldBe([(tenant.Id, "Closed Ltd", "closed")]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
     }
 
     [Fact]

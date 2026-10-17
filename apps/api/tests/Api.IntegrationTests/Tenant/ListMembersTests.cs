@@ -214,8 +214,43 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
             (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", "owner"),
             (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, "member"),
         ]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
+            .ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted", "joinedAt"], ignoreOrder: true);
         Deleted(page).ShouldBe([false, false]);
+    }
+
+    // The Members screen shows when each member joined (memberships.joined_at).
+    [Fact]
+    public async Task ListMembers_EachMember_ReturnsWhenTheyJoined()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var first = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
+        var later = new DateTimeOffset(2026, 6, 7, 8, 9, 10, TimeSpan.Zero);
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner", joinedAt: first);
+        var member = await _catalog.AddMemberAsync(tenant.Id, joinedAt: later);
+
+        var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members", Cancellation);
+
+        page.GetProperty("items").EnumerateArray()
+            .Select(item => (item.GetProperty("userId").GetGuid(), item.GetProperty("joinedAt").GetDateTimeOffset()))
+            .ShouldBe([(await _catalog.UserIdOfAsync(owner), first), (await _catalog.UserIdOfAsync(member), later)]);
+    }
+
+    // The page is one query, with each member's user and role joined: a longer page sends no more commands (K5).
+    [Fact]
+    public async Task ListMembers_ALongerPage_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await AddMembersAsync(tenant.Id, "Ball", "Cole");
+        var url = $"/v1/tenants/{tenant.Id}/members";
+
+        var one = await commands.CountAsync(() => _api.CreateClient(owner), client => client.GetAsync($"{url}?pageSize=1", Cancellation));
+        var three = await commands.CountAsync(() => _api.CreateClient(owner), client => client.GetAsync($"{url}?pageSize=3", Cancellation));
+
+        three.ShouldBe(one);
+        one.ShouldBeGreaterThan(0);
     }
 
     // The screen shows "Deleted user", as for audit (K3): the member says deleted, as the audit logs do.

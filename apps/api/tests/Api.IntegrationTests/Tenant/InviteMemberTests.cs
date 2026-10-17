@@ -43,14 +43,16 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task InviteMember_AsAnOwnerOrAnAdmin_CreatesAPendingInvitation(string inviterRole)
     {
         var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddMemberAsync(tenant.Id, role: inviterRole);
+        var inviter = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: inviterRole);
         var email = NewEmail();
 
         var invited = await _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email);
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        invitation.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "email", "role", "invitedBy", "createdAt", "expiresAt"], ignoreOrder: true);
+        invitation.EnumerateObject().Select(field => field.Name)
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt"], ignoreOrder: true);
+        invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
         invitation.GetProperty("role").GetString().ShouldBe("member");
         invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _catalog.UserIdOfAsync(inviter));

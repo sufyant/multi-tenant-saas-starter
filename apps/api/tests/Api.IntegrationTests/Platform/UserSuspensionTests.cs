@@ -34,7 +34,8 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin"], ignoreOrder: true);
+        body.EnumerateObject().Select(field => field.Name)
+            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(id);
         body.GetProperty("firstName").GetString().ShouldBe("Ada");
         body.GetProperty("status").GetString().ShouldBe("suspended");

@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
 namespace Api.IntegrationTests.Platform;
@@ -56,7 +57,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             (Guid.Parse($"f{random[1..]}"), null, null, null, "deleted", false),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(5);
@@ -203,6 +204,99 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
+
+    // The users list shows how many organisations each user is in, and when they joined the catalog.
+    [Fact]
+    public async Task ListUsers_EachUser_ReturnsTheirMembershipCountAndWhenTheyWereCreated()
+    {
+        var created = new DateTimeOffset(2026, 5, 6, 7, 8, 9, TimeSpan.Zero);
+        var user = await _catalog.AddUserAsync(email: $"{_marker}@example.com", createdAt: created);
+        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
+        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
+
+        var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
+
+        (item.GetProperty("membershipCount").GetInt32(), item.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((2, created));
+    }
+
+    // AcceptInvitation adds a membership and counts it on the user, a new one included, who is created at the module's clock.
+    [Fact]
+    public async Task ListUsers_AfterAUserJoinsTwoTenants_CountsBothMemberships()
+    {
+        var now = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: new FakeTimeProvider(now));
+        var email = $"{_marker}@example.com";
+        var invitee = $"user_{Guid.NewGuid():N}";
+        _api.Identity.AddAccount(invitee, email);
+        var first = await _catalog.AddTenantAsync();
+        var second = await _catalog.AddTenantAsync();
+        await _catalog.AddInvitationAsync(first.Id, email, secret: "first-secret", expiresAt: now.AddDays(7));
+        await _catalog.AddInvitationAsync(second.Id, email, secret: "second-secret", expiresAt: now.AddDays(7));
+
+        (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(first.Id, "first-secret")))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(second.Id, "second-secret")))).EnsureSuccessStatusCode();
+
+        var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
+        (item.GetProperty("membershipCount").GetInt32(), item.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((2, now));
+        (await _catalog.StoredMembershipCountOfAsync(invitee)).ShouldBe(await _catalog.CountedMembershipsOfAsync(invitee));
+    }
+
+    // RemoveMember takes one membership away and counts it down on the user.
+    [Fact]
+    public async Task ListUsers_AfterAMemberIsRemovedFromOneOfTwoTenants_CountsOne()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var user = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: $"{_marker}@example.com"));
+        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
+        var id = await _catalog.UserIdOfAsync(user);
+
+        (await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, id))).EnsureSuccessStatusCode();
+
+        var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
+        item.GetProperty("membershipCount").GetInt32().ShouldBe(1);
+        (await _catalog.StoredMembershipCountOfAsync(user)).ShouldBe(await _catalog.CountedMembershipsOfAsync(user));
+    }
+
+    // A deletion takes the user out of every tenant first (RemoveUserMembership), and each step counts one down.
+    [Fact]
+    public async Task ListUsers_AfterTheUsersDeletion_CountsNone()
+    {
+        await UseADatabaseOfItsOwnAsync();
+        var user = await _catalog.AddUserAsync(email: $"{_marker}@example.com");
+        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
+        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
+        var admin = await AdminAsync();
+        var id = await _catalog.UserIdOfAsync(user);
+
+        (await _api.WaitingForMessagesAsync(() => admin.DeleteAsync($"/v1/platform/users/{id}", Cancellation))).EnsureSuccessStatusCode();
+
+        var found = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/users?status=deleted", Cancellation);
+        found.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("membershipCount").GetInt32()))
+            .ShouldBe([(id, 0)]);
+        (await _catalog.StoredMembershipCountOfAsync(user)).ShouldBe(0);
+    }
+
+    // The page is one query: the count and the creation time are on the user row, so a longer page sends no more commands (K5).
+    [Fact]
+    public async Task ListUsers_ALongerPage_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        await AddUsersAsync("Ball", "Cole", "Dunn");
+        var admin = await _catalog.AddSystemAdminAsync();
+
+        var one = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/users?q={_marker}&pageSize=1", Cancellation));
+        var three = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/users?q={_marker}&pageSize=3", Cancellation));
+
+        three.ShouldBe(one);
+        one.ShouldBeGreaterThan(0);
+    }
+
+    private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 

@@ -38,10 +38,45 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Tenants(page).ShouldBe([(alpha.Id, "Alpha Ltd", alpha.Slug), (beta.Id, "Beta Ltd", beta.Slug)]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
+        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
+    }
+
+    // The chooser shows the caller's role in each organisation, in lower case as every role the API answers (K5).
+    [Fact]
+    public async Task ListMyTenants_MemberOfThreeTenantsInThreeRoles_ReturnsTheRoleInEach()
+    {
+        var owned = await _catalog.AddTenantAsync(name: "Alpha Ltd");
+        var administered = await _catalog.AddTenantAsync(name: "Bravo Ltd");
+        var joined = await _catalog.AddTenantAsync(name: "Charlie Ltd");
+        var user = await _catalog.AddMemberAsync(owned.Id, role: "Owner");
+        await _catalog.AddMemberAsync(administered.Id, user, role: "Admin");
+        await _catalog.AddMemberAsync(joined.Id, user, role: "Member");
+
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
+
+        page.GetProperty("items").EnumerateArray()
+            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("role").GetString()))
+            .ShouldBe([(owned.Id, "owner"), (administered.Id, "admin"), (joined.Id, "member")]);
+    }
+
+    // The page is one query, with the role joined: a longer page sends no more commands (K5).
+    [Fact]
+    public async Task ListMyTenants_ALongerPage_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        var user = await MemberOfAsync(
+            await _catalog.AddTenantAsync(name: "Alpha Ltd"),
+            await _catalog.AddTenantAsync(name: "Bravo Ltd"),
+            await _catalog.AddTenantAsync(name: "Charlie Ltd"));
+
+        var one = await commands.CountAsync(() => _api.CreateClient(user), client => client.GetAsync("/v1/me/tenants?pageSize=1", Cancellation));
+        var three = await commands.CountAsync(() => _api.CreateClient(user), client => client.GetAsync("/v1/me/tenants?pageSize=3", Cancellation));
+
+        three.ShouldBe(one);
+        one.ShouldBeGreaterThan(0);
     }
 
     [Fact]
