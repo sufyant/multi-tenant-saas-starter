@@ -1,4 +1,6 @@
+using System.Reflection;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Members;
@@ -97,6 +99,23 @@ public enum MemberRole
 }
 
 /// <summary>
-/// Reads a role by its name only. The default converter also takes a number, so <c>7</c> would bind to no role and <c>0</c> to Owner.
+/// Reads and writes a role as its exact name, the name its member declares. The default enum converter also takes a number, so <c>7</c>
+/// would bind to no role and <c>0</c> to Owner, a list of names with commas, so <c>"Admin, Member"</c> would bind to no role and
+/// <c>"Owner, Admin"</c> to Admin, and a name with spaces, so <c>" Admin"</c> would bind to Admin.
 /// </summary>
-public sealed class MemberRoleConverter() : JsonStringEnumConverter<MemberRole>(allowIntegerValues: false);
+public sealed class MemberRoleConverter : JsonConverter<MemberRole>
+{
+    private static readonly Dictionary<MemberRole, string> Names = Enum.GetValues<MemberRole>().ToDictionary(
+        role => role,
+        role => typeof(MemberRole).GetField(role.ToString())!.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()!.Name);
+
+    public override MemberRole Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var name = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+        return Names.SingleOrDefault(pair => pair.Value == name) is { Value: not null } found
+            ? found.Key
+            : throw new JsonException("A role is one name of the list.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, MemberRole value, JsonSerializerOptions options) => writer.WriteStringValue(Names[value]);
+}

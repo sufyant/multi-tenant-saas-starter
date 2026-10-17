@@ -12,14 +12,15 @@ namespace Api.Hosting;
 
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
-// sort and filters, the members of the one error schema with the enums of the error codes, and the one list of languages. They change
-// the document only; the JSON on the wire stays as it is.
+// sort and filters, the values of an enum with a converter of its own, the members of the one error schema with the enums of the error
+// codes, and the one list of languages. They change the document only; the JSON on the wire stays as it is.
 internal static class OpenApiContract
 {
     public static OpenApiOptions DescribeContract(this OpenApiOptions options) =>
         options.AddOperationTransformer(NameOperation)
             .AddOperationTransformer(DeclarePathParameters)
             .AddOperationTransformer(DescribeListParameters)
+            .AddSchemaTransformer(DescribeEnumValues)
             .AddDocumentTransformer(DescribeProblemDetails)
             .AddDocumentTransformer(DescribeLanguage);
 
@@ -74,6 +75,20 @@ internal static class OpenApiContract
     {
         var describe = parameter == typeof(ListSort<>) ? typeof(ListSort) : parameter == typeof(ListFilter<>) ? typeof(ListFilter) : null;
         return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
+    }
+
+    // The generator knows the values of the default enum converter only. An enum with a converter of its own, such as MemberRole, which
+    // reads an exact name only, would so have a schema without values. Its values are the JSON names, the names the converter reads.
+    private static Task DescribeEnumValues(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (context.JsonTypeInfo.Type.IsEnum && schema.Enum is null)
+        {
+            var values = (IReadOnlyList<string>)typeof(ListFilter).GetMethod(nameof(ListFilter.ValuesOf))!
+                .MakeGenericMethod(context.JsonTypeInfo.Type).Invoke(null, null)!;
+            schema.Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))];
+        }
+
+        return Task.CompletedTask;
     }
 
     // K5: every error answer is Problem Details (ResultResponses) with a code. The host adds four members to its schema: the code, one
