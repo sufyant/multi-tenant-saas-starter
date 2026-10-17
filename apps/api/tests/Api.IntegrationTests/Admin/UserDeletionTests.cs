@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Tenancy;
 
@@ -48,6 +50,33 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(id)).ShouldBe(
             $"{first.Id}:member.removed|Platform|-|User|{id}|-, {second.Id}:member.removed|Platform|-|User|{id}|-");
         _api.Identity.Deleted.ShouldBe([user]);
+    }
+
+    // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's user erases them from every
+    // audit table, and the read side, through ControlPlane's contract, gives them no name and marks them deleted. The records stay.
+    [Fact]
+    public async Task DeleteUser_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser()
+    {
+        var marker = Guid.NewGuid().ToString("N");
+        var tenant = await _catalog.AddTenantAsync();
+        var user = await _catalog.AddUserAsync(email: $"{marker}@example.com", firstName: $"Ada{marker}", lastName: $"Lovelace{marker}");
+        await _catalog.AddMemberAsync(tenant.Id, user);
+        var userId = await _catalog.UserIdOfAsync(user);
+        var admin = await _catalog.AddSystemAdminAsync();
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(admin, secondFactor: true)
+            .PatchAsJsonAsync($"/v1/admin/users/{userId}", new { firstName = $"Grace{marker}", lastName = $"Hopper{marker}" }, Cancellation));
+        var before = await NamesAsync(userId);
+        var kept = await RowsHoldingAsync("control_plane", marker);
+
+        await _api.WaitingForMessagesAsync(() => DeleteAsync(admin, userId));
+
+        before[userId].ShouldBe(new UserName($"Grace{marker} Hopper{marker}", Deleted: false));
+        kept.ShouldBe(1);
+        (await RowsHoldingAsync("audit", marker)).ShouldBe(0);
+        (await RowsHoldingAsync("control_plane", marker)).ShouldBe(0);
+        (await NamesAsync(userId))[userId].ShouldBe(new UserName(null, Deleted: true));
+        var adminId = await _catalog.UserIdOfAsync(admin);
+        (await _audit.PlatformLogAsync(userId)).ShouldBe($"user.renamed|User|{adminId}|User|{userId}|-, user.deleted|User|{adminId}|User|{userId}|-");
     }
 
     // The check comes first: the tenants where the user is the last Owner are named, and nothing changes anywhere.
@@ -188,6 +217,21 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
 
     private Task<long> MembershipsOfAsync(Guid userId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'");
+
+    private async Task<IReadOnlyDictionary<Guid, UserName>> NamesAsync(Guid userId)
+    {
+        await using var scope = _api.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IUserNames>().FindAsync([userId], Cancellation);
+    }
+
+    // The rows of every table in the schema whose text holds the marker, read as the superuser.
+    private Task<long> RowsHoldingAsync(string schema, string marker) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"""
+            SELECT coalesce(sum((xpath('/row/n/text()', query_to_xml(
+                format('SELECT count(*) AS n FROM %I.%I r WHERE r::text LIKE %L', schemaname, tablename, '%{marker}%'), false, true, '')))[1]::text::bigint), 0)::bigint
+            FROM pg_tables WHERE schemaname = '{schema}'
+            """);
 
     // How many sessions wait for a lock that the holder's session holds.
     private Task<long> WaitingBehindAsync(int holder) =>
