@@ -1,11 +1,15 @@
+using SharedKernel;
+
 namespace ControlPlane.Domain.Users;
 
 /// <summary>
-/// One identity across tenants, matched to the identity provider's user id. The user keeps a copy of their email address and name;
-/// the identity provider owns these fields.
+/// One identity across tenants, matched to the identity provider's user id. The catalog owns the email address and the names (A7):
+/// the identity provider keeps no name, and only a system admin changes one.
 /// </summary>
 internal sealed class User(Guid id, string externalId)
 {
+    public const int NameMaxLength = 100;
+
     public Guid Id { get; private init; } = id;
 
     public string ExternalId { get; private init; } = externalId;
@@ -16,32 +20,36 @@ internal sealed class User(Guid id, string externalId)
 
     public string? LastName { get; private set; }
 
-    /// <summary>The identity provider's time of the change the copy holds.</summary>
-    public DateTimeOffset? ProfileUpdatedAt { get; private set; }
-
-    /// <summary>When the identity provider deleted the user. The row stays: memberships and audit entries point to it.</summary>
+    /// <summary>When a system admin deleted the user. The row stays: audit entries point to it.</summary>
     public DateTimeOffset? DeletedAt { get; private set; }
 
     /// <summary>When a system admin suspended the user. A suspended user is refused on every me and tenant endpoint (A9).</summary>
     public DateTimeOffset? SuspendedAt { get; private set; }
 
     /// <summary>
-    /// Takes the identity provider's profile, unless the copy holds a later change or the user is deleted. The same change
-    /// taken twice gives the same copy. True when the email address or the name changed; a newer time alone is no change.
+    /// A person the catalog does not know joins through an invitation: the invited address, which the identity provider verified, and
+    /// the names they typed, without the spaces around them.
     /// </summary>
-    public bool CopyProfile(string? email, string? firstName, string? lastName, DateTimeOffset updatedAt)
+    public static User Join(Guid id, string externalId, string email, string firstName, string lastName) =>
+        new(id, externalId) { Email = email, FirstName = firstName.Trim(), LastName = lastName.Trim() };
+
+    /// <summary>
+    /// A system admin changes the names. True when they changed; the same names with spaces around them are no change. A deleted user
+    /// has no names to change: giving them one would keep personal data the deletion erased.
+    /// </summary>
+    public Result<bool> Rename(string firstName, string lastName)
     {
-        if (DeletedAt is not null || updatedAt < ProfileUpdatedAt)
+        if (DeletedAt is not null)
         {
-            return false;
+            return Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
         }
 
-        var changed = (Email, FirstName, LastName) != (email, firstName, lastName);
-        (Email, FirstName, LastName, ProfileUpdatedAt) = (email, firstName, lastName, updatedAt);
+        var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
+        (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
         return changed;
     }
 
-    /// <summary>Erases the copy and marks the user deleted. A second deletion keeps the first time. True for the first deletion.</summary>
+    /// <summary>Erases the email address and the names and marks the user deleted. A second deletion keeps the first time. True for the first deletion.</summary>
     public bool Delete(DateTimeOffset now)
     {
         var first = DeletedAt is null;

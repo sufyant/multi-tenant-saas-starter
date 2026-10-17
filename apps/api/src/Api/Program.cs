@@ -29,7 +29,7 @@ try
     }
 
     var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
-    builder.Services.AddControlPlaneInfrastructure(role.ServesTheApi());
+    builder.Services.AddControlPlaneInfrastructure();
     builder.Services.AddNotificationsInfrastructure();
     builder.Services.AddAuditInfrastructure();
 
@@ -53,7 +53,7 @@ try
     {
         var v1 = app.MapV1();
         var (admin, tenant) = (v1.MapAdmin(), v1.MapTenant());
-        ControlPlaneModule.MapEndpoints(admin, v1.MapMe(), tenant, v1.MapWebhooks());
+        ControlPlaneModule.MapEndpoints(admin, v1.MapMe(), tenant);
         AuditModule.MapEndpoints(admin, tenant);
         app.MapApiDocuments();
     }

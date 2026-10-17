@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Contracts;
 using Notifications.Contracts;
 using SharedKernel;
@@ -26,7 +27,8 @@ public sealed record TenantCreationTimeouts(TimeSpan Activation, TimeSpan Invita
 /// repeated message still finds the state it is ignored by, and the record says where the process ended.
 /// </summary>
 /// <remarks>
-/// Steps: start (compensatable), activate the tenant (pivot), send the invitation email (retryable) (S5). A step that fails for good
+/// Steps: start (compensatable), activate the tenant (pivot), let the owner sign up and send the invitation email (retryable) (S5). A
+/// step that fails for good
 /// reaches the saga as Wolverine's fault of its message. Every wait has a timeout (S10). A wait that times out while the invitation
 /// may still be open cancels it, so a late email carries a link that answers 404. Completed, Cancelled and NeedsAttention are final:
 /// the alarm is raised once for each tenant creation.
@@ -91,7 +93,11 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(SendInvitationEmailReply.TenantId))] SendInvitationEmailReply sent) =>
         IsSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
 
-    // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is withdrawn.
+    // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is withdrawn. The identity provider
+    // that did not let the owner sign up, and the email that did not go out, end the same way.
+    public OutgoingMessages Handle(Fault<OpenOwnerSignUp> fault) =>
+        IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
+
     public OutgoingMessages Handle(Fault<OwnerInvitationReady> fault) =>
         IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 

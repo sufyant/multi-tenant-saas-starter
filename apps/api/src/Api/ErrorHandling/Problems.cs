@@ -17,15 +17,25 @@ internal static class Problems
 
     public const string TraceIdMember = "traceId";
 
+    public const string TenantIdsMember = "tenantIds";
+
     /// <summary>The JSON names of every field code of a validation answer.</summary>
     public static IReadOnlyList<string> FieldCodes { get; } = [.. Enum.GetValues<FieldErrorCode>().Select(NameOf)];
 
-    /// <summary>The answer to a failed result, or to a refusal: its status, its English detail and its code.</summary>
-    public static IResult For(Error error) =>
-        TypedResults.Problem(
-            statusCode: StatusCodeFor(error.Type),
-            detail: error.Description,
-            extensions: new Dictionary<string, object?> { [CodeMember] = error.Code.Value });
+    /// <summary>
+    /// The answer to a failed result, or to a refusal: its status, its English detail and its code, and the tenants it is about when it
+    /// names some.
+    /// </summary>
+    public static IResult For(Error error)
+    {
+        var extensions = new Dictionary<string, object?> { [CodeMember] = error.Code.Value };
+        if (error.TenantIds is { } tenantIds)
+        {
+            extensions[TenantIdsMember] = tenantIds;
+        }
+
+        return TypedResults.Problem(statusCode: StatusCodeFor(error.Type), detail: error.Description, extensions: extensions);
+    }
 
     /// <summary>The answer to a request whose fields failed validation: the field codes for each field, by its JSON name.</summary>
     public static HttpValidationProblemDetails ForFields(IDictionary<string, string[]> errors) =>

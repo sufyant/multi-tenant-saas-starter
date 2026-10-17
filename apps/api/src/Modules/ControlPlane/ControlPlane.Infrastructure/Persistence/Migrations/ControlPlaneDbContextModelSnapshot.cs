@@ -104,6 +104,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("role_id");
 
+                    b.Property<string>("SignUpInvitationId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("sign_up_invitation_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -333,10 +338,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<string>("LastName")
                         .HasColumnType("text")
                         .HasColumnName("last_name");
-
-                    b.Property<DateTimeOffset?>("ProfileUpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("profile_updated_at");
 
                     b.Property<DateTimeOffset?>("SuspendedAt")
                         .HasColumnType("timestamp with time zone")

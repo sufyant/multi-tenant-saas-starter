@@ -25,12 +25,11 @@ internal sealed class SystemAdminDirectory(
         var isSystemAdmin = await IsSystemAdminAsync(externalUserId, cancellationToken);
         if (!isSystemAdmin && mayBecomeTheFirst)
         {
-            // The verified addresses come from the identity provider's server, as when an invitation is accepted. The same call
-            // gives the profile that a new catalog user starts with.
-            var account = await identity.FindAccountAsync(externalUserId, cancellationToken);
-            if (SystemDoor.IsFirstSystemAdmin(settings.Value.FirstSystemAdminEmail!, secondFactorVerified: true, account.VerifiedEmails))
+            // The verified addresses come from the identity provider's server, as when an invitation is accepted.
+            var verifiedEmails = await identity.FindVerifiedEmailsAsync(externalUserId, cancellationToken);
+            if (SystemDoor.IsFirstSystemAdmin(settings.Value.FirstSystemAdminEmail!, secondFactorVerified: true, verifiedEmails))
             {
-                await GrantTheFirstAsync(externalUserId, account.Profile, cancellationToken);
+                await GrantTheFirstAsync(externalUserId, settings.Value.FirstSystemAdminEmail!.Trim(), cancellationToken);
                 isSystemAdmin = await IsSystemAdminAsync(externalUserId, cancellationToken);
             }
         }
@@ -41,16 +40,17 @@ internal sealed class SystemAdminDirectory(
     private Task<bool> IsSystemAdminAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => controlPlane.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);
 
-    // One statement writes the catalog user, if the catalog does not know them yet, with a copy of their profile, and the grant, and it
-    // writes the grant only while the staff list is empty: of two pods that let the same person in at the same moment, one writes it.
-    private async Task GrantTheFirstAsync(string externalUserId, UserProfile profile, CancellationToken cancellationToken)
+    // One statement writes the catalog user, if the catalog does not know them yet, with the configured address, which the identity
+    // provider verified, and no names, and the grant, and it writes the grant only while the staff list is empty: of two pods that let
+    // the same person in at the same moment, one writes it. A system admin gives the first one their names (A7).
+    private async Task GrantTheFirstAsync(string externalUserId, string email, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
         await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH added AS (
-                INSERT INTO control_plane.users (id, external_id, email, first_name, last_name, profile_updated_at)
-                VALUES ({Guid.CreateVersion7(now)}, {externalUserId}, {profile.Email}, {profile.FirstName}, {profile.LastName}, {profile.UpdatedAt})
+                INSERT INTO control_plane.users (id, external_id, email)
+                VALUES ({Guid.CreateVersion7(now)}, {externalUserId}, {email})
                 ON CONFLICT (external_id) DO NOTHING
                 RETURNING id),
             person AS (

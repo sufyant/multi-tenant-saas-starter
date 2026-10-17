@@ -63,7 +63,7 @@ internal sealed class AuditEntry : AuditRecord, ITenantEntity
     }
 }
 
-/// <summary>A record of the platform's log: what system admins and the identity provider did, above tenants.</summary>
+/// <summary>A record of the platform's log: what system admins did, above tenants, and what the identity provider did before step 20i.</summary>
 internal sealed class PlatformAuditEntry : AuditRecord
 {
     private PlatformAuditEntry()
@@ -81,7 +81,6 @@ internal sealed record AuditActor(AuditActorKind Kind, Guid? UserId)
 {
     public static readonly AuditActor Platform = new(AuditActorKind.Platform, null);
 
-    public static readonly AuditActor IdentityProvider = new(AuditActorKind.IdentityProvider, null);
 
     public static AuditActor User(Guid userId) => new(AuditActorKind.User, userId);
 }
@@ -101,6 +100,8 @@ internal enum AuditActorKind
 {
     User,
     Platform,
+
+    // A record the identity provider's webhook wrote before step 20i. Nothing writes it now; a record is never changed once written (K3).
     IdentityProvider,
 }
 

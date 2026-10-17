@@ -6,8 +6,8 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 // envelope carries the same tenant, so every step runs in it. The events that leave the module are in ControlPlane.Contracts and
 // Notifications.Contracts.
 
-/// <summary>Step 2, the pivot: makes the tenant active and announces it, with the link the owner is invited by.</summary>
-public sealed record ActivateTenant(Guid TenantId, Guid InvitationId, Uri Link);
+/// <summary>Step 2, the pivot: makes the tenant active and announces it, and lets the owner sign up with the accept link they are invited by.</summary>
+public sealed record ActivateTenant(Guid TenantId, Guid InvitationId, Uri AcceptLink);
 
 /// <summary>The reply to the saga: the tenant is active (S13).</summary>
 public sealed record ActivateTenantReply(Guid TenantId);

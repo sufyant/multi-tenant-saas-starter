@@ -1,3 +1,4 @@
+using ControlPlane.Application;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
@@ -19,8 +20,7 @@ namespace ControlPlane.Infrastructure;
 /// </summary>
 public static class ControlPlaneInfrastructure
 {
-    /// <param name="servesTheApi">Whether the process serves the API, so it receives the identity provider's webhook too.</param>
-    public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services, bool servesTheApi)
+    public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
         services.AddDbContextWithWolverineIntegration<ControlPlaneDbContext>(
             (provider, options) => options.UseModuleDatabase(provider, ControlPlaneDbContext.Schema),
@@ -74,11 +74,12 @@ public static class ControlPlaneInfrastructure
             .Validate(clerk => !string.IsNullOrWhiteSpace(clerk.SecretKey), $"{ClerkOptions.Section}:SecretKey must be the secret key of the Clerk instance.")
             .Validate(clerk => clerk.BackendApiUrl.IsAbsoluteUri, $"{ClerkOptions.Section}:BackendApiUrl must be an absolute URL.")
             .Validate(clerk => clerk.Timeout > TimeSpan.Zero, $"{ClerkOptions.Section}:Timeout must be positive.")
-            .Validate(
-                clerk => !servesTheApi || ClerkIdentityProviderWebhook.IsSigningSecret(clerk.WebhookSigningSecret),
-                $"{ClerkOptions.Section}:WebhookSigningSecret must be the signing secret of the Clerk webhook endpoint, which starts with whsec_.")
             .ValidateOnStart();
-        services.AddSingleton<IIdentityProviderWebhook, ClerkIdentityProviderWebhook>();
+        services.AddOptions<IdentityProviderSettings>()
+            .BindConfiguration(IdentityProviderSettings.Section)
+            .Validate(settings => settings.IsValid, $"{IdentityProviderSettings.Section}:RetryDelays must be positive pauses that grow.")
+            .ValidateOnStart();
+        services.AddSingleton<IWolverineExtension, IdentityProviderRetries>();
         services.AddHttpClient<IIdentityProvider, ClerkIdentityProvider>((provider, http) =>
         {
             var clerk = provider.GetRequiredService<IOptions<ClerkOptions>>().Value;

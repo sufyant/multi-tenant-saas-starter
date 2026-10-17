@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
 using ControlPlane.Domain;
@@ -32,12 +33,12 @@ public sealed class InviteMemberValidator : AbstractValidator<InviteMember>
 // other, and neither passes the daily limit nor leaves a second pending invitation. The checks run in the catalog's order: an inviter
 // who is no longer a member, a tenant that is no longer active, the role rule, a member's address, the daily limit. Every rejection returns before the handler changes
 // anything, because Wolverine commits a failed Result too (W7). The secret is born here; only its hash is stored, and the link that
-// carries it goes on in the event.
+// carries it goes on to the identity provider's sign-up, after the commit. A replaced invitation's sign-up is withdrawn.
 public static class InviteMemberHandler
 {
     private static readonly TimeSpan LimitWindow = TimeSpan.FromHours(24);
 
-    public static async Task<(Result<InvitationSummary>, MemberInvited?)> HandleAsync(
+    public static async Task<(Result<InvitationSummary>, MemberInvited?, OpenMemberSignUp?, WithdrawSignUp?)> HandleAsync(
         InviteMember command,
         ITenantCatalog catalog,
         InvitationSettings invitations,
@@ -53,7 +54,7 @@ public static class InviteMemberHandler
         // exist (T3).
         if (await catalog.FindMembershipAsync(inviter.Id, cancellationToken) is not { } membership)
         {
-            return (Errors.TenantNotFound, null);
+            return (Errors.TenantNotFound, null, null, null);
         }
 
         // The door let the inviter into an active tenant, but a system admin may have suspended or closed it while this request waited for
@@ -61,7 +62,7 @@ public static class InviteMemberHandler
         var access = Tenant.CheckMemberAccess(tenant.Status);
         if (!access.IsSuccess)
         {
-            return (access.Error, null);
+            return (access.Error, null, null, null);
         }
 
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Name == command.Role);
@@ -69,19 +70,19 @@ public static class InviteMemberHandler
         var allowed = Invitation.CheckInviter(BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId), role);
         if (!allowed.IsSuccess)
         {
-            return (allowed.Error, null);
+            return (allowed.Error, null, null, null);
         }
 
         var email = command.Email.Trim();
         if (await catalog.IsMemberEmailAsync(email, cancellationToken))
         {
-            return (Error.Conflict(ControlPlaneErrorCodes.MembershipExists, "Someone with this email address is already a member of this tenant."), null);
+            return (Error.Conflict(ControlPlaneErrorCodes.MembershipExists, "Someone with this email address is already a member of this tenant."), null, null, null);
         }
 
         var now = time.GetUtcNow();
         if (await catalog.CountInvitationsSinceAsync(now - LimitWindow, cancellationToken) >= invitations.DailyLimitPerTenant)
         {
-            return (Error.TooManyRequests(ControlPlaneErrorCodes.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours."), null);
+            return (Error.TooManyRequests(ControlPlaneErrorCodes.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours."), null, null, null);
         }
 
         // K2: the new invitation replaces a pending one to the same address. The replaced one is saved as cancelled first, so the
@@ -107,9 +108,14 @@ public static class InviteMemberHandler
                 invitation.Id,
                 inviter.Id,
                 role.Name,
-                replaced?.Id,
+                replaced?.Id),
+            new OpenMemberSignUp(
+                tenant.Id,
+                invitation.Id,
                 invitation.Email,
                 tenant.Name,
-                invitations.AcceptLink(new InvitationCode(tenant.Id, secret))));
+                invitations.AcceptLink(new InvitationCode(tenant.Id, secret)),
+                invitation.ExpiresAt),
+            replaced?.SignUpInvitationId is { } withdrawn ? new WithdrawSignUp(withdrawn) : null);
     }
 }

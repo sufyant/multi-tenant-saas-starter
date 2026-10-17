@@ -1,30 +1,18 @@
 using System.Text.Json.Serialization;
-using ControlPlane.Application.Ports;
 
 namespace ControlPlane.Infrastructure.Clerk;
 
-// Clerk's user object, as its Backend API returns it and as its user.created and user.updated events carry it. Only the fields the
-// catalog needs are read. The email is the address marked primary, not the first in the list. Clerk's updated_at is in milliseconds.
+// Clerk's user object, as its Backend API returns it. Only the verified email addresses are read: Clerk keeps no name of ours, and the
+// catalog owns the names (A7).
 internal sealed record ClerkUser(
     [property: JsonPropertyName("id")] string Id,
-    [property: JsonPropertyName("primary_email_address_id")] string? PrimaryEmailAddressId,
-    [property: JsonPropertyName("email_addresses")] IReadOnlyList<ClerkEmailAddress> EmailAddresses,
-    [property: JsonPropertyName("first_name")] string? FirstName,
-    [property: JsonPropertyName("last_name")] string? LastName,
-    [property: JsonPropertyName("updated_at")] long UpdatedAt)
+    [property: JsonPropertyName("email_addresses")] IReadOnlyList<ClerkEmailAddress> EmailAddresses)
 {
     public IReadOnlyList<string> VerifiedEmails =>
         [.. EmailAddresses.Where(address => address.Verification?.Status == "verified").Select(address => address.EmailAddress)];
-
-    public UserProfile Profile => new(
-        EmailAddresses.FirstOrDefault(address => address.Id == PrimaryEmailAddressId)?.EmailAddress,
-        FirstName,
-        LastName,
-        DateTimeOffset.FromUnixTimeMilliseconds(UpdatedAt));
 }
 
 internal sealed record ClerkEmailAddress(
-    [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("email_address")] string EmailAddress,
     [property: JsonPropertyName("verification")] ClerkVerification? Verification);
 

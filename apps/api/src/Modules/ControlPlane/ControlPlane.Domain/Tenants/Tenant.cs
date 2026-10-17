@@ -245,6 +245,15 @@ internal sealed class Tenant
         return IsOwner(target) && owners <= 1 ? LastOwner : Result.Success();
     }
 
+    /// <summary>
+    /// Whether a system admin's deletion of the user may take this membership away (K1): a tenant always has at least one Owner, so the
+    /// tenant's last Owner stays. It changes nothing, so a caller checks it before any change.
+    /// </summary>
+    public static Result CheckUserDeletion(Membership target, int owners) =>
+        IsOwner(target) && owners <= 1
+            ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
+            : Result.Success();
+
     private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
 
     private Result<bool> Move(TenantStatus from, TenantStatus to)

@@ -3,8 +3,7 @@ using SharedKernel;
 namespace ControlPlane.Domain;
 
 /// <summary>
-/// The codes of every error ControlPlane answers, in its lowest layer, so that every layer of the module reaches them (K5). The
-/// webhook's code is here too, although the webhooks are not in the OpenAPI document (N5).
+/// The codes of every error ControlPlane answers, in its lowest layer, so that every layer of the module reaches them (K5).
 /// </summary>
 public static class ControlPlaneErrorCodes
 {
@@ -52,11 +51,15 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantSuspended = ErrorCode.Declare("tenant.suspended");
 
+    public static readonly ErrorCode UserDeleted = ErrorCode.Declare("user.deleted");
+
+    public static readonly ErrorCode UserHasMemberships = ErrorCode.Declare("user.has_memberships");
+
     public static readonly ErrorCode UserIsSystemAdmin = ErrorCode.Declare("user.is_system_admin");
+
+    public static readonly ErrorCode UserLastOwner = ErrorCode.Declare("user.last_owner");
 
     public static readonly ErrorCode UserNotFound = ErrorCode.Declare("user.not_found");
 
     public static readonly ErrorCode UserSuspended = ErrorCode.Declare("user.suspended");
-
-    public static readonly ErrorCode WebhookSignatureInvalid = ErrorCode.Declare("webhook.signature_invalid");
 }

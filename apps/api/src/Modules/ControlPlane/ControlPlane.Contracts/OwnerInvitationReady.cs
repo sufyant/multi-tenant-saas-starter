@@ -1,13 +1,14 @@
 namespace ControlPlane.Contracts;
 
 /// <summary>
-/// A new tenant's first owner can be invited: the link is ready to be sent to them. Published through the outbox with the
-/// tenant's activation.
+/// A new tenant's first owner can be invited: the identity provider lets the address sign up, and the link is ready to be sent to them.
+/// Published through the outbox, in the new tenant, after the tenant's activation.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="Link">
-/// Where the owner accepts: the accept link, or the identity provider's sign-up link that leads to it. It carries the invitation's
-/// secret, which cannot be produced again later; see the deviations list in ARCHITECTURE.md.
+/// Where the owner accepts: the identity provider's sign-up link that leads to the accept link, or the accept link itself for an address
+/// that has an account. It carries the invitation's secret, which cannot be produced again later; see the deviations list in
+/// ARCHITECTURE.md.
 /// </param>
 public sealed record OwnerInvitationReady(
     Guid EventId,
