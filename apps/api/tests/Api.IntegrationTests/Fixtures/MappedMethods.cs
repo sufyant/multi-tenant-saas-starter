@@ -1,3 +1,4 @@
+using Api.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,7 +11,7 @@ internal static class MappedMethods
     public static IEnumerable<string> Of(IServiceProvider services) =>
         services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
-            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/v1/", StringComparison.Ordinal) == true)
+            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith($"{RouteGroups.V1}/", StringComparison.Ordinal) == true)
             .SelectMany(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? [])
             .Distinct();
 }
