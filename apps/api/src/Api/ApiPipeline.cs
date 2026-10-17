@@ -17,6 +17,7 @@ using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
 using Tenancy;
+using JasperFx.CodeGeneration;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.ErrorHandling;
@@ -79,6 +80,10 @@ internal static class ApiPipeline
 
         builder.Services.AddWolverine(options =>
         {
+            // The handler code is written by `codegen write`, committed in Internal/Generated and loaded as static types (W10). The
+            // OpenAPI document build handles no message, so it loads none and starts while that code is out of date.
+            options.ApplicationAssembly = typeof(ApiPipeline).Assembly;
+            options.CodeGeneration.TypeLoadMode = openApiBuild ? TypeLoadMode.Auto : TypeLoadMode.Static;
             options.Discovery.IncludeAssembly(typeof(ApiPipeline).Assembly);
             foreach (var assembly in handlerAssemblies)
             {

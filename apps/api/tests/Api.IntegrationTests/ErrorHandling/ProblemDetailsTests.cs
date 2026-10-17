@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.IntegrationTests.ErrorHandling;
 
+[RuntimeHandlerCode]
 public sealed class ProblemDetailsTests : IAsyncLifetime
 {
     private PipelineHost _host = null!;

@@ -4,6 +4,7 @@ using System.Text.Json;
 
 namespace Api.IntegrationTests.RateLimiting;
 
+[RuntimeHandlerCode]
 public sealed class RateLimitingTests(Database database) : IAsyncLifetime
 {
     private readonly Catalog _catalog = new(database);

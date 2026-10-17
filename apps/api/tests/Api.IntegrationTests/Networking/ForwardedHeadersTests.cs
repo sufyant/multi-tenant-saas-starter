@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 namespace Api.IntegrationTests.Networking;
 
 // The client address decides the rate limit bucket of unauthenticated requests, which is where a forwarded address matters.
+[RuntimeHandlerCode]
 public sealed class ForwardedHeadersTests
 {
     [Fact]

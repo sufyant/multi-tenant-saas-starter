@@ -1,6 +1,7 @@
 using System.Reflection;
 using Api.Authorization;
 using ControlPlane.Contracts;
+using JasperFx.CodeGeneration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SharedKernel;
+using Wolverine;
 
 namespace Api.ArchitectureTests;
 
@@ -143,7 +145,8 @@ public sealed class EndpointAccessTests : IAsyncLifetime
         $"{string.Join(",", endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods ?? ["*"])} {endpoint.RoutePattern.RawText}";
 
     // The application as Program composes it, in development, where the API documents are mapped too, in the role that serves the
-    // whole API. The host's own start-up checks need a database and its settings; the endpoints do not.
+    // whole API. The host's own start-up checks need a database and its settings; the endpoints do not. As in the shared
+    // ComposedApplication, the host loads none of the committed handler code (W10).
     private sealed class ComposedApplication : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -157,6 +160,7 @@ public sealed class EndpointAccessTests : IAsyncLifetime
                     .ToList()
                     .ForEach(check => services.Remove(check));
                 services.RemoveAll<IStartupValidator>();
+                services.ConfigureWolverine(options => options.CodeGeneration.TypeLoadMode = TypeLoadMode.Auto);
             });
         }
     }

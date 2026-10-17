@@ -8,6 +8,7 @@ using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Messaging;
 
+[RuntimeHandlerCode]
 public sealed class DefaultRetryTests(Database database)
 {
     [Theory]

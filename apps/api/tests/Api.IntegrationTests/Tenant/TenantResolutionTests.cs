@@ -2,6 +2,7 @@ using System.Net;
 
 namespace Api.IntegrationTests.Tenant;
 
+[RuntimeHandlerCode]
 public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
 {
     private readonly Catalog _catalog = new(database);

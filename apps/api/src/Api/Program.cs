@@ -7,6 +7,7 @@ using Audit.Api;
 using Audit.Infrastructure;
 using ControlPlane.Api;
 using ControlPlane.Infrastructure;
+using JasperFx;
 using Notifications.Api;
 using Notifications.Infrastructure;
 
@@ -19,6 +20,14 @@ WebApplication app;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+
+    // Wolverine writes the handler code for the message storage the host has, and the host has one only with a database setting
+    // (W10). The codegen command never opens the database.
+    if (args is ["codegen", ..])
+    {
+        builder.Configuration["ConnectionStrings:Database"] ??= "Host=localhost;Database=unused;Username=unused;Password=unused";
+    }
+
     var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
     builder.Services.AddControlPlaneInfrastructure(role.ServesTheApi());
     builder.Services.AddNotificationsInfrastructure();
@@ -29,6 +38,12 @@ try
     if (args is [MigrationStep.Command, ..])
     {
         return await MigrationStep.RunCommandAsync(app.Services);
+    }
+
+    // `dotnet run -- codegen write` writes Wolverine's handler code to Internal/Generated (W10).
+    if (args is ["codegen", ..])
+    {
+        return await app.RunJasperFxCommands(args);
     }
 
     app.UseApiPipeline();

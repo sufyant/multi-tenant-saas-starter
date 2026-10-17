@@ -15,6 +15,7 @@ Run from `apps/api/`.
 - Build: `dotnet build Api.slnx`. No new warnings.
 - Test: `dotnet test --solution Api.slnx`. Needs Docker: tests run on PostgreSQL 18 in a container.
 - Format C#: `dotnet format whitespace Api.slnx`.
+- Write Wolverine's handler code after a change to a handler, a message, a saga, a middleware or a registration: `pnpm codegen` (`pnpm api:codegen` from the repository root). Commit `src/Api/Internal/Generated`. `HandlerCodeFileTests` fails otherwise. (W10)
 - Add a migration to module X: `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/X/X.Infrastructure --output-dir Persistence/Migrations`.
 - Run the system: follow `docs/local-run.md`. One build output; `Host:Role` is `web`, `worker` or `all`.
 

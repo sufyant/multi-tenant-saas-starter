@@ -9,6 +9,7 @@ namespace Api.IntegrationTests.Messaging;
 // W12: a node without a handler for a message does not drop it. During a rolling deploy an old worker takes a message only the new
 // version knows. It puts the message back on the queue, and a worker that knows it handles it. A message no node knows goes to the
 // dead letter queue after the tries.
+[RuntimeHandlerCode]
 public sealed class UnknownMessageTests(Database database)
 {
     private static readonly Dictionary<string, string?> ShortPutBacks = new()

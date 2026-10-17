@@ -15,6 +15,7 @@
     "lint": "biome check",
     "format": "biome check --write",
     "api:generate": "pnpm --filter @repo/api-client generate",
+    "api:codegen": "pnpm --filter @repo/api codegen",
     "github:apply": "scripts/github/apply-settings.sh",
     "github:check": "scripts/github/apply-settings.sh --check",
     "railway:plan": "railway config plan",

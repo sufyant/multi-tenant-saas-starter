@@ -7,6 +7,7 @@ namespace Api.IntegrationTests.Messaging;
 // Requirements 3 and 5 of the messaging tool (section 3): with two workers on one database, only one of them takes a message at a
 // time, and a message that a dying worker was handling is taken over by the other. Wolverine's guarantee is at least once: the
 // other worker runs the handler again, so the handler's second run must have no effect (O4).
+[RuntimeHandlerCode]
 public sealed class TwoWorkerTests(Database database)
 {
     // W5: a web host runs no durability agent, even when it leads the cluster; it gives the agent to a worker.
