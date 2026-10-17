@@ -56,7 +56,9 @@ describe("createApiClient", () => {
 
     expect(data?.items?.[0]?.status).toBe("active");
     const request = sentRequest(fetch);
-    expect(request.url).toBe(`${baseUrl}/v1/platform/tenants?page=1&pageSize=20`);
+    expect(request.url).toBe(
+      `${baseUrl}/v1/platform/tenants?page=1&pageSize=20`,
+    );
     expect(request.headers.get("Authorization")).toBe("Bearer token-1");
   });
 
