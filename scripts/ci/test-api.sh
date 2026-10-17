@@ -36,7 +36,7 @@ run_watched() {
   while kill -0 "$tests" 2>/dev/null; do
     for pid in $(descendants "$tests"); do
       peak=$(awk '/^VmHWM:/ { print $2 }' "/proc/$pid/status" 2>/dev/null || true)
-      name=$(basename "$(tr '\0' '\n' <"/proc/$pid/cmdline" 2>/dev/null | head -n 1)" 2>/dev/null || true)
+      name=$(basename "$(tr '\0' '\n' 2>/dev/null <"/proc/$pid/cmdline" | head -n 1)" 2>/dev/null || true)
       [[ -n "$peak" && -n "$name" ]] || continue
       echo "$name $peak" >>"$peaks"
       if ((peak > limit_kb && over == 0)); then
