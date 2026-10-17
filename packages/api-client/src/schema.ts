@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/v1/admin/tenants": {
+    "/v1/platform/tenants": {
         parameters: {
             query?: never;
             header?: never;
@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/tenants/{tenantId}": {
+    "/v1/platform/tenants/{tenantId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -36,7 +36,7 @@ export interface paths {
         patch: operations["RenameTenant"];
         trace?: never;
     };
-    "/v1/admin/tenants/{tenantId}/suspend": {
+    "/v1/platform/tenants/{tenantId}/suspend": {
         parameters: {
             query?: never;
             header?: never;
@@ -52,7 +52,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/tenants/{tenantId}/reactivate": {
+    "/v1/platform/tenants/{tenantId}/reactivate": {
         parameters: {
             query?: never;
             header?: never;
@@ -68,7 +68,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/tenants/{tenantId}/close": {
+    "/v1/platform/tenants/{tenantId}/close": {
         parameters: {
             query?: never;
             header?: never;
@@ -84,7 +84,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/tenants/{tenantId}/reopen": {
+    "/v1/platform/tenants/{tenantId}/reopen": {
         parameters: {
             query?: never;
             header?: never;
@@ -100,7 +100,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/users": {
+    "/v1/platform/tenants/{tenantId}/owner-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InviteOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -116,7 +132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/users/{userId}/suspend": {
+    "/v1/platform/users/{userId}/suspend": {
         parameters: {
             query?: never;
             header?: never;
@@ -132,7 +148,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/users/{userId}/reactivate": {
+    "/v1/platform/users/{userId}/reactivate": {
         parameters: {
             query?: never;
             header?: never;
@@ -148,7 +164,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/admin/users/{userId}": {
+    "/v1/platform/users/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -164,7 +180,7 @@ export interface paths {
         patch: operations["RenameUser"];
         trace?: never;
     };
-    "/v1/admin/audit-log": {
+    "/v1/platform/audit-log": {
         parameters: {
             query?: never;
             header?: never;
@@ -435,14 +451,14 @@ export interface components {
          * @description The error's code, area.reason. A client shows its own text for it, never the English detail.
          * @enum {string}
          */
-        ErrorCode: "auth.forbidden" | "auth.unauthenticated" | "idempotency.key_in_progress" | "idempotency.key_invalid" | "idempotency.key_reused" | "invitation.code_required" | "invitation.daily_limit_reached" | "invitation.email_mismatch" | "invitation.expired" | "invitation.not_found" | "invitation.not_pending" | "invitation.owner_requires_owner" | "invitation.staff_cannot_join" | "membership.cannot_remove_self" | "membership.exists" | "membership.last_owner" | "membership.not_found" | "membership.owner_requires_owner" | "paging.cursor_invalid" | "paging.filter_invalid" | "paging.limit_invalid" | "paging.page_invalid" | "paging.page_size_invalid" | "paging.q_invalid" | "paging.sort_invalid" | "rate_limit.exceeded" | "request.invalid" | "request.timeout" | "request.too_large" | "request.unsupported_media_type" | "request.validation_failed" | "route.method_not_allowed" | "route.not_found" | "server.error" | "tenant.closed" | "tenant.name_invalid" | "tenant.not_active" | "tenant.not_closed" | "tenant.not_found" | "tenant.reopen_period_ended" | "tenant.slug_invalid" | "tenant.slug_taken" | "tenant.suspended" | "user.deleted" | "user.has_memberships" | "user.is_system_admin" | "user.last_owner" | "user.not_found" | "user.suspended";
+        ErrorCode: "auth.forbidden" | "auth.unauthenticated" | "idempotency.key_in_progress" | "idempotency.key_invalid" | "idempotency.key_reused" | "invitation.code_required" | "invitation.daily_limit_reached" | "invitation.email_mismatch" | "invitation.expired" | "invitation.not_found" | "invitation.not_pending" | "invitation.owner_requires_owner" | "invitation.staff_cannot_join" | "membership.cannot_remove_self" | "membership.exists" | "membership.last_owner" | "membership.not_found" | "membership.owner_requires_owner" | "paging.cursor_invalid" | "paging.filter_invalid" | "paging.limit_invalid" | "paging.page_invalid" | "paging.page_size_invalid" | "paging.q_invalid" | "paging.sort_invalid" | "rate_limit.exceeded" | "request.invalid" | "request.timeout" | "request.too_large" | "request.unsupported_media_type" | "request.validation_failed" | "route.method_not_allowed" | "route.not_found" | "server.error" | "tenant.closed" | "tenant.has_owner" | "tenant.name_invalid" | "tenant.not_active" | "tenant.not_closed" | "tenant.not_found" | "tenant.reopen_period_ended" | "tenant.slug_invalid" | "tenant.slug_taken" | "tenant.suspended" | "user.deleted" | "user.has_memberships" | "user.is_system_admin" | "user.last_owner" | "user.not_found" | "user.suspended";
         /**
          * @description Why one field of a request failed validation.
          * @enum {string}
          */
         FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid";
         /**
-         * @description A pending invitation: the invited address, its role (Owner, Admin or Member), the catalog user id of the member who invited, and when
+         * @description A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited, and when
          *     it was created and expires. The screen shows an expired invitation from its expiry.
          */
         InvitationResponse: {
@@ -464,6 +480,14 @@ export interface components {
         InviteMemberRequest: {
             email: string;
             role: components["schemas"]["MemberRole"];
+            language?: null | components["schemas"]["Language"];
+        };
+        /**
+         * @description The address of the Owner the platform invites into a tenant without one, and the language of the invitation's email: without one, the
+         *     system admin's own.
+         */
+        InviteOwnerRequest: {
+            email: string;
             language?: null | components["schemas"]["Language"];
         };
         JsonElement: unknown;
@@ -499,8 +523,8 @@ export interface components {
             /** Format: int32 */
             total?: number | string;
         };
-        ListPageOfTenantResponse: {
-            items?: components["schemas"]["TenantResponse"][];
+        ListPageOfTenantListItemResponse: {
+            items?: components["schemas"]["TenantListItemResponse"][];
             /** Format: int32 */
             page?: number | string;
             /** Format: int32 */
@@ -518,7 +542,7 @@ export interface components {
             total?: number | string;
         };
         /**
-         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, Owner, Admin or Member, and whether the
+         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, and whether the
          *     identity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows "Deleted user",
          *     as the audit logs say `deleted` (K3).
          */
@@ -536,7 +560,7 @@ export interface components {
          *     the role an invitation gives, and the role a member is given.
          * @enum {string}
          */
-        MemberRole: "Owner" | "Admin" | "Member";
+        MemberRole: "owner" | "admin" | "member";
         /**
          * @description The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, whether they are a system admin, and
          *     their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
@@ -567,6 +591,18 @@ export interface components {
          * @enum {unknown}
          */
         MyTenantResponseStatus: "active" | "suspended" | "closed";
+        /** @description The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request. */
+        OwnerInvitationResponse: {
+            email: string;
+            /** Format: date-time */
+            expiresAt: string;
+            state: components["schemas"]["OwnerInvitationResponseState"];
+        };
+        /**
+         * @description The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled.
+         * @enum {unknown}
+         */
+        OwnerInvitationResponseState: "pending" | "expired" | "cancelled";
         /** @description The user's preferences, which follow them to every tenant and device. A null time zone is not set. */
         PreferencesResponse: {
             language: components["schemas"]["Language"];
@@ -601,6 +637,55 @@ export interface components {
         /** @description Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it. */
         SuspendTenantRequest: {
             reason: string;
+        };
+        /** @description One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first. */
+        TenantDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            status: components["schemas"]["TenantResponseStatus"];
+            suspensionReason: null | string;
+            /** Format: date-time */
+            closedAt: null | string;
+            /** Format: date-time */
+            reopenableUntil: null | string;
+            /** Format: int32 */
+            memberCount: number | string;
+            /** Format: int32 */
+            ownerCount: number | string;
+            owners: components["schemas"]["TenantOwnerResponse"][];
+            ownerInvitation: null | components["schemas"]["OwnerInvitationResponse"];
+        };
+        /**
+         * @description A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners
+         *     counted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+         */
+        TenantListItemResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            status: components["schemas"]["TenantResponseStatus"];
+            suspensionReason: null | string;
+            /** Format: date-time */
+            closedAt: null | string;
+            /** Format: date-time */
+            reopenableUntil: null | string;
+            /** Format: int32 */
+            memberCount: number | string;
+            /** Format: int32 */
+            ownerCount: number | string;
+            firstOwner: null | components["schemas"]["TenantOwnerResponse"];
+            ownerInvitation: null | components["schemas"]["OwnerInvitationResponse"];
+        };
+        /** @description An Owner of a tenant: the catalog user's id, names and address. */
+        TenantOwnerResponse: {
+            /** Format: uuid */
+            userId: string;
+            firstName: null | string;
+            lastName: null | string;
+            email: null | string;
         };
         /**
          * @description A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its
@@ -669,7 +754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListPageOfTenantResponse"];
+                    "application/json": components["schemas"]["ListPageOfTenantListItemResponse"];
                 };
             };
             /** @description Bad Request */
@@ -843,7 +928,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantResponse"];
+                    "application/json": components["schemas"]["TenantDetailResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1277,6 +1362,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    InviteOwner: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                tenantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteOwnerRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1780,6 +1956,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: number | string;
+                tenantId?: string;
             };
             header?: never;
             path?: never;
@@ -1953,7 +2130,7 @@ export interface operations {
                 pageSize?: number | string;
                 sort?: "role" | "-role" | "email" | "-email" | "lastName" | "-lastName";
                 q?: string;
-                role?: "Owner" | "Admin" | "Member";
+                role?: "owner" | "admin" | "member";
             };
             header?: never;
             path: {
@@ -2218,7 +2395,7 @@ export interface operations {
                 pageSize?: number | string;
                 sort?: "expiresAt" | "-expiresAt" | "email" | "-email";
                 q?: string;
-                role?: "Owner" | "Admin" | "Member";
+                role?: "owner" | "admin" | "member";
             };
             header?: never;
             path: {
