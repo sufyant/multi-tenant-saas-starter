@@ -10,10 +10,12 @@ internal static class RouteGroups
 {
     public const string TenantIdParameter = "tenantId";
 
+    public const string V1 = "/v1";
+
     // Every API route lives under a version segment; expected failures returned as results become Problem Details here.
     // The group grants no access: each endpoint states its own (A5).
     public static RouteGroupBuilder MapV1(this IEndpointRouteBuilder endpoints) =>
-        endpoints.MapGroup("/v1")
+        endpoints.MapGroup(V1)
             .AddEndpointFilter<ResultEndpointFilter>()
             .DescribeResults()
             .RequireUserRateLimit();

@@ -9,6 +9,8 @@ using Api.Networking;
 using Api.Observability;
 using Api.Persistence;
 using Api.RateLimiting;
+using Api.Routing;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
@@ -130,11 +132,13 @@ internal static class ApiPipeline
             builder.Services.AddHostedService<IdempotencyCleanup>();
         }
 
-        // API8: only the configured browser origins may call, with the methods and headers the API uses, and without credentials
-        // mode: the API reads its caller from the Authorization header, never from a cookie.
-        builder.Services.AddCors(cors => cors.AddDefaultPolicy(policy => policy
+        // API8: only the configured browser origins may call, with the methods of the mapped /v1 endpoints and the headers the API
+        // uses, and without credentials mode: the API reads its caller from the Authorization header, never from a cookie. The options
+        // are built at their first use, after the endpoints are mapped, so the methods come from the endpoints and from no list.
+        builder.Services.AddCors();
+        builder.Services.AddOptions<CorsOptions>().Configure<EndpointDataSource>((cors, endpoints) => cors.AddDefaultPolicy(policy => policy
             .WithOrigins(host.Cors.AllowedOrigins)
-            .WithMethods(HttpMethods.Get, HttpMethods.Post)
+            .WithMethods(MethodsOf(endpoints))
             .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyKeyHeader)));
 
         builder.Services.AddUserRateLimiting();
@@ -198,6 +202,17 @@ internal static class ApiPipeline
 
         return app;
     }
+
+    // The HTTP methods of the endpoints under /v1, in ordinal order. A worker maps none.
+    private static string[] MethodsOf(EndpointDataSource endpoints) =>
+    [
+        .. endpoints.Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith($"{RouteGroups.V1}/", StringComparison.Ordinal) == true)
+            .SelectMany(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? [])
+            .Distinct()
+            .Order(StringComparer.Ordinal),
+    ];
 
     // The API's documents, in Development only, on a host that serves the API.
     public static WebApplication MapApiDocuments(this WebApplication app)
