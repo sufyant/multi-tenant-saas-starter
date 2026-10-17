@@ -24,6 +24,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string ProblemDetailsSchema = "#/components/schemas/ProblemDetails";
     private const string LanguageSchema = "#/components/schemas/Language";
     private const string PermissionSchema = "#/components/schemas/Permission";
+    private const string InvitationStateSchema = "#/components/schemas/InvitationResponseState";
 
     private readonly ComposedApplication _application = new();
     private JsonElement _document;
@@ -140,6 +141,24 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // The maintainer's decision in audit fix 08: one enum of an invitation's state, InvitationResponseState. The preview, the Owner
+    // invitation of a tenant and the invitation of the tenant's list refer to it, so a generated client has one type for it, and no other
+    // schema lists the states of an invitation.
+    [Fact]
+    public void BuildOpenApiDocument_EveryStateOfAnInvitation_IsTheOneInvitationStateEnum()
+    {
+        var documented = Schemas()
+            .Where(schema => schema.Value.TryGetProperty("properties", out _))
+            .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
+                .Where(property => ReferencesIn(property.Value).Contains(InvitationStateSchema))
+                .Select(property => $"{schema.Name}.{property.Name}"));
+        var stateEnums = Schemas().Where(schema => schema.Name.EndsWith("State", StringComparison.Ordinal)).Select(schema => schema.Name);
+
+        documented.ShouldBe(["InvitationPreviewResponse.state", "InvitationResponse.state", "OwnerInvitationResponse.state"], ignoreOrder: true);
+        stateEnums.ShouldBe(["InvitationResponseState"]);
+        EnumOf(Resolve(Schemas().Single(schema => schema.Name == "InvitationResponseState").Value)).ShouldBe("pending, expired, accepted, cancelled");
     }
 
     [Fact]
