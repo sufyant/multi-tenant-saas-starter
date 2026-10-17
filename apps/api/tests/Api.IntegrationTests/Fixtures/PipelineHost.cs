@@ -12,13 +12,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Notifications.Infrastructure;
 using Tenancy;
+using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Fixtures;
 
 // Runs the host's real pipeline on a test server against the test database, with the test endpoints and handlers mapped
-// where module endpoints go.
+// where module endpoints go. The test handlers are not in the committed handler code, so the host generates it at runtime.
 internal sealed class PipelineHost : IAsyncDisposable
 {
     private static readonly Dictionary<string, string?> DefaultSettings = new()
@@ -70,6 +71,7 @@ internal sealed class PipelineHost : IAsyncDisposable
             (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
             TenancyServiceCollectionExtensions.MessageSchema);
         builder.Services.AddModuleMigrations<ProbeDbContext>(ProbeDbContext.Schema);
+        builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
         builder.Services.TrustTestKey();
         builder.Services.AddSingleton<IdempotencyGate>();
         builder.Services.AddSingleton<RetryAttempts>();

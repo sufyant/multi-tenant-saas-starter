@@ -5,6 +5,7 @@ using System.Text.Json;
 namespace Api.IntegrationTests.Authorization;
 
 // Function level authorization: code checks permissions, never roles.
+[RuntimeHandlerCode]
 public sealed class AuthorizationTests(Database database) : IAsyncLifetime
 {
     private readonly Catalog _catalog = new(database);

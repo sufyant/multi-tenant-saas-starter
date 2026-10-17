@@ -108,7 +108,7 @@ internal sealed class RollingDeploy : IAsyncDisposable
             {
                 if (knowsTheMessage)
                 {
-                    options.Discovery.IncludeType(typeof(RecordHandlingHandler));
+                    options.GenerateHandlerCodeAtRuntime().Discovery.IncludeType(typeof(RecordHandlingHandler));
                 }
             });
         });

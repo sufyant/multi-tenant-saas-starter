@@ -9,6 +9,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Api.IntegrationTests.Idempotency;
 
+[RuntimeHandlerCode]
 public sealed class IdempotencyBoundaryTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

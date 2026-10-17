@@ -23,6 +23,7 @@ namespace Api.IntegrationTests.Hosting;
 // Section 1: one build output runs as two process types, chosen by Host:Role. The web host serves the API and runs the command a
 // request sends; whatever that command sends on is handled by a worker host. The two hosts share a database of their own here, so no
 // other test's host takes part.
+[RuntimeHandlerCode]
 public sealed class HostRoleTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

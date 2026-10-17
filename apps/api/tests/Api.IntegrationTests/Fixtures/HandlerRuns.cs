@@ -31,7 +31,7 @@ public sealed class HandlerRunsOfHost(string host, HandlerRuns runs)
     public static Action<IServiceCollection> Register(string host, HandlerRuns runs) => services =>
     {
         services.AddSingleton(new HandlerRunsOfHost(host, runs));
-        services.ConfigureWolverine(options => options.Policies.Add(new RecordHandlerRuns()));
+        services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime().Policies.Add(new RecordHandlerRuns()));
     };
 
     // Called by the generated code of every handler chain, so public.

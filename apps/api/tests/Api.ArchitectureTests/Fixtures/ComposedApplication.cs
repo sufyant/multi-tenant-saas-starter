@@ -1,3 +1,4 @@
+using JasperFx.CodeGeneration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -12,7 +13,9 @@ namespace Api.ArchitectureTests.Fixtures;
 // The application as Program composes it, in the given role (by default the one that handles every message), without the start-up
 // checks that need a database and its settings. The roles web and worker configure the PostgreSQL transport, which needs a
 // connection setting; it is never used: Wolverine's message storage and external transports are switched off, and its endpoints and
-// routing stay as configured. A test may configure the host further.
+// routing stay as configured. The host handles no message, so it loads none of the committed handler code: Wolverine finds the
+// handlers by scanning their assemblies, and builds no handler, which would read settings this host lacks (W10). A test may configure
+// the host further.
 internal sealed class ComposedApplication(string role = "all", Action<IWebHostBuilder>? configure = null) : WebApplicationFactory<Program>
 {
     private const string UnusedConnection = "Host=localhost;Database=unused;Username=unused;Password=unused";
@@ -33,6 +36,7 @@ internal sealed class ComposedApplication(string role = "all", Action<IWebHostBu
                 .ToList()
                 .ForEach(check => services.Remove(check));
             services.RemoveAll<IStartupValidator>();
+            services.ConfigureWolverine(options => options.CodeGeneration.TypeLoadMode = TypeLoadMode.Auto);
             if (role != "all")
             {
                 services.DisableAllExternalWolverineTransports();

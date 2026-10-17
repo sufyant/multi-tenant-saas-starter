@@ -7,6 +7,7 @@ using Wolverine;
 
 namespace Api.IntegrationTests.Idempotency;
 
+[RuntimeHandlerCode]
 public sealed class IdempotencyTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -19,7 +20,7 @@ public sealed class IdempotencyTests(Database database)
         await using var api = new ApiFactory(database.ApplicationConnectionString, configureServices: services =>
         {
             services.AddSingleton(failure);
-            services.ConfigureWolverine(options => options.Policies.Add<IdempotencyCommitFailurePolicy>());
+            services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime().Policies.Add<IdempotencyCommitFailurePolicy>());
         });
         var client = api.CreateClient(await new Catalog(database).AddSystemAdminAsync(), secondFactor: true);
         var slug = $"rollback-{Guid.NewGuid():N}";

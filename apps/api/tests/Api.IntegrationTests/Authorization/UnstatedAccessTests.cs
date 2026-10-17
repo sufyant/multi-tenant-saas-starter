@@ -3,6 +3,7 @@ using System.Net;
 namespace Api.IntegrationTests.Authorization;
 
 // A5: an endpoint that states no access is refused at run time, never opened.
+[RuntimeHandlerCode]
 public sealed class UnstatedAccessTests : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

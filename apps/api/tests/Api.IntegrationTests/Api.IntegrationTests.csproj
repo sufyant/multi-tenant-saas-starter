@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Section 9, rule 8. The slowest test takes 13 s. xUnit reports a test that runs for 60 s into the diagnostic log. A run in which
+    <!-- Section 9, rule 8. The slowest test takes about 20 s. xUnit reports a test that runs for 60 s into the diagnostic log. A run in which
          no test ends for 3 minutes is hung: the platform writes a dump of the test process and the tests in progress to the
          results directory, then ends the run. Under Microsoft.Testing.Platform, xUnit ignores longRunningTestSeconds in
          xunit.runner.json, so the options are here. -->
@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="WolverineFx.RuntimeCompilation" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 

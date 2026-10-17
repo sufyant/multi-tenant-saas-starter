@@ -3,6 +3,7 @@ using System.Net;
 namespace Api.IntegrationTests.Admin;
 
 // The system door is a separate route group with its own authorization, and needs a second factor.
+[RuntimeHandlerCode]
 public sealed class AdminRoutesTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

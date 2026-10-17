@@ -117,6 +117,7 @@ internal sealed class ApiFactory(
         var start = host.StartAsync();
         _factoryWaits.SetResult();
         start.GetAwaiter().GetResult();
+        RuntimeHandlerCode.AssertTheCommittedCodeHoldsEveryFrame(host.Services);
         return host;
     }
 
