@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetUser"];
+        put?: never;
+        post?: never;
+        delete: operations["DeleteUser"];
+        options?: never;
+        head?: never;
+        patch: operations["RenameUser"];
+        trace?: never;
+    };
     "/v1/platform/users/{userId}/suspend": {
         parameters: {
             query?: never;
@@ -162,22 +178,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/v1/platform/users/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["DeleteUser"];
-        options?: never;
-        head?: never;
-        patch: operations["RenameUser"];
         trace?: never;
     };
     "/v1/platform/audit-log": {
@@ -356,6 +356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/invitations/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GetInvitationPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -457,9 +473,32 @@ export interface components {
          * @enum {string}
          */
         FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid";
+        /** @description The invitation code from the invitation link. */
+        GetInvitationPreviewRequest: {
+            code: string;
+        };
         /**
-         * @description A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited, and when
-         *     it was created and expires. The screen shows an expired invitation from its expiry.
+         * @description What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
+         *     gives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request. Only a caller with
+         *     the invited address gets it.
+         */
+        InvitationPreviewResponse: {
+            tenantName: string;
+            inviterName: components["schemas"]["InviterNameResponse"];
+            role: string;
+            /** Format: date-time */
+            expiresAt: string;
+            state: components["schemas"]["InvitationPreviewResponseState"];
+        };
+        /**
+         * @description The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
+         *     (revoked, replaced, or cancelled with its tenant).
+         * @enum {unknown}
+         */
+        InvitationPreviewResponseState: "pending" | "expired" | "accepted" | "cancelled";
+        /**
+         * @description A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their
+         *     names as the catalog holds them now, and when it was created and expires. The screen shows an expired invitation from its expiry.
          */
         InvitationResponse: {
             /** Format: uuid */
@@ -468,6 +507,7 @@ export interface components {
             role: string;
             /** Format: uuid */
             invitedBy: string;
+            invitedByName: components["schemas"]["UserNameResponse"];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -490,6 +530,21 @@ export interface components {
             email: string;
             language?: null | components["schemas"]["Language"];
         };
+        /**
+         * @description Who invited: a user, with the names the catalog holds now and `deleted` for a user a system admin deleted, or the platform,
+         *     with no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do.
+         */
+        InviterNameResponse: {
+            kind: components["schemas"]["InviterNameResponseKind"];
+            firstName: null | string;
+            lastName: null | string;
+            deleted: null | boolean;
+        };
+        /**
+         * @description Who invited: a user of the tenant, or the platform, for which a system admin acted.
+         * @enum {unknown}
+         */
+        InviterNameResponseKind: "user" | "platform";
         JsonElement: unknown;
         /**
          * @description A language the web speaks, by its BCP 47 language tag.
@@ -542,9 +597,9 @@ export interface components {
             total?: number | string;
         };
         /**
-         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, and whether the
-         *     identity provider deleted the user. A deleted user has an empty email address and empty names, and the screen shows "Deleted user",
-         *     as the audit logs say `deleted` (K3).
+         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, whether the
+         *     identity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
+         *     the screen shows "Deleted user", as the audit logs say `deleted` (K3).
          */
         MemberResponse: {
             /** Format: uuid */
@@ -554,6 +609,8 @@ export interface components {
             lastName: null | string;
             role: string;
             deleted: boolean;
+            /** Format: date-time */
+            joinedAt: string;
         };
         /**
          * @description A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
@@ -576,8 +633,25 @@ export interface components {
             timeZone: null | string;
         };
         /**
-         * @description A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a
-         *     member reads by its id. Its status is active, or suspended when its members cannot enter it.
+         * @description The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
+         *     permissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every
+         *     endpoint still checks the permission itself.
+         */
+        MyTenantDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            status: components["schemas"]["MyTenantResponseStatus"];
+            role: string;
+            permissions: string[];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /**
+         * @description A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
+         *     active, or suspended or closed when its members cannot enter it. The role is the user's there: `owner`, `admin` or
+         *     `member`.
          */
         MyTenantResponse: {
             /** Format: uuid */
@@ -585,6 +659,7 @@ export interface components {
             name: string;
             slug: string;
             status: components["schemas"]["MyTenantResponseStatus"];
+            role: string;
         };
         /**
          * @description The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.
@@ -707,8 +782,59 @@ export interface components {
          */
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
+         * @description One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
+         *     (null when the user is not suspended, or was suspended before step 20l), and every membership by the organisation's name.
+         */
+        UserDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            email: null | string;
+            firstName: null | string;
+            lastName: null | string;
+            status: components["schemas"]["UserResponseStatus"];
+            isSystemAdmin: boolean;
+            /** Format: int32 */
+            membershipCount: number | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            suspendedAt: null | string;
+            suspendedBy: null | components["schemas"]["UserNameResponse"];
+            memberships: components["schemas"]["UserMembershipResponse"][];
+        };
+        /**
+         * @description An organisation the user is a member of: its id, name, slug and status, the user's role there (`owner`, `admin` or
+         *     `member`), when they joined, and whether they are its only Owner. The suspend dialog warns with `soleOwner`, and the delete
+         *     refusal names those organisations.
+         */
+        UserMembershipResponse: {
+            /** Format: uuid */
+            tenantId: string;
+            tenantName: string;
+            tenantSlug: string;
+            tenantStatus: components["schemas"]["UserMembershipResponseTenantStatus"];
+            role: string;
+            /** Format: date-time */
+            joinedAt: string;
+            soleOwner: boolean;
+        };
+        /**
+         * @description The status of an organisation a user is a member of: active, or suspended or closed when its members cannot enter it.
+         * @enum {unknown}
+         */
+        UserMembershipResponseTenantStatus: "active" | "suspended" | "closed";
+        /**
+         * @description A user's names as the catalog holds them now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
+         *     names and `deleted`, and the screen shows "Deleted user". It holds no email address.
+         */
+        UserNameResponse: {
+            firstName: null | string;
+            lastName: null | string;
+            deleted: boolean;
+        };
+        /**
          * @description A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or
-         *     deleted) and whether they are a system admin.
+         *     deleted), whether they are a system admin, how many organisations they are a member of, and when they joined the catalog.
          */
         UserResponse: {
             /** Format: uuid */
@@ -718,6 +844,10 @@ export interface components {
             lastName: null | string;
             status: components["schemas"]["UserResponseStatus"];
             isSystemAdmin: boolean;
+            /** Format: int32 */
+            membershipCount: number | string;
+            /** Format: date-time */
+            createdAt: string;
         };
         /**
          * @description The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs.
@@ -1609,7 +1739,7 @@ export interface operations {
             };
         };
     };
-    SuspendUser: {
+    GetUser: {
         parameters: {
             query?: never;
             header?: never;
@@ -1626,92 +1756,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-        };
-    };
-    ReactivateUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
+                    "application/json": components["schemas"]["UserDetailResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1951,6 +1996,176 @@ export interface operations {
             };
         };
     };
+    SuspendUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListPlatformAuditEntries: {
         parameters: {
             query?: {
@@ -2055,7 +2270,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MyTenantResponse"];
+                    "application/json": components["schemas"]["MyTenantDetailResponse"];
                 };
             };
             /** @description Bad Request */
@@ -3020,6 +3235,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyTenantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetInvitationPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GetInvitationPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationPreviewResponse"];
                 };
             };
             /** @description Bad Request */

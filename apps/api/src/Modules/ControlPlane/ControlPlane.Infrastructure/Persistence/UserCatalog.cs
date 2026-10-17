@@ -51,6 +51,33 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
             .ToListAsync(cancellationToken);
     }
 
+    // The tenants table is not under row level security (R6), so the one query joins each membership's tenant and role. The tenant's
+    // summary counts its Owners (R12): a user who holds the Owner role in a tenant with one Owner is its only Owner.
+    async Task<IReadOnlyList<UserMembershipDetails>> IUserCatalog.ListMembershipDetailsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        var memberships = await (
+                from membership in controlPlane.Memberships
+                join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
+                join role in controlPlane.Roles on membership.RoleId equals role.Id
+                orderby tenant.Name, tenant.Id
+                select new { tenant.Id, tenant.Name, tenant.Slug, tenant.Status, role.BuiltIn, membership.JoinedAt, tenant.OwnerCount })
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return
+        [
+            .. memberships.Select(membership => new UserMembershipDetails(
+                membership.Id,
+                membership.Name,
+                membership.Slug,
+                membership.Status.ToString(),
+                Role.NameOf(membership.BuiltIn),
+                membership.JoinedAt,
+                membership.BuiltIn == BuiltInRole.Owner && membership.OwnerCount == 1)),
+        ];
+    }
+
     Task<User?> IUserCatalog.FindUserAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.Users.AsNoTracking().SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
 

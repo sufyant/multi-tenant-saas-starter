@@ -28,7 +28,9 @@ public sealed class UserRenameTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameUser_NewNames_AnswersTheUserWithThemAndRecordsTheChange()
     {
-        var user = await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Byron");
+        var created = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
+        var user = await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Byron", createdAt: created);
+        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
         var id = await _catalog.UserIdOfAsync(user);
         var admin = await _catalog.AddSystemAdminAsync();
 
@@ -37,6 +39,7 @@ public sealed class UserRenameTests(Database database) : IAsyncLifetime
         renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await renamed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (body.GetProperty("firstName").GetString(), body.GetProperty("lastName").GetString()).ShouldBe(("Ada", "Lovelace"));
+        (body.GetProperty("membershipCount").GetInt32(), body.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((1, created));
         (await _catalog.UserOfAsync(user)).ShouldSatisfyAllConditions(
             stored => stored.FirstName.ShouldBe("Ada"),
             stored => stored.LastName.ShouldBe("Lovelace"));

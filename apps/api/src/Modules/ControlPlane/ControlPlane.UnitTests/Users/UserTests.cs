@@ -7,12 +7,58 @@ public class UserTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
 
+    private static readonly Guid AdminId = new("0199a8f0-0000-7000-8000-000000000901");
+
+    private static readonly Guid OtherAdminId = new("0199a8f0-0000-7000-8000-000000000902");
+
+    // The user detail names the system admin who suspended the user.
+    [Fact]
+    public void SuspendUser_ByASystemAdmin_KeepsWhoSuspendedThem()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+
+        user.Suspend(Now, AdminId);
+
+        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, AdminId));
+    }
+
+    [Fact]
+    public void SuspendUser_TwiceByTwoSystemAdmins_KeepsTheFirst()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, AdminId);
+
+        user.Suspend(Now.AddHours(1), OtherAdminId);
+
+        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, AdminId));
+    }
+
+    [Fact]
+    public void ReactivateUser_Suspended_ForgetsWhoSuspendedThem()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, AdminId);
+
+        user.Reactivate();
+
+        user.SuspendedBy.ShouldBeNull();
+    }
+
+    // A person who joins through an invitation is created at that moment, and is the member of the tenant they join.
+    [Fact]
+    public void JoinUser_NewPerson_IsCreatedAtTheMomentWithOneMembership()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+
+        (user.CreatedAt, user.MembershipCount).ShouldBe((Now, 1));
+    }
+
     [Fact]
     public void SuspendUser_Active_IsSuspendedFromThatTime()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        user.Suspend(Now);
+        user.Suspend(Now, AdminId);
 
         user.SuspendedAt.ShouldBe(Now);
     }
@@ -22,9 +68,9 @@ public class UserTests
     public void SuspendUser_Twice_KeepsTheFirstTime()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now);
+        user.Suspend(Now, AdminId);
 
-        user.Suspend(Now.AddHours(1));
+        user.Suspend(Now.AddHours(1), AdminId);
 
         user.SuspendedAt.ShouldBe(Now);
     }
@@ -33,7 +79,7 @@ public class UserTests
     public void ReactivateUser_Suspended_IsNoLongerSuspended()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now);
+        user.Suspend(Now, AdminId);
 
         user.Reactivate();
 
@@ -46,8 +92,8 @@ public class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        var first = user.Suspend(Now);
-        var second = user.Suspend(Now.AddHours(1));
+        var first = user.Suspend(Now, AdminId);
+        var second = user.Suspend(Now.AddHours(1), AdminId);
 
         (first, second).ShouldBe((true, false));
     }
@@ -56,7 +102,7 @@ public class UserTests
     public void ReactivateUser_NotSuspended_ChangesNothing()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now);
+        user.Suspend(Now, AdminId);
 
         var first = user.Reactivate();
         var second = user.Reactivate();
@@ -67,7 +113,7 @@ public class UserTests
     [Fact]
     public void JoinUser_NamesWithSpaces_KeepsThemTrimmed()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "  Ada ", " Lovelace  ", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "  Ada ", " Lovelace  ", Language.En, Now);
 
         (user.Email, user.FirstName, user.LastName).ShouldBe(("ada@example.com", "Ada", "Lovelace"));
     }
@@ -75,7 +121,7 @@ public class UserTests
     [Fact]
     public void RenameUser_AnotherName_IsAChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
 
         var changed = user.Rename("Ada", "King");
 
@@ -87,7 +133,7 @@ public class UserTests
     [Fact]
     public void RenameUser_SameNamesWithSpaces_IsNoChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
 
         var changed = user.Rename(" Ada ", "Lovelace ");
 
@@ -98,7 +144,7 @@ public class UserTests
     [Fact]
     public void RenameUser_Deleted_IsRefusedAndStaysErased()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
         user.Delete(Now);
 
         var renamed = user.Rename("Ada", "King");
@@ -123,7 +169,7 @@ public class UserTests
     [Fact]
     public void JoinUser_ThroughATurkishInvitation_SpeaksTurkishWithNoTimeZone()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.Tr);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.Tr, Now);
 
         (user.Language, user.TimeZone).ShouldBe((Language.Tr, null));
     }
@@ -131,7 +177,7 @@ public class UserTests
     [Fact]
     public void ChangePreferences_NewValues_IsAChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
 
         var changed = user.ChangePreferences(Language.Ar, "Asia/Dubai");
 
@@ -143,7 +189,7 @@ public class UserTests
     [Fact]
     public void ChangePreferences_TheValuesTheUserHas_IsNoChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.Tr);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.Tr, Now);
         user.ChangePreferences(Language.Tr, "Europe/Istanbul");
 
         var changed = user.ChangePreferences(Language.Tr, "Europe/Istanbul");
@@ -155,7 +201,7 @@ public class UserTests
     [Fact]
     public void ChangePreferences_NoTimeZone_ClearsIt()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
         user.ChangePreferences(Language.En, "Europe/Dublin");
 
         var changed = user.ChangePreferences(Language.En, null);
@@ -168,7 +214,7 @@ public class UserTests
     [Fact]
     public void ChangePreferences_Deleted_IsForbiddenAndChangesNothing()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
         user.Delete(Now);
 
         var changed = user.ChangePreferences(Language.Tr, "Europe/Istanbul");
@@ -181,7 +227,7 @@ public class UserTests
     [Fact]
     public void DeleteUser_WithATimeZone_ErasesIt()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
         user.ChangePreferences(Language.En, "Europe/London");
 
         user.Delete(Now);

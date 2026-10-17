@@ -37,6 +37,31 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
+    // A membership exists only in a tenant past its creation's pivot (section 6).
+    public static UserMembershipResponseTenantStatus OfUserMembership(string status) => status switch
+    {
+        "Active" => UserMembershipResponseTenantStatus.Active,
+        "Suspended" => UserMembershipResponseTenantStatus.Suspended,
+        "Closed" => UserMembershipResponseTenantStatus.Closed,
+        _ => throw Unknown(status),
+    };
+
+    public static InvitationPreviewResponseState OfInvitationPreview(string state) => state switch
+    {
+        "Pending" => InvitationPreviewResponseState.Pending,
+        "Expired" => InvitationPreviewResponseState.Expired,
+        "Accepted" => InvitationPreviewResponseState.Accepted,
+        "Cancelled" => InvitationPreviewResponseState.Cancelled,
+        _ => throw Unknown(state),
+    };
+
+    public static InviterNameResponseKind OfInviter(string kind) => kind switch
+    {
+        "User" => InviterNameResponseKind.User,
+        "Platform" => InviterNameResponseKind.Platform,
+        _ => throw Unknown(kind),
+    };
+
     public static OwnerInvitationResponseState OfOwnerInvitation(string state) => state switch
     {
         "Pending" => OwnerInvitationResponseState.Pending,

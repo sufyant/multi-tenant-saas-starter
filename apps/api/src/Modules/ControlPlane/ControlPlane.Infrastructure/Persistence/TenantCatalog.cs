@@ -135,7 +135,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
 
     // Row level security keeps the list to the active tenant; the query names no tenant. The users table is not under row level security
     // (R6), so the query starts from the memberships and joins each member's user: a user of another tenant never enters it.
-    async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted)>> ITenantCatalog.ListMembersAsync(
+    async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted, DateTimeOffset JoinedAt)>> ITenantCatalog.ListMembersAsync(
         ListRequest<ListMembersSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken)
@@ -144,7 +144,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             from membership in Memberships
             join memberRole in controlPlane.Roles on membership.RoleId equals memberRole.Id
             join user in controlPlane.Users on membership.UserId equals user.Id
-            select new { membership.UserId, user.Email, user.FirstName, user.LastName, memberRole.BuiltIn, Deleted = user.DeletedAt != null };
+            select new { membership.UserId, user.Email, user.FirstName, user.LastName, memberRole.BuiltIn, Deleted = user.DeletedAt != null, membership.JoinedAt };
         if (role is { } wanted)
         {
             members = members.Where(member => member.BuiltIn == wanted);
@@ -175,7 +175,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .Take(list.Paging.PageSize)
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn, member.Deleted))], list.Paging, total);
+        return new([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn, member.Deleted, member.JoinedAt))], list.Paging, total);
     }
 
     // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level
@@ -211,8 +211,9 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     }
 
     // Row level security keeps the list to the active tenant; the query names no tenant. Two pending invitations never share an address,
-    // so only the expiry can tie, and the id breaks every tie (K5).
-    async Task<ListPage<Invitation>> ITenantCatalog.ListPendingInvitationsAsync(
+    // so only the expiry can tie, and the id breaks every tie (K5). The users table is not under row level security (R6): the page joins
+    // each inviter's user in the same query, so their names are read with the page, with no query for each invitation.
+    async Task<ListPage<(Invitation Invitation, User Inviter)>> ITenantCatalog.ListPendingInvitationsAsync(
         ListRequest<ListInvitationsSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken)
@@ -240,11 +241,16 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
             .ThenBy(invitation => invitation.Id)
             .Skip(list.Paging.Skip)
             .Take(list.Paging.PageSize)
+            .Join(controlPlane.Users, invitation => invitation.InvitedBy, user => user.Id, (invitation, user) => new { Invitation = invitation, Inviter = user })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new ListPage<Invitation>(page, list.Paging, total);
+        return new([.. page.Select(row => (row.Invitation, row.Inviter))], list.Paging, total);
     }
+
+    // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none.
+    Task<Invitation?> ITenantCatalog.FindInvitationAsync(string tokenHash, CancellationToken cancellationToken) =>
+        Invitations.AsNoTracking().SingleOrDefaultAsync(invitation => invitation.TokenHash == tokenHash, cancellationToken);
 
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken)
     {
@@ -267,13 +273,25 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<User?> ITenantCatalog.FindUserAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.Users.SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
 
-    async Task<User?> ITenantCatalog.FindUserForShareAsync(string externalUserId, CancellationToken cancellationToken)
+    // FOR NO KEY UPDATE: the lock an update of the row takes. It waits for a deletion's FOR UPDATE, and it lets a membership that
+    // references the user be inserted, which takes FOR KEY SHARE.
+    async Task<User?> ITenantCatalog.FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Users
-            .FromSql($"SELECT * FROM control_plane.users WHERE external_id = {externalUserId} FOR SHARE")
+            .FromSql($"SELECT * FROM control_plane.users WHERE external_id = {externalUserId} FOR NO KEY UPDATE")
             .ToListAsync(cancellationToken);
 
         return found.SingleOrDefault();
+    }
+
+    // The database adds the change to the stored count, so the statement reads and writes the row under its own lock: two transactions of
+    // two tenants that count for one user run one after the other, and neither loses the other's change.
+    async Task ITenantCatalog.CountMembershipAsync(Guid userId, int change, CancellationToken cancellationToken)
+    {
+        await controlPlane.SaveChangesAsync(cancellationToken);
+        await controlPlane.Database.ExecuteSqlAsync(
+            $"UPDATE control_plane.users SET membership_count = membership_count + {change} WHERE id = {userId}",
+            cancellationToken);
     }
 
     Task<User?> ITenantCatalog.FindUserAsync(Guid userId, CancellationToken cancellationToken) =>
@@ -292,7 +310,10 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     {
         var added = OfActiveTenant(tenant, tenant.Id);
         var inserted = await controlPlane.Database.ExecuteSqlAsync(
-            $"INSERT INTO control_plane.tenants (id, name, slug, status) VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}) ON CONFLICT (slug) DO NOTHING",
+            $"""
+            INSERT INTO control_plane.tenants (id, name, slug, status, created_at)
+            VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
+            """,
             cancellationToken);
 
         return inserted == 1;

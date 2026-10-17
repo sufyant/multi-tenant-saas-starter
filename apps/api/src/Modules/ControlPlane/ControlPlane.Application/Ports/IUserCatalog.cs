@@ -27,6 +27,13 @@ public interface IUserCatalog
     /// </summary>
     internal Task<IReadOnlyList<UserMembership>> ListMembershipsAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The user's memberships in every tenant, by the tenant's name, then id, in one query. It declares the user in the transaction (R11),
+    /// so the own_memberships policy decides what is seen; the transaction then declares no tenant (R4). Whether the user is a tenant's
+    /// only Owner comes from the tenant's summary (R12), because the policy shows the user's own memberships only.
+    /// </summary>
+    internal Task<IReadOnlyList<UserMembershipDetails>> ListMembershipDetailsAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>The user with this identity provider id, without a lock, for a read.</summary>
     internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
 

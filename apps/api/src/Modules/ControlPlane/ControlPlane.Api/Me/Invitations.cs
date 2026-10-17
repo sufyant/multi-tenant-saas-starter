@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application;
 using ControlPlane.Application.Invitations;
@@ -20,8 +21,12 @@ public static class Invitations
     /// </summary>
     public const string AcceptRateLimit = "invitation-accept";
 
-    public static void Map(RouteGroupBuilder me) =>
+    // The preview costs a call to the identity provider for a guessed code too, so it shares the stricter limit of accepting.
+    public static void Map(RouteGroupBuilder me)
+    {
         me.MapPost("/invitations/accept", AcceptInvitation).RequireRateLimiting(AcceptRateLimit);
+        me.MapPost("/invitations/preview", GetInvitationPreview).RequireRateLimiting(AcceptRateLimit);
+    }
 
     // Accepting starts outside any tenant. The invitation code names the tenant, which is declared before the invitation is looked up
     // by its secret, so a wrong tenant, a wrong secret and a malformed code all answer the same 404; a request without a code, or with
@@ -49,7 +54,45 @@ public static class Invitations
             code.TenantId.ToString(),
             new AcceptInvitation(code.Secret, user.Id(), verifiedEmails, request.FirstName, request.LastName),
             cancellationToken);
-        return accepted.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status)));
+        return accepted.Map(MyTenants.ToResponse);
+    }
+
+    // The accept screen before the person accepts. The code is the invitation's secret, so it travels in the body, never in the URL,
+    // which access logs, the browser's history and the Referer header keep; the endpoint is a POST for that reason, and it changes
+    // nothing. It reads the invitation as accepting does: the code's tenant is declared, then the invitation is found by the hash of the
+    // secret (W3, T2), with the same answers for a missing, an unknown and a malformed code.
+    private static async Task<Result<InvitationPreviewResponse>> GetInvitationPreview(
+        GetInvitationPreviewRequest request,
+        ClaimsPrincipal user,
+        IIdentityProvider identity,
+        IMessageBus bus,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Code))
+        {
+            return Errors.InvitationCodeRequired;
+        }
+
+        if (InvitationCode.Parse(request.Code) is not { } code)
+        {
+            return Errors.InvitationNotFound;
+        }
+
+        var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
+        var preview = await bus.InvokeForTenantAsync<Result<InvitationPreview>>(
+            code.TenantId.ToString(),
+            new GetInvitationPreview(code.Secret, verifiedEmails),
+            cancellationToken);
+        return preview.Map(found => new InvitationPreviewResponse(
+            found.TenantName,
+            new InviterNameResponse(
+                ResponseStatus.OfInviter(found.Inviter.Kind),
+                found.Inviter.Name?.FirstName,
+                found.Inviter.Name?.LastName,
+                found.Inviter.Name?.Deleted),
+            found.Role,
+            found.ExpiresAt,
+            ResponseStatus.OfInvitationPreview(found.State)));
     }
 }
 
@@ -58,3 +101,55 @@ public static class Invitations
 /// trimmed. A user the catalog knows sends none.
 /// </summary>
 public sealed record AcceptInvitationRequest(string Code, string? FirstName = null, string? LastName = null);
+
+/// <summary>The invitation code from the invitation link.</summary>
+public sealed record GetInvitationPreviewRequest(string Code);
+
+/// <summary>
+/// What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
+/// gives (<c>owner</c>, <c>admin</c> or <c>member</c>), when it expires, and its state at the moment of the request. Only a caller with
+/// the invited address gets it.
+/// </summary>
+public sealed record InvitationPreviewResponse(
+    string TenantName,
+    InviterNameResponse InviterName,
+    string Role,
+    DateTimeOffset ExpiresAt,
+    InvitationPreviewResponseState State);
+
+/// <summary>
+/// Who invited: a user, with the names the catalog holds now and <c>deleted</c> for a user a system admin deleted, or the platform,
+/// with no names and no <c>deleted</c>. The screen names the platform from <c>kind</c>, as the audit logs do.
+/// </summary>
+public sealed record InviterNameResponse(InviterNameResponseKind Kind, string? FirstName, string? LastName, bool? Deleted);
+
+/// <summary>Who invited: a user of the tenant, or the platform, for which a system admin acted.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<InviterNameResponseKind>))]
+public enum InviterNameResponseKind
+{
+    [JsonStringEnumMemberName("user")]
+    User,
+
+    [JsonStringEnumMemberName("platform")]
+    Platform,
+}
+
+/// <summary>
+/// The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
+/// (revoked, replaced, or cancelled with its tenant).
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<InvitationPreviewResponseState>))]
+public enum InvitationPreviewResponseState
+{
+    [JsonStringEnumMemberName("pending")]
+    Pending,
+
+    [JsonStringEnumMemberName("expired")]
+    Expired,
+
+    [JsonStringEnumMemberName("accepted")]
+    Accepted,
+
+    [JsonStringEnumMemberName("cancelled")]
+    Cancelled,
+}

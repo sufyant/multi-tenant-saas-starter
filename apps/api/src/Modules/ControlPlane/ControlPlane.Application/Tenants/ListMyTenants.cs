@@ -1,4 +1,6 @@
 using ControlPlane.Application.Ports;
+using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
 namespace ControlPlane.Application.Tenants;
@@ -15,8 +17,14 @@ public enum ListMyTenantsSort
 /// </summary>
 public sealed record ListMyTenants(string UserId, ListRequest<ListMyTenantsSort> List);
 
-/// <summary>A tenant as its members see it: active, or suspended or closed so that they cannot enter it.</summary>
-public sealed record TenantSummary(Guid Id, string Name, string Slug, string Status);
+/// <summary>
+/// A tenant as its members see it: active, or suspended or closed so that they cannot enter it, with the name of the built-in role the
+/// user holds there (<c>owner</c>).
+/// </summary>
+public sealed record TenantSummary(Guid Id, string Name, string Slug, string Status, string Role)
+{
+    internal static TenantSummary Of(Tenant tenant, Role role) => new(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString(), role.Name);
+}
 
 public static class ListMyTenantsHandler
 {
@@ -25,5 +33,5 @@ public static class ListMyTenantsHandler
         IUserTenants tenants,
         CancellationToken cancellationToken) =>
         (await tenants.ListPastCreationAsync(query.UserId, query.List, cancellationToken))
-            .Map(tenant => new TenantSummary(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString()));
+            .Map(found => TenantSummary.Of(found.Tenant, found.Role));
 }

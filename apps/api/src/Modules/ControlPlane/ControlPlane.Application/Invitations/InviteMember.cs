@@ -102,7 +102,7 @@ public static class InviteMemberHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationSummary.Of(invitation),
+            InvitationSummary.Of(invitation, inviter),
             new MemberInvited(
                 Guid.CreateVersion7(now),
                 now,

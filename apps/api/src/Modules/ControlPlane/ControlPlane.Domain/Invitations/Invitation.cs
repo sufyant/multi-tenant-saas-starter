@@ -12,6 +12,10 @@ internal sealed class Invitation : ITenantEntity
 {
     public const int EmailMaxLength = 320;
 
+    // The body holds no address, not even part of one: the person learns only that theirs is not the invited one.
+    private static readonly Error EmailMismatch =
+        Error.Forbidden(ControlPlaneErrorCodes.InvitationEmailMismatch, "The invitation was sent to an email address you have not verified.");
+
     private Invitation(
         Guid id,
         Guid tenantId,
@@ -152,10 +156,26 @@ internal sealed class Invitation : ITenantEntity
             return Error.Conflict(ControlPlaneErrorCodes.InvitationExpired, "The invitation has expired; ask for a new one.");
         }
 
-        return verifiedEmails.Any(email => string.Equals(email.Trim(), Email, StringComparison.OrdinalIgnoreCase))
-            ? Result.Success()
-            : Error.Forbidden(ControlPlaneErrorCodes.InvitationEmailMismatch, "The invitation was sent to an email address you have not verified.");
+        return CheckEmail(verifiedEmails);
     }
+
+    /// <summary>
+    /// Whether one of these verified email addresses is the invited one, compared without case, whatever the invitation's status. The
+    /// preview asks it before anything else, so a holder of the link without the invited address learns nothing more than the email told
+    /// them; the acceptance asks it last, with the same error.
+    /// </summary>
+    public Result CheckEmail(IEnumerable<string> verifiedEmails) =>
+        verifiedEmails.Any(email => string.Equals(email.Trim(), Email, StringComparison.OrdinalIgnoreCase))
+            ? Result.Success()
+            : EmailMismatch;
+
+    /// <summary>The state of the invitation at this moment: a pending invitation is expired from its expiry on.</summary>
+    public InvitationState StateAt(DateTimeOffset now) => Status switch
+    {
+        InvitationStatus.Pending => now >= ExpiresAt ? InvitationState.Expired : InvitationState.Pending,
+        InvitationStatus.Accepted => InvitationState.Accepted,
+        _ => InvitationState.Cancelled,
+    };
 
     /// <summary>Uses up the invitation for the user, after the same checks as <see cref="CheckAcceptance"/>.</summary>
     public Result Accept(IEnumerable<string> verifiedEmails, Guid userId, DateTimeOffset now)

@@ -74,6 +74,9 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             tenant.HasOne<User>().WithMany().HasForeignKey(t => t.FirstOwnerId).OnDelete(DeleteBehavior.Restrict);
             tenant.Property(t => t.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
             tenant.Property(t => t.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
+
+            // A version that does not know the column inserts a tenant at the moment of its insert.
+            tenant.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<User>(user =>
@@ -88,6 +91,11 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             user.HasIndex(u => u.LastName, "ix_users_last_name_trgm").HasDatabaseName("ix_users_last_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
             user.Property(u => u.Language).HasConversion(LanguageTag).HasMaxLength(LanguageTagMaxLength);
             user.Property(u => u.TimeZone).HasMaxLength(User.TimeZoneMaxLength);
+            user.HasOne<User>().WithMany().HasForeignKey(u => u.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
+
+            // A version that does not know the columns inserts a user at the moment of its insert, with no count (R13).
+            user.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
+            user.Property(u => u.MembershipCount).HasDefaultValue(0);
         });
 
         modelBuilder.Entity<Role>(role =>

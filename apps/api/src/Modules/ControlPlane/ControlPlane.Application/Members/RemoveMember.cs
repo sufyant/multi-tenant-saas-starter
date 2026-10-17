@@ -54,6 +54,7 @@ public static class RemoveMemberHandler
 
         catalog.Remove(target);
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
+        await catalog.CountMembershipAsync(target.UserId, -1, cancellationToken);
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

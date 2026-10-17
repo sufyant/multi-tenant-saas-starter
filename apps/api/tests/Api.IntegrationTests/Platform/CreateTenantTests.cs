@@ -5,6 +5,7 @@ using System.Text.Json;
 using ControlPlane.Application.Ports;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
 namespace Api.IntegrationTests.Platform;
@@ -39,6 +40,22 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("provisioning");
         (await StatusOfAsync(slug)).ShouldBe("Active");
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
+    }
+
+    // Settings › General shows when the organisation was created: the moment of the request, by the module's clock.
+    [Fact]
+    public async Task CreateTenant_Valid_StoresWhenTheTenantWasCreated()
+    {
+        var now = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: new FakeTimeProvider(now));
+        var slug = Slug();
+        var admin = await AdminAsync();
+
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com" }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await database.ScalarAsync<DateTime>($"SELECT created_at FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(now.UtcDateTime);
     }
 
     // Decision 5 of step 20j: without a language, the owner's invitation speaks the system admin's own, and its email does too.

@@ -31,15 +31,21 @@ public static class MyTenants
         }
 
         var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), list.Value), cancellationToken);
-        return tenants.Map(found => found.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status))));
+        return tenants.Map(found => found.Map(ToResponse));
     }
+
+    // Accepting an invitation answers the tenant it joined in the same shape (N7: a response that two audiences answer stays in the
+    // first one's file).
+    internal static MyTenantResponse ToResponse(TenantSummary tenant) =>
+        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), tenant.Role);
 }
 
 /// <summary>
-/// A tenant the signed-in user belongs to: an item of their tenant list, the tenant an invitation made them join, and the tenant a
-/// member reads by its id. Its status is active, or suspended when its members cannot enter it.
+/// A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
+/// active, or suspended or closed when its members cannot enter it. The role is the user's there: <c>owner</c>, <c>admin</c> or
+/// <c>member</c>.
 /// </summary>
-public sealed record MyTenantResponse(Guid Id, string Name, string Slug, MyTenantResponseStatus Status);
+public sealed record MyTenantResponse(Guid Id, string Name, string Slug, MyTenantResponseStatus Status, string Role);
 
 /// <summary>The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<MyTenantResponseStatus>))]

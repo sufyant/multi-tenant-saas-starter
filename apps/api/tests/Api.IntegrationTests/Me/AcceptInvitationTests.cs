@@ -37,7 +37,8 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
         var tenant = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status"], ignoreOrder: true);
+        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
+        tenant.GetProperty("role").GetString().ShouldBe("owner");
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);
@@ -109,6 +110,38 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(accepted)).ShouldBe("user.deleted");
         (await MembersAsync(slug)).ShouldBe(0);
+    }
+
+    // K6, R13: one known user accepts invitations of two tenants at once. Each acceptance counts the membership on the user's row, so each
+    // takes the row's update lock first, and they run one after the other. With a share lock, both would hold the row and then both wait
+    // to update it: a deadlock, and one acceptance would fail. A holder keeps the row until both acceptances wait behind it.
+    [Fact]
+    public async Task AcceptInvitation_OneKnownUserIntoTwoTenantsAtOnce_JoinsBothAndCountsTwo()
+    {
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var (firstSecret, secondSecret) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
+        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace");
+        _api.Identity.AddAccount(known, email);
+        var first = await _catalog.AddTenantAsync();
+        var second = await _catalog.AddTenantAsync();
+        await _catalog.AddInvitationAsync(first.Id, email, secret: firstSecret);
+        await _catalog.AddInvitationAsync(second.Id, email, secret: secondSecret);
+        await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
+        await holder.OpenAsync(Cancellation);
+        await using var holding = await holder.BeginTransactionAsync(Cancellation);
+        await using var hold = new NpgsqlCommand($"SELECT 1 FROM control_plane.users WHERE external_id = '{known}' FOR UPDATE", holder, holding);
+        await hold.ExecuteScalarAsync(Cancellation);
+
+        var accepting = Task.WhenAll(
+            AcceptAsync(known, Catalog.InvitationCodeOf(first.Id, firstSecret)),
+            AcceptAsync(known, Catalog.InvitationCodeOf(second.Id, secondSecret)));
+        await Waiting.UntilAsync(async () => accepting.IsCompleted || await WaitingBehindAsync(holder.ProcessID) == 2);
+        await holding.CommitAsync(Cancellation);
+        var accepted = await accepting;
+
+        accepted.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
+        (await _catalog.StoredMembershipCountOfAsync(known)).ShouldBe(2);
+        (await _catalog.CountedMembershipsOfAsync(known)).ShouldBe(2);
     }
 
     // A7: a new catalog user gets the invited address, which the identity provider verified, and the names the person typed, without the
@@ -524,6 +557,17 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     private Task<long> MembersAsync(string slug) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id WHERE tenants.slug = '{slug}'");
+
+    // How many other sessions wait behind the holder's session: for a lock it holds, or for a session that waits behind it. A second
+    // waiter for one row waits for the first waiter, which holds the row's place in the queue.
+    private Task<long> WaitingBehindAsync(int holder) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"""
+            WITH RECURSIVE behind (pid) AS (
+                SELECT pid FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))
+                UNION SELECT waiting.pid FROM pg_stat_activity AS waiting JOIN behind ON behind.pid = ANY(pg_blocking_pids(waiting.pid)))
+            SELECT count(*) FROM behind
+            """);
 
     // Whether another session waits for a lock that the holder's session holds.
     private async Task<bool> IsBlockingAsync(int holder) =>

@@ -243,6 +243,61 @@ public class InvitationTests
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
+    // The accept screen says which: a pending invitation is expired from the moment of its expiry, read when it is asked, never stored.
+    [Fact]
+    public void PreviewInvitation_PendingBeforeItsExpiry_IsPending()
+    {
+        var invitation = Invite("ada@example.com");
+
+        invitation.StateAt(Now.AddDays(7).AddTicks(-1)).ShouldBe(InvitationState.Pending);
+    }
+
+    [Fact]
+    public void PreviewInvitation_PendingAtItsExpiry_IsExpired()
+    {
+        var invitation = Invite("ada@example.com");
+
+        invitation.StateAt(Now.AddDays(7)).ShouldBe(InvitationState.Expired);
+    }
+
+    [Fact]
+    public void PreviewInvitation_AcceptedAfterItsExpiry_IsAccepted()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.Accept(["ada@example.com"], AccepterId, Now);
+
+        invitation.StateAt(Now.AddDays(8)).ShouldBe(InvitationState.Accepted);
+    }
+
+    [Fact]
+    public void PreviewInvitation_CancelledAfterItsExpiry_IsCancelled()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.Cancel();
+
+        invitation.StateAt(Now.AddDays(8)).ShouldBe(InvitationState.Cancelled);
+    }
+
+    // The preview refuses a caller without the invited address before it reads the state, with the error the acceptance gives.
+    [Fact]
+    public void PreviewInvitation_CancelledWithoutTheInvitedEmail_IsRefusedAsTheAcceptanceIs()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.Cancel();
+
+        var allowed = invitation.CheckEmail(["grace@example.com"]);
+
+        allowed.Error.ShouldBe(Invite("ada@example.com").CheckAcceptance(["grace@example.com"], Now).Error);
+    }
+
+    [Fact]
+    public void PreviewInvitation_TheInvitedEmailInAnotherCase_IsAllowed()
+    {
+        var invitation = Invite("Ada@Example.com");
+
+        invitation.CheckEmail(["other@example.com", " ada@example.com "]).IsSuccess.ShouldBeTrue();
+    }
+
     // K1: only an Owner gives the Owner role, so only an Owner invites an Owner.
     [Fact]
     public void InviteMember_AnAdminForTheOwnerRole_IsForbidden()

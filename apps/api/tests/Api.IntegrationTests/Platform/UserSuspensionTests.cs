@@ -34,7 +34,8 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin"], ignoreOrder: true);
+        body.EnumerateObject().Select(field => field.Name)
+            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(id);
         body.GetProperty("firstName").GetString().ShouldBe("Ada");
         body.GetProperty("status").GetString().ShouldBe("suspended");
@@ -82,13 +83,16 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReactivateUser_SuspendedUser_IsActiveAgain()
     {
-        var user = await _catalog.AddUserAsync();
+        var created = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
+        var user = await _catalog.AddUserAsync(createdAt: created);
         await _catalog.SuspendUserAsync(user);
 
         var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (body.GetProperty("status").GetString(), body.GetProperty("membershipCount").GetInt32(), body.GetProperty("createdAt").GetDateTimeOffset())
+            .ShouldBe(("active", 0, created));
         (await SuspendedAtAsync(user)).ShouldBeNull();
     }
 

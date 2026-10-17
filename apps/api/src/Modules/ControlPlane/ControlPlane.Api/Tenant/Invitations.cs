@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -71,8 +72,17 @@ public static class Invitations
         await bus.InvokeAsync<Result>(new RevokeInvitation(user.Id(), invitationId), cancellationToken);
 
     // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
-    internal static InvitationResponse ToResponse(InvitationSummary invitation) =>
-        new(invitation.Id, invitation.Email, invitation.Role, invitation.InvitedBy, invitation.CreatedAt, invitation.ExpiresAt);
+    internal static InvitationResponse ToResponse(InvitationSummary invitation) => new(
+        invitation.Id,
+        invitation.Email,
+        invitation.Role,
+        invitation.InvitedBy,
+        ToResponse(invitation.InvitedByName),
+        invitation.CreatedAt,
+        invitation.ExpiresAt);
+
+    // The platform's user detail names the system admin who suspended a user in the same shape (N7).
+    internal static UserNameResponse ToResponse(PersonName name) => new(name.FirstName, name.LastName, name.Deleted);
 }
 
 /// <summary>
@@ -82,7 +92,20 @@ public static class Invitations
 public sealed record InviteMemberRequest(string Email, [property: JsonRequired] MemberRole Role, Language? Language = null);
 
 /// <summary>
-/// A pending invitation: the invited address, its role (<c>owner</c>, <c>admin</c> or <c>member</c>), the catalog user id of the member who invited, and when
-/// it was created and expires. The screen shows an expired invitation from its expiry.
+/// A pending invitation: the invited address, its role (<c>owner</c>, <c>admin</c> or <c>member</c>), the catalog user id of the member who invited and their
+/// names as the catalog holds them now, and when it was created and expires. The screen shows an expired invitation from its expiry.
 /// </summary>
-public sealed record InvitationResponse(Guid Id, string Email, string Role, Guid InvitedBy, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt);
+public sealed record InvitationResponse(
+    Guid Id,
+    string Email,
+    string Role,
+    Guid InvitedBy,
+    UserNameResponse InvitedByName,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset ExpiresAt);
+
+/// <summary>
+/// A user's names as the catalog holds them now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
+/// names and <c>deleted</c>, and the screen shows "Deleted user". It holds no email address.
+/// </summary>
+public sealed record UserNameResponse(string? FirstName, string? LastName, bool Deleted);

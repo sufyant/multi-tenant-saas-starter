@@ -50,7 +50,8 @@ public static class CreateTenantHandler
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
             ?? throw new InvalidOperationException("A system admin is always a catalog user.");
 
-        var tenant = Tenant.Create(catalog.TenantId, command.Name, command.Slug);
+        var now = time.GetUtcNow();
+        var tenant = Tenant.Create(catalog.TenantId, command.Name, command.Slug, now);
         if (!tenant.IsSuccess)
         {
             return (tenant.Error, null, null, null);
@@ -61,7 +62,6 @@ public static class CreateTenantHandler
             return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
         }
 
-        var now = time.GetUtcNow();
         var secret = InvitationToken.Generate();
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now),

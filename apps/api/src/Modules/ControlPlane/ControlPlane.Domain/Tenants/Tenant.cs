@@ -23,12 +23,13 @@ internal sealed class Tenant
 
     private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MembershipLastOwner, "A tenant always has at least one Owner.");
 
-    private Tenant(Guid id, string name, string slug)
+    private Tenant(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
         Id = id;
         Name = name;
         Slug = slug;
         Status = TenantStatus.Provisioning;
+        CreatedAt = createdAt;
     }
 
     public Guid Id { get; private init; }
@@ -40,6 +41,9 @@ internal sealed class Tenant
     public string Slug { get; private init; }
 
     public TenantStatus Status { get; private set; }
+
+    /// <summary>When a system admin created the tenant. A tenant from before step 20l has the moment of that step's migration.</summary>
+    public DateTimeOffset CreatedAt { get; private init; }
 
     /// <summary>Why the tenant creation cancelled the tenant: a fixed code, never the text of an exception.</summary>
     public string? CancellationReason { get; private set; }
@@ -78,7 +82,7 @@ internal sealed class Tenant
     public InvitationStatus? OwnerInvitationStatus { get; private set; }
 
     /// <summary>The name is stored without the spaces around it.</summary>
-    public static Result<Tenant> Create(Guid id, string name, string slug)
+    public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
         if (!IsValidName(trimmed))
@@ -87,7 +91,7 @@ internal sealed class Tenant
         }
 
         return IsUrlSafe(slug)
-            ? new Tenant(id, trimmed, slug)
+            ? new Tenant(id, trimmed, slug, createdAt)
             : Error.Validation(
                 ControlPlaneErrorCodes.TenantSlugInvalid,
                 "A slug is 3 to 63 lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
