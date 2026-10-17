@@ -148,9 +148,7 @@ public sealed class Database : IAsyncLifetime
     // A host's connection string: it names the owner of the host's connections in pg_stat_activity (the kind of host and the test
     // class that started it). A host's data sources are its own, so the name splits none of them. An empty setting stays empty, as a
     // test of a missing setting gives it.
-    // Each pool of a host holds at most 20 connections, or fewer when the test asks for fewer (section 9, rule 7). Uncapped, the
-    // messages pool grows to one connection per durable local queue as the host stops, and a run closes so many connections that macOS
-    // runs out of local ports.
+    // Each pool of a host holds at most 20 connections, or fewer when the test asks for fewer (section 9, rule 7).
     public static string? ForHost(string? connectionString, string host)
     {
         if (connectionString is not { Length: > 0 })
@@ -162,12 +160,10 @@ public sealed class Database : IAsyncLifetime
         {
             ApplicationName = $"{host}:{TestContext.Current.TestClass?.TestClassSimpleName ?? "none"}",
         };
-        connection.MaxPoolSize = Math.Min(connection.MaxPoolSize, HostPoolSize);
+        connection.MaxPoolSize = Math.Min(connection.MaxPoolSize, 20);
 
         return connection.ConnectionString;
     }
-
-    public const int HostPoolSize = 20;
 
     // The start check of a host reads pending migrations through Npgsql's global pool, which belongs to no host and keeps its idle
     // connections for five minutes. With a name per test class that is one pool per class, so the host closes it when it stops.
