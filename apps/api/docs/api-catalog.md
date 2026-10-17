@@ -144,6 +144,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The tenant door answers a stranger with the handlers' own `tenant.not_found`, so its body is the same apart from the trace id (T3, `TenantNotFoundTests`).
 - 401 and 429 are declared on every operation. A test enforces it.
 - A second shape of a resource carries its audience in the name: platform `GetTenant`, member `GetMyTenant`. The platform reads a tenant in three shapes: `TenantResponse` for a command, `TenantListItemResponse` for an item of its list, and `TenantDetailResponse` for one tenant (step 20k).
+- A response field that holds permission names is named `permissions`. It is an array of the one schema `Permission`: every name of the permission catalogue (`Permissions` in ControlPlane.Contracts). Today that is `permissions` of `GetMyTenant`. A test fails for a response field named `permissions` that is not an array of `Permission` (`OpenApiContractTests`).
 - A field that holds a built-in role is the one enum `MemberRole`: `owner`, `admin`, `member`, in lower case as every other enum. A response keeps a role as a string with the same values. Another case (`Owner`), a number or a list of names is a body the endpoint cannot read: 400 `request.invalid` (the maintainer's decision in step 20k).
 - Every list uses one contract: `page`, `pageSize` (50, at most 100), `sort`, `q`, and allowed filters. The answer is `{ items, page, pageSize, total }`. A test enforces it (`ListContractTests`).
 - `page` starts at 1. `pageSize` is 1 to 100, 50 when left out.
