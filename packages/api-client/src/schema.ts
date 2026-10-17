@@ -534,7 +534,7 @@ export interface components {
         /**
          * @description A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
          *     the role an invitation gives, and the role a member is given.
-         * @enum {unknown}
+         * @enum {string}
          */
         MemberRole: "Owner" | "Admin" | "Member";
         /**
