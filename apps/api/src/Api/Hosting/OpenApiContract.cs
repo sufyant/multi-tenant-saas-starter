@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
 using Api.ErrorHandling;
+using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
@@ -12,16 +13,20 @@ namespace Api.Hosting;
 
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
-// sort and filters, the values of an enum with a converter of its own, and the members of the one error schema with the enums of the
-// error codes. They change the document only; the JSON on the wire stays as it is.
+// sort and filters, the values of an enum with a converter of its own, the members of the one error schema with the enums of the
+// error codes, and the enum of the permissions. They change the document only; the JSON on the wire stays as it is.
 internal static class OpenApiContract
 {
+    private const string PermissionSchema = "Permission";
+    private const string PermissionsMember = "permissions";
+
     public static OpenApiOptions DescribeContract(this OpenApiOptions options) =>
         options.AddOperationTransformer(NameOperation)
             .AddOperationTransformer(DeclarePathParameters)
             .AddOperationTransformer(DescribeListParameters)
             .AddSchemaTransformer(DescribeEnumValues)
-            .AddDocumentTransformer(DescribeProblemDetails);
+            .AddDocumentTransformer(DescribeProblemDetails)
+            .AddDocumentTransformer(DescribePermissions);
 
     // N7: an endpoint is a method with the action's name, so the method's name is the operation id.
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
@@ -173,6 +178,37 @@ internal static class OpenApiContract
 
         return [.. codes.Distinct().Order(StringComparer.Ordinal)];
     }
+
+    // The web shows an action only when the member's permissions hold its name (section 6, "What the screens read"). The names are one
+    // enum in the document, every constant of the catalogue (Permissions), so a generated client has a type for them. A response keeps
+    // the names as strings, so each field that holds them, a field named permissions, refers to the enum. OpenApiContractTests checks both.
+    private static Task DescribePermissions(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas is not { } schemas)
+        {
+            return Task.CompletedTask;
+        }
+
+        schemas[PermissionSchema] = EnumSchema(CataloguePermissions, "A permission of the catalogue. Every endpoint checks its own permission.");
+        foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(PermissionsMember) == true))
+        {
+            schema.Properties![PermissionsMember] = new OpenApiSchema
+            {
+                Type = JsonSchemaType.Array,
+                Items = new OpenApiSchemaReference(PermissionSchema, document),
+            };
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static IReadOnlyList<string> CataloguePermissions { get; } =
+    [
+        .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal),
+    ];
 
     private static OpenApiSchema EnumSchema(IReadOnlyList<string> values, string description) =>
         new() { Type = JsonSchemaType.String, Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))], Description = description };
