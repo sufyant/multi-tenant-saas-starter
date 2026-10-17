@@ -52,7 +52,7 @@ public sealed class InvitationDeliveryTests(Database database)
         sent.IdempotencyKey.ShouldBe($"invite/{invitationId}");
         var body = JsonDocument.Parse(sent.Body).RootElement;
         body.GetProperty("to").EnumerateArray().Single().GetString().ShouldBe(email);
-        body.GetProperty("text").GetString()!.ShouldContain($"{ApiFactory.AcceptUrl}?code=");
+        body.GetProperty("text").GetString()!.ShouldContain("https://clerk.test/v1/tickets/accept?ticket=");
     }
 
     // An invitation nobody can receive must not look sent: outside Development a pod that cannot send email does not start.

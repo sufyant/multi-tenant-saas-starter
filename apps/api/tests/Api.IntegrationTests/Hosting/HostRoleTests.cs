@@ -35,6 +35,8 @@ public sealed class HostRoleTests(Database database)
         new(typeof(ActivateTenant), typeof(ActivateTenantHandler)),
         new(typeof(ActivateTenantReply), typeof(TenantCreationSaga)),
         new(typeof(TenantActivated), typeof(RecordTenantCreatedHandler)),
+        new(typeof(OpenOwnerSignUp), typeof(OpenSignUpHandler)),
+        new(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
         new(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)),
         new(typeof(SendInvitationEmailReply), typeof(TenantCreationSaga)),
     ];

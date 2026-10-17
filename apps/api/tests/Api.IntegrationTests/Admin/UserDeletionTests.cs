@@ -55,7 +55,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
     // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's user erases them from every
     // audit table, and the read side, through ControlPlane's contract, gives them no name and marks them deleted. The records stay.
     [Fact]
-    public async Task DeleteUser_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser()
+    public async Task DeleteUser_UserNamedInTheAuditLog_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser()
     {
         var marker = Guid.NewGuid().ToString("N");
         var tenant = await _catalog.AddTenantAsync();

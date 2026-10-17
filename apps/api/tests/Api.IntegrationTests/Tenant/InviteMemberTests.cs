@@ -314,7 +314,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        (await owner.InviteMemberAsync(tenant.Id, NewEmail())).StatusCode.ShouldBe(HttpStatusCode.Created);
+        // The first invitation's sign-up locks the tenant row too, after the commit; it ends before the holder counts its waiters.
+        (await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, NewEmail()))).StatusCode.ShouldBe(HttpStatusCode.Created);
 
         var statuses = await WhileTheTenantIsHeldAsync(
             tenant.Id, () => owner.InviteMemberAsync(tenant.Id, NewEmail()), () => owner.InviteMemberAsync(tenant.Id, NewEmail()));
@@ -375,7 +376,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var sent = _api.Email.Sent.Where(message => message.To == email).ShouldHaveSingleItem();
         sent.IdempotencyKey.ShouldBe($"invite/{invitation}");
         sent.Subject.ShouldContain("Globex Corp");
-        sent.Text.ShouldContain($"{ApiFactory.AcceptUrl}?code=");
+        FakeIdentityProvider.AcceptLinkOf(_api.Email.LinkSentTo(email)).ToString().ShouldStartWith($"{ApiFactory.AcceptUrl}?code=");
         _api.Email.CodeSentFor(invitation).ShouldStartWith($"{tenant.Id}.");
     }
 

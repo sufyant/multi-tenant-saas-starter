@@ -19,7 +19,6 @@ public sealed class HostConfigurationTests(Database database)
         { Environments.Development, ["ConnectionStrings:Database"] },
         { Environments.Development, ["Authentication:Clerk:Issuer"] },
         { Environments.Development, ["ControlPlane:Clerk:SecretKey"] },
-        { Environments.Development, ["ControlPlane:Clerk:WebhookSigningSecret"] },
         { Environments.Development, ["ControlPlane:Invitations:AcceptUrl"] },
         { Environments.Development, ["ControlPlane:FirstSystemAdminEmail"] },
         { Environments.Production, ["Authentication:Clerk:AuthorizedParties:0"] },
@@ -62,7 +61,7 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:FirstSystemAdminEmail", "not an email" },
         { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
-        { "ControlPlane:Clerk:WebhookSigningSecret", "whsec_not base64" },
+        { "ControlPlane:Clerk:RetryDelays:0", "00:00:00" },
         { "ControlPlane:ActivationTimeout", "00:00:00" },
         { "ControlPlane:InvitationEmailTimeout", "-00:00:01" },
         { "ControlPlane:CancellationTimeout", "00:00:00" },
@@ -136,20 +135,6 @@ public sealed class HostConfigurationTests(Database database)
             ports: HostPorts.Free());
 
         var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
-
-        ready.StatusCode.ShouldBe(HttpStatusCode.OK);
-    }
-
-    // A worker serves no API, so it receives no webhook and starts without the webhook's signing secret.
-    [Fact]
-    public async Task StartApplication_WorkerWithoutTheWebhookSigningSecret_Starts()
-    {
-        await using var worker = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application, await database.CreateMigratedDatabaseAsync()),
-            settings: new Dictionary<string, string?> { ["Host:Role"] = "worker", ["ControlPlane:Clerk:WebhookSigningSecret"] = null },
-            ports: HostPorts.Free());
-
-        var ready = await worker.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
 
         ready.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
