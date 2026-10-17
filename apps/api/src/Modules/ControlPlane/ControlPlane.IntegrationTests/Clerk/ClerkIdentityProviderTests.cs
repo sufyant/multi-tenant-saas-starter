@@ -1,16 +1,23 @@
 using System.Net;
 using System.Text;
+using System.Text.Json.Nodes;
 using ControlPlane.Application.Ports;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Time.Testing;
 
 namespace ControlPlane.IntegrationTests.Clerk;
 
 // Clerk's Backend API is a system we do not own; these tests pin down the requests the adapter makes and how it reads the answers.
 public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
 {
+    private static readonly Uri AcceptLink = new("https://app.test/invitations/accept?code=t.s");
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     private readonly StubClerk _clerk = new();
+
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 17, 9, 0, 0, TimeSpan.Zero));
 
     public void Dispose() => _clerk.Dispose();
 
@@ -19,7 +26,7 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     {
         _clerk.Respond("""{"id":"user_1","email_addresses":[]}""");
 
-        await Identity().FindAccountAsync("user_1", Cancellation);
+        await Identity().FindVerifiedEmailsAsync("user_1", Cancellation);
 
         _clerk.Requests.ShouldHaveSingleItem().Authorization.ShouldBe("Bearer sk_test_secret");
     }
@@ -34,27 +41,110 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
               {"email_address":"ada@old.example","verification":null}]}
             """);
 
-        var account = await Identity().FindAccountAsync("user_1", Cancellation);
+        var emails = await Identity().FindVerifiedEmailsAsync("user_1", Cancellation);
 
-        account.VerifiedEmails.ShouldBe(["ada@example.com"]);
+        emails.ShouldBe(["ada@example.com"]);
         _clerk.Requests.ShouldHaveSingleItem().Uri.ShouldBe(new Uri("https://api.clerk.test/v1/users/user_1"));
     }
 
-    // The profile copy takes the address marked primary, not the first in the list, and Clerk's time of the user's last change.
+    // Clerk sends no email and keeps no name: the invitation carries only the address, our accept link and our expiry.
     [Fact]
-    public async Task FindAccount_PrimaryAddressNotFirst_ReturnsThePrimaryInTheProfile()
+    public async Task AllowSignUp_EmailWithoutAccount_CreatesAnInvitationThatSendsNoEmail()
     {
-        _clerk.Respond("""
-            {"id":"user_1","primary_email_address_id":"idn_2","first_name":"Ada","last_name":"Lovelace","updated_at":1760432400123,
-             "email_addresses":[
-              {"id":"idn_1","email_address":"ada@old.example","verification":{"status":"verified"}},
-              {"id":"idn_2","email_address":"ada@example.com","verification":{"status":"verified"}}],
-             "image_url":"https://img.clerk.test/ada.png","phone_numbers":[{"phone_number":"+15550100"}],"public_metadata":{"plan":"x"}}
-            """);
+        _clerk.Respond("[]");
+        _clerk.Respond("""{"object":"invitation","id":"inv_1","email_address":"ada@example.com","status":"pending","url":"https://clerk.test/v1/tickets/accept?ticket=t_1"}""");
 
-        var account = await Identity().FindAccountAsync("user_1", Cancellation);
+        var link = await Identity().AllowSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(7), Cancellation);
 
-        account.Profile.ShouldBe(new UserProfile("ada@example.com", "Ada", "Lovelace", DateTimeOffset.FromUnixTimeMilliseconds(1760432400123)));
+        link.ShouldBe(new SignUpLink(new Uri("https://clerk.test/v1/tickets/accept?ticket=t_1"), "inv_1"));
+        _clerk.Requests.Count.ShouldBe(2);
+        _clerk.Requests[0].Method.ShouldBe(HttpMethod.Get);
+        _clerk.Requests[0].Uri.ShouldBe(new Uri("https://api.clerk.test/v1/users?email_address=ada%40example.com"));
+        _clerk.Requests[1].Method.ShouldBe(HttpMethod.Post);
+        _clerk.Requests[1].Uri.ShouldBe(new Uri("https://api.clerk.test/v1/invitations"));
+        JsonNode.DeepEquals(
+            JsonNode.Parse(_clerk.Requests[1].Body!),
+            JsonNode.Parse("""
+                {"email_address":"ada@example.com","redirect_url":"https://app.test/invitations/accept?code=t.s","notify":false,
+                 "ignore_existing":true,"expires_in_days":7}
+                """)).ShouldBeTrue(_clerk.Requests[1].Body);
+    }
+
+    // A person with an account signs in and accepts; Clerk would refuse an invitation for their address.
+    [Fact]
+    public async Task AllowSignUp_EmailWithAccount_CreatesNoInvitationAndAnswersTheAcceptLink()
+    {
+        _clerk.Respond("""[{"id":"user_1","email_addresses":[]}]""");
+
+        var link = await Identity().AllowSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(7), Cancellation);
+
+        link.ShouldBe(new SignUpLink(AcceptLink, null));
+        _clerk.Requests.ShouldHaveSingleItem().Method.ShouldBe(HttpMethod.Get);
+    }
+
+    // Clerk counts an invitation's life in whole days. The link must not die before our invitation, so a part of a day counts as a day.
+    [Theory]
+    [InlineData(6.5, 7)]
+    [InlineData(0.1, 1)]
+    [InlineData(-1, 1)]
+    [InlineData(400, 365)]
+    public async Task AllowSignUp_Expiry_IsInWholeDaysRoundedUpWithinClerksRange(double daysLeft, int expected)
+    {
+        _clerk.Respond("[]");
+        _clerk.Respond("""{"id":"inv_1","url":"https://clerk.test/v1/tickets/accept?ticket=t_1"}""");
+
+        await Identity().AllowSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(daysLeft), Cancellation);
+
+        JsonNode.Parse(_clerk.Requests[1].Body!)!["expires_in_days"]!.GetValue<int>().ShouldBe(expected);
+    }
+
+    [Fact]
+    public async Task WithdrawSignUp_PendingInvitation_RevokesIt()
+    {
+        _clerk.Respond("""{"id":"inv_1","status":"revoked","revoked":true}""");
+
+        await Identity().WithdrawSignUpAsync("inv_1", Cancellation);
+
+        var request = _clerk.Requests.ShouldHaveSingleItem();
+        request.Method.ShouldBe(HttpMethod.Post);
+        request.Uri.ShouldBe(new Uri("https://api.clerk.test/v1/invitations/inv_1/revoke"));
+    }
+
+    // Clerk revokes only a pending invitation: one already accepted, revoked or expired answers 400, and an unknown one 404. Either way
+    // nobody can sign up with it any more.
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    public async Task WithdrawSignUp_InvitationNoLongerPending_IsDone(HttpStatusCode status)
+    {
+        _clerk.Respond("""{"errors":[{"code":"invitation_not_pending"}]}""", status);
+
+        await Identity().WithdrawSignUpAsync("inv_1", Cancellation);
+
+        _clerk.Requests.ShouldHaveSingleItem();
+    }
+
+    [Fact]
+    public async Task DeleteUser_KnownUser_DeletesIt()
+    {
+        _clerk.Respond("""{"id":"user_1","object":"user","deleted":true}""");
+
+        await Identity().DeleteUserAsync("user_1", Cancellation);
+
+        var request = _clerk.Requests.ShouldHaveSingleItem();
+        request.Method.ShouldBe(HttpMethod.Delete);
+        request.Uri.ShouldBe(new Uri("https://api.clerk.test/v1/users/user_1"));
+    }
+
+    // A retried deletion finds the user gone.
+    [Fact]
+    public async Task DeleteUser_UserAlreadyGone_IsDone()
+    {
+        _clerk.Respond("""{"errors":[{"code":"resource_not_found"}]}""", HttpStatusCode.NotFound);
+
+        await Identity().DeleteUserAsync("user_1", Cancellation);
+
+        _clerk.Requests.ShouldHaveSingleItem();
     }
 
     [Fact]
@@ -62,9 +152,9 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     {
         _clerk.Respond("""{"errors":[{"code":"internal"}]}""", HttpStatusCode.InternalServerError);
 
-        var find = async () => await Identity().FindAccountAsync("user_1", Cancellation);
+        var delete = async () => await Identity().DeleteUserAsync("user_1", Cancellation);
 
-        await find.ShouldThrowAsync<HttpRequestException>();
+        await delete.ShouldThrowAsync<HttpRequestException>();
     }
 
     // Every call to Clerk has a time limit, set from configuration.
@@ -73,7 +163,7 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     {
         _clerk.Delay = TimeSpan.FromSeconds(30);
 
-        var find = async () => await Identity(timeout: "00:00:00.100").FindAccountAsync("user_1", Cancellation);
+        var find = async () => await Identity(timeout: "00:00:00.100").FindVerifiedEmailsAsync("user_1", Cancellation);
 
         await find.ShouldThrowAsync<TaskCanceledException>();
     }
@@ -82,7 +172,11 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     private IIdentityProvider Identity(string timeout = "00:00:10")
     {
         var services = database.BuildServices(
-            services => services.ConfigureHttpClientDefaults(client => client.ConfigurePrimaryHttpMessageHandler(() => _clerk)),
+            services =>
+            {
+                services.ConfigureHttpClientDefaults(client => client.ConfigurePrimaryHttpMessageHandler(() => _clerk));
+                services.Replace(ServiceDescriptor.Singleton<TimeProvider>(_time));
+            },
             settings: new()
             {
                 ["ControlPlane:Clerk:SecretKey"] = "sk_test_secret",
@@ -94,14 +188,15 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
         return services.GetRequiredService<IIdentityProvider>();
     }
 
+    // Answers the requests in the order the test gives the answers; the last answer repeats.
     private sealed class StubClerk : HttpMessageHandler
     {
-        private string _body = "{}";
-        private HttpStatusCode _status = HttpStatusCode.OK;
+        private readonly Queue<(string Body, HttpStatusCode Status)> _answers = new();
+        private (string Body, HttpStatusCode Status) _last = ("{}", HttpStatusCode.OK);
 
         public List<(HttpMethod Method, Uri Uri, string? Authorization, string? Body)> Requests { get; } = [];
 
-        public void Respond(string body, HttpStatusCode status = HttpStatusCode.OK) => (_body, _status) = (body, status);
+        public void Respond(string body, HttpStatusCode status = HttpStatusCode.OK) => _answers.Enqueue((body, status));
 
         public TimeSpan Delay { get; set; }
 
@@ -114,7 +209,8 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
                 request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken)));
 
             await Task.Delay(Delay, cancellationToken);
-            return new HttpResponseMessage(_status) { Content = new StringContent(_body, Encoding.UTF8, "application/json") };
+            _last = _answers.TryDequeue(out var answer) ? answer : _last;
+            return new HttpResponseMessage(_last.Status) { Content = new StringContent(_last.Body, Encoding.UTF8, "application/json") };
         }
     }
 }

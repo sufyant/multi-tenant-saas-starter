@@ -94,11 +94,10 @@ public class ProjectReferenceTests
                 [Wolverine, "FluentValidation.*"],
                 []),
             "Api" => new([$"{module}.Application", $"{module}.Contracts", Solution.SharedKernel], [Wolverine], [AspNetCore]),
-            // Wolverine's EF Core integration registers the module's DbContext (W1). Svix checks the signature of the identity
-            // provider's webhook, an adapter for an external system.
+            // Wolverine's EF Core integration registers the module's DbContext (W1).
             "Infrastructure" => new(
                 [$"{module}.Application", $"{module}.Domain", $"{module}.Contracts", Solution.SharedKernel, Solution.Tenancy],
-                ["Microsoft.EntityFrameworkCore.*", "Npgsql.*", "Microsoft.Extensions.*", "WolverineFx", "WolverineFx.EntityFrameworkCore", "Svix"],
+                ["Microsoft.EntityFrameworkCore.*", "Npgsql.*", "Microsoft.Extensions.*", "WolverineFx", "WolverineFx.EntityFrameworkCore"],
                 []),
             _ => throw new ArgumentOutOfRangeException(nameof(layer), layer, "Every layer has a row in the table."),
         };

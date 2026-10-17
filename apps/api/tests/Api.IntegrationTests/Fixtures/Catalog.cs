@@ -42,7 +42,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         return externalId;
     }
 
-    // A user with the copy of a profile: an email address and a name, each of which may be missing.
+    // A user with an email address and names, each of which may be missing.
     public async Task<string> AddUserAsync(Guid? id = null, string? email = null, string? firstName = null, string? lastName = null)
     {
         var externalId = $"user_{Guid.NewGuid():N}";
@@ -67,7 +67,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         return externalId;
     }
 
-    // Marks the user the way the identity provider's deletion does: the copy erased, the time of the deletion set.
+    // Marks the user the way a system admin's deletion does: the email address and the names erased, the time of the deletion set.
     public Task DeleteUserAsync(string externalId) =>
         database.ScalarAsync<object>(
             $"UPDATE control_plane.users SET email = NULL, first_name = NULL, last_name = NULL, deleted_at = now() WHERE external_id = '{externalId}'",
@@ -111,21 +111,20 @@ internal sealed class Catalog(Database database, string databaseName = Database.
 
     public Task<long> CountAsync(string sql) => database.ScalarAsync<long>(sql);
 
-    // The catalog's copy of a user's profile, and whether the user is marked deleted.
-    public async Task<StoredProfile> ProfileOfAsync(string externalId, string? databaseName = null)
+    // The catalog's email address and names of a user, and whether the user is marked deleted.
+    public async Task<StoredUser> UserOfAsync(string externalId, string? databaseName = null)
     {
         var json = await database.ScalarAsSuperuserAsync<string>(
             $"""
-            SELECT json_build_object(
-                'email', email, 'firstName', first_name, 'lastName', last_name, 'updatedAt', profile_updated_at, 'deletedAt', deleted_at)::text
+            SELECT json_build_object('email', email, 'firstName', first_name, 'lastName', last_name, 'deleted', deleted_at IS NOT NULL)::text
             FROM control_plane.users WHERE external_id = '{externalId}'
             """,
             databaseName ?? Database.MainDatabase);
 
-        return JsonSerializer.Deserialize<StoredProfile>(json!, JsonSerializerOptions.Web)!;
+        return JsonSerializer.Deserialize<StoredUser>(json!, JsonSerializerOptions.Web)!;
     }
 
     private static string Text(string? value) => value is null ? "NULL" : $"'{value}'";
 }
 
-internal sealed record StoredProfile(string? Email, string? FirstName, string? LastName, DateTimeOffset? UpdatedAt, DateTimeOffset? DeletedAt);
+internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted);

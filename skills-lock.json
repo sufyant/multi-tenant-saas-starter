@@ -49,12 +49,6 @@
       "skillPath": "skills/clerk-testing/SKILL.md",
       "computedHash": "2e2172e0ef81c58cec2bdb7ff5edefbd1ba424e9fca931e0cb80a1bd8bfd4e80"
     },
-    "clerk-webhooks": {
-      "source": "clerk/skills",
-      "sourceType": "github",
-      "skillPath": "skills/clerk-webhooks/SKILL.md",
-      "computedHash": "7a9fd8c5c956ad8672eef0592e83df89ce1fc78080a0af9cb853abfe2e549b16"
-    },
     "email-best-practices": {
       "source": "resend/resend-skills",
       "sourceType": "github",

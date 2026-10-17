@@ -113,7 +113,7 @@ public sealed class AcceptInvitationTests(Database database)
         var email = Unique.Email();
         var (tenantId, _, ready) = await Handlers.CreateActiveTenantAsync(services ?? database.Services, email);
 
-        return (tenantId, email, Handlers.CodeOf(ready.Link));
+        return (tenantId, email, Handlers.CodeOf(ready.AcceptLink));
     }
 
     private async Task<TenantMembership?> FindMembershipAsync(Guid tenantId, string externalUserId)

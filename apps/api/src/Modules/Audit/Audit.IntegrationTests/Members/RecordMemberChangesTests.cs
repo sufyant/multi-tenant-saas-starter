@@ -45,6 +45,23 @@ public sealed class RecordMemberChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, removed.EventId)).ShouldBe(0);
     }
 
+    // A system admin's deletion of a user takes the user out of the tenant. The tenant's log shows the platform, as for every action of a
+    // system admin on a tenant (K3); the deletion's own record is in the platform's log.
+    [Fact]
+    public async Task RecordMemberRemoved_UserMembershipRemoved_WritesTheTenantEntryByThePlatform()
+    {
+        var removed = new UserMembershipRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Owner");
+
+        await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
+            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await Logs.DescribeAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId))
+            .ShouldBe($"member.removed|Platform|-|User|{removed.UserId}|-");
+        var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId))!).RootElement;
+        details.GetProperty("role").GetString().ShouldBe("Owner");
+        (await Logs.CountAsync(database.Services, Logs.Platform, null, removed.EventId)).ShouldBe(0);
+    }
+
     // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
     [Fact]
     public async Task RecordMemberRoleChanged_EventArrivesTwice_WritesOneEntry()

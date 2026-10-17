@@ -7,29 +7,24 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using SharedKernel;
 using Wolverine;
 
 namespace Api.ArchitectureTests;
 
-// A5: every endpoint of the composed application carries exactly one access state, public, signed-in only, a permission or a checked
-// signature. Every endpoint on the tenant path requires a permission. Every endpoint on the webhooks path has no user and declares
-// that it checks its sender's signature, and only those endpoints do.
+// A5: every endpoint of the composed application carries exactly one access state: public, signed-in only, or a permission. Every
+// endpoint on the tenant path requires a permission.
 public sealed class EndpointAccessTests : IAsyncLifetime
 {
     private const string Public = "public";
     private const string SignedIn = "signed-in";
     private const string Permission = "permission";
-    private const string Signature = "signature";
 
     private const string TenantPath = "/v1/tenants/";
-    private const string WebhooksPath = "/v1/webhooks/";
 
     // Every endpoint anyone may call without signing in. A new one is added here on purpose. The health checks are not endpoints:
     // they answer on the management port alone, before routing (section 8).
@@ -85,37 +80,6 @@ public sealed class EndpointAccessTests : IAsyncLifetime
     }
 
     [Fact]
-    public void StateAccess_EndpointOnTheWebhooksPath_ChecksASignatureWithoutAUser()
-    {
-        var webhookEndpoints = _endpoints.Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith(WebhooksPath, StringComparison.Ordinal));
-
-        webhookEndpoints.ShouldNotBeEmpty();
-        WithoutASignatureCheck(webhookEndpoints).ShouldBeEmpty();
-    }
-
-    // The check above fails for a webhook endpoint that does not declare a signature check, such as one the group alone opens.
-    [Fact]
-    public void StateAccess_WebhookEndpointWithoutASignatureCheck_IsFound()
-    {
-        var opened = new RouteEndpointBuilder(_ => Task.CompletedTask, RoutePatternFactory.Parse($"{WebhooksPath}other"), 0)
-        {
-            Metadata = { new AllowAnonymousAttribute(), new HttpMethodMetadata(["POST"]) },
-        }.Build();
-
-        WithoutASignatureCheck([(RouteEndpoint)opened]).ShouldBe([$"POST {WebhooksPath}other"]);
-    }
-
-    [Fact]
-    public void StateAccess_EndpointThatChecksASignature_IsOnTheWebhooksPath()
-    {
-        var elsewhere = _endpoints
-            .Where(endpoint => StatesOf(endpoint).Contains(Signature) && !endpoint.RoutePattern.RawText!.StartsWith(WebhooksPath, StringComparison.Ordinal))
-            .Select(Describe);
-
-        elsewhere.ShouldBeEmpty();
-    }
-
-    [Fact]
     public void StateAccess_PublicEndpoint_IsOnTheList()
     {
         var publicEndpoints = _endpoints.Where(endpoint => StatesOf(endpoint).Contains(Public)).Select(Describe);
@@ -123,18 +87,9 @@ public sealed class EndpointAccessTests : IAsyncLifetime
         publicEndpoints.ShouldBe(PublicEndpoints, ignoreOrder: true);
     }
 
-    // A webhook endpoint states a checked signature, and needs no user for it: it is open to anyone who can sign.
-    private static IEnumerable<string> WithoutASignatureCheck(IEnumerable<RouteEndpoint> endpoints) =>
-        endpoints
-            .Where(endpoint => !StatesOf(endpoint).SequenceEqual([Signature]) || endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null)
-            .Select(Describe);
-
     private static string[] StatesOf(RouteEndpoint endpoint) =>
     [
-        .. endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null || endpoint.Metadata.GetMetadata<SignatureChecked>() is not null
-            ? Array.Empty<string>()
-            : [Public],
-        .. endpoint.Metadata.GetMetadata<SignatureChecked>() is null ? Array.Empty<string>() : [Signature],
+        .. endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null ? Array.Empty<string>() : [Public],
         .. endpoint.Metadata.GetMetadata<SignedInEndpoint>() is null ? Array.Empty<string>() : [SignedIn],
         .. endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Any(data => PermissionCatalogue.Contains(data.Policy))
             ? [Permission]

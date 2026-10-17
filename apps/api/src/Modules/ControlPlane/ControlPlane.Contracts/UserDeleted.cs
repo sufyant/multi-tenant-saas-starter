@@ -1,9 +1,10 @@
 namespace ControlPlane.Contracts;
 
 /// <summary>
-/// The identity provider deleted a catalog user, and the catalog erased its copy of their profile (A8). Published through the outbox,
-/// without a tenant.
+/// A system admin deleted a catalog user: the user has no membership left, and the catalog erased their email address and names (A8).
+/// Published through the outbox, without a tenant.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the deleted user.</param>
-public sealed record UserDeleted(Guid EventId, DateTimeOffset OccurredAt, Guid UserId);
+/// <param name="DeletedBy">The catalog user id of the system admin who deleted the user.</param>
+public sealed record UserDeleted(Guid EventId, DateTimeOffset OccurredAt, Guid UserId, Guid DeletedBy);

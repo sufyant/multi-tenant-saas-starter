@@ -101,7 +101,6 @@ The table holds names only. A value never goes into the repository.
 | `Authentication__Clerk__AuthorizedParties__0` | Railway shared variable | own value | own value |
 | `ControlPlane__FirstSystemAdminEmail` | Railway shared variable | own value | own value |
 | `ControlPlane__Clerk__SecretKey` | Railway shared variable, sealed | own value | own value |
-| `ControlPlane__Clerk__WebhookSigningSecret` | Railway shared variable, sealed. Its value comes from the webhook endpoint in the Clerk dashboard | own value | own value |
 | `ControlPlane__Invitations__AcceptUrl` | Railway shared variable | own value | own value |
 | `Notifications__Resend__ApiKey` | Railway shared variable, sealed | own value | own value |
 | `Notifications__Resend__From` | Railway shared variable | own value | own value |
@@ -370,6 +369,14 @@ Add a shared variable to the API services without apply:
 5. Merge.
 
 Steps 2 and 3 are safe before the merge, because the running version ignores a variable it does not read. The order matters when the same pull request adds code that needs the variable at start: without the variable, the staging deploy fails.
+
+Remove a shared variable from the API services without apply:
+
+1. Remove its name from `sharedVariables` in `.railway/railway.ts`, in the pull request that stops reading it. `pnpm railway:plan` then also shows "Delete variable" for `api-web` and `api-worker`.
+2. Merge, and let the deploy finish in each environment. The version before it may still need the variable to start.
+3. Then, in the Railway dashboard, open Shared Variables, untick `api-web` and `api-worker` for the variable, and delete it.
+
+Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way.
 
 ## 8. Migrations and the running version
 

@@ -65,7 +65,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
-            tenant.Id, new AcceptInvitation("no-such-secret", user, [Email()], FakeIdentityProvider.NoProfile));
+            tenant.Id, new AcceptInvitation("no-such-secret", user, [Email()], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.not_found");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
@@ -79,7 +79,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
-            tenantId, new AcceptInvitation(secret, user, [Email()], FakeIdentityProvider.NoProfile));
+            tenantId, new AcceptInvitation(secret, user, [Email()], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
@@ -95,7 +95,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var member = await _catalog.AddMemberAsync(tenantId);
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
-            tenantId, new AcceptInvitation(secret, member, [email], FakeIdentityProvider.NoProfile));
+            tenantId, new AcceptInvitation(secret, member, [email], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("membership.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);

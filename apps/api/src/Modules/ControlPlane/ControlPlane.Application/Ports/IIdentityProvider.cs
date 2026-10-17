@@ -1,17 +1,30 @@
 namespace ControlPlane.Application.Ports;
 
-/// <summary>The identity provider (Clerk): it authenticates people; who they are in a tenant stays in our catalog.</summary>
+/// <summary>
+/// The identity provider (Clerk): it only signs people in. Who they are in a tenant, and their names, stay in our catalog. It sends no
+/// email and keeps no name; an invitation stays ours, and the provider's invitation only lets the invited person sign up.
+/// </summary>
 public interface IIdentityProvider
 {
-    /// <summary>The user's verified email addresses and their profile, in one call.</summary>
-    Task<IdentityAccount> FindAccountAsync(string externalUserId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Lets the email sign up until the expiry, and answers the link the invitation email carries. The link leads to the accept link
+    /// once the person has an account. An email that already has an account needs no sign-up: the answer is the accept link itself,
+    /// without an invitation id.
+    /// </summary>
+    Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken);
+
+    /// <summary>Withdraws the permission to sign up. An invitation that is no longer pending, or that the provider does not know, is done.</summary>
+    Task WithdrawSignUpAsync(string invitationId, CancellationToken cancellationToken);
+
+    /// <summary>The email addresses the user has verified.</summary>
+    Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken);
+
+    /// <summary>Deletes the user. A user the provider does not know is done.</summary>
+    Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken);
 }
 
-/// <summary>A user as the identity provider knows them: the email addresses they have verified, and their profile.</summary>
-public sealed record IdentityAccount(IReadOnlyList<string> VerifiedEmails, UserProfile Profile);
-
 /// <summary>
-/// The fields of a user that the catalog keeps a copy of. The identity provider owns them. <see cref="UpdatedAt"/> is the provider's
-/// time of the user's last change.
+/// The link an invitation email carries, and the provider's invitation behind it. <see cref="InvitationId"/> is null when the email
+/// already has an account; <see cref="Link"/> is then the accept link.
 /// </summary>
-public sealed record UserProfile(string? Email, string? FirstName, string? LastName, DateTimeOffset UpdatedAt);
+public sealed record SignUpLink(Uri Link, string? InvitationId);

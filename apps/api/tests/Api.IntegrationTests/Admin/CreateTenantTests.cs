@@ -327,22 +327,22 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await IdOfAsync(bySecond)).ShouldNotBe(await IdOfAsync(byFirst));
     }
 
-    // A7: the first system admin's first visit writes their catalog user, which starts with a copy of the profile that the identity
-    // provider gave in the same call as the verified addresses. Their staff list is empty, so the test has a database of its own.
+    // A7: the first system admin's first visit writes their catalog user with the configured address, which the identity provider
+    // verified, and no names: the identity provider keeps none, and a system admin gives them. Their staff list is empty, so the test
+    // has a database of its own.
     [Fact]
-    public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithACopyOfTheirProfile()
+    public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithTheConfiguredAddressAndNoNames()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
         var admin = $"user_{Guid.NewGuid():N}";
-        var updatedAt = new DateTimeOffset(2026, 10, 3, 8, 30, 0, TimeSpan.Zero);
-        api.Identity.AddAccount(admin, new UserProfile(ApiFactory.FirstSystemAdminEmail, "Grace", "Hopper", updatedAt), ApiFactory.FirstSystemAdminEmail);
+        api.Identity.AddAccount(admin, ApiFactory.FirstSystemAdminEmail);
 
         var created = await api.WaitingForMessagesAsync(
             () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.ProfileOfAsync(admin, name)).ShouldBe(new StoredProfile(ApiFactory.FirstSystemAdminEmail, "Grace", "Hopper", updatedAt, null));
+        (await _catalog.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.FirstSystemAdminEmail, null, null, Deleted: false));
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);

@@ -6,10 +6,12 @@ using Audit.Application.Members;
 using Audit.Application.Tenants;
 using Audit.Application.Users;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
+using ControlPlane.Application.Users.UserDeletion;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Invitations.InvitationEmail;
@@ -34,6 +36,8 @@ public sealed class HostRoleTests(Database database)
         new(typeof(ActivateTenant), typeof(ActivateTenantHandler)),
         new(typeof(ActivateTenantReply), typeof(TenantCreationSaga)),
         new(typeof(TenantActivated), typeof(RecordTenantCreatedHandler)),
+        new(typeof(OpenOwnerSignUp), typeof(OpenSignUpHandler)),
+        new(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
         new(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)),
         new(typeof(SendInvitationEmailReply), typeof(TenantCreationSaga)),
     ];
@@ -219,8 +223,52 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
     }
 
-    // O3, W4, W5: an invitation is created in the web host. Its event has two handlers, Audit's and Notifications', and both run in the
-    // worker, once; Notifications hands the email on to a command of its own, whose retries may be scheduled.
+    // O3, K3: a user's rename and deletion run in the web host, step by step for the deletion. Their Audit handlers run in the worker,
+    // once each, and so does the identity provider's deletion, which has scheduled retries (W5).
+    [Fact]
+    public async Task RenameAndDeleteUser_OnAWebAndAWorkerHost_RecordAndDeleteAtTheIdentityProviderInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var catalog = new Catalog(database, name);
+        var tenant = await catalog.AddTenantAsync();
+        var user = await catalog.AddMemberAsync(tenant.Id);
+        var userId = await catalog.UserIdOfAsync(user);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var renamed = await admin.PatchAsJsonAsync($"/v1/admin/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        var deleted = await admin.DeleteAsync($"/v1/admin/users/{userId}", Cancellation);
+        await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && await PlatformEntriesAsync(name, userId, "user.deleted") > 0
+            && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0 && await PlatformEntriesAsync(name, userId, "user.renamed") > 0);
+
+        (renamed.StatusCode, deleted.StatusCode).ShouldBe((HttpStatusCode.OK, HttpStatusCode.NoContent));
+        runs.In("web").ShouldBe(
+            [
+                new HandlerRun(typeof(RenameUser), typeof(RenameUserHandler)),
+                new HandlerRun(typeof(ListUserMemberships), typeof(ListUserMembershipsHandler)),
+                new HandlerRun(typeof(RemoveUserMembership), typeof(RemoveUserMembershipHandler)),
+                new HandlerRun(typeof(DeleteUser), typeof(DeleteUserHandler)),
+            ],
+            ignoreOrder: true);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(UserRenamed), typeof(RecordUserChangesHandler)),
+                new HandlerRun(typeof(UserMembershipRemoved), typeof(RecordMemberRemovedHandler)),
+                new HandlerRun(typeof(UserDeleted), typeof(RecordUserChangesHandler)),
+                new HandlerRun(typeof(DeleteIdentityAccount), typeof(DeleteIdentityAccountHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Identity.Deleted.ShouldBe([user]);
+        (await PlatformEntriesAsync(name, userId, "user.renamed")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, userId, "user.deleted")).ShouldBe(1L);
+        (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
+    }
+
+    // O3, W4, W5: an invitation is created in the web host. Audit records its event in the worker, once. The identity provider's sign-up
+    // runs in the worker, once, then the email: each message has one handler, so its retries may be scheduled.
     [Fact]
     public async Task InviteMember_OnAWebAndAWorkerHost_RecordsAndEmailsOnceInTheWorker()
     {
@@ -241,8 +289,9 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldBe(
             [
                 new HandlerRun(typeof(MemberInvited), typeof(RecordMemberInvitedHandler)),
-                new HandlerRun(typeof(MemberInvited), typeof(QueueMemberInvitationEmailHandler)),
-                new HandlerRun(typeof(SendMemberInvitationEmail), typeof(SendMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(OpenMemberSignUp), typeof(OpenSignUpHandler)),
+                new HandlerRun(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
+                new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
             ],
             ignoreOrder: true);
         worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");

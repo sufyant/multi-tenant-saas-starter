@@ -44,7 +44,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.RevokeInvitationHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Invitations.RevokeInvitationHandler.HandleAsync(revokeInvitation, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Invitations.RevokeInvitationHandler.HandleAsync(revokeInvitation, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -53,6 +53,10 @@ namespace Internal.Generated.WolverineHandlers
                 
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

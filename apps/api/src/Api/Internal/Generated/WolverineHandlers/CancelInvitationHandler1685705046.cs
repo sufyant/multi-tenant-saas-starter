@@ -41,7 +41,11 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.TenantCreation.CancelInvitationHandler");
                 
                 // The actual message execution
-                await ControlPlane.Application.Tenants.TenantCreation.CancelInvitationHandler.HandleAsync(cancelInvitation, tenantCatalog, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Tenants.TenantCreation.CancelInvitationHandler.HandleAsync(cancelInvitation, tenantCatalog, cancellation).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

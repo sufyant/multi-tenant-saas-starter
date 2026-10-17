@@ -1,9 +1,9 @@
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Ports;
-using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users.UserDeletion;
 using ControlPlane.Contracts;
 using JasperFx;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Application.Invitations.InvitationEmail;
 using Notifications.Application.Ports;
 using Wolverine.Runtime.Handlers;
 
@@ -35,7 +35,12 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
         var calling = chains.Where(chain => ServicesOf(chain).Any(service => Reaches(service, container, []))).ToList();
         var withTransaction = calling.Where(chain => chain.Tags.ContainsKey(EfCoreTransaction)).Select(Describe);
 
-        calling.Select(chain => chain.MessageType).ShouldBe([typeof(OwnerInvitationReady), typeof(SendMemberInvitationEmail)], ignoreOrder: true);
+        calling.Select(chain => chain.MessageType).ShouldBe(
+            [
+                typeof(OpenOwnerSignUp), typeof(OpenMemberSignUp), typeof(WithdrawSignUp), typeof(DeleteIdentityAccount),
+                typeof(OwnerInvitationReady), typeof(MemberInvitationReady),
+            ],
+            ignoreOrder: true);
         withTransaction.ShouldBeEmpty();
     }
 

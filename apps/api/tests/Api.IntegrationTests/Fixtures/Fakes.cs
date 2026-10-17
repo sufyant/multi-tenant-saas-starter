@@ -6,30 +6,90 @@ using Notifications.Application.Ports;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// Clerk, as far as the application uses it.
+// Clerk, as far as the application uses it. Clerk is invite-only: an address without an account gets Clerk's invitation, whose link
+// leads to the accept link once the person signed up; an address with an account gets none.
 internal sealed class FakeIdentityProvider : IIdentityProvider
 {
-    // The profile of an account a test gives none.
-    public static readonly UserProfile NoProfile = new(null, null, null, DateTimeOffset.UnixEpoch);
+    private readonly ConcurrentDictionary<string, string[]> _accounts = new();
+    private int _failures;
+    private int _calls;
 
-    private readonly ConcurrentDictionary<string, IdentityAccount> _accounts = new();
+    public void AddAccount(string externalUserId, params string[] verifiedEmails) => _accounts[externalUserId] = verifiedEmails;
 
-    public void AddAccount(string externalUserId, params string[] verifiedEmails) => AddAccount(externalUserId, NoProfile, verifiedEmails);
-
-    public void AddAccount(string externalUserId, UserProfile profile, params string[] verifiedEmails) =>
-        _accounts[externalUserId] = new IdentityAccount(verifiedEmails, profile);
-
-    // Lets a test look at the database at the moment the application asks for a user's account.
+    // Lets a test look at the database at the moment the application asks for a user's verified addresses.
     public Func<Task>? WhileReadingVerifiedEmails { get; set; }
 
-    public async Task<IdentityAccount> FindAccountAsync(string externalUserId, CancellationToken cancellationToken)
+    // Every invitation Clerk created, with what it was given.
+    public ConcurrentQueue<(string Email, Uri AcceptLink, DateTimeOffset ExpiresAt, string InvitationId)> SignUps { get; } = [];
+
+    // Every invitation the application withdrew, and every user it deleted.
+    public ConcurrentQueue<string> Withdrawn { get; } = [];
+
+    public ConcurrentQueue<string> Deleted { get; } = [];
+
+    // How many calls the application made; a refused one counts too.
+    public int Calls => _calls;
+
+    // While down, every call fails.
+    public bool IsDown { get; set; }
+
+    // The next calls fail, then Clerk recovers.
+    public void FailNext(int calls) => _failures = calls;
+
+    public Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    {
+        Answer();
+        if (_accounts.Values.Any(emails => emails.Contains(email, StringComparer.OrdinalIgnoreCase)))
+        {
+            return Task.FromResult(new SignUpLink(acceptLink, null));
+        }
+
+        var invitationId = $"inv_{Guid.NewGuid():N}";
+        SignUps.Enqueue((email, acceptLink, expiresAt, invitationId));
+        return Task.FromResult(new SignUpLink(ClerkLink(invitationId, acceptLink), invitationId));
+    }
+
+    public Task WithdrawSignUpAsync(string invitationId, CancellationToken cancellationToken)
+    {
+        Answer();
+        Withdrawn.Enqueue(invitationId);
+        return Task.CompletedTask;
+    }
+
+    public async Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken)
     {
         if (WhileReadingVerifiedEmails is { } probe)
         {
             await probe();
         }
 
-        return _accounts.GetValueOrDefault(externalUserId, new IdentityAccount([], NoProfile));
+        return _accounts.GetValueOrDefault(externalUserId, []);
+    }
+
+    public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken)
+    {
+        Answer();
+        Deleted.Enqueue(externalUserId);
+        return Task.CompletedTask;
+    }
+
+    // Clerk's link of an invitation: the accept link it leads to rides in it, so a test can follow it.
+    public static Uri ClerkLink(string invitationId, Uri acceptLink) =>
+        new($"https://clerk.test/v1/tickets/accept?ticket={invitationId}&redirect_url={Uri.EscapeDataString(acceptLink.ToString())}");
+
+    // Where a link in an email leads: Clerk's link leads to the accept link it carries; any other link is the accept link.
+    public static Uri AcceptLinkOf(Uri link) =>
+        link.Host == "clerk.test"
+            ? new Uri(Uri.UnescapeDataString(link.Query.TrimStart('?').Split('&').Single(pair => pair.StartsWith("redirect_url=", StringComparison.Ordinal))["redirect_url=".Length..]))
+            : link;
+
+    private void Answer()
+    {
+        Interlocked.Increment(ref _calls);
+        if (IsDown || Interlocked.Decrement(ref _failures) >= 0)
+        {
+            throw new HttpRequestException("Clerk is down.");
+        }
     }
 }
 
@@ -68,20 +128,17 @@ internal sealed partial class FakeEmailChannel : IEmailChannel
 
     public Uri LinkSentTo(string email) => new(Link().Match(Sent.Single(sent => sent.To == email).Text).Value);
 
-    // The invitation code of the accept link sent to the address.
-    public string CodeSentTo(string email)
-    {
-        var link = LinkSentTo(email);
-        link.Query.ShouldStartWith("?code=");
-        return Uri.UnescapeDataString(link.Query["?code=".Length..]);
-    }
+    // The invitation code of the accept link the email to the address leads to, through Clerk's link or directly.
+    public string CodeSentTo(string email) => CodeOf(FakeIdentityProvider.AcceptLinkOf(LinkSentTo(email)));
 
     // The invitation code of the email sent for the invitation: its idempotency key is the invitation's.
-    public string CodeSentFor(Guid invitationId)
+    public string CodeSentFor(Guid invitationId) =>
+        CodeOf(FakeIdentityProvider.AcceptLinkOf(new Uri(Link().Match(Sent.Single(sent => sent.IdempotencyKey == $"invite/{invitationId}").Text).Value)));
+
+    private static string CodeOf(Uri acceptLink)
     {
-        var link = new Uri(Link().Match(Sent.Single(sent => sent.IdempotencyKey == $"invite/{invitationId}").Text).Value);
-        link.Query.ShouldStartWith("?code=");
-        return Uri.UnescapeDataString(link.Query["?code=".Length..]);
+        acceptLink.Query.ShouldStartWith("?code=");
+        return Uri.UnescapeDataString(acceptLink.Query["?code=".Length..]);
     }
 
     [GeneratedRegex(@"https://\S+")]

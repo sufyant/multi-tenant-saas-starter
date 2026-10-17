@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
@@ -37,8 +38,8 @@ public sealed class TenantCreationTests(Database database)
         activate.ShouldSatisfyAllConditions(
             step => step.TenantId.ShouldBe(tenantId),
             step => step.InvitationId.ShouldBe(invitationId),
-            step => step.Link.GetLeftPart(UriPartial.Path).ShouldBe(Database.AcceptUrl),
-            step => Handlers.TenantIdOf(Handlers.CodeOf(step.Link)).ShouldBe(tenantId));
+            step => step.AcceptLink.GetLeftPart(UriPartial.Path).ShouldBe(Database.AcceptUrl),
+            step => Handlers.TenantIdOf(Handlers.CodeOf(step.AcceptLink)).ShouldBe(tenantId));
         started.Timeout.ShouldBe(new ActivationTimedOut(tenantId, TimeSpan.FromMinutes(10)));
         (await StatusOfAsync(tenantId)).ShouldBe("Provisioning");
         (await ScalarAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}' AND tenant_id = '{tenantId}'"))
@@ -60,7 +61,7 @@ public sealed class TenantCreationTests(Database database)
 
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
 
-        var secret = Handlers.SecretOf(Handlers.CodeOf(started.Activate.ShouldNotBeNull().Message.Link));
+        var secret = Handlers.SecretOf(Handlers.CodeOf(started.Activate.ShouldNotBeNull().Message.AcceptLink));
         (await ScalarAsync<string>($"SELECT token_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
     }
 
@@ -110,8 +111,9 @@ public sealed class TenantCreationTests(Database database)
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 
+    // Step 3 starts with the activation: the identity provider lets the owner sign up, until the invitation expires.
     [Fact]
-    public async Task ActivateTenant_Provisioning_ActivatesItAndAnnouncesTheTenantAndTheInvitation()
+    public async Task ActivateTenant_Provisioning_ActivatesItAnnouncesTheTenantAndOpensTheOwnersSignUp()
     {
         var admin = await Catalog.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
@@ -120,7 +122,7 @@ public sealed class TenantCreationTests(Database database)
         var invitationId = started.Activate.ShouldNotBeNull().Message.InvitationId;
         var link = AcceptLink();
 
-        var (completed, activated, ready) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, link));
+        var (completed, activated, signUp) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, link));
 
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
         completed.ShouldBe(new ActivateTenantReply(tenantId));
@@ -129,13 +131,13 @@ public sealed class TenantCreationTests(Database database)
             announced => announced.Name.ShouldBe("Acme Ltd"),
             announced => announced.CreatedBy.ShouldBe(admin.Id),
             announced => announced.EventId.ShouldNotBe(Guid.Empty));
-        ready.ShouldNotBeNull().ShouldSatisfyAllConditions(
-            invitation => invitation.TenantId.ShouldBe(tenantId),
-            invitation => invitation.InvitationId.ShouldBe(invitationId),
-            invitation => invitation.Email.ShouldBe(owner),
-            invitation => invitation.TenantName.ShouldBe("Acme Ltd"),
-            invitation => invitation.Link.ShouldBe(link),
-            invitation => invitation.EventId.ShouldNotBe(activated.EventId));
+        signUp.ShouldBe(new OpenOwnerSignUp(
+            tenantId,
+            invitationId,
+            owner,
+            "Acme Ltd",
+            link,
+            await ScalarAsync<DateTime>($"SELECT expires_at FROM control_plane.invitations WHERE id = '{invitationId}'")));
     }
 
     [Fact]
@@ -264,10 +266,11 @@ public sealed class TenantCreationTests(Database database)
         var userId = Unique.ExternalId();
         database.Identity.AddAccount(userId, owner);
         var (tenantId, _, ready) = await Handlers.CreateActiveTenantAsync(database.Services, owner);
-        (await Handlers.AcceptAsync(database.Services, Handlers.CodeOf(ready.Link), userId)).IsSuccess.ShouldBeTrue();
+        (await Handlers.AcceptAsync(database.Services, Handlers.CodeOf(ready.AcceptLink), userId)).IsSuccess.ShouldBeTrue();
 
-        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, ready.InvitationId));
+        var withdrawal = await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, ready.InvitationId));
 
+        withdrawal.ShouldBeNull();
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{ready.InvitationId}'")).ShouldBe("Accepted");
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }

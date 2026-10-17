@@ -1240,6 +1240,209 @@
         }
       }
     },
+    "/v1/admin/users/{userId}": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "RenameUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/audit-log": {
       "get": {
         "tags": [
@@ -2667,9 +2870,21 @@
         "properties": {
           "code": {
             "type": "string"
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "The invitation code from the invitation link."
+        "description": "The invitation code from the invitation link, and the names of a person the catalog does not know yet: 1 to 100 characters each,\ntrimmed. A user the catalog knows sends none."
       },
       "AuditActorResponse": {
         "required": [
@@ -2898,10 +3113,12 @@
           "tenant.slug_invalid",
           "tenant.slug_taken",
           "tenant.suspended",
+          "user.deleted",
+          "user.has_memberships",
           "user.is_system_admin",
+          "user.last_owner",
           "user.not_found",
-          "user.suspended",
-          "webhook.signature_invalid"
+          "user.suspended"
         ],
         "type": "string",
         "description": "The error's code, area.reason. A client shows its own text for it, never the English detail."
@@ -3319,6 +3536,14 @@
           "traceId": {
             "type": "string",
             "description": "The trace id of the request, for the logs."
+          },
+          "tenantIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of."
           }
         }
       },
@@ -3333,6 +3558,22 @@
           }
         },
         "description": "A tenant's new name. The slug never changes."
+      },
+      "RenameUserRequest": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        },
+        "description": "A user's new names: 1 to 100 characters each, trimmed."
       },
       "SuspendTenantRequest": {
         "required": [
@@ -3436,7 +3677,7 @@
             "type": "boolean"
           }
         },
-        "description": "A catalog user: the catalog's id, not the identity provider's, the copy of their profile, their status (active, suspended or\ndeleted) and whether they are a system admin."
+        "description": "A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted) and whether they are a system admin."
       },
       "UserResponseStatus": {
         "enum": [
@@ -3444,7 +3685,7 @@
           "suspended",
           "deleted"
         ],
-        "description": "The status of a catalog user. A deleted user is one the identity provider no longer knows."
+        "description": "The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs."
       }
     }
   },

@@ -74,8 +74,9 @@ internal static class OpenApiContract
         return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
     }
 
-    // K5: every error answer is Problem Details (ResultResponses) with a code. The host adds three members to its schema: the code, one
-    // of the one enum of error codes; the field codes of a request that failed validation, an enum too; and the trace id. The enums are
+    // K5: every error answer is Problem Details (ResultResponses) with a code. The host adds four members to its schema: the code, one
+    // of the one enum of error codes; the field codes of a request that failed validation, an enum too; the trace id; and the tenants an
+    // error is about, which only some errors name. The enums are
     // schemas of their own, so a generated client has a type for each and can check that a screen has a text for every code.
     private static Task DescribeProblemDetails(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
@@ -100,6 +101,12 @@ internal static class OpenApiContract
         {
             Type = JsonSchemaType.String,
             Description = "The trace id of the request, for the logs.",
+        };
+        problem.Properties[Problems.TenantIdsMember] = new OpenApiSchema
+        {
+            Type = JsonSchemaType.Array,
+            Items = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uuid" },
+            Description = "The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of.",
         };
         problem.Required ??= new HashSet<string>();
         problem.Required.Add(Problems.CodeMember);

@@ -137,7 +137,8 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         var invitation = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
         (await RevokeAsync(owner, tenant.Id, invitation)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentFor(invitation) }, Cancellation);
+        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentFor(invitation), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(accepted)).ShouldBe("invitation.not_found");

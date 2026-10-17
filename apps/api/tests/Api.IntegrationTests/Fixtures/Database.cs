@@ -401,7 +401,7 @@ public sealed class Database : IAsyncLifetime
             .AddLogging()
             .AddApiPersistence()
             .AddTenancy(_ => ConnectionStringFor(DatabaseRoles.Application, database))
-            .AddControlPlaneInfrastructure(servesTheApi: false)
+            .AddControlPlaneInfrastructure()
             .AddNotificationsInfrastructure()
             .AddAuditInfrastructure()
             .BuildServiceProvider();

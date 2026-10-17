@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,8 @@ public sealed class TraceIdTests(Database database)
         typeof(ActivateTenant).FullName!,
         typeof(ActivateTenantReply).FullName!,
         typeof(TenantActivated).FullName!,
+        typeof(OpenOwnerSignUp).FullName!,
+        typeof(SignUpOpened).FullName!,
         typeof(OwnerInvitationReady).FullName!,
         typeof(SendInvitationEmailReply).FullName!,
     ];

@@ -26,7 +26,7 @@ public static class Invitations
     // Accepting starts outside any tenant. The invitation code names the tenant, which is declared before the invitation is looked up
     // by its secret, so a wrong tenant, a wrong secret and a malformed code all answer the same 404; a request without a code, or with
     // an empty or blank one, is a bad request. The identity provider is asked first, so its call never runs while the acceptance holds
-    // the invitation locked.
+    // the invitation locked. A person the catalog does not know gives their first and last name; the email address is the invited one.
     private static async Task<Result<MyTenantResponse>> AcceptInvitation(
         AcceptInvitationRequest request,
         ClaimsPrincipal user,
@@ -44,12 +44,17 @@ public static class Invitations
             return Errors.InvitationNotFound;
         }
 
-        var account = await identity.FindAccountAsync(user.Id(), cancellationToken);
+        var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
         var accepted = await bus.InvokeForTenantAsync<Result<TenantSummary>>(
-            code.TenantId.ToString(), new AcceptInvitation(code.Secret, user.Id(), account.VerifiedEmails, account.Profile), cancellationToken);
+            code.TenantId.ToString(),
+            new AcceptInvitation(code.Secret, user.Id(), verifiedEmails, request.FirstName, request.LastName),
+            cancellationToken);
         return accepted.Map(tenant => new MyTenantResponse(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status)));
     }
 }
 
-/// <summary>The invitation code from the invitation link.</summary>
-public sealed record AcceptInvitationRequest(string Code);
+/// <summary>
+/// The invitation code from the invitation link, and the names of a person the catalog does not know yet: 1 to 100 characters each,
+/// trimmed. A user the catalog knows sends none.
+/// </summary>
+public sealed record AcceptInvitationRequest(string Code, string? FirstName = null, string? LastName = null);

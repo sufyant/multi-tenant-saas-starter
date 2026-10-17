@@ -46,7 +46,6 @@ public sealed class FailedStartTests
         ["ConnectionStrings__Database"] = ApiProcess.HostThatDoesNotAnswer,
         ["Authentication__Clerk__Issuer"] = TestTokens.Issuer,
         ["ControlPlane__Clerk__SecretKey"] = "sk_test_unused",
-        ["ControlPlane__Clerk__WebhookSigningSecret"] = ClerkDeliveries.SigningSecret,
         ["ControlPlane__Invitations__AcceptUrl"] = ApiFactory.AcceptUrl,
         ["ControlPlane__FirstSystemAdminEmail"] = ApiFactory.FirstSystemAdminEmail,
         ["ASPNETCORE_URLS"] = $"http://127.0.0.1:{ports.Public}",

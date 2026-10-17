@@ -24,7 +24,7 @@ internal sealed class InvitationEmailRetries(IOptions<NotificationsSettings> set
     {
         var inline = settings.Value.RetryDelays.TakeWhile(delay => delay < LongestInlinePause).ToArray();
         var scheduled = settings.Value.RetryDelays.Skip(inline.Length).ToArray();
-        foreach (var chain in chains.Where(chain => chain.MessageType == typeof(OwnerInvitationReady) || chain.MessageType == typeof(SendMemberInvitationEmail)))
+        foreach (var chain in chains.Where(chain => chain.MessageType == typeof(OwnerInvitationReady) || chain.MessageType == typeof(MemberInvitationReady)))
         {
             var retries = chain.OnAnyException();
             var next = inline.Length > 0 ? retries.RetryWithCooldown(inline).Then : retries;

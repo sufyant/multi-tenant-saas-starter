@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
 using ControlPlane.Domain.Tenants;
@@ -5,7 +6,10 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Invitations;
 
-/// <summary>An Owner or an Admin revokes a pending invitation of the active tenant; its link stops working at once (K2).</summary>
+/// <summary>
+/// An Owner or an Admin revokes a pending invitation of the active tenant; its link stops working at once (K2), and the identity provider's
+/// invitation behind it is withdrawn after the commit.
+/// </summary>
 public sealed record RevokeInvitation(string RevokerId, Guid InvitationId);
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row is
@@ -14,7 +18,7 @@ public sealed record RevokeInvitation(string RevokerId, Guid InvitationId);
 // the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class RevokeInvitationHandler
 {
-    public static async Task<(Result, InvitationRevoked?)> HandleAsync(
+    public static async Task<(Result, InvitationRevoked?, WithdrawSignUp?)> HandleAsync(
         RevokeInvitation command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -29,7 +33,7 @@ public static class RevokeInvitationHandler
         // exist (T3).
         if (await catalog.FindMembershipAsync(revoker.Id, cancellationToken) is null)
         {
-            return (Errors.TenantNotFound, null);
+            return (Errors.TenantNotFound, null, null);
         }
 
         // The door let the revoker into an active tenant, but a system admin may have suspended or closed it while this request waited for
@@ -37,23 +41,26 @@ public static class RevokeInvitationHandler
         var access = Tenant.CheckMemberAccess(tenant.Status);
         if (!access.IsSuccess)
         {
-            return (access, null);
+            return (access, null, null);
         }
 
         if (await catalog.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)
         {
-            return (Errors.InvitationNotFound, null);
+            return (Errors.InvitationNotFound, null, null);
         }
 
         var revoked = invitation.Revoke();
         if (!revoked.IsSuccess || !revoked.Value)
         {
-            return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null);
+            return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
         }
 
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (Result.Success(), new InvitationRevoked(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, revoker.Id));
+        return (
+            Result.Success(),
+            new InvitationRevoked(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, revoker.Id),
+            invitation.SignUpInvitationId is { } signUp ? new WithdrawSignUp(signUp) : null);
     }
 }

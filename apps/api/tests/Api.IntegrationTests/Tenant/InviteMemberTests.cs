@@ -314,7 +314,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        (await owner.InviteMemberAsync(tenant.Id, NewEmail())).StatusCode.ShouldBe(HttpStatusCode.Created);
+        // The first invitation's sign-up locks the tenant row too, after the commit; it ends before the holder counts its waiters.
+        (await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, NewEmail()))).StatusCode.ShouldBe(HttpStatusCode.Created);
 
         var statuses = await WhileTheTenantIsHeldAsync(
             tenant.Id, () => owner.InviteMemberAsync(tenant.Id, NewEmail()), () => owner.InviteMemberAsync(tenant.Id, NewEmail()));
@@ -375,7 +376,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var sent = _api.Email.Sent.Where(message => message.To == email).ShouldHaveSingleItem();
         sent.IdempotencyKey.ShouldBe($"invite/{invitation}");
         sent.Subject.ShouldContain("Globex Corp");
-        sent.Text.ShouldContain($"{ApiFactory.AcceptUrl}?code=");
+        FakeIdentityProvider.AcceptLinkOf(_api.Email.LinkSentTo(email)).ToString().ShouldStartWith($"{ApiFactory.AcceptUrl}?code=");
         _api.Email.CodeSentFor(invitation).ShouldStartWith($"{tenant.Id}.");
     }
 
@@ -396,11 +397,10 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     // O4: an event that arrives twice sends one email, because the email's idempotency key is the invitation's.
     [Fact]
-    public async Task SendMemberInvitationEmail_MemberInvitedArrivesTwice_SendsOneEmail()
+    public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
-        var invited = new MemberInvited(
-            Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), Guid.NewGuid(), "Member", null, NewEmail(), "Acme Ltd",
-            new Uri($"{ApiFactory.AcceptUrl}?code=x"));
+        var invited = new MemberInvitationReady(
+            Guid.CreateVersion7(), _time.GetUtcNow(), Guid.NewGuid(), Guid.CreateVersion7(), NewEmail(), "Acme Ltd", new Uri($"{ApiFactory.AcceptUrl}?code=x"));
         using var scope = _api.Services.CreateScope();
         var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
         var inTheTenant = new DeliveryOptions { TenantId = invited.TenantId.ToString() };
@@ -466,7 +466,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     }
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
     private Task<long> InvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");

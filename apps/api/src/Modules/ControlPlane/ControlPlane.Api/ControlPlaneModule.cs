@@ -2,7 +2,6 @@ using System.Reflection;
 using ControlPlane.Api.Admin;
 using ControlPlane.Api.Me;
 using ControlPlane.Api.Tenant;
-using ControlPlane.Api.Webhooks;
 using ControlPlane.Application.Invitations;
 using Microsoft.AspNetCore.Routing;
 
@@ -18,10 +17,10 @@ public static class ControlPlaneModule
 
     /// <summary>
     /// Maps the module's endpoints into the host's route groups, one for each audience. Each endpoint on an admin or tenant route
-    /// names the permission it needs, and each webhook endpoint declares that it checks its sender's signature (A5); each sends one
-    /// command, and the host maps its result.
+    /// names the permission it needs (A5); each sends one command, and the host maps its result. Deleting a user sends one command for
+    /// each step, because each step runs in a transaction of its own.
     /// </summary>
-    public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder me, RouteGroupBuilder tenant, RouteGroupBuilder webhooks)
+    public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder me, RouteGroupBuilder tenant)
     {
         Tenants.Map(admin);
         Users.Map(admin);
@@ -31,6 +30,5 @@ public static class ControlPlaneModule
         Profile.Map(tenant);
         Members.Map(tenant);
         Tenant.Invitations.Map(tenant);
-        ClerkEvents.Map(webhooks);
     }
 }

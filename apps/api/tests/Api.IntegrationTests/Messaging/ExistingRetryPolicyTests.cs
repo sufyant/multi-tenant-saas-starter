@@ -11,6 +11,11 @@ public sealed class ExistingRetryPolicyTests(Database database)
     [InlineData("CancelTenant", "Retry inline with no delay")]
     [InlineData("CancelInvitation", "Retry inline with no delay")]
     [InlineData("OwnerInvitationReady", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("MemberInvitationReady", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("OpenOwnerSignUp", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("OpenMemberSignUp", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("WithdrawSignUp", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("DeleteIdentityAccount", "Retry inline with a delay of 00:00:00.01")]
     public async Task ReadRetryRules_TenantStepsAndInvitation_KeepTheirMessageSpecificRules(string message, string firstAction)
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);

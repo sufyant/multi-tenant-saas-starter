@@ -1,4 +1,5 @@
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
@@ -42,7 +43,7 @@ internal static class Handlers
             return new CreatedTenant(result, saga, activate, timeout);
         });
 
-    public static Task<(ActivateTenantReply? Completed, TenantActivated? Activated, OwnerInvitationReady? Ready)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenant step) =>
+    public static Task<(ActivateTenantReply? Completed, TenantActivated? Activated, OpenOwnerSignUp? SignUp)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenant step) =>
         InTenant.RunAsync(services, tenantId, scope => ActivateTenantHandler.HandleAsync(
             step,
             scope.GetRequiredService<ITenantCatalog>(),
@@ -56,34 +57,55 @@ internal static class Handlers
             scope.GetRequiredService<ILogger<TenantCreationSaga>>(),
             Cancellation));
 
-    public static Task CancelInvitationAsync(IServiceProvider services, Guid tenantId, CancelInvitation step) =>
+    public static Task<WithdrawSignUp?> CancelInvitationAsync(IServiceProvider services, Guid tenantId, CancelInvitation step) =>
         InTenant.RunAsync(services, tenantId, scope => CancelInvitationHandler.HandleAsync(step, scope.GetRequiredService<ITenantCatalog>(), Cancellation));
 
-    // A tenant created up to its pivot, the way the saga drives it: started and activated. Returns what the invitation email is
-    // sent from.
-    public static async Task<(Guid TenantId, string Slug, OwnerInvitationReady Ready)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
+    // The identity provider's answer for an invitation's sign-up, recorded in the invitation's tenant.
+    public static Task<OutgoingMessages> RecordSignUpAsync(IServiceProvider services, Guid tenantId, SignUpOpened opened) =>
+        InTenant.RunAsync(services, tenantId, scope => RecordSignUpHandler.HandleAsync(
+            opened,
+            scope.GetRequiredService<ITenantCatalog>(),
+            scope.GetRequiredService<TimeProvider>(),
+            Cancellation));
+
+    public static Task<WithdrawSignUp?> ExpireSignUpAsync(IServiceProvider services, Guid tenantId, ExpireSignUp expire) =>
+        InTenant.RunAsync(services, tenantId, scope => ExpireSignUpHandler.HandleAsync(
+            expire,
+            scope.GetRequiredService<ITenantCatalog>(),
+            scope.GetRequiredService<TimeProvider>(),
+            Cancellation));
+
+    // A tenant created up to its pivot, the way the saga drives it: started and activated. Returns what the owner's sign-up is opened
+    // from.
+    public static async Task<(Guid TenantId, string Slug, OpenOwnerSignUp SignUp)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
     {
         var admin = await Catalog.AddUserAsync(services);
         var tenantId = Guid.CreateVersion7();
         var slug = Unique.Slug();
         var started = await CreateTenantAsync(services, tenantId, admin.ExternalId, slug, ownerEmail);
-        var (_, _, ready) = await ActivateAsync(services, tenantId, started.Activate.ShouldNotBeNull().Message);
+        var (_, _, signUp) = await ActivateAsync(services, tenantId, started.Activate.ShouldNotBeNull().Message);
 
-        return (tenantId, slug, ready.ShouldNotBeNull());
+        return (tenantId, slug, signUp.ShouldNotBeNull());
     }
 
     // Accepting starts outside any tenant: the invitation code names the tenant, the identity provider is asked for the user's
-    // verified email addresses and profile, and then the invitation is found by its secret in that tenant.
-    public static async Task<Result<TenantSummary>> AcceptAsync(IServiceProvider services, string code, string userId)
+    // verified email addresses, and then the invitation is found by its secret in that tenant. A person the catalog does not know
+    // gives their names.
+    public static async Task<Result<TenantSummary>> AcceptAsync(
+        IServiceProvider services,
+        string code,
+        string userId,
+        string? firstName = "Ada",
+        string? lastName = "Lovelace")
     {
-        IdentityAccount account;
+        IReadOnlyList<string> verifiedEmails;
         await using (var scope = services.CreateAsyncScope())
         {
-            account = await scope.ServiceProvider.GetRequiredService<IIdentityProvider>().FindAccountAsync(userId, Cancellation);
+            verifiedEmails = await scope.ServiceProvider.GetRequiredService<IIdentityProvider>().FindVerifiedEmailsAsync(userId, Cancellation);
         }
 
         var (accepted, _) = await InTenant.RunAsync(services, TenantIdOf(code), scope => AcceptInvitationHandler.HandleAsync(
-            new AcceptInvitation(SecretOf(code), userId, account.VerifiedEmails, account.Profile),
+            new AcceptInvitation(SecretOf(code), userId, verifiedEmails, firstName, lastName),
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));

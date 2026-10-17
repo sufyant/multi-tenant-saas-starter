@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Application.Invitations.SignUp;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,8 @@ using Wolverine.Tracking;
 namespace Api.IntegrationTests.Admin;
 
 // The tenant creation saga through the system door and the real host: its three steps, its compensations, and what is left
-// for a person when the last step fails for good. Only Clerk and the email service are fakes.
+// for a person when the last step fails for good. Step 3 lets the owner sign up with Clerk, then sends the email. Only Clerk and the
+// email service are fakes.
 public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -49,6 +51,23 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{await _catalog.UserIdOfAsync(admin)}|Tenant|{tenantId}|Acme Ltd");
         (await _audit.TenantLogAsync(tenantId)).ShouldBe($"{tenantId}:tenant.created|Platform|-|Tenant|{tenantId}|Acme Ltd");
         (await SagaStateAsync(tenantId)).ShouldBe("Completed");
+    }
+
+    // Step 3: the owner has no account, so Clerk creates its invitation once, and the email carries its link, which leads to our accept
+    // link.
+    [Fact]
+    public async Task CreateTenant_OwnerWithoutAnAccount_CreatesOneClerkInvitationAndEmailsItsLink()
+    {
+        var admin = await _catalog.AddSystemAdminAsync();
+        var owner = Email();
+
+        var created = await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), owner));
+
+        var tenantId = await IdOfAsync(created);
+        var signUp = _api.Identity.SignUps.Where(signUp => signUp.Email == owner).ShouldHaveSingleItem();
+        signUp.AcceptLink.GetLeftPart(UriPartial.Path).ShouldBe(ApiFactory.AcceptUrl);
+        signUp.ExpiresAt.ShouldBe(await database.ScalarAsSuperuserAsync<DateTime>($"SELECT expires_at FROM control_plane.invitations WHERE tenant_id = '{tenantId}'"));
+        _api.Email.LinkSentTo(owner).ShouldBe(FakeIdentityProvider.ClerkLink(signUp.InvitationId, signUp.AcceptLink));
     }
 
     // Section 6, step 1: the tenant, the owner's invitation and the saga record are written in one transaction.
@@ -134,6 +153,28 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
             record.Level == LogLevel.Error
             && record.Id.Name == "TenantCreationNeedsAttention"
             && record.Message.Contains(tenantId.ToString(), StringComparison.Ordinal));
+        alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
+    }
+
+    // Clerk that stays down ends step 3 as an email that never goes out: the tenant stays active, the invitation nobody can use is
+    // cancelled, no email carries a link that leads nowhere, and a person is told.
+    [Fact]
+    public async Task CreateTenant_ClerkKeepsFailing_LeavesTheTenantActiveCancelsTheInvitationSendsNoEmailAndRaisesTheAlarm()
+    {
+        var admin = await _catalog.AddSystemAdminAsync();
+        var owner = Email();
+        _api.Identity.IsDown = true;
+        using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_creation.needs_attention");
+
+        HttpResponseMessage created = null!;
+        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), owner));
+
+        var tenantId = await IdOfAsync(created);
+        messages.MovedToErrorQueue.SingleMessage<OpenOwnerSignUp>().ShouldNotBeNull();
+        (await TenantStatusAsync(tenantId)).ShouldBe("Active");
+        (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
+        (await SagaStateAsync(tenantId)).ShouldBe("NeedsAttention");
+        _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
         alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
     }
 

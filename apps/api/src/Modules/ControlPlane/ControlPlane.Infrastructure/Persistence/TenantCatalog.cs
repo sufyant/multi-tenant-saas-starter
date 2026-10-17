@@ -227,6 +227,15 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     Task<User?> ITenantCatalog.FindUserAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.Users.SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
 
+    async Task<User?> ITenantCatalog.FindUserForShareAsync(string externalUserId, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.Users
+            .FromSql($"SELECT * FROM control_plane.users WHERE external_id = {externalUserId} FOR SHARE")
+            .ToListAsync(cancellationToken);
+
+        return found.SingleOrDefault();
+    }
+
     Task<User?> ITenantCatalog.FindUserAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.Users.SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 

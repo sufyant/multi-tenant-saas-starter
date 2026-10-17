@@ -59,6 +59,12 @@ internal sealed class Invitation : ITenantEntity
 
     public Guid? AcceptedBy { get; private set; }
 
+    /// <summary>
+    /// The identity provider's invitation that lets the invited person sign up. None while the provider has not answered, and none when
+    /// the address already had an account.
+    /// </summary>
+    public string? SignUpInvitationId { get; private set; }
+
     public static Invitation Create(
         Guid id,
         Guid tenantId,
@@ -100,6 +106,28 @@ internal sealed class Invitation : ITenantEntity
         InvitationStatus.Accepted => Error.Conflict(ControlPlaneErrorCodes.InvitationNotPending, "The invitation has already been used."),
         _ => Cancel(),
     };
+
+    /// <summary>
+    /// Takes the identity provider's answer for the invitation's sign-up: its invitation, or none for an address that has an account.
+    /// The link goes out only for a pending invitation that has no other provider invitation. An answer that arrives twice changes
+    /// nothing. A provider invitation that comes too late, for an invitation that is no longer pending or already has one, must be
+    /// withdrawn, so nobody signs up with a link nobody receives.
+    /// </summary>
+    public SignUpDecision RecordSignUp(string? signUpInvitationId)
+    {
+        if (signUpInvitationId is not null && signUpInvitationId == SignUpInvitationId)
+        {
+            return SignUpDecision.Ignore;
+        }
+
+        if (Status != InvitationStatus.Pending || SignUpInvitationId is not null)
+        {
+            return signUpInvitationId is null ? SignUpDecision.Ignore : SignUpDecision.Withdraw;
+        }
+
+        SignUpInvitationId = signUpInvitationId;
+        return SignUpDecision.Send;
+    }
 
     /// <summary>
     /// Whether the invitation can be accepted now by someone with these verified email addresses: it is pending, it has not expired,
