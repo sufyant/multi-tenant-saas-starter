@@ -7,7 +7,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>
-/// A system admin suspends a tenant, for a reason they write. It runs inside that tenant, which the admin route names, with the tenant
+/// A system admin suspends a tenant, for a reason they write. It runs inside that tenant, which the platform route names, with the tenant
 /// locked, so a suspension and a reactivation run one at a time.
 /// </summary>
 public sealed record SuspendTenant(string AdminId, string Reason);

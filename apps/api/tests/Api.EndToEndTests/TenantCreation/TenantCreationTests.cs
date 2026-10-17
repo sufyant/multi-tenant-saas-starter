@@ -63,7 +63,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
     }
 
     // The client gives each tenant it creates a key, so a repeated request does not create a second tenant.
-    private static HttpRequestMessage CreateTenant(object body) => new(HttpMethod.Post, "/v1/admin/tenants")
+    private static HttpRequestMessage CreateTenant(object body) => new(HttpMethod.Post, "/v1/platform/tenants")
     {
         Content = JsonContent.Create(body),
         Headers = { { "Idempotency-Key", Guid.NewGuid().ToString() } },

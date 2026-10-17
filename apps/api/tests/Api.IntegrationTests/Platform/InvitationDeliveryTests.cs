@@ -11,7 +11,7 @@ using Tenancy;
 using Wolverine.Runtime;
 using Wolverine.Tracking;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // The invitation email goes through the Notifications module: through Resend, or to the log in Development without
 // Resend. It is sent from the event ControlPlane publishes once the tenant is active.

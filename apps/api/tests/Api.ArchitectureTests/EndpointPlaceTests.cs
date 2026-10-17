@@ -4,14 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.ArchitectureTests;
 
-// N5 and N7: an endpoint of a module sits in the folder of its audience, the same word as its route group: Admin for /v1/admin,
+// N5 and N7: an endpoint of a module sits in the folder of its audience, the same word as its route group: Platform for /v1/platform,
 // Me for /v1/me and Tenant for /v1/tenants/{tenantId}. Read from the endpoints of the composed application: the method that
 // handles each one, the type that declares it, and the file of that type in the module's Api project.
 public sealed class EndpointPlaceTests : IAsyncLifetime
 {
     private static readonly (string RoutePrefix, string Audience)[] Audiences =
     [
-        ("/v1/admin/", "Admin"),
+        ("/v1/platform/", "Platform"),
         ("/v1/me/", "Me"),
         ("/v1/tenants/{tenantId:guid}/", "Tenant"),
     ];

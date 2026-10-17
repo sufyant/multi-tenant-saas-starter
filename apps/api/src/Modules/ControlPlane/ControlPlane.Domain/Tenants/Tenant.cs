@@ -43,7 +43,7 @@ internal sealed class Tenant
     /// <summary>Why the tenant creation cancelled the tenant: a fixed code, never the text of an exception.</summary>
     public string? CancellationReason { get; private set; }
 
-    /// <summary>Why a system admin suspended the tenant, in their words; only the admin side sees it. None unless suspended or closed after a suspension.</summary>
+    /// <summary>Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a suspension.</summary>
     public string? SuspensionReason { get; private set; }
 
     /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed.</summary>

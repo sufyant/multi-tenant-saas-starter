@@ -48,7 +48,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         await admin.CloseTenantAsync(tenant.Id);
 
         var response = await stranger.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
-        var fromTheHandler = await admin.GetAsync($"/v1/admin/tenants/{Guid.NewGuid()}", Cancellation);
+        var fromTheHandler = await admin.GetAsync($"/v1/platform/tenants/{Guid.NewGuid()}", Cancellation);
 
         (response.StatusCode, fromTheHandler.StatusCode).ShouldBe((HttpStatusCode.NotFound, HttpStatusCode.NotFound));
         var handlers = await ProblemBodies.WithoutTraceIdAsync(fromTheHandler);

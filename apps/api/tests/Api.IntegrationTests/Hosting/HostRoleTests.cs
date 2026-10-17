@@ -214,7 +214,7 @@ public sealed class HostRoleTests(Database database)
         var userId = await catalog.UserIdOfAsync(await catalog.AddUserAsync());
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var suspended = await admin.PostAsync($"/v1/admin/users/{userId}/suspend", null, Cancellation);
+        var suspended = await admin.PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation);
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.suspended") > 0);
 
         suspended.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -239,8 +239,8 @@ public sealed class HostRoleTests(Database database)
         var userId = await catalog.UserIdOfAsync(user);
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var renamed = await admin.PatchAsJsonAsync($"/v1/admin/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
-        var deleted = await admin.DeleteAsync($"/v1/admin/users/{userId}", Cancellation);
+        var renamed = await admin.PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
         await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && await PlatformEntriesAsync(name, userId, "user.deleted") > 0
             && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0 && await PlatformEntriesAsync(name, userId, "user.renamed") > 0);
 
@@ -404,7 +404,7 @@ public sealed class HostRoleTests(Database database)
         var tenant = await new Catalog(database, name).AddTenantAsync(status: "Suspended");
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var reactivated = await admin.PostAsync($"/v1/admin/tenants/{tenant.Id}/reactivate", null, Cancellation);
+        var reactivated = await admin.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation);
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated") > 0);
 
         reactivated.StatusCode.ShouldBe(HttpStatusCode.OK);

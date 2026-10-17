@@ -15,7 +15,7 @@ using Tenancy;
 using Wolverine;
 using Wolverine.Tracking;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // The tenant creation saga through the system door and the real host: its three steps, its compensations, and what is left
 // for a person when the last step fails for good. Step 3 lets the owner sign up with Clerk, then sends the email. Only Clerk and the

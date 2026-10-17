@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
 // A system admin closes a tenant and reopens it within the reopen period, 30 days by default, through the system door (K4). Closing
 // cancels the tenant's pending invitations in the same transaction. A change of status is announced, and Audit records it under the
@@ -81,7 +81,7 @@ public sealed class TenantClosureTests(Database database) : IAsyncLifetime
     [InlineData("reopen")]
     public async Task CloseOrReopenTenant_UnknownTenant_IsNotFound(string action)
     {
-        var response = await (await AdminAsync()).PostAsync($"/v1/admin/tenants/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/tenants/{Guid.NewGuid()}/{action}", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");

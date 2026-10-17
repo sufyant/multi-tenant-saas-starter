@@ -1,5 +1,5 @@
 using System.Reflection;
-using ControlPlane.Api.Admin;
+using ControlPlane.Api.Platform;
 using ControlPlane.Api.Me;
 using ControlPlane.Api.Tenant;
 using ControlPlane.Application.Invitations;
@@ -16,14 +16,14 @@ public static class ControlPlaneModule
     public static Assembly HandlerAssembly => typeof(AcceptInvitationHandler).Assembly;
 
     /// <summary>
-    /// Maps the module's endpoints into the host's route groups, one for each audience. Each endpoint on an admin or tenant route
+    /// Maps the module's endpoints into the host's route groups, one for each audience. Each endpoint on a platform or tenant route
     /// names the permission it needs (A5); each sends one command, and the host maps its result. Deleting a user sends one command for
     /// each step, because each step runs in a transaction of its own.
     /// </summary>
-    public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder me, RouteGroupBuilder tenant)
+    public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder me, RouteGroupBuilder tenant)
     {
-        Tenants.Map(admin);
-        Users.Map(admin);
+        Tenants.Map(platform);
+        Users.Map(platform);
         MyProfile.Map(me);
         MyTenants.Map(me);
         Me.Invitations.Map(me);

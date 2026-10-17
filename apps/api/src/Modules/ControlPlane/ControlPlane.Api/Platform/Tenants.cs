@@ -10,24 +10,24 @@ using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
 
-namespace ControlPlane.Api.Admin;
+namespace ControlPlane.Api.Platform;
 
 /// <summary>The tenants a system admin works with.</summary>
 public static class Tenants
 {
-    public static void Map(RouteGroupBuilder admin)
+    public static void Map(RouteGroupBuilder platform)
     {
-        admin.MapPost("/tenants", CreateTenant)
+        platform.MapPost("/tenants", CreateTenant)
             .WithMetadata(new IdempotencyKeyRequired())
-            .RequireAuthorization(Permissions.AdminTenantsCreate)
+            .RequireAuthorization(Permissions.PlatformTenantsCreate)
             .Produces<TenantResponse>(StatusCodes.Status201Created);
-        admin.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.AdminTenantsRead);
-        admin.MapGet("/tenants/{tenantId:guid}", GetTenant).RequireAuthorization(Permissions.AdminTenantsRead);
-        admin.MapPatch("/tenants/{tenantId:guid}", RenameTenant).RequireAuthorization(Permissions.AdminTenantsUpdate);
-        admin.MapPost("/tenants/{tenantId:guid}/suspend", SuspendTenant).RequireAuthorization(Permissions.AdminTenantsSuspend);
-        admin.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.AdminTenantsReactivate);
-        admin.MapPost("/tenants/{tenantId:guid}/close", CloseTenant).RequireAuthorization(Permissions.AdminTenantsClose);
-        admin.MapPost("/tenants/{tenantId:guid}/reopen", ReopenTenant).RequireAuthorization(Permissions.AdminTenantsReopen);
+        platform.MapGet("/tenants", ListTenants).RequireAuthorization(Permissions.PlatformTenantsRead);
+        platform.MapGet("/tenants/{tenantId:guid}", GetTenant).RequireAuthorization(Permissions.PlatformTenantsRead);
+        platform.MapPatch("/tenants/{tenantId:guid}", RenameTenant).RequireAuthorization(Permissions.PlatformTenantsUpdate);
+        platform.MapPost("/tenants/{tenantId:guid}/suspend", SuspendTenant).RequireAuthorization(Permissions.PlatformTenantsSuspend);
+        platform.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.PlatformTenantsReactivate);
+        platform.MapPost("/tenants/{tenantId:guid}/close", CloseTenant).RequireAuthorization(Permissions.PlatformTenantsClose);
+        platform.MapPost("/tenants/{tenantId:guid}/reopen", ReopenTenant).RequireAuthorization(Permissions.PlatformTenantsReopen);
     }
 
     // Tenant creation runs inside the tenant it creates. The tenant's id is chosen here, by the server, never by the client. The client

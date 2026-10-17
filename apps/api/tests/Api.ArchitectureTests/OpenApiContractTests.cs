@@ -175,7 +175,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // OpenAPI 3.1, "Path Templating": each parameter in a path is a required path parameter. The tenant group, not the endpoint,
-    // names {tenantId}, so the endpoint alone would leave it out. A {name:guid} parameter is a uuid, as on the admin routes.
+    // names {tenantId}, so the endpoint alone would leave it out. A {name:guid} parameter is a uuid, as on the platform routes.
     [Fact]
     public void BuildOpenApiDocument_ParameterInAPath_IsARequiredPathParameterWithItsFormat()
     {

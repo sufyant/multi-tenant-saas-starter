@@ -1,4 +1,4 @@
-using ControlPlane.Api.Admin;
+using ControlPlane.Api.Platform;
 using ControlPlane.Api.Me;
 
 namespace ControlPlane.Api;

@@ -59,7 +59,7 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
         var member = await _catalog.AddMemberAsync(tenant.Id);
         await SuspendAsync(tenant.Id);
         (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true)
-            .PostAsync($"/v1/admin/tenants/{tenant.Id}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
+            .PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -77,7 +77,7 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id, Reason));
         var atTheDoor = await owner.GetAsync($"/v1/tenants/{tenant.Id}", Cancellation);
         var inTheList = await owner.GetAsync("/v1/me/tenants", Cancellation);
-        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/admin/tenants/{tenant.Id}/reactivate", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation));
 
         var theTenant = await owner.GetAsync($"/v1/tenants/{tenant.Id}", Cancellation);
         var activity = await owner.GetAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);

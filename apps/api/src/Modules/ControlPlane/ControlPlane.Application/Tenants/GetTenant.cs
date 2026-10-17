@@ -3,7 +3,7 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Tenants;
 
-/// <summary>The tenant the admin route names, in any status, for a system admin. It runs inside that tenant (W3).</summary>
+/// <summary>The tenant the platform route names, in any status, for a system admin. It runs inside that tenant (W3).</summary>
 public sealed record GetTenant;
 
 public static class GetTenantHandler

@@ -20,9 +20,9 @@ internal static class RouteGroups
 
     // The system door (T5): a separate route group for system admins, with its own authorization policy. ControlPlane decides who
     // passes, including the second factor (A6).
-    public static RouteGroupBuilder MapAdmin(this RouteGroupBuilder v1) =>
-        v1.MapGroup("/admin")
-            .WithMetadata(new AdminEndpoint())
+    public static RouteGroupBuilder MapPlatform(this RouteGroupBuilder v1) =>
+        v1.MapGroup("/platform")
+            .WithMetadata(new PlatformEndpoint())
             .RequireAuthorization(AccessPolicies.SystemAdmin);
 
     // The signed-in user, acting for themselves: any signed-in user may call these endpoints, without a permission, and reaches only
@@ -37,7 +37,7 @@ internal static class RouteGroups
             .RequireAuthorization(AccessPolicies.TenantMember);
 }
 
-internal sealed class AdminEndpoint;
+internal sealed class PlatformEndpoint;
 
 internal sealed class MeEndpoint;
 

@@ -86,11 +86,11 @@ internal sealed class PipelineHost : IAsyncDisposable
         app.UseApiPipeline();
         app.MapApiDocuments();
         var v1 = app.MapV1();
-        var admin = v1.MapAdmin();
+        var admin = v1.MapPlatform();
         TestEndpoints.Map(v1);
         IdempotencyEndpoints.Map(v1);
         TestEndpoints.MapTenant(v1.MapTenant());
-        TestEndpoints.MapAdmin(admin);
+        TestEndpoints.MapPlatform(admin);
         await app.StartAsync(TestContext.Current.CancellationToken);
 
         return new PipelineHost(app);

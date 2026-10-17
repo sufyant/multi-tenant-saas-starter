@@ -238,7 +238,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         var pendingAfterTheRefusal = await InvitationStatusAsync(slug);
         var membersAfterTheRefusal = await MembersAsync(slug);
         (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true)
-            .PostAsync($"/v1/admin/tenants/{TenantIdOf(code)}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
+            .PostAsync($"/v1/platform/tenants/{TenantIdOf(code)}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
         var accepted = await AcceptAsync(invitee, code);
 
         refused.StatusCode.ShouldBe(HttpStatusCode.Conflict);

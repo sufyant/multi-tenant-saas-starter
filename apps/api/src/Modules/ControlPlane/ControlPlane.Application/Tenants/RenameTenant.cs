@@ -7,7 +7,7 @@ namespace ControlPlane.Application.Tenants;
 
 /// <summary>
 /// A system admin gives a tenant a new name; the slug never changes (K4). Only the platform renames a tenant: a member cannot. It runs
-/// inside that tenant, which the admin route names, with the tenant locked.
+/// inside that tenant, which the platform route names, with the tenant locked.
 /// </summary>
 public sealed record RenameTenant(string AdminId, string Name);
 

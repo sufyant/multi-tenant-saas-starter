@@ -29,7 +29,7 @@ public sealed class TenantNotFoundTests(Database database) : IAsyncLifetime
 
         var notAMember = await outsider.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
         var noSuchTenant = await outsider.GetAsync($"/v1/tenants/{Guid.NewGuid()}/members", Cancellation);
-        var fromTheHandler = await admin.GetAsync($"/v1/admin/tenants/{Guid.NewGuid()}", Cancellation);
+        var fromTheHandler = await admin.GetAsync($"/v1/platform/tenants/{Guid.NewGuid()}", Cancellation);
 
         (notAMember.StatusCode, noSuchTenant.StatusCode, fromTheHandler.StatusCode)
             .ShouldBe((HttpStatusCode.NotFound, HttpStatusCode.NotFound, HttpStatusCode.NotFound));

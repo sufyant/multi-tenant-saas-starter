@@ -15,9 +15,9 @@ public static class AuditModule
     /// its members. Each names the permission it needs (A5). It reads a page of the log, then has its users named: two
     /// queries, each in the transaction of one module's DbContext (W1).
     /// </summary>
-    public static void MapEndpoints(RouteGroupBuilder admin, RouteGroupBuilder tenant)
+    public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder tenant)
     {
-        Admin.AuditLog.Map(admin);
+        Platform.AuditLog.Map(platform);
         Tenant.AuditLog.Map(tenant);
     }
 }

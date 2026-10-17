@@ -4,9 +4,9 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Admin;
+namespace Api.IntegrationTests.Platform;
 
-// GET /v1/admin/tenants/{tenantId}: one tenant, in every status, for the system admin.
+// GET /v1/platform/tenants/{tenantId}: one tenant, in every status, for the system admin.
 public sealed class GetTenantTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -32,7 +32,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: stored, name: "Admin View Ltd");
 
-        var response = await (await AdminAsync()).GetAsync($"/v1/admin/tenants/{tenant.Id}", Cancellation);
+        var response = await (await AdminAsync()).GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -48,7 +48,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var closedAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
         var tenant = await _catalog.AddTenantAsync(status: "Closed", suspensionReason: "Unpaid invoices", closedAt: closedAt);
 
-        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/admin/tenants/{tenant.Id}", Cancellation);
+        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
         (found.GetProperty("suspensionReason").GetString(), found.GetProperty("closedAt").GetDateTimeOffset()).ShouldBe(("Unpaid invoices", closedAt));
     }
@@ -56,7 +56,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_AnIdNoTenantHas_IsNotFound()
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/admin/tenants/{Guid.NewGuid()}", Cancellation);
+        var response = await (await AdminAsync()).GetAsync($"/v1/platform/tenants/{Guid.NewGuid()}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.not_found");
