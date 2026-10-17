@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using ControlPlane.Api;
+using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
@@ -21,6 +22,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string DocumentFile = "openapi/v1.json";
     private const string ProblemDetailsSchema = "#/components/schemas/ProblemDetails";
     private const string LanguageSchema = "#/components/schemas/Language";
+    private const string PermissionSchema = "#/components/schemas/Permission";
 
     private readonly ComposedApplication _application = new();
     private JsonElement _document;
@@ -102,6 +104,41 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
         EnumOf(language).ShouldBe(JsonValuesOf(typeof(Language)));
         copies.ShouldBeEmpty();
+    }
+
+    // A1: the permission catalogue is one enum in the document, so a generated client knows each name and a typo does not compile.
+    [Fact]
+    public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfTheCatalogue()
+    {
+        var catalogue = typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal);
+
+        var documented = EnumOf(Schemas().Single(schema => schema.Name == "Permission").Value);
+
+        catalogue.ShouldNotBeEmpty();
+        documented.ShouldBe(string.Join(", ", catalogue));
+    }
+
+    // Every response field that holds permission names is an array of the one schema Permission, so the web compares each name with
+    // the enum. A field is found by its name, as the response types keep the names as strings (MyTenantDetailResponse).
+    [Fact]
+    public void BuildOpenApiDocument_EveryResponseFieldNamedPermissions_IsAnArrayOfPermission()
+    {
+        var expected = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
+            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Permissions") is not null)
+            .Select(type => $"{type.Name}.permissions");
+
+        var documented = Schemas()
+            .Where(schema => schema.Value.TryGetProperty("properties", out _))
+            .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
+                .Where(property => IsAnArrayOf(property.Value, PermissionSchema))
+                .Select(property => $"{schema.Name}.{property.Name}"));
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
     }
 
     [Fact]
@@ -260,6 +297,10 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     };
 
     private static string FormatOf(JsonElement schema) => schema.TryGetProperty("format", out var format) ? format.GetString()! : "-";
+
+    private static bool IsAnArrayOf(JsonElement schema, string items) =>
+        schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "array"
+        && schema.TryGetProperty("items", out var item) && item.TryGetProperty("$ref", out var reference) && reference.GetString() == items;
 
     // A schema the document names, such as an enum, is a reference into components/schemas.
     private JsonElement Resolve(JsonElement schema) =>
