@@ -59,7 +59,15 @@ public static class AcceptInvitationHandler
         }
 
         var now = time.GetUtcNow();
-        var existing = await catalog.FindUserAsync(command.UserId, cancellationToken);
+
+        // A8: a system admin's deletion locks the user row and erases the user once they have no membership. The share lock waits for a
+        // deletion that runs, and a deleted user is refused, so a deleted user never becomes a member. The door refused them already,
+        // unless the deletion committed after it let them in.
+        var existing = await catalog.FindUserForShareAsync(command.UserId, cancellationToken);
+        if (existing?.DeletedAt is not null)
+        {
+            return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), null);
+        }
 
         // T5: provider staff enter through the system door, never as tenant members.
         if (existing is not null && await catalog.IsSystemAdminAsync(existing.Id, cancellationToken))

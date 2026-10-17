@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -8,14 +7,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class ClerkOnlySignsIn : Migration
     {
+        // Expand only: the version that serves during the deploy still reads users.profile_updated_at, so the column stays, unused
+        // and nullable. A later release drops it (docs/deployment.md, section 8).
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "profile_updated_at",
-                schema: "control_plane",
-                table: "users");
-
             migrationBuilder.AddColumn<string>(
                 name: "sign_up_invitation_id",
                 schema: "control_plane",
@@ -32,13 +29,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                 name: "sign_up_invitation_id",
                 schema: "control_plane",
                 table: "invitations");
-
-            migrationBuilder.AddColumn<DateTimeOffset>(
-                name: "profile_updated_at",
-                schema: "control_plane",
-                table: "users",
-                type: "timestamp with time zone",
-                nullable: true);
         }
     }
 }

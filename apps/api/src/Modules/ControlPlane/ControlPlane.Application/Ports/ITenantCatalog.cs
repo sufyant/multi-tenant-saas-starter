@@ -94,6 +94,12 @@ public interface ITenantCatalog
 
     internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The user with this identity provider id, with a share lock for the rest of the transaction: a deletion, which locks the user row
+    /// for update, runs before or after, never between a check of the user and the change (K6, A8).
+    /// </summary>
+    internal Task<User?> FindUserForShareAsync(string externalUserId, CancellationToken cancellationToken);
+
     internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Whether the user is on the staff list. The staff list belongs to no tenant.</summary>
