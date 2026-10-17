@@ -144,21 +144,25 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // The maintainer's decision in audit fix 08: one enum of an invitation's state, InvitationResponseState. The preview, the Owner
-    // invitation of a tenant and the invitation of the tenant's list refer to it, so a generated client has one type for it, and no other
-    // schema lists the states of an invitation.
+    // invitation of a tenant and the invitation of the tenant's list refer to it, so a generated client has one type for it. No other
+    // schema is an enum of the invitation's states, or of a part of them; an enum of another thing's states is not a copy.
     [Fact]
     public void BuildOpenApiDocument_EveryStateOfAnInvitation_IsTheOneInvitationStateEnum()
     {
+        string[] invitationStates = ["pending", "expired", "accepted", "cancelled"];
         var documented = Schemas()
             .Where(schema => schema.Value.TryGetProperty("properties", out _))
             .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
                 .Where(property => ReferencesIn(property.Value).Contains(InvitationStateSchema))
                 .Select(property => $"{schema.Name}.{property.Name}"));
-        var stateEnums = Schemas().Where(schema => schema.Name.EndsWith("State", StringComparison.Ordinal)).Select(schema => schema.Name);
+        var copies = Schemas()
+            .Where(schema => schema.Name != "InvitationResponseState" && schema.Value.TryGetProperty("enum", out _))
+            .Where(schema => schema.Value.GetProperty("enum").EnumerateArray().All(value => invitationStates.Contains(value.GetString())))
+            .Select(schema => schema.Name);
 
         documented.ShouldBe(["InvitationPreviewResponse.state", "InvitationResponse.state", "OwnerInvitationResponse.state"], ignoreOrder: true);
-        stateEnums.ShouldBe(["InvitationResponseState"]);
-        EnumOf(Resolve(Schemas().Single(schema => schema.Name == "InvitationResponseState").Value)).ShouldBe("pending, expired, accepted, cancelled");
+        EnumOf(Resolve(Schemas().Single(schema => schema.Name == "InvitationResponseState").Value)).ShouldBe(string.Join(", ", invitationStates));
+        copies.ShouldBeEmpty();
     }
 
     [Fact]
