@@ -132,9 +132,8 @@ internal static class ApiPipeline
             builder.Services.AddHostedService<IdempotencyCleanup>();
         }
 
-        // API8: only the configured browser origins may call, with the methods of the mapped /v1 endpoints and the headers the API
-        // uses, and without credentials mode: the API reads its caller from the Authorization header, never from a cookie. The options
-        // are built at their first use, after the endpoints are mapped, so the methods come from the endpoints and from no list.
+        // API8. The options are built at their first use, after the endpoints are mapped, so the methods come from the endpoints and
+        // from no list.
         builder.Services.AddCors();
         builder.Services.AddOptions<CorsOptions>().Configure<EndpointDataSource>((cors, endpoints) => cors.AddDefaultPolicy(policy => policy
             .WithOrigins(host.Cors.AllowedOrigins)
