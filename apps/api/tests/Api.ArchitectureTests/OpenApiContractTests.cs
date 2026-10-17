@@ -210,7 +210,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         unions.ShouldBeEmpty();
     }
 
-    // Every /v1 route needs a bearer token (A1), so the document declares the scheme once and requires it for every operation. The
+    // Every /v1 route needs a bearer token (A5), so the document declares the scheme once and requires it for every operation. The
     // anonymous routes, the document and the API reference, are outside /v1 and so outside the document.
     [Fact]
     public void BuildOpenApiDocument_EveryOperation_RequiresTheBearerScheme()

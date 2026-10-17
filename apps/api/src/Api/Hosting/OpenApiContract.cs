@@ -170,8 +170,9 @@ internal static class OpenApiContract
         }
     }
 
-    // A1: every /v1 route needs a bearer token from the identity provider. The anonymous routes, the document and the API reference, are
-    // outside /v1 and so outside the document (OpenApiContractTests), so no operation sets the requirement aside.
+    // A5: every /v1 route is signed-in only or requires a permission, so it needs a bearer token from the identity provider. The anonymous
+    // routes, the document and the API reference, are outside /v1 and so outside the document (OpenApiContractTests), so no operation
+    // sets the requirement aside.
     private static Task RequireBearerToken(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         document.Components ??= new OpenApiComponents();
