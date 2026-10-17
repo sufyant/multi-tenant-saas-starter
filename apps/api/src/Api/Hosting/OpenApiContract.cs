@@ -115,15 +115,26 @@ internal static class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // The one list of languages is the schema Language, which every field that holds a language refers to. The generator builds it from
-    // the field it meets first; when that field is nullable it puts null among the values and gives no type, so a client would take null
-    // for a language everywhere. The schema states the tags only; a nullable field says null itself.
+    // The one list of languages is the schema Language, which every field that holds a language refers to. Language has a converter of
+    // its own, which reads an exact tag only, so the generator knows no values: it gives the schema no type, and a nullable field no
+    // schema at all. So the schema states the tags, and each such field, which the API names "language", refers to it and may be null.
+    // OpenApiContractTests fails for a field that holds a language and does not refer to it.
     private static Task DescribeLanguage(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
-        if (document.Components?.Schemas?.ContainsKey(nameof(Language)) == true)
+        if (document.Components?.Schemas?.ContainsKey(nameof(Language)) != true)
         {
-            document.Components.Schemas[nameof(Language)] = EnumSchema(
-                [.. Enum.GetValues<Language>().Select(Problems.NameOf)], "A language the web speaks, by its BCP 47 language tag.");
+            return Task.CompletedTask;
+        }
+
+        document.Components.Schemas[nameof(Language)] = EnumSchema(
+            [.. Enum.GetValues<Language>().Select(Problems.NameOf)], "A language the web speaks, by its BCP 47 language tag.");
+        var unknown = document.Components.Schemas.Values.OfType<OpenApiSchema>()
+            .SelectMany(schema => schema.Properties ?? new Dictionary<string, IOpenApiSchema>())
+            .Where(property => property.Key == "language" && property.Value is OpenApiSchema { Type: null, Enum: null, OneOf: null })
+            .Select(property => (OpenApiSchema)property.Value);
+        foreach (var field in unknown)
+        {
+            field.OneOf = [new OpenApiSchema { Type = JsonSchemaType.Null }, new OpenApiSchemaReference(nameof(Language), document)];
         }
 
         return Task.CompletedTask;
