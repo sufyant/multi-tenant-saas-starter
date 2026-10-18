@@ -8,7 +8,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Project conventions
+Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file adds only what differs for the tenant web.
 
-- New page/route with real logic (validation, protected behavior, data transforms) → add a test (Vitest for units, Playwright for flows). Pure UI shells don't need one.
-- New page under `(app)` → add its label to `labels` in [dynamic-breadcrumb.tsx](src/components/dynamic-breadcrumb.tsx).
+# The tenant web
+
+- The members of an organisation use this app. On screen a tenant is an "organisation".
+- Every signed-in route sits under `/[tenantSlug]/...` (F30). The tenant layout turns the slug into the tenant id through the cached `ListMyTenants`, and every call of a tenant operation takes that id. A slug that is not in the user's list shows "No access yet".
+- `/` is "Choose an organisation". With one organisation it redirects to `/[tenantSlug]`.
+- The breadcrumb starts with the organisation name. It opens the OrgMenu when the user has more than one organisation.
+- What the user may do comes from `GetMyTenant.permissions` (F5).

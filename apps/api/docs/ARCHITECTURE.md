@@ -44,7 +44,7 @@ flowchart TB
 | Who handles an event | The event is in the publisher's `Contracts` project, in the folder of its resource. Its handlers are in each listening module's `Application` project, in the use case folder of the handler. The message tables of section 6 name each one | N8, section 6 |
 | An error code | The owner's static `...ErrorCodes` class | Section 2, N11w |
 | A test | Next to the module it tests, or in `tests/` for the whole system. A class is named by its use case or by the class it tests | N9 |
-| A generated file | A file that ends in `.g.cs` or `.gen.ts`, and `openapi/v1.json`. The table in section 2 names each generator | D1, "Generated files" in section 2 |
+| A generated file | A file that ends in `.g.cs`, `.gen.ts` or `.gen.css`, and `openapi/v1.json`. The table in section 2 names each generator | D1, "Generated files" in section 2 |
 | A rule | This document, by its id | |
 
 ## Purpose and scope
@@ -149,7 +149,8 @@ A generated C# file ends in `.g.cs`, a generated TypeScript or CSS file in `.gen
 | `ControlPlane.Contracts/Permissions.g.cs`, the permission list that the endpoints and Audit read | `ControlPlane.Domain/PermissionPools.cs`, the one place of the permission names and their pools (Vernon, *Implementing Domain-Driven Design*, Identity and Access). Contracts never references Domain | `apps/api/scripts/generate-permissions.mjs` | `pnpm api:permissions` |
 | `src/Api/Internal/Generated/**/*.g.cs`, Wolverine's handler code (W10) | the handlers, messages, sagas, middleware and registrations | Wolverine's `codegen write`; `apps/api/scripts/codegen.mjs` empties the folder first and names each file `.g.cs` after it. The host compiles the files and loads the types by name, so the name changes nothing at run time (`HandlerCodeFileTests`) | `pnpm api:codegen` |
 | `openapi/v1.json` (N11) | the request and response types, the endpoints and `Api/Hosting/OpenApiContract.cs` | the build of `src/Api` (`Microsoft.Extensions.ApiDescription.Server`) | `pnpm api:openapi` |
-| `packages/api-client/src/schema.gen.ts`, the client types | `openapi/v1.json` | `openapi-typescript` | `pnpm api:generate` |
+| `packages/api-client/src/generated/**/*.gen.ts`, the client: the types and enum objects, the Zod schemas, the TanStack Query options and the MSW handlers, and the list of operations with their declared response headers | `openapi/v1.json` | Orval (`packages/api-client/orval.config.ts`), then `packages/api-client/scripts/generate-operations.mjs` | `pnpm api:generate` |
+| `packages/ui/src/styles/tokens.gen.css`, the CSS variables of the design tokens | `packages/ui/tokens/tokens.json` | `packages/ui/scripts/build-tokens.mjs` | `pnpm ui:tokens` |
 | A migration's `.Designer.cs` and each module's `...ModelSnapshot.cs` | the DbContext's model | `dotnet ef migrations add` | none in `pnpm generate`: a migration is written once for each model change, and `PendingModelChangesTests` fails when the model has changed without one. The migration itself is reviewed, because it holds row level security, so `.gitattributes` does not fold it |
 
 ## 3. Messaging
