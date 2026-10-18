@@ -64,6 +64,21 @@ public sealed partial class AuditOperationTests
         mapped.ShouldBe(types);
     }
 
+    // N8: a type of details is named after the constant of its operation in AuditOperations: {Operation}Details.
+    [Fact]
+    public void DeclareAuditDetails_EveryDetailsType_IsNamedAfterItsOperation()
+    {
+        var constants = typeof(AuditOperations).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .ToDictionary(field => (string)field.GetRawConstantValue()!, field => field.Name, StringComparer.Ordinal);
+
+        var misnamed = AuditDetailsTypes.OfOperation
+            .Where(decision => decision.Value is not null && decision.Value.Name != $"{constants[decision.Key]}Details")
+            .Select(decision => $"{decision.Key}: {decision.Value!.Name}");
+
+        misnamed.ShouldBeEmpty();
+    }
+
     // K3 and N7: every type of details has one response shape, named after it, whose discriminator is its operation.
     [Fact]
     public void AnswerAuditDetails_EveryDetailsType_HasOneResponseShapeWithItsOperation()

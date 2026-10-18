@@ -11,7 +11,7 @@ namespace Audit.Api.Tenant.AuditLogs;
 [JsonDerivedType(typeof(MemberInvitedDetailsResponse), AuditDetailsTypes.MemberInvited)]
 [JsonDerivedType(typeof(MemberRemovedDetailsResponse), AuditDetailsTypes.MemberRemoved)]
 [JsonDerivedType(typeof(MemberRoleChangedDetailsResponse), AuditDetailsTypes.MemberRoleChanged)]
-[JsonDerivedType(typeof(OwnerInvitedDetailsResponse), AuditDetailsTypes.TenantOwnerInvited)]
+[JsonDerivedType(typeof(TenantOwnerInvitedDetailsResponse), AuditDetailsTypes.TenantOwnerInvited)]
 [JsonDerivedType(typeof(TenantRenamedDetailsResponse), AuditDetailsTypes.TenantRenamed)]
 [JsonDerivedType(typeof(TenantSuspendedDetailsResponse), AuditDetailsTypes.TenantSuspended)]
 public abstract record AuditDetailsResponse;

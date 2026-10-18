@@ -408,7 +408,7 @@ export interface components {
          * @description The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
          *     `details` by it. It is the entry's own operation.
          */
-        AuditDetailsResponse: components["schemas"]["MemberInvitedDetailsResponse"] | components["schemas"]["MemberRemovedDetailsResponse"] | components["schemas"]["MemberRoleChangedDetailsResponse"] | components["schemas"]["OwnerInvitedDetailsResponse"] | components["schemas"]["TenantRenamedDetailsResponse"] | components["schemas"]["TenantSuspendedDetailsResponse"];
+        AuditDetailsResponse: components["schemas"]["MemberInvitedDetailsResponse"] | components["schemas"]["MemberRemovedDetailsResponse"] | components["schemas"]["MemberRoleChangedDetailsResponse"] | components["schemas"]["TenantOwnerInvitedDetailsResponse"] | components["schemas"]["TenantRenamedDetailsResponse"] | components["schemas"]["TenantSuspendedDetailsResponse"];
         /**
          * @description One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry
          *     keeps: the shape of its operation, or null for an operation without details. Names are resolved when the log is read; a name is only
@@ -714,15 +714,6 @@ export interface components {
             expiresAt: string;
             state: components["schemas"]["InvitationResponseState"];
         };
-        /** @description The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any. */
-        OwnerInvitedDetailsResponse: {
-            /** @enum {string} */
-            operation: "tenant.owner_invited";
-            /** Format: uuid */
-            invitationId: string;
-            /** Format: uuid */
-            replacedInvitationId: null | string;
-        };
         /**
          * @description A name of the permission list. Every endpoint checks its own permission.
          * @enum {string}
@@ -814,6 +805,15 @@ export interface components {
             ownerCount: number;
             firstOwner: null | components["schemas"]["TenantOwnerResponse"];
             ownerInvitation: null | components["schemas"]["OwnerInvitationResponse"];
+        };
+        /** @description The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any. */
+        TenantOwnerInvitedDetailsResponse: {
+            /** @enum {string} */
+            operation: "tenant.owner_invited";
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            replacedInvitationId: null | string;
         };
         /** @description An Owner of a tenant: the user's id, names and address. */
         TenantOwnerResponse: {

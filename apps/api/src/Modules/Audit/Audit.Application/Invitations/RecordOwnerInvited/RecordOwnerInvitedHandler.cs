@@ -15,7 +15,7 @@ public static class RecordOwnerInvitedHandler
     public static Task HandleAsync(OwnerInvitedEvent invited, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(invited.TenantId, invited.TenantName);
-        var details = JsonSerializer.Serialize(new OwnerInvitedDetails(invited.InvitationId, invited.ReplacedInvitationId), JsonSerializerOptions.Web);
+        var details = JsonSerializer.Serialize(new TenantOwnerInvitedDetails(invited.InvitationId, invited.ReplacedInvitationId), JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(invited.EventId, invited.OccurredAt, AuditActor.User(invited.InvitedBy), AuditOperations.TenantOwnerInvited, tenant, details),
             new TenantAuditEntry(invited.EventId, invited.OccurredAt, AuditActor.Platform, AuditOperations.TenantOwnerInvited, tenant, details),

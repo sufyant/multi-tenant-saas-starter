@@ -251,6 +251,20 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         page.GetProperty("items")[0].GetProperty("details").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
+    // A stored object for an operation that keeps no details has no shape to answer. No handler writes one, so it is a fault, not an
+    // answer.
+    [Fact]
+    public async Task ListAuditEntries_DetailsOfAnOperationWithoutDetails_IsAServerError()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _audit.AddTenantEntryAsync(tenant.Id, Start, operation: "invitation.revoked", details: """{"x":1}""");
+
+        var response = await _api.CreateClient(owner).GetAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+    }
+
     // The screen shows names; an email address is a person's data that Activity does not need, even for a user without a name, who gets
     // no name at all.
     [Fact]

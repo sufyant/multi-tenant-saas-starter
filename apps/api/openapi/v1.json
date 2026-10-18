@@ -4087,7 +4087,7 @@
             "$ref": "#/components/schemas/MemberRoleChangedDetailsResponse"
           },
           {
-            "$ref": "#/components/schemas/OwnerInvitedDetailsResponse"
+            "$ref": "#/components/schemas/TenantOwnerInvitedDetailsResponse"
           },
           {
             "$ref": "#/components/schemas/TenantRenamedDetailsResponse"
@@ -4103,7 +4103,7 @@
             "member.invited": "#/components/schemas/MemberInvitedDetailsResponse",
             "member.removed": "#/components/schemas/MemberRemovedDetailsResponse",
             "member.role_changed": "#/components/schemas/MemberRoleChangedDetailsResponse",
-            "tenant.owner_invited": "#/components/schemas/OwnerInvitedDetailsResponse",
+            "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
           }
@@ -4982,33 +4982,6 @@
         },
         "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner."
       },
-      "OwnerInvitedDetailsResponse": {
-        "required": [
-          "invitationId",
-          "replacedInvitationId",
-          "operation"
-        ],
-        "properties": {
-          "operation": {
-            "enum": [
-              "tenant.owner_invited"
-            ],
-            "type": "string"
-          },
-          "invitationId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "replacedInvitationId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          }
-        },
-        "description": "The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any."
-      },
       "Permission": {
         "enum": [
           "platform.audit.read",
@@ -5349,6 +5322,33 @@
           }
         },
         "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply."
+      },
+      "TenantOwnerInvitedDetailsResponse": {
+        "required": [
+          "invitationId",
+          "replacedInvitationId",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.owner_invited"
+            ],
+            "type": "string"
+          },
+          "invitationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "replacedInvitationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any."
       },
       "TenantOwnerResponse": {
         "required": [
