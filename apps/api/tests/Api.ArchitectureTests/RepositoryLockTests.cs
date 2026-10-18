@@ -2,8 +2,10 @@ using System.Reflection;
 
 namespace Api.ArchitectureTests;
 
-// K6a: a repository method that returns an aggregate root locks it, and its name says so. A handler gets a root only from a repository
-// (Q1, Q2), so a handler cannot change a root it did not lock. A part of an aggregate is not checked: the handler locked its root first.
+// K6a: a repository method that returns an aggregate root locks it, and its name says so. A query class returns no root (Q2), so a
+// handler gets a root only from a repository (Q1), and it cannot change a root it did not lock. A part of an aggregate is not checked:
+// the handler locked its root first. Audit's IAuditLog is neither, and returns its entries without a lock, because an entry never
+// changes (K3).
 public sealed class RepositoryLockTests
 {
     private static readonly string[] LockSuffixes = ["ForUpdateAsync", "ForNoKeyUpdateAsync"];
@@ -25,8 +27,22 @@ public sealed class RepositoryLockTests
         unlocked.ShouldBeEmpty();
     }
 
-    // The test above finds the roots by their folder. Each repository, I{Aggregate}Repository (Q1), names one of them, so a root that the
-    // test above does not find fails here.
+    [Theory]
+    [MemberData(nameof(Modules))]
+    public void LoadAggregateRoot_FromAQueryClass_FindsNone(string module)
+    {
+        var roots = AggregateRootsOf(module);
+
+        var returningRoots = InterfacesOf(module, "Queries")
+            .SelectMany(queries => queries.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            .Where(method => Mentions(method.ReturnType, roots))
+            .Select(method => $"{method.DeclaringType!.Name}.{method.Name}");
+
+        returningRoots.ShouldBeEmpty();
+    }
+
+    // The tests above find the roots by their folder. Each repository, I{Aggregate}Repository (Q1), names one of them, so a root that the
+    // tests above do not find fails here.
     [Theory]
     [MemberData(nameof(Modules))]
     public void FindAggregateRoot_OfEachRepository_IsFound(string module)
@@ -44,9 +60,12 @@ public sealed class RepositoryLockTests
     private static HashSet<Type> AggregateRootsOf(string module) =>
         [.. Solution.Load($"{module}.Domain").GetTypes().Where(type => type.Namespace == $"{module}.Domain.{PluralOf(type.Name)}")];
 
-    private static IEnumerable<Type> RepositoriesOf(string module) =>
+    private static IEnumerable<Type> RepositoriesOf(string module) => InterfacesOf(module, "Repository");
+
+    // I{Aggregate}Repository and I{Resource}Queries (Q1, Q2), by the role their name ends with (N8).
+    private static IEnumerable<Type> InterfacesOf(string module, string role) =>
         Solution.Load($"{module}.Application").GetTypes()
-            .Where(type => type.IsInterface && type.Name.StartsWith('I') && type.Name.EndsWith("Repository", StringComparison.Ordinal));
+            .Where(type => type.IsInterface && type.Name.StartsWith('I') && type.Name.EndsWith(role, StringComparison.Ordinal));
 
     private static string PluralOf(string name) => name.EndsWith('y') ? $"{name[..^1]}ies" : $"{name}s";
 
