@@ -784,7 +784,6 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
             .SelectMany(schema => PropertiesOf(schema.Value).Select(property => ($"{schema.Name}.{property.Name}", property.Value)));
 
-    // The webhook group is left out of the document (N5), and so are the endpoints outside /v1, such as the document itself.
     private IEnumerable<RouteEndpoint> DocumentedEndpoints() =>
         _application.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
