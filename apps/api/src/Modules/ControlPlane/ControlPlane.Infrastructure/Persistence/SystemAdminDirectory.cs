@@ -14,7 +14,7 @@ internal sealed class SystemAdminDirectory(
 {
     // The system admin list is read before the person's own grant: of two first visits at once, the one that finds the list empty and
     // then loses the race to write the grant finds the other's grant when it reads its own.
-    public async Task<IReadOnlySet<string>?> FindSystemPermissionsAsync(
+    public async Task<IReadOnlySet<string>?> FindPlatformPermissionsAsync(
         string externalUserId,
         bool secondFactorVerified,
         CancellationToken cancellationToken)

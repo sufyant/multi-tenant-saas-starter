@@ -7,11 +7,11 @@ namespace ControlPlane.UnitTests.SystemAdmins;
 public class SystemDoorTests
 {
     [Fact]
-    public void EnterSystemDoor_SystemAdminWithASecondFactor_HoldsTheSystemPool()
+    public void EnterSystemDoor_SystemAdminWithASecondFactor_HoldsThePlatformPool()
     {
         var permissions = SystemDoor.PermissionsFor(isSystemAdmin: true, secondFactorVerified: true);
 
-        permissions.ShouldBe(PermissionPools.SystemPool);
+        permissions.ShouldBe(PermissionPools.PlatformPool);
     }
 
     [Fact]

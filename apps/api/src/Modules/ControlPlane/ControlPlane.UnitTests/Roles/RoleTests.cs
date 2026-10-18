@@ -17,9 +17,9 @@ public class RoleTests
     [Fact]
     public void GrantBuiltInRoles_EveryRole_HoldsNoSystemPermission()
     {
-        var systemPermissions = BuiltInRoles.All.SelectMany(role => role.Permissions).Intersect(PermissionPools.SystemPool);
+        var platformPermissions = BuiltInRoles.All.SelectMany(role => role.Permissions).Intersect(PermissionPools.PlatformPool);
 
-        systemPermissions.ShouldBeEmpty();
+        platformPermissions.ShouldBeEmpty();
     }
 
     [Fact]

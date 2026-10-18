@@ -5,11 +5,11 @@ namespace ControlPlane.UnitTests;
 
 public class PermissionPoolTests
 {
-    // A tenant's custom roles choose from the tenant pool, so a system permission must never be part of it.
+    // A tenant's custom roles choose from the tenant pool, so a platform permission must never be part of it.
     [Fact]
     public void ComparePools_TenantAndSystem_ShareNoPermission()
     {
-        var shared = PermissionPools.TenantPool.Intersect(PermissionPools.SystemPool);
+        var shared = PermissionPools.TenantPool.Intersect(PermissionPools.PlatformPool);
 
         shared.ShouldBeEmpty();
     }
@@ -17,7 +17,7 @@ public class PermissionPoolTests
     [Fact]
     public void NameSystemPermissions_EveryOne_StartsWithAdmin()
     {
-        var misnamed = PermissionPools.SystemPool.Where(permission => !permission.StartsWith("platform.", StringComparison.Ordinal));
+        var misnamed = PermissionPools.PlatformPool.Where(permission => !permission.StartsWith("platform.", StringComparison.Ordinal));
 
         misnamed.ShouldBeEmpty();
     }
@@ -31,6 +31,6 @@ public class PermissionPoolTests
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!);
 
-        names.ShouldBe(PermissionPools.TenantPool.Concat(PermissionPools.SystemPool), ignoreOrder: true);
+        names.ShouldBe(PermissionPools.TenantPool.Concat(PermissionPools.PlatformPool), ignoreOrder: true);
     }
 }

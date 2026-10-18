@@ -4,16 +4,16 @@ using SharedKernel;
 namespace Api.Authorization;
 
 // What the caller of this request may do, resolved once per request with the tenant: their membership on a
-// tenant route, their system permissions on a platform route, or ControlPlane's reason to refuse them on a me or tenant route.
+// tenant route, their platform permissions on a platform route, or ControlPlane's reason to refuse them on a me or tenant route.
 internal sealed class RequestAccess
 {
     public TenantMembership? Membership { get; set; }
 
     public Error? Refusal { get; set; }
 
-    public IReadOnlySet<string>? SystemPermissions { get; set; }
+    public IReadOnlySet<string>? PlatformPermissions { get; set; }
 
-    // The tenant and system pools never share a permission, so one set never satisfies the other's checks.
+    // The tenant and platform pools never share a permission, so one set never satisfies the other's checks.
     public bool Has(string permission) =>
-        Membership?.Permissions.Contains(permission) == true || SystemPermissions?.Contains(permission) == true;
+        Membership?.Permissions.Contains(permission) == true || PlatformPermissions?.Contains(permission) == true;
 }
