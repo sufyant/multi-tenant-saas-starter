@@ -26,11 +26,11 @@ public static class SuspendTenantHandler
             return (suspended.Map(_ => TenantView.Of(tenant)), null);
         }
 
-        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name, tenant.SuspensionReason));
+        return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, tenant.SuspensionReason));
     }
 }
