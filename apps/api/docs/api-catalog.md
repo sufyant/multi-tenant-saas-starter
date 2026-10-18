@@ -99,11 +99,11 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A replaced or a revoked invitation becomes `Cancelled`. Accepting it answers 404 `invitation.not_found`. There is no other status.
 - A replacement is one command and one audit record: `member.invited`, with the replaced invitation's id in its details. It writes no `invitation.revoked` record (K3).
 - "Send again" is not an endpoint of its own.
-- An invitation lives `ControlPlane:Invitations:Lifetime`, 7 days today, and at least one day. The email says how long the link works, in whole days.
+- An invitation lives `ControlPlane:Invitations:Lifetime`, at least one day. The email says how long the link works, in whole days.
 - An invitation keeps the language of its email (K8).
 - The platform's Owner invitation follows K9. A member never invites into a tenant without an Owner, because such a tenant has no member.
 - A tenant has at most one pending invitation to an email. A partial unique index on the tenant and `lower(email)` of pending invitations keeps it. The tenant row lock is the first guard; the index is the second (K6).
-- Each tenant may create `ControlPlane:Invitations:DailyLimitPerTenant` invitations in any 24 hours, 50 by default. The window rolls: it counts every invitation the tenant created in the last 24 hours, cancelled and replaced ones included, so a replacement does not get around it. Over the limit, `InviteMember` answers 429 `invitation.daily_limit_reached` (RFC 6585), without a `Retry-After` header. It may become a platform setting later.
+- Each tenant may create `ControlPlane:Invitations:DailyLimitPerTenant` invitations in any 24 hours. The window rolls: it counts every invitation the tenant created in the last 24 hours, cancelled and replaced ones included, so a replacement does not get around it. Over the limit, `InviteMember` answers 429 `invitation.daily_limit_reached` (RFC 6585), without a `Retry-After` header. It may become a platform setting later.
 - An email that already belongs to a member, in the catalog and compared without case, answers 409 `member.exists`.
 - The invitation email has the retries of the owner invitation email. After the last try the message goes to the dead letter queue. The invitation stays pending; the inviter can invite again, which replaces it.
 - Closing a tenant cancels its pending invitations, in the same transaction. Accepting one then answers 404 `invitation.not_found`, as a revoked one, also after a reopening. An invitation to a suspended tenant cannot be accepted (409).
@@ -127,7 +127,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 - provisioning → active ⇄ suspended → closed → deleted. A failed creation goes provisioning → cancelled. Active and suspended both go to closed, and a reopening goes closed → active.
 - A suspension has a reason. Today it is text the system admin writes: 1 to 500 characters, trimmed. The platform side shows it (`GetTenant`, `ListTenants`); a member never sees it, and only the platform's audit entry holds it. Reactivating and reopening clear it. A billing reason comes with billing.
-- closed: members cannot enter (403 `tenant.closed`), the data stays, and closing cancels the pending invitations. The tenant can be reopened while `closedAt` plus `ControlPlane:Tenants:ReopenPeriod`, 30 days by default, is in the future. Nothing ends the period by itself: no job runs when it ends.
+- closed: members cannot enter (403 `tenant.closed`), the data stays, and closing cancels the pending invitations. The tenant can be reopened while `closedAt` plus `ControlPlane:Tenants:ReopenPeriod` is in the future. Nothing ends the period by itself: no job runs when it ends.
 - Only the platform renames a tenant (`RenameTenant`, platform). The tenant's name is locked in the tenant app.
 - The slug never changes.
 - deleted (removing the data) is not in this catalog. Export and deletion are designed in a later step.
@@ -198,7 +198,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. The first system admin starts with `en`.
 - A user's `timeZone` is an IANA name, or null for "not set". The API never interprets it: the image has no time zone data (ARCHITECTURE.md, section 7). It checks the shape only, keeps the name and gives it back. The web offers the list. The API formats no date or time.
 - `InviteMember`, `CreateTenant` and `InviteOwner` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant` and `InviteOwner`, the system admin's. The invitation keeps it.
-- The invitation emails say how long the link works ("7 days"), from the invitation's lifetime, and show no date or time, so they need no time zone.
+- The invitation emails say how long the link works, in whole days, from the invitation's lifetime, and show no date or time, so they need no time zone.
 - `ChangePreferences` writes the platform entry `user.preferences_changed`, by the user and about the user, with no details: the entry holds no value (K3).
 - A system admin's deletion erases the time zone with the names (A8). The language stays.
 - Sources: W3C, "Language tags in HTML and XML" and "Working with time zones". IANA Time Zone Database, "Theory and pragmatics of the tz code and data". Microsoft Learn, "Globalization invariant mode". Unicode CLDR, "Language Plural Rules".

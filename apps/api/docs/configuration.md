@@ -2,7 +2,7 @@
 
 Every setting the API reads. Configuration comes from environment variables (section 7 of `ARCHITECTURE.md`): a key becomes a variable with `__` in place of `:`, and a list item gets its index (`Host__Cors__AllowedOrigins__0`). `appsettings.json` holds only the defaults below that are marked as coming from it; `appsettings.Example.json` lists the keys with placeholders.
 
-Each process checks its settings when it starts. If a required setting is missing or wrong, it stops and names the key. A test fails when a key the code binds has no row here.
+Each process checks its settings when it starts. If a required setting is missing or wrong, it stops and names the key. `ConfigurationDocumentTests` fails when a key the code binds has no row here, when `appsettings.Example.json` and this table list different keys, or when a default here differs from the code or from `appsettings.json`.
 
 "Required" means the process does not start without it. **Development** marks what `ASPNETCORE_ENVIRONMENT=Development` relaxes.
 
