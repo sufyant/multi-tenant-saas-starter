@@ -17,8 +17,8 @@ public sealed record AuditEntrySummary(
     AuditTargetSummary Target);
 
 /// <summary>
-/// Who acted: a user carries their catalog user id, their real name or null, and whether they were deleted. The platform and the
-/// identity provider carry only their kind.
+/// Who acted: a user carries their catalog user id, their real name or null, and whether they were deleted. The platform carries only
+/// its kind.
 /// </summary>
 public sealed record AuditActorSummary(string Kind, Guid? UserId, string? DisplayName, bool? Deleted);
 
@@ -59,11 +59,10 @@ internal static class AuditEntrySummaries
         });
     }
 
-    // The platform and the identity provider have no name here: a screen names them from their kind, in its own language.
+    // The platform has no name here: a screen names it from its kind, in its own language.
     private static AuditActorSummary ActorOf(AuditRecord record) => record.ActorKind switch
     {
         AuditActorKind.User => new(nameof(AuditActorKind.User), record.ActorId, null, false),
-        AuditActorKind.IdentityProvider => new(nameof(AuditActorKind.IdentityProvider), null, null, null),
         _ => new(nameof(AuditActorKind.Platform), null, null, null),
     };
 

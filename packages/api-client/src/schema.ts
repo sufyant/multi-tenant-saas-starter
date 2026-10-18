@@ -388,10 +388,9 @@ export interface components {
             lastName?: null | string;
         };
         /**
-         * @description Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.
-         *     `displayName` is a user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know,
-         *     and for the platform and the identity provider, which the screen names from `kind` in its own language. `deleted` is set
-         *     for a user only.
+         * @description Who acted: a user, by catalog user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a
+         *     user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know, and for the platform, which
+         *     the screen names from `kind` in its own language. `deleted` is set for a user only.
          */
         AuditActorResponse: {
             kind: components["schemas"]["AuditActorResponseKind"];
@@ -404,7 +403,7 @@ export interface components {
          * @description The kind of actor of an audit record.
          * @enum {unknown}
          */
-        AuditActorResponseKind: "user" | "platform" | "identityProvider";
+        AuditActorResponseKind: "user" | "platform";
         /**
          * @description One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record
          *     keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email

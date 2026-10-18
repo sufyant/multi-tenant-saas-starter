@@ -7,7 +7,7 @@ using Wolverine;
 
 namespace Audit.Api.Platform;
 
-/// <summary>The platform's audit log: what system admins did, above tenants, and what the identity provider did before step 20i.</summary>
+/// <summary>The platform's audit log: what system admins did, above tenants.</summary>
 public static class AuditLog
 {
     public static void Map(RouteGroupBuilder platform) =>

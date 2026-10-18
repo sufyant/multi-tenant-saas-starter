@@ -48,10 +48,9 @@ public sealed record AuditEntryResponse(
     AuditTargetResponse Target);
 
 /// <summary>
-/// Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.
-/// <c>displayName</c> is a user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know,
-/// and for the platform and the identity provider, which the screen names from <c>kind</c> in its own language. <c>deleted</c> is set
-/// for a user only.
+/// Who acted: a user, by catalog user id, or the platform, that is a system admin seen from a tenant's log. <c>displayName</c> is a
+/// user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know, and for the platform, which
+/// the screen names from <c>kind</c> in its own language. <c>deleted</c> is set for a user only.
 /// </summary>
 public sealed record AuditActorResponse(AuditActorResponseKind Kind, Guid? UserId, string? DisplayName, bool? Deleted);
 
@@ -70,9 +69,6 @@ public enum AuditActorResponseKind
 
     [JsonStringEnumMemberName("platform")]
     Platform,
-
-    [JsonStringEnumMemberName("identityProvider")]
-    IdentityProvider,
 }
 
 /// <summary>The kind of target of an audit record.</summary>

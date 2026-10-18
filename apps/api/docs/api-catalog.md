@@ -119,7 +119,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The read side resolves names in one batch through an interface in `ControlPlane.Contracts` (API composition). Audit never reads `control_plane` tables directly.
 - When a system admin deletes a user, `DeleteUser` erases the catalog's email address and names, so the read side gives the user no name and marks them deleted, and the screen shows "Deleted user". No audit entry changes, and the entry stays (GDPR Article 17).
 - Every action of a system admin goes to the platform log. When it changes a tenant, it also goes to that tenant's log, with "Platform" in place of the person. In the tenant log, a system admin's action has the actor kind "platform" and no actor id.
-- Nothing comes from Clerk: the API has no webhook. A record that Clerk's webhook wrote before step 20i keeps "Clerk" as its actor: the actor kind `identityProvider` is historical. No code writes it, and the read side still reads it, because a record is never changed (the maintainer's decision in step 20k).
+- Nothing comes from Clerk: the API has no webhook.
 - The platform log is a table of its own. The row level security of the tenant table does not change.
 - The code, the table and the endpoint say `audit`. The screen label is "Activity".
 - Sources: GDPR Articles 4(5) and 25 (pseudonymisation). Richardson, *Microservices Patterns*, "API composition".
