@@ -99,7 +99,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(email: $"{_marker}@math.org", firstName: $"Ada{_marker}", lastName: $"Lovelace{_marker}");
         await _catalog.AddUserAsync(email: $"{_marker}@navy.mil", firstName: $"Grace{_marker}", lastName: $"Hopper{_marker}");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>(
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
             $"/v1/platform/users?q={Uri.EscapeDataString(string.Format(CultureInfo.InvariantCulture, q, _marker))}", Cancellation);
 
         Users(page).Select(user => user.FirstName).ShouldBe([$"{found}{_marker}"]);
@@ -114,7 +114,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     {
         await AddUsersAsync("Per%cent", "Perxcent", "Under_score", "Underxscore", @"Back\slash", "Backslash");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
 
         Users(page).Select(user => user.LastName).ShouldBe([$"{_marker} {found}"]);
     }
@@ -135,7 +135,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.DeleteUserAsync(deleted);
         await _catalog.SuspendUserAsync(deleted);
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?status={status}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?status={status}", Cancellation);
 
         Users(page).Select(user => user.Status).ShouldBe(Enumerable.Repeat(status, count));
         page.GetProperty("total").GetInt32().ShouldBe(count);
@@ -153,7 +153,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(email: $"al{_marker}@t.org", lastName: "Zed");
         await _catalog.AddUserAsync(email: $"cy{_marker}@t.org");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
 
         EmailsOf(page).ShouldBe(emails);
     }
@@ -167,7 +167,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddUserAsync(firstName: _marker);
         await _catalog.AddUserAsync(email: $"a{_marker}@t.org", firstName: _marker);
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
 
         EmailsOf(page).ShouldBe(emails);
     }
@@ -182,7 +182,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         var random = Guid.NewGuid().ToString();
         await _catalog.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: $"same{_marker}@t.org", lastName: "Same");
         await _catalog.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: $"same{_marker}@t.org", lastName: "Same");
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);
         var second = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}&pageSize=1&page=2", Cancellation);
@@ -199,7 +199,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListUsers_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/users?{query}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/users?{query}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
@@ -214,7 +214,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
 
-        var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
+        var item = (await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
 
         (item.GetProperty("membershipCount").GetInt32(), item.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((2, created));
     }
@@ -238,7 +238,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(first.Id, firstSecret)))).EnsureSuccessStatusCode();
         (await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, Catalog.InvitationCodeOf(second.Id, secondSecret)))).EnsureSuccessStatusCode();
 
-        var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
+        var item = (await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
         (item.GetProperty("membershipCount").GetInt32(), item.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((2, now));
         (await _catalog.StoredMembershipCountOfAsync(invitee)).ShouldBe(await _catalog.CountedMembershipsOfAsync(invitee));
     }
@@ -255,7 +255,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
 
         (await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, id))).EnsureSuccessStatusCode();
 
-        var item = (await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
+        var item = (await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation)).GetProperty("items")[0];
         item.GetProperty("membershipCount").GetInt32().ShouldBe(1);
         (await _catalog.StoredMembershipCountOfAsync(user)).ShouldBe(await _catalog.CountedMembershipsOfAsync(user));
     }
@@ -268,7 +268,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         var user = await _catalog.AddUserAsync(email: $"{_marker}@example.com");
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
         await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var id = await _catalog.UserIdOfAsync(user);
 
         (await _api.WaitingForMessagesAsync(() => admin.DeleteAsync($"/v1/platform/users/{id}", Cancellation))).EnsureSuccessStatusCode();
@@ -299,7 +299,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     // A database where no other test adds a user, for a test that reads the whole list or a status.
     private async Task UseADatabaseOfItsOwnAsync()

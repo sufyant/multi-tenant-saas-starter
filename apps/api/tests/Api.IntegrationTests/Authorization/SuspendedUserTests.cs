@@ -44,7 +44,7 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
         var email = $"{Guid.NewGuid():N}@example.com";
         _api.Identity.AddAccount(user, email);
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
-        await _api.WaitingForMessagesAsync(async () => await (await AdminAsync()).CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email }));
+        await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email }));
 
         var response = await _api.CreateClient(user).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
 
@@ -88,7 +88,7 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id);
         await SuspendAsync(member);
-        (await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(member)}/reactivate", null, Cancellation))
+        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(member)}/reactivate", null, Cancellation))
             .EnsureSuccessStatusCode();
 
         var tenants = await _api.CreateClient(member).GetAsync("/v1/me/tenants", Cancellation);
@@ -99,10 +99,10 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     }
 
     private async Task SuspendAsync(string externalId) =>
-        (await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
+        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
             .EnsureSuccessStatusCode();
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();

@@ -3,7 +3,7 @@ using ControlPlane.Domain;
 
 namespace ControlPlane.UnitTests;
 
-public class PermissionPoolsTests
+public sealed class PermissionPoolsTests
 {
     // A tenant's custom roles choose from the tenant pool, so a platform permission must never be part of it.
     [Fact]

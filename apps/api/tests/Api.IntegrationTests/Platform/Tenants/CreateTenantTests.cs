@@ -46,7 +46,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_Valid_AnswersProvisioningAndBecomesActiveWithItsOwnerInvited()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var slug = Slug();
         var owner = $"{Guid.NewGuid():N}@example.com";
 
@@ -66,7 +66,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         await _api.DisposeAsync();
         _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: new FakeTimeProvider(now));
         var slug = Slug();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com" }));
 
@@ -105,7 +105,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_WithALanguageNotOfTheList_IsABadRequestAndCreatesNothing()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var slug = Slug();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "owner@example.com", language = "de" });
@@ -117,7 +117,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_SlugTaken_IsAConflict()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var existing = await _catalog.AddTenantAsync();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = existing.Slug, ownerEmail = "owner@example.com" });
@@ -131,7 +131,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [InlineData("valid-slug", "not an email")]
     public async Task CreateTenant_InvalidSlugOrOwnerEmail_IsABadRequest(string slug, string ownerEmail)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail });
 
@@ -141,7 +141,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_WithNameSlugAndOwnerEmail_ReturnsTheTenant()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var slug = Slug();
 
         var created = await _api.WaitingForMessagesAsync(() =>
@@ -161,7 +161,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_OnTheOldPath_IsNotFound()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.PostAsJsonAsync("/v1/system/tenants", new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }, Cancellation);
 
@@ -174,7 +174,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [MemberData(nameof(InvalidNames))]
     public async Task CreateTenant_InvalidName_IsRejected(string name)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { name, slug = Slug(), ownerEmail = "ali@acme.com" });
 
@@ -187,7 +187,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_NameTooLong_IsAValidationProblemForTheName()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { name = $" {new string('n', 101)} ", slug = Slug(), ownerEmail = "ali@acme.com" });
 
@@ -203,7 +203,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [MemberData(nameof(InvalidSlugs))]
     public async Task CreateTenant_InvalidSlug_IsAValidationProblemForTheSlug(string slug)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" });
 
@@ -214,7 +214,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_WithoutAName_IsRejected()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { slug = Slug(), ownerEmail = "ali@acme.com" });
 
@@ -231,7 +231,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [InlineData("""{"name":null,"slug":"acme-ltd","ownerEmail":"ali@acme.com"}""", "name")]
     public async Task CreateTenant_WithoutARequiredField_IsAValidationProblem(string body, string field)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new StringContent(body, Encoding.UTF8, "application/json"));
 
@@ -252,7 +252,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [MemberData(nameof(OwnerEmailsThatBreakARule))]
     public async Task CreateTenant_AnOwnerEmailThatBreaksARule_ListsTheRulesCode(string ownerEmail, string code)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail });
 
@@ -268,7 +268,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [InlineData("{")]
     public async Task CreateTenant_WithoutAReadableBody_IsABadRequest(string body)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new StringContent(body, Encoding.UTF8, "application/json"));
 
@@ -279,7 +279,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_NameOfOneHundredCharacters_IsAccepted()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var name = new string('n', 100);
 
         var created = await _api.WaitingForMessagesAsync(() =>
@@ -305,7 +305,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_WithoutAnIdempotencyKey_IsABadRequest()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var slug = Slug();
 
         var created = await admin.PostAsJsonAsync(TenantRequests.Path, new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" }, Cancellation);
@@ -321,7 +321,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [MemberData(nameof(InvalidIdempotencyKeys))]
     public async Task CreateTenant_WithAnInvalidIdempotencyKey_IsABadRequest(string key)
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         using var request = new HttpRequestMessage(HttpMethod.Post, TenantRequests.Path)
         {
             Content = JsonContent.Create(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }),
@@ -337,7 +337,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_AKeyOfTwoHundredFiftyFiveVisibleCharacters_IsAccepted()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }, new string('~', 255));
 
@@ -347,7 +347,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TheSameKeyAndBodyAgain_ReturnsTheFirstTenantAndCreatesNothingNew()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var slug = Slug();
         var body = new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" };
         var key = Guid.NewGuid().ToString();
@@ -368,7 +368,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_Valid_AnswersTheAddressOfTheTenantInLocation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var body = new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" };
         var key = Guid.NewGuid().ToString();
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(body, key));
@@ -386,7 +386,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_ReplayedAnswer_HasTheLowercaseStatus()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var body = new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" };
         var key = Guid.NewGuid().ToString();
         await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(body, key));
@@ -401,7 +401,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TheSameKeyWithAnotherBody_IsUnprocessable()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var key = Guid.NewGuid().ToString();
         await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" }, key);
         var otherSlug = Slug();
@@ -416,7 +416,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TwoRequestsWithTheSameKeyAtOnce_CreateOneTenant()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var slug = Slug();
         var body = new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" };
         var key = Guid.NewGuid().ToString();
@@ -432,8 +432,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TwoSystemAdminsWithTheSameKey_EachCreateTheirOwnTenant()
     {
-        var first = await AdminAsync();
-        var second = await AdminAsync();
+        var first = await SystemAdminAsync();
+        var second = await SystemAdminAsync();
         var key = Guid.NewGuid().ToString();
         var firstSlug = Slug();
         var secondSlug = Slug();
@@ -610,7 +610,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         holdingTheSecret.ShouldBe(0);
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();

@@ -9,7 +9,7 @@ namespace Api.ArchitectureTests;
 
 // Section 9, the unit test standard, read from every test project the solution lists: the classification trait, the name
 // pattern, and no branch or loop in a test. Several cases are a theory with data; a helper outside the test may branch.
-public partial class TestStandardTests
+public sealed partial class TestStandardTests
 {
     private const string Classification = "TestClassification";
 

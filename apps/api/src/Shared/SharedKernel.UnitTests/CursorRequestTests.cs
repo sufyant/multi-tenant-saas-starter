@@ -2,7 +2,7 @@ namespace SharedKernel.UnitTests;
 
 // K5's exception: the audit logs page by a cursor, newest first. The cursor holds the last item's moment and id; a cursor that does not
 // decode or was changed is refused, and so is a limit out of range.
-public class CursorRequestTests
+public sealed class CursorRequestTests
 {
     private static readonly CursorPosition Position = new(new DateTimeOffset(2026, 10, 16, 9, 30, 15, 123, 456, TimeSpan.Zero), Guid.CreateVersion7());
 

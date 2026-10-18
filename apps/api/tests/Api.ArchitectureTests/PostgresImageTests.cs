@@ -4,7 +4,7 @@ namespace Api.ArchitectureTests;
 
 // Audit B24: the test fixtures and CI run one PostgreSQL image, pinned by digest in db/postgres-image. A fixture or a workflow that
 // names an image of its own may run another 18.x than the image check.
-public partial class PostgresImageTests
+public sealed partial class PostgresImageTests
 {
     [Fact]
     public void PostgresImage_FixturesAndWorkflows_NameNoImageOfTheirOwn()

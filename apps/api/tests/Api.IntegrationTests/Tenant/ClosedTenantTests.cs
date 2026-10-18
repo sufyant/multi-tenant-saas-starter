@@ -28,7 +28,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await (await AdminAsync()).CloseTenantAsync(tenant.Id);
+        await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -44,7 +44,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         await _catalog.AddMemberAsync(tenant.Id);
         var stranger = _api.CreateClient(await _catalog.AddUserAsync());
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
 
         var response = await stranger.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -61,7 +61,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id);
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
         (await admin.ReopenTenantAsync(tenant.Id)).EnsureSuccessStatusCode();
 
@@ -70,7 +70,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();

@@ -13,7 +13,7 @@ namespace ControlPlane.UnitTests.Tenants.TenantCreation;
 
 // The tenant creation saga without a host (S12): it only decides, from its state and the message, what its next state is and which
 // messages it sends. A message that does not fit the state is ignored (S7). One test for each row of the saga's state table.
-public class TenantCreationSagaTests
+public sealed class TenantCreationSagaTests
 {
     private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
     private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000401");

@@ -43,7 +43,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
         var user = await _catalog.AddUserAsync(createdAt: created);
         await _catalog.SuspendUserAsync(user);
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -57,7 +57,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     {
         var user = await _catalog.AddUserAsync();
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
@@ -69,7 +69,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     [InlineData("reactivate")]
     public async Task SuspendOrReactivateUser_UnknownUser_IsNotFound(string action)
     {
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("user.not_found");
@@ -83,7 +83,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<DateTime?> SuspendedAtAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<DateTime?>($"SELECT suspended_at FROM control_plane.users WHERE external_id = '{externalId}'");

@@ -46,7 +46,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         await SummarizeAsync(alone.Id, shared.Id, suspended.Id, closed.Id);
         var id = await _catalog.UserIdOfAsync(user);
 
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/users/{id}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/users/{id}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -74,7 +74,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     {
         var id = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
 
-        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
         found.GetProperty("memberships").GetArrayLength().ShouldBe(0);
         found.GetProperty("membershipCount").GetInt32().ShouldBe(0);
@@ -104,7 +104,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_AUserSuspendedAndReactivated_HasNoSuspension()
     {
-        var client = await AdminAsync();
+        var client = await SystemAdminAsync();
         var id = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync());
         (await client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation)).EnsureSuccessStatusCode();
         (await client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
@@ -123,7 +123,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var user = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Gone"));
         var id = await _catalog.UserIdOfAsync(user);
-        var client = await AdminAsync();
+        var client = await SystemAdminAsync();
         (await _api.WaitingForMessagesAsync(() => client.DeleteAsync($"/v1/platform/users/{id}", Cancellation))).EnsureSuccessStatusCode();
 
         var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
@@ -140,7 +140,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddSystemAdminAsync();
         var id = await _catalog.UserIdOfAsync(admin);
 
-        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
         found.GetProperty("isSystemAdmin").GetBoolean().ShouldBeTrue();
     }
@@ -148,7 +148,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_AnIdNoUserHas_IsNotFound()
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/users/{Guid.NewGuid()}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/users/{Guid.NewGuid()}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("user.not_found");
@@ -186,7 +186,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         forOne.ShouldBeGreaterThan(0);
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private async Task SummarizeAsync(params Guid[] tenantIds)
     {

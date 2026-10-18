@@ -32,7 +32,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     [InlineData("reopen")]
     public async Task CloseOrReopenTenant_UnknownTenant_IsNotFound(string action)
     {
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/tenants/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/tenants/{Guid.NewGuid()}/{action}", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");
@@ -62,7 +62,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     public async Task ReopenTenant_WithinThePeriod_AnswersTheTenantActive()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
         _time.Advance(ReopenPeriod - TimeSpan.FromSeconds(1));
 
@@ -78,7 +78,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     public async Task ReopenTenant_WhenThePeriodEnds_IsAConflictAndStaysClosed()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
         _time.Advance(ReopenPeriod);
 
@@ -95,7 +95,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     public async Task ReopenTenant_ClosedAfterASuspension_ForgetsTheReason()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.SuspendTenantAsync(tenant.Id);
         var closed = await admin.CloseTenantAsync(tenant.Id);
 
@@ -111,7 +111,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await _api.WaitingForMessagesAsync(async () => await (await AdminAsync()).ReopenTenantAsync(tenant.Id));
+        var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
@@ -126,7 +126,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var response = await (await AdminAsync()).ReopenTenantAsync(tenant.Id);
+        var response = await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_closed");
@@ -141,7 +141,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(

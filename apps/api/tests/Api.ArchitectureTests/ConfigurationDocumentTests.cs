@@ -13,7 +13,7 @@ namespace Api.ArchitectureTests;
 // Smoke findings 8 and 11: docs/configuration.md has a row for every key the application binds. The keys are read from the composed
 // application: every options class of the solution that is bound to a configuration section, and the settable properties under it.
 // The example file lists the same keys, and the Default column holds the code's defaults (audit B12, B13).
-public partial class ConfigurationDocumentTests
+public sealed partial class ConfigurationDocumentTests
 {
     // The host reads its ASPNETCORE_ variables from the environment, not from a configuration file.
     private const string EnvironmentOnlyPrefix = "ASPNETCORE_";

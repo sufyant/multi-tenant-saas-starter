@@ -36,7 +36,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_ATenantWithoutAnOwner_AnswersTheInvitationAndSendsItsEmail()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
         var owner = PlatformTenants.Email();
 
@@ -61,7 +61,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_AnotherEmail_CancelsThePendingInvitationAndItsLinkIsDead()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var first = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, first);
         var replaced = await _tenants.LatestInvitationAsync(tenant);
@@ -81,7 +81,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_TheSameEmailAgain_ReplacesThePendingInvitation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var owner = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, owner);
         var replaced = await _tenants.LatestInvitationAsync(tenant);
@@ -98,7 +98,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_ATenantWithAnOwner_IsAConflictAndInvitesNobody()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var owner = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, owner);
         await _tenants.AcceptAsync(await _tenants.LatestInvitationAsync(tenant), owner);
@@ -119,7 +119,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var invited = await (await AdminAsync()).InviteOwnerAsync(tenant.Id, PlatformTenants.Email());
+        var invited = await (await SystemAdminAsync()).InviteOwnerAsync(tenant.Id, PlatformTenants.Email());
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(invited)).ShouldBe("tenant.not_active");
@@ -129,7 +129,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_AnIdNoTenantHas_IsNotFound()
     {
-        var invited = await (await AdminAsync()).InviteOwnerAsync(Guid.NewGuid(), PlatformTenants.Email());
+        var invited = await (await SystemAdminAsync()).InviteOwnerAsync(Guid.NewGuid(), PlatformTenants.Email());
 
         invited.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(invited)).ShouldBe("tenant.not_found");
@@ -142,7 +142,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var invited = await (await AdminAsync()).InviteOwnerAsync(tenant.Id, email);
+        var invited = await (await SystemAdminAsync()).InviteOwnerAsync(tenant.Id, email);
 
         invited.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("errors").GetProperty("email")[0].GetString().ShouldBe(fieldCode);
@@ -168,7 +168,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_TheSameIdempotencyKeyTwice_CreatesOneInvitation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
         var owner = PlatformTenants.Email();
         var key = Guid.NewGuid().ToString();
@@ -235,7 +235,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptAndInviteOwner_AtOnceWithTheAcceptanceFirst_KeepTheOwnerAndInviteNobody()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var owner = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, owner);
         var invitation = await _tenants.LatestInvitationAsync(tenant);
@@ -258,7 +258,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptAndInviteOwner_AtOnceWithTheInvitationFirst_CancelTheOldLinkAndLeaveOnePendingInvitation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var owner = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, owner);
         var invitation = await _tenants.LatestInvitationAsync(tenant);
@@ -277,7 +277,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant);
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();

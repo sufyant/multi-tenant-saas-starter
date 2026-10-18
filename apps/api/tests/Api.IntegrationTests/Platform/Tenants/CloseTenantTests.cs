@@ -43,7 +43,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var response = await (await AdminAsync()).CloseTenantAsync(tenant.Id);
+        var response = await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -57,7 +57,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     public async Task CloseTenant_Twice_KeepsTheFirstMomentAndIsRecordedOnceInEachLog()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var closedAt = _time.GetUtcNow();
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
         _time.Advance(TimeSpan.FromDays(1));
@@ -76,7 +76,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var response = await (await AdminAsync()).CloseTenantAsync(tenant.Id);
+        var response = await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_active");
@@ -92,7 +92,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         var expired = await _catalog.AddInvitationAsync(tenant.Id, expiresAt: _time.GetUtcNow().AddDays(-1));
         var accepted = await _catalog.AddInvitationAsync(tenant.Id, status: "Accepted");
 
-        (await (await AdminAsync()).CloseTenantAsync(tenant.Id)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         (await _catalog.InvitationStatusOfAsync(pending)).ShouldBe("Cancelled");
         (await _catalog.InvitationStatusOfAsync(expired)).ShouldBe("Cancelled");
@@ -107,7 +107,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
             tenant.Id, () => admin.CloseTenantAsync(tenant.Id), () => owner.InviteMemberAsync(tenant.Id, $"{Guid.NewGuid():N}@example.com"));
@@ -126,7 +126,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
             tenant.Id, () => owner.InviteMemberAsync(tenant.Id, $"{Guid.NewGuid():N}@example.com"), () => admin.CloseTenantAsync(tenant.Id));
@@ -151,7 +151,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
         var invitation = await _catalog.AddInvitationAsync(tenant.Id);
         var members = await MembersOfAsync(tenant.Id);
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
             tenant.Id, () => admin.CloseTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation));
@@ -176,7 +176,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
         var invitation = await _catalog.AddInvitationAsync(tenant.Id);
         var members = await MembersOfAsync(tenant.Id);
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
             tenant.Id, () => admin.SuspendTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation));
@@ -211,7 +211,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
     };
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<string?> MembersOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(

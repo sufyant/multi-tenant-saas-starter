@@ -3,7 +3,7 @@ using ControlPlane.Domain.Roles;
 
 namespace ControlPlane.UnitTests.Roles;
 
-public class BuiltInRolesTests
+public sealed class BuiltInRolesTests
 {
     // Requests, responses, events and audit details name a built-in role in lower case, as every other enum of the API (api-catalog, K5).
     [Fact]

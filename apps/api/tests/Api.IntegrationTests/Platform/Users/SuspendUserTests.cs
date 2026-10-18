@@ -31,7 +31,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         var user = await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
         var id = await _catalog.UserIdOfAsync(user);
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -50,7 +50,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
     {
         var user = await _catalog.AddUserAsync();
         var id = await _catalog.UserIdOfAsync(user);
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
         var first = await SuspendedAtAsync(user);
 
@@ -66,7 +66,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
     {
         var systemAdmin = await _catalog.AddSystemAdminAsync();
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(systemAdmin)}/suspend", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(systemAdmin)}/suspend", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("user.is_system_admin");
@@ -79,7 +79,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
     {
         var systemAdmin = await _catalog.AddSystemAdminAsync();
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(systemAdmin)}/suspend", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(systemAdmin)}/suspend", null, Cancellation);
 
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Detail.ShouldBe("A system admin cannot be suspended or deleted.");
     }
@@ -96,7 +96,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(response)).ShouldBe("user.is_system_admin");
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<DateTime?> SuspendedAtAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<DateTime?>($"SELECT suspended_at FROM control_plane.users WHERE external_id = '{externalId}'");

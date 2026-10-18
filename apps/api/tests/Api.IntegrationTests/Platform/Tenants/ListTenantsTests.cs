@@ -38,7 +38,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var echoLater = await _catalog.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
         var echoEarlier = await _catalog.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
 
-        var response = await (await AdminAsync()).GetAsync("/v1/platform/tenants", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync("/v1/platform/tenants", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -67,7 +67,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _catalog.AddTenantAsync(name: "Second Ltd");
         var third = await _catalog.AddTenantAsync(name: "Third Ltd");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants?page=2&pageSize=2", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants?page=2&pageSize=2", Cancellation);
 
         Tenants(page).ShouldBe([(third.Id, "Third Ltd", third.Slug, "active")]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
@@ -80,7 +80,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("page=0", "paging.page_invalid")]
     public async Task ListTenants_PagingOutsideItsRange_IsRejected(string query, string code)
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/tenants?{query}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/tenants?{query}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
@@ -96,7 +96,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _catalog.AddTenantAsync(name: $"Alpha Acme{_marker} Ltd", slug: $"alpha-{_marker}");
         await _catalog.AddTenantAsync(name: $"Bravo {_marker} Ltd", slug: $"orbit-{_marker}");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={Uri.EscapeDataString(q + _marker)}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={Uri.EscapeDataString(q + _marker)}", Cancellation);
 
         Names(page).ShouldHaveSingleItem().ShouldStartWith(found);
         page.GetProperty("total").GetInt32().ShouldBe(1);
@@ -110,7 +110,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     {
         await AddTenantsAsync("100% Ltd", "1000 Ltd", "a_b Ltd", "axb Ltd", @"c\d Ltd", "cd Ltd");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
 
         Names(page).ShouldBe([$"{_marker} {found}"]);
     }
@@ -129,7 +129,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _catalog.AddTenantAsync(status: "Cancelled", name: $"{_marker} Delta");
         await _catalog.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
 
         Names(page).ShouldBe([$"{_marker} {found}"]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
@@ -146,7 +146,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _catalog.AddTenantAsync(name: $"{_marker} Alpha", slug: $"zulu-{_marker}");
         await _catalog.AddTenantAsync(name: $"{_marker} Charlie", slug: $"xray-{_marker}");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&sort={sort}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&sort={sort}", Cancellation);
 
         string.Join(", ", Names(page).Select(name => name[(_marker.Length + 1)..])).ShouldBe(names);
     }
@@ -158,7 +158,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _catalog.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
         await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status=", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status=", Cancellation);
 
         Names(page).ShouldBe([$"{_marker} Bravo", $"{_marker} Charlie"]);
     }
@@ -172,7 +172,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var random = Guid.NewGuid().ToString();
         var later = await _catalog.AddTenantAsync(name: $"{_marker} Same", tenantId: Guid.Parse($"f{random[1..]}"));
         var earlier = await _catalog.AddTenantAsync(name: $"{_marker} Same", tenantId: Guid.Parse($"0{random[1..]}"));
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);
         var second = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&sort={sort}&pageSize=1&page=2", Cancellation);
@@ -189,13 +189,13 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListTenants_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/tenants?{query}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/tenants?{query}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     // The system admin sees why each tenant is suspended in the list too.
     [Fact]
@@ -204,7 +204,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Alpha", suspensionReason: "Unpaid invoices");
         await _catalog.AddTenantAsync(name: $"{_marker} Bravo");
 
-        var page = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
 
         page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("suspensionReason").GetString()).ShouldBe(["Unpaid invoices", null]);
     }
@@ -215,7 +215,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListTenants_TenantsInEachStateOfTheirOwners_AnswerTheCountsTheFirstOwnerAndTheInvitation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var tenants = new PlatformTenants(database, _api);
         var (ada, grace, expired, pending, closed) = (Email(), Email(), Email(), Email(), Email());
         var expiredTenant = await tenants.CreateAsync(admin, expired, name: $"{_marker} Delta");

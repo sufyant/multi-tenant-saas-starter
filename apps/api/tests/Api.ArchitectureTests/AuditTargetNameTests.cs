@@ -6,7 +6,7 @@ namespace Api.ArchitectureTests;
 // cannot read ControlPlane's limit, and the two modules keep a constant each. A longer tenant name would fail the audit insert and send
 // the message to the dead letter queue, so this test keeps the audit column at least as wide. Both constants are internal to their
 // modules, so the test reads them by reflection.
-public class AuditTargetNameTests
+public sealed class AuditTargetNameTests
 {
     [Fact]
     public void RecordATargetName_TheLongestTenantName_FitsTheAuditColumn()

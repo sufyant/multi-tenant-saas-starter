@@ -3,7 +3,7 @@ using System.Reflection;
 namespace Api.ArchitectureTests;
 
 // Section 2: a module's Contracts project holds interfaces, DTOs and events, and no domain type. It is all another module sees.
-public class ContractsShapeTests
+public sealed class ContractsShapeTests
 {
     private const BindingFlags Declared =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;

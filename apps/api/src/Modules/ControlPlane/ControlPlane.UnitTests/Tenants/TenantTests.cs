@@ -7,7 +7,7 @@ namespace ControlPlane.UnitTests.Tenants;
 
 // The rules of the Tenant aggregate (M1): its creation, status and name, its Owner invitation and summary, and the Owner rules of a
 // role change and a removal (K1). Each check is pure up to the change, so a rejection changes nothing.
-public class TenantTests
+public sealed class TenantTests
 {
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
 

@@ -263,7 +263,7 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(name: "Closed Ltd");
         var member = await _catalog.AddMemberAsync(tenant.Id);
-        await (await AdminAsync()).CloseTenantAsync(tenant.Id);
+        await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
@@ -291,5 +291,5 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
             .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("name").GetString()!, item.GetProperty("slug").GetString()!)),
     ];
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 }

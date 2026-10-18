@@ -3,7 +3,7 @@ using NetArchTest.Rules;
 
 namespace Api.ArchitectureTests;
 
-public class ReferenceRuleTests
+public sealed class ReferenceRuleTests
 {
     private const string DbContext = "Microsoft.EntityFrameworkCore.DbContext";
 

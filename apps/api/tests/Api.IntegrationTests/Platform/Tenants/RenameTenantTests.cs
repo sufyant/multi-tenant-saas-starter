@@ -31,7 +31,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var response = await (await AdminAsync()).RenameTenantAsync(tenant.Id, "  Globex Corp ");
+        var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, "  Globex Corp ");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -65,7 +65,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await _api.WaitingForMessagesAsync(async () => await (await AdminAsync()).RenameTenantAsync(tenant.Id, name));
+        var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, name));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("name").GetString().ShouldBe("Acme Ltd");
@@ -82,7 +82,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await (await AdminAsync()).RenameTenantAsync(tenant.Id, name);
+        var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, name);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(response)).ShouldBe("tenant.name_invalid");
@@ -95,7 +95,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await (await AdminAsync()).RenameTenantAsync(tenant.Id, $" {new string('n', 101)} ");
+        var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, $" {new string('n', 101)} ");
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -109,7 +109,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await (await AdminAsync()).PatchAsJsonAsync($"/v1/platform/tenants/{tenant.Id}", new { }, Cancellation);
+        var response = await (await SystemAdminAsync()).PatchAsJsonAsync($"/v1/platform/tenants/{tenant.Id}", new { }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -125,7 +125,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status, closedAt: DateTimeOffset.UtcNow);
 
-        var response = await (await AdminAsync()).RenameTenantAsync(tenant.Id, "Globex Corp");
+        var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, "Globex Corp");
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_active");
@@ -135,7 +135,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameTenant_UnknownTenant_IsNotFound()
     {
-        var response = await (await AdminAsync()).RenameTenantAsync(Guid.NewGuid(), "Globex Corp");
+        var response = await (await SystemAdminAsync()).RenameTenantAsync(Guid.NewGuid(), "Globex Corp");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");
@@ -155,7 +155,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
         (await StoredNameAsync(tenant.Id)).ShouldBe("Acme Ltd");
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<string?> StoredNameAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT name FROM control_plane.tenants WHERE id = '{tenantId}'");

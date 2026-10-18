@@ -1,6 +1,6 @@
 namespace SharedKernel.UnitTests;
 
-public class ResultTests
+public sealed class ResultTests
 {
     private static readonly Error TenantNotFound = Error.NotFound(ErrorCode.Declare("tenant.not_found"), "The tenant was not found.");
 

@@ -4,7 +4,7 @@ using ControlPlane.Domain.SystemAdmins;
 namespace ControlPlane.UnitTests.SystemAdmins;
 
 // A6: the system door needs a system admin with a second factor verified in the session.
-public class SystemDoorTests
+public sealed class SystemDoorTests
 {
     [Fact]
     public void EnterSystemDoor_SystemAdminWithASecondFactor_HoldsThePlatformPool()

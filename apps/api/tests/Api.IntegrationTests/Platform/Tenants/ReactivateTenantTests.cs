@@ -36,7 +36,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var response = await (await AdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/{action}", new { reason = Reason }, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/{action}", new { reason = Reason }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -60,7 +60,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: status);
 
-        var response = await (await AdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/{action}", new { reason = Reason }, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/{action}", new { reason = Reason }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_active");
@@ -72,7 +72,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     [InlineData("reactivate")]
     public async Task SuspendOrReactivateTenant_UnknownTenant_IsNotFound(string action)
     {
-        var response = await (await AdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{Guid.NewGuid()}/{action}", new { reason = Reason }, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{Guid.NewGuid()}/{action}", new { reason = Reason }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");
@@ -101,7 +101,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await _api.WaitingForMessagesAsync(async () => await (await AdminAsync()).PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation));
+        var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await AuditEntryCountAsync(tenant.Id)).ShouldBe(0);
@@ -111,7 +111,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     public async Task ReactivateTenant_Suspended_ForgetsTheReason()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.SuspendTenantAsync(tenant.Id);
 
         var response = await admin.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation);
@@ -120,7 +120,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
         (await SuspensionReasonOfAsync(await admin.GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation))).ShouldBeNull();
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(

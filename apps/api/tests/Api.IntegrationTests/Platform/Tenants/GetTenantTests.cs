@@ -38,7 +38,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync(status: stored, name: "Admin View Ltd");
 
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -56,7 +56,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var closedAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
         var tenant = await _catalog.AddTenantAsync(status: "Closed", suspensionReason: "Unpaid invoices", closedAt: closedAt);
 
-        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
         (found.GetProperty("suspensionReason").GetString(), found.GetProperty("closedAt").GetDateTimeOffset()).ShouldBe(("Unpaid invoices", closedAt));
         found.GetProperty("reopenableUntil").GetDateTimeOffset().ShouldBe(closedAt.AddDays(30));
@@ -65,7 +65,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_ItsFirstOwnerJoined_AnswersTheOwnerAndNoInvitation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var email = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, email);
         var (owner, _) = await _tenants.AcceptAsync(await _tenants.LatestInvitationAsync(tenant), email);
@@ -82,7 +82,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_SeveralOwners_AnswersEveryOwnerInTheOrderTheyJoined()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var (ada, grace, alan) = (PlatformTenants.Email(), PlatformTenants.Email(), PlatformTenants.Email());
         var tenant = await _tenants.CreateAsync(admin, ada);
         var (first, _) = await _tenants.AcceptAsync(await _tenants.LatestInvitationAsync(tenant), ada);
@@ -104,7 +104,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_ItsOwnerInvitationIsPending_AnswersTheInvitation()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var email = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, email);
 
@@ -119,7 +119,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_ItsOwnerInvitationExpired_AnswersItAsExpired()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var email = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, email);
         var expiresAt = _time.GetUtcNow().AddDays(7);
@@ -134,7 +134,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_ClosedWithoutAnOwner_AnswersTheCancelledInvitationAndWhenItCanBeReopened()
     {
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var email = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, email);
         var expiresAt = _time.GetUtcNow().AddDays(7);
@@ -150,13 +150,13 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetTenant_AnIdNoTenantHas_IsNotFound()
     {
-        var response = await (await AdminAsync()).GetAsync($"/v1/platform/tenants/{Guid.NewGuid()}", Cancellation);
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/tenants/{Guid.NewGuid()}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.not_found");
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     // Each Owner as "userId|firstName|lastName|email".
     private static IEnumerable<string> Owners(JsonElement tenant) =>

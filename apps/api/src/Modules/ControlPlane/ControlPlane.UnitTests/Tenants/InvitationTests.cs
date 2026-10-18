@@ -5,11 +5,11 @@ using SharedKernel;
 
 namespace ControlPlane.UnitTests.Tenants;
 
-public class InvitationTests
+public sealed class InvitationTests
 {
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000401");
     private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
-    private static readonly Guid InviterId = new("0199a8f0-0000-7000-8000-000000000301");
+    private static readonly Guid ActorId = new("0199a8f0-0000-7000-8000-000000000301");
     private static readonly Guid AccepterId = new("0199a8f0-0000-7000-8000-000000000302");
     private static readonly DateTimeOffset Now = new(2026, 10, 4, 9, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
@@ -29,7 +29,7 @@ public class InvitationTests
     [Fact]
     public void CreateInvitation_InArabic_KeepsTheLanguage()
     {
-        var invitation = Invitation.Create(Id, TenantId, "ada@example.com", BuiltInRoles.Member, InviterId, Now, Lifetime, Token, Language.Ar);
+        var invitation = Invitation.Create(Id, TenantId, "ada@example.com", BuiltInRoles.Member, ActorId, Now, Lifetime, Token, Language.Ar);
 
         invitation.Language.ShouldBe(Language.Ar);
     }
@@ -324,5 +324,5 @@ public class InvitationTests
     private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
 
     private static Invitation Invite(string email) =>
-        Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, InviterId, Now, Lifetime, Token, Language.En);
+        Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, ActorId, Now, Lifetime, Token, Language.En);
 }

@@ -538,7 +538,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         var invitee = $"user_{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.com";
         _api.Identity.AddAccount(invitee, email);
@@ -634,7 +634,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
     private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private static async Task<Guid> IdOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();

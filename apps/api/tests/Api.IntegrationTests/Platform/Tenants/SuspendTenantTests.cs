@@ -23,7 +23,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     public async Task SuspendTenant_Twice_IsRecordedOnceInEachLog()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id));
 
         var again = await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id, "Another reason"));
@@ -38,7 +38,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     public async Task SuspendTenant_WithAReason_KeepsItTrimmedAndShowsItToTheAdmin()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         var response = await admin.SuspendTenantAsync(tenant.Id, "  Unpaid invoices ");
 
@@ -52,7 +52,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         var reason = new string('r', 500);
 
-        var response = await (await AdminAsync()).SuspendTenantAsync(tenant.Id, $" {reason} ");
+        var response = await (await SystemAdminAsync()).SuspendTenantAsync(tenant.Id, $" {reason} ");
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await SuspensionReasonOfAsync(response)).ShouldBe(reason);
@@ -64,7 +64,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
 
-        var response = await (await AdminAsync()).PostAsync(
+        var response = await (await SystemAdminAsync()).PostAsync(
             $"/v1/platform/tenants/{tenant.Id}/suspend", new StringContent(body, System.Text.Encoding.UTF8, "application/json"), Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -79,7 +79,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     public async Task SuspendTenant_WithAReason_RecordsItInThePlatformEntryOnly()
     {
         var tenant = await _catalog.AddTenantAsync();
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
 
         await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id));
 
@@ -105,7 +105,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
         { $$"""{"reason":"{{new string('r', 501)}}"}""", "too_long" },
     };
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(

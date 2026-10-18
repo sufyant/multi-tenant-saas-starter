@@ -4,7 +4,7 @@ namespace SharedKernel.UnitTests;
 
 // K5: one contract for every list. The shared type reads and checks page, pageSize, sort and q; a filter reads the JSON names of its
 // enum. JSON:API 1.1, "Sorting": one field, descending with a leading minus.
-public class ListRequestTests
+public sealed class ListRequestTests
 {
     [Fact]
     public void CreateList_NothingSent_SortsByTheFirstFieldAscendingWithoutSearch()

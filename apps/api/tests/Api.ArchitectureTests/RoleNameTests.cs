@@ -9,7 +9,7 @@ namespace Api.ArchitectureTests;
 // coupled by the member's name (ToString and Enum.Parse), so a renamed member compiles and throws at run time. The domain is internal
 // to its module, and only a module's own projects see its internals (InternalsVisibleToTests), so this system-wide test reads it by
 // reflection.
-public class RoleNameTests
+public sealed class RoleNameTests
 {
     private static readonly Type BuiltInRole = Solution.Load("ControlPlane.Domain").GetType("ControlPlane.Domain.Roles.BuiltInRole", throwOnError: true)!;
 
