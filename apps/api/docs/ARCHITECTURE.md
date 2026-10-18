@@ -861,6 +861,7 @@ These deviations were discussed openly and approved.
 | The rate limit is kept in each pod | OWASP API4: a limit for each user | A shared store (Redis or the database) is infrastructure the first template does not need. The real limit is the setting times the number of pods |
 | In Development, email without an email service is written to the log, link included | OWASP Logging Cheat Sheet: secrets are not logged | Local development and the smoke run need the link without an email account. Outside Development the application does not start without the email service |
 | The API image has no `HEALTHCHECK` | CIS Docker Benchmark 4.6: add a `HEALTHCHECK` instruction to the image | The chiseled image has no shell and no `curl` to run a check. The platform checks `/health/live` and `/health/ready` over HTTP on the management port: its own HTTP health check or Kubernetes probes (`setup.md`). Docker ignores `HEALTHCHECK` under Kubernetes |
+| An endpoint method returns a `Task` and has no `Async` suffix (`CreateTenant`) | Microsoft Learn, "Task-based Asynchronous Pattern": the name of an asynchronous method ends with `Async` | N7 makes the endpoint's method name the action's name, and N11 makes it the operation id that every client reads. A suffix would put `Async` into every operation id. The handlers keep `HandleAsync` |
 
 ## Deferred
 
