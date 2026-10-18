@@ -129,13 +129,14 @@ internal static class ApiPipeline
             builder.Services.AddHostedService<IdempotencyCleanup>();
         }
 
-        // API8. The options are built at their first use, after the endpoints are mapped, so the methods come from the endpoints and
-        // from no list.
+        // API8. The options are built at their first use, after the endpoints are mapped, so the methods and the exposed headers come
+        // from the endpoints and from no list.
         builder.Services.AddCors();
         builder.Services.AddOptions<CorsOptions>().Configure<EndpointDataSource>((cors, endpoints) => cors.AddDefaultPolicy(policy => policy
             .WithOrigins(host.Cors.AllowedOrigins)
             .WithMethods(MethodsOf(endpoints))
-            .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyMiddleware.Header)));
+            .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyMiddleware.Header)
+            .WithExposedHeaders(ExposedHeadersOf(endpoints))));
 
         builder.Services.AddUserRateLimiting();
         builder.Services.AddHealthChecks();
@@ -187,13 +188,39 @@ internal static class ApiPipeline
     // The HTTP methods of the endpoints under /v1, in ordinal order. A worker maps none.
     private static string[] MethodsOf(EndpointDataSource endpoints) =>
     [
-        .. endpoints.Endpoints
-            .OfType<RouteEndpoint>()
-            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith($"{RouteGroups.V1}/", StringComparison.Ordinal) == true)
+        .. V1Endpoints(endpoints)
             .SelectMany(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? [])
             .Distinct()
             .Order(StringComparer.Ordinal),
     ];
+
+    // The response headers that the OpenAPI document declares for the endpoints under /v1, in ordinal order. Each comes from the metadata
+    // that makes the host send it: CreatedLocation gives Location (N11), and IdempotencyKeyRequired gives Idempotent-Replayed (I5).
+    private static string[] ExposedHeadersOf(EndpointDataSource endpoints) =>
+    [
+        .. V1Endpoints(endpoints)
+            .SelectMany(endpoint => HeadersSentBy(endpoint.Metadata))
+            .Distinct()
+            .Order(StringComparer.Ordinal),
+    ];
+
+    private static IEnumerable<string> HeadersSentBy(EndpointMetadataCollection metadata)
+    {
+        if (metadata.GetMetadata<CreatedLocation>() is not null)
+        {
+            yield return HeaderNames.Location;
+        }
+
+        if (metadata.GetMetadata<IdempotencyKeyRequired>() is not null)
+        {
+            yield return IdempotencyExecutor.ReplayedHeader;
+        }
+    }
+
+    private static IEnumerable<RouteEndpoint> V1Endpoints(EndpointDataSource endpoints) =>
+        endpoints.Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith($"{RouteGroups.V1}/", StringComparison.Ordinal) == true);
 
     // The API's documents, in Development only, on a host that serves the API.
     public static WebApplication MapApiDocuments(this WebApplication app)
