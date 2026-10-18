@@ -11,12 +11,8 @@ namespace Audit.Api.Tenant;
 /// <summary>The audit log of the tenant in the route, which its Owners and Admins read. The screen calls it "Activity".</summary>
 public static class AuditLog
 {
-    // The permission catalogue is in ControlPlane.Contracts, which this project does not reference (section 2). The name is stated
-    // here as well; EndpointAccessTests fails for an endpoint whose permission the catalogue does not hold.
-    private const string TenantAuditRead = "tenant.audit.read";
-
     public static void Map(RouteGroupBuilder tenant) =>
-        tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(TenantAuditRead);
+        tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead);
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the log to it. K5's exception: a cursor,
     // newest first, and no total.
