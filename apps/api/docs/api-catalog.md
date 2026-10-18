@@ -199,7 +199,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. The first system admin starts with `en`.
 - A user's `timeZone` is an IANA name, or null for "not set". The API never interprets it: the image has no time zone data (ARCHITECTURE.md, section 7). It checks the shape only, keeps the name and gives it back. The web offers the list. The API formats no date or time.
 - `InviteMember`, `CreateTenant` and `InviteOwner` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant` and `InviteOwner`, the system admin's. The invitation keeps it.
-- The invitation emails say how long the link works ("7 days"), from the invitation's lifetime, and show no date or time, so they need no time zone. A message to Notifications written before step 20j has no language: its email is English, without the lifetime.
+- The invitation emails say how long the link works ("7 days"), from the invitation's lifetime, and show no date or time, so they need no time zone.
 - `ChangePreferences` writes the platform entry `user.preferences_changed`, by the user and about the user, with no details: the entry holds no value (K3).
 - A system admin's deletion erases the time zone with the names (A8). The language stays.
 - Sources: W3C, "Language tags in HTML and XML" and "Working with time zones". IANA Time Zone Database, "Theory and pragmatics of the tz code and data". Microsoft Learn, "Globalization invariant mode". Unicode CLDR, "Language Plural Rules".

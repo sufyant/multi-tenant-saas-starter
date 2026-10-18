@@ -5,7 +5,7 @@ namespace Notifications.Application.Invitations.InvitationEmail;
 // The texts of the two invitation emails, the owner's and the member's, which say the same. Each language is one block here, so a
 // reviewer reads all of its texts in one place; a new language adds its block. The email is plain text. It shows no date or time, so it
 // needs no time zone: it says how long the link works, in whole days, with each language's plural forms (Unicode CLDR, "Language Plural
-// Rules"). A message written before step 20j has no language and no lifetime: its email is English, without the lifetime.
+// Rules").
 internal static class InvitationEmailTexts
 {
     private static readonly Dictionary<Language, Texts> ByLanguage = new()
@@ -27,14 +27,10 @@ internal static class InvitationEmailTexts
             Lifetime: days => $"الرابط صالح لمدة {ArabicDays(days)}."),
     };
 
-    public static EmailMessage Write(string to, string tenantName, Uri link, Language? language, TimeSpan? lifetime, Guid invitationId)
+    public static EmailMessage Write(string to, string tenantName, Uri link, Language language, TimeSpan lifetime, Guid invitationId)
     {
-        var texts = ByLanguage[language ?? Language.En];
-        var text = $"{texts.Invitation(tenantName)}\n\n{link}";
-        if (lifetime is { } days)
-        {
-            text += $"\n\n{texts.Lifetime((int)days.TotalDays)}";
-        }
+        var texts = ByLanguage[language];
+        var text = $"{texts.Invitation(tenantName)}\n\n{link}\n\n{texts.Lifetime((int)lifetime.TotalDays)}";
 
         // The idempotency key is the invitation's, so an event that arrives twice sends one email.
         return new EmailMessage(to, texts.Subject(tenantName), text, $"invite/{invitationId}");
