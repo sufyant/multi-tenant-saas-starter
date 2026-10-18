@@ -5,6 +5,7 @@ using ControlPlane.Application.Users.GetMe;
 using ControlPlane.Application.Users.GetUser;
 using ControlPlane.Application.Users.ListUsers;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
@@ -55,7 +56,9 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
             return null;
         }
 
-        return await IsSystemAdminAsync(user.Id, cancellationToken) ? new InviterNameView("Platform", null) : new InviterNameView("User", UserNameView.Of(user));
+        return await IsSystemAdminAsync(user.Id, cancellationToken)
+            ? new InviterNameView(nameof(InviterKind.Platform), null)
+            : new InviterNameView(nameof(InviterKind.User), UserNameView.Of(user));
     }
 
     async Task<ListPage<UserView>> IUserQueries.ListUsersAsync(

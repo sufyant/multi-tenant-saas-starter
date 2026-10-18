@@ -28,6 +28,8 @@ public sealed class DomainNameMapTests
 
     public static TheoryData<string> UserStatuses => [.. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Users.UserStatus")];
 
+    public static TheoryData<string> InviterKinds => [.. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.InviterKind")];
+
     public static TheoryData<TenantResponseStatus> TenantFilters => [.. Enum.GetValues<TenantResponseStatus>()];
 
     public static TheoryData<UserResponseStatus> UserFilters => [.. Enum.GetValues<UserResponseStatus>()];
@@ -72,6 +74,13 @@ public sealed class DomainNameMapTests
     public void MapAUserStatus_EveryDomainStatus_HasAResponseStatus(string status)
     {
         Map("OfUser", status).ShouldNotBeNull();
+    }
+
+    [Theory]
+    [MemberData(nameof(InviterKinds))]
+    public void MapAnInviter_EveryDomainKind_HasAResponseKind(string kind)
+    {
+        Map("OfInviter", kind).ShouldNotBeNull();
     }
 
     // A list filter names a response status; the query reads the Domain status of that name.
