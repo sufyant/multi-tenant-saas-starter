@@ -62,10 +62,10 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             ["tenantId", "tenantName", "tenantSlug", "tenantStatus", "role", "joinedAt", "soleOwner"], ignoreOrder: true);
         Memberships(found).ShouldBe(
         [
-            (alone.Id, "Alpha Ltd", alone.Slug, "active", "owner", joined, true),
-            (shared.Id, "Bravo Ltd", shared.Slug, "active", "owner", joined, false),
-            (suspended.Id, "Charlie Ltd", suspended.Slug, "suspended", "admin", joined, false),
-            (closed.Id, "Delta Ltd", closed.Slug, "closed", "member", joined, false),
+            (alone.Id, "Alpha Ltd", alone.Slug, "active", Roles.BuiltIn("owner"), joined, true),
+            (shared.Id, "Bravo Ltd", shared.Slug, "active", Roles.BuiltIn("owner"), joined, false),
+            (suspended.Id, "Charlie Ltd", suspended.Slug, "suspended", Roles.BuiltIn("admin"), joined, false),
+            (closed.Id, "Delta Ltd", closed.Slug, "closed", Roles.BuiltIn("member"), joined, false),
         ]);
     }
 
@@ -218,7 +218,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             membership.GetProperty("tenantName").GetString(),
             membership.GetProperty("tenantSlug").GetString(),
             membership.GetProperty("tenantStatus").GetString(),
-            membership.GetProperty("role").GetString(),
+            Roles.Of(membership),
             membership.GetProperty("joinedAt").GetDateTimeOffset(),
             membership.GetProperty("soleOwner").GetBoolean())),
     ];

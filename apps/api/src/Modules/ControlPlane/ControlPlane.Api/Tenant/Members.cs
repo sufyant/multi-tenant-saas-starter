@@ -63,7 +63,11 @@ public static class Members
         await bus.InvokeAsync<Result>(new RemoveMember(user.Id(), userId), cancellationToken);
 
     private static MemberResponse ToResponse(MemberSummary member) =>
-        new(member.UserId, member.Email, member.FirstName, member.LastName, member.Role, member.Deleted, member.JoinedAt);
+        new(member.UserId, member.Email, member.FirstName, member.LastName, ToResponse(member.Role), member.Deleted, member.JoinedAt);
+
+    // Every response that holds a role answers it in this one shape (N7). The built-in role keeps ControlPlane's name, as a request
+    // gives it (RoleNameTests).
+    internal static RoleResponse ToResponse(RoleSummary role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
 }
 
 /// <summary>
@@ -73,15 +77,21 @@ public static class Members
 public sealed record ChangeMemberRoleRequest([property: JsonRequired] MemberRole Role);
 
 /// <summary>
-/// A member of the tenant: the user's id, the copy of their email address and name, their role, <c>owner</c>, <c>admin</c> or <c>member</c>, whether the
-/// identity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
+/// A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted
+/// the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
 /// the screen shows "Deleted user", as the audit logs say <c>deleted</c> (K3).
 /// </summary>
-public sealed record MemberResponse(Guid UserId, string? Email, string? FirstName, string? LastName, string Role, bool Deleted, DateTimeOffset JoinedAt);
+public sealed record MemberResponse(Guid UserId, string? Email, string? FirstName, string? LastName, RoleResponse Role, bool Deleted, DateTimeOffset JoinedAt);
 
 /// <summary>
-/// A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
-/// the role an invitation gives, and the role a member is given.
+/// A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers
+/// <c>{ "builtIn": "owner", "name": "owner" }</c>. A client compares <c>builtIn</c> with <see cref="MemberRole"/>, never the name.
+/// </summary>
+public sealed record RoleResponse(MemberRole? BuiltIn, string Name);
+
+/// <summary>
+/// A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an
+/// invitation gives, and the role a member is given.
 /// </summary>
 [JsonConverter(typeof(ExactNameEnumConverter<MemberRole>))]
 public enum MemberRole

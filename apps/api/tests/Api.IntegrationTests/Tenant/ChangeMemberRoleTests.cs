@@ -44,7 +44,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         body.GetProperty("userId").GetGuid().ShouldBe(memberId);
         body.GetProperty("email").GetString().ShouldBe("ada@example.com");
         body.GetProperty("lastName").GetString().ShouldBe("Lovelace");
-        body.GetProperty("role").GetString().ShouldBe("admin");
+        Roles.Of(body).ShouldBe(Roles.BuiltIn("admin"));
         body.GetProperty("deleted").GetBoolean().ShouldBeFalse();
         body.GetProperty("joinedAt").GetDateTimeOffset().ShouldBe(joined);
         (await RoleOfAsync(tenant.Id, memberId)).ShouldBe("Admin");
@@ -199,7 +199,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var again = await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("role").GetString().ShouldBe("admin");
+        Roles.Of(await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(Roles.BuiltIn("admin"));
         (await _audit.TenantLogAsync(member)).ShouldNotBeNull().Split(", ").ShouldHaveSingleItem();
     }
 

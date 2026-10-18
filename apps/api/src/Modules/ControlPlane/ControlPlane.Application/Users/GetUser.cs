@@ -1,3 +1,4 @@
+using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
 using SharedKernel;
 
@@ -20,8 +21,8 @@ public sealed record UserWithMemberships(
     IReadOnlyList<UserMembershipDetails> Memberships);
 
 /// <summary>
-/// A tenant the user is a member of: its name, slug and status (<c>Active</c>, <c>Suspended</c>, <c>Closed</c>), the name of the
-/// built-in role the user holds there (<c>owner</c>), when they joined, and whether they are its only Owner. The suspend dialog warns
+/// A tenant the user is a member of: its name, slug and status (<c>Active</c>, <c>Suspended</c>, <c>Closed</c>), the role the user
+/// holds there, when they joined, and whether they are its only Owner. The suspend dialog warns
 /// with it, and the delete refusal names those tenants.
 /// </summary>
 public sealed record UserMembershipDetails(
@@ -29,7 +30,7 @@ public sealed record UserMembershipDetails(
     string TenantName,
     string TenantSlug,
     string TenantStatus,
-    string Role,
+    RoleSummary Role,
     DateTimeOffset JoinedAt,
     bool SoleOwner);
 

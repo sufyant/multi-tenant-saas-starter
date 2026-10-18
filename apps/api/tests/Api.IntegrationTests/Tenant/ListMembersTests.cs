@@ -39,9 +39,9 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Members(page).ShouldBe(
         [
-            (await _catalog.UserIdOfAsync(owner), "owner"),
-            (await _catalog.UserIdOfAsync(admin), "admin"),
-            (await _catalog.UserIdOfAsync(member), "member"),
+            (await _catalog.UserIdOfAsync(owner), Roles.BuiltIn("owner")),
+            (await _catalog.UserIdOfAsync(admin), Roles.BuiltIn("admin")),
+            (await _catalog.UserIdOfAsync(member), Roles.BuiltIn("member")),
         ]);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
@@ -59,7 +59,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(later).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
-        Members(page).ShouldBe([(lower, "member"), (higher, "member")]);
+        Members(page).ShouldBe([(lower, Roles.BuiltIn("member")), (higher, Roles.BuiltIn("member"))]);
     }
 
     // T2: the tenant comes from the path, whatever the query string or a header says.
@@ -76,7 +76,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?tenantId={other.Id}", Cancellation);
 
-        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(caller), "owner")]);
+        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(caller), Roles.BuiltIn("owner"))]);
     }
 
     // T3: a tenant the caller cannot enter looks the same as one that does not exist.
@@ -177,7 +177,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?page=2&pageSize=2", Cancellation);
 
-        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(member), "member")]);
+        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(member), Roles.BuiltIn("member"))]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
         page.GetProperty("pageSize").GetInt32().ShouldBe(2);
         page.GetProperty("total").GetInt32().ShouldBe(3);
@@ -211,8 +211,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Profiles(page).ShouldBe(
         [
-            (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", "owner"),
-            (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, "member"),
+            (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", Roles.BuiltIn("owner")),
+            (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, Roles.BuiltIn("member")),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
             .ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted", "joinedAt"], ignoreOrder: true);
@@ -264,7 +264,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=member", Cancellation);
 
-        Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, "member")]);
+        Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, Roles.BuiltIn("member"))]);
         Deleted(page).ShouldBe([true]);
     }
 
@@ -330,7 +330,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role={role}", Cancellation);
 
-        Members(page).Select(member => member.Role).ShouldBe([role]);
+        Members(page).Select(member => member.Role).ShouldBe([Roles.BuiltIn(role)]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
@@ -410,12 +410,12 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
             item.GetProperty("email").GetString(),
             item.GetProperty("firstName").GetString(),
             item.GetProperty("lastName").GetString(),
-            item.GetProperty("role").GetString()!)),
+            Roles.Of(item))),
     ];
 
     private static List<bool> Deleted(JsonElement page) =>
         [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("deleted").GetBoolean())];
 
     private static List<(Guid UserId, string Role)> Members(JsonElement page) =>
-        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("userId").GetGuid(), item.GetProperty("role").GetString()!))];
+        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("userId").GetGuid(), Roles.Of(item)))];
 }

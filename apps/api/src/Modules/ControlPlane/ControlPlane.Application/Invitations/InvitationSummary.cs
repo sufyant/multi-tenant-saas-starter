@@ -1,3 +1,4 @@
+using ControlPlane.Application.Members;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Application.Users;
 using ControlPlane.Domain.Roles;
@@ -13,7 +14,7 @@ namespace ControlPlane.Application.Invitations;
 public sealed record InvitationSummary(
     Guid Id,
     string Email,
-    string Role,
+    RoleSummary Role,
     Guid InvitedBy,
     PersonName InvitedByName,
     DateTimeOffset CreatedAt,
@@ -23,7 +24,7 @@ public sealed record InvitationSummary(
     internal static InvitationSummary Of(Invitation invitation, User inviter, DateTimeOffset now) => new(
         invitation.Id,
         invitation.Email,
-        BuiltInRoles.All.Single(role => role.Id == invitation.RoleId).Name,
+        RoleSummary.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
         invitation.InvitedBy,
         PersonName.Of(inviter),
         invitation.CreatedAt,

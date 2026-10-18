@@ -25,7 +25,7 @@ public static class Profile
                 found.Tenant.Name,
                 found.Tenant.Slug,
                 ResponseStatus.OfMyTenant(found.Tenant.Status),
-                found.Tenant.Role,
+                Members.ToResponse(found.Tenant.Role),
                 found.Permissions,
                 found.CreatedAt));
 }
@@ -40,6 +40,6 @@ public sealed record MyTenantDetailResponse(
     string Name,
     string Slug,
     MyTenantResponseStatus Status,
-    string Role,
+    RoleResponse Role,
     IReadOnlyList<string> Permissions,
     DateTimeOffset CreatedAt);
