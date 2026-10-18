@@ -25,11 +25,11 @@ public static class ReactivateTenantHandler
             return (reactivated.Map(_ => TenantView.Of(tenant)), null);
         }
 
-        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), new TenantReactivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name));
+        return (TenantView.Of(tenant), new TenantReactivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name));
     }
 }

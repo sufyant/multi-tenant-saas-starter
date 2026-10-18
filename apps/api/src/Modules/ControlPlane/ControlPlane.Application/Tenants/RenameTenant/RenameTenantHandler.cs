@@ -26,11 +26,11 @@ public static class RenameTenantHandler
             return (renamed.Map(_ => TenantView.Of(tenant)), null);
         }
 
-        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, oldName, tenant.Name));
+        return (TenantView.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, oldName, tenant.Name));
     }
 }

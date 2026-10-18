@@ -1,12 +1,11 @@
 using ControlPlane.Application.Users;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
 using SharedKernel;
 
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>The member who sends a tenant command, with the tenant the command locked and the member's membership in it.</summary>
-internal sealed record TenantActor(Tenant Tenant, User User, Membership Membership)
+internal sealed record TenantActor(Tenant Tenant, UserProfile User, Membership Membership)
 {
     /// <summary>
     /// The start of every tenant command that a member sends. It locks the active tenant first (K6g), then finds the actor and their
@@ -22,9 +21,9 @@ internal sealed record TenantActor(Tenant Tenant, User User, Membership Membersh
     {
         var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var user = await users.FindUserAsync(actorId, cancellationToken)
+        var actor = await users.FindProfileAsync(actorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a user.");
-        if (await tenants.FindMembershipAsync(user.Id, cancellationToken) is not { } membership)
+        if (await tenants.FindMembershipAsync(actor.Id, cancellationToken) is not { } membership)
         {
             return Errors.TenantNotFound;
         }
@@ -35,6 +34,6 @@ internal sealed record TenantActor(Tenant Tenant, User User, Membership Membersh
             return access.Error;
         }
 
-        return new TenantActor(tenant, user, membership);
+        return new TenantActor(tenant, actor, membership);
     }
 }
