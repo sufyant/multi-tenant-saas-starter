@@ -51,7 +51,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         invitation.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state"], ignoreOrder: true);
+        invitation.GetProperty("state").GetString().ShouldBe("pending");
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
         invitation.GetProperty("role").GetString().ShouldBe("member");

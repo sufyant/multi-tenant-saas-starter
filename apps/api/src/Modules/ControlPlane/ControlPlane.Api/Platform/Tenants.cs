@@ -176,7 +176,7 @@ public static class Tenants
     private static TenantOwnerResponse ToResponse(OwnerDetails owner) => new(owner.UserId, owner.FirstName, owner.LastName, owner.Email);
 
     private static OwnerInvitationResponse ToResponse(OwnerInvitationDetails invitation) =>
-        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfOwnerInvitation(invitation.State));
+        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfInvitation(invitation.State));
 }
 
 /// <summary>
@@ -237,22 +237,12 @@ public sealed record TenantDetailResponse(
 /// <summary>An Owner of a tenant: the catalog user's id, names and address.</summary>
 public sealed record TenantOwnerResponse(Guid UserId, string? FirstName, string? LastName, string? Email);
 
-/// <summary>The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request.</summary>
-public sealed record OwnerInvitationResponse(string Email, DateTimeOffset ExpiresAt, OwnerInvitationResponseState State);
-
-/// <summary>The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled.</summary>
-[JsonConverter(typeof(JsonStringEnumConverter<OwnerInvitationResponseState>))]
-public enum OwnerInvitationResponseState
-{
-    [JsonStringEnumMemberName("pending")]
-    Pending,
-
-    [JsonStringEnumMemberName("expired")]
-    Expired,
-
-    [JsonStringEnumMemberName("cancelled")]
-    Cancelled,
-}
+/// <summary>
+/// The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
+/// <c>pending</c>, <c>expired</c> once its expiry has passed, or <c>cancelled</c>. It is never <c>accepted</c>, because it is shown only
+/// while the tenant has no Owner.
+/// </summary>
+public sealed record OwnerInvitationResponse(string Email, DateTimeOffset ExpiresAt, InvitationResponseState State);
 
 /// <summary>The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<TenantResponseStatus>))]
