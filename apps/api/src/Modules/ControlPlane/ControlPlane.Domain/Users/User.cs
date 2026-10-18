@@ -85,11 +85,11 @@ internal sealed class User(Guid id, string externalId)
         };
 
     /// <summary>
-    /// The user changes their own preferences, which follow them to every tenant and device. True when they changed. The API never
+    /// The user changes their own preferences, which follow them to every tenant and device. Changed when they changed. The API never
     /// interprets the time zone: it keeps the IANA name the web chose, and null means the web uses the browser's. A deleted user is
     /// refused, as on every me endpoint (A9).
     /// </summary>
-    public Result<bool> ChangePreferences(Language language, string? timeZone)
+    public Result<StateChange> ChangePreferences(Language language, string? timeZone)
     {
         if (DeletedAt is not null)
         {
@@ -98,14 +98,14 @@ internal sealed class User(Guid id, string externalId)
 
         var changed = (Language, TimeZone) != (language, timeZone);
         (Language, TimeZone) = (language, timeZone);
-        return changed;
+        return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 
     /// <summary>
-    /// A system admin changes the names. True when they changed; the same names with spaces around them are no change. A deleted user
+    /// A system admin changes the names. Changed when they changed; the same names with spaces around them are no change. A deleted user
     /// has no names to change: giving them one would keep personal data the deletion erased.
     /// </summary>
-    public Result<bool> Rename(string firstName, string lastName)
+    public Result<StateChange> Rename(string firstName, string lastName)
     {
         if (DeletedAt is not null)
         {
@@ -114,41 +114,41 @@ internal sealed class User(Guid id, string externalId)
 
         var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
         (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
-        return changed;
+        return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 
     /// <summary>
     /// Erases the email address, the names and the time zone, which tells where the person lives, and marks the user deleted. A second
-    /// deletion keeps the first time. True for the first deletion.
+    /// deletion keeps the first time. Changed for the first deletion.
     /// </summary>
-    public bool Delete(DateTimeOffset now)
+    public StateChange Delete(DateTimeOffset now)
     {
         var first = DeletedAt is null;
         (Email, FirstName, LastName, TimeZone) = (null, null, null, null);
         DeletedAt ??= now;
-        return first;
+        return first ? StateChange.Changed : StateChange.Unchanged;
     }
 
     /// <summary>
     /// A system admin suspends the user. A second suspension keeps the first time and the first system admin. The identity provider is
-    /// not told. True when the user was not suspended.
+    /// not told. Changed when the user was not suspended.
     /// </summary>
-    public bool Suspend(DateTimeOffset now, Guid suspendedBy)
+    public StateChange Suspend(DateTimeOffset now, Guid suspendedBy)
     {
         if (SuspendedAt is not null)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         (SuspendedAt, SuspendedBy) = (now, suspendedBy);
-        return true;
+        return StateChange.Changed;
     }
 
-    /// <summary>Reactivates the user and forgets who suspended them. True when the user was suspended.</summary>
-    public bool Reactivate()
+    /// <summary>Reactivates the user and forgets who suspended them. Changed when the user was suspended.</summary>
+    public StateChange Reactivate()
     {
         var changed = SuspendedAt is not null;
         (SuspendedAt, SuspendedBy) = (null, null);
-        return changed;
+        return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 }

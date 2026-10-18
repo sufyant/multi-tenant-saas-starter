@@ -43,7 +43,7 @@ public static class RenameUserHandler
 
         var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
         var renamed = user.Rename(command.FirstName, command.LastName);
-        if (!renamed.IsSuccess || !renamed.Value)
+        if (!renamed.IsSuccess || renamed.Value == StateChange.Unchanged)
         {
             return (renamed.Map(_ => UserView.Of(user, isSystemAdmin)), null);
         }

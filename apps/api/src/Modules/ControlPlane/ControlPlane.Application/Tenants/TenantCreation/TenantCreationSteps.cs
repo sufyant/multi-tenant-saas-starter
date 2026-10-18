@@ -3,6 +3,7 @@ using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
 using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.Logging;
+using SharedKernel;
 using Wolverine.ErrorHandling;
 using Wolverine.Runtime.Handlers;
 
@@ -27,7 +28,7 @@ public static class ActivateTenantHandler
     {
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("A tenant is activated after its creation added it.");
-        if (!tenant.Activate())
+        if (tenant.Activate() == StateChange.Unchanged)
         {
             return (null, null, null);
         }
@@ -63,7 +64,7 @@ public static partial class CancelTenantHandler
             return null;
         }
 
-        if (tenant.Cancel(step.Reason))
+        if (tenant.Cancel(step.Reason) == StateChange.Changed)
         {
             LogCancelled(logger, step.TenantId, step.Reason);
         }
@@ -89,7 +90,7 @@ public static class CancelInvitationHandler
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation is cancelled in the tenant its creation added.");
         var invitation = await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken);
-        var cancelled = invitation?.Cancel() == true;
+        var cancelled = invitation?.Cancel() == StateChange.Changed;
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
         return cancelled && invitation!.SignUpInvitationId is { } signUp ? new WithdrawSignUpCommand(signUp) : null;

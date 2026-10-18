@@ -40,14 +40,14 @@ public static class DeleteUserHandler
         }
 
         var now = time.GetUtcNow();
-        var first = user.Delete(now);
+        var deleted = user.Delete(now);
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a catalog user.");
         await users.SaveChangesAsync(cancellationToken);
 
         return (
             Result.Success(),
-            first ? new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, actor) : null,
+            deleted == StateChange.Changed ? new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, actor) : null,
             new DeleteIdentityAccountCommand(user.ExternalId));
     }
 }

@@ -40,7 +40,7 @@ public static class SuspendTenantHandler
         }
 
         var suspended = tenant.Suspend(command.Reason);
-        if (!suspended.IsSuccess || !suspended.Value)
+        if (!suspended.IsSuccess || suspended.Value == StateChange.Unchanged)
         {
             return (suspended.Map(_ => TenantView.Of(tenant)), null);
         }

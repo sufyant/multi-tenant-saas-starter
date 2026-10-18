@@ -42,7 +42,7 @@ public static class RenameTenantHandler
 
         var oldName = tenant.Name;
         var renamed = tenant.Rename(command.Name);
-        if (!renamed.IsSuccess || !renamed.Value)
+        if (!renamed.IsSuccess || renamed.Value == StateChange.Unchanged)
         {
             return (renamed.Map(_ => TenantView.Of(tenant)), null);
         }

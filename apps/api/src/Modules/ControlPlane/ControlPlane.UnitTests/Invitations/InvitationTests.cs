@@ -41,7 +41,7 @@ public class InvitationTests
 
         var cancelled = invitation.Cancel();
 
-        cancelled.ShouldBeTrue();
+        cancelled.ShouldBe(StateChange.Changed);
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
     }
 
@@ -54,7 +54,7 @@ public class InvitationTests
 
         var cancelled = invitation.Cancel();
 
-        cancelled.ShouldBeFalse();
+        cancelled.ShouldBe(StateChange.Unchanged);
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
     }
 
@@ -66,7 +66,7 @@ public class InvitationTests
 
         var cancelled = invitation.Cancel();
 
-        cancelled.ShouldBeFalse();
+        cancelled.ShouldBe(StateChange.Unchanged);
         invitation.Status.ShouldBe(InvitationStatus.Accepted);
     }
 

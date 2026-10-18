@@ -54,7 +54,7 @@ public static class ChangePreferencesHandler
         }
 
         var changed = user.ChangePreferences(command.Language, command.TimeZone);
-        if (!changed.IsSuccess || !changed.Value)
+        if (!changed.IsSuccess || changed.Value == StateChange.Unchanged)
         {
             return (changed.Map(_ => new PreferencesView(user.Language, user.TimeZone)), null);
         }

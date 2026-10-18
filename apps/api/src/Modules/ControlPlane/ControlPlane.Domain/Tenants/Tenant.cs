@@ -102,21 +102,21 @@ internal sealed class Tenant
     }
 
     /// <summary>Ends the tenant's creation. Only a provisioning tenant becomes active.</summary>
-    public bool Activate() => Leave(TenantStatus.Active);
+    public StateChange Activate() => Leave(TenantStatus.Active);
 
     /// <summary>
     /// Compensates a tenant creation that did not reach the activation. Only a provisioning tenant is cancelled: an active one stays
     /// active, and a cancelled one keeps its first reason.
     /// </summary>
-    public bool Cancel(string reason)
+    public StateChange Cancel(string reason)
     {
-        if (!Leave(TenantStatus.Cancelled))
+        if (Leave(TenantStatus.Cancelled) == StateChange.Unchanged)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         CancellationReason = reason;
-        return true;
+        return StateChange.Changed;
     }
 
     /// <summary>
@@ -124,10 +124,10 @@ internal sealed class Tenant
     /// is reactivated. Returns whether the status changed; a suspended tenant stays suspended and keeps its first reason. A tenant whose
     /// creation has not passed its pivot, or never will, or a closed one, is rejected. The caller checked the reason's length.
     /// </summary>
-    public Result<bool> Suspend(string reason)
+    public Result<StateChange> Suspend(string reason)
     {
         var moved = Move(from: TenantStatus.Active, to: TenantStatus.Suspended);
-        if (moved.IsSuccess && moved.Value)
+        if (moved.IsSuccess && moved.Value == StateChange.Changed)
         {
             SuspensionReason = reason.Trim();
         }
@@ -139,10 +139,10 @@ internal sealed class Tenant
     /// Gives a suspended tenant back to its members and forgets the reason. Returns whether the status changed; an active tenant stays
     /// active. A tenant whose creation has not passed its pivot, or never will, or a closed one, is rejected.
     /// </summary>
-    public Result<bool> Reactivate()
+    public Result<StateChange> Reactivate()
     {
         var moved = Move(from: TenantStatus.Suspended, to: TenantStatus.Active);
-        if (moved.IsSuccess && moved.Value)
+        if (moved.IsSuccess && moved.Value == StateChange.Changed)
         {
             SuspensionReason = null;
         }
@@ -154,7 +154,7 @@ internal sealed class Tenant
     /// Gives an active or a suspended tenant a new name, kept without the spaces around it; the slug never changes (K4). Returns whether
     /// the name changed: the name the tenant has changes nothing (I1). Every rejection comes before the change.
     /// </summary>
-    public Result<bool> Rename(string name)
+    public Result<StateChange> Rename(string name)
     {
         if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
         {
@@ -169,11 +169,11 @@ internal sealed class Tenant
 
         if (trimmed == Name)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         Name = trimmed;
-        return true;
+        return StateChange.Changed;
     }
 
     /// <summary>
@@ -181,11 +181,11 @@ internal sealed class Tenant
     /// period counts from now (K4). A suspension's reason stays until a reopening. Returns whether the status changed; a closed tenant
     /// stays closed and keeps its first moment. A tenant whose creation has not passed its pivot, or never will, is rejected.
     /// </summary>
-    public Result<bool> Close(DateTimeOffset now)
+    public Result<StateChange> Close(DateTimeOffset now)
     {
         if (Status == TenantStatus.Closed)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
@@ -195,7 +195,7 @@ internal sealed class Tenant
 
         Status = TenantStatus.Closed;
         ClosedAt = now;
-        return true;
+        return StateChange.Changed;
     }
 
     /// <summary>
@@ -203,11 +203,11 @@ internal sealed class Tenant
     /// suspension's reason (K4). From the moment of the closure plus the period on, it stays closed. Returns whether the status changed;
     /// an active tenant, as a first reopening leaves it, changes nothing (I1). Any other tenant is not closed, and is rejected.
     /// </summary>
-    public Result<bool> Reopen(DateTimeOffset now, TimeSpan period)
+    public Result<StateChange> Reopen(DateTimeOffset now, TimeSpan period)
     {
         if (Status == TenantStatus.Active)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         if (Status != TenantStatus.Closed)
@@ -223,7 +223,7 @@ internal sealed class Tenant
         Status = TenantStatus.Active;
         ClosedAt = null;
         SuspensionReason = null;
-        return true;
+        return StateChange.Changed;
     }
 
     /// <summary>
@@ -284,7 +284,7 @@ internal sealed class Tenant
     /// and counts the Owners under it (K6). Returns whether the role changed: the role the member already has changes nothing (I1).
     /// Every rejection comes before the change.
     /// </summary>
-    public static Result<bool> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
+    public static Result<StateChange> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
     {
         var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
         if (givesOrTakesOwner && !IsOwner(actor))
@@ -331,7 +331,7 @@ internal sealed class Tenant
 
     private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
 
-    private Result<bool> Move(TenantStatus from, TenantStatus to)
+    private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {
         if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
         {
@@ -340,22 +340,22 @@ internal sealed class Tenant
 
         if (Status != from)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         Status = to;
-        return true;
+        return StateChange.Changed;
     }
 
-    private bool Leave(TenantStatus status)
+    private StateChange Leave(TenantStatus status)
     {
         if (Status != TenantStatus.Provisioning)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         Status = status;
-        return true;
+        return StateChange.Changed;
     }
 
     private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;

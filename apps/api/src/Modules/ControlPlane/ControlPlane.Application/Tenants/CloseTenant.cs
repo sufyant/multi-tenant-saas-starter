@@ -32,7 +32,7 @@ public static class CloseTenantHandler
 
         var now = time.GetUtcNow();
         var closed = tenant.Close(now);
-        if (!closed.IsSuccess || !closed.Value)
+        if (!closed.IsSuccess || closed.Value == StateChange.Unchanged)
         {
             return (closed.Map(_ => TenantView.Of(tenant)), null, []);
         }

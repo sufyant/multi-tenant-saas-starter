@@ -22,7 +22,7 @@ public static class ReactivateUserHandler
         }
 
         var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
-        if (!user.Reactivate())
+        if (user.Reactivate() == StateChange.Unchanged)
         {
             return (UserView.Of(user, isSystemAdmin), null);
         }

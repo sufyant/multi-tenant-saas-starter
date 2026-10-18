@@ -28,7 +28,7 @@ public static class ReopenTenantHandler
 
         var now = time.GetUtcNow();
         var reopened = tenant.Reopen(now, settings.ReopenPeriod);
-        if (!reopened.IsSuccess || !reopened.Value)
+        if (!reopened.IsSuccess || reopened.Value == StateChange.Unchanged)
         {
             return (reopened.Map(_ => TenantView.Of(tenant)), null);
         }

@@ -96,22 +96,22 @@ internal sealed class Invitation : ITenantEntity
             : Result.Success();
 
     /// <summary>Cancels a pending invitation, as when nobody could be told of it. A used or cancelled one stays as it is.</summary>
-    public bool Cancel()
+    public StateChange Cancel()
     {
         if (Status != InvitationStatus.Pending)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         Status = InvitationStatus.Cancelled;
-        return true;
+        return StateChange.Changed;
     }
 
     /// <summary>
-    /// A member revokes the invitation, so its link stops working at once (K2). A pending one, expired or not, is cancelled: true. A
-    /// cancelled one stays as it is: false, as setting a state twice changes nothing (I1). A used one cannot be revoked.
+    /// A member revokes the invitation, so its link stops working at once (K2). A pending one, expired or not, is cancelled: Changed. A
+    /// cancelled one stays as it is: Unchanged, as setting a state twice changes nothing (I1). A used one cannot be revoked.
     /// </summary>
-    public Result<bool> Revoke() => Status switch
+    public Result<StateChange> Revoke() => Status switch
     {
         InvitationStatus.Accepted => Error.Conflict(ControlPlaneErrorCodes.InvitationNotPending, "The invitation has already been used."),
         _ => Cancel(),

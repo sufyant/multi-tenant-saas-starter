@@ -26,7 +26,7 @@ public static class ReactivateTenantHandler
         }
 
         var reactivated = tenant.Reactivate();
-        if (!reactivated.IsSuccess || !reactivated.Value)
+        if (!reactivated.IsSuccess || reactivated.Value == StateChange.Unchanged)
         {
             return (reactivated.Map(_ => TenantView.Of(tenant)), null);
         }

@@ -50,7 +50,7 @@ public static class RevokeInvitationHandler
         }
 
         var revoked = invitation.Revoke();
-        if (!revoked.IsSuccess || !revoked.Value)
+        if (!revoked.IsSuccess || revoked.Value == StateChange.Unchanged)
         {
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
         }

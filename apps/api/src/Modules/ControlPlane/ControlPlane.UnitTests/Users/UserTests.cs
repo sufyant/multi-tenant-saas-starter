@@ -96,7 +96,7 @@ public class UserTests
         var first = user.Suspend(Now, AdminId);
         var second = user.Suspend(Now.AddHours(1), AdminId);
 
-        (first, second).ShouldBe((true, false));
+        (first, second).ShouldBe((StateChange.Changed, StateChange.Unchanged));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class UserTests
         var first = user.Reactivate();
         var second = user.Reactivate();
 
-        (first, second).ShouldBe((true, false));
+        (first, second).ShouldBe((StateChange.Changed, StateChange.Unchanged));
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public class UserTests
 
         var changed = user.Rename("Ada", "King");
 
-        changed.Value.ShouldBeTrue();
+        changed.Value.ShouldBe(StateChange.Changed);
         (user.FirstName, user.LastName).ShouldBe(("Ada", "King"));
     }
 
@@ -138,7 +138,7 @@ public class UserTests
 
         var changed = user.Rename(" Ada ", "Lovelace ");
 
-        changed.Value.ShouldBeFalse();
+        changed.Value.ShouldBe(StateChange.Unchanged);
     }
 
     // The deletion erased the names; a new one would bring personal data back.
@@ -162,7 +162,7 @@ public class UserTests
         var first = user.Delete(Now);
         var second = user.Delete(Now.AddHours(1));
 
-        (first, second).ShouldBe((true, false));
+        (first, second).ShouldBe((StateChange.Changed, StateChange.Unchanged));
     }
 
     // Decision 6 of step 20j: a new user speaks the language of the invitation they accept. The time zone is not set, so the web uses
@@ -182,7 +182,7 @@ public class UserTests
 
         var changed = user.ChangePreferences(Language.Ar, "Asia/Dubai");
 
-        changed.Value.ShouldBeTrue();
+        changed.Value.ShouldBe(StateChange.Changed);
         (user.Language, user.TimeZone).ShouldBe((Language.Ar, "Asia/Dubai"));
     }
 
@@ -195,7 +195,7 @@ public class UserTests
 
         var changed = user.ChangePreferences(Language.Tr, "Europe/Istanbul");
 
-        changed.Value.ShouldBeFalse();
+        changed.Value.ShouldBe(StateChange.Unchanged);
     }
 
     // Null means "not set": the web uses the browser's time zone.
@@ -207,7 +207,7 @@ public class UserTests
 
         var changed = user.ChangePreferences(Language.En, null);
 
-        changed.Value.ShouldBeTrue();
+        changed.Value.ShouldBe(StateChange.Changed);
         user.TimeZone.ShouldBeNull();
     }
 

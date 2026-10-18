@@ -24,7 +24,7 @@ public class MemberManagementTests
 
         var result = Tenant.ChangeMemberRole(Membership(actor), changed, RoleOf(role), owners: 2);
 
-        result.Value.ShouldBeTrue();
+        result.Value.ShouldBe(StateChange.Changed);
         changed.RoleId.ShouldBe(RoleOf(role).Id);
     }
 
@@ -66,7 +66,7 @@ public class MemberManagementTests
 
         var result = Tenant.ChangeMemberRole(self, self, BuiltInRoles.Admin, owners: 2);
 
-        result.Value.ShouldBeTrue();
+        result.Value.ShouldBe(StateChange.Changed);
         self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
     }
 
@@ -89,7 +89,7 @@ public class MemberManagementTests
 
         var result = Tenant.ChangeMemberRole(self, self, BuiltInRoles.Member, owners: 1);
 
-        result.Value.ShouldBeTrue();
+        result.Value.ShouldBe(StateChange.Changed);
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class MemberManagementTests
     {
         var result = Tenant.ChangeMemberRole(Membership("Owner"), Membership(role), RoleOf(role), owners);
 
-        result.Value.ShouldBeFalse();
+        result.Value.ShouldBe(StateChange.Unchanged);
     }
 
     // Section 6, "Member management": an Admin who acts on an Owner is refused before the Owner count is looked at.
