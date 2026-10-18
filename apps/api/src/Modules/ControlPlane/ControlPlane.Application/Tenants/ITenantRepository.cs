@@ -1,24 +1,16 @@
-using ControlPlane.Application.Invitations.ListInvitations;
-using ControlPlane.Application.Members.ListMembers;
-using ControlPlane.Application.Tenants.ListTenants;
-using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
-using SharedKernel;
 
-namespace ControlPlane.Application.Ports;
+namespace ControlPlane.Application.Tenants;
 
 /// <summary>
-/// The one way handlers reach catalog rows that belong to a tenant, used inside the active tenant. Row level security keeps one
-/// tenant's memberships and invitations from another. Users are not tenant-owned; they are here because accepting an invitation
-/// saves a user and its membership together. The list of every tenant is here too: it is the catalog's own table, which belongs to
-/// no tenant, and it is read outside any.
+/// The tenant aggregate for the commands: the active tenant, its memberships and its invitations (M1), loaded to change them and saved.
+/// Row level security keeps one tenant's memberships and invitations from another. A method is here when a command needs it to decide.
 /// </summary>
 /// <remarks>
 /// Public only because Wolverine's generated code passes it to public handlers; its members speak domain types, so they
 /// are internal to the module.
 /// </remarks>
-public interface ITenantCatalog
+public interface ITenantRepository
 {
     internal Guid TenantId { get; }
 
@@ -28,24 +20,12 @@ public interface ITenantCatalog
     /// </summary>
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
 
-    /// <summary>The active tenant, without a lock, for a read. Null when no tenant has the active tenant's id.</summary>
-    internal Task<Tenant?> FindTenantAsync(CancellationToken cancellationToken);
-
-    /// <summary>
-    /// A page of every tenant whose name or slug contains the search, in the status or every status, by the sort field, then id. It
-    /// needs no active tenant.
-    /// </summary>
-    internal Task<ListPage<(Tenant Tenant, User? FirstOwner)>> ListTenantsAsync(ListRequest<ListTenantsSort> list, TenantStatus? status, CancellationToken cancellationToken);
-
     /// <summary>
     /// What the active tenant's own rows say for its summary: its members, its Owners, the Owner who joined first, and its latest Owner
     /// invitation. It saves the pending changes first, so it reads the rows as the transaction leaves them. The caller holds the tenant's
     /// lock (K6).
     /// </summary>
     internal Task<TenantRows> ReadRowsAsync(CancellationToken cancellationToken);
-
-    /// <summary>The users who hold the Owner role in the active tenant, in the order they joined, then by user id.</summary>
-    internal Task<IReadOnlyList<User>> ListOwnersAsync(CancellationToken cancellationToken);
 
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
@@ -54,16 +34,6 @@ public interface ITenantCatalog
     /// every change to a membership takes first, so the count stays true until the transaction ends (K6).
     /// </summary>
     internal Task<int> CountOwnersAsync(CancellationToken cancellationToken);
-
-    /// <summary>
-    /// A page of the active tenant's members of the role or every role, with the copy of their profile and whether the user was deleted,
-    /// whose email address or name contains the search: by the sort field, then by user id. The search starts from the tenant's
-    /// memberships, never from the users.
-    /// </summary>
-    internal Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted, DateTimeOffset JoinedAt)>> ListMembersAsync(
-        ListRequest<ListMembersSort> list,
-        BuiltInRole? role,
-        CancellationToken cancellationToken);
 
     /// <summary>
     /// Whether a member of the active tenant has this email address, in the catalog's copy of their profile, compared without case.
@@ -86,37 +56,11 @@ public interface ITenantCatalog
     /// </summary>
     internal Task<IReadOnlyList<Invitation>> FindPendingInvitationsAsync(CancellationToken cancellationToken);
 
-    /// <summary>
-    /// A page of the active tenant's pending invitations, expired ones included, of the role or every role, whose email address contains
-    /// the search, each with the user who invited: by the sort field, then by id.
-    /// </summary>
-    internal Task<ListPage<(Invitation Invitation, User Inviter)>> ListPendingInvitationsAsync(
-        ListRequest<ListInvitationsSort> list,
-        BuiltInRole? role,
-        CancellationToken cancellationToken);
-
-    /// <summary>The invitation with this secret hash, without a lock, for a read; null when the active tenant has none.</summary>
-    internal Task<Invitation?> FindInvitationAsync(string secretHash, CancellationToken cancellationToken);
-
     /// <summary>The invitation with this secret hash, locked for the rest of the transaction so it is accepted only once.</summary>
     internal Task<Invitation?> FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken);
 
     /// <summary>The invitation with this id, locked for the rest of the transaction so the steps that change it run one at a time.</summary>
     internal Task<Invitation?> FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken);
-
-    internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// The user with this identity provider id, locked for the rest of the transaction: a deletion, which locks the user row for update,
-    /// runs before or after, never between a check of the user and the change (K6, A8). The lock does not block a read, nor an insert of
-    /// a row that references the user.
-    /// </summary>
-    internal Task<User?> FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken);
-
-    internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
-
-    /// <summary>Whether the user is on the system admin list. The system admin list belongs to no tenant.</summary>
-    internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Adds the user to the active tenant with the role, and keeps what follows from it (R13): the tenant's summary, and the user's count
@@ -138,8 +82,6 @@ public interface ITenantCatalog
     internal Task<bool> TryAddAsync(Tenant tenant, CancellationToken cancellationToken);
 
     internal void Add(Invitation invitation);
-
-    internal void Add(User user);
 
     internal Task SaveChangesAsync(CancellationToken cancellationToken);
 }

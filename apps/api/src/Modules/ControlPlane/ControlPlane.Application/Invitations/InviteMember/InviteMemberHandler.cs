@@ -1,6 +1,7 @@
 using ControlPlane.Application.Invitations.OpenMemberSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
@@ -20,19 +21,20 @@ public static class InviteMemberHandler
 
     public static async Task<(Result<InvitationView>, MemberInvitedEvent?, OpenMemberSignUpCommand?, WithdrawSignUpCommand?)> HandleAsync(
         InviteMemberCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         InvitationOptions invitations,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var inviter = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var inviter = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
 
         // The door let the inviter in, but a change that held the lock before may have removed them: to a non-member the tenant does not
         // exist (T3).
-        if (await catalog.FindMembershipAsync(inviter.Id, cancellationToken) is not { } membership)
+        if (await tenants.FindMembershipAsync(inviter.Id, cancellationToken) is not { } membership)
         {
             return (Errors.TenantNotFound, null, null, null);
         }
@@ -54,32 +56,32 @@ public static class InviteMemberHandler
         }
 
         var email = command.Email.Trim();
-        if (await catalog.IsMemberEmailAsync(email, cancellationToken))
+        if (await tenants.IsMemberEmailAsync(email, cancellationToken))
         {
             return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant."), null, null, null);
         }
 
         var now = time.GetUtcNow();
-        if (await catalog.CountInvitationsSinceAsync(now - LimitWindow, cancellationToken) >= invitations.DailyLimitPerTenant)
+        if (await tenants.CountInvitationsSinceAsync(now - LimitWindow, cancellationToken) >= invitations.DailyLimitPerTenant)
         {
             return (Error.TooManyRequests(ControlPlaneErrorCodes.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours."), null, null, null);
         }
 
         // K2: the new invitation replaces a pending one to the same address. The replaced one is saved as cancelled first, so the
         // partial unique index never sees two pending invitations.
-        var replaced = await catalog.FindPendingInvitationAsync(email, cancellationToken);
+        var replaced = await tenants.FindPendingInvitationAsync(email, cancellationToken);
         if (replaced is not null)
         {
             replaced.Cancel();
-            await catalog.SaveChangesAsync(cancellationToken);
+            await tenants.SaveChangesAsync(cancellationToken);
         }
 
         var secret = InvitationSecret.Generate();
         var language = command.Language ?? inviter.Language;
         var invitation = Invitation.Create(Guid.CreateVersion7(now), tenant.Id, email, role, inviter.Id, now, invitations.Lifetime, secret, language);
-        catalog.Add(invitation);
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.SaveChangesAsync(cancellationToken);
+        tenants.Add(invitation);
+        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        await tenants.SaveChangesAsync(cancellationToken);
 
         return (
             InvitationView.Of(invitation, inviter, now),

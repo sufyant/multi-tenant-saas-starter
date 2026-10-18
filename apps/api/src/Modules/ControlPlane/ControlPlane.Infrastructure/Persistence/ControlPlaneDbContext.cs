@@ -44,6 +44,33 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
 
     internal DbSet<TenantCreationSaga> TenantCreationSagas => Set<TenantCreationSaga>();
 
+    /// <summary>
+    /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
+    /// fast without one.
+    /// </summary>
+    internal Guid ActiveTenant =>
+        MessageTenantId ?? throw new InvalidOperationException("Tenant-owned catalog rows are reached only inside a tenant.");
+
+    /// <summary>The active tenant's memberships. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
+    internal IQueryable<Membership> TenantMemberships
+    {
+        get
+        {
+            _ = ActiveTenant;
+            return Memberships;
+        }
+    }
+
+    /// <summary>The active tenant's invitations. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
+    internal IQueryable<Invitation> TenantInvitations
+    {
+        get
+        {
+            _ = ActiveTenant;
+            return Invitations;
+        }
+    }
+
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -66,7 +93,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             tenant.Property(t => t.SuspensionReason).HasMaxLength(Tenant.SuspensionReasonMaxLength);
 
             // R12: the summary the platform's tenant list reads across tenants, where row level security hides the memberships and the
-            // invitations. Tenant.Summarize writes it under the tenant's lock. TenantCatalog inserts a new tenant with SQL, without the
+            // invitations. Tenant.Summarize writes it under the tenant's lock. TenantRepository inserts a new tenant with SQL, without the
             // summary, which the defaults make empty.
             tenant.Property(t => t.MemberCount).HasDefaultValue(0);
             tenant.Property(t => t.OwnerCount).HasDefaultValue(0);

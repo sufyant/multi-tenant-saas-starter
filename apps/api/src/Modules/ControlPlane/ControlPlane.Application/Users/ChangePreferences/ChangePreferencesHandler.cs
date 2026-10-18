@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
 
@@ -11,7 +10,7 @@ public static class ChangePreferencesHandler
 {
     public static async Task<(Result<PreferencesView>, UserPreferencesChangedEvent?)> HandleAsync(
         ChangePreferencesCommand command,
-        IUserCatalog users,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

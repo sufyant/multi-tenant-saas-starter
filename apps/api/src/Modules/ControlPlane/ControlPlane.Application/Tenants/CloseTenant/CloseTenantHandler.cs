@@ -1,5 +1,5 @@
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -16,11 +16,12 @@ public static class CloseTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantClosedEvent?, OutgoingMessages)> HandleAsync(
         CloseTenantCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        if (await catalog.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
+        if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
         {
             return (Errors.TenantNotFound, null, []);
         }
@@ -33,7 +34,7 @@ public static class CloseTenantHandler
         }
 
         var withdrawals = new OutgoingMessages();
-        foreach (var invitation in await catalog.FindPendingInvitationsAsync(cancellationToken))
+        foreach (var invitation in await tenants.FindPendingInvitationsAsync(cancellationToken))
         {
             invitation.Cancel();
             if (invitation.SignUpInvitationId is { } signUp)
@@ -42,10 +43,10 @@ public static class CloseTenantHandler
             }
         }
 
-        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a catalog user.");
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.SaveChangesAsync(cancellationToken);
+        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        await tenants.SaveChangesAsync(cancellationToken);
 
         return (TenantView.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name), withdrawals);
     }

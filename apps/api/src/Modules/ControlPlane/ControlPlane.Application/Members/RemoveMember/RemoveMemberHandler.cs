@@ -1,4 +1,5 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -14,18 +15,19 @@ public static class RemoveMemberHandler
 {
     public static async Task<(Result, MemberRemovedEvent?)> HandleAsync(
         RemoveMemberCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var actorUser = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var actorUser = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
 
         // The door let the actor in, but a change that held the lock before may have removed them: to a non-member the tenant does not
         // exist (T3).
-        if (await catalog.FindMembershipAsync(actorUser.Id, cancellationToken) is not { } actor)
+        if (await tenants.FindMembershipAsync(actorUser.Id, cancellationToken) is not { } actor)
         {
             return (Errors.TenantNotFound, null);
         }
@@ -38,18 +40,18 @@ public static class RemoveMemberHandler
             return (access, null);
         }
 
-        if (await catalog.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
+        if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
             return (Errors.MemberNotFound, null);
         }
 
-        var allowed = Tenant.CheckRemoval(actor, target, await catalog.CountOwnersAsync(cancellationToken));
+        var allowed = Tenant.CheckRemoval(actor, target, await tenants.CountOwnersAsync(cancellationToken));
         if (!allowed.IsSuccess)
         {
             return (allowed, null);
         }
 
-        await catalog.RemoveMembershipAsync(tenant, target, cancellationToken);
+        await tenants.RemoveMembershipAsync(tenant, target, cancellationToken);
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);

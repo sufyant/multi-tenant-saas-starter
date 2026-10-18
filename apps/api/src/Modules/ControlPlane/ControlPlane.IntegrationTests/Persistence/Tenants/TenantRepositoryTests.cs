@@ -1,14 +1,14 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Infrastructure.Persistence;
+using ControlPlane.Infrastructure.Persistence.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ControlPlane.IntegrationTests.Persistence;
+namespace ControlPlane.IntegrationTests.Persistence.Tenants;
 
-// Tenant-owned catalog rows are reached through one access point, and row level security keeps each tenant to its own.
-public sealed class TenantCatalogTests(Database database)
+// Tenant-owned tenants rows are reached through the tenant repository, and row level security keeps each tenant to its own.
+public sealed class TenantRepositoryTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -23,12 +23,12 @@ public sealed class TenantCatalogTests(Database database)
         await Catalog.AddMemberAsync(database.Services, other, outsider);
 
         var members = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
-            ((TenantCatalog)scope.GetRequiredService<ITenantCatalog>()).Memberships.Select(membership => membership.UserId).ToListAsync(Cancellation));
+            ((TenantRepository)scope.GetRequiredService<ITenantRepository>()).Memberships.Select(membership => membership.UserId).ToListAsync(Cancellation));
 
         members.ShouldBe([member.Id]);
     }
 
-    // B8: one port method writes the membership, the tenant's summary and the user's count (R13).
+    // B8: one repository method writes the membership, the tenant's summary and the user's count (R13).
     [Fact]
     public async Task AddMembership_InATenant_BelongsToThatTenantAndIsCountedAndSummarized()
     {
@@ -37,14 +37,14 @@ public sealed class TenantCatalogTests(Database database)
 
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
-            var catalog = scope.GetRequiredService<ITenantCatalog>();
-            var locked = (await catalog.FindTenantForUpdateAsync(Cancellation))!;
-            await catalog.AddMembershipAsync(locked, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
+            await tenants.AddMembershipAsync(locked, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
         var memberships = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
-            ((TenantCatalog)scope.GetRequiredService<ITenantCatalog>()).Memberships.Select(membership => membership.TenantId).ToListAsync(Cancellation));
+            ((TenantRepository)scope.GetRequiredService<ITenantRepository>()).Memberships.Select(membership => membership.TenantId).ToListAsync(Cancellation));
         memberships.ShouldBe([tenant.Id]);
         (await Catalog.MembershipCountOfAsync(database.Services, user)).ShouldBe(1);
         (await Catalog.MemberCountOfAsync(database.Services, tenant)).ShouldBe(1);
@@ -57,16 +57,16 @@ public sealed class TenantCatalogTests(Database database)
         var user = await Catalog.AddUserAsync(database.Services);
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
-            var catalog = scope.GetRequiredService<ITenantCatalog>();
-            await catalog.AddMembershipAsync((await catalog.FindTenantForUpdateAsync(Cancellation))!, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            await tenants.AddMembershipAsync((await tenants.FindTenantForUpdateAsync(Cancellation))!, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
-            var catalog = scope.GetRequiredService<ITenantCatalog>();
-            var locked = (await catalog.FindTenantForUpdateAsync(Cancellation))!;
-            await catalog.RemoveMembershipAsync(locked, (await catalog.FindMembershipAsync(user.Id, Cancellation))!, Cancellation);
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
+            await tenants.RemoveMembershipAsync(locked, (await tenants.FindMembershipAsync(user.Id, Cancellation))!, Cancellation);
             return SharedKernel.Result.Success();
         });
 
@@ -78,9 +78,9 @@ public sealed class TenantCatalogTests(Database database)
     public async Task ReadMemberships_OutsideATenant_IsRefused()
     {
         await using var scope = database.Services.CreateAsyncScope();
-        var catalog = (TenantCatalog)scope.ServiceProvider.GetRequiredService<ITenantCatalog>();
+        var tenants = (TenantRepository)scope.ServiceProvider.GetRequiredService<ITenantRepository>();
 
-        var read = () => catalog.Memberships.ToListAsync(Cancellation);
+        var read = () => tenants.Memberships.ToListAsync(Cancellation);
 
         await read.ShouldThrowAsync<InvalidOperationException>();
     }
@@ -94,7 +94,7 @@ public sealed class TenantCatalogTests(Database database)
         var tenant = await Catalog.AddTenantAsync(database.Services);
 
         var found = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
-            scope.GetRequiredService<ITenantCatalog>().FindInvitationForUpdateAsync(tokenHash, Cancellation));
+            scope.GetRequiredService<ITenantRepository>().FindInvitationForUpdateAsync(tokenHash, Cancellation));
 
         found.ShouldBeNull();
     }
@@ -107,7 +107,7 @@ public sealed class TenantCatalogTests(Database database)
         var tenant = await Catalog.AddTenantAsync(database.Services);
 
         var found = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
-            scope.GetRequiredService<ITenantCatalog>().FindInvitationForUpdateAsync(invitationId, Cancellation));
+            scope.GetRequiredService<ITenantRepository>().FindInvitationForUpdateAsync(invitationId, Cancellation));
 
         found.ShouldBeNull();
     }
@@ -119,7 +119,7 @@ public sealed class TenantCatalogTests(Database database)
         var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), DateTimeOffset.UtcNow).Value;
 
         var add = () => InTenant.ReadAsync(database.Services, Guid.CreateVersion7(), scope =>
-            scope.GetRequiredService<ITenantCatalog>().TryAddAsync(other, Cancellation));
+            scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, Cancellation));
 
         await add.ShouldThrowAsync<InvalidOperationException>();
     }

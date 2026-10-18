@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
 
@@ -9,7 +8,7 @@ public static class ReactivateUserHandler
 {
     public static async Task<(Result<UserView>, UserReactivatedEvent?)> HandleAsync(
         ReactivateUserCommand command,
-        IUserCatalog users,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using SharedKernel;
 
 namespace ControlPlane.Application.Users.ListUserMemberships;
@@ -9,7 +8,7 @@ public static class ListUserMembershipsHandler
 {
     public static async Task<Result<UserMembership[]>> HandleAsync(
         ListUserMembershipsQuery query,
-        IUserCatalog users,
+        IUserRepository users,
         CancellationToken cancellationToken)
     {
         if (await users.FindUserAsync(query.UserId, cancellationToken) is null)

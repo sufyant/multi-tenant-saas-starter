@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.Logging;
@@ -16,11 +15,11 @@ public static partial class CancelTenantHandler
     // the saga's cancellation timeout leaves the tenant creation to a person. A cancelled tenant keeps its first reason.
     public static async Task<CancelTenantReply?> HandleAsync(
         CancelTenantCommand step,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
         ILogger<TenantCreationSaga> logger,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("A tenant is cancelled after its creation added it.");
         if (tenant.Status is TenantStatus.Active or TenantStatus.Suspended)
         {
@@ -32,9 +31,9 @@ public static partial class CancelTenantHandler
             LogCancelled(logger, step.TenantId, step.Reason);
         }
 
-        (await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.SaveChangesAsync(cancellationToken);
+        (await tenants.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
+        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        await tenants.SaveChangesAsync(cancellationToken);
         return new CancelTenantReply(step.TenantId);
     }
 

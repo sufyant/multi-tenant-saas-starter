@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
@@ -8,13 +7,13 @@ public static class ListTenantsHandler
 {
     public static async Task<Result<ListPage<TenantListItemView>>> HandleAsync(
         ListTenantsQuery query,
-        ITenantCatalog catalog,
+        ITenantQueries tenants,
         TenantOptions settings,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        return (await catalog.ListTenantsAsync(query.List, query.Status is { } status ? Enum.Parse<TenantStatus>(status) : null, cancellationToken))
+        return (await tenants.ListTenantsAsync(query.List, query.Status is { } status ? Enum.Parse<TenantStatus>(status) : null, cancellationToken))
             .Map(found => new TenantListItemView(
                 TenantView.Of(found.Tenant),
                 found.Tenant.ReopenableUntil(settings.ReopenPeriod),

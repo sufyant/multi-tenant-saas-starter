@@ -1,4 +1,4 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Domain;
@@ -38,7 +38,7 @@ public sealed class DeleteUserTests(Database database)
         var catalog = scope.ServiceProvider.GetRequiredService<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>();
         await using var transaction = await catalog.Database.BeginTransactionAsync(Cancellation);
         var returned = await DeleteUserHandler.HandleAsync(
-            command, scope.ServiceProvider.GetRequiredService<IUserCatalog>(), scope.ServiceProvider.GetRequiredService<TimeProvider>(), Cancellation);
+            command, scope.ServiceProvider.GetRequiredService<IUserRepository>(), scope.ServiceProvider.GetRequiredService<TimeProvider>(), Cancellation);
         await transaction.CommitAsync(Cancellation);
         return returned;
     }

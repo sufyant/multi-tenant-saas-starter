@@ -30,7 +30,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var userCatalog = new ControlPlane.Infrastructure.Persistence.UserCatalog(controlPlaneDbContext);
+            var userRepository = new ControlPlane.Infrastructure.Persistence.Users.UserRepository(controlPlaneDbContext);
             // The actual message body
             var renameUserCommand = (ControlPlane.Application.Users.RenameUser.RenameUserCommand)context.Envelope.Message;
 
@@ -52,7 +52,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Users.RenameUser.RenameUserCommand>(_validatorOfRenameUserCommand, _failureActionOfRenameUserCommand, renameUserCommand).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Users.RenameUser.RenameUserHandler.HandleAsync(renameUserCommand, userCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Users.RenameUser.RenameUserHandler.HandleAsync(renameUserCommand, userRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

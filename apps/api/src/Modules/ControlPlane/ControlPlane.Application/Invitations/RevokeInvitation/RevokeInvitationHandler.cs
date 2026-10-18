@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -14,18 +15,19 @@ public static class RevokeInvitationHandler
 {
     public static async Task<(Result, InvitationRevokedEvent?, WithdrawSignUpCommand?)> HandleAsync(
         RevokeInvitationCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var revoker = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var revoker = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
 
         // The door let the revoker in, but a change that held the lock before may have removed them: to a non-member the tenant does not
         // exist (T3).
-        if (await catalog.FindMembershipAsync(revoker.Id, cancellationToken) is null)
+        if (await tenants.FindMembershipAsync(revoker.Id, cancellationToken) is null)
         {
             return (Errors.TenantNotFound, null, null);
         }
@@ -38,7 +40,7 @@ public static class RevokeInvitationHandler
             return (access, null, null);
         }
 
-        if (await catalog.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)
+        if (await tenants.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)
         {
             return (Errors.InvitationNotFound, null, null);
         }
@@ -49,8 +51,8 @@ public static class RevokeInvitationHandler
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
         }
 
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.SaveChangesAsync(cancellationToken);
+        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
         return (

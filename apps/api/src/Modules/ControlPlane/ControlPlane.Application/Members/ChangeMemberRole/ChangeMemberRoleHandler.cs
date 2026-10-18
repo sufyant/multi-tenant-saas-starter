@@ -1,4 +1,5 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -14,18 +15,19 @@ public static class ChangeMemberRoleHandler
 {
     public static async Task<(Result<MemberView>, MemberRoleChangedEvent?)> HandleAsync(
         ChangeMemberRoleCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var actorUser = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var actorUser = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
 
         // The door let the actor in, but a change that held the lock before may have removed them: to a non-member the tenant does not
         // exist (T3).
-        if (await catalog.FindMembershipAsync(actorUser.Id, cancellationToken) is not { } actor)
+        if (await tenants.FindMembershipAsync(actorUser.Id, cancellationToken) is not { } actor)
         {
             return (Errors.TenantNotFound, null);
         }
@@ -38,20 +40,20 @@ public static class ChangeMemberRoleHandler
             return (access.Error, null);
         }
 
-        if (await catalog.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
+        if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
             return (Errors.MemberNotFound, null);
         }
 
         var oldRole = RoleOf(target);
         var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
-        var changed = Tenant.ChangeMemberRole(actor, target, role, await catalog.CountOwnersAsync(cancellationToken));
+        var changed = Tenant.ChangeMemberRole(actor, target, role, await tenants.CountOwnersAsync(cancellationToken));
         if (!changed.IsSuccess)
         {
             return (changed.Error, null);
         }
 
-        var user = await catalog.FindUserAsync(target.UserId, cancellationToken)
+        var user = await users.FindUserAsync(target.UserId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
         var member = new MemberView(user.Id, user.Email, user.FirstName, user.LastName, RoleView.Of(role), user.DeletedAt is not null, target.JoinedAt);
         if (changed.Value == StateChange.Unchanged)
@@ -59,8 +61,8 @@ public static class ChangeMemberRoleHandler
             return (member, null);
         }
 
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.SaveChangesAsync(cancellationToken);
+        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
         return (member, new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actorUser.Id, oldRole.Name, role.Name));

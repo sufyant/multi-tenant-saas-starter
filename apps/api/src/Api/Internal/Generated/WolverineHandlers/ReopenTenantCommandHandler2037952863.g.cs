@@ -27,7 +27,8 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
+            var userRepository = new ControlPlane.Infrastructure.Persistence.Users.UserRepository(controlPlaneDbContext);
+            var tenantRepository = new ControlPlane.Infrastructure.Persistence.Tenants.TenantRepository(controlPlaneDbContext);
             // The actual message body
             var reopenTenantCommand = (ControlPlane.Application.Tenants.ReopenTenant.ReopenTenantCommand)context.Envelope.Message;
 
@@ -48,7 +49,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.ReopenTenant.ReopenTenantHandler.HandleAsync(reopenTenantCommand, tenantCatalog, _tenantOptions, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.ReopenTenant.ReopenTenantHandler.HandleAsync(reopenTenantCommand, tenantRepository, userRepository, _tenantOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

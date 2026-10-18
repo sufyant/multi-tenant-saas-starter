@@ -1,5 +1,5 @@
 using ControlPlane.Application.Members;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -14,12 +14,14 @@ public static class GetInvitationPreviewHandler
 {
     public static async Task<Result<InvitationPreviewView>> HandleAsync(
         GetInvitationPreviewQuery query,
-        ITenantCatalog catalog,
+        ITenantQueries tenants,
+        IInvitationQueries invitations,
+        IUserQueries users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        if (await catalog.FindTenantAsync(cancellationToken) is not { } tenant
-            || await catalog.FindInvitationAsync(InvitationSecret.Hash(query.Secret), cancellationToken) is not { } invitation)
+        if (await tenants.FindTenantAsync(cancellationToken) is not { } tenant
+            || await invitations.FindInvitationAsync(InvitationSecret.Hash(query.Secret), cancellationToken) is not { } invitation)
         {
             return Errors.InvitationNotFound;
         }
@@ -30,9 +32,9 @@ public static class GetInvitationPreviewHandler
             return allowed.Error;
         }
 
-        var inviter = await catalog.FindUserAsync(invitation.InvitedBy, cancellationToken)
+        var inviter = await users.FindUserAsync(invitation.InvitedBy, cancellationToken)
             ?? throw new InvalidOperationException("An invitation's inviter is always a catalog user.");
-        var invitedBy = await catalog.IsSystemAdminAsync(inviter.Id, cancellationToken)
+        var invitedBy = await users.IsSystemAdminAsync(inviter.Id, cancellationToken)
             ? new InviterNameView("Platform", null)
             : new InviterNameView("User", UserNameView.Of(inviter));
         return new InvitationPreviewView(

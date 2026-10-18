@@ -1,11 +1,10 @@
-using ControlPlane.Application.Ports;
 using SharedKernel;
 
 namespace ControlPlane.Application.Users.GetMe;
 
 public static class GetMeHandler
 {
-    public static async Task<Result<MeView>> HandleAsync(GetMeQuery query, IUserCatalog users, CancellationToken cancellationToken)
+    public static async Task<Result<MeView>> HandleAsync(GetMeQuery query, IUserQueries users, CancellationToken cancellationToken)
     {
         if (await users.FindUserAsync(query.ActorId, cancellationToken) is not { } user)
         {

@@ -30,7 +30,8 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
+            var userRepository = new ControlPlane.Infrastructure.Persistence.Users.UserRepository(controlPlaneDbContext);
+            var tenantRepository = new ControlPlane.Infrastructure.Persistence.Tenants.TenantRepository(controlPlaneDbContext);
             // The actual message body
             var suspendTenantCommand = (ControlPlane.Application.Tenants.SuspendTenant.SuspendTenantCommand)context.Envelope.Message;
 
@@ -52,7 +53,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Tenants.SuspendTenant.SuspendTenantCommand>(_validatorOfSuspendTenantCommand, _failureActionOfSuspendTenantCommand, suspendTenantCommand).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.SuspendTenant.SuspendTenantHandler.HandleAsync(suspendTenantCommand, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.SuspendTenant.SuspendTenantHandler.HandleAsync(suspendTenantCommand, tenantRepository, userRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

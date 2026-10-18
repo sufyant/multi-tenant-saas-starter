@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using SharedKernel;
 
 namespace ControlPlane.Application.Tenants.GetTenant;
@@ -7,17 +6,17 @@ public static class GetTenantHandler
 {
     public static async Task<Result<TenantDetailView>> HandleAsync(
         GetTenantQuery query,
-        ITenantCatalog catalog,
+        ITenantQueries tenants,
         TenantOptions settings,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        if (await catalog.FindTenantAsync(cancellationToken) is not { } tenant)
+        if (await tenants.FindTenantAsync(cancellationToken) is not { } tenant)
         {
             return Errors.TenantNotFound;
         }
 
-        var owners = await catalog.ListOwnersAsync(cancellationToken);
+        var owners = await tenants.ListOwnersAsync(cancellationToken);
         return new TenantDetailView(
             TenantView.Of(tenant),
             tenant.ReopenableUntil(settings.ReopenPeriod),

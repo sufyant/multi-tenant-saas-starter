@@ -3,12 +3,12 @@ using System.Text;
 using ControlPlane.Application.Invitations.CancelInvitation;
 using ControlPlane.Application.Invitations.OpenOwnerSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Application.Tenants.CancelTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Users;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence;
@@ -321,7 +321,8 @@ public sealed class TenantCreationTests(Database database)
     private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
         (await CreateTenantHandler.HandleAsync(
             new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
-            scope.ServiceProvider.GetRequiredService<ITenantCatalog>(),
+            scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
+            scope.ServiceProvider.GetRequiredService<IUserRepository>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
             scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),
             TimeProvider.System,

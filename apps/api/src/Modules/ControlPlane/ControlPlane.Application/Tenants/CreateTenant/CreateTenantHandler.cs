@@ -1,7 +1,7 @@
 using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Users;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -19,23 +19,24 @@ public static class CreateTenantHandler
 {
     public static async Task<(Result<TenantView>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenantCommand>?, ActivationTimedOut?)> HandleAsync(
         CreateTenantCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         InvitationOptions invitations,
         TenantCreationOptions tenantCreation,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a catalog user.");
 
         var now = time.GetUtcNow();
-        var tenant = Tenant.Create(catalog.TenantId, command.Name, command.Slug, now);
+        var tenant = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);
         if (!tenant.IsSuccess)
         {
             return (tenant.Error, null, null, null);
         }
 
-        if (!await catalog.TryAddAsync(tenant.Value, cancellationToken))
+        if (!await tenants.TryAddAsync(tenant.Value, cancellationToken))
         {
             return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
         }
@@ -51,12 +52,12 @@ public static class CreateTenantHandler
             invitations.Lifetime,
             secret,
             command.Language ?? actor.Language);
-        catalog.Add(invitation);
+        tenants.Add(invitation);
 
         // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to change it.
-        var added = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var added = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant was added in this transaction.");
-        added.Summarize(await catalog.ReadRowsAsync(cancellationToken));
+        added.Summarize(await tenants.ReadRowsAsync(cancellationToken));
 
         var (saga, activate, timeout) = TenantCreationSaga.Begin(
             tenant.Value.Id,

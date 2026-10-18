@@ -1,4 +1,5 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Members;
+using ControlPlane.Application.Users;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
 
@@ -8,11 +9,16 @@ namespace ControlPlane.Application.Tenants.GetMyTenant;
 // tenant does not exist (T3).
 public static class GetMyTenantHandler
 {
-    public static async Task<Result<MyTenantDetailView>> HandleAsync(GetMyTenantQuery query, ITenantCatalog catalog, CancellationToken cancellationToken)
+    public static async Task<Result<MyTenantDetailView>> HandleAsync(
+        GetMyTenantQuery query,
+        ITenantQueries tenants,
+        IMemberQueries members,
+        IUserQueries users,
+        CancellationToken cancellationToken)
     {
-        if (await catalog.FindTenantAsync(cancellationToken) is not { } tenant
-            || await catalog.FindUserAsync(query.ActorId, cancellationToken) is not { } user
-            || await catalog.FindMembershipAsync(user.Id, cancellationToken) is not { } membership)
+        if (await tenants.FindTenantAsync(cancellationToken) is not { } tenant
+            || await users.FindUserAsync(query.ActorId, cancellationToken) is not { } user
+            || await members.FindMembershipAsync(user.Id, cancellationToken) is not { } membership)
         {
             return Errors.TenantNotFound;
         }

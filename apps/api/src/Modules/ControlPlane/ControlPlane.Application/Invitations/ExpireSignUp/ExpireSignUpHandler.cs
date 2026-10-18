@@ -1,5 +1,5 @@
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Tenants;
 
 namespace ControlPlane.Application.Invitations.ExpireSignUp;
@@ -11,13 +11,13 @@ public static class ExpireSignUpHandler
 {
     public static async Task<WithdrawSignUpCommand?> HandleAsync(
         ExpireSignUpCommand expire,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        _ = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        _ = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation's sign-up runs in the tenant of the invitation.");
-        var invitation = await catalog.FindInvitationForUpdateAsync(expire.InvitationId, cancellationToken);
+        var invitation = await tenants.FindInvitationForUpdateAsync(expire.InvitationId, cancellationToken);
         return invitation is { Status: InvitationStatus.Pending, SignUpInvitationId: { } signUp } && time.GetUtcNow() >= invitation.ExpiresAt
             ? new WithdrawSignUpCommand(signUp)
             : null;

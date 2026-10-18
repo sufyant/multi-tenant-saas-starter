@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
 
@@ -11,7 +10,7 @@ public static class RenameUserHandler
 {
     public static async Task<(Result<UserView>, UserRenamedEvent?)> HandleAsync(
         RenameUserCommand command,
-        IUserCatalog users,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
