@@ -26,7 +26,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `RateLimiting:Window` | Optional | `00:01:00` (`appsettings.json`) | The rate limit's window |
 | `RateLimiting:InvitationAccept:PermitLimit` | Optional | `10` | Invitation accepts each user may make in a window, on top of the general limit |
 | `RateLimiting:InvitationAccept:Window` | Optional | `00:01:00` | The window of the invitation accept limit |
-| `ControlPlane:FirstSystemAdminEmail` | Required while the staff list is empty | none | The verified email address of the first system admin, who is granted on their first request to `/v1/platform/...` |
+| `ControlPlane:FirstSystemAdminEmail` | Required while the system admin list is empty | none | The verified email address of the first system admin, who is granted on their first request to `/v1/platform/...` |
 | `ControlPlane:ActivationTimeout` | Optional | `00:10:00` | From the start of a tenant creation until the tenant is active; then the tenant creation needs attention |
 | `ControlPlane:InvitationEmailTimeout` | Optional | `02:00:00` | From the tenant's activation until the invitation email is sent. Must be longer than `ControlPlane:Clerk:RetryDelays` and `Notifications:InvitationEmailRetryDelays` together. The host checks this on start; the error names the three keys and their values |
 | `ControlPlane:CancellationTimeout` | Optional | `00:10:00` | From the start of a cancellation until the tenant is cancelled; then the tenant creation needs attention |
