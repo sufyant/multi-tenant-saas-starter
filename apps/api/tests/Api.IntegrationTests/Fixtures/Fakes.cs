@@ -1,8 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using ControlPlane.Application.Ports;
-using Notifications.Application;
-using Notifications.Application.Ports;
+using ControlPlane.Application.Identity;
+using Notifications.Application.Email;
 
 namespace Api.IntegrationTests.Fixtures;
 
@@ -36,7 +35,7 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
     // The next calls fail, then Clerk recovers.
     public void FailNext(int calls) => _failures = calls;
 
-    public Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public Task<SignUpLink> OpenSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
         Answer();
         if (_accounts.Values.Any(emails => emails.Contains(email, StringComparer.OrdinalIgnoreCase)))

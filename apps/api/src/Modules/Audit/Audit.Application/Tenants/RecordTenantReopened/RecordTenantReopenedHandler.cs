@@ -1,0 +1,20 @@
+using Audit.Application.AuditLogs;
+using Audit.Domain;
+using Audit.Domain.AuditEntries;
+using ControlPlane.Contracts.Tenants;
+
+namespace Audit.Application.Tenants.RecordTenantReopened;
+
+// The audit entries of a tenant's reopening, written when ControlPlane announces it, under that tenant. The system admin who reopened
+// the tenant acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3).
+public static class RecordTenantReopenedHandler
+{
+    public static Task HandleAsync(TenantReopenedEvent reopened, IAuditLog log, CancellationToken cancellationToken)
+    {
+        var tenant = AuditTarget.Tenant(reopened.TenantId, reopened.TenantName);
+        return log.RecordAsync(
+            new PlatformAuditEntry(reopened.EventId, reopened.OccurredAt, AuditActor.User(reopened.ReopenedBy), AuditOperations.TenantReopened, tenant),
+            new TenantAuditEntry(reopened.EventId, reopened.OccurredAt, AuditActor.Platform, AuditOperations.TenantReopened, tenant),
+            cancellationToken);
+    }
+}

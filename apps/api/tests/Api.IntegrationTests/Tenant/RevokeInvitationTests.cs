@@ -6,7 +6,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Tenant;
 
-// DELETE /v1/tenants/{tenantId}/invitations/{invitationId}: an Owner or an Admin withdraws a pending invitation. Its link stops working
+// DELETE /v1/tenants/{tenantId}/invitations/{invitationId}: an Owner or an Admin revokes a pending invitation. Its link stops working
 // at once (K2).
 public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
 {

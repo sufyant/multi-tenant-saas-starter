@@ -1,7 +1,10 @@
 using System.Text.Json;
-using Audit.Application.Members;
-using Audit.Application.Ports;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Members.RecordMemberRemoved;
+using Audit.Application.Members.RecordMemberRoleChanged;
+using Audit.Application.Users.RecordUserMembershipRemoved;
+using ControlPlane.Contracts.Members;
+using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Members;
@@ -33,7 +36,7 @@ public sealed class RecordMemberChangesTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_MemberRemoved_WritesTheTenantEntryWithTheRoleTheMemberHad()
     {
-        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin");
+        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin");
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -46,14 +49,14 @@ public sealed class RecordMemberChangesTests(Database database)
     }
 
     // A system admin's deletion of a user takes the user out of the tenant. The tenant's log shows the platform, as for every action of a
-    // system admin on a tenant (K3); the deletion's own record is in the platform's log.
+    // system admin on a tenant (K3); the deletion's own entry is in the platform's log.
     [Fact]
     public async Task RecordMemberRemoved_UserMembershipRemoved_WritesTheTenantEntryByThePlatform()
     {
-        var removed = new UserMembershipRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "owner");
+        var removed = new UserMembershipRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "owner");
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
-            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserMembershipRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId))
             .ShouldBe($"member.removed|Platform|-|User|{removed.UserId}|-");
@@ -62,7 +65,7 @@ public sealed class RecordMemberChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, removed.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberRoleChanged_EventArrivesTwice_WritesOneEntry()
     {
@@ -79,7 +82,7 @@ public sealed class RecordMemberChangesTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_EventArrivesTwice_WritesOneEntry()
     {
-        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member");
+        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member");
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -89,6 +92,6 @@ public sealed class RecordMemberChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId)).ShouldBe(1);
     }
 
-    private static MemberRoleChanged RoleChanged() =>
+    private static MemberRoleChangedEvent RoleChanged() =>
         new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "owner", "admin");
 }

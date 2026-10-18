@@ -1,7 +1,11 @@
 using System.Text.Json;
-using Audit.Application.Ports;
-using Audit.Application.Tenants;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Invitations.RecordOwnerInvited;
+using Audit.Application.Tenants.RecordTenantClosed;
+using Audit.Application.Tenants.RecordTenantRenamed;
+using Audit.Application.Tenants.RecordTenantReopened;
+using ControlPlane.Contracts.Invitations;
+using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Tenants;
@@ -19,7 +23,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantRenamed_TenantRenamed_WritesBothEntriesWithTheOldAndTheNewName()
     {
-        var renamed = new TenantRenamed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Globex");
+        var renamed = new TenantRenamedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Globex");
 
         await InTenant.RunAsync(database.Services, renamed.TenantId, scope =>
             RecordTenantRenamedHandler.HandleAsync(renamed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -36,7 +40,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordOwnerInvited_OwnerInvited_WritesBothEntriesWithTheInvitationAndTheOneItReplaced()
     {
-        var invited = new OwnerInvited(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+        var invited = new OwnerInvitedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, invited.TenantId, scope =>
             RecordOwnerInvitedHandler.HandleAsync(invited, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -53,7 +57,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantClosed_TenantClosed_WritesThePlatformEntryByTheAdminAndTheTenantEntryByThePlatform()
     {
-        var closed = new TenantClosed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var closed = new TenantClosedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, closed.TenantId, scope =>
             RecordTenantClosedHandler.HandleAsync(closed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -67,7 +71,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantReopened_TenantReopened_WritesThePlatformEntryByTheAdminAndTheTenantEntryByThePlatform()
     {
-        var reopened = new TenantReopened(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var reopened = new TenantReopenedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, reopened.TenantId, scope =>
             RecordTenantReopenedHandler.HandleAsync(reopened, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -78,11 +82,11 @@ public sealed class RecordTenantLifecycleTests(Database database)
             .ShouldBe($"tenant.reopened|Platform|-|Tenant|{reopened.TenantId}|Acme");
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id in each log, so each log holds it once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id in each log, so each log holds it once.
     [Fact]
     public async Task RecordTenantClosed_EventArrivesTwice_WritesOneEntryInEachLog()
     {
-        var closed = new TenantClosed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var closed = new TenantClosedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, closed.TenantId, scope =>
             RecordTenantClosedHandler.HandleAsync(closed, scope.GetRequiredService<IAuditLog>(), Cancellation));

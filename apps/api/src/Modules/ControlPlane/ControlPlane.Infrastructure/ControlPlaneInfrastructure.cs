@@ -1,12 +1,16 @@
-using ControlPlane.Application;
-using ControlPlane.Application.IdentityProvider;
+using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.SystemAdmins;
+using ControlPlane.Contracts.Tenants;
+using ControlPlane.Contracts.Users;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
+using ControlPlane.Infrastructure.Persistence.SystemAdmins;
+using ControlPlane.Infrastructure.Persistence.Tenants;
+using ControlPlane.Infrastructure.Persistence.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Tenancy;
@@ -45,11 +49,10 @@ public static class ControlPlaneInfrastructure
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
-        services.AddScoped<IUserDirectory, UserDirectory>();
 
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
-        services.AddScoped<IUserNames, UserNames>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminOptions>().BindConfiguration(SystemAdminOptions.Section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<SystemAdminOptions>, SystemAdminOptions.Validation>();

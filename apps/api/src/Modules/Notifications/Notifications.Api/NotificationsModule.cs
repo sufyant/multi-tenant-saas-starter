@@ -1,5 +1,5 @@
 using System.Reflection;
-using Notifications.Application.Ports;
+using Notifications.Application.Email;
 
 namespace Notifications.Api;
 

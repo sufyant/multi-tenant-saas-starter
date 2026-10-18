@@ -1,10 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.Invitations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using Notifications.Application.Email;
 using Npgsql;
 using SharedKernel;
 using Tenancy;
@@ -453,7 +454,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
-        var invited = new MemberInvitationReady(
+        var invited = new MemberInvitationReadyEvent(
             Guid.CreateVersion7(),
             _time.GetUtcNow(),
             Guid.NewGuid(),

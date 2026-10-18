@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using ControlPlane.Application.Ports;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
@@ -360,7 +359,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         var secret = SecretOf(_api.Email.CodeSentTo(email));
 
         var stored = await database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM control_plane.invitations WHERE email = '{email}' AND token_hash = encode(sha256(convert_to('{secret}', 'UTF8')), 'hex')");
+            $"SELECT count(*) FROM control_plane.invitations WHERE email = '{email}' AND secret_hash = encode(sha256(convert_to('{secret}', 'UTF8')), 'hex')");
         var holdingTheSecret = await database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM control_plane.invitations WHERE position('{secret}' in invitations::text) > 0");
 

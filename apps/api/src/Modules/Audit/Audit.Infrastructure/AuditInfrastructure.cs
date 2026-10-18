@@ -1,5 +1,6 @@
-using Audit.Application.Ports;
+using Audit.Application.AuditLogs;
 using Audit.Infrastructure.Persistence;
+using Audit.Infrastructure.Persistence.AuditLogs;
 using Microsoft.Extensions.DependencyInjection;
 using Tenancy;
 using Wolverine.EntityFrameworkCore;

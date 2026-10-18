@@ -1,9 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Notifications.Application;
-using Notifications.Application.Invitations.InvitationEmail;
-using Notifications.Application.Ports;
+using Notifications.Application.Email;
+using Notifications.Application.Invitations;
 using Notifications.Infrastructure.Email;
 using Wolverine;
 

@@ -1,6 +1,6 @@
 using System.Reflection;
-using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Tenants.CreateTenant;
+using ControlPlane.Application.Users.DeleteUser;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,8 +31,8 @@ public sealed class CommandAuditTests : IAsyncLifetime
 
         var unaudited = commands.Where(command => !ReachesAudit(command, handlers)).Select(command => command.Name);
 
-        commands.ShouldContain(typeof(CreateTenant));
-        commands.ShouldContain(typeof(DeleteUser));
+        commands.ShouldContain(typeof(CreateTenantCommand));
+        commands.ShouldContain(typeof(DeleteUserCommand));
         unaudited.ShouldBeEmpty("A command publishes, through the outbox, one event that Audit handles (K3).");
     }
 
@@ -79,7 +79,7 @@ public sealed class CommandAuditTests : IAsyncLifetime
         return false;
     }
 
-    // A type and every type argument in it: Task<(Result<T>, TenantSuspended?)> gives TenantSuspended, among others.
+    // A type and every type argument in it: Task<(Result<T>, TenantSuspendedEvent?)> gives TenantSuspendedEvent, among others.
     private static IEnumerable<Type> TypesIn(Type type) =>
         type.IsGenericType ? [type, .. type.GetGenericArguments().SelectMany(TypesIn)] : [type];
 }

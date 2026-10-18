@@ -12,7 +12,7 @@ public class AuditTargetNameTests
     public void RecordATargetName_TheLongestTenantName_FitsTheAuditColumn()
     {
         var tenantName = ConstantOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.Tenant", "NameMaxLength");
-        var targetName = ConstantOf("Audit.Domain", "Audit.Domain.AuditRecord", "TargetNameMaxLength");
+        var targetName = ConstantOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditEntry", "TargetNameMaxLength");
 
         targetName.ShouldBeGreaterThanOrEqualTo(tenantName);
     }

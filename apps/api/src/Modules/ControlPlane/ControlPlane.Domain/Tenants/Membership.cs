@@ -18,14 +18,14 @@ internal sealed class Membership(Guid tenantId, Guid userId, Guid roleId, DateTi
     public DateTimeOffset JoinedAt { get; private init; } = joinedAt;
 
     /// <summary>Gives the membership the role. Only <see cref="Tenant.ChangeMemberRole"/> calls it, after the tenant's rules.</summary>
-    internal bool Assign(Role role)
+    internal StateChange Assign(Role role)
     {
         if (RoleId == role.Id)
         {
-            return false;
+            return StateChange.Unchanged;
         }
 
         RoleId = role.Id;
-        return true;
+        return StateChange.Changed;
     }
 }

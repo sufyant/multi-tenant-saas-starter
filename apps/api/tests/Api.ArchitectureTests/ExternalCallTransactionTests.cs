@@ -1,10 +1,12 @@
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Application.Ports;
-using ControlPlane.Application.Users.UserDeletion;
-using ControlPlane.Contracts;
+using ControlPlane.Application.Identity;
+using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.WithdrawSignUp;
+using ControlPlane.Application.Users.DeleteIdentityAccount;
+using ControlPlane.Contracts.Invitations;
 using JasperFx;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Application.Ports;
+using Notifications.Application.Email;
 using Wolverine.Runtime.Handlers;
 
 namespace Api.ArchitectureTests;
@@ -37,8 +39,8 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
 
         calling.Select(chain => chain.MessageType).ShouldBe(
             [
-                typeof(OpenOwnerSignUp), typeof(OpenMemberSignUp), typeof(WithdrawSignUp), typeof(DeleteIdentityAccount),
-                typeof(OwnerInvitationReady), typeof(MemberInvitationReady),
+                typeof(OpenOwnerSignUpCommand), typeof(OpenMemberSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand),
+                typeof(OwnerInvitationReadyEvent), typeof(MemberInvitationReadyEvent),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

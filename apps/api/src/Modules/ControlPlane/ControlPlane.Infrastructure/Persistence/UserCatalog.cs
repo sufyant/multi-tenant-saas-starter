@@ -1,10 +1,11 @@
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Users;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Users.ListUsers;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -54,7 +55,7 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
 
     // The tenants table is not under row level security (R6), so the one query joins each membership's tenant and role. The tenant's
     // summary counts its Owners (R12): a user who holds the Owner role in a tenant with one Owner is its last Owner.
-    async Task<IReadOnlyList<UserMembershipDetails>> IUserCatalog.ListMembershipDetailsAsync(Guid userId, CancellationToken cancellationToken)
+    async Task<IReadOnlyList<UserMembershipView>> IUserCatalog.ListMembershipDetailsAsync(Guid userId, CancellationToken cancellationToken)
     {
         await controlPlane.DeclareUserAsync(userId, cancellationToken);
         var memberships = await (
@@ -68,12 +69,12 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
 
         return
         [
-            .. memberships.Select(membership => new UserMembershipDetails(
+            .. memberships.Select(membership => new UserMembershipView(
                 membership.Id,
                 membership.Name,
                 membership.Slug,
                 membership.Status.ToString(),
-                RoleSummary.Of(membership.BuiltIn),
+                RoleView.Of(membership.BuiltIn),
                 membership.JoinedAt,
                 membership.BuiltIn == BuiltInRole.Owner && membership.OwnerCount == 1)),
         ];

@@ -1,24 +1,21 @@
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Contracts;
-using Notifications.Contracts;
+using ControlPlane.Application.Invitations.CancelInvitation;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Tenants.CancelTenant;
+using ControlPlane.Application.Tenants.RaiseTenantCreationAlarm;
+using ControlPlane.Contracts.Invitations;
+using Notifications.Contracts.Invitations;
 using SharedKernel;
 using Wolverine;
 using Wolverine.Persistence.Sagas;
 
 namespace ControlPlane.Application.Tenants.TenantCreation;
 
-public enum TenantCreationSagaState
-{
-    Activating,
-    SendingInvitation,
-    Completed,
-    Cancelling,
-    Cancelled,
-    NeedsAttention,
-}
-
-/// <summary>How long the tenant creation waits for the activation, the invitation email and the cancellation (S10).</summary>
-public sealed record TenantCreationTimeouts(TimeSpan Activation, TimeSpan InvitationEmail, TimeSpan Cancellation);
+// The messages of the saga inside ControlPlane carry the new tenant, which is also the saga's id; the envelope carries the same tenant,
+// so every step runs in it. The events that leave the module are in ControlPlane.Contracts and Notifications.Contracts. Each step and
+// compensation (ActivateTenantHandler, CancelTenantHandler, CancelInvitationHandler) runs in the new tenant, may run twice (S7), and
+// returns its result as a message. A step that fails for good goes to the dead letter queue, and the saga hears of it through the fault
+// Wolverine publishes.
 
 /// <summary>
 /// The tenant creation process of section 6, orchestrated in one place (S3, S4). Its id is the tenant's id, and its record belongs
@@ -54,7 +51,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     public TimeSpan CancellationTimeout { get; private set; }
 
     /// <summary>Step 1 starts the tenant creation: the tenant is activated with the link the owner is invited by, within the activation timeout.</summary>
-    public static (TenantCreationSaga Saga, ActivateTenant Activate, ActivationTimedOut Timeout) Begin(
+    public static (TenantCreationSaga Saga, ActivateTenantCommand Activate, ActivationTimedOut Timeout) Begin(
         Guid tenantId,
         Guid invitationId,
         Uri acceptLink,
@@ -68,7 +65,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
                 InvitationEmailTimeout = timeouts.InvitationEmail,
                 CancellationTimeout = timeouts.Cancellation,
             },
-            new ActivateTenant(tenantId, invitationId, acceptLink),
+            new ActivateTenantCommand(tenantId, invitationId, acceptLink),
             new ActivationTimedOut(tenantId, timeouts.Activation));
 
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(ActivateTenantReply.TenantId))] ActivateTenantReply activated) =>
@@ -76,11 +73,11 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
             ? MoveTo(TenantCreationSagaState.SendingInvitation, new InvitationEmailTimedOut(Id, InvitationEmailTimeout))
             : [];
 
-    public OutgoingMessages Handle(Fault<ActivateTenant> fault) =>
+    public OutgoingMessages Handle(Fault<ActivateTenantCommand> fault) =>
         State == TenantCreationSagaState.Activating
             ? MoveTo(
                 TenantCreationSagaState.Cancelling,
-                new CancelTenant(Id, InvitationId, ActivationFailed),
+                new CancelTenantCommand(Id, InvitationId, ActivationFailed),
                 new CancellationTimedOut(Id, CancellationTimeout))
             : [];
 
@@ -91,15 +88,15 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     // The email can be reported before the activation reaches the saga: both are published by the activation, so the report proves
     // that the activation committed.
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(SendInvitationEmailReply.TenantId))] SendInvitationEmailReply sent) =>
-        IsSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
+        IsActivatingOrSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
 
-    // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is withdrawn. The identity provider
+    // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is cancelled. The identity provider
     // that did not let the owner sign up, and the email that did not go out, end the same way.
-    public OutgoingMessages Handle(Fault<OpenOwnerSignUp> fault) =>
-        IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
+    public OutgoingMessages Handle(Fault<OpenOwnerSignUpCommand> fault) =>
+        IsActivatingOrSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 
-    public OutgoingMessages Handle(Fault<OwnerInvitationReady> fault) =>
-        IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
+    public OutgoingMessages Handle(Fault<OwnerInvitationReadyEvent> fault) =>
+        IsActivatingOrSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(InvitationEmailTimedOut.TenantId))] InvitationEmailTimedOut timeout) =>
         State == TenantCreationSagaState.SendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
@@ -112,18 +109,18 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
         State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
 
     // A compensation that fails for good leaves the process to a person (S9).
-    public OutgoingMessages Handle(Fault<CancelTenant> fault) => State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
+    public OutgoingMessages Handle(Fault<CancelTenantCommand> fault) => State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
 
-    public OutgoingMessages Handle(Fault<CancelInvitation> fault) => IsFinal ? [] : NeedsAttention();
+    public OutgoingMessages Handle(Fault<CancelInvitationCommand> fault) => IsFinal ? [] : NeedsAttention();
 
-    private bool IsSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
+    private bool IsActivatingOrSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
 
     private bool IsFinal => State is TenantCreationSagaState.Completed or TenantCreationSagaState.Cancelled or TenantCreationSagaState.NeedsAttention;
 
     private OutgoingMessages NeedsAttentionWithTheInvitationCancelled() =>
-        MoveTo(TenantCreationSagaState.NeedsAttention, new CancelInvitation(Id, InvitationId), new RaiseTenantCreationAlarm(Id));
+        MoveTo(TenantCreationSagaState.NeedsAttention, new CancelInvitationCommand(Id, InvitationId), new RaiseTenantCreationAlarmCommand(Id));
 
-    private OutgoingMessages NeedsAttention() => MoveTo(TenantCreationSagaState.NeedsAttention, new RaiseTenantCreationAlarm(Id));
+    private OutgoingMessages NeedsAttention() => MoveTo(TenantCreationSagaState.NeedsAttention, new RaiseTenantCreationAlarmCommand(Id));
 
     private OutgoingMessages MoveTo(TenantCreationSagaState state, params object[] messages)
     {

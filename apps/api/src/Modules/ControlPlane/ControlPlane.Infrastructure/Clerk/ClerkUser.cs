@@ -11,9 +11,3 @@ internal sealed record ClerkUser(
     public IReadOnlyList<string> VerifiedEmails =>
         [.. EmailAddresses.Where(address => address.Verification?.Status == "verified").Select(address => address.EmailAddress)];
 }
-
-internal sealed record ClerkEmailAddress(
-    [property: JsonPropertyName("email_address")] string EmailAddress,
-    [property: JsonPropertyName("verification")] ClerkVerification? Verification);
-
-internal sealed record ClerkVerification([property: JsonPropertyName("status")] string Status);

@@ -1,4 +1,4 @@
-// Writes the permission catalogue of ControlPlane.Contracts from the one source of the permission names, ControlPlane.Domain's
+// Writes the permission list of ControlPlane.Contracts from the one source of the permission names, ControlPlane.Domain's
 // PermissionPools (B18). Contracts never references Domain (section 2), so it reads a generated copy, and CI fails when the copy
 // differs from what this script writes (scripts/ci/check-generated.sh). Run it from apps/api: node scripts/generate-permissions.mjs
 import { readFileSync, writeFileSync } from "node:fs";
@@ -18,7 +18,7 @@ const lines = [
   "namespace ControlPlane.Contracts;",
   "",
   "/// <summary>",
-  "/// The permission catalogue. Permissions are fixed in code, each tied to a capability. Endpoints name a permission as their",
+  "/// The permission list. Permissions are fixed in code, each tied to a capability. Endpoints name a permission as their",
   "/// authorization policy (A1).",
   "/// </summary>",
   "public static class Permissions",

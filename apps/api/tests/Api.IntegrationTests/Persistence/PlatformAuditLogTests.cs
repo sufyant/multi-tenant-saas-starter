@@ -2,7 +2,7 @@ namespace Api.IntegrationTests.Persistence;
 
 // K3, R11: the platform's audit log has no tenant column. Forced row level security lets only a transaction that declares neither a
 // tenant nor a user read it, so no tenant route and no me route can, whatever its SQL. Audit, in a tenant's transaction, still adds the
-// platform's record of a system admin's action on that tenant. Plain SQL as the application account; what is really in the table is
+// platform's entry of a system admin's action on that tenant. Plain SQL as the application account; what is really in the table is
 // read as the superuser.
 public sealed class PlatformAuditLogTests(Database database)
 {

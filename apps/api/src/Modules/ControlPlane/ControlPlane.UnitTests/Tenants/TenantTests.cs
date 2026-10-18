@@ -1,5 +1,4 @@
 using ControlPlane.Domain;
-using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -117,7 +116,7 @@ public class TenantTests
 
         var activated = tenant.Activate();
 
-        activated.ShouldBeFalse();
+        activated.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Cancelled);
     }
 
@@ -128,7 +127,7 @@ public class TenantTests
 
         var cancelled = tenant.Cancel("identity_provider_failed");
 
-        cancelled.ShouldBeTrue();
+        cancelled.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Cancelled);
         tenant.CancellationReason.ShouldBe("identity_provider_failed");
     }
@@ -142,7 +141,7 @@ public class TenantTests
 
         var cancelled = tenant.Cancel("registration_timed_out");
 
-        cancelled.ShouldBeFalse();
+        cancelled.ShouldBe(StateChange.Unchanged);
         tenant.CancellationReason.ShouldBe("identity_provider_failed");
     }
 
@@ -155,7 +154,7 @@ public class TenantTests
 
         var cancelled = tenant.Cancel("activation_failed");
 
-        cancelled.ShouldBeFalse();
+        cancelled.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Active);
         tenant.CancellationReason.ShouldBeNull();
     }
@@ -167,7 +166,7 @@ public class TenantTests
 
         var suspended = tenant.Suspend(Reason);
 
-        suspended.Value.ShouldBeTrue();
+        suspended.Value.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Suspended);
     }
 
@@ -180,7 +179,7 @@ public class TenantTests
 
         var suspended = tenant.Suspend(Reason);
 
-        suspended.Value.ShouldBeFalse();
+        suspended.Value.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Suspended);
     }
 
@@ -192,7 +191,7 @@ public class TenantTests
 
         var reactivated = tenant.Reactivate();
 
-        reactivated.Value.ShouldBeTrue();
+        reactivated.Value.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Active);
     }
 
@@ -203,7 +202,7 @@ public class TenantTests
 
         var reactivated = tenant.Reactivate();
 
-        reactivated.Value.ShouldBeFalse();
+        reactivated.Value.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Active);
     }
 
@@ -244,7 +243,7 @@ public class TenantTests
 
         var cancelled = tenant.Cancel("activation_failed");
 
-        cancelled.ShouldBeFalse();
+        cancelled.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Suspended);
     }
 
@@ -302,7 +301,7 @@ public class TenantTests
 
         var renamed = tenant.Rename("  Globex Corp ");
 
-        renamed.Value.ShouldBeTrue();
+        renamed.Value.ShouldBe(StateChange.Changed);
         tenant.Name.ShouldBe("Globex Corp");
         tenant.Slug.ShouldBe("acme");
     }
@@ -315,7 +314,7 @@ public class TenantTests
 
         var renamed = tenant.Rename("Globex Corp");
 
-        renamed.Value.ShouldBeTrue();
+        renamed.Value.ShouldBe(StateChange.Changed);
         tenant.Name.ShouldBe("Globex Corp");
     }
 
@@ -329,7 +328,7 @@ public class TenantTests
 
         var renamed = tenant.Rename(name);
 
-        renamed.Value.ShouldBeFalse();
+        renamed.Value.ShouldBe(StateChange.Unchanged);
         tenant.Name.ShouldBe("Acme Ltd");
     }
 
@@ -368,7 +367,7 @@ public class TenantTests
 
         var closed = tenant.Close(Now);
 
-        closed.Value.ShouldBeTrue();
+        closed.Value.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Closed);
         tenant.ClosedAt.ShouldBe(Now);
     }
@@ -393,7 +392,7 @@ public class TenantTests
 
         var closed = tenant.Close(Now.AddDays(1));
 
-        closed.Value.ShouldBeFalse();
+        closed.Value.ShouldBe(StateChange.Unchanged);
         tenant.ClosedAt.ShouldBe(Now);
     }
 
@@ -418,7 +417,7 @@ public class TenantTests
 
         var cancelled = tenant.Cancel("activation_failed");
 
-        cancelled.ShouldBeFalse();
+        cancelled.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Closed);
     }
 
@@ -431,7 +430,7 @@ public class TenantTests
 
         var reopened = tenant.Reopen(Now + ReopenPeriod - TimeSpan.FromSeconds(1), ReopenPeriod);
 
-        reopened.Value.ShouldBeTrue();
+        reopened.Value.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Active);
         tenant.ClosedAt.ShouldBeNull();
         tenant.SuspensionReason.ShouldBeNull();
@@ -458,7 +457,7 @@ public class TenantTests
 
         var reopened = tenant.Reopen(Now, ReopenPeriod);
 
-        reopened.Value.ShouldBeFalse();
+        reopened.Value.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Active);
     }
 
@@ -620,10 +619,10 @@ public class TenantTests
         _ = status switch
         {
             "Provisioning" => true,
-            "Cancelled" => tenant.Cancel("activation_failed"),
-            "Active" => tenant.Activate(),
-            "Suspended" => tenant.Activate() && tenant.Suspend(Reason).Value,
-            "Closed" => tenant.Activate() && tenant.Close(Now).Value,
+            "Cancelled" => tenant.Cancel("activation_failed") is StateChange.Changed,
+            "Active" => tenant.Activate() is StateChange.Changed,
+            "Suspended" => tenant.Activate() is StateChange.Changed && tenant.Suspend(Reason).Value is StateChange.Changed,
+            "Closed" => tenant.Activate() is StateChange.Changed && tenant.Close(Now).Value is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;

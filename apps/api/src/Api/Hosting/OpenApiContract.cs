@@ -50,6 +50,7 @@ internal static partial class OpenApiContract
                 options.CreateSchemaReferenceId = NameSchema;
                 options
                     .AddOperationTransformer(NameOperation)
+                    .AddOperationTransformer(TagOperation)
                     .AddOperationTransformer(DeclarePathParameters)
                     .AddOperationTransformer(DescribeListParameters)
                     .AddOperationTransformer(DescribeListLimits)
@@ -57,6 +58,7 @@ internal static partial class OpenApiContract
                     .AddOperationTransformer(DescribeResponseHeaders)
                     .AddSchemaTransformer(DescribeEnumValues)
                     .AddSchemaTransformer(DescribeRequestRules)
+                    .AddDocumentTransformer(ListTags)
                     .AddDocumentTransformer(RequireBearerToken)
                     .AddDocumentTransformer(DescribeProblemDetails)
                     .AddDocumentTransformer(DescribePermissions)
@@ -73,6 +75,47 @@ internal static partial class OpenApiContract
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         operation.OperationId ??= context.Description.ActionDescriptor.EndpointMetadata.OfType<MethodInfo>().FirstOrDefault()?.Name;
+        return Task.CompletedTask;
+    }
+
+    // N7, N8: an operation's one tag is the folder of its endpoints below the module's Api project, its audience and its resource
+    // (Platform/Tenants), so the API reference and a generated client group the operations as the folders do, never by a class name.
+    private static Task TagOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (TagOf(context.Description.ActionDescriptor.EndpointMetadata.OfType<MethodInfo>().FirstOrDefault()?.DeclaringType) is { } tag)
+        {
+            operation.Tags = new HashSet<OpenApiTagReference> { new(tag, context.Document) };
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // The namespace {Module}.Api.{Audience}.{Resource} of an endpoint class, which follows its folder (IDE0130), gives
+    // {Audience}/{Resource}. A lambda's method sits in a closure type inside the class.
+    private static string? TagOf(Type? type)
+    {
+        while (type?.DeclaringType is { } outer)
+        {
+            type = outer;
+        }
+
+        var project = type?.Assembly.GetName().Name;
+        return type?.Namespace is { } name && project is not null && name.StartsWith($"{project}.", StringComparison.Ordinal)
+            ? name[(project.Length + 1)..].Replace('.', '/')
+            : null;
+    }
+
+    // The document lists each tag its operations use once, in ordinal order, in place of the class names the generator collected.
+    private static Task ListTags(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        var used = document.Paths.Values
+            .SelectMany(path => path.Operations ?? [])
+            .SelectMany(operation => operation.Value.Tags ?? new HashSet<OpenApiTagReference>())
+            .Select(tag => tag.Name)
+            .OfType<string>()
+            .Distinct()
+            .Order(StringComparer.Ordinal);
+        document.Tags = new HashSet<OpenApiTag>(used.Select(name => new OpenApiTag { Name = name }));
         return Task.CompletedTask;
     }
 
@@ -435,12 +478,17 @@ internal static partial class OpenApiContract
         return found;
     }
 
-    // The validator of each command, by the name of the request that carries the command: X's validator describes XRequest. A command's
-    // validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project does.
+    // The validator of each command, by the name of the request that carries the command: the validator of XCommand describes XRequest
+    // (N8). A command's validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project
+    // does.
     private static Dictionary<string, Type> RequestValidators { get; } = AssembliesThatReachSharedKernel
         .SelectMany(assembly => assembly.GetTypes())
         .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
-        .ToDictionary(type => $"{type.BaseType!.GetGenericArguments()[0].Name}Request", StringComparer.Ordinal);
+        .ToDictionary(type => RequestOf(type.BaseType!.GetGenericArguments()[0]), StringComparer.Ordinal);
+
+    // N8: a command is named {Action}Command, and the request that carries it {Action}Request.
+    private static string RequestOf(Type command) =>
+        $"{(command.Name.EndsWith("Command", StringComparison.Ordinal) ? command.Name[..^"Command".Length] : command.Name)}Request";
 
     // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
     // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.
@@ -455,7 +503,7 @@ internal static partial class OpenApiContract
             .Order(StringComparer.Ordinal),
     ];
 
-    // K3: Audit declares the operation of every audit record once, in Audit.Domain's AuditOperations. The host does not reference a
+    // K3: Audit declares the operation of every audit entry once, in Audit.Domain's AuditOperations. The host does not reference a
     // Domain project (section 2), so it finds the class by its name, as it finds the error codes. OpenApiContractTests checks the enum.
     private static IReadOnlyList<string> DeclaredAuditOperations { get; } =
     [
@@ -477,7 +525,7 @@ internal static partial class OpenApiContract
             return Task.CompletedTask;
         }
 
-        schemas[AuditOperationSchema] = EnumSchema(DeclaredAuditOperations, "The operation of an audit record, area.action.");
+        schemas[AuditOperationSchema] = EnumSchema(DeclaredAuditOperations, "The operation of an audit entry, area.action.");
         foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(OperationMember) == true))
         {
             schema.Properties![OperationMember] = new OpenApiSchemaReference(AuditOperationSchema, document);
@@ -487,7 +535,7 @@ internal static partial class OpenApiContract
     }
 
     // The web shows an action only when the member's permissions hold its name (section 6, "What the screens read"). The names are one
-    // enum in the document, every constant of the catalogue (Permissions), so a generated client has a type for them. A response keeps
+    // enum in the document, every constant of the permission list (Permissions), so a generated client has a type for them. A response keeps
     // the names as strings, so each field that holds them, a field named permissions, refers to the enum. OpenApiContractTests checks both.
     private static Task DescribePermissions(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
@@ -496,7 +544,7 @@ internal static partial class OpenApiContract
             return Task.CompletedTask;
         }
 
-        schemas[PermissionSchema] = EnumSchema(CataloguePermissions, "A permission of the catalogue. Every endpoint checks its own permission.");
+        schemas[PermissionSchema] = EnumSchema(ListedPermissions, "A name of the permission list. Every endpoint checks its own permission.");
         foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(PermissionsMember) == true))
         {
             schema.Properties![PermissionsMember] = new OpenApiSchema
@@ -509,7 +557,7 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    private static IReadOnlyList<string> CataloguePermissions { get; } =
+    private static IReadOnlyList<string> ListedPermissions { get; } =
     [
         .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)

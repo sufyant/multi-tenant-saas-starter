@@ -1,6 +1,6 @@
 namespace Audit.IntegrationTests.Fixtures;
 
-// Reads one record of an audit log as the application role, the way a reader of that log would: the tenant's log in that tenant's
+// Reads one entry of an audit log as the application role, the way a reader of that log would: the tenant's log in that tenant's
 // transaction, the platform's log in a transaction that declares nothing (R11).
 internal static class Logs
 {
@@ -10,7 +10,7 @@ internal static class Logs
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    // "operation|actor kind|actor id|target kind|target id|target name", with "-" for an empty value; null when there is no record.
+    // "operation|actor kind|actor id|target kind|target id|target name", with "-" for an empty value; null when there is no entry.
     public static Task<string?> DescribeAsync(IServiceProvider services, string log, Guid? tenantId, Guid entryId) =>
         InTenant.SqlAsync(
             services,
@@ -25,7 +25,7 @@ internal static class Logs
         InTenant.SqlAsync(
             services, tenantId, async command => (long)(await command.ExecuteScalarAsync(Cancellation))!, $"SELECT count(*) FROM {log} WHERE id = '{entryId}'");
 
-    // The details of one record as JSON text; null when the record has none.
+    // The details of one entry as JSON text; null when the entry has none.
     public static Task<string?> DetailsAsync(IServiceProvider services, string log, Guid? tenantId, Guid entryId) =>
         InTenant.SqlAsync(
             services, tenantId, async command => await command.ExecuteScalarAsync(Cancellation) as string, $"SELECT details::text FROM {log} WHERE id = '{entryId}'");

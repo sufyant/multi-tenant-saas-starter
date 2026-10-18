@@ -1,6 +1,6 @@
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Tenants.ActivateTenant;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Contracts;
+using Notifications.Contracts.Invitations;
 using Wolverine;
 using Wolverine.Runtime.Handlers;
 
@@ -31,7 +31,7 @@ public sealed class SagaMessageTests : IAsyncLifetime
             .Select(message => $"{message.Key.Name} -> {string.Join(", ", message.Value.Select(handler => handler.Name))}");
 
         sagaMessages.Select(message => message.Key).ShouldContain(typeof(SendInvitationEmailReply));
-        sagaMessages.Select(message => message.Key).ShouldContain(typeof(Fault<ActivateTenant>));
+        sagaMessages.Select(message => message.Key).ShouldContain(typeof(Fault<ActivateTenantCommand>));
         shared.ShouldBeEmpty(WhyNot);
     }
 

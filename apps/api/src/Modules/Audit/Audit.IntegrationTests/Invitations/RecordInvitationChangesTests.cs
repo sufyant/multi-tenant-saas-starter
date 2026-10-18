@@ -1,13 +1,15 @@
 using System.Text.Json;
-using Audit.Application.Invitations;
-using Audit.Application.Ports;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Invitations.RecordInvitationRevoked;
+using Audit.Application.Members.RecordMemberInvited;
+using ControlPlane.Contracts.Invitations;
+using ControlPlane.Contracts.Members;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Invitations;
 
 // The Audit module records an invitation and its revocation in the tenant's own log: the member who acted, and the invitation by its
-// id. The invited email address travels in the event for Notifications, and never reaches a record (K3).
+// id. The invited email address travels in the event for Notifications, and never reaches an entry (K3).
 public sealed class RecordInvitationChangesTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -43,7 +45,7 @@ public sealed class RecordInvitationChangesTests(Database database)
         (await Logs.DetailsAsync(database.Services, Logs.Tenant, invited.TenantId, invited.EventId)).ShouldNotBeNull().ShouldNotContain("@");
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberInvited_EventArrivesTwice_WritesOneEntry()
     {
@@ -60,7 +62,7 @@ public sealed class RecordInvitationChangesTests(Database database)
     [Fact]
     public async Task RecordInvitationRevoked_InvitationRevoked_WritesTheTenantEntryByTheRevoker()
     {
-        var revoked = new InvitationRevoked(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+        var revoked = new InvitationRevokedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, revoked.TenantId, scope =>
             RecordInvitationRevokedHandler.HandleAsync(revoked, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -70,6 +72,6 @@ public sealed class RecordInvitationChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, revoked.EventId)).ShouldBe(0);
     }
 
-    private static MemberInvited Invited(Guid? replaced) =>
+    private static MemberInvitedEvent Invited(Guid? replaced) =>
         new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin", replaced);
 }

@@ -11,7 +11,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform;
 
-// POST /v1/platform/tenants/{tenantId}/owner-invitation: a tenant has no Owner only while its first Owner has not accepted. The platform
+// POST /v1/platform/tenants/{tenantId}/invitations: a tenant has no Owner only while its first Owner has not accepted. The platform
 // then invites an Owner. At most one platform Owner invitation is pending: a new one replaces the pending one, also to another address,
 // and the old link answers as a cancelled one. A tenant with an Owner is refused, under the tenant's lock (K6).
 public sealed class OwnerInvitationTests(Database database) : IAsyncLifetime
@@ -211,7 +211,7 @@ public sealed class OwnerInvitationTests(Database database) : IAsyncLifetime
     public void MapInviteOwner_TheEndpoint_RequiresItsPermissionAndAnIdempotencyKey()
     {
         var endpoint = _api.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>().Single(found =>
-            found.RoutePattern.RawText == "/v1/platform/tenants/{tenantId:guid}/owner-invitation"
+            found.RoutePattern.RawText == "/v1/platform/tenants/{tenantId:guid}/invitations"
             && found.Metadata.GetMetadata<IHttpMethodMetadata>()!.HttpMethods.Contains("POST"));
 
         endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Select(data => data.Policy).ShouldContain("platform.tenants.invite_owner");

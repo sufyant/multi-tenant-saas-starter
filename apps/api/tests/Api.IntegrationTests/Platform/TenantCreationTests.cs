@@ -1,14 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Contracts.Invitations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Notifications.Contracts.Invitations;
 using Npgsql;
 using SharedKernel;
 using Tenancy;
@@ -102,10 +103,10 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, Email()));
 
         var tenantId = (await IdOfAsync(created)).ToString();
-        var fault = messages.Executed.SingleEnvelope<Fault<ActivateTenant>>();
+        var fault = messages.Executed.SingleEnvelope<Fault<ActivateTenantCommand>>();
         fault.TenantId.ShouldBe(tenantId);
         fault.SagaId.ShouldBe(tenantId);
-        ((Fault<ActivateTenant>)fault.Message!).TenantId.ShouldBe(tenantId);
+        ((Fault<ActivateTenantCommand>)fault.Message!).TenantId.ShouldBe(tenantId);
     }
 
     // The activation is refused by the database, as a real failure would be; the step is retried, then compensated.
@@ -121,7 +122,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, owner));
 
         var tenantId = await IdOfAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<ActivateTenant>().ShouldNotBeNull();
+        messages.MovedToErrorQueue.SingleMessage<ActivateTenantCommand>().ShouldNotBeNull();
         (await TenantStatusAsync(tenantId)).ShouldBe("Cancelled");
         (await database.ScalarAsSuperuserAsync<string>($"SELECT cancellation_reason FROM control_plane.tenants WHERE id = '{tenantId}'"))
             .ShouldBe("activation_failed");
@@ -149,7 +150,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), Email()));
 
         var tenantId = await IdOfAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<OwnerInvitationReady>().ShouldNotBeNull();
+        messages.MovedToErrorQueue.SingleMessage<OwnerInvitationReadyEvent>().ShouldNotBeNull();
         (await TenantStatusAsync(tenantId)).ShouldBe("Active");
         (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
         (await SagaStateAsync(tenantId)).ShouldBe("NeedsAttention");
@@ -175,7 +176,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), owner));
 
         var tenantId = await IdOfAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<OpenOwnerSignUp>().ShouldNotBeNull();
+        messages.MovedToErrorQueue.SingleMessage<OpenOwnerSignUpCommand>().ShouldNotBeNull();
         (await TenantStatusAsync(tenantId)).ShouldBe("Active");
         (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
         (await SagaStateAsync(tenantId)).ShouldBe("NeedsAttention");
@@ -192,7 +193,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var created = await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), owner));
         var tenantId = await IdOfAsync(created);
         var invitationId = await InvitationIdAsync(tenantId);
-        var again = new OwnerInvitationReady(
+        var again = new OwnerInvitationReadyEvent(
             Guid.CreateVersion7(), DateTimeOffset.UtcNow, tenantId, invitationId, owner, "Acme Ltd", _api.Email.LinkSentTo(owner), Language.En, TimeSpan.FromDays(7));
 
         await _api.WaitingForMessagesAsync(async () =>
@@ -223,7 +224,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
             VALUES ('{tenantId}', 'Activating', '{invitationId}', interval '2 hours', interval '10 minutes', 0)
             """);
         var now = DateTimeOffset.UtcNow;
-        var emailSent = new Notifications.Contracts.SendInvitationEmailReply(Guid.CreateVersion7(), now, tenantId, invitationId);
+        var emailSent = new Notifications.Contracts.Invitations.SendInvitationEmailReply(Guid.CreateVersion7(), now, tenantId, invitationId);
         var activated = new ActivateTenantReply(tenantId);
         await using var hold = await HoldSagaAsync(tenantId);
 

@@ -1,8 +1,14 @@
 using System.Reflection;
-using ControlPlane.Api.Platform;
-using ControlPlane.Api.Me;
-using ControlPlane.Api.Tenant;
-using ControlPlane.Application.Invitations;
+using ControlPlane.Api.Me.Invitations;
+using ControlPlane.Api.Me.Tenants;
+using ControlPlane.Api.Me.Users;
+using ControlPlane.Api.Platform.Invitations;
+using ControlPlane.Api.Platform.Tenants;
+using ControlPlane.Api.Platform.Users;
+using ControlPlane.Api.Tenant.Invitations;
+using ControlPlane.Api.Tenant.Members;
+using ControlPlane.Api.Tenant.Tenants;
+using ControlPlane.Application.Invitations.AcceptInvitation;
 using Microsoft.AspNetCore.Routing;
 
 namespace ControlPlane.Api;
@@ -22,13 +28,14 @@ public static class ControlPlaneModule
     /// </summary>
     public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder me, RouteGroupBuilder tenant)
     {
-        Tenants.Map(platform);
-        Users.Map(platform);
-        MyProfile.Map(me);
-        MyTenants.Map(me);
-        Me.Invitations.Map(me);
-        Profile.Map(tenant);
-        Members.Map(tenant);
-        Tenant.Invitations.Map(tenant);
+        TenantEndpoints.Map(platform);
+        PlatformInvitationEndpoints.Map(platform);
+        UserEndpoints.Map(platform);
+        MyProfileEndpoints.Map(me);
+        MyTenantEndpoints.Map(me);
+        MyInvitationEndpoints.Map(me);
+        TenantProfileEndpoints.Map(tenant);
+        MemberEndpoints.Map(tenant);
+        InvitationEndpoints.Map(tenant);
     }
 }

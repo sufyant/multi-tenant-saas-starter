@@ -260,7 +260,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         (await _catalog.StoredMembershipCountOfAsync(user)).ShouldBe(await _catalog.CountedMembershipsOfAsync(user));
     }
 
-    // A deletion takes the user out of every tenant first (RemoveUserMembership), and each step counts one down.
+    // A deletion takes the user out of every tenant first (RemoveUserMembershipCommand), and each step counts one down.
     [Fact]
     public async Task ListUsers_AfterTheUsersDeletion_CountsNone()
     {

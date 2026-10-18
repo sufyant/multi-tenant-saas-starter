@@ -1,5 +1,7 @@
 using System.Reflection;
-using Audit.Application.Tenants;
+using Audit.Api.Platform.AuditLogs;
+using Audit.Api.Tenant.AuditLogs;
+using Audit.Application.Tenants.RecordTenantCreated;
 using Microsoft.AspNetCore.Routing;
 
 namespace Audit.Api;
@@ -17,7 +19,7 @@ public static class AuditModule
     /// </summary>
     public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder tenant)
     {
-        Platform.AuditLog.Map(platform);
-        Tenant.AuditLog.Map(tenant);
+        PlatformAuditLogEndpoints.Map(platform);
+        AuditLogEndpoints.Map(tenant);
     }
 }

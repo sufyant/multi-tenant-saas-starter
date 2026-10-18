@@ -1,4 +1,4 @@
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Domain;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,7 +21,7 @@ public sealed class SystemAdminDirectoryTests(Database database)
 
         var permissions = await VisitAsync(services, person);
 
-        permissions.ShouldNotBeNull().ShouldBe(PermissionPools.SystemPool, ignoreOrder: true);
+        permissions.ShouldNotBeNull().ShouldBe(PermissionPools.PlatformPool, ignoreOrder: true);
         (await SystemAdminCountAsync(services)).ShouldBe(1);
     }
 
@@ -118,7 +118,7 @@ public sealed class SystemAdminDirectoryTests(Database database)
         await using var scope = services.CreateAsyncScope();
 
         return await scope.ServiceProvider.GetRequiredService<ISystemAdminDirectory>()
-            .FindSystemPermissionsAsync(externalId, secondFactorVerified, Cancellation);
+            .FindPlatformPermissionsAsync(externalId, secondFactorVerified, Cancellation);
     }
 
     private Task<long> SystemAdminCountAsync(IServiceProvider services) =>

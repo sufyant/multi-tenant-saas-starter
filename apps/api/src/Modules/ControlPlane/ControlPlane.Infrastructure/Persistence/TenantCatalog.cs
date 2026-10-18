@@ -1,11 +1,11 @@
-using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Members;
+using ControlPlane.Application.Invitations.ListInvitations;
+using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Ports;
-using ControlPlane.Application.Tenants;
-using ControlPlane.Domain.Invitations;
+using ControlPlane.Application.Tenants.ListTenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -249,13 +249,13 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     }
 
     // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none.
-    Task<Invitation?> ITenantCatalog.FindInvitationAsync(string tokenHash, CancellationToken cancellationToken) =>
-        Invitations.AsNoTracking().SingleOrDefaultAsync(invitation => invitation.TokenHash == tokenHash, cancellationToken);
+    Task<Invitation?> ITenantCatalog.FindInvitationAsync(string secretHash, CancellationToken cancellationToken) =>
+        Invitations.AsNoTracking().SingleOrDefaultAsync(invitation => invitation.SecretHash == secretHash, cancellationToken);
 
-    async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken)
+    async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Invitations
-            .FromSql($"SELECT * FROM control_plane.invitations WHERE token_hash = {tokenHash} FOR UPDATE")
+            .FromSql($"SELECT * FROM control_plane.invitations WHERE secret_hash = {secretHash} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
         return found.SingleOrDefault();

@@ -1,6 +1,6 @@
-using Audit.Application.Members;
-using Audit.Application.Ports;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Members.RecordMemberJoined;
+using ControlPlane.Contracts.Members;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Members;
@@ -15,7 +15,7 @@ public sealed class RecordMemberJoinedTests(Database database)
     [Fact]
     public async Task RecordMemberJoined_MemberJoined_WritesTheTenantEntryByTheNewMember()
     {
-        var joined = new MemberJoined(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var joined = new MemberJoinedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, joined.TenantId, scope =>
             RecordMemberJoinedHandler.HandleAsync(joined, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -25,11 +25,11 @@ public sealed class RecordMemberJoinedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, joined.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberJoined_EventArrivesTwice_WritesOneEntry()
     {
-        var joined = new MemberJoined(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var joined = new MemberJoinedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, joined.TenantId, scope =>
             RecordMemberJoinedHandler.HandleAsync(joined, scope.GetRequiredService<IAuditLog>(), Cancellation));

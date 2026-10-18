@@ -7,7 +7,7 @@ using Solution = Api.ArchitectureTests.Fixtures.Solution;
 
 namespace Api.ArchitectureTests;
 
-// K3: AuditOperations declares the operation of every audit record once. Each Audit handler names its operation from it, and the
+// K3: AuditOperations declares the operation of every audit entry once. Each Audit handler names its operation from it, and the
 // catalog's Audit column, the specification, lists exactly its operations. OpenApiContractTests checks the enum in the document.
 public partial class AuditOperationTests
 {
@@ -16,7 +16,7 @@ public partial class AuditOperationTests
     private static readonly string[] Records = ["AuditEntry", "PlatformAuditEntry"];
 
     [Fact]
-    public void WriteAuditRecord_EveryHandler_NamesItsOperationFromAuditOperations()
+    public void WriteAuditEntry_EveryHandler_NamesItsOperationFromAuditOperations()
     {
         var operations = OperationArgumentsOfEveryRecord();
 

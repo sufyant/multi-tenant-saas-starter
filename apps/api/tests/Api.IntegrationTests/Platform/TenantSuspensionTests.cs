@@ -184,7 +184,7 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
         (await SuspensionReasonOfAsync(await admin.GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation))).ShouldBeNull();
     }
 
-    // K3: the platform's record holds the admin's reason; the tenant's record, which its Owners and Admins read, does not.
+    // K3: the platform's entry holds the system admin's reason; the tenant's entry, which its Owners and Admins read, does not.
     [Fact]
     public async Task SuspendTenant_WithAReason_RecordsItInThePlatformEntryOnly()
     {

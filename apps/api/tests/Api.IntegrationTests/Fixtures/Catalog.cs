@@ -144,7 +144,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         await database.ExecuteInTenantAsync(
             tenantId,
             $"""
-            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, token_hash, status, language)
+            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, secret_hash, status, language)
             SELECT '{invitationId}', '{tenantId}', '{email ?? $"{Guid.NewGuid():N}@example.com"}', roles.id, '{inviter}', now(),
                 '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', 'en'
             FROM control_plane.roles WHERE roles.built_in = '{role}'

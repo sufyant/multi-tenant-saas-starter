@@ -1,7 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.SignUp;
+using ControlPlane.Application.Invitations.ExpireSignUp;
+using ControlPlane.Application.Invitations.OpenMemberSignUp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -181,7 +182,7 @@ public sealed class InvitationSignUpTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => invited = await owner.InviteMemberAsync(tenantId, email));
 
         var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUp>().InvitationId.ShouldBe(invitationId);
+        messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUpCommand>().InvitationId.ShouldBe(invitationId);
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == email);
         (await _catalog.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
     }
@@ -205,7 +206,7 @@ public sealed class InvitationSignUpTests(Database database) : IAsyncLifetime
         _api.WaitingForMessagesAsync(async () =>
         {
             using var scope = _api.Services.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), new ExpireSignUp(tenantId, invitationId), Cancellation);
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), new ExpireSignUpCommand(tenantId, invitationId), Cancellation);
             return true;
         });
 

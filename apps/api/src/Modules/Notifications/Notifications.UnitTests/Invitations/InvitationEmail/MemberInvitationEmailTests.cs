@@ -1,12 +1,11 @@
-using ControlPlane.Contracts;
-using Notifications.Application;
-using Notifications.Application.Invitations.InvitationEmail;
-using Notifications.Application.Ports;
+using ControlPlane.Contracts.Invitations;
+using Notifications.Application.Email;
+using Notifications.Application.Invitations.SendMemberInvitationEmail;
 using SharedKernel;
 
 namespace Notifications.UnitTests.Invitations.InvitationEmail;
 
-// The Notifications module emails a person a member invited. It hears MemberInvitationReady, which only it hears, so the email's retries
+// The Notifications module emails a person a member invited. It hears MemberInvitationReadyEvent, which only it hears, so the email's retries
 // may be scheduled (W5).
 public sealed class MemberInvitationEmailTests
 {
@@ -41,7 +40,7 @@ public sealed class MemberInvitationEmailTests
         _channel.Sent.Select(email => email.IdempotencyKey).ShouldBe([$"invite/{InvitationId}", $"invite/{InvitationId}"]);
     }
 
-    private static MemberInvitationReady Ready() =>
+    private static MemberInvitationReadyEvent Ready() =>
         new(
             Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 

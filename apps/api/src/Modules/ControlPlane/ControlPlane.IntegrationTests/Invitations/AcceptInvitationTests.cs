@@ -1,9 +1,9 @@
+using ControlPlane.Application.Invitations.CancelInvitation;
 using ControlPlane.Application.Members;
-using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
-using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
+using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
@@ -22,7 +22,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, invitee);
 
-        accepted.Value.ShouldBe(new TenantSummary(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'"), "Active", new RoleSummary("Owner", "owner")));
+        accepted.Value.ShouldBe(new MyTenantView(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'"), "Active", new RoleView("Owner", "owner")));
         (await FindMembershipAsync(tenantId, invitee)).ShouldNotBeNull();
         (await ScalarAsync<string>(
             $"""
@@ -98,7 +98,7 @@ public sealed class AcceptInvitationTests(Database database)
     {
         var (tenantId, email, code) = await InviteOwnerAsync();
         var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
-        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
+        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
         var invitee = Unique.ExternalId();
         database.Identity.AddAccount(invitee, email);
 

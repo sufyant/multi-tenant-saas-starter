@@ -97,7 +97,7 @@ internal sealed class AccessHandler : IAuthorizationHandler
             {
                 PermissionRequirement permission => access.Has(permission.Permission),
                 TenantMemberRequirement => access.Membership is not null,
-                SystemAdminRequirement => access.SystemPermissions is not null,
+                SystemAdminRequirement => access.PlatformPermissions is not null,
                 AccessStatedRequirement => http.GetEndpoint() is not RouteEndpoint,
                 _ => false,
             };

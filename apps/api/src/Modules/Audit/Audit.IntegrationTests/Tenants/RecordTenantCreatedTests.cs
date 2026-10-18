@@ -1,6 +1,6 @@
-using Audit.Application.Ports;
-using Audit.Application.Tenants;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Tenants.RecordTenantCreated;
+using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -49,7 +49,7 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Tenant, Guid.NewGuid(), activated.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id in each log, so each log holds it once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id in each log, so each log holds it once.
     [Fact]
     public async Task RecordTenantCreated_EventArrivesTwice_WritesOneEntryInEachLog()
     {
@@ -62,7 +62,7 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, activated.EventId)).ShouldBe(1);
     }
 
-    // Audit records are never changed once written: the application role may add and read them, nothing more.
+    // Audit entries are never changed once written: the application role may add and read them, nothing more.
     [Theory]
     [InlineData("UPDATE audit.entries SET operation = 'rewritten'")]
     [InlineData("DELETE FROM audit.entries")]
@@ -78,8 +78,8 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await change.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
     }
 
-    private static TenantActivated Activated() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", Guid.CreateVersion7());
+    private static TenantActivatedEvent Activated() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", Guid.CreateVersion7());
 
-    private static Task RecordAsync(IServiceProvider scope, TenantActivated activated) =>
+    private static Task RecordAsync(IServiceProvider scope, TenantActivatedEvent activated) =>
         RecordTenantCreatedHandler.HandleAsync(activated, scope.GetRequiredService<IAuditLog>(), Cancellation);
 }

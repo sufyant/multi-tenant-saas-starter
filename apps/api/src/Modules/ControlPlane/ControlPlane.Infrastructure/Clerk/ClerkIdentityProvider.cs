@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Identity;
 
 namespace ControlPlane.Infrastructure.Clerk;
 
@@ -16,7 +16,7 @@ internal sealed class ClerkIdentityProvider(HttpClient http, TimeProvider time) 
     // An address that belongs to an account needs no invitation: Clerk refuses one, and the person signs in. Any other address gets an
     // invitation even when Clerk holds one for it already (ignore_existing), as when two tenants invite the same person, or a replaced
     // invitation's withdrawal has not run yet. The link must not die before our invitation, so a part of a day counts as a day.
-    public async Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public async Task<SignUpLink> OpenSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
         var accounts = await http.GetFromJsonAsync<IReadOnlyList<ClerkUser>>($"users?email_address={Uri.EscapeDataString(email)}", cancellationToken);
         if (accounts!.Count > 0)

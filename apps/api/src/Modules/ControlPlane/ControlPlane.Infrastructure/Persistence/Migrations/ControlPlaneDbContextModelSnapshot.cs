@@ -68,104 +68,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("tenant_creation_sagas", "control_plane");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Invitations.Invitation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("AcceptedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("accepted_at");
-
-                    b.Property<Guid?>("AcceptedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("accepted_by");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("email");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<Guid>("InvitedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("invited_by");
-
-                    b.Property<string>("Language")
-                        .IsRequired()
-                        .HasMaxLength(35)
-                        .HasColumnType("character varying(35)")
-                        .HasColumnName("language");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("role_id");
-
-                    b.Property<string>("SignUpInvitationId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("sign_up_invitation_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("TenantId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id")
-                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
-
-                    b.Property<string>("TokenHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("token_hash");
-
-                    b.HasKey("Id")
-                        .HasName("pk_invitations");
-
-                    b.HasIndex("AcceptedBy")
-                        .HasDatabaseName("ix_invitations_accepted_by");
-
-                    b.HasIndex("Email")
-                        .HasDatabaseName("ix_invitations_email");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_invitations_expires_at");
-
-                    b.HasIndex("InvitedBy")
-                        .HasDatabaseName("ix_invitations_invited_by");
-
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_invitations_role_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_invitations_tenant_id");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("ix_invitations_token_hash");
-
-                    b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm")
-                        .HasDatabaseName("ix_invitations_email_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.ToTable("invitations", "control_plane");
-                });
-
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -224,6 +126,104 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasName("pk_system_admins");
 
                     b.ToTable("system_admins", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.Invitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<Guid?>("AcceptedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accepted_by");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("InvitedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invited_by");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("language");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("SecretHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("secret_hash");
+
+                    b.Property<string>("SignUpInvitationId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("sign_up_invitation_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invitations");
+
+                    b.HasIndex("AcceptedBy")
+                        .HasDatabaseName("ix_invitations_accepted_by");
+
+                    b.HasIndex("Email")
+                        .HasDatabaseName("ix_invitations_email");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_invitations_expires_at");
+
+                    b.HasIndex("InvitedBy")
+                        .HasDatabaseName("ix_invitations_invited_by");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_invitations_role_id");
+
+                    b.HasIndex("SecretHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_secret_hash");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_invitations_tenant_id");
+
+                    b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm")
+                        .HasDatabaseName("ix_invitations_email_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("invitations", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
@@ -454,7 +454,17 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("users", "control_plane");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Invitations.Invitation", b =>
+            modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithOne()
+                        .HasForeignKey("ControlPlane.Domain.SystemAdmins.SystemAdmin", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_system_admins_users_user_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.Invitation", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithMany()
@@ -482,16 +492,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_invitations_tenants_tenant_id");
-                });
-
-            modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
-                {
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithOne()
-                        .HasForeignKey("ControlPlane.Domain.SystemAdmins.SystemAdmin", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_system_admins_users_user_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>

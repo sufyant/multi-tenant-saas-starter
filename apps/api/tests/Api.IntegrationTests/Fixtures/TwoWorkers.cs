@@ -3,12 +3,12 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Notifications.Application;
-using Notifications.Application.Ports;
+using Notifications.Application.Email;
 using Npgsql;
 using Tenancy;
 using Wolverine;
 using Wolverine.Runtime;
+using Wolverine.Util;
 
 namespace Api.IntegrationTests.Fixtures;
 
@@ -98,7 +98,7 @@ internal sealed class TwoWorkers : IAsyncDisposable
 
     // Waits until the inbox shows the given number of messages of the type as handled, so no host will run any of them again.
     public Task WaitForHandledAsync<TMessage>(int count) => Waiting.UntilAsync(async () => await _database.ScalarAsSuperuserAsync<long>(
-        $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).FullName}'",
+        $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).ToMessageTypeName()}'",
         DatabaseName) == count);
 
     public Task WaitForSagaStateAsync(Guid tenantId, string state) =>

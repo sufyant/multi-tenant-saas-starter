@@ -1,11 +1,17 @@
 using System.Security.Cryptography;
 using System.Text;
-using ControlPlane.Application.Invitations.SignUp;
+using ControlPlane.Application.Invitations.CancelInvitation;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Tenants.CancelTenant;
+using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
 using ControlPlane.Domain;
+using ControlPlane.Domain.Tenants;
+using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +38,7 @@ public sealed class TenantCreationTests(Database database)
 
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, slug, owner);
 
-        started.Result.Value.ShouldBe(new TenantDetails(tenantId, "Acme Ltd", slug, "Provisioning", null, null));
+        started.Result.Value.ShouldBe(new TenantView(tenantId, "Acme Ltd", slug, "Provisioning", null, null));
         var activate = started.Activate.ShouldNotBeNull().Message;
         var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
         activate.ShouldSatisfyAllConditions(
@@ -62,7 +68,7 @@ public sealed class TenantCreationTests(Database database)
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
 
         var secret = Handlers.SecretOf(Handlers.CodeOf(started.Activate.ShouldNotBeNull().Message.AcceptLink));
-        (await ScalarAsync<string>($"SELECT token_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
+        (await ScalarAsync<string>($"SELECT secret_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
     }
 
     // The steps it starts carry the saga's id on their envelopes, so the fault of one that fails for good finds the saga.
@@ -122,7 +128,7 @@ public sealed class TenantCreationTests(Database database)
         var invitationId = started.Activate.ShouldNotBeNull().Message.InvitationId;
         var link = AcceptLink();
 
-        var (completed, activated, signUp) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, link));
+        var (completed, activated, signUp) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, link));
 
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
         completed.ShouldBe(new ActivateTenantReply(tenantId));
@@ -131,7 +137,7 @@ public sealed class TenantCreationTests(Database database)
             announced => announced.Name.ShouldBe("Acme Ltd"),
             announced => announced.CreatedBy.ShouldBe(admin.Id),
             announced => announced.EventId.ShouldNotBe(Guid.Empty));
-        signUp.ShouldBe(new OpenOwnerSignUp(
+        signUp.ShouldBe(new OpenOwnerSignUpCommand(
             tenantId,
             invitationId,
             owner,
@@ -144,7 +150,7 @@ public sealed class TenantCreationTests(Database database)
     public async Task ActivateTenant_Repeated_AnnouncesNothingAgain()
     {
         var (tenantId, invitationId) = await StartAsync();
-        var activate = new ActivateTenant(tenantId, invitationId, AcceptLink());
+        var activate = new ActivateTenantCommand(tenantId, invitationId, AcceptLink());
         await Handlers.ActivateAsync(database.Services, tenantId, activate);
 
         var (completed, activated, ready) = await Handlers.ActivateAsync(database.Services, tenantId, activate);
@@ -159,7 +165,7 @@ public sealed class TenantCreationTests(Database database)
     {
         var (tenantId, invitationId) = await StartAsync();
 
-        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
         cancelled.ShouldBe(new CancelTenantReply(tenantId));
         (await StatusOfAsync(tenantId)).ShouldBe("Cancelled");
@@ -171,9 +177,9 @@ public sealed class TenantCreationTests(Database database)
     public async Task CancelTenant_Repeated_KeepsTheFirstReason()
     {
         var (tenantId, invitationId) = await StartAsync();
-        await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+        await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
-        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "another_reason"));
+        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "another_reason"));
 
         cancelled.ShouldBe(new CancelTenantReply(tenantId));
         (await ScalarAsync<string>($"SELECT cancellation_reason FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe("activation_failed");
@@ -185,9 +191,9 @@ public sealed class TenantCreationTests(Database database)
     public async Task CancelTenant_Active_ChangesNothingAndReportsNoCancellation()
     {
         var (tenantId, invitationId) = await StartAsync();
-        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, AcceptLink()));
+        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
 
-        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
         cancelled.ShouldBeNull();
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
@@ -200,10 +206,10 @@ public sealed class TenantCreationTests(Database database)
     public async Task CancelTenant_Suspended_ChangesNothingAndReportsNoCancellation()
     {
         var (tenantId, invitationId) = await StartAsync();
-        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, AcceptLink()));
+        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
         await ScalarAsync<object>($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE id = '{tenantId}'");
 
-        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+        var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
         cancelled.ShouldBeNull();
         (await StatusOfAsync(tenantId)).ShouldBe("Suspended");
@@ -214,9 +220,9 @@ public sealed class TenantCreationTests(Database database)
     public async Task ActivateTenant_Cancelled_AnnouncesNothing()
     {
         var (tenantId, invitationId) = await StartAsync();
-        await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenant(tenantId, invitationId, "activation_failed"));
+        await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
-        var (completed, activated, ready) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, AcceptLink()));
+        var (completed, activated, ready) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
 
         completed.ShouldBeNull();
         activated.ShouldBeNull();
@@ -228,10 +234,10 @@ public sealed class TenantCreationTests(Database database)
     public async Task CancelInvitation_Pending_CancelsItAndATenantStaysActive()
     {
         var (tenantId, invitationId) = await StartAsync();
-        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenant(tenantId, invitationId, AcceptLink()));
+        await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
 
-        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
-        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
+        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
+        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
 
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Cancelled");
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
@@ -249,7 +255,7 @@ public sealed class TenantCreationTests(Database database)
         await using var lockTenant = new NpgsqlCommand($"SELECT 1 FROM control_plane.tenants WHERE id = '{tenantId}' FOR UPDATE", other, holding);
         await lockTenant.ExecuteNonQueryAsync(Cancellation);
 
-        var cancelling = Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
+        var cancelling = Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
         var waited = await WaitsForAsync(other.ProcessID, cancelling);
         await holding.CommitAsync(Cancellation);
         await cancelling;
@@ -268,7 +274,7 @@ public sealed class TenantCreationTests(Database database)
         var (tenantId, _, ready) = await Handlers.CreateActiveTenantAsync(database.Services, owner);
         (await Handlers.AcceptAsync(database.Services, Handlers.CodeOf(ready.AcceptLink), userId)).IsSuccess.ShouldBeTrue();
 
-        var withdrawal = await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, ready.InvitationId));
+        var withdrawal = await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, ready.InvitationId));
 
         withdrawal.ShouldBeNull();
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{ready.InvitationId}'")).ShouldBe("Accepted");
@@ -312,9 +318,9 @@ public sealed class TenantCreationTests(Database database)
         return (transaction, ((NpgsqlConnection)catalog.Database.GetDbConnection()).ProcessID);
     }
 
-    private static async Task<SharedKernel.Result<TenantDetails>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
+    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
         (await CreateTenantHandler.HandleAsync(
-            new CreateTenant(adminId, "Acme Ltd", slug, Unique.Email(), null),
+            new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
             scope.ServiceProvider.GetRequiredService<ITenantCatalog>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
             scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),

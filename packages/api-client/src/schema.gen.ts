@@ -100,7 +100,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/platform/tenants/{tenantId}/owner-invitation": {
+    "/v1/platform/tenants/{tenantId}/invitations": {
         parameters: {
             query?: never;
             header?: never;
@@ -400,12 +400,12 @@ export interface components {
             deleted: null | boolean;
         };
         /**
-         * @description The kind of actor of an audit record.
+         * @description The kind of actor of an audit entry.
          * @enum {string}
          */
         AuditActorResponseKind: "user" | "platform";
         /**
-         * @description One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record
+         * @description One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry
          *     keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
          *     address.
          */
@@ -420,7 +420,7 @@ export interface components {
             target: components["schemas"]["AuditTargetResponse"];
         };
         /**
-         * @description The operation of an audit record, area.action.
+         * @description The operation of an audit entry, area.action.
          * @enum {string}
          */
         AuditOperation: "invitation.revoked" | "member.invited" | "member.joined" | "member.removed" | "member.role_changed" | "tenant.closed" | "tenant.created" | "tenant.owner_invited" | "tenant.reactivated" | "tenant.renamed" | "tenant.reopened" | "tenant.suspended" | "user.deleted" | "user.preferences_changed" | "user.reactivated" | "user.renamed" | "user.suspended";
@@ -436,7 +436,7 @@ export interface components {
             deleted: null | boolean;
         };
         /**
-         * @description The kind of target of an audit record.
+         * @description The kind of target of an audit entry.
          * @enum {string}
          */
         AuditTargetResponseKind: "tenant" | "user" | "invitation";
@@ -690,7 +690,7 @@ export interface components {
             state: components["schemas"]["InvitationResponseState"];
         };
         /**
-         * @description A permission of the catalogue. Every endpoint checks its own permission.
+         * @description A name of the permission list. Every endpoint checks its own permission.
          * @enum {string}
          */
         Permission: "platform.audit.read" | "platform.tenants.close" | "platform.tenants.create" | "platform.tenants.invite_owner" | "platform.tenants.reactivate" | "platform.tenants.read" | "platform.tenants.reopen" | "platform.tenants.suspend" | "platform.tenants.update" | "platform.users.delete" | "platform.users.reactivate" | "platform.users.read" | "platform.users.suspend" | "platform.users.update" | "tenant.audit.read" | "tenant.invitations.create" | "tenant.invitations.delete" | "tenant.invitations.read" | "tenant.members.delete" | "tenant.members.read" | "tenant.members.update" | "tenant.profile.read";

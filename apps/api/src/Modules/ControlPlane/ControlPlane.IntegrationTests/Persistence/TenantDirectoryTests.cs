@@ -1,4 +1,4 @@
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.DependencyInjection;

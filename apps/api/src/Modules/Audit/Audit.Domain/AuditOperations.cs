@@ -1,8 +1,8 @@
 namespace Audit.Domain;
 
 /// <summary>
-/// The operation of every audit record, each declared once (K3). The OpenAPI document reads these constants into the enum
-/// AuditOperation, so a client knows every operation. A record keeps its operation as text, and a stored name never changes.
+/// The operation of every audit entry, each declared once (K3). The OpenAPI document reads these constants into the enum
+/// AuditOperation, so a client knows every operation. An entry keeps its operation as text, and a stored name never changes.
 /// </summary>
 public static class AuditOperations
 {

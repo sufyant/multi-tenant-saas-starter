@@ -1,4 +1,4 @@
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Infrastructure.Persistence;
 using JasperFx;
 using JasperFx.CodeGeneration;
@@ -30,7 +30,7 @@ internal sealed class IdempotencyCommitFailurePolicy : IHandlerPolicy
 {
     public void Apply(IReadOnlyList<HandlerChain> chains, GenerationRules rules, IServiceContainer container)
     {
-        foreach (var chain in chains.Where(chain => chain.MessageType == typeof(CreateTenant)))
+        foreach (var chain in chains.Where(chain => chain.MessageType == typeof(CreateTenantCommand)))
         {
             chain.Postprocessors.Insert(1, new MethodCall(typeof(IdempotencyCommitFailure), nameof(IdempotencyCommitFailure.AfterAsync)));
         }

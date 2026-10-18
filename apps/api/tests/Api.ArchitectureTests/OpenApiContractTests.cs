@@ -4,8 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Audit.Domain;
-using ControlPlane.Api;
-using ControlPlane.Api.Tenant;
+using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Contracts;
 using FluentValidation;
 using FluentValidation.Validators;
@@ -138,19 +137,19 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         copies.ShouldBeEmpty();
     }
 
-    // N11 and K5: the permission catalogue is one enum in the document, so a generated client knows each name and a typo does not compile.
+    // N11 and K5: the permission list is one enum in the document, so a generated client knows each name and a typo does not compile.
     [Fact]
-    public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfTheCatalogue()
+    public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfThePermissionList()
     {
-        var catalogue = typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
+        var listed = typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)
             .Order(StringComparer.Ordinal);
 
         var documented = EnumOf(Schemas().Single(schema => schema.Name == "Permission").Value);
 
-        catalogue.ShouldNotBeEmpty();
-        documented.ShouldBe(string.Join(", ", catalogue));
+        listed.ShouldNotBeEmpty();
+        documented.ShouldBe(string.Join(", ", listed));
     }
 
     // N11 and K5: every response field that holds permission names is an array of the one schema Permission, so the web compares each
@@ -198,7 +197,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         EnumOf(SchemaAt(MemberRoleSchema)).ShouldBe(JsonValuesOf(typeof(MemberRole)));
     }
 
-    // N11 and K3: the operations of the audit records are one enum in the document, so a client knows each one and hears of a new one.
+    // N11 and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.
     [Fact]
     public void BuildOpenApiDocument_AuditOperation_ListsEveryOperationOfAuditOperations()
     {
@@ -498,6 +497,49 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         predicates.ShouldBeEmpty();
     }
 
+    // N7, N8: an operation has one tag, the folder of its endpoints below the module's Api project, {Audience}/{Resource}, so the API
+    // reference and a generated client group the operations as the folders do. The document lists each tag it uses.
+    [Fact]
+    public void BuildOpenApiDocument_EveryOperation_HasOneTagThatIsAnAudienceAndResourceFolder()
+    {
+        var tags = Operations().Select(operation => (Operation: $"{operation.Method} {operation.Path}", Tags: TagsOf(operation.Value))).ToList();
+        var folders = Solution.LayerOfEveryModule("Api")
+            .SelectMany(project => Directory.EnumerateDirectories(Solution.FolderOf(project)).SelectMany(Directory.EnumerateDirectories)
+                .Select(folder => Path.GetRelativePath(Solution.FolderOf(project), folder).Replace(Path.DirectorySeparatorChar, '/')))
+            .ToHashSet();
+        var listed = _document.GetProperty("tags").EnumerateArray().Select(tag => tag.GetProperty("name").GetString()!);
+
+        var notOne = tags.Where(operation => operation.Tags.Count != 1).Select(operation => operation.Operation);
+        var noFolder = tags.SelectMany(operation => operation.Tags).Where(tag => !folders.Contains(tag)).Distinct();
+
+        tags.ShouldNotBeEmpty();
+        notOne.ShouldBeEmpty();
+        noFolder.ShouldBeEmpty();
+        listed.ShouldBe(tags.SelectMany(operation => operation.Tags).Distinct(), ignoreOrder: true);
+    }
+
+    // Decision 1 of audit fix 09 and N8: the document finds a command's validator by the request that carries the command, XRequest for
+    // XCommand. A validator whose request does not exist describes nothing in the document.
+    [Fact]
+    public void MapRequestToValidator_EveryCommandValidator_FindsItsRequest()
+    {
+        var requests = Solution.LayerOfEveryModule("Api")
+            .SelectMany(project => Solution.Load(project).GetExportedTypes())
+            .Select(type => type.Name)
+            .Where(name => name.EndsWith("Request", StringComparison.Ordinal))
+            .ToHashSet();
+        var commands = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+            .Select(type => type.BaseType!.GetGenericArguments()[0])
+            .ToList();
+
+        var withoutRequest = commands.Select(RequestOf).Where(request => !requests.Contains(request));
+
+        commands.ShouldNotBeEmpty();
+        withoutRequest.ShouldBeEmpty();
+    }
+
     // Decision 1 of audit fix 09: a rule that the document cannot read is reported, never copied as a number. Each one is listed here, so
     // a new kind of rule, such as a range, fails the test until someone decides how the document shows it. A predicate (Must) has no
     // form to read, and the time zone's regex has no pattern. A rule that needs a value is required in the document already: the
@@ -586,9 +628,12 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
             .SelectMany(type => ((IValidator)Activator.CreateInstance(type)!).CreateDescriptor().GetMembersWithValidators()
                 .SelectMany(member => member.Select(rule =>
-                    ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
+                    ($"{RequestOf(type.BaseType!.GetGenericArguments()[0])}.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
                         rule.Validator,
                         rule.Options.ErrorCode))));
+
+    // N8: the command XCommand is carried by the request XRequest, as OpenApiContract maps them.
+    private static string RequestOf(Type command) => $"{command.Name[..^"Command".Length]}Request";
 
     private List<string> PatternedRequestFields() =>
         [.. RequestFields().Where(field => field.Value.TryGetProperty("pattern", out _)).Select(field => field.Name)];
@@ -758,6 +803,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         schema.TryGetProperty("$ref", out var reference)
             ? _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.GetString()!.Split('/')[^1])
             : schema;
+
+    private static List<string> TagsOf(JsonElement operation) =>
+        operation.TryGetProperty("tags", out var tags) ? [.. tags.EnumerateArray().Select(tag => tag.GetString()!)] : [];
 
     private IEnumerable<(string Method, string Path, JsonElement Value)> Operations() =>
         _document.GetProperty("paths").EnumerateObject()

@@ -1,6 +1,9 @@
 using ControlPlane.Application.Ports;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Users.DeleteIdentityAccount;
+using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Domain;
+using ControlPlane.Domain.Tenants;
+using ControlPlane.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ControlPlane.IntegrationTests.Users.UserDeletion;
@@ -21,7 +24,7 @@ public sealed class DeleteUserTests(Database database)
         await Catalog.AddMemberAsync(database.Services, tenant, user);
         var admin = await Catalog.AddUserAsync(database.Services);
 
-        var (result, deleted, identity) = await DeleteAsync(new DeleteUser(user.Id, admin.ExternalId));
+        var (result, deleted, identity) = await DeleteAsync(new DeleteUserCommand(admin.ExternalId, user.Id));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserHasMemberships);
         deleted.ShouldBeNull();
@@ -29,7 +32,7 @@ public sealed class DeleteUserTests(Database database)
         (await database.ScalarAsSuperuserAsync<bool>($"SELECT deleted_at IS NULL FROM control_plane.users WHERE id = '{user.Id}'")).ShouldBeTrue();
     }
 
-    private async Task<(SharedKernel.Result Result, ControlPlane.Contracts.UserDeleted? Deleted, DeleteIdentityAccount? Identity)> DeleteAsync(DeleteUser command)
+    private async Task<(SharedKernel.Result Result, ControlPlane.Contracts.Users.UserDeletedEvent? Deleted, DeleteIdentityAccountCommand? Identity)> DeleteAsync(DeleteUserCommand command)
     {
         await using var scope = database.Services.CreateAsyncScope();
         var catalog = scope.ServiceProvider.GetRequiredService<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>();

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -55,7 +55,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(second.Id);
     }
 
-    // K3, GDPR Article 17: an audit record holds no name and no email address, so erasing the catalog's user erases them from every
+    // K3, GDPR Article 17: an audit entry holds no name and no email address, so erasing the catalog's user erases them from every
     // audit table, and the read side, through ControlPlane's contract, gives them no name and marks them deleted. The records stay.
     [Fact]
     public async Task DeleteUser_UserNamedInTheAuditLog_LeavesNoNameOrEmailInAnyAuditTableAndReadsAsDeletedUser()
@@ -224,7 +224,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
     private async Task<IReadOnlyDictionary<Guid, UserName>> NamesAsync(Guid userId)
     {
         await using var scope = _api.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<IUserNames>().FindAsync([userId], Cancellation);
+        return await scope.ServiceProvider.GetRequiredService<IUserDirectory>().FindNamesAsync([userId], Cancellation);
     }
 
     // The rows of every table in the schema whose text holds the marker, read as the superuser.

@@ -1,9 +1,8 @@
-using Notifications.Application;
-using Notifications.Application.Invitations.InvitationEmail;
-using Notifications.Application.Ports;
-using ControlPlane.Contracts;
-using Notifications.Contracts;
+using ControlPlane.Contracts.Invitations;
 using Microsoft.Extensions.Time.Testing;
+using Notifications.Application.Email;
+using Notifications.Application.Invitations.SendInvitationEmail;
+using Notifications.Contracts.Invitations;
 using SharedKernel;
 
 namespace Notifications.UnitTests.Invitations.InvitationEmail;
@@ -65,10 +64,10 @@ public sealed class InvitationEmailTests
         await send.ShouldThrowAsync<HttpRequestException>();
     }
 
-    private static OwnerInvitationReady Ready() =>
+    private static OwnerInvitationReadyEvent Ready() =>
         new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 
-    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReady ready) =>
+    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReadyEvent ready) =>
         SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);
 
     // The email channel, as a system we do not own, at our port.

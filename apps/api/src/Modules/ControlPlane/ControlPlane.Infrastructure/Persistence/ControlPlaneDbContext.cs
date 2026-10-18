@@ -1,6 +1,5 @@
 using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
@@ -119,9 +118,9 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         {
             invitation.Property(i => i.Id).ValueGeneratedNever();
             invitation.Property(i => i.Email).HasMaxLength(Invitation.EmailMaxLength);
-            invitation.Property(i => i.TokenHash).HasMaxLength(64);
+            invitation.Property(i => i.SecretHash).HasMaxLength(64);
             invitation.Property(i => i.SignUpInvitationId).HasMaxLength(255);
-            invitation.HasIndex(i => i.TokenHash).IsUnique();
+            invitation.HasIndex(i => i.SecretHash).IsUnique();
             // The partial unique index ix_invitations_pending_email keeps one pending invitation for each tenant and lower(email) (K2).
             // It is on an expression, which EF Core does not model, so the migration AddInvitationIndexes creates it in SQL.
             invitation.HasIndex(i => i.ExpiresAt);

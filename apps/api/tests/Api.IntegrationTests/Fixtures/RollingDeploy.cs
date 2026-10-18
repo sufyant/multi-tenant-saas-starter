@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Tenancy;
 using Wolverine;
+using Wolverine.Util;
 
 namespace Api.IntegrationTests.Fixtures;
 
@@ -74,7 +75,7 @@ internal sealed class RollingDeploy : IAsyncDisposable
     public Task WaitForLogAsync(string version, LogLevel level, int count) => Waiting.UntilAsync(() => LogOf(version, level).Count >= count);
 
     public Task WaitForHandledAsync<TMessage>(int count) => Waiting.UntilAsync(async () => await _database.ScalarAsSuperuserAsync<long>(
-        $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).FullName}'",
+        $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).ToMessageTypeName()}'",
         DatabaseName) == count);
 
     public Task WaitForDeadLetterAsync(Guid messageId) => Waiting.UntilAsync(async () => await DeadLettersAsync(messageId) == 1);
