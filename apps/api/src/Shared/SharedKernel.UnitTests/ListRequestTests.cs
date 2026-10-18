@@ -2,6 +2,21 @@ using System.Text.Json.Serialization;
 
 namespace SharedKernel.UnitTests;
 
+public enum ThingSort
+{
+    Name,
+    LastName,
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter<ThingStatus>))]
+public enum ThingStatus
+{
+    [JsonStringEnumMemberName("on-hold")]
+    OnHold,
+
+    Active,
+}
+
 // K5: one contract for every list. The shared type reads and checks page, pageSize, sort and q; a filter reads the JSON names of its
 // enum. JSON:API 1.1, "Sorting": one field, descending with a leading minus.
 public sealed class ListRequestTests
@@ -167,19 +182,4 @@ public sealed class ListRequestTests
     }
 
     private static ListSort<ThingSort> Sort(string text) => new(text);
-}
-
-public enum ThingSort
-{
-    Name,
-    LastName,
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter<ThingStatus>))]
-public enum ThingStatus
-{
-    [JsonStringEnumMemberName("on-hold")]
-    OnHold,
-
-    Active,
 }

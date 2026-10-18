@@ -12,11 +12,11 @@ namespace Notifications.UnitTests.Email;
 // Resend is a system we do not own; these tests pin down the requests the email channel makes.
 public sealed class ResendEmailChannelTests : IDisposable
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly EmailMessage Email = new("ada@example.com", "You are invited", "Open https://app.test/accept?token=abc", "invite/0199a8f0-0000-7000-8000-000000000401");
 
     private readonly StubResend _resend = new();
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public void Dispose() => _resend.Dispose();
 
@@ -98,9 +98,9 @@ public sealed class ResendEmailChannelTests : IDisposable
 
         public List<(HttpMethod Method, Uri Uri, string? Authorization, string? IdempotencyKey, string Body)> Requests { get; } = [];
 
-        public void Respond(HttpStatusCode status) => _status = status;
-
         public TimeSpan Delay { get; set; }
+
+        public void Respond(HttpStatusCode status) => _status = status;
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

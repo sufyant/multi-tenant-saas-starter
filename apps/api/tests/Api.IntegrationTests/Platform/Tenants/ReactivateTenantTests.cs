@@ -11,13 +11,15 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // suspension and a reactivation sits here, with the use case it checks last (N9).
 public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private const string Reason = "Unpaid invoices";
 
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -120,15 +122,15 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
         (await SuspensionReasonOfAsync(await admin.GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation))).ShouldBeNull();
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
-    private Task<long> AuditEntryCountAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<long>(
-            $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
-
     private static async Task<string?> SuspensionReasonOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("suspensionReason").GetString();
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+    private Task<long> AuditEntryCountAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
 }

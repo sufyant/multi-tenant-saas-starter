@@ -104,6 +104,18 @@ internal static class ApiPipeline
         return app;
     }
 
+    // The API's documents, in Development only, on a host that serves the API.
+    public static WebApplication MapApiDocuments(this WebApplication app)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapOpenApi().AllowAnonymous();
+            app.MapScalarApiReference().AllowAnonymous();
+        }
+
+        return app;
+    }
+
     // The OpenAPI document build only describes the API: it has no configuration and no database, so it registers no database
     // and checks nothing while it starts. Every other start checks every setting first (section 7).
     private static void AddStartChecks(this WebApplicationBuilder builder, bool openApiBuild)
@@ -229,16 +241,4 @@ internal static class ApiPipeline
         endpoints.Endpoints
             .OfType<RouteEndpoint>()
             .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith($"{RouteGroups.V1}/", StringComparison.Ordinal) == true);
-
-    // The API's documents, in Development only, on a host that serves the API.
-    public static WebApplication MapApiDocuments(this WebApplication app)
-    {
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapOpenApi().AllowAnonymous();
-            app.MapScalarApiReference().AllowAnonymous();
-        }
-
-        return app;
-    }
 }

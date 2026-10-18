@@ -7,10 +7,10 @@ namespace Api.IntegrationTests.Fixtures;
 // not exited: a process that fails must stop on its own.
 internal static class ApiProcess
 {
-    public static readonly TimeSpan TimeLimit = TimeSpan.FromSeconds(30);
-
     // Nothing listens on port 1, so the connection is refused at once.
     public const string HostThatDoesNotAnswer = "Host=127.0.0.1;Port=1;Database=api;Username=nobody;Password=none";
+
+    public static readonly TimeSpan TimeLimit = TimeSpan.FromSeconds(30);
 
     public static async Task<ApiProcessResult> RunAsync(IReadOnlyDictionary<string, string> environment, params string[] arguments)
     {

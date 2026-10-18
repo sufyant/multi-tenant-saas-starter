@@ -8,28 +8,32 @@ namespace Api.ArchitectureTests.Fixtures;
 internal static partial class Solution
 {
     public const string SharedKernel = "SharedKernel";
+
     public const string Tenancy = "Tenancy";
+
     public const string Host = "Api";
 
-    private const string SolutionFile = "Api.slnx";
-
-    public static IReadOnlyList<string> Layers { get; } = ["Contracts", "Domain", "Application", "Infrastructure", "Api"];
+    // Static members are initialized in the order of the text, and the properties below read these, so they are fields, which come
+    // first (SA1201). The folder of the solution file: found above the test's output directory, in the source tree the test was built
+    // from.
+    public static readonly string Root = FindRoot();
 
     // A test project is known by its name, not by its folder: module tests sit next to their module (section 2).
-    public static IReadOnlyList<string> TestProjectSuffixes { get; } = [".UnitTests", ".IntegrationTests", ".EndToEndTests", ".ArchitectureTests"];
+    public static readonly IReadOnlyList<string> TestProjectSuffixes = [".UnitTests", ".IntegrationTests", ".EndToEndTests", ".ArchitectureTests"];
+
+    private const string SolutionFile = "Api.slnx";
 
     // The deps file marks the solution's own projects apart from third-party packages, some of which follow the module
     // naming pattern too (OpenTelemetry.Api), and lists each project's direct project references. The test project references
     // the host and the other test projects, so without the test projects these are exactly the projects the host ships.
-    private static IReadOnlyDictionary<string, IReadOnlyList<string>> ProjectReferences { get; } = ReadProjectReferencesFromDepsFile();
+    private static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> ProjectReferences = ReadProjectReferencesFromDepsFile();
 
-    private static IReadOnlyList<string> ProjectNames { get; } = [.. ProjectReferences.Keys];
-
-    // The folder of the solution file: found above the test's output directory, in the source tree the test was built from.
-    public static string Root { get; } = FindRoot();
+    private static readonly IReadOnlyList<string> ProjectNames = [.. ProjectReferences.Keys];
 
     // The project files themselves, as the solution file lists them.
-    private static Dictionary<string, string> ProjectFiles { get; } = ReadProjectFilesFromSolution();
+    private static readonly Dictionary<string, string> ProjectFiles = ReadProjectFilesFromSolution();
+
+    public static IReadOnlyList<string> Layers { get; } = ["Contracts", "Domain", "Application", "Infrastructure", "Api"];
 
     // The modules of the projects the host ships and of the solution file: a module project that nothing references is still
     // checked, and fails the rules it cannot meet.
@@ -51,6 +55,8 @@ internal static partial class Solution
     public static IReadOnlyList<string> TestProjects { get; } = [.. ProjectFiles.Keys.Where(IsTestProject).Order()];
 
     public static IReadOnlyList<string> ProductionProjects { get; } = [.. ProjectFiles.Keys.Where(project => !IsTestProject(project)).Order()];
+
+    public static IReadOnlyList<string> SolutionProjects => [.. ProjectFiles.Keys.Order()];
 
     public static bool IsTestProject(string project) =>
         TestProjectSuffixes.Any(suffix => project.EndsWith(suffix, StringComparison.Ordinal));
@@ -86,6 +92,9 @@ internal static partial class Solution
             .Where(file => !buildOutput.Any(output => file[folder.Length..].Contains(output, StringComparison.Ordinal)));
     }
 
+    // What NuGet restored for a project: the packages it uses, direct and transitive, and the folders they are in.
+    public static string AssetsFileOf(string project) => Path.Combine(Path.GetDirectoryName(ProjectFiles[project])!, "obj", "project.assets.json");
+
     private static IEnumerable<string> Includes(XDocument file, string item) =>
         file.Descendants(item).Select(element => (string)element.Attribute("Include")!);
 
@@ -104,11 +113,6 @@ internal static partial class Solution
         XDocument.Load(Path.Combine(Root, SolutionFile)).Descendants("Project")
             .Select(project => Path.Combine(Root, (string)project.Attribute("Path")!))
             .ToDictionary(path => Path.GetFileNameWithoutExtension(path)!, path => path);
-
-    // What NuGet restored for a project: the packages it uses, direct and transitive, and the folders they are in.
-    public static string AssetsFileOf(string project) => Path.Combine(Path.GetDirectoryName(ProjectFiles[project])!, "obj", "project.assets.json");
-
-    public static IReadOnlyList<string> SolutionProjects => [.. ProjectFiles.Keys.Order()];
 
     private static Dictionary<string, IReadOnlyList<string>> ReadProjectReferencesFromDepsFile()
     {

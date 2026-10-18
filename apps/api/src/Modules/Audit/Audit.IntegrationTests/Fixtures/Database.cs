@@ -22,13 +22,13 @@ public sealed class Database : IAsyncLifetime
 
     public IServiceProvider Services => _services;
 
-    public string ConnectionStringFor(string role) =>
-        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Username = role, Password = Password }.ConnectionString;
-
     public string ApplicationConnectionString => ConnectionStringFor(DatabaseRoles.Application);
 
     // The container's own account, which no policy binds.
     public string SuperuserConnectionString => _container.GetConnectionString();
+
+    public string ConnectionStringFor(string role) =>
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Username = role, Password = Password }.ConnectionString;
 
     public async ValueTask InitializeAsync()
     {

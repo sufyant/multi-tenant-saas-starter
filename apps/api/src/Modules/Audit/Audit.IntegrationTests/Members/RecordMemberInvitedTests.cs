@@ -10,9 +10,9 @@ namespace Audit.IntegrationTests.Members;
 // invited email address travels in the event for Notifications, and never reaches an entry (K3).
 public sealed class RecordMemberInvitedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordMemberInvited_MemberInvited_WritesTheTenantEntryWithTheRoleAndTheReplacedInvitation()

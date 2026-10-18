@@ -14,13 +14,15 @@ namespace Api.IntegrationTests.Me.Invitations;
 // state is read, with the body accepting gives (the maintainer's decision in step 20l).
 public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset Later = DateTimeOffset.UtcNow.AddDays(3);
 
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -259,6 +261,9 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         other.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     // An invitation of the tenant with a secret of its own, to an address that the identity provider has verified for a new account.
     private async Task<(Guid Id, string Code, string Email, string Invitee)> InvitationAsync(
         Guid tenantId,
@@ -285,7 +290,4 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
 
     private Task<string?> RowVersionOfAsync(Guid invitationId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT xmin::text FROM control_plane.invitations WHERE id = '{invitationId}'");
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

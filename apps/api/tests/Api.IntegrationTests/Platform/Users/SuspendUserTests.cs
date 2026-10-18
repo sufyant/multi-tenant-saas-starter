@@ -11,11 +11,13 @@ namespace Api.IntegrationTests.Platform.Users;
 // a suspended user meets.
 public sealed class SuspendUserTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -96,11 +98,11 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(response)).ShouldBe("user.is_system_admin");
     }
 
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<DateTime?> SuspendedAtAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<DateTime?>($"SELECT suspended_at FROM control_plane.users WHERE external_id = '{externalId}'");
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

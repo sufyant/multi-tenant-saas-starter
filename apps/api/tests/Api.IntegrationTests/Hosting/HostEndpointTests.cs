@@ -7,7 +7,14 @@ namespace Api.IntegrationTests.Hosting;
 
 public sealed class HostEndpointTests(Database database) : IAsyncLifetime
 {
+    private static readonly Dictionary<string, string?> Resend = new()
+    {
+        ["Notifications:Resend:ApiKey"] = "re_test_key",
+        ["Notifications:Resend:From"] = "no-reply@app.test",
+    };
+
     private ApiFactory _api = null!;
+
     private HttpClient _client = null!;
 
     public ValueTask InitializeAsync()
@@ -180,8 +187,6 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
         ready.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
     }
 
-    private static string UsernameOf(string connectionString) => new NpgsqlConnectionStringBuilder(connectionString).Username!;
-
     // Outside Development the API must know which clients may use it; without the list any origin's token would be accepted.
     [Fact]
     public async Task StartApplication_OutsideDevelopmentWithoutAuthorizedParties_Fails()
@@ -246,12 +251,6 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    private static readonly Dictionary<string, string?> Resend = new()
-    {
-        ["Notifications:Resend:ApiKey"] = "re_test_key",
-        ["Notifications:Resend:From"] = "no-reply@app.test",
-    };
-
     [Fact]
     public async Task ServeScalarReference_InDevelopment_IsServed()
     {
@@ -259,4 +258,6 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
+
+    private static string UsernameOf(string connectionString) => new NpgsqlConnectionStringBuilder(connectionString).Username!;
 }

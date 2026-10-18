@@ -10,14 +10,16 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 // GET /v1/tenants/{tenantId}/invitations: the tenant's pending invitations, expired ones included, through the list contract (K5).
 public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset Soon = DateTimeOffset.UtcNow.AddDays(1);
 
     private readonly Catalog _catalog = new(database);
+
     // A whole second: PostgreSQL rounds a stored time to microseconds, so a clock with ticks could store an expiry after the clock's.
     private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -275,6 +277,12 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe(code);
     }
 
+    private static List<string> Emails(JsonElement page) =>
+        [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("email").GetString()!)];
+
+    private static List<(Guid Id, string Role)> Invitations(JsonElement page) =>
+        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), Roles.Of(item)))];
+
     private async Task AddInvitationsAsync(Guid tenantId, params string[] emails)
     {
         foreach (var email in emails)
@@ -282,10 +290,4 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
             await _catalog.AddInvitationAsync(tenantId, email);
         }
     }
-
-    private static List<string> Emails(JsonElement page) =>
-        [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("email").GetString()!)];
-
-    private static List<(Guid Id, string Role)> Invitations(JsonElement page) =>
-        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), Roles.Of(item)))];
 }

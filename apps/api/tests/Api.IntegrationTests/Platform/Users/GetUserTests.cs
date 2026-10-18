@@ -12,12 +12,13 @@ namespace Api.IntegrationTests.Platform.Users;
 // tenants.
 public sealed class GetUserTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset Created = new(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
 
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -186,16 +187,6 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         forOne.ShouldBeGreaterThan(0);
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
-    private async Task SummarizeAsync(params Guid[] tenantIds)
-    {
-        foreach (var tenantId in tenantIds)
-        {
-            await _catalog.SummarizeAsync(tenantId);
-        }
-    }
-
     private static List<(Guid TenantId, string? Name, string? Slug, string? Status, string? Role, DateTimeOffset JoinedAt, bool LastOwner)> Memberships(JsonElement user) =>
     [
         .. user.GetProperty("memberships").EnumerateArray().Select(membership => (
@@ -207,4 +198,14 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             membership.GetProperty("joinedAt").GetDateTimeOffset(),
             membership.GetProperty("lastOwner").GetBoolean())),
     ];
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+    private async Task SummarizeAsync(params Guid[] tenantIds)
+    {
+        foreach (var tenantId in tenantIds)
+        {
+            await _catalog.SummarizeAsync(tenantId);
+        }
+    }
 }

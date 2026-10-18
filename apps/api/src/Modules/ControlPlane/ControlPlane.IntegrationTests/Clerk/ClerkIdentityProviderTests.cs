@@ -13,11 +13,11 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
 {
     private static readonly Uri AcceptLink = new("https://app.test/invitations/accept?code=t.s");
 
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly StubClerk _clerk = new();
 
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 17, 9, 0, 0, TimeSpan.Zero));
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public void Dispose() => _clerk.Dispose();
 
@@ -192,13 +192,14 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     private sealed class StubClerk : HttpMessageHandler
     {
         private readonly Queue<(string Body, HttpStatusCode Status)> _answers = new();
+
         private (string Body, HttpStatusCode Status) _last = ("{}", HttpStatusCode.OK);
 
         public List<(HttpMethod Method, Uri Uri, string? Authorization, string? Body)> Requests { get; } = [];
 
-        public void Respond(string body, HttpStatusCode status = HttpStatusCode.OK) => _answers.Enqueue((body, status));
-
         public TimeSpan Delay { get; set; }
+
+        public void Respond(string body, HttpStatusCode status = HttpStatusCode.OK) => _answers.Enqueue((body, status));
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

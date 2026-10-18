@@ -6,10 +6,11 @@ namespace Api.IntegrationTests.Platform;
 [RuntimeHandlerCode]
 public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private PipelineHost _host = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
 

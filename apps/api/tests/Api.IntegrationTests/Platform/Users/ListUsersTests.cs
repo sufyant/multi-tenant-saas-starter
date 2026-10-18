@@ -13,11 +13,13 @@ namespace Api.IntegrationTests.Platform.Users;
 // of its own.
 public sealed class ListUsersTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly string _marker = Guid.NewGuid().ToString("N")[..12];
+
     private Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -296,6 +298,17 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         one.ShouldBeGreaterThan(0);
     }
 
+    private static List<(Guid Id, string? Email, string? FirstName, string? LastName, string Status, bool IsSystemAdmin)> Users(JsonElement page) =>
+    [
+        .. page.GetProperty("items").EnumerateArray().Select(item => (
+            item.GetProperty("id").GetGuid(),
+            item.GetProperty("email").GetString(),
+            item.GetProperty("firstName").GetString(),
+            item.GetProperty("lastName").GetString(),
+            item.GetProperty("status").GetString()!,
+            item.GetProperty("isSystemAdmin").GetBoolean())),
+    ];
+
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
@@ -322,15 +335,4 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: $"{_marker} {lastName}");
         }
     }
-
-    private static List<(Guid Id, string? Email, string? FirstName, string? LastName, string Status, bool IsSystemAdmin)> Users(JsonElement page) =>
-    [
-        .. page.GetProperty("items").EnumerateArray().Select(item => (
-            item.GetProperty("id").GetGuid(),
-            item.GetProperty("email").GetString(),
-            item.GetProperty("firstName").GetString(),
-            item.GetProperty("lastName").GetString(),
-            item.GetProperty("status").GetString()!,
-            item.GetProperty("isSystemAdmin").GetBoolean())),
-    ];
 }

@@ -63,8 +63,6 @@ internal static class UserRateLimiting
     private static string PartitionKey(HttpContext context) =>
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId ? $"user:{userId}" : $"ip:{context.Connection.RemoteIpAddress}";
 
-    private sealed class UserRateLimit;
-
     private static async ValueTask WriteProblemAsync(OnRejectedContext rejected, CancellationToken cancellationToken)
     {
         var httpContext = rejected.HttpContext;
@@ -80,4 +78,6 @@ internal static class UserRateLimiting
             ProblemDetails = { Status = StatusCodes.Status429TooManyRequests, Detail = "The rate limit was exceeded. Retry after the time in the Retry-After header." },
         });
     }
+
+    private sealed class UserRateLimit;
 }

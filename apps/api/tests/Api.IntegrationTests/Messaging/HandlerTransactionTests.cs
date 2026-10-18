@@ -83,6 +83,13 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
             return _known[service] = IsDbContext(service) || (!IsFramework(service) && BuiltOnADbContext(service));
         }
 
+        private static bool IsFramework(Type type) =>
+            type.Namespace is { } name
+            && (name.StartsWith("System", StringComparison.Ordinal)
+                || name.StartsWith("Microsoft", StringComparison.Ordinal)
+                || name.StartsWith("Wolverine", StringComparison.Ordinal)
+                || name.StartsWith("JasperFx", StringComparison.Ordinal));
+
         private bool BuiltOnADbContext(Type service) =>
             ImplementationOf(service)?
                 .GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
@@ -96,12 +103,5 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
                 [.., { ImplementationFactory: not null }] => scope.GetService(service)?.GetType(),
                 _ => service.IsClass && !service.IsAbstract ? service : null,
             };
-
-        private static bool IsFramework(Type type) =>
-            type.Namespace is { } name
-            && (name.StartsWith("System", StringComparison.Ordinal)
-                || name.StartsWith("Microsoft", StringComparison.Ordinal)
-                || name.StartsWith("Wolverine", StringComparison.Ordinal)
-                || name.StartsWith("JasperFx", StringComparison.Ordinal));
     }
 }

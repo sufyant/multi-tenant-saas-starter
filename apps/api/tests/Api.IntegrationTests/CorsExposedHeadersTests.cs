@@ -11,10 +11,11 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 {
     private const string AllowedOrigin = "https://app.test";
 
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -54,17 +55,17 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
         ExposedHeadersOf(response).ShouldBe(DeclaredResponseHeaders.Of(document), ignoreOrder: true);
     }
 
-    private async Task<HttpClient> CrossOriginAdminAsync()
-    {
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-        admin.DefaultRequestHeaders.Add("Origin", AllowedOrigin);
-        return admin;
-    }
-
     private static string[] ExposedHeadersOf(HttpResponseMessage response) =>
     [
         .. response.Headers.GetValues("Access-Control-Expose-Headers")
             .SelectMany(value => value.Split(','))
             .Select(header => header.Trim().ToLowerInvariant()),
     ];
+
+    private async Task<HttpClient> CrossOriginAdminAsync()
+    {
+        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        admin.DefaultRequestHeaders.Add("Origin", AllowedOrigin);
+        return admin;
+    }
 }

@@ -11,12 +11,15 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // whole list has a database of its own, where no other test adds a tenant; any other test searches for a marker of its own.
 public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly string _marker = Guid.NewGuid().ToString("N")[..12];
+
     private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
+
     private Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -195,8 +198,6 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
     // The system admin sees why each tenant is suspended in the list too.
     [Fact]
     public async Task ListTenants_ASuspendedTenant_ShowsItsReason()
@@ -252,24 +253,6 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             item.GetProperty("status").GetString()!)),
     ];
 
-    // A database where no other test adds a tenant, for a test that reads the whole list.
-    private async Task UseADatabaseOfItsOwnAsync()
-    {
-        var name = await database.CreateMigratedDatabaseAsync();
-        _catalog = new Catalog(database, name);
-        await _api.DisposeAsync();
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
-    }
-
-    // Tenants named after the test's marker, so that a search for the marker finds them alone.
-    private async Task AddTenantsAsync(params string[] names)
-    {
-        foreach (var name in names)
-        {
-            await _catalog.AddTenantAsync(name: $"{_marker} {name}");
-        }
-    }
-
     // Each item as "id|memberCount|ownerCount|firstOwner|ownerInvitation|reopenableUntil": the first Owner as "userId|firstName|lastName|email",
     // the invitation as "email|expiresAt|state", "-" for null.
     private static List<string> Owners(JsonElement page) =>
@@ -290,4 +273,24 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     private static string Email() => $"{Guid.NewGuid():N}@example.com";
 
     private static List<string> Names(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("name").GetString()!)];
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+    // A database where no other test adds a tenant, for a test that reads the whole list.
+    private async Task UseADatabaseOfItsOwnAsync()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        _catalog = new Catalog(database, name);
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
+    }
+
+    // Tenants named after the test's marker, so that a search for the marker finds them alone.
+    private async Task AddTenantsAsync(params string[] names)
+    {
+        foreach (var name in names)
+        {
+            await _catalog.AddTenantAsync(name: $"{_marker} {name}");
+        }
+    }
 }

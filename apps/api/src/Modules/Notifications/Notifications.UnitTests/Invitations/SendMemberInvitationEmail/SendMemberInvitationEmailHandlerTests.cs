@@ -10,13 +10,36 @@ namespace Notifications.UnitTests.Invitations.SendMemberInvitationEmail;
 // may be scheduled (W5).
 public sealed class SendMemberInvitationEmailHandlerTests
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000402");
+
     private static readonly Uri Link = new("https://app.test/invitations/accept?code=x");
+
     private static readonly TimeSpan SevenDays = TimeSpan.FromDays(7);
 
     private readonly RecordingEmailChannel _channel = new();
+
+    public static TheoryData<Language, string, string> Texts => new()
+    {
+        {
+            Language.En,
+            "You are invited to Acme Ltd",
+            $"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}\n\nThe link works for 7 days."
+        },
+        {
+            Language.Tr,
+            "Acme Ltd adlı kuruluşa davet edildiniz",
+            $"Acme Ltd adlı kuruluşa katılmaya davet edildiniz. Daveti kabul etmek için bu bağlantıyı açın:\n\n{Link}\n\nBağlantı 7 gün geçerlidir."
+        },
+        {
+            Language.Ar,
+            "دعوة للانضمام إلى Acme Ltd",
+            $"تمت دعوتك للانضمام إلى Acme Ltd. افتح هذا الرابط لقبول الدعوة:\n\n{Link}\n\nالرابط صالح لمدة 7 أيام."
+        },
+    };
+
+    public static TheoryData<Language> Languages => [.. Enum.GetValues<Language>()];
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     // The same text as the owner invitation: the tenant's name, the link and how long it works.
     [Fact]
@@ -105,6 +128,11 @@ public sealed class SendMemberInvitationEmailHandlerTests
         new(
             Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 
+    private static MemberInvitationReadyEvent MemberReady(Language language, TimeSpan lifetime) =>
+        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, language, lifetime);
+
+    private Task SendMemberAsync(MemberInvitationReadyEvent ready) => SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
+
     private sealed class RecordingEmailChannel : IEmailChannel
     {
         public List<EmailMessage> Sent { get; } = [];
@@ -115,30 +143,4 @@ public sealed class SendMemberInvitationEmailHandlerTests
             return Task.CompletedTask;
         }
     }
-
-    public static TheoryData<Language, string, string> Texts => new()
-    {
-        {
-            Language.En,
-            "You are invited to Acme Ltd",
-            $"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}\n\nThe link works for 7 days."
-        },
-        {
-            Language.Tr,
-            "Acme Ltd adlı kuruluşa davet edildiniz",
-            $"Acme Ltd adlı kuruluşa katılmaya davet edildiniz. Daveti kabul etmek için bu bağlantıyı açın:\n\n{Link}\n\nBağlantı 7 gün geçerlidir."
-        },
-        {
-            Language.Ar,
-            "دعوة للانضمام إلى Acme Ltd",
-            $"تمت دعوتك للانضمام إلى Acme Ltd. افتح هذا الرابط لقبول الدعوة:\n\n{Link}\n\nالرابط صالح لمدة 7 أيام."
-        },
-    };
-
-    public static TheoryData<Language> Languages => [.. Enum.GetValues<Language>()];
-
-    private Task SendMemberAsync(MemberInvitationReadyEvent ready) => SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
-
-    private static MemberInvitationReadyEvent MemberReady(Language language, TimeSpan lifetime) =>
-        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, language, lifetime);
 }

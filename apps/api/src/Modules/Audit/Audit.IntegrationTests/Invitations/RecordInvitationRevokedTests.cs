@@ -9,9 +9,9 @@ namespace Audit.IntegrationTests.Invitations;
 // (K3).
 public sealed class RecordInvitationRevokedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordInvitationRevoked_InvitationRevoked_WritesTheTenantEntryByTheRevoker()

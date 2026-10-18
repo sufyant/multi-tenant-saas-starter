@@ -33,6 +33,11 @@ internal sealed class DatabaseTables(Database database, string? databaseName = n
         ORDER BY n.nspname, c.relname, p.polname
         """;
 
+    private string ConnectionString =>
+        databaseName is null
+            ? database.SuperuserConnectionString
+            : new NpgsqlConnectionStringBuilder(database.SuperuserConnectionString) { Database = databaseName }.ConnectionString;
+
     public async Task<List<string>> TenantTablesAsync() =>
         [.. (await ReadAsync()).Where(table => !TablesWithoutTenant.Contains(table.Schema, table.Name)).Select(table => table.QualifiedName)];
 
@@ -94,11 +99,6 @@ internal sealed class DatabaseTables(Database database, string? databaseName = n
 
         return policies;
     }
-
-    private string ConnectionString =>
-        databaseName is null
-            ? database.SuperuserConnectionString
-            : new NpgsqlConnectionStringBuilder(database.SuperuserConnectionString) { Database = databaseName }.ConnectionString;
 
     private async Task<List<Table>> ReadAsync()
     {

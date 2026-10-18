@@ -12,6 +12,16 @@ namespace Api.IntegrationTests.Hosting;
 // database gives the first system admin's setting, so the check reads no system admin list there.
 public sealed class HostConfigurationTests(Database database)
 {
+    // The factory's short retries left out, so each module's default retries apply.
+    private static readonly Dictionary<string, string?> DefaultRetries =
+        ApiFactory.ShortRetries.ToDictionary(setting => setting.Key, _ => (string?)null);
+
+    private static readonly Dictionary<string, string?> Complete = new()
+    {
+        ["Notifications:Resend:ApiKey"] = "re_test_key",
+        ["Notifications:Resend:From"] = "no-reply@app.test",
+    };
+
     // The first key of each row is the one the error names; the others are missing too.
     public static TheoryData<string, string[]> RequiredSettings => new()
     {
@@ -27,6 +37,27 @@ public sealed class HostConfigurationTests(Database database)
 
         // S1: without a connection, the first system admin's check cannot read the system admin list; the start names the connection.
         { Environments.Development, ["ConnectionStrings:Database", "ControlPlane:FirstSystemAdminEmail"] },
+    };
+
+    public static TheoryData<string, string> WrongSettings => new()
+    {
+        { "ControlPlane:FirstSystemAdminEmail", "not an email" },
+        { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
+        { "ControlPlane:Invitations:Lifetime", "23:59:59" },
+        { "ControlPlane:Clerk:Timeout", "00:00:00" },
+        { "ControlPlane:Clerk:RetryDelays:0", "00:00:00" },
+        { "ControlPlane:ActivationTimeout", "00:00:00" },
+        { "ControlPlane:InvitationEmailTimeout", "-00:00:01" },
+        { "ControlPlane:CancellationTimeout", "00:00:00" },
+        { "ControlPlane:Tenants:ReopenPeriod", "00:00:00" },
+        { "RateLimiting:InvitationAccept:PermitLimit", "0" },
+        { "RateLimiting:InvitationAccept:Window", "00:00:00" },
+        { "Notifications:Resend:Timeout", "-00:00:01" },
+        { "Host:ShutdownTimeout", "00:00:00" },
+        { "Host:Cors:AllowedOrigins:0", "*" },
+        { "Host:Cors:AllowedOrigins:0", "https://app.test/path" },
+        { "Host:ManagementPort", "0" },
+        { "Host:ManagementPort", "65536" },
     };
 
     [Theory]
@@ -55,27 +86,6 @@ public sealed class HostConfigurationTests(Database database)
 
         start.ShouldThrow<Exception>().Message.ShouldContain("Host:Role");
     }
-
-    public static TheoryData<string, string> WrongSettings => new()
-    {
-        { "ControlPlane:FirstSystemAdminEmail", "not an email" },
-        { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
-        { "ControlPlane:Invitations:Lifetime", "23:59:59" },
-        { "ControlPlane:Clerk:Timeout", "00:00:00" },
-        { "ControlPlane:Clerk:RetryDelays:0", "00:00:00" },
-        { "ControlPlane:ActivationTimeout", "00:00:00" },
-        { "ControlPlane:InvitationEmailTimeout", "-00:00:01" },
-        { "ControlPlane:CancellationTimeout", "00:00:00" },
-        { "ControlPlane:Tenants:ReopenPeriod", "00:00:00" },
-        { "RateLimiting:InvitationAccept:PermitLimit", "0" },
-        { "RateLimiting:InvitationAccept:Window", "00:00:00" },
-        { "Notifications:Resend:Timeout", "-00:00:01" },
-        { "Host:ShutdownTimeout", "00:00:00" },
-        { "Host:Cors:AllowedOrigins:0", "*" },
-        { "Host:Cors:AllowedOrigins:0", "https://app.test/path" },
-        { "Host:ManagementPort", "0" },
-        { "Host:ManagementPort", "65536" },
-    };
 
     [Theory]
     [MemberData(nameof(WrongSettings))]
@@ -214,16 +224,6 @@ public sealed class HostConfigurationTests(Database database)
     // The complete settings without the given keys; a setting given as null is left out.
     private static Dictionary<string, string?> Without(string[] keys) =>
         Complete.Where(setting => !keys.Contains(setting.Key)).Concat(keys.Select(key => KeyValuePair.Create(key, (string?)null))).ToDictionary();
-
-    // The factory's short retries left out, so each module's default retries apply.
-    private static readonly Dictionary<string, string?> DefaultRetries =
-        ApiFactory.ShortRetries.ToDictionary(setting => setting.Key, _ => (string?)null);
-
-    private static readonly Dictionary<string, string?> Complete = new()
-    {
-        ["Notifications:Resend:ApiKey"] = "re_test_key",
-        ["Notifications:Resend:From"] = "no-reply@app.test",
-    };
 
     // The host creates its hosted services before it checks the settings, and its services dispose them with the host. The services
     // count as disposed before they dispose this one.

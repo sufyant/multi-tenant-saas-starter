@@ -12,12 +12,15 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // creation schedules come after the test.
 public sealed class GetTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
+
     private ApiFactory _api = null!;
+
     private PlatformTenants _tenants = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -156,8 +159,6 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.not_found");
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
     // Each Owner as "userId|firstName|lastName|email".
     private static IEnumerable<string> Owners(JsonElement tenant) =>
         tenant.GetProperty("owners").EnumerateArray().Select(owner =>
@@ -169,4 +170,6 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var invitation = tenant.GetProperty("ownerInvitation");
         return $"{invitation.GetProperty("email").GetString()}|{invitation.GetProperty("expiresAt").GetDateTimeOffset():O}|{invitation.GetProperty("state").GetString()}";
     }
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 }

@@ -11,6 +11,8 @@ public sealed class SystemAdminDirectoryTests(Database database)
 {
     private const string FirstAdminEmail = "First.Admin@Example.com";
 
+    private string _database = null!;
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -97,7 +99,13 @@ public sealed class SystemAdminDirectoryTests(Database database)
         (await database.ScalarAsSuperuserAsync<Guid>("SELECT user_id FROM control_plane.system_admins", _database)).ShouldBe(user.Id);
     }
 
-    private string _database = null!;
+    private static async Task<IReadOnlySet<string>?> VisitAsync(IServiceProvider services, string externalId, bool secondFactorVerified = true)
+    {
+        await using var scope = services.CreateAsyncScope();
+
+        return await scope.ServiceProvider.GetRequiredService<ISystemAdminDirectory>()
+            .FindPlatformPermissionsAsync(externalId, secondFactorVerified, Cancellation);
+    }
 
     private async Task<ServiceProvider> WithoutSystemAdminsAsync()
     {
@@ -111,14 +119,6 @@ public sealed class SystemAdminDirectoryTests(Database database)
         var externalId = Unique.ExternalId();
         database.Identity.AddAccount(externalId, verifiedEmails);
         return externalId;
-    }
-
-    private static async Task<IReadOnlySet<string>?> VisitAsync(IServiceProvider services, string externalId, bool secondFactorVerified = true)
-    {
-        await using var scope = services.CreateAsyncScope();
-
-        return await scope.ServiceProvider.GetRequiredService<ISystemAdminDirectory>()
-            .FindPlatformPermissionsAsync(externalId, secondFactorVerified, Cancellation);
     }
 
     private Task<long> SystemAdminCountAsync(IServiceProvider services) =>

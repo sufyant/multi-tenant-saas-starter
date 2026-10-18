@@ -15,13 +15,19 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // follows what a closed tenant means to its members.
 public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 {
+    private readonly Catalog _catalog = new(database);
+
+    private readonly TenantSummaries _summaries = new(database);
+
+    private readonly AuditEntries _audit = new(database);
+
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+
+    private ApiFactory _api = null!;
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private readonly Catalog _catalog = new(database);
-    private readonly TenantSummaries _summaries = new(database);
-    private readonly AuditEntries _audit = new(database);
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
-    private ApiFactory _api = null!;
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     public ValueTask InitializeAsync()
     {
@@ -30,8 +36,6 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
-
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     [Theory]
     [InlineData("Active")]
@@ -208,6 +212,12 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
     };
 
+    private static async Task<DateTimeOffset> ClosedAtOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("closedAt").GetDateTimeOffset();
+
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<string?> MembersOfAsync(Guid tenantId) =>
@@ -223,10 +233,4 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
-
-    private static async Task<DateTimeOffset> ClosedAtOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("closedAt").GetDateTimeOffset();
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

@@ -7,10 +7,11 @@ namespace Api.IntegrationTests.Tenant;
 // tenant.not_found, so neither its status nor its body, apart from the trace id, says which one it was.
 public sealed class TenantNotFoundTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {

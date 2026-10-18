@@ -54,6 +54,9 @@ public sealed class CorsMethodsTests(Database database) : IAsyncLifetime
         AllowedMethodsOf(response).ShouldNotContain("PUT");
     }
 
+    private static string[] AllowedMethodsOf(HttpResponseMessage response) =>
+        [.. response.Headers.GetValues("Access-Control-Allow-Methods").Single().Split(',').Select(method => method.Trim())];
+
     private async Task<HttpResponseMessage> PreflightAsync(string method, string path)
     {
         using var request = new HttpRequestMessage(HttpMethod.Options, path)
@@ -68,7 +71,4 @@ public sealed class CorsMethodsTests(Database database) : IAsyncLifetime
 
         return await _api.CreateClient().SendAsync(request, TestContext.Current.CancellationToken);
     }
-
-    private static string[] AllowedMethodsOf(HttpResponseMessage response) =>
-        [.. response.Headers.GetValues("Access-Control-Allow-Methods").Single().Split(',').Select(method => method.Trim())];
 }

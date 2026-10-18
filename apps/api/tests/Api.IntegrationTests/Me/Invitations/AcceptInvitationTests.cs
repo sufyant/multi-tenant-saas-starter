@@ -14,12 +14,17 @@ namespace Api.IntegrationTests.Me.Invitations;
 // People join a tenant only through an invitation.
 public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 {
+    private readonly Catalog _catalog = new(database);
+
+    private readonly AuditEntries _audit = new(database);
+
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 4, 9, 0, 0, TimeSpan.Zero));
+
+    private ApiFactory _api = null!;
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private readonly Catalog _catalog = new(database);
-    private readonly AuditEntries _audit = new(database);
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 4, 9, 0, 0, TimeSpan.Zero));
-    private ApiFactory _api = null!;
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     public ValueTask InitializeAsync()
     {
@@ -28,8 +33,6 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
-
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     [Fact]
     public async Task AcceptInvitation_InvitedPerson_BecomesAMemberOfTheTenant()
@@ -571,6 +574,19 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(accepted)).ShouldBe("invitation.not_found");
     }
 
+    // An invitation code is `<tenantId>.<secret>`.
+    private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];
+
+    private static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
+
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
+
+    private static async Task<Guid> IdOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
     // Creating a tenant invites its first owner, here someone who already has an account, so the link carries our invitation
     // code.
     private async Task<(string Slug, string Invitee, string Code)> InviteSomeoneWithAnAccountAsync()
@@ -621,20 +637,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
-    // An invitation code is `<tenantId>.<secret>`.
-    private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];
-
-    private static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
-
-    private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
-
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
-    private static async Task<Guid> IdOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
     private Task<HttpResponseMessage> RevokeAsync(string userId, Guid tenantId, Guid invitationId) =>
         _api.CreateClient(userId).DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitationId}", Cancellation);

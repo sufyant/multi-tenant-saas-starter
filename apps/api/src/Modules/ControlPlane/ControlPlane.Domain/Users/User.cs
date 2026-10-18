@@ -17,6 +17,18 @@ internal sealed class User(Guid id, string externalId)
     /// </summary>
     public const int TimeZoneMaxLength = 64;
 
+    // Static members are initialized in the order of the text, so the expression comes before its compiled form.
+    private static readonly Expression<Func<User, UserStatus>> StatusExpression = user =>
+        user.DeletedAt != null ? UserStatus.Deleted : user.SuspendedAt != null ? UserStatus.Suspended : UserStatus.Active;
+
+    private static readonly Func<User, UserStatus> CompiledStatusOf = StatusExpression.Compile();
+
+    /// <summary>
+    /// The user's status: a deletion outranks a suspension, because the identity provider no longer knows the person. It is an
+    /// expression, so the catalog's queries filter by the same rule (B9).
+    /// </summary>
+    public static Expression<Func<User, UserStatus>> StatusOf => StatusExpression;
+
     public Guid Id { get; private init; } = id;
 
     public string ExternalId { get; private init; } = externalId;
@@ -53,15 +65,6 @@ internal sealed class User(Guid id, string externalId)
     /// transaction; the database adds one or takes one away, so two tenants' commands for one user never lose a change.
     /// </summary>
     public int MembershipCount { get; private init; }
-
-    /// <summary>
-    /// The user's status: a deletion outranks a suspension, because the identity provider no longer knows the person. It is an
-    /// expression, so the catalog's queries filter by the same rule (B9).
-    /// </summary>
-    public static Expression<Func<User, UserStatus>> StatusOf { get; } = user =>
-        user.DeletedAt != null ? UserStatus.Deleted : user.SuspendedAt != null ? UserStatus.Suspended : UserStatus.Active;
-
-    private static readonly Func<User, UserStatus> CompiledStatusOf = StatusOf.Compile();
 
     public UserStatus Status => CompiledStatusOf(this);
 

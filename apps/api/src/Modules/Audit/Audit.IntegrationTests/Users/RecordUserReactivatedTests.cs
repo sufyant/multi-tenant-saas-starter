@@ -11,9 +11,9 @@ namespace Audit.IntegrationTests.Users;
 // user belongs to no tenant (K3).
 public sealed class RecordUserReactivatedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 15, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordUserReactivated_UserReactivated_WritesThePlatformEntryByTheAdmin()

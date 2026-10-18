@@ -23,6 +23,13 @@ public sealed partial class NamesAndPlacesTests
 
     public static TheoryData<string> ModuleDbContextNames => [.. ModuleDbContexts.Types().Select(type => type.FullName!)];
 
+    public static TheoryData<string> ModuleNames => [.. Solution.Modules];
+
+    public static TheoryData<string> UnitTestProjects => [.. Solution.TestProjects.Where(project => project.EndsWith(".UnitTests", StringComparison.Ordinal))];
+
+    public static TheoryData<string> ModuleIntegrationTestProjects =>
+        [.. Solution.Modules.Select(module => $"{module}.IntegrationTests").Where(Solution.TestProjects.Contains)];
+
     // N4: a module's schema is its name in snake case, so the schema says which module owns a table.
     [Theory]
     [MemberData(nameof(ModuleDbContextNames))]
@@ -293,13 +300,6 @@ public sealed partial class NamesAndPlacesTests
         resources.ShouldNotBeEmpty();
         unknown.ShouldBeEmpty();
     }
-
-    public static TheoryData<string> ModuleNames => [.. Solution.Modules];
-
-    public static TheoryData<string> UnitTestProjects => [.. Solution.TestProjects.Where(project => project.EndsWith(".UnitTests", StringComparison.Ordinal))];
-
-    public static TheoryData<string> ModuleIntegrationTestProjects =>
-        [.. Solution.Modules.Select(module => $"{module}.IntegrationTests").Where(Solution.TestProjects.Contains)];
 
     private static IEnumerable<Type> PermissionLists() =>
         Solution.LayerOfEveryModule("Contracts")

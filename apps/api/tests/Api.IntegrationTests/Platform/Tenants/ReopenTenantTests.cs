@@ -14,15 +14,19 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // announces nothing. A test of both a closure and a reopening sits here, with the use case it checks last (N9).
 public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
 
     private readonly Catalog _catalog = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Theory]
     [InlineData("close")]
@@ -138,15 +142,15 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
-    private Task<long> AuditEntryCountAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<long>(
-            $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
-
     private static async Task<string?> SuspensionReasonOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("suspensionReason").GetString();
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+    private Task<long> AuditEntryCountAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
 }

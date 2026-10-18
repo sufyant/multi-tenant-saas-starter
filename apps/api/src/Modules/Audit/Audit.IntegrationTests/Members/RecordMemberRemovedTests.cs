@@ -12,9 +12,9 @@ namespace Audit.IntegrationTests.Members;
 // user's deletion, and the member acted on, by id (K3). The details hold the role the member had, never a name or an email address.
 public sealed class RecordMemberRemovedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordMemberRemoved_MemberRemoved_WritesTheTenantEntryWithTheRoleTheMemberHad()

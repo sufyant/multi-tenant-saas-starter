@@ -10,11 +10,13 @@ namespace Api.IntegrationTests.Platform.Users;
 // identity provider is not told. A test of both a suspension and a reactivation sits here, with the use case it checks last (N9).
 public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     // K3: a user belongs to no tenant, so only the platform's log records it, by the system admin who acted. A repeat changes nothing
     // and is not recorded again.
@@ -83,11 +85,11 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<DateTime?> SuspendedAtAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<DateTime?>($"SELECT suspended_at FROM control_plane.users WHERE external_id = '{externalId}'");
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

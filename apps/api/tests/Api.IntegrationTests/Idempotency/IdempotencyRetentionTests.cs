@@ -72,14 +72,6 @@ public sealed class IdempotencyRetentionTests(Database database)
         host.Services.GetServices<Microsoft.Extensions.Hosting.IHostedService>().Select(service => service.GetType().Name).ShouldNotContain("IdempotencyCleanup");
     }
 
-    // Section 9, rule 6.
-    private async Task<string> OwnDatabaseAsync()
-    {
-        var name = await database.CreateMigratedDatabaseAsync();
-        await database.CreateProbesAsync(name);
-        return database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name);
-    }
-
     private static IdempotencyKey Row(string subject, string key, DateTimeOffset createdAt, DateTimeOffset? lockedUntil = null) => new()
     {
         Subject = subject,
@@ -91,4 +83,12 @@ public sealed class IdempotencyRetentionTests(Database database)
         Lease = Guid.NewGuid(),
         LockedUntil = lockedUntil,
     };
+
+    // Section 9, rule 6.
+    private async Task<string> OwnDatabaseAsync()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await database.CreateProbesAsync(name);
+        return database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name);
+    }
 }

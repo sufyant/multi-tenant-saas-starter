@@ -5,6 +5,9 @@ namespace Api.IntegrationTests.Fixtures;
 // A record of the tenant's log starts with its tenant id. A test that reads the logs through the API adds its records here.
 internal sealed class AuditEntries(Database database)
 {
+    private const string Record =
+        "concat_ws('|', operation, actor_kind, coalesce(actor_id::text, '-'), target_kind, target_id, coalesce(target_name, '-'))";
+
     public Task<string?> TenantLogAsync(Guid targetId) =>
         database.ScalarAsSuperuserAsync<string>(
             $"SELECT string_agg(tenant_id || ':' || {Record}, ', ' ORDER BY occurred_at, id) FROM audit.entries WHERE target_id = '{targetId}'");
@@ -70,7 +73,4 @@ internal sealed class AuditEntries(Database database)
     }
 
     private static string Text(object? value) => value is null ? "NULL" : $"'{value}'";
-
-    private const string Record =
-        "concat_ws('|', operation, actor_kind, coalesce(actor_id::text, '-'), target_kind, target_id, coalesce(target_name, '-'))";
 }

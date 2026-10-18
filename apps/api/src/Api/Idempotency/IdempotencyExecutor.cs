@@ -13,8 +13,11 @@ namespace Api.Idempotency;
 internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbContext api, IMessageBus bus, TimeProvider time) : IIdempotencyExecutor
 {
     public const string SubjectHeader = "idempotency-subject";
+
     public const string KeyHeader = "idempotency-key";
+
     public const string LeaseHeader = "idempotency-lease";
+
     public const string TraceHeader = "idempotency-trace";
 
     // I5: a replayed answer carries this response header. The OpenAPI document declares it.
@@ -33,6 +36,17 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
 
         return await ClaimAsync<T>(context, subject, key, lease, cancellationToken)
             ?? await RunAsync<T>(command, tenantId, context, subject, key, lease, cancellationToken);
+    }
+
+    private static async Task<string> HashRequestAsync(HttpRequest request, CancellationToken cancellationToken)
+    {
+        request.Body.Position = 0;
+        using var sha256 = SHA256.Create();
+        await using var hashing = new CryptoStream(Stream.Null, sha256, CryptoStreamMode.Write, leaveOpen: true);
+        await request.Body.CopyToAsync(hashing, cancellationToken);
+        await hashing.WriteAsync(JsonSerializer.SerializeToUtf8Bytes(request.RouteValues.OrderBy(pair => pair.Key, StringComparer.Ordinal)), cancellationToken);
+        await hashing.FlushFinalBlockAsync(cancellationToken);
+        return Convert.ToHexStringLower(sha256.Hash!);
     }
 
     // Claims the key for this request with the lease, or answers without running the command: the saved result of a finished request
@@ -122,17 +136,6 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
             await ReleaseAsync(subject, key, lease);
             throw;
         }
-    }
-
-    private static async Task<string> HashRequestAsync(HttpRequest request, CancellationToken cancellationToken)
-    {
-        request.Body.Position = 0;
-        using var sha256 = SHA256.Create();
-        await using var hashing = new CryptoStream(Stream.Null, sha256, CryptoStreamMode.Write, leaveOpen: true);
-        await request.Body.CopyToAsync(hashing, cancellationToken);
-        await hashing.WriteAsync(JsonSerializer.SerializeToUtf8Bytes(request.RouteValues.OrderBy(pair => pair.Key, StringComparer.Ordinal)), cancellationToken);
-        await hashing.FlushFinalBlockAsync(cancellationToken);
-        return Convert.ToHexStringLower(sha256.Hash!);
     }
 
     private Task<int> ReleaseAsync(string subject, string key, Guid lease) => api.Database.ExecuteSqlAsync($"""

@@ -12,9 +12,9 @@ namespace ControlPlane.Infrastructure.Persistence.Tenants;
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
 public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITenantRepository
 {
-    internal IQueryable<Membership> Memberships => controlPlane.TenantMemberships;
-
     Guid ITenantRepository.TenantId => controlPlane.ActiveTenant;
+
+    internal IQueryable<Membership> Memberships => controlPlane.TenantMemberships;
 
     async Task<Tenant?> ITenantRepository.FindTenantForUpdateAsync(CancellationToken cancellationToken)
     {

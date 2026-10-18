@@ -36,16 +36,6 @@ public sealed class CommandAuditTests : IAsyncLifetime
         unaudited.ShouldBeEmpty("A command publishes, through the outbox, one event that Audit handles (K3).");
     }
 
-    // The handler methods of each message type: its chain's own and those Wolverine separated onto endpoints of their own (W4).
-    private Dictionary<Type, MethodInfo[]> HandlersByMessage()
-    {
-        var graph = _application.Services.GetRequiredService<HandlerGraph>();
-        return graph.Chains
-            .Concat(graph.Chains.SelectMany(chain => chain.ByEndpoint))
-            .GroupBy(chain => chain.MessageType)
-            .ToDictionary(message => message.Key, message => message.SelectMany(chain => chain.Handlers).Select(call => call.Method).Distinct().ToArray());
-    }
-
     private static List<Type> CommandsOf(Dictionary<Type, MethodInfo[]> handlers)
     {
         var created = Solution.Modules
@@ -82,4 +72,14 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // A type and every type argument in it: Task<(Result<T>, TenantSuspendedEvent?)> gives TenantSuspendedEvent, among others.
     private static IEnumerable<Type> TypesIn(Type type) =>
         type.IsGenericType ? [type, .. type.GetGenericArguments().SelectMany(TypesIn)] : [type];
+
+    // The handler methods of each message type: its chain's own and those Wolverine separated onto endpoints of their own (W4).
+    private Dictionary<Type, MethodInfo[]> HandlersByMessage()
+    {
+        var graph = _application.Services.GetRequiredService<HandlerGraph>();
+        return graph.Chains
+            .Concat(graph.Chains.SelectMany(chain => chain.ByEndpoint))
+            .GroupBy(chain => chain.MessageType)
+            .ToDictionary(message => message.Key, message => message.SelectMany(chain => chain.Handlers).Select(call => call.Method).Distinct().ToArray());
+    }
 }

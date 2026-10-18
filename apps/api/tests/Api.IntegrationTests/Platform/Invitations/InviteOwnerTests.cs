@@ -16,13 +16,17 @@ namespace Api.IntegrationTests.Platform.Invitations;
 // and the old link answers as a cancelled one. A tenant with an Owner is refused, under the tenant's lock (K6).
 public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private ApiFactory _api = null!;
+
     private PlatformTenants _tenants = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -277,10 +281,10 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant);
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> InvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");

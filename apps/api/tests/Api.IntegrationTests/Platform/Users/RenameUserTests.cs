@@ -10,11 +10,13 @@ namespace Api.IntegrationTests.Platform.Users;
 // name, so it is not told.
 public sealed class RenameUserTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -112,9 +114,9 @@ public sealed class RenameUserTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(renamed)).ShouldBe("user.not_found");
     }
 
-    private Task<HttpResponseMessage> RenameAsync(string admin, Guid userId, string firstName, string lastName) =>
-        _api.CreateClient(admin, secondFactor: true).PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName, lastName }, Cancellation);
-
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private Task<HttpResponseMessage> RenameAsync(string admin, Guid userId, string firstName, string lastName) =>
+        _api.CreateClient(admin, secondFactor: true).PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName, lastName }, Cancellation);
 }

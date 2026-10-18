@@ -11,9 +11,9 @@ namespace Audit.IntegrationTests.Users;
 // declares nothing: a user belongs to no tenant (K3).
 public sealed class RecordUserPreferencesChangedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 15, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     // A user changes their own preferences, so they are the actor and the target. The entry holds no value: details are empty.
     [Fact]

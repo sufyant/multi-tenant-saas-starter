@@ -7,13 +7,19 @@ namespace ControlPlane.UnitTests.Tenants;
 
 public sealed class InvitationTests
 {
-    private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000401");
-    private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
-    private static readonly Guid ActorId = new("0199a8f0-0000-7000-8000-000000000301");
-    private static readonly Guid AccepterId = new("0199a8f0-0000-7000-8000-000000000302");
-    private static readonly DateTimeOffset Now = new(2026, 10, 4, 9, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
     private const string Token = "the-invitation-token";
+
+    private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000401");
+
+    private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
+
+    private static readonly Guid ActorId = new("0199a8f0-0000-7000-8000-000000000301");
+
+    private static readonly Guid AccepterId = new("0199a8f0-0000-7000-8000-000000000302");
+
+    private static readonly DateTimeOffset Now = new(2026, 10, 4, 9, 0, 0, TimeSpan.Zero);
+
+    private static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
 
     // The secret is born with the invitation, and only its hash is kept.
     [Fact]

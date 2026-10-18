@@ -19,15 +19,21 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 // 6, "Invitation sign-up"). The daily limit is 2 here, so a test reaches it with three invitations.
 public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private const int DailyLimit = 2;
 
     private readonly Catalog _catalog = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     public ValueTask InitializeAsync()
     {
@@ -39,8 +45,6 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
-
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     [Theory]
     [InlineData("Owner")]
@@ -580,6 +584,20 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await _catalog.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
     }
 
+    private static (string? Role, string? ReplacedInvitationId) Details(string? json)
+    {
+        var details = JsonDocument.Parse(json!).RootElement;
+        return (details.GetProperty("role").GetString(), details.GetProperty("replacedInvitationId").GetString());
+    }
+
+    private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
+
+    private static async Task<Guid> IdOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     // Runs the two requests while another transaction holds the tenant row, until both wait for it, then lets them go.
     private async Task<HttpStatusCode[]> WhileTheTenantIsHeldAsync(Guid tenantId, Func<Task<HttpResponseMessage>> one, Func<Task<HttpResponseMessage>> other)
     {
@@ -626,18 +644,4 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     private Task<long> PendingInvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'");
-
-    private static (string? Role, string? ReplacedInvitationId) Details(string? json)
-    {
-        var details = JsonDocument.Parse(json!).RootElement;
-        return (details.GetProperty("role").GetString(), details.GetProperty("replacedInvitationId").GetString());
-    }
-
-    private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
-
-    private static async Task<Guid> IdOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

@@ -12,9 +12,9 @@ namespace Audit.IntegrationTests.Users;
 // belongs to no tenant (K3).
 public sealed class RecordUserSuspendedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 15, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordUserSuspended_UserSuspended_WritesThePlatformEntryByTheAdmin()

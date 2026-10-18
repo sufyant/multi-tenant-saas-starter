@@ -16,7 +16,7 @@ public sealed class IdentityProviderOptions
     // Unset unless configured, so configured pauses replace the defaults: the binder would add them to an array it finds.
     public TimeSpan[]? RetryDelays { get; set; }
 
-    internal IReadOnlyList<TimeSpan> Delays => RetryDelays ?? DefaultRetryDelays;
-
     public bool IsValid => GrowingRetries.AreValid(Delays);
+
+    internal IReadOnlyList<TimeSpan> Delays => RetryDelays ?? DefaultRetryDelays;
 }

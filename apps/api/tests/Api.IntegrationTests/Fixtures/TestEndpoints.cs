@@ -10,6 +10,43 @@ using Wolverine;
 
 namespace Api.IntegrationTests.Fixtures;
 
+public static class GreetHandler
+{
+    public static Result<Greeting> Handle(Greet command) => new Greeting($"Hello, {command.Name}");
+}
+
+public static class AcknowledgeHandler
+{
+    public static Result Handle(Acknowledge command) => Result.Success();
+}
+
+public static class FailHandler
+{
+    public static Result Handle(Fail command) => new Error(ErrorCode.Declare("test.failure"), "The test asked for a failure.", command.Type);
+}
+
+public static class ExplodeHandler
+{
+    public static Result Handle(Explode command) =>
+        throw new InvalidOperationException("Host=internal-db;Password=hunter2");
+}
+
+// Wolverine only discovers public handlers, messages and validators.
+public sealed record Greet(string Name);
+
+public sealed record Greeting(string Text);
+
+public sealed class GreetValidator : AbstractValidator<Greet>
+{
+    public GreetValidator() => RuleFor(command => command.Name).NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required));
+}
+
+public sealed record Acknowledge;
+
+public sealed record Fail(ErrorType Type);
+
+public sealed record Explode;
+
 internal static class TestEndpoints
 {
     // A permission no built-in role holds: it is in no pool.
@@ -27,23 +64,6 @@ internal static class TestEndpoints
 
         // An endpoint that states no access at all (A5).
         v1.MapGet("/unstated", () => Results.Ok());
-    }
-
-    private static void MapOpen(RouteGroupBuilder v1)
-    {
-        v1.MapPost("/greetings", (Greet command, IMessageBus bus, CancellationToken cancellationToken) =>
-            bus.InvokeAsync<Result<Greeting>>(command, cancellationToken));
-
-        v1.MapPost("/acknowledgements", (Acknowledge command, IMessageBus bus, CancellationToken cancellationToken) =>
-            bus.InvokeAsync<Result>(command, cancellationToken));
-
-        v1.MapPost("/failures/{type}", (ErrorType type, IMessageBus bus, CancellationToken cancellationToken) =>
-            bus.InvokeAsync<Result>(new Fail(type), cancellationToken));
-
-        v1.MapPost("/explosions", (IMessageBus bus, CancellationToken cancellationToken) =>
-            bus.InvokeAsync<Result>(new Explode(), cancellationToken));
-
-        v1.MapGet("/ping", () => Results.Ok());
     }
 
     // Tenant endpoints require a permission (A5); every built-in role holds this one, so any member gets in.
@@ -68,41 +88,21 @@ internal static class TestEndpoints
 
     public static void MapPlatform(RouteGroupBuilder platform) =>
         platform.MapGet("/ping", () => Results.Ok()).RequireAuthorization(Permissions.PlatformTenantsCreate);
-}
 
-// Wolverine only discovers public handlers, messages and validators.
-public sealed record Greet(string Name);
+    private static void MapOpen(RouteGroupBuilder v1)
+    {
+        v1.MapPost("/greetings", (Greet command, IMessageBus bus, CancellationToken cancellationToken) =>
+            bus.InvokeAsync<Result<Greeting>>(command, cancellationToken));
 
-public sealed record Greeting(string Text);
+        v1.MapPost("/acknowledgements", (Acknowledge command, IMessageBus bus, CancellationToken cancellationToken) =>
+            bus.InvokeAsync<Result>(command, cancellationToken));
 
-public sealed class GreetValidator : AbstractValidator<Greet>
-{
-    public GreetValidator() => RuleFor(command => command.Name).NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required));
-}
+        v1.MapPost("/failures/{type}", (ErrorType type, IMessageBus bus, CancellationToken cancellationToken) =>
+            bus.InvokeAsync<Result>(new Fail(type), cancellationToken));
 
-public static class GreetHandler
-{
-    public static Result<Greeting> Handle(Greet command) => new Greeting($"Hello, {command.Name}");
-}
+        v1.MapPost("/explosions", (IMessageBus bus, CancellationToken cancellationToken) =>
+            bus.InvokeAsync<Result>(new Explode(), cancellationToken));
 
-public sealed record Acknowledge;
-
-public static class AcknowledgeHandler
-{
-    public static Result Handle(Acknowledge command) => Result.Success();
-}
-
-public sealed record Fail(ErrorType Type);
-
-public static class FailHandler
-{
-    public static Result Handle(Fail command) => new Error(ErrorCode.Declare("test.failure"), "The test asked for a failure.", command.Type);
-}
-
-public sealed record Explode;
-
-public static class ExplodeHandler
-{
-    public static Result Handle(Explode command) =>
-        throw new InvalidOperationException("Host=internal-db;Password=hunter2");
+        v1.MapGet("/ping", () => Results.Ok());
+    }
 }

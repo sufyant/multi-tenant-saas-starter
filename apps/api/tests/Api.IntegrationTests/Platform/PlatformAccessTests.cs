@@ -14,18 +14,9 @@ namespace Api.IntegrationTests.Platform;
 // an idempotency key, because each reads or sets a state (I1).
 public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
-
-    public ValueTask InitializeAsync()
-    {
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
-        return ValueTask.CompletedTask;
-    }
-
-    public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     public static TheoryData<string, string, string> Endpoints => new()
     {
@@ -73,6 +64,16 @@ public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
         { "POST", "/v1/admin/users/{userId:guid}/reactivate" },
         { "GET", "/v1/admin/audit-log" },
     };
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    public ValueTask InitializeAsync()
+    {
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
     [MemberData(nameof(OldRoutes))]

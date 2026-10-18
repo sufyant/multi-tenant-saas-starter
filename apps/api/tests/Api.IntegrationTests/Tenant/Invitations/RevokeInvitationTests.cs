@@ -13,12 +13,17 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 // at once (K2).
 public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
 {
+    private readonly Catalog _catalog = new(database);
+
+    private readonly TenantSummaries _summaries = new(database);
+
+    private readonly AuditEntries _audit = new(database);
+
+    private ApiFactory _api = null!;
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private readonly Catalog _catalog = new(database);
-    private readonly TenantSummaries _summaries = new(database);
-    private readonly AuditEntries _audit = new(database);
-    private ApiFactory _api = null!;
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     public ValueTask InitializeAsync()
     {
@@ -27,8 +32,6 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
-
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     [Theory]
     [InlineData("Owner")]
@@ -160,9 +163,9 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         _api.Identity.Withdrawn.Where(withdrawn => withdrawn == signUp).ShouldHaveSingleItem();
     }
 
-    private Task<HttpResponseMessage> RevokeAsync(string userId, Guid tenantId, Guid invitationId) =>
-        _api.CreateClient(userId).DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitationId}", Cancellation);
-
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private Task<HttpResponseMessage> RevokeAsync(string userId, Guid tenantId, Guid invitationId) =>
+        _api.CreateClient(userId).DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitationId}", Cancellation);
 }

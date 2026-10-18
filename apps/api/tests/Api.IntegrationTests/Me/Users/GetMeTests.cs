@@ -10,10 +10,11 @@ namespace Api.IntegrationTests.Me.Users;
 // first system admin, so a signed-in person the catalog does not know is not found, and the web shows "no access yet".
 public sealed class GetMeTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {

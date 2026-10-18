@@ -14,12 +14,15 @@ namespace Api.IntegrationTests.Platform.Users;
 // deletes its user. A tenant always has at least one Owner (K1), so the tenant's last Owner is never deleted.
 public sealed class DeleteUserTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -215,6 +218,15 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(me)).ShouldBe("user.deleted");
     }
 
+    private static async Task ExecuteAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string sql)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        await command.ExecuteNonQueryAsync(Cancellation);
+    }
+
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private Task<HttpResponseMessage> DeleteAsync(string admin, Guid userId) =>
         _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
 
@@ -239,13 +251,4 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     // How many sessions wait for a lock that the holder's session holds.
     private Task<long> WaitingBehindAsync(int holder) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))");
-
-    private static async Task ExecuteAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string sql)
-    {
-        await using var command = new NpgsqlCommand(sql, connection, transaction);
-        await command.ExecuteNonQueryAsync(Cancellation);
-    }
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

@@ -9,6 +9,8 @@ namespace ControlPlane.UnitTests.Tenants;
 // role change and a removal (K1). Each check is pure up to the change, so a rejection changes nothing.
 public sealed class TenantTests
 {
+    private const string Reason = "Unpaid invoices";
+
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
 
     private static readonly DateTimeOffset Now = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
@@ -17,7 +19,7 @@ public sealed class TenantTests
 
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
-    private const string Reason = "Unpaid invoices";
+    public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
 
     // Settings › General shows when the tenant was created.
     [Fact]
@@ -78,8 +80,6 @@ public sealed class TenantTests
 
         tenant.Value.Name.ShouldBe(name);
     }
-
-    public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
 
     [Theory]
     [MemberData(nameof(InvalidNames))]

@@ -10,10 +10,11 @@ namespace Api.IntegrationTests.Tenant.Members;
 // permission check, through the composed application.
 public sealed class ListMembersTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -395,14 +396,6 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
-    private async Task AddMembersAsync(Guid tenantId, params string[] lastNames)
-    {
-        foreach (var lastName in lastNames)
-        {
-            await _catalog.AddMemberAsync(tenantId, await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: lastName));
-        }
-    }
-
     private static List<(Guid UserId, string? Email, string? FirstName, string? LastName, string Role)> Profiles(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => (
@@ -418,4 +411,12 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
 
     private static List<(Guid UserId, string Role)> Members(JsonElement page) =>
         [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("userId").GetGuid(), Roles.Of(item)))];
+
+    private async Task AddMembersAsync(Guid tenantId, params string[] lastNames)
+    {
+        foreach (var lastName in lastNames)
+        {
+            await _catalog.AddMemberAsync(tenantId, await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: lastName));
+        }
+    }
 }

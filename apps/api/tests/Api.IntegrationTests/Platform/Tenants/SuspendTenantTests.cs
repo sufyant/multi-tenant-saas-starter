@@ -10,13 +10,24 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // SuspendedTenantTests follows what a suspended tenant means to its members.
 public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private const string Reason = "Unpaid invoices";
 
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    public static TheoryData<string, string> WrongReasons => new()
+    {
+        { """{}""", "required" },
+        { """{"reason":null}""", "required" },
+        { """{"reason":""}""", "required" },
+        { """{"reason":"   "}""", "required" },
+        { $$"""{"reason":"{{new string('r', 501)}}"}""", "too_long" },
+    };
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task SuspendTenant_Twice_IsRecordedOnceInEachLog()
@@ -95,21 +106,12 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    public static TheoryData<string, string> WrongReasons => new()
-    {
-        { """{}""", "required" },
-        { """{"reason":null}""", "required" },
-        { """{"reason":""}""", "required" },
-        { """{"reason":"   "}""", "required" },
-        { $$"""{"reason":"{{new string('r', 501)}}"}""", "too_long" },
-    };
+    private static async Task<string?> SuspensionReasonOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("suspensionReason").GetString();
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
-
-    private static async Task<string?> SuspensionReasonOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("suspensionReason").GetString();
 }

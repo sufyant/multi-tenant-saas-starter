@@ -50,6 +50,10 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     /// <summary>Fixed when the tenant creation starts, like <see cref="InvitationEmailTimeout"/>.</summary>
     public TimeSpan CancellationTimeout { get; private set; }
 
+    private bool IsActivatingOrSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
+
+    private bool IsFinal => State is TenantCreationSagaState.Completed or TenantCreationSagaState.Cancelled or TenantCreationSagaState.NeedsAttention;
+
     /// <summary>Step 1 starts the tenant creation: the tenant is activated with the link the owner is invited by, within the activation timeout.</summary>
     public static (TenantCreationSaga Saga, ActivateTenantCommand Activate, ActivationTimedOut Timeout) Begin(
         Guid tenantId,
@@ -112,10 +116,6 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     public OutgoingMessages Handle(Fault<CancelTenantCommand> fault) => State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
 
     public OutgoingMessages Handle(Fault<CancelInvitationCommand> fault) => IsFinal ? [] : NeedsAttention();
-
-    private bool IsActivatingOrSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
-
-    private bool IsFinal => State is TenantCreationSagaState.Completed or TenantCreationSagaState.Cancelled or TenantCreationSagaState.NeedsAttention;
 
     private OutgoingMessages NeedsAttentionWithTheInvitationCancelled() =>
         MoveTo(TenantCreationSagaState.NeedsAttention, new CancelInvitationCommand(Id, InvitationId), new RaiseTenantCreationAlarmCommand(Id));

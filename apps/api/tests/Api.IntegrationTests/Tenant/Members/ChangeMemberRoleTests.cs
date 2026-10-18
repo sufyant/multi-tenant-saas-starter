@@ -11,12 +11,15 @@ namespace Api.IntegrationTests.Tenant.Members;
 // Owner role, and the last Owner keeps it (K1).
 public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -329,6 +332,9 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "Hopper")).ShouldBe(0);
     }
 
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private Task<string?> RoleOfAsync(Guid tenantId, Guid userId) =>
         database.ScalarAsSuperuserAsync<string>(
             $"""
@@ -342,7 +348,4 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
             SELECT count(*) FROM control_plane.memberships JOIN control_plane.roles ON roles.id = memberships.role_id
             WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'Owner'
             """);
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

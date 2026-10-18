@@ -8,6 +8,11 @@ public sealed class ContractsShapeTests
     private const BindingFlags Declared =
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
+    // Section 2: another module reaches a contract only through its interface. The class behind it is internal sealed, in the
+    // Infrastructure project of the module that publishes the contract. A class that another module's handler takes is public and
+    // sealed, so that Wolverine's generated code builds it on the handler's DbContext (W1, W9).
+    private static readonly string[] BuiltByWolverine = ["ControlPlane.Infrastructure.Persistence.Users.UserDirectory"];
+
     public static TheoryData<string> Modules => [.. Solution.Modules];
 
     [Theory]
@@ -27,11 +32,6 @@ public sealed class ContractsShapeTests
         otherShapes.ShouldBeEmpty();
         domainTypesShown.ShouldBeEmpty();
     }
-
-    // Section 2: another module reaches a contract only through its interface. The class behind it is internal sealed, in the
-    // Infrastructure project of the module that publishes the contract. A class that another module's handler takes is public and
-    // sealed, so that Wolverine's generated code builds it on the handler's DbContext (W1, W9).
-    private static readonly string[] BuiltByWolverine = ["ControlPlane.Infrastructure.Persistence.Users.UserDirectory"];
 
     [Theory]
     [MemberData(nameof(Modules))]

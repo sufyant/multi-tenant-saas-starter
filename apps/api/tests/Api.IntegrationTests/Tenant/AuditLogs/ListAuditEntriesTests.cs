@@ -11,13 +11,15 @@ namespace Api.IntegrationTests.Tenant.AuditLogs;
 // Each test adds the records of a tenant of its own.
 public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset Start = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -221,26 +223,6 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         Described(JsonElement.Parse(answer)).ShouldBe([$"member.role_changed|user|{named}|Ada Lovelace|false|user|{unnamed}|-|false"]);
     }
 
-    // The tenant's records, one minute apart, oldest first.
-    private async Task<Guid[]> AddEntriesAsync(Guid tenantId, int count)
-    {
-        var entries = new Guid[count];
-        foreach (var minute in Enumerable.Range(0, count))
-        {
-            entries[minute] = await _audit.AddTenantEntryAsync(tenantId, Start.AddMinutes(minute));
-        }
-
-        return entries;
-    }
-
-    // The cursor with one character in its id changed: it still decodes, but its checksum no longer matches.
-    private static string Changed(string cursor) => string.Concat(cursor[..20], cursor[20] == 'A' ? "B" : "A", cursor[21..]);
-
-    private static async Task<JsonElement> PageAsync(HttpClient client, Guid tenantId, string query) =>
-        await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/audit-log?{query}", Cancellation);
-
-    private static IEnumerable<Guid> Ids(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid());
-
     // Each entry as "operation|actor kind|actor user id|actor name|actor deleted|target kind|target id|target name|target deleted", with
     // "-" for an empty value.
     internal static IEnumerable<string> Described(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item =>
@@ -252,6 +234,14 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
             target.GetProperty("id").GetString(), TextOf(target.GetProperty("name")), TextOf(target.GetProperty("deleted")));
     });
 
+    // The cursor with one character in its id changed: it still decodes, but its checksum no longer matches.
+    private static string Changed(string cursor) => string.Concat(cursor[..20], cursor[20] == 'A' ? "B" : "A", cursor[21..]);
+
+    private static async Task<JsonElement> PageAsync(HttpClient client, Guid tenantId, string query) =>
+        await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/audit-log?{query}", Cancellation);
+
+    private static IEnumerable<Guid> Ids(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid());
+
     private static string TextOf(JsonElement value) => value.ValueKind switch
     {
         JsonValueKind.Null => "-",
@@ -259,4 +249,16 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         JsonValueKind.False => "false",
         _ => value.GetString()!,
     };
+
+    // The tenant's records, one minute apart, oldest first.
+    private async Task<Guid[]> AddEntriesAsync(Guid tenantId, int count)
+    {
+        var entries = new Guid[count];
+        foreach (var minute in Enumerable.Range(0, count))
+        {
+            entries[minute] = await _audit.AddTenantEntryAsync(tenantId, Start.AddMinutes(minute));
+        }
+
+        return entries;
+    }
 }

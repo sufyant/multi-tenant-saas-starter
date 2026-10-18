@@ -61,6 +61,14 @@ public sealed class SagaMessageTests : IAsyncLifetime
         heardElsewhere.ShouldBeEmpty("Only a saga handles a ...Reply (N3).");
     }
 
+    private static bool IsReply(Type message) => message.Name.EndsWith("Reply", StringComparison.Ordinal);
+
+    private static bool IsTimeout(Type message) => message.Name.EndsWith("TimedOut", StringComparison.Ordinal);
+
+    private static bool IsFault(Type message) => message.IsGenericType && message.GetGenericTypeDefinition() == typeof(Fault<>);
+
+    private static bool IsSaga(Type handler) => handler.IsAssignableTo(typeof(Saga));
+
     private Dictionary<Type, Type[]> HandlersByMessage()
     {
         var graph = _application.Services.GetRequiredService<HandlerGraph>();
@@ -71,12 +79,4 @@ public sealed class SagaMessageTests : IAsyncLifetime
     }
 
     private List<KeyValuePair<Type, Type[]>> SagaMessages() => [.. HandlersByMessage().Where(message => message.Value.Any(IsSaga))];
-
-    private static bool IsReply(Type message) => message.Name.EndsWith("Reply", StringComparison.Ordinal);
-
-    private static bool IsTimeout(Type message) => message.Name.EndsWith("TimedOut", StringComparison.Ordinal);
-
-    private static bool IsFault(Type message) => message.IsGenericType && message.GetGenericTypeDefinition() == typeof(Fault<>);
-
-    private static bool IsSaga(Type handler) => handler.IsAssignableTo(typeof(Saga));
 }

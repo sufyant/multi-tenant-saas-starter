@@ -10,44 +10,6 @@ namespace SharedKernel;
 /// </summary>
 public readonly record struct CursorPosition(DateTimeOffset At, Guid Id);
 
-/// <summary>What a client asks of a cursor list: how many items, and the place after which the page starts; null is the first page.</summary>
-public sealed record CursorRequest(int Limit, CursorPosition? After)
-{
-    // K5: a cursor list has the page size limits of a list.
-    public const int MinLimit = PageRequest.MinPageSize;
-
-    public const int DefaultLimit = PageRequest.DefaultPageSize;
-
-    public const int MaxLimit = PageRequest.MaxPageSize;
-
-    /// <summary>
-    /// The page the client asked for, from what it sent. A limit left out takes the default. A cursor left out or empty is the first
-    /// page. A cursor that does not decode, or was changed, is refused.
-    /// </summary>
-    public static Result<CursorRequest> Create(string? cursor, int? limit)
-    {
-        if (limit is < MinLimit or > MaxLimit)
-        {
-            return Error.Validation(PagingErrorCodes.LimitInvalid, $"The limit is {MinLimit} to {MaxLimit}.");
-        }
-
-        if (string.IsNullOrEmpty(cursor))
-        {
-            return new CursorRequest(limit ?? DefaultLimit, null);
-        }
-
-        return Cursor.Decode(cursor) is { } after
-            ? new CursorRequest(limit ?? DefaultLimit, after)
-            : Error.Validation(PagingErrorCodes.CursorInvalid, "The cursor is not one this list gave.");
-    }
-}
-
-/// <summary>One page of a cursor list, and the cursor of the next page; null on the last page. There is no total.</summary>
-public sealed record CursorPage<T>(IReadOnlyList<T> Items, string? NextCursor)
-{
-    public CursorPage<TOut> Map<TOut>(Func<T, TOut> map) => new([.. Items.Select(map)], NextCursor);
-}
-
 public static class CursorPage
 {
     /// <summary>
@@ -118,4 +80,42 @@ public static class Cursor
     }
 
     private static byte[] Checksum(ReadOnlySpan<byte> payload) => SHA256.HashData(payload)[..ChecksumLength];
+}
+
+/// <summary>What a client asks of a cursor list: how many items, and the place after which the page starts; null is the first page.</summary>
+public sealed record CursorRequest(int Limit, CursorPosition? After)
+{
+    // K5: a cursor list has the page size limits of a list.
+    public const int MinLimit = PageRequest.MinPageSize;
+
+    public const int DefaultLimit = PageRequest.DefaultPageSize;
+
+    public const int MaxLimit = PageRequest.MaxPageSize;
+
+    /// <summary>
+    /// The page the client asked for, from what it sent. A limit left out takes the default. A cursor left out or empty is the first
+    /// page. A cursor that does not decode, or was changed, is refused.
+    /// </summary>
+    public static Result<CursorRequest> Create(string? cursor, int? limit)
+    {
+        if (limit is < MinLimit or > MaxLimit)
+        {
+            return Error.Validation(PagingErrorCodes.LimitInvalid, $"The limit is {MinLimit} to {MaxLimit}.");
+        }
+
+        if (string.IsNullOrEmpty(cursor))
+        {
+            return new CursorRequest(limit ?? DefaultLimit, null);
+        }
+
+        return Cursor.Decode(cursor) is { } after
+            ? new CursorRequest(limit ?? DefaultLimit, after)
+            : Error.Validation(PagingErrorCodes.CursorInvalid, "The cursor is not one this list gave.");
+    }
+}
+
+/// <summary>One page of a cursor list, and the cursor of the next page; null on the last page. There is no total.</summary>
+public sealed record CursorPage<T>(IReadOnlyList<T> Items, string? NextCursor)
+{
+    public CursorPage<TOut> Map<TOut>(Func<T, TOut> map) => new([.. Items.Select(map)], NextCursor);
 }

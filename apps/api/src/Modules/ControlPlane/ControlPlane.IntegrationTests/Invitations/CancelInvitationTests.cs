@@ -75,6 +75,8 @@ public sealed class CancelInvitationTests(Database database)
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }
 
+    private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
+
     // True once another session waits for a lock that the holder's session holds; false when the work finishes first, so it never
     // waited.
     private async Task<bool> WaitsForAsync(int holder, Task work)
@@ -92,8 +94,6 @@ public sealed class CancelInvitationTests(Database database)
 
         return false;
     }
-
-    private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
 
     private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
 

@@ -19,12 +19,15 @@ namespace Api.IntegrationTests.Platform;
 // service are fakes.
 public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -111,17 +114,21 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         _api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record => record.Exception is SagaConcurrencyException);
     }
 
-    private Task<HttpResponseMessage> CreateTenantAsync(string admin, string slug, string ownerEmail) =>
-        _api.CreateClient(admin, secondFactor: true)
-            .CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail });
-
-    private IMessageBus Bus() => _api.Services.GetRequiredService<IHost>().MessageBus();
-
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created)
     {
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
     }
+
+    private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
+
+    private static string Email() => $"{Guid.NewGuid():N}@example.com";
+
+    private Task<HttpResponseMessage> CreateTenantAsync(string admin, string slug, string ownerEmail) =>
+        _api.CreateClient(admin, secondFactor: true)
+            .CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail });
+
+    private IMessageBus Bus() => _api.Services.GetRequiredService<IHost>().MessageBus();
 
     private async Task<Guid> InvitationIdAsync(Guid tenantId) =>
         await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
@@ -140,10 +147,6 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 
         return new SagaHold(database, connection, transaction);
     }
-
-    private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
-
-    private static string Email() => $"{Guid.NewGuid():N}@example.com";
 
     private sealed class SagaHold(Database database, NpgsqlConnection connection, NpgsqlTransaction transaction) : IAsyncDisposable
     {

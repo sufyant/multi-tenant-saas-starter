@@ -12,12 +12,15 @@ namespace Api.IntegrationTests.Platform.AuditLogs;
 // and the first page holds them.
 public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly DateTimeOffset _start = FarFuture();
+
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -149,9 +152,6 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("request.invalid");
     }
 
-    private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>
-        _audit.AddPlatformEntryAsync(occurredAt, "User", Guid.CreateVersion7(), "User", Guid.CreateVersion7());
-
     // 500 years from now, in whole microseconds, as PostgreSQL keeps a moment. A later test starts later.
     private static DateTimeOffset FarFuture()
     {
@@ -160,4 +160,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     }
 
     private static IEnumerable<Guid> Ids(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid());
+
+    private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>
+        _audit.AddPlatformEntryAsync(occurredAt, "User", Guid.CreateVersion7(), "User", Guid.CreateVersion7());
 }

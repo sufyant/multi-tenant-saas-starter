@@ -133,6 +133,8 @@ public sealed class CreateTenantTests(Database database)
             TimeProvider.System,
             Cancellation)).Item1;
 
+    private static string Sha256(string secret) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
+
     // The second tenant creation must be waiting on the first one's insert before the first commits, or the test would prove nothing.
     private async Task WaitUntilBlockedAsync(int processId)
     {
@@ -148,8 +150,6 @@ public sealed class CreateTenantTests(Database database)
     }
 
     private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
-
-    private static string Sha256(string secret) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
 
     private Task<T> ScalarAsync<T>(string sql) => database.ScalarAsSuperuserAsync<T>(sql);
 }

@@ -13,11 +13,13 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
 {
     private const string Path = "/v1/me/preferences";
 
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {

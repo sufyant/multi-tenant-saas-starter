@@ -9,10 +9,11 @@ namespace Api.IntegrationTests.Authorization;
 // reactivated through the system door.
 public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -98,12 +99,12 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
         members.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private async Task SuspendAsync(string externalId) =>
         (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
             .EnsureSuccessStatusCode();
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

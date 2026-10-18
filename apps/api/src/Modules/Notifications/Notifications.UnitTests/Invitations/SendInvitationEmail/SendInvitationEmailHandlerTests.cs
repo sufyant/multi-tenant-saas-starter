@@ -10,15 +10,40 @@ namespace Notifications.UnitTests.Invitations.SendInvitationEmail;
 // The Notifications module sends the invitation email when ControlPlane announces that a tenant's first owner can be invited.
 public sealed class SendInvitationEmailHandlerTests
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
+
     private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000401");
+
     private static readonly DateTimeOffset Now = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
+
     private static readonly Uri Link = new("https://clerk.test/invitations/inv_1");
 
+    private static readonly TimeSpan SevenDays = TimeSpan.FromDays(7);
+
     private readonly RecordingEmailChannel _channel = new();
+
     private readonly FakeTimeProvider _time = new(Now);
+
+    public static TheoryData<Language, string, string> Texts => new()
+    {
+        {
+            Language.En,
+            "You are invited to Acme Ltd",
+            $"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}\n\nThe link works for 7 days."
+        },
+        {
+            Language.Tr,
+            "Acme Ltd adlı kuruluşa davet edildiniz",
+            $"Acme Ltd adlı kuruluşa katılmaya davet edildiniz. Daveti kabul etmek için bu bağlantıyı açın:\n\n{Link}\n\nBağlantı 7 gün geçerlidir."
+        },
+        {
+            Language.Ar,
+            "دعوة للانضمام إلى Acme Ltd",
+            $"تمت دعوتك للانضمام إلى Acme Ltd. افتح هذا الرابط لقبول الدعوة:\n\n{Link}\n\nالرابط صالح لمدة 7 أيام."
+        },
+    };
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task SendInvitation_InvitationReady_EmailsTheOwnerTheTenantsNameAndTheLink()
@@ -77,8 +102,14 @@ public sealed class SendInvitationEmailHandlerTests
     private static OwnerInvitationReadyEvent Ready() =>
         new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 
+    private static OwnerInvitationReadyEvent OwnerReady(Language language, TimeSpan lifetime) =>
+        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "owner@acme.test", "Acme Ltd", Link, language, lifetime);
+
     private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReadyEvent ready) =>
         SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);
+
+    private Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReadyEvent ready) =>
+        SendInvitationEmailHandler.HandleAsync(ready, _channel, new FakeTimeProvider(DateTimeOffset.UnixEpoch), Cancellation);
 
     // The email channel, as a system we do not own, at our port.
     private sealed class RecordingEmailChannel : IEmailChannel
@@ -98,31 +129,4 @@ public sealed class SendInvitationEmailHandlerTests
             return Task.CompletedTask;
         }
     }
-
-    private static readonly TimeSpan SevenDays = TimeSpan.FromDays(7);
-
-    public static TheoryData<Language, string, string> Texts => new()
-    {
-        {
-            Language.En,
-            "You are invited to Acme Ltd",
-            $"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}\n\nThe link works for 7 days."
-        },
-        {
-            Language.Tr,
-            "Acme Ltd adlı kuruluşa davet edildiniz",
-            $"Acme Ltd adlı kuruluşa katılmaya davet edildiniz. Daveti kabul etmek için bu bağlantıyı açın:\n\n{Link}\n\nBağlantı 7 gün geçerlidir."
-        },
-        {
-            Language.Ar,
-            "دعوة للانضمام إلى Acme Ltd",
-            $"تمت دعوتك للانضمام إلى Acme Ltd. افتح هذا الرابط لقبول الدعوة:\n\n{Link}\n\nالرابط صالح لمدة 7 أيام."
-        },
-    };
-
-    private Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReadyEvent ready) =>
-        SendInvitationEmailHandler.HandleAsync(ready, _channel, new FakeTimeProvider(DateTimeOffset.UnixEpoch), Cancellation);
-
-    private static OwnerInvitationReadyEvent OwnerReady(Language language, TimeSpan lifetime) =>
-        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "owner@acme.test", "Acme Ltd", Link, language, lifetime);
 }

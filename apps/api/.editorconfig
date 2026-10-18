@@ -24,6 +24,23 @@ dotnet_diagnostic.IDE0130.severity = warning
 # "Names and places"), so an audience such as Me is a namespace. Only our own C# host uses these assemblies.
 dotnet_code_quality.CA1716.analyzed_symbol_kinds = NamedType, Method, Property, Event, Parameter
 
+# StyleCop.Analyzers checks the order of the members in a file and nothing else, so a reader finds the same kind of member in the same
+# place in every file (the maintainer's decision in audit-g4): SA1201 (the order of the kinds of element), SA1202 (public before
+# private), SA1203 (constants before fields) and SA1204 (static before instance). Every other StyleCop rule is off. SA0001 has no file,
+# so Directory.Build.props turns it off.
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.DocumentationRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.LayoutRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.MaintainabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.NamingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.OrderingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.ReadabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpacingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpecialRules.severity = none
+dotnet_diagnostic.SA1201.severity = warning
+dotnet_diagnostic.SA1202.severity = warning
+dotnet_diagnostic.SA1203.severity = warning
+dotnet_diagnostic.SA1204.severity = warning
+
 # Test names describe behaviour in words separated by underscores. A test project is known by its name, wherever it sits.
 [**/*.{UnitTests,IntegrationTests,EndToEndTests,ArchitectureTests}/**.cs]
 dotnet_diagnostic.CA1707.severity = none

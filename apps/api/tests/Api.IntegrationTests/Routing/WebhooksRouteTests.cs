@@ -9,9 +9,9 @@ namespace Api.IntegrationTests.Routing;
 // address answers as any route that does not exist.
 public sealed class WebhooksRouteTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {

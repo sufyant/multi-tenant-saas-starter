@@ -6,16 +6,6 @@ using Wolverine.ErrorHandling;
 
 namespace Api.IntegrationTests.Fixtures;
 
-public sealed class RetryAttempts
-{
-    private readonly ConcurrentDictionary<Guid, int> _counts = new();
-    public int Record(Guid id) => _counts.AddOrUpdate(id, 1, (_, count) => count + 1);
-    public int Count(Guid id) => _counts.GetValueOrDefault(id);
-}
-
-public sealed record RetryProbe(Guid Id);
-public sealed record SpecificRetryProbe(Guid Id);
-
 public static class RetryProbeHandler
 {
     public static Result Handle(RetryProbe command, RetryAttempts attempts)
@@ -34,3 +24,14 @@ public static class SpecificRetryProbeHandler
         throw new InvalidOperationException("The specific retry probe always fails.");
     }
 }
+
+public sealed class RetryAttempts
+{
+    private readonly ConcurrentDictionary<Guid, int> _counts = new();
+    public int Record(Guid id) => _counts.AddOrUpdate(id, 1, (_, count) => count + 1);
+    public int Count(Guid id) => _counts.GetValueOrDefault(id);
+}
+
+public sealed record RetryProbe(Guid Id);
+
+public sealed record SpecificRetryProbe(Guid Id);

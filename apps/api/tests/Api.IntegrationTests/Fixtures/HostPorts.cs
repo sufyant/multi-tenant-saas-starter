@@ -19,8 +19,6 @@ internal sealed record HostPorts(int Public, int Management)
 
     private static int _next = Random.Shared.Next(Count);
 
-    public static HostPorts Free() => new(Next(), Next());
-
     // The host takes its public address from ASPNETCORE_URLS, which the urls setting stands for, and its management port from its own
     // setting.
     public IReadOnlyDictionary<string, string?> Settings => new Dictionary<string, string?>
@@ -28,6 +26,8 @@ internal sealed record HostPorts(int Public, int Management)
         ["urls"] = $"http://127.0.0.1:{Public}",
         ["Host:ManagementPort"] = Management.ToString(CultureInfo.InvariantCulture),
     };
+
+    public static HostPorts Free() => new(Next(), Next());
 
     private static int Next()
     {

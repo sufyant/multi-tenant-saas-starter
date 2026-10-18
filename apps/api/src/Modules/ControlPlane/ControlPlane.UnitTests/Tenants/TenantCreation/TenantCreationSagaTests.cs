@@ -15,13 +15,19 @@ namespace ControlPlane.UnitTests.Tenants.TenantCreation;
 // messages it sends. A message that does not fit the state is ignored (S7). One test for each row of the saga's state table.
 public sealed class TenantCreationSagaTests
 {
-    private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
-    private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000401");
-    private static readonly Guid EventId = new("0199a8f0-0000-7000-8000-000000000501");
-    private static readonly DateTimeOffset Now = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
-    private static readonly Uri AcceptLink = new("https://app.test/invitations/accept?code=0199a8f0-0000-7000-8000-000000000201.secret");
-    private static readonly TenantCreationTimeouts Timeouts = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(2), TimeSpan.FromMinutes(15));
     private const string OwnerEmail = "owner@acme.test";
+
+    private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
+
+    private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000401");
+
+    private static readonly Guid EventId = new("0199a8f0-0000-7000-8000-000000000501");
+
+    private static readonly DateTimeOffset Now = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
+
+    private static readonly Uri AcceptLink = new("https://app.test/invitations/accept?code=0199a8f0-0000-7000-8000-000000000201.secret");
+
+    private static readonly TenantCreationTimeouts Timeouts = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(2), TimeSpan.FromMinutes(15));
 
     // (start) | CreateTenantCommand handled | Activating | ActivateTenantCommand, ActivationTimedOut
     [Fact]

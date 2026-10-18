@@ -10,11 +10,15 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // name is announced, and Audit records it under the tenant with the old and the new name; the name the tenant has announces nothing.
 public sealed class RenameTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    public static TheoryData<string> InvalidNames => ["", "   "];
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -72,8 +76,6 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBeNull();
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBeNull();
     }
-
-    public static TheoryData<string> InvalidNames => ["", "   "];
 
     // The tenant checks the name as at its creation.
     [Theory]
@@ -155,11 +157,11 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
         (await StoredNameAsync(tenant.Id)).ShouldBe("Acme Ltd");
     }
 
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<string?> StoredNameAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT name FROM control_plane.tenants WHERE id = '{tenantId}'");
-
-    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
-        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 }

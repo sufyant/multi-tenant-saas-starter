@@ -15,8 +15,12 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
 {
     private readonly Catalog _catalog = new(database);
+
     private readonly FakeTimeProvider _time = new(DateTimeOffset.UtcNow);
+
     private ApiFactory _api = null!;
+
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     public ValueTask InitializeAsync()
     {
@@ -25,8 +29,6 @@ public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
-
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
 
     // The withdrawal at the end of the invitation's life is scheduled when the link goes out; here it arrives, once the lifetime is over.
     [Fact]

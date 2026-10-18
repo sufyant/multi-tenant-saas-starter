@@ -23,12 +23,28 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // the Owner's invitation email, or to its compensation. TenantCreationTests follows what the saga does with its own record.
 public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private readonly TenantSummaries _summaries = new(database);
+
     private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
+
+    public static TheoryData<string> InvalidNames => ["", "   "];
+
+    public static TheoryData<string> InvalidSlugs =>
+        ["", "ab", new string('s', 64), "Acme", "acme corp", "acme_corp", "-acme", "acme-", "acme--corp", "acmé", "acme\n"];
+
+    public static TheoryData<string, string> OwnerEmailsThatBreakARule => new()
+    {
+        { "not an email", "email_invalid" },
+        { new string('x', 320) + "@acme.com", "too_long" },
+    };
+
+    public static TheoryData<string> InvalidIdempotencyKeys => ["", "has space", "tab\there", "ключ", new string('k', 256)];
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -163,8 +179,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         created.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    public static TheoryData<string> InvalidNames => ["", "   "];
-
     [Theory]
     [MemberData(nameof(InvalidNames))]
     public async Task CreateTenant_InvalidName_IsRejected(string name)
@@ -189,9 +203,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await FieldCodesOfAsync(created, "name")).ShouldBe(("request.validation_failed", "too_long"));
     }
-
-    public static TheoryData<string> InvalidSlugs =>
-        ["", "ab", new string('s', 64), "Acme", "acme corp", "acme_corp", "-acme", "acme-", "acme--corp", "acmé", "acme\n"];
 
     // The maintainer's decision 3 after audit fix 09: the validator checks the slug's length and shape, so the document states both.
     [Theory]
@@ -235,12 +246,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
         problem.GetProperty("errors").GetRawText().ShouldBe($$"""{"{{field}}":["required"]}""");
     }
-
-    public static TheoryData<string, string> OwnerEmailsThatBreakARule => new()
-    {
-        { "not an email", "email_invalid" },
-        { new string('x', 320) + "@acme.com", "too_long" },
-    };
 
     // A screen writes its own text for each rule a field broke, so the answer names the rule's code, never a message.
     [Theory]
@@ -309,8 +314,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("idempotency.key_invalid");
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
     }
-
-    public static TheoryData<string> InvalidIdempotencyKeys => ["", "has space", "tab\there", "ключ", new string('k', 256)];
 
     [Theory]
     [MemberData(nameof(InvalidIdempotencyKeys))]
@@ -605,16 +608,10 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         holdingTheSecret.ShouldBe(0);
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
-    private Task<long> CountAsync(string sql) => database.ScalarAsSuperuserAsync<long>(sql);
-
     private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
-
-    private Task<string?> StatusOfAsync(string slug) => database.ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE slug = '{slug}'");
 
     private static async Task<(string?, string?)> FieldCodesOfAsync(HttpResponseMessage response, string field)
     {
@@ -622,15 +619,25 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         return (problem.GetProperty("code").GetString(), string.Join(", ", problem.GetProperty("errors").GetProperty(field).EnumerateArray().Select(code => code.GetString())));
     }
 
-    private Task<HttpResponseMessage> CreateTenantAsync(string admin, string slug, string ownerEmail) =>
-        _api.CreateClient(admin, secondFactor: true)
-            .CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail });
-
     private static async Task<Guid> IdOfCreatedAsync(HttpResponseMessage created)
     {
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
     }
+
+    private static string Email() => $"{Guid.NewGuid():N}@example.com";
+
+    private static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+
+    private Task<long> CountAsync(string sql) => database.ScalarAsSuperuserAsync<long>(sql);
+
+    private Task<string?> StatusOfAsync(string slug) => database.ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE slug = '{slug}'");
+
+    private Task<HttpResponseMessage> CreateTenantAsync(string admin, string slug, string ownerEmail) =>
+        _api.CreateClient(admin, secondFactor: true)
+            .CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail });
 
     private async Task<Guid> InvitationIdAsync(Guid tenantId) =>
         await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
@@ -644,8 +651,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     private Task<string?> SagaStateAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'");
 
-    private static string Email() => $"{Guid.NewGuid():N}@example.com";
-
     private async Task<string> CreateTenantWithOwnerAsync(string ownerEmail, string language = "en")
     {
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
@@ -654,6 +659,4 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         return slug;
     }
-
-    private static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
 }

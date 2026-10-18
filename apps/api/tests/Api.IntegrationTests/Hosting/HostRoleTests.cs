@@ -62,8 +62,6 @@ namespace Api.IntegrationTests.Hosting;
 [RuntimeHandlerCode]
 public sealed class HostRoleTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     // The handlers of every tenant creation message after the first, as section 6 lists them.
     private static readonly HandlerRun[] HandlersAfterTheFirstStep =
     [
@@ -77,6 +75,8 @@ public sealed class HostRoleTests(Database database)
     ];
 
     private static readonly HandlerRun FirstStep = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task CreateTenant_OnAWebAndAWorkerHost_RunsEveryStepAfterTheFirstInTheWorker()
@@ -557,6 +557,9 @@ public sealed class HostRoleTests(Database database)
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
+        (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
     private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
         settings: new Dictionary<string, string?> { ["Host:Role"] = role },
@@ -611,9 +614,6 @@ public sealed class HostRoleTests(Database database)
 
         return externalId;
     }
-
-    private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
-        (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
     private Task<string?> SagaStateAsync(string databaseName, Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", databaseName);

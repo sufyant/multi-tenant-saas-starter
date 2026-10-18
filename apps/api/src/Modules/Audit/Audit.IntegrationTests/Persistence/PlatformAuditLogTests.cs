@@ -60,13 +60,6 @@ public sealed class PlatformAuditLogTests(Database database)
         type.ShouldBe("uuid");
     }
 
-    private async Task<Guid> AddEntryAsync()
-    {
-        var entry = Guid.CreateVersion7();
-        await database.ScalarAsSuperuserAsync<object>(InsertOf(entry));
-        return entry;
-    }
-
     private static string InsertOf(Guid entry) =>
         $"""
         INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id)
@@ -74,4 +67,11 @@ public sealed class PlatformAuditLogTests(Database database)
         """;
 
     private static string CountOf(Guid entry) => $"SELECT count(*) FROM audit.platform_entries WHERE id = '{entry}'";
+
+    private async Task<Guid> AddEntryAsync()
+    {
+        var entry = Guid.CreateVersion7();
+        await database.ScalarAsSuperuserAsync<object>(InsertOf(entry));
+        return entry;
+    }
 }

@@ -10,10 +10,11 @@ namespace Api.IntegrationTests.Me.Tenants;
 // memberships.
 public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -273,6 +274,12 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
     }
 
+    private static List<(Guid Id, string Name, string Slug)> Tenants(JsonElement page) =>
+    [
+        .. page.GetProperty("items").EnumerateArray()
+            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("name").GetString()!, item.GetProperty("slug").GetString()!)),
+    ];
+
     // A new user who is a member of each tenant.
     private async Task<string> MemberOfAsync(params (Guid Id, string Slug)[] tenants)
     {
@@ -284,12 +291,6 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
 
         return user;
     }
-
-    private static List<(Guid Id, string Name, string Slug)> Tenants(JsonElement page) =>
-    [
-        .. page.GetProperty("items").EnumerateArray()
-            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("name").GetString()!, item.GetProperty("slug").GetString()!)),
-    ];
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 }

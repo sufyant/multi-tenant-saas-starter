@@ -11,9 +11,9 @@ namespace Audit.IntegrationTests.Invitations;
 // platform's log by the system admin, and in the tenant's own log by the platform, with no person in it (K3).
 public sealed class RecordOwnerInvitedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     // The target is the tenant, so the platform's Activity tab of the tenant shows it; the details hold the invitations' ids, no address.
     [Fact]
