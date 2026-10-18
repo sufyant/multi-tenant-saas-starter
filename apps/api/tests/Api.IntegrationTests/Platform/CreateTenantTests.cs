@@ -42,7 +42,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
     }
 
-    // Settings › General shows when the organisation was created: the moment of the request, by the module's clock.
+    // Settings › General shows when the tenant was created: the moment of the request, by the module's clock.
     [Fact]
     public async Task CreateTenant_Valid_StoresWhenTheTenantWasCreated()
     {
@@ -403,7 +403,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     // A7: the first system admin's first visit writes their catalog user with the configured address, which the identity provider
     // verified, and no names: the identity provider keeps none, and a system admin gives them. No invitation chose their language, so
-    // they start with English (decision 6 of step 20j). Their staff list is empty, so the test has a database of its own.
+    // they start with English (decision 6 of step 20j). Their system admin list is empty, so the test has a database of its own.
     [Fact]
     public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithTheConfiguredAddressNoNamesAndEnglish()
     {

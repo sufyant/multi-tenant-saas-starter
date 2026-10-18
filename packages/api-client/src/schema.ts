@@ -474,7 +474,7 @@ export interface components {
          * @description The error's code, area.reason. A client shows its own text for it, never the English detail.
          * @enum {string}
          */
-        ErrorCode: "auth.forbidden" | "auth.unauthenticated" | "idempotency.key_in_progress" | "idempotency.key_invalid" | "idempotency.key_reused" | "invitation.code_required" | "invitation.daily_limit_reached" | "invitation.email_mismatch" | "invitation.expired" | "invitation.not_found" | "invitation.not_pending" | "invitation.owner_requires_owner" | "invitation.staff_cannot_join" | "membership.cannot_remove_self" | "membership.exists" | "membership.last_owner" | "membership.not_found" | "membership.owner_requires_owner" | "paging.cursor_invalid" | "paging.filter_invalid" | "paging.limit_invalid" | "paging.page_invalid" | "paging.page_size_invalid" | "paging.q_invalid" | "paging.sort_invalid" | "rate_limit.exceeded" | "request.invalid" | "request.timeout" | "request.too_large" | "request.unsupported_media_type" | "request.validation_failed" | "route.method_not_allowed" | "route.not_found" | "server.error" | "tenant.closed" | "tenant.has_owner" | "tenant.name_invalid" | "tenant.not_active" | "tenant.not_closed" | "tenant.not_found" | "tenant.reopen_period_ended" | "tenant.slug_invalid" | "tenant.slug_taken" | "tenant.suspended" | "user.deleted" | "user.has_memberships" | "user.is_system_admin" | "user.last_owner" | "user.not_found" | "user.suspended";
+        ErrorCode: "auth.forbidden" | "auth.unauthenticated" | "idempotency.key_in_progress" | "idempotency.key_invalid" | "idempotency.key_reused" | "invitation.code_required" | "invitation.daily_limit_reached" | "invitation.email_mismatch" | "invitation.expired" | "invitation.not_found" | "invitation.not_pending" | "invitation.owner_requires_owner" | "invitation.system_admin_cannot_join" | "member.cannot_remove_self" | "member.exists" | "member.last_owner" | "member.not_found" | "member.owner_requires_owner" | "paging.cursor_invalid" | "paging.filter_invalid" | "paging.limit_invalid" | "paging.page_invalid" | "paging.page_size_invalid" | "paging.q_invalid" | "paging.sort_invalid" | "rate_limit.exceeded" | "request.invalid" | "request.timeout" | "request.too_large" | "request.unsupported_media_type" | "request.validation_failed" | "route.method_not_allowed" | "route.not_found" | "server.error" | "tenant.closed" | "tenant.has_owner" | "tenant.name_invalid" | "tenant.not_active" | "tenant.not_closed" | "tenant.not_found" | "tenant.reopen_period_ended" | "tenant.slug_invalid" | "tenant.slug_taken" | "tenant.suspended" | "user.deleted" | "user.has_memberships" | "user.is_system_admin" | "user.last_owner" | "user.not_found" | "user.suspended";
         /**
          * @description Why one field of a request failed validation.
          * @enum {string}
@@ -485,7 +485,7 @@ export interface components {
             code: string;
         };
         /**
-         * @description What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
+         * @description What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation
          *     gives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
          *     `cancelled`. Only a caller with the invited address gets it.
          */
@@ -805,7 +805,7 @@ export interface components {
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
          * @description One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
-         *     (null when the user is not suspended, or was suspended before step 20l), and every membership by the organisation's name.
+         *     (null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name.
          */
         UserDetailResponse: {
             /** Format: uuid */
@@ -825,8 +825,8 @@ export interface components {
             memberships: components["schemas"]["UserMembershipResponse"][];
         };
         /**
-         * @description An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
-         *     its only Owner. The suspend dialog warns with `soleOwner`, and the delete refusal names those organisations.
+         * @description A tenant the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
+         *     its last Owner. The suspend dialog warns with `lastOwner`, and the delete refusal names those tenants.
          */
         UserMembershipResponse: {
             /** Format: uuid */
@@ -837,10 +837,10 @@ export interface components {
             role: components["schemas"]["RoleResponse"];
             /** Format: date-time */
             joinedAt: string;
-            soleOwner: boolean;
+            lastOwner: boolean;
         };
         /**
-         * @description The status of an organisation a user is a member of: active, or suspended or closed when its members cannot enter it.
+         * @description The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.
          * @enum {unknown}
          */
         UserMembershipResponseTenantStatus: "active" | "suspended" | "closed";
@@ -855,7 +855,7 @@ export interface components {
         };
         /**
          * @description A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or
-         *     deleted), whether they are a system admin, how many organisations they are a member of, and when they joined the catalog.
+         *     deleted), whether they are a system admin, how many tenants they are a member of, and when they joined the catalog.
          */
         UserResponse: {
             /** Format: uuid */

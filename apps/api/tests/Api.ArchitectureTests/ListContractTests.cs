@@ -76,7 +76,7 @@ public sealed class ListContractTests : IAsyncLifetime
         withACursor.ShouldBe(CursorLists, ignoreOrder: true);
     }
 
-    // Step 20k: the platform's log filters by the tenant an entry is about, for the Activity tab of an organisation.
+    // Step 20k: the platform's log filters by the tenant an entry is about, for the Activity tab of a tenant.
     [Fact]
     public void BuildOpenApiDocument_EveryListWithACursor_TakesExactlyCursorAndLimitAndItsFilters()
     {

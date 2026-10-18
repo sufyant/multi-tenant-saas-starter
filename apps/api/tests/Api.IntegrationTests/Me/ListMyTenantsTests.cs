@@ -44,7 +44,7 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(2);
     }
 
-    // The chooser shows the caller's role in each organisation, in lower case as every role the API answers (K5).
+    // The chooser shows the caller's role in each tenant, in lower case as every role the API answers (K5).
     [Fact]
     public async Task ListMyTenants_MemberOfThreeTenantsInThreeRoles_ReturnsTheRoleInEach()
     {

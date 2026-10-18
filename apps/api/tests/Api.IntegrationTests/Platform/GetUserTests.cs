@@ -8,7 +8,7 @@ namespace Api.IntegrationTests.Platform;
 
 // GET /v1/platform/users/{userId}: one catalog user for the system admin, with their memberships in every tenant. The memberships are
 // under row level security, so the read declares the user (R11), as a user's deletion does, and reads them in one query. Whether the user
-// is a tenant's only Owner comes from the tenant's summary (R12): the suspend dialog warns with it, and the delete refusal names those
+// is a tenant's last Owner comes from the tenant's summary (R12): the suspend dialog warns with it, and the delete refusal names those
 // tenants.
 public sealed class GetUserTests(Database database) : IAsyncLifetime
 {
@@ -27,7 +27,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    // A sole Owner, an Owner with a co-Owner, an Admin of a suspended tenant and a Member of a closed one, by the tenant's name.
+    // A last Owner, an Owner with a co-Owner, an Admin of a suspended tenant and a Member of a closed one, by the tenant's name.
     [Fact]
     public async Task GetUser_AMemberOfSeveralTenants_ReturnsTheUserAndEachMembershipByTenantName()
     {
@@ -59,7 +59,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             .ShouldBe(("active", false, 4));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(Created);
         found.GetProperty("memberships")[0].EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["tenantId", "tenantName", "tenantSlug", "tenantStatus", "role", "joinedAt", "soleOwner"], ignoreOrder: true);
+            ["tenantId", "tenantName", "tenantSlug", "tenantStatus", "role", "joinedAt", "lastOwner"], ignoreOrder: true);
         Memberships(found).ShouldBe(
         [
             (alone.Id, "Alpha Ltd", alone.Slug, "active", Roles.BuiltIn("owner"), joined, true),
@@ -169,7 +169,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("user.not_found");
     }
 
-    // platform.users.read: the system door lets in staff only; a tenant's Owner is refused.
+    // platform.users.read: the system door lets in system admins only; a tenant's Owner is refused.
     [Fact]
     public async Task GetUser_AsATenantOwner_IsForbidden()
     {
@@ -211,7 +211,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         }
     }
 
-    private static List<(Guid TenantId, string? Name, string? Slug, string? Status, string? Role, DateTimeOffset JoinedAt, bool SoleOwner)> Memberships(JsonElement user) =>
+    private static List<(Guid TenantId, string? Name, string? Slug, string? Status, string? Role, DateTimeOffset JoinedAt, bool LastOwner)> Memberships(JsonElement user) =>
     [
         .. user.GetProperty("memberships").EnumerateArray().Select(membership => (
             membership.GetProperty("tenantId").GetGuid(),
@@ -220,6 +220,6 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             membership.GetProperty("tenantStatus").GetString(),
             Roles.Of(membership),
             membership.GetProperty("joinedAt").GetDateTimeOffset(),
-            membership.GetProperty("soleOwner").GetBoolean())),
+            membership.GetProperty("lastOwner").GetBoolean())),
     ];
 }

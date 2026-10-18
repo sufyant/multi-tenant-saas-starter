@@ -326,19 +326,19 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(reused)).ShouldBe("invitation.not_pending");
     }
 
-    // T5: provider staff are not tenant members, even with the code and the invited email address verified.
+    // T5: system admins are not tenant members, even with the code and the invited email address verified.
     [Fact]
     public async Task AcceptInvitation_ASystemAdmin_IsRefusedAndJoinsNothing()
     {
-        var staff = await _catalog.AddSystemAdminAsync();
+        var systemAdmin = await _catalog.AddSystemAdminAsync();
         var email = $"{Guid.NewGuid():N}@example.com";
-        _api.Identity.AddAccount(staff, email);
+        _api.Identity.AddAccount(systemAdmin, email);
         var slug = await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
 
-        var accepted = await AcceptAsync(staff, _api.Email.CodeSentTo(email));
+        var accepted = await AcceptAsync(systemAdmin, _api.Email.CodeSentTo(email));
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
-        (await CodeOfAsync(accepted)).ShouldBe("invitation.staff_cannot_join");
+        (await CodeOfAsync(accepted)).ShouldBe("invitation.system_admin_cannot_join");
         (await database.ScalarAsSuperuserAsync<long>(
             $"""
             SELECT count(*) FROM control_plane.memberships JOIN control_plane.tenants ON tenants.id = memberships.tenant_id

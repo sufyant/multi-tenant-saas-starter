@@ -94,7 +94,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, owner, role);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await CodeOfAsync(changed)).ShouldBe("membership.owner_requires_owner");
+        (await CodeOfAsync(changed)).ShouldBe("member.owner_requires_owner");
         (await RoleOfAsync(tenant.Id, owner)).ShouldBe("Owner");
     }
 
@@ -108,7 +108,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, member, "owner");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await CodeOfAsync(changed)).ShouldBe("membership.owner_requires_owner");
+        (await CodeOfAsync(changed)).ShouldBe("member.owner_requires_owner");
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
     }
 
@@ -139,7 +139,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, ownerId, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await CodeOfAsync(changed)).ShouldBe("membership.last_owner");
+        (await CodeOfAsync(changed)).ShouldBe("member.last_owner");
         (await RoleOfAsync(tenant.Id, ownerId)).ShouldBe("Owner");
     }
 
@@ -183,7 +183,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var changed = await _api.CreateClient(admin).ChangeMemberRoleAsync(tenant.Id, adminId, "owner");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await CodeOfAsync(changed)).ShouldBe("membership.owner_requires_owner");
+        (await CodeOfAsync(changed)).ShouldBe("member.owner_requires_owner");
         (await RoleOfAsync(tenant.Id, adminId)).ShouldBe("Admin");
     }
 
@@ -212,7 +212,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, Guid.NewGuid(), "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await CodeOfAsync(changed)).ShouldBe("membership.not_found");
+        (await CodeOfAsync(changed)).ShouldBe("member.not_found");
     }
 
     // Row level security hides another tenant's member, so their id answers as an unknown one.
@@ -227,7 +227,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, stranger, "admin");
 
         changed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await CodeOfAsync(changed)).ShouldBe("membership.not_found");
+        (await CodeOfAsync(changed)).ShouldBe("member.not_found");
         (await RoleOfAsync(other.Id, stranger)).ShouldBe("Member");
     }
 
@@ -261,7 +261,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
             () => _api.CreateClient(other).ChangeMemberRoleAsync(tenant.Id, oneId, "admin"));
 
         responses.Select(response => response.StatusCode).Order().ShouldBe([HttpStatusCode.OK, HttpStatusCode.Forbidden]);
-        (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.Forbidden))).ShouldBe("membership.owner_requires_owner");
+        (await CodeOfAsync(responses.Single(response => response.StatusCode == HttpStatusCode.Forbidden))).ShouldBe("member.owner_requires_owner");
         (await OwnersOfAsync(tenant.Id)).ShouldBe(1);
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }

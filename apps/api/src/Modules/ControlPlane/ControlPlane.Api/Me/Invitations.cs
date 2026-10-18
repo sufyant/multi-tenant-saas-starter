@@ -107,7 +107,7 @@ public sealed record AcceptInvitationRequest(string Code, string? FirstName = nu
 public sealed record GetInvitationPreviewRequest(string Code);
 
 /// <summary>
-/// What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
+/// What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation
 /// gives, when it expires, and its state at the moment of the request: <c>pending</c>, <c>expired</c>, <c>accepted</c> or
 /// <c>cancelled</c>. Only a caller with the invited address gets it.
 /// </summary>

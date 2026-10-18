@@ -21,17 +21,17 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode InvitationOwnerRequiresOwner = ErrorCode.Declare("invitation.owner_requires_owner");
 
-    public static readonly ErrorCode InvitationStaffCannotJoin = ErrorCode.Declare("invitation.staff_cannot_join");
+    public static readonly ErrorCode InvitationSystemAdminCannotJoin = ErrorCode.Declare("invitation.system_admin_cannot_join");
 
-    public static readonly ErrorCode MembershipCannotRemoveSelf = ErrorCode.Declare("membership.cannot_remove_self");
+    public static readonly ErrorCode MemberCannotRemoveSelf = ErrorCode.Declare("member.cannot_remove_self");
 
-    public static readonly ErrorCode MembershipExists = ErrorCode.Declare("membership.exists");
+    public static readonly ErrorCode MemberExists = ErrorCode.Declare("member.exists");
 
-    public static readonly ErrorCode MembershipLastOwner = ErrorCode.Declare("membership.last_owner");
+    public static readonly ErrorCode MemberLastOwner = ErrorCode.Declare("member.last_owner");
 
-    public static readonly ErrorCode MembershipNotFound = ErrorCode.Declare("membership.not_found");
+    public static readonly ErrorCode MemberNotFound = ErrorCode.Declare("member.not_found");
 
-    public static readonly ErrorCode MembershipOwnerRequiresOwner = ErrorCode.Declare("membership.owner_requires_owner");
+    public static readonly ErrorCode MemberOwnerRequiresOwner = ErrorCode.Declare("member.owner_requires_owner");
 
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
 

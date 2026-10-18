@@ -123,7 +123,7 @@ public interface ITenantCatalog
 
     internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 
-    /// <summary>Whether the user is on the staff list. The staff list belongs to no tenant.</summary>
+    /// <summary>Whether the user is on the system admin list. The system admin list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
     internal void AddMember(Guid userId, Guid roleId, DateTimeOffset joinedAt);

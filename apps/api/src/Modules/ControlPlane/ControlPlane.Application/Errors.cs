@@ -10,7 +10,7 @@ public static class Errors
 
     public static readonly Error InvitationNotFound = Error.NotFound(ControlPlaneErrorCodes.InvitationNotFound, "The invitation was not found.");
 
-    public static readonly Error MembershipNotFound = Error.NotFound(ControlPlaneErrorCodes.MembershipNotFound, "The member was not found.");
+    public static readonly Error MemberNotFound = Error.NotFound(ControlPlaneErrorCodes.MemberNotFound, "The member was not found.");
 
     public static readonly Error TenantNotFound = Error.NotFound(ControlPlaneErrorCodes.TenantNotFound, "The tenant was not found.");
 

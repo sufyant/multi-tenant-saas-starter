@@ -12,7 +12,7 @@ internal sealed class SystemAdminDirectory(
     IOptions<SystemAdminSettings> settings,
     TimeProvider time) : ISystemAdminDirectory
 {
-    // The staff list is read before the person's own grant: of two first visits at once, the one that finds the list empty and
+    // The system admin list is read before the person's own grant: of two first visits at once, the one that finds the list empty and
     // then loses the race to write the grant finds the other's grant when it reads its own.
     public async Task<IReadOnlySet<string>?> FindSystemPermissionsAsync(
         string externalUserId,
@@ -42,7 +42,7 @@ internal sealed class SystemAdminDirectory(
 
     // One statement writes the catalog user, if the catalog does not know them yet, with the configured address, which the identity
     // provider verified, no names and English, as no invitation chose a language, and the grant, and it writes the grant only while the
-    // staff list is empty: of two pods that let the same person in at the same moment, one writes it. A system admin gives the first one
+    // system admin list is empty: of two pods that let the same person in at the same moment, one writes it. A system admin gives the first one
     // their names (A7).
     private async Task GrantTheFirstAsync(string externalUserId, string email, CancellationToken cancellationToken)
     {

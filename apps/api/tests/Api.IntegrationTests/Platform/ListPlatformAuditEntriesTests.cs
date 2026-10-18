@@ -116,7 +116,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|-|false|user|{target}|Ada|false"]);
     }
 
-    // The Activity tab of an organisation: the platform's entries about that tenant, newest first, a page at a time. An entry about
+    // The Activity tab of a tenant: the platform's entries about that tenant, newest first, a page at a time. An entry about
     // another tenant or about a user is left out. The platform never reads the tenant's own log here.
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilter_ReturnsTheEntriesAboutThatTenantOnly()

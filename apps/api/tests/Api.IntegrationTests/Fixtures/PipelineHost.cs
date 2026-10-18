@@ -76,7 +76,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         builder.Services.AddSingleton<IdempotencyGate>();
         builder.Services.AddSingleton<RetryAttempts>();
 
-        // The identity provider is a system we do not own. The system door asks it for a user's verified emails while the staff list
+        // The identity provider is a system we do not own. The system door asks it for a user's verified emails while the system admin list
         // is empty, which depends on the order the tests run in.
         builder.Services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(new FakeIdentityProvider()));
         configureServices?.Invoke(builder.Services);

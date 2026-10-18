@@ -13,7 +13,7 @@ internal sealed class Tenant
     public const int SuspensionReasonMaxLength = 500;
 
     private static readonly Error OwnerRequiresOwner =
-        Error.Forbidden(ControlPlaneErrorCodes.MembershipOwnerRequiresOwner, "Only an Owner can give or take the Owner role, or remove an Owner.");
+        Error.Forbidden(ControlPlaneErrorCodes.MemberOwnerRequiresOwner, "Only an Owner can give or take the Owner role, or remove an Owner.");
 
     private static readonly Error NameInvalid =
         Error.Validation(ControlPlaneErrorCodes.TenantNameInvalid, $"A name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
@@ -21,7 +21,7 @@ internal sealed class Tenant
     private static readonly Error NotActive =
         Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed or closed.");
 
-    private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MembershipLastOwner, "A tenant always has at least one Owner.");
+    private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MemberLastOwner, "A tenant always has at least one Owner.");
 
     private Tenant(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
@@ -305,7 +305,7 @@ internal sealed class Tenant
     {
         if (actor.UserId == target.UserId)
         {
-            return Error.Forbidden(ControlPlaneErrorCodes.MembershipCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
+            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
         }
 
         if (IsOwner(target) && !IsOwner(actor))

@@ -43,7 +43,7 @@ public static class RemoveMemberHandler
 
         if (await catalog.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
-            return (Errors.MembershipNotFound, null);
+            return (Errors.MemberNotFound, null);
         }
 
         var allowed = Tenant.CheckRemoval(actor, target, await catalog.CountOwnersAsync(cancellationToken));

@@ -72,15 +72,15 @@ public static class AcceptInvitationHandler
             return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), null);
         }
 
-        // T5: provider staff enter through the system door, never as tenant members.
+        // T5: system admins enter through the system door, never as tenant members.
         if (existing is not null && await catalog.IsSystemAdminAsync(existing.Id, cancellationToken))
         {
-            return (Error.Unprocessable(ControlPlaneErrorCodes.InvitationStaffCannotJoin, "Provider staff cannot join a tenant."), null);
+            return (Error.Unprocessable(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin, "A system admin cannot join a tenant."), null);
         }
 
         if (existing is not null && await catalog.FindMembershipAsync(existing.Id, cancellationToken) is not null)
         {
-            return (Error.Conflict(ControlPlaneErrorCodes.MembershipExists, "You are already a member of this tenant."), null);
+            return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "You are already a member of this tenant."), null);
         }
 
         var allowed = invitation.CheckAcceptance(command.VerifiedEmails, now);

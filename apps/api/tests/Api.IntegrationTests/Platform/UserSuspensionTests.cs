@@ -7,7 +7,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Platform;
 
 // A system admin suspends and reactivates a catalog user through the system door. The identity provider is not told. A system admin
-// cannot be suspended, so the system door always stays open to staff. SuspendedUserTests follows what a suspended user meets.
+// cannot be suspended, so the system door always stays open to system admins. SuspendedUserTests follows what a suspended user meets.
 public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -111,13 +111,13 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendUser_ASystemAdmin_IsAConflictAndChangesNothing()
     {
-        var staff = await _catalog.AddSystemAdminAsync();
+        var systemAdmin = await _catalog.AddSystemAdminAsync();
 
-        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(staff)}/suspend", null, Cancellation);
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(systemAdmin)}/suspend", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("user.is_system_admin");
-        (await SuspendedAtAsync(staff)).ShouldBeNull();
+        (await SuspendedAtAsync(systemAdmin)).ShouldBeNull();
     }
 
     [Fact]
