@@ -34,7 +34,7 @@ test("DevComponents_OutsideProduction_ShowsEveryComponent", async ({
 
   await expect(page.getByRole("region", { name: "AppShell" })).toBeVisible();
   const sections = await page
-    .getByRole("region")
+    .locator("section[aria-labelledby^='dev-']")
     .evaluateAll((regions) =>
       regions.map((region) => region.getAttribute("aria-labelledby")),
     );
