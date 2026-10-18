@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,8 @@ namespace Api.ArchitectureTests;
 // Section "Names and places": the names and folders the rules fix, read from the compiled code and the source tree.
 public sealed partial class NamesAndPlacesTests
 {
+    private const string HostIntegrationTests = $"{Solution.Host}.IntegrationTests";
+
     private static readonly string[] CatchAllFolders = ["Helpers", "Utils", "Utilities", "Common", "Misc"];
 
     private static readonly string[] BuildOutput = ["bin", "obj"];
@@ -104,6 +107,70 @@ public sealed partial class NamesAndPlacesTests
 
         testProjects.ShouldNotBeEmpty();
         misnamed.ShouldBeEmpty();
+    }
+
+    // N9: a unit test class is named by the class it tests, and sits in the folder of that class: TenantTests holds the rules of the
+    // Tenant aggregate, in Tenants/.
+    [Theory]
+    [MemberData(nameof(UnitTestProjects))]
+    public void NameTestClasses_UnitTestClass_IsNamedAndPlacedByTheClassItTests(string project)
+    {
+        var tested = TestedTypesOf(project).ToLookup(type => type.Name);
+        var classes = TestClassesOf(project).ToList();
+
+        var misplaced = classes
+            .Where(test => !test.Name.EndsWith("Tests", StringComparison.Ordinal)
+                || !tested[test.Name[..^"Tests".Length]].Any(type => FolderOf(type) == FolderOf(test)))
+            .Select(test => test.FullName!);
+
+        classes.ShouldNotBeEmpty();
+        misplaced.ShouldBeEmpty();
+    }
+
+    // N9: in Api.IntegrationTests, each test of an endpoint's use case sits in the one class of that use case, {UseCase}Tests, in the
+    // audience and resource folder of the endpoint (Platform/Tenants/CreateTenantTests). The use case is the first part of the test's
+    // name. A test of a feature that several use cases share, such as the tenant door, names no use case first.
+    [Fact]
+    public void PlaceTests_TestOfAnEndpoint_SitsInTheClassOfItsUseCaseInTheFolderOfItsEndpoints()
+    {
+        var folders = EndpointFolders();
+        var tests = TestMethodsOf(HostIntegrationTests)
+            .Where(test => Audiences.Any(audience => $"{test.DeclaringType!.Namespace}.".StartsWith($"{HostIntegrationTests}.{audience}.", StringComparison.Ordinal)))
+            .Where(test => folders.ContainsKey(UseCaseOf(test)))
+            .ToList();
+
+        var misplaced = tests
+            .Where(test => test.DeclaringType!.FullName != $"{HostIntegrationTests}.{folders[UseCaseOf(test)]}.{UseCaseOf(test)}Tests")
+            .Select(test => $"{test.DeclaringType!.FullName}.{test.Name}");
+
+        tests.ShouldNotBeEmpty();
+        misplaced.ShouldBeEmpty();
+    }
+
+    // N9: in a module's integration test project, each test of a use case sits in the one class of that use case, {UseCase}Tests, in the
+    // folder of its resource in Application (Tenants/ActivateTenantTests). A class named by a class of the module, such as
+    // TenantRepositoryTests, tests that class.
+    [Theory]
+    [MemberData(nameof(ModuleIntegrationTestProjects))]
+    public void PlaceTests_TestOfAUseCase_SitsInTheClassOfItsUseCaseInTheFolderOfItsResource(string project)
+    {
+        var module = project[..^".IntegrationTests".Length];
+        var resources = Handlers()
+            .Where(handler => handler.Type.Assembly == Solution.Load($"{module}.Application") && !handler.Type.IsSubclassOf(typeof(Wolverine.Saga)))
+            .Select(handler => handler.Type)
+            .Distinct()
+            .ToDictionary(handler => handler.Name[..^"Handler".Length], handler => handler.Namespace!.Split('.')[2]);
+        var classTests = Solution.ProjectsOf(module).SelectMany(tested => Solution.Load(tested).GetTypes()).Select(type => $"{type.Name}Tests").ToHashSet();
+        var tests = TestMethodsOf(project)
+            .Where(test => resources.ContainsKey(UseCaseOf(test)) && !classTests.Contains(test.DeclaringType!.Name))
+            .ToList();
+
+        var misplaced = tests
+            .Where(test => test.DeclaringType!.FullName != $"{project}.{resources[UseCaseOf(test)]}.{UseCaseOf(test)}Tests")
+            .Select(test => $"{test.DeclaringType!.FullName}.{test.Name}");
+
+        tests.ShouldNotBeEmpty();
+        misplaced.ShouldBeEmpty();
     }
 
     // N8, rule 1: one type in each file, and the file has the type's name (StyleCop SA1402, SA1649). A generated file adds .g. A
@@ -229,6 +296,11 @@ public sealed partial class NamesAndPlacesTests
 
     public static TheoryData<string> ModuleNames => [.. Solution.Modules];
 
+    public static TheoryData<string> UnitTestProjects => [.. Solution.TestProjects.Where(project => project.EndsWith(".UnitTests", StringComparison.Ordinal))];
+
+    public static TheoryData<string> ModuleIntegrationTestProjects =>
+        [.. Solution.Modules.Select(module => $"{module}.IntegrationTests").Where(Solution.TestProjects.Contains)];
+
     private static IEnumerable<Type> PermissionLists() =>
         Solution.LayerOfEveryModule("Contracts")
             .SelectMany(project => Solution.Load(project).GetTypes())
@@ -326,6 +398,46 @@ public sealed partial class NamesAndPlacesTests
         Directory.Exists(folder)
             ? Directory.EnumerateDirectories(folder).Select(Path.GetFileName).OfType<string>().Where(name => !BuildOutput.Contains(name))
             : [];
+
+    // The types a unit test project tests: a module's projects for a module's tests, or the one project it is named after.
+    private static IEnumerable<Type> TestedTypesOf(string project)
+    {
+        var tested = project[..^".UnitTests".Length];
+        var projects = Solution.Modules.Contains(tested) ? Solution.ProjectsOf(tested) : [tested];
+        return projects.SelectMany(seen => Solution.Load(seen).GetTypes()).Where(type => !type.IsNested);
+    }
+
+    // Every top-level class that holds a test.
+    private static IEnumerable<Type> TestClassesOf(string project) => TestMethodsOf(project).Select(test => test.DeclaringType!).Where(type => !type.IsNested).Distinct();
+
+    // Every method xunit runs as a test: [Fact], and [Theory], which derives from it.
+    private static IEnumerable<MethodInfo> TestMethodsOf(string project) =>
+        Solution.Load(project).GetTypes()
+            .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
+            .Where(method => method.IsDefined(typeof(FactAttribute), inherit: true));
+
+    // The work a test names first: Operation in Operation_Scenario_ExpectedOutcome (section 9).
+    private static string UseCaseOf(MethodInfo test) => test.Name.Split('_')[0];
+
+    // The folder of a type below its project, as its namespace says (IDE0130): "" at the root, ".Tenants" in Tenants/.
+    private static string FolderOf(Type type) => type.Namespace![type.Assembly.GetName().Name!.Length..];
+
+    // Each operation of the OpenAPI document, and the audience and resource folder of the endpoints class that declares it (N7, N11).
+    private static Dictionary<string, string> EndpointFolders()
+    {
+        var operations = JsonDocument.Parse(File.ReadAllText(Path.Combine(Solution.Root, "openapi/v1.json"))).RootElement
+            .GetProperty("paths").EnumerateObject()
+            .SelectMany(path => path.Value.EnumerateObject())
+            .Select(operation => operation.Value.GetProperty("operationId").GetString()!)
+            .ToHashSet();
+        return Solution.LayerOfEveryModule("Api")
+            .SelectMany(project => Solution.Load(project).GetTypes())
+            .Where(type => type.Name.EndsWith("Endpoints", StringComparison.Ordinal))
+            .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(method => operations.Contains(method.Name))
+                .Select(method => (Operation: method.Name, Folder: FolderOf(type)[1..])))
+            .ToDictionary(endpoint => endpoint.Operation, endpoint => endpoint.Folder);
+    }
 
     private static bool IsProjectDotKindTests(string project)
     {

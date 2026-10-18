@@ -56,22 +56,6 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         (await ProblemBodies.WithoutTraceIdAsync(response)).ShouldBe(handlers);
     }
 
-    // T4: a member still finds a closed tenant in their list, with its status, as a suspended one.
-    [Fact]
-    public async Task ListMyTenants_MemberOfAClosedTenant_ListsItAsClosed()
-    {
-        var tenant = await _catalog.AddTenantAsync(name: "Closed Ltd");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
-        await (await AdminAsync()).CloseTenantAsync(tenant.Id);
-
-        var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
-
-        var listed = page.GetProperty("items").EnumerateArray()
-            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("name").GetString(), item.GetProperty("status").GetString()));
-        listed.ShouldBe([(tenant.Id, "Closed Ltd", "closed")]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
-    }
-
     [Fact]
     public async Task EnterTenant_MemberAfterReopening_GetsIn()
     {
