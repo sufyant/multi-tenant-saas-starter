@@ -1,4 +1,4 @@
-namespace Api.IntegrationTests.Persistence;
+namespace Audit.IntegrationTests.Persistence;
 
 // K3, R11: the platform's audit log has no tenant column. Forced row level security lets only a transaction that declares neither a
 // tenant nor a user read it, so no tenant route and no me route can, whatever its SQL. Audit, in a tenant's transaction, still adds the

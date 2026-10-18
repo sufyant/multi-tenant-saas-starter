@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Api.IntegrationTests;
+namespace Api.IntegrationTests.Hosting;
 
 // Section 8 (API8): only the browser origins in Host:Cors:AllowedOrigins may call the API, with the methods and headers it uses and
 // without credentials mode.
