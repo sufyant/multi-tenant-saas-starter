@@ -1,3 +1,5 @@
+import type { Language } from "@repo/api-client";
+
 // The language of a request (F13): the cookie that the app sets from GetMe.language after sign-in, else the best match of the
 // browser's Accept-Language, else the fallback. The app passes the languages of the contract (`Object.values(Language)`).
 
@@ -37,10 +39,18 @@ export function chooseLocale<L extends string>(
   return fallback;
 }
 
-/** The writing direction of a language, from Unicode's data in the Intl API: `ar` is right to left. */
+/**
+ * The writing direction of each language of the contract (W3C, "Structural markup and right-to-left text in HTML"). It is a fact
+ * of ours, written once: `Record<Language, Direction>` makes a new language of the contract fail the type check until it has
+ * its entry. The Intl API's `getTextInfo` is not in every browser or Node, so the direction never comes from there.
+ */
+export const directions: Record<Language, Direction> = {
+  en: "ltr",
+  tr: "ltr",
+  ar: "rtl",
+};
+
+/** The writing direction of a language: `rtl` for Arabic, `ltr` for the others and for a tag the contract does not list. */
 export function directionOf(language: string): Direction {
-  const locale = new Intl.Locale(language) as Intl.Locale & {
-    getTextInfo?: () => { direction: Direction };
-  };
-  return locale.getTextInfo?.().direction ?? "ltr";
+  return directions[language as Language] ?? "ltr";
 }

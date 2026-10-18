@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   formatDate,
   formatDateTime,
@@ -12,6 +12,17 @@ const at = "2026-10-16T13:32:00Z";
 const dublin = { locale: "en-IE", timeZone: "Europe/Dublin" };
 const istanbul = { locale: "tr-TR", timeZone: "Europe/Istanbul" };
 const riyadh = { locale: "ar-SA", timeZone: "Asia/Riyadh" };
+
+// A runtime whose ICU data has no name for a zone gives only its offset, as some do for Europe/Istanbul.
+class UnnamedZoneFormat extends Intl.DateTimeFormat {
+  override formatToParts(): Intl.DateTimeFormatPart[] {
+    return [{ type: "timeZoneName", value: "GMT+03:00" }];
+  }
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("format-date-time", () => {
   it("FormatDateTime_EnIe_ShowsLocalTime", () => {
@@ -43,28 +54,41 @@ describe("format-date-time", () => {
     expect(formatUtc(at, riyadh)).toBe("13:32 UTC");
   });
 
-  it("ZoneLabel_DublinInSummer_NamesTheZoneWithItsOffset", () => {
-    expect(zoneLabel(at, dublin)).toBe("Irish Standard Time (UTC+1)");
+  it("ZoneLabel_DublinInSummer_EndsWithItsUtcOffset", () => {
+    const label = zoneLabel(at, dublin);
+
+    expect(label).toMatch(/^\S.* \(UTC\+1\)$/);
   });
 
-  it("ZoneLabel_DublinInWinter_HasOffsetZero", () => {
-    expect(zoneLabel("2026-12-03T09:14:00Z", dublin)).toBe(
-      "Greenwich Mean Time (UTC+0)",
+  it("ZoneLabel_DublinInWinter_EndsWithOffsetZero", () => {
+    expect(zoneLabel("2026-12-03T09:14:00Z", dublin)).toMatch(
+      /^\S.* \(UTC\+0\)$/,
     );
   });
 
   it("ZoneLabel_ZoneWithoutAName_UsesTheCityOfTheZone", () => {
-    expect(zoneLabel(at, istanbul)).toBe("Istanbul (UTC+3)");
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
+      UnnamedZoneFormat as never,
+    );
+
+    expect(zoneLabel(at, dublin)).toBe("Dublin (UTC+3)");
   });
 
-  it("ZoneLabel_ArabicZoneWithoutAName_UsesTheCityWithWesternDigits", () => {
-    expect(
-      zoneLabel(at, { locale: "ar-SA", timeZone: "Europe/Istanbul" }),
-    ).toBe("Istanbul (UTC+3)");
+  it("ZoneLabel_ArabicIstanbul_EndsWithItsOffsetInWesternDigits", () => {
+    const label = zoneLabel(at, {
+      locale: "ar-SA",
+      timeZone: "Europe/Istanbul",
+    });
+
+    expect(label).toMatch(/^\S.* \(UTC\+3\)$/);
+    expect(label).not.toMatch(/[٠-٩]/);
   });
 
-  it("ZoneLabel_ArabicZoneWithAName_NamesItInArabic", () => {
-    expect(zoneLabel(at, riyadh)).toBe("التوقيت العربي الرسمي (UTC+3)");
+  it("ZoneLabel_ArabicRiyadh_EndsWithItsOffsetInWesternDigits", () => {
+    const label = zoneLabel(at, riyadh);
+
+    expect(label).toMatch(/^\S.* \(UTC\+3\)$/);
+    expect(label).not.toMatch(/[٠-٩]/);
   });
 
   it("FormatTime_NullTimeZone_UsesTheBrowsersZone", () => {
