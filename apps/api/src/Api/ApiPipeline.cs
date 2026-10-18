@@ -194,8 +194,8 @@ internal static class ApiPipeline
             .Order(StringComparer.Ordinal),
     ];
 
-    // The response headers that the endpoints under /v1 send and that are not CORS-safelisted, in ordinal order. Each comes from the
-    // metadata that makes the host send it: CreatedLocation gives Location (N11), and IdempotencyKeyRequired gives Idempotent-Replayed (I5).
+    // The response headers that the OpenAPI document declares for the endpoints under /v1, in ordinal order. Each comes from the metadata
+    // that makes the host send it: CreatedLocation gives Location (N11), and IdempotencyKeyRequired gives Idempotent-Replayed (I5).
     private static string[] ExposedHeadersOf(EndpointDataSource endpoints) =>
     [
         .. V1Endpoints(endpoints)

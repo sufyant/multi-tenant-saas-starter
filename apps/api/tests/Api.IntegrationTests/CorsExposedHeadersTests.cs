@@ -5,8 +5,8 @@ using Tenancy;
 
 namespace Api.IntegrationTests;
 
-// Section 8 (API8), on the host with the modules' endpoints: a browser script may read every response header the API sends that is
-// not CORS-safelisted. The exposed headers come from the endpoints' metadata, so the test compares them with the OpenAPI document.
+// Section 8 (API8), on the host with the modules' endpoints: a browser script may read every response header that the OpenAPI document
+// declares. The exposed headers come from the endpoints' metadata, so the test compares them with the document.
 public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 {
     private const string AllowedOrigin = "https://app.test";
