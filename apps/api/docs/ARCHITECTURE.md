@@ -807,6 +807,9 @@ One concept has one word in the code, the API and its documents. The screen may 
 | Concept | Word in the code, the API and its documents | Word on the screen | Source |
 | --- | --- | --- | --- |
 | A customer's isolated space: its members, roles and data | tenant | organisation | The maintainer's decision in audit fix 07. Evans, Chapter 2 |
+| An Owner or an Admin ends a pending invitation | revoke (`RevokeInvitation`, `invitation.revoked`) | revoke | The maintainer's decision in audit-g3. Evans, Chapter 2 |
+| An invitation that can no longer be accepted, whether it was revoked, replaced, closed with its tenant or ended by the tenant creation | cancelled (`InvitationStatus.Cancelled`, `Invitation.Cancel`) | cancelled | The maintainer's decision in audit-g3 |
+| The identity provider's invitation ends, so nobody can sign up with its link | withdraw (`WithdrawSignUpCommand`) | none: the screen never shows it | The maintainer's decision in audit-g3 |
 
 ### Places
 

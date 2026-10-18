@@ -18,7 +18,7 @@ public sealed record CancelTenantCommand(Guid TenantId, Guid InvitationId, strin
 /// <summary>The tenant is cancelled.</summary>
 public sealed record CancelTenantReply(Guid TenantId);
 
-/// <summary>Withdraws the owner's invitation, when nobody could be told of it.</summary>
+/// <summary>Cancels the owner's invitation, when nobody could be told of it.</summary>
 public sealed record CancelInvitationCommand(Guid TenantId, Guid InvitationId);
 
 /// <summary>Tells a person that a tenant creation needs them (S9).</summary>

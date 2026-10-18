@@ -95,7 +95,7 @@ internal sealed class Invitation : ITenantEntity
             ? Error.Forbidden(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner, "Only an Owner can invite an Owner.")
             : Result.Success();
 
-    /// <summary>Withdraws a pending invitation, as when nobody could be told of it. A used or withdrawn one stays as it is.</summary>
+    /// <summary>Cancels a pending invitation, as when nobody could be told of it. A used or cancelled one stays as it is.</summary>
     public bool Cancel()
     {
         if (Status != InvitationStatus.Pending)
@@ -108,7 +108,7 @@ internal sealed class Invitation : ITenantEntity
     }
 
     /// <summary>
-    /// A member withdraws the invitation, so its link stops working at once (K2). A pending one, expired or not, is cancelled: true. A
+    /// A member revokes the invitation, so its link stops working at once (K2). A pending one, expired or not, is cancelled: true. A
     /// cancelled one stays as it is: false, as setting a state twice changes nothing (I1). A used one cannot be revoked.
     /// </summary>
     public Result<bool> Revoke() => Status switch

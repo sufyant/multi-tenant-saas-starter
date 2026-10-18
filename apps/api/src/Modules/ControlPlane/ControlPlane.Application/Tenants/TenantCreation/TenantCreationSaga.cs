@@ -93,7 +93,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(SendInvitationEmailReply.TenantId))] SendInvitationEmailReply sent) =>
         IsSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
 
-    // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is withdrawn. The identity provider
+    // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is cancelled. The identity provider
     // that did not let the owner sign up, and the email that did not go out, end the same way.
     public OutgoingMessages Handle(Fault<OpenOwnerSignUpCommand> fault) =>
         IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
