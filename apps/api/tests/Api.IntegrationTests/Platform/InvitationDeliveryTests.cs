@@ -30,7 +30,7 @@ public sealed class InvitationDeliveryTests(Database database)
         await using var api = Api(Environments.Development);
         var email = $"{Guid.NewGuid():N}@example.com";
 
-        var response = await api.WaitingForMessagesAsync(() => InviteOwnerAsync(api, email));
+        var response = await api.WaitingForMessagesAsync(() => CreateTenantForOwnerAsync(api, email));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record => record.Message.Contains(email, StringComparison.Ordinal));
@@ -43,7 +43,7 @@ public sealed class InvitationDeliveryTests(Database database)
         await using var api = Api(Environments.Production, resend, Resend);
         var email = $"{Guid.NewGuid():N}@example.com";
 
-        var response = await api.WaitingForMessagesAsync(() => InviteOwnerAsync(api, email));
+        var response = await api.WaitingForMessagesAsync(() => CreateTenantForOwnerAsync(api, email));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitationId = await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE email = '{email}'");
@@ -82,7 +82,7 @@ public sealed class InvitationDeliveryTests(Database database)
         api.Email.FailNext(2);
         var email = $"{Guid.NewGuid():N}@example.com";
 
-        var messages = await api.TrackMessagesAsync(() => InviteOwnerAsync(api, email));
+        var messages = await api.TrackMessagesAsync(() => CreateTenantForOwnerAsync(api, email));
 
         var attempts = messages.ExecutionStarted.RecordsInOrder()
             .Where(record => record.Message is OwnerInvitationReadyEvent)
@@ -118,8 +118,8 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(
             async () =>
             {
-                await InviteOwnerAsync(api, refused, catalog);
-                await InviteOwnerAsync(api, next, catalog);
+                await CreateTenantForOwnerAsync(api, refused, catalog);
+                await CreateTenantForOwnerAsync(api, next, catalog);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
@@ -154,8 +154,8 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(
             async () =>
             {
-                await InviteOwnerAsync(api, refused, catalog);
-                await InviteOwnerAsync(api, next, catalog);
+                await CreateTenantForOwnerAsync(api, refused, catalog);
+                await CreateTenantForOwnerAsync(api, next, catalog);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
@@ -233,10 +233,9 @@ public sealed class InvitationDeliveryTests(Database database)
             }
         });
 
-    // Creating a tenant invites its first owner.
-    private Task<HttpResponseMessage> InviteOwnerAsync(ApiFactory api, string email) => InviteOwnerAsync(api, email, _catalog);
+    private Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email) => CreateTenantForOwnerAsync(api, email, _catalog);
 
-    private static async Task<HttpResponseMessage> InviteOwnerAsync(ApiFactory api, string email, Catalog catalog)
+    private static async Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email, Catalog catalog)
     {
         var admin = await catalog.AddSystemAdminAsync();
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
