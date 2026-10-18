@@ -632,8 +632,14 @@ The build writes the OpenAPI document to openapi/v1.json, and the file is commit
 3. A value that changes between environments comes from an environment variable.
 4. Passwords and keys are not written in `appsettings.json`.
 5. A rule that joins the settings of two modules is checked by the host on start, because only the host sees both. Each module's Infrastructure entry point gives the host its own keys and values. Today one rule does this: the invitation email's wait is longer than the retries before the email (section 6, "Tenant creation process"; `Api/Hosting/InvitationEmailWait.cs`, `HostConfigurationTests`).
+6. A configuration class ends in `Options` and names its section in a `Section` constant. Example: `InvitationOptions`, section `ControlPlane:Invitations`. A class does not take the name of a framework type: the host's classes are `HostingOptions` and `HostingCorsOptions`, because `HostOptions` and `CorsOptions` are framework types.
+7. The feature file of a class registers it: `AddOptions<T>()`, `BindConfiguration(T.Section)`, one `Validate` for each rule, then `ValidateOnStart()`. Each message names its key from `T.Section`. A module registers its classes in its Infrastructure entry point. A check that needs a service, such as the catalog or the settings of two modules, is an `IValidateOptions<T>` class.
+8. A list that is unset until it is configured keeps its default in a static field `Default<Property>`. The binder adds configured items to an array that it finds, so the property stays null and configured items replace the defaults. `ConfigurationDocumentTests` reads the field.
+9. A new key goes under the section of its owner: `<Module>:<Feature>:<Key>` in a module (rule 1), and `Host:<Feature>:<Key>` in the host. A framework's own section keeps the framework's name, such as `Serilog` or `AllowedHosts`. An existing key keeps its place, because the deployed environments read it (N1). So `Api:IdempotencyKeyRetention`, `Messaging:UnknownMessages`, `RateLimiting`, `ForwardedHeaders`, `Authentication:Clerk` and the tenant creation timeouts directly under `ControlPlane` stay where they are.
 
-Source: Twelve-Factor, Factor III. Nygard, Chapter 5 (Fail Fast).
+`docs/configuration.md` lists every key. `ConfigurationDocumentTests` keeps it equal to the code, to `appsettings.json`, to `appsettings.Example.json` and to the variables of `.railway/railway.ts`.
+
+Source: Twelve-Factor, Factor III. Nygard, Chapter 5 (Fail Fast). Microsoft Learn, "Options pattern in ASP.NET Core".
 
 ### Container image
 
