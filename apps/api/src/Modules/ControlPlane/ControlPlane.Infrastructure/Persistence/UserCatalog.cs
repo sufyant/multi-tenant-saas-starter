@@ -125,7 +125,7 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return new([.. page.Select(found => (found.User, found.IsSystemAdmin))], list.Paging, total);
+        return ListPage.Of([.. page.Select(found => (found.User, found.IsSystemAdmin))], list.Paging, total);
     }
 
     Task IUserCatalog.SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);

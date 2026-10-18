@@ -319,6 +319,23 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await CountAsync($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
     }
 
+    // RFC 9110, section 10.2.2: a 201 names the new resource in Location, and GetTenant reads it there. A replay names the same tenant (I5).
+    [Fact]
+    public async Task CreateTenant_Valid_AnswersTheAddressOfTheTenantInLocation()
+    {
+        var admin = await AdminAsync();
+        var body = new { name = "Acme Ltd", slug = Slug(), ownerEmail = "ali@acme.com" };
+        var key = Guid.NewGuid().ToString();
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(body, key));
+
+        var again = await admin.CreateTenantAsync(body, key);
+        var read = await admin.GetAsync(created.Headers.Location, Cancellation);
+
+        created.Headers.Location.ShouldBe(new Uri($"{TenantRequests.Path}/{await IdOfAsync(created)}", UriKind.Relative));
+        again.Headers.Location.ShouldBe(created.Headers.Location);
+        read.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
     // The saved result holds the status as ControlPlane names it. The endpoint maps it to the API's lowercase value when it builds the
     // answer, so the first answer and its replay are the same.
     [Fact]

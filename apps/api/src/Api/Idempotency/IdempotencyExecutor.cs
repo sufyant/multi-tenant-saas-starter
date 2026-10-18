@@ -17,6 +17,9 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
     public const string LeaseHeader = "idempotency-lease";
     public const string TraceHeader = "idempotency-trace";
 
+    // I5: a replayed answer carries this response header. The OpenAPI document declares it.
+    public const string ReplayedHeader = "Idempotent-Replayed";
+
     public async Task<Result<T>> ExecuteAsync<T>(object command, string? tenantId, CancellationToken cancellationToken)
     {
         var context = accessor.HttpContext ?? throw new InvalidOperationException("Idempotency runs inside an HTTP request.");
@@ -59,7 +62,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
             {
                 var result = JsonSerializer.Deserialize<SavedCommandResult<T>>(saved)!;
                 context.Items[IdempotencyMiddleware.TraceItem] = result.TraceId;
-                context.Response.Headers["Idempotent-Replayed"] = "true";
+                context.Response.Headers[ReplayedHeader] = "true";
                 return result.ToResult();
             }
 
