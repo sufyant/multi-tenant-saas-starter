@@ -11,8 +11,6 @@ namespace Audit.Application.Members;
 // platform's log.
 public static class RecordMemberRemovedHandler
 {
-    private const string MemberRemoved = "member.removed";
-
     public static Task HandleAsync(MemberRemoved removed, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
@@ -20,7 +18,7 @@ public static class RecordMemberRemovedHandler
                 removed.EventId,
                 removed.OccurredAt,
                 AuditActor.User(removed.RemovedBy),
-                MemberRemoved,
+                AuditOperations.MemberRemoved,
                 AuditTarget.User(removed.UserId),
                 JsonSerializer.Serialize(new Details(RoleNames.Of(removed.Role)), JsonSerializerOptions.Web)),
             cancellationToken);
@@ -32,7 +30,7 @@ public static class RecordMemberRemovedHandler
                 removed.EventId,
                 removed.OccurredAt,
                 AuditActor.Platform,
-                MemberRemoved,
+                AuditOperations.MemberRemoved,
                 AuditTarget.User(removed.UserId),
                 JsonSerializer.Serialize(new Details(RoleNames.Of(removed.Role)), JsonSerializerOptions.Web)),
             cancellationToken);

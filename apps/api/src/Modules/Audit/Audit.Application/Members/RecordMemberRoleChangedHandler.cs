@@ -9,8 +9,6 @@ namespace Audit.Application.Members;
 // whose role changed is the target, by id (K3). The details hold the old and the new role.
 public static class RecordMemberRoleChangedHandler
 {
-    private const string MemberRoleChanged = "member.role_changed";
-
     public static Task HandleAsync(MemberRoleChanged changed, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
@@ -18,7 +16,7 @@ public static class RecordMemberRoleChangedHandler
                 changed.EventId,
                 changed.OccurredAt,
                 AuditActor.User(changed.ChangedBy),
-                MemberRoleChanged,
+                AuditOperations.MemberRoleChanged,
                 AuditTarget.User(changed.UserId),
                 JsonSerializer.Serialize(new Details(RoleNames.Of(changed.OldRole), RoleNames.Of(changed.NewRole)), JsonSerializerOptions.Web)),
             cancellationToken);
