@@ -171,7 +171,7 @@ internal static partial class OpenApiContract
             Name = IdempotencyMiddleware.Header,
             In = ParameterLocation.Header,
             Required = true,
-            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = IdempotencyMiddleware.MaxLength, Pattern = "^[!-~]+$" },
+            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = IdempotencyMiddleware.MaxLength, Pattern = IdempotencyMiddleware.Pattern },
         });
         foreach (var (status, answer) in operation.Responses ?? [])
         {
