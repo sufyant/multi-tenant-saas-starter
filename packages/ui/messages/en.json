@@ -1,4 +1,48 @@
 {
+  "common": {
+    "tryAgain": "Try again",
+    "cancel": "Cancel",
+    "close": "Close",
+    "notifications": "Notifications",
+    "signOut": "Sign out",
+    "account": "Account",
+    "loading": "Loading",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {count}",
+    "goHome": "Go home"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "languages": {
+    "en": "English",
+    "tr": "Türkçe",
+    "ar": "العربية"
+  },
+  "validation": {
+    "required": "Fill in this field.",
+    "too_long": "This is too long. Shorten it.",
+    "too_big": "This number is too big.",
+    "too_small": "This is too short.",
+    "email_invalid": "Enter an email address like name@company.com.",
+    "format_invalid": "This format is not valid.",
+    "choose_value": "Choose one of the options.",
+    "invalid": "This value is not valid."
+  },
+  "problems": {
+    "noAccessTitle": "No access yet",
+    "noAccessText": "You are not a member of an organisation yet. When someone invites you, the invitation comes by email.",
+    "suspendedTitle": "Your account is suspended",
+    "suspendedText": "You cannot use the app while your account is suspended. Contact the person who manages your organisation.",
+    "errorTitle": "Something went wrong",
+    "errorText": "The page could not load. Your data is safe. Try again.",
+    "notFoundTitle": "Page not found",
+    "notFoundText": "This page does not exist."
+  },
   "errors": {
     "auth": {
       "forbidden": "You do not have permission to do this.",

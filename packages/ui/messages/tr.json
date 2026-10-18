@@ -1,4 +1,48 @@
 {
+  "common": {
+    "tryAgain": "Yeniden dene",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "notifications": "Bildirimler",
+    "signOut": "Çıkış yap",
+    "account": "Hesap",
+    "loading": "Yükleniyor",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "page": "Sayfa {page} / {count}",
+    "goHome": "Ana sayfaya git"
+  },
+  "theme": {
+    "label": "Tema",
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem"
+  },
+  "languages": {
+    "en": "English",
+    "tr": "Türkçe",
+    "ar": "العربية"
+  },
+  "validation": {
+    "required": "Bu alanı doldurun.",
+    "too_long": "Bu çok uzun. Kısaltın.",
+    "too_big": "Bu sayı çok büyük.",
+    "too_small": "Bu çok kısa.",
+    "email_invalid": "ad@sirket.com gibi bir e-posta adresi girin.",
+    "format_invalid": "Bu biçim geçerli değil.",
+    "choose_value": "Seçeneklerden birini seçin.",
+    "invalid": "Bu değer geçerli değil."
+  },
+  "problems": {
+    "noAccessTitle": "Henüz erişiminiz yok",
+    "noAccessText": "Henüz bir kuruluşun üyesi değilsiniz. Biri sizi davet ettiğinde davet e-postayla gelir.",
+    "suspendedTitle": "Hesabınız askıya alındı",
+    "suspendedText": "Hesabınız askıdayken uygulamayı kullanamazsınız. Kuruluşunuzu yöneten kişiyle iletişime geçin.",
+    "errorTitle": "Bir sorun oluştu",
+    "errorText": "Sayfa yüklenemedi. Verileriniz güvende. Yeniden deneyin.",
+    "notFoundTitle": "Sayfa bulunamadı",
+    "notFoundText": "Bu sayfa yok."
+  },
   "errors": {
     "auth": {
       "forbidden": "Bu işlem için yetkiniz yok.",
