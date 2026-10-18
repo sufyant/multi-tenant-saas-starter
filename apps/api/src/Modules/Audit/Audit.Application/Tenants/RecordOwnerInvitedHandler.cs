@@ -11,15 +11,13 @@ namespace Audit.Application.Tenants;
 // the invitation's id and the one it replaced, never the address.
 public static class RecordOwnerInvitedHandler
 {
-    private const string OwnerInvited = "tenant.owner_invited";
-
     public static Task HandleAsync(OwnerInvited invited, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(invited.TenantId, invited.TenantName);
         var details = JsonSerializer.Serialize(new Details(invited.InvitationId, invited.ReplacedInvitationId), JsonSerializerOptions.Web);
         return log.RecordAsync(
-            new PlatformAuditEntry(invited.EventId, invited.OccurredAt, AuditActor.User(invited.InvitedBy), OwnerInvited, tenant, details),
-            new AuditEntry(invited.EventId, invited.OccurredAt, AuditActor.Platform, OwnerInvited, tenant, details),
+            new PlatformAuditEntry(invited.EventId, invited.OccurredAt, AuditActor.User(invited.InvitedBy), AuditOperations.TenantOwnerInvited, tenant, details),
+            new AuditEntry(invited.EventId, invited.OccurredAt, AuditActor.Platform, AuditOperations.TenantOwnerInvited, tenant, details),
             cancellationToken);
     }
 

@@ -10,8 +10,6 @@ namespace Audit.Application.Tenants;
 // admin's: only the platform's record holds it, because a member never sees it, and the tenant's Owners and Admins read the tenant's log.
 public static class RecordTenantSuspendedHandler
 {
-    private const string TenantSuspended = "tenant.suspended";
-
     public static Task HandleAsync(TenantSuspended suspended, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(suspended.TenantId, suspended.TenantName);
@@ -20,10 +18,10 @@ public static class RecordTenantSuspendedHandler
                 suspended.EventId,
                 suspended.OccurredAt,
                 AuditActor.User(suspended.SuspendedBy),
-                TenantSuspended,
+                AuditOperations.TenantSuspended,
                 tenant,
                 suspended.Reason is { } reason ? JsonSerializer.Serialize(new Details(reason), JsonSerializerOptions.Web) : null),
-            new AuditEntry(suspended.EventId, suspended.OccurredAt, AuditActor.Platform, TenantSuspended, tenant),
+            new AuditEntry(suspended.EventId, suspended.OccurredAt, AuditActor.Platform, AuditOperations.TenantSuspended, tenant),
             cancellationToken);
     }
 

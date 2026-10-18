@@ -8,11 +8,9 @@ namespace Audit.Application.Invitations;
 // invitation is the target, by its id.
 public static class RecordInvitationRevokedHandler
 {
-    private const string InvitationRevoked = "invitation.revoked";
-
     public static Task HandleAsync(InvitationRevoked revoked, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
-            new AuditEntry(revoked.EventId, revoked.OccurredAt, AuditActor.User(revoked.RevokedBy), InvitationRevoked, AuditTarget.Invitation(revoked.InvitationId)),
+            new AuditEntry(revoked.EventId, revoked.OccurredAt, AuditActor.User(revoked.RevokedBy), AuditOperations.InvitationRevoked, AuditTarget.Invitation(revoked.InvitationId)),
             cancellationToken);
 }

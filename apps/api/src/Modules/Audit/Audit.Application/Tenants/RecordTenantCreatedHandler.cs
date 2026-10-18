@@ -9,14 +9,12 @@ namespace Audit.Application.Tenants;
 // records are written in one transaction.
 public static class RecordTenantCreatedHandler
 {
-    private const string TenantCreated = "tenant.created";
-
     public static Task HandleAsync(TenantActivated activated, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(activated.TenantId, activated.Name);
         return log.RecordAsync(
-            new PlatformAuditEntry(activated.EventId, activated.OccurredAt, AuditActor.User(activated.CreatedBy), TenantCreated, tenant),
-            new AuditEntry(activated.EventId, activated.OccurredAt, AuditActor.Platform, TenantCreated, tenant),
+            new PlatformAuditEntry(activated.EventId, activated.OccurredAt, AuditActor.User(activated.CreatedBy), AuditOperations.TenantCreated, tenant),
+            new AuditEntry(activated.EventId, activated.OccurredAt, AuditActor.Platform, AuditOperations.TenantCreated, tenant),
             cancellationToken);
     }
 }

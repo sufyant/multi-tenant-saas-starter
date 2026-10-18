@@ -19,13 +19,17 @@ namespace Api.Hosting;
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
 // sort and filters, the values of an enum with a converter of its own, the idempotency key and the headers of an answer, the bearer
-// scheme, the members of the one error schema with the enums of the error codes, and the enum of the permissions. They change the
-// document only. The one rule here that the wire follows is how JSON reads a number, because the document describes the numbers from it.
+// scheme, the members of the one error schema with the enums of the error codes, the enum of the permissions, and the enum of the audit
+// operations. They change the document only. The one rule here that the wire follows is how JSON reads a number, because the document
+// describes the numbers from it.
 internal static class OpenApiContract
 {
     private const string BearerScheme = "bearer";
     private const string PermissionSchema = "Permission";
     private const string PermissionsMember = "permissions";
+    private const string AuditOperationSchema = "AuditOperation";
+    private const string AuditOperationsClass = "AuditOperations";
+    private const string OperationMember = "operation";
 
     // An idempotent operation replays a saved result: its success or a business rejection. A request that failed validation (400) or
     // authentication (401) saves none (I5, I6).
@@ -48,7 +52,8 @@ internal static class OpenApiContract
                     .AddSchemaTransformer(DescribeEnumValues)
                     .AddDocumentTransformer(RequireBearerToken)
                     .AddDocumentTransformer(DescribeProblemDetails)
-                    .AddDocumentTransformer(DescribePermissions);
+                    .AddDocumentTransformer(DescribePermissions)
+                    .AddDocumentTransformer(DescribeAuditOperations);
             });
 
     // A nullable enum, such as MemberRole?, gets the schema name of its enum, MemberRole, so the two schemas would share one name, and the
@@ -260,17 +265,17 @@ internal static class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
-    // Domain project. The document joins them into one enum. Only an assembly that references SharedKernel can declare a code, so the
-    // search starts at the host and follows only those references. ErrorCodeTests checks that it finds every declared code.
-    private static IReadOnlyList<string> DeclaredErrorCodes { get; } = FindDeclaredErrorCodes();
+    // The host's assembly and each assembly it references, directly or not, that references SharedKernel: only such an assembly can
+    // declare an error code or the audit operations, and each module's Domain project is one. The search starts at the host and follows
+    // only those references.
+    private static IReadOnlyList<Assembly> AssembliesThatReachSharedKernel { get; } = FindAssembliesThatReachSharedKernel();
 
-    private static List<string> FindDeclaredErrorCodes()
+    private static List<Assembly> FindAssembliesThatReachSharedKernel()
     {
         var kernel = typeof(ErrorCode).Assembly.GetName().Name;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var pending = new Queue<Assembly>([typeof(OpenApiContract).Assembly]);
-        var codes = new List<string>();
+        var found = new List<Assembly>();
         while (pending.TryDequeue(out var assembly))
         {
             if (!seen.Add(assembly.GetName().Name!))
@@ -278,11 +283,7 @@ internal static class OpenApiContract
                 continue;
             }
 
-            codes.AddRange(assembly.GetTypes()
-                .Where(type => type is { IsAbstract: true, IsSealed: true } && type.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
-                .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-                .Where(field => field.FieldType == typeof(ErrorCode))
-                .Select(field => ((ErrorCode)field.GetValue(null)!).Value));
+            found.Add(assembly);
             foreach (var referenced in assembly.GetReferencedAssemblies().Where(name => !seen.Contains(name.Name!)).Select(Assembly.Load))
             {
                 if (referenced.GetName().Name == kernel || referenced.GetReferencedAssemblies().Any(name => name.Name == kernel))
@@ -292,7 +293,51 @@ internal static class OpenApiContract
             }
         }
 
-        return [.. codes.Distinct().Order(StringComparer.Ordinal)];
+        return found;
+    }
+
+    // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
+    // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.
+    private static IReadOnlyList<string> DeclaredErrorCodes { get; } =
+    [
+        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: true, IsSealed: true } && type.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            .Where(field => field.FieldType == typeof(ErrorCode))
+            .Select(field => ((ErrorCode)field.GetValue(null)!).Value)
+            .Distinct()
+            .Order(StringComparer.Ordinal),
+    ];
+
+    // K3: Audit declares the operation of every audit record once, in Audit.Domain's AuditOperations. The host does not reference a
+    // Domain project (section 2), so it finds the class by its name, as it finds the error codes. OpenApiContractTests checks the enum.
+    private static IReadOnlyList<string> DeclaredAuditOperations { get; } =
+    [
+        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: AuditOperationsClass })
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal),
+    ];
+
+    // The operations of both audit logs are one enum in the document, so a client has a type for them and hears of a new one. A
+    // response keeps the operation as a string, so each field that holds one, a field named operation, refers to the enum
+    // (AuditEntryResponse.operation). OpenApiContractTests checks both.
+    private static Task DescribeAuditOperations(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas is not { } schemas)
+        {
+            return Task.CompletedTask;
+        }
+
+        schemas[AuditOperationSchema] = EnumSchema(DeclaredAuditOperations, "The operation of an audit record, area.action.");
+        foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(OperationMember) == true))
+        {
+            schema.Properties![OperationMember] = new OpenApiSchemaReference(AuditOperationSchema, document);
+        }
+
+        return Task.CompletedTask;
     }
 
     // The web shows an action only when the member's permissions hold its name (section 6, "What the screens read"). The names are one
