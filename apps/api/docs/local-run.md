@@ -14,10 +14,10 @@ These steps take an empty machine to a created tenant and an accepted invitation
 
 ## 2. Database
 
-Start PostgreSQL 18 with a database for the API, for example in a container:
+Start PostgreSQL 18 with a database for the API, for example in a container. `apps/api/db/postgres-image` names the image that the tests and CI run:
 
 ```sh
-docker run -d --name api-db -e POSTGRES_PASSWORD=<superuser password> -e POSTGRES_DB=app -p 5432:5432 postgres:18
+docker run -d --name api-db -e POSTGRES_PASSWORD=<superuser password> -e POSTGRES_DB=app -p 5432:5432 "$(cat apps/api/db/postgres-image)"
 ```
 
 Create the two roles (R2, R7). This is the only step that uses the superuser. Connect to the API's database, not to `postgres`:
@@ -60,48 +60,26 @@ The Notifications module stores no data and has no schema of its own.
 
 ## 5. Configure
 
-Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. Each key of `apps/api/appsettings.Example.json` becomes a variable with `__` in place of `:`, and an array item gets its index (`Host__Cors__AllowedOrigins__0`). For a local run:
+Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. A key becomes a variable with `__` in place of `:`, and an array item gets its index (`Host__Cors__AllowedOrigins__0`). A local run sets the required keys and the ports:
 
 ```sh
 ASPNETCORE_ENVIRONMENT=Development
 Host__Role=web                       # web or worker; one process per role
-Host__ShutdownTimeout=00:00:30
 Host__Cors__AllowedOrigins__0=https://app.localhost
 ConnectionStrings__Database=Host=localhost;Port=5432;Database=app;Username=api_application;Password=<application password>
 Authentication__Clerk__Issuer=<issuer URL>
 Authentication__Clerk__AuthorizedParties__0=https://app.localhost
-ForwardedHeaders__KnownProxies__0=10.0.0.1
-ForwardedHeaders__KnownNetworks__0=10.0.0.0/8
-RateLimiting__PermitLimit=1000
-RateLimiting__Window=00:01:00
-RateLimiting__InvitationAccept__PermitLimit=10
-RateLimiting__InvitationAccept__Window=00:01:00
 ControlPlane__FirstSystemAdminEmail=<first system admin's email>
-ControlPlane__ActivationTimeout=00:10:00
-ControlPlane__InvitationEmailTimeout=02:00:00   # longer than ControlPlane:Clerk:RetryDelays and Notifications:InvitationEmailRetryDelays together; checked on start
-ControlPlane__CancellationTimeout=00:10:00
 ControlPlane__Clerk__SecretKey=<Backend API secret key>
-ControlPlane__Clerk__BackendApiUrl=<Backend API URL, ending in />
-ControlPlane__Clerk__Timeout=00:00:10
-ControlPlane__Clerk__RetryDelays__0=00:00:10
-ControlPlane__Clerk__RetryDelays__1=00:01:00
-ControlPlane__Clerk__RetryDelays__2=00:05:00
-ControlPlane__Clerk__RetryDelays__3=00:15:00
 ControlPlane__Invitations__AcceptUrl=https://app.localhost/invitations/accept
-ControlPlane__Invitations__Lifetime=7.00:00:00
-Notifications__InvitationEmailRetryDelays__0=00:00:10
-Notifications__InvitationEmailRetryDelays__1=00:01:00
-Notifications__InvitationEmailRetryDelays__2=00:05:00
-Notifications__InvitationEmailRetryDelays__3=00:15:00
-Notifications__Resend__From=App <no-reply@app.localhost>
-Notifications__Resend__Timeout=00:00:10
 ASPNETCORE_URLS=http://127.0.0.1:5080   # the public port; each web process on the machine needs its own
 Host__ManagementPort=5180               # the health endpoints; each process on the machine needs its own
 ```
 
 Notes:
 
-- Leave `Notifications__Resend__ApiKey` unset. In Development without it, the worker writes each email to its log instead of sending it. If it is set together with `From`, email is really sent, in Development too.
+- Every other key has the default in the Default column of `configuration.md`. Set a key only to change its value. For example, set `ControlPlane__Clerk__BackendApiUrl` when the identity provider's Backend API is not at the default URL.
+- Leave `Notifications__Resend__ApiKey` unset. In Development without it, the worker writes each email to its log instead of sending it. If it is set together with `Notifications__Resend__From`, email is really sent, in Development too.
 - Leave `ConnectionStrings__Messaging` unset; Wolverine then uses `ConnectionStrings__Database`.
 - Do not give the running processes `ConnectionStrings__Migrations` (R3).
 - Leave `OTEL_EXPORTER_OTLP_ENDPOINT` unset unless a collector listens there; without it no telemetry is sent.

@@ -21,21 +21,21 @@ namespace ControlPlane.Infrastructure;
 public static class ControlPlaneInfrastructure
 {
     /// <summary>The key of the wait for the invitation email after the tenant's activation.</summary>
-    public const string InvitationEmailTimeoutKey = $"{TenantCreationSettings.Section}:{nameof(TenantCreationSettings.InvitationEmailTimeout)}";
+    public const string InvitationEmailTimeoutKey = $"{TenantCreationOptions.Section}:{nameof(TenantCreationOptions.InvitationEmailTimeout)}";
 
     /// <summary>The key of the pauses before each new try of a call to the identity provider.</summary>
-    public const string IdentityProviderRetryDelaysKey = $"{IdentityProviderSettings.Section}:{nameof(IdentityProviderSettings.RetryDelays)}";
+    public const string IdentityProviderRetryDelaysKey = $"{IdentityProviderOptions.Section}:{nameof(IdentityProviderOptions.RetryDelays)}";
 
     /// <summary>
     /// The wait for the invitation email, as configured. The host checks it against the retries of both calls before the email
     /// (section 6, "Tenant creation process").
     /// </summary>
     public static TimeSpan InvitationEmailTimeout(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<TenantCreationSettings>>().Value.InvitationEmailTimeout;
+        services.GetRequiredService<IOptions<TenantCreationOptions>>().Value.InvitationEmailTimeout;
 
     /// <summary>The pauses before each new try of a call to the identity provider, as configured or by default.</summary>
     public static IReadOnlyList<TimeSpan> IdentityProviderRetryDelays(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<IdentityProviderSettings>>().Value.Delays;
+        services.GetRequiredService<IOptions<IdentityProviderOptions>>().Value.Delays;
 
     public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
@@ -50,8 +50,8 @@ public static class ControlPlaneInfrastructure
         // DbContext and in its transaction (W1).
         services.AddScoped<IUserNames, UserNames>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
-        services.AddOptions<SystemAdminSettings>().BindConfiguration(SystemAdminSettings.Section).ValidateOnStart();
-        services.AddSingleton<IValidateOptions<SystemAdminSettings>, SystemAdminSettings.Validation>();
+        services.AddOptions<SystemAdminOptions>().BindConfiguration(SystemAdminOptions.Section).ValidateOnStart();
+        services.AddSingleton<IValidateOptions<SystemAdminOptions>, SystemAdminOptions.Validation>();
 
         // Registered by type, so Wolverine builds them in its generated code on the handler's own DbContext, and sees that the
         // handler needs its transaction (W1).
@@ -59,29 +59,29 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IUserTenants, UserTenants>();
         services.AddScoped<IUserCatalog, UserCatalog>();
 
-        services.AddOptions<InvitationSettings>()
-            .BindConfiguration(InvitationSettings.Section)
-            .Validate(settings => settings.AcceptUrl is { IsAbsoluteUri: true }, $"{InvitationSettings.Section}:AcceptUrl must be the absolute URL of the page that accepts invitations.")
+        services.AddOptions<InvitationOptions>()
+            .BindConfiguration(InvitationOptions.Section)
+            .Validate(settings => settings.AcceptUrl is { IsAbsoluteUri: true }, $"{InvitationOptions.Section}:AcceptUrl must be the absolute URL of the page that accepts invitations.")
             .Validate(
                 settings => settings.Lifetime >= TimeSpan.FromDays(1),
-                $"{InvitationSettings.Section}:Lifetime must be at least one day: the invitation email says it in whole days.")
-            .Validate(settings => settings.DailyLimitPerTenant > 0, $"{InvitationSettings.Section}:DailyLimitPerTenant must be positive.")
+                $"{InvitationOptions.Section}:Lifetime must be at least one day: the invitation email says it in whole days.")
+            .Validate(settings => settings.DailyLimitPerTenant > 0, $"{InvitationOptions.Section}:DailyLimitPerTenant must be positive.")
             .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<InvitationSettings>>().Value);
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<InvitationOptions>>().Value);
 
-        services.AddOptions<TenantSettings>()
-            .BindConfiguration(TenantSettings.Section)
-            .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantSettings.Section}:ReopenPeriod must be positive.")
+        services.AddOptions<TenantOptions>()
+            .BindConfiguration(TenantOptions.Section)
+            .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantOptions.Section}:ReopenPeriod must be positive.")
             .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantSettings>>().Value);
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantOptions>>().Value);
 
-        services.AddOptions<TenantCreationSettings>()
-            .BindConfiguration(TenantCreationSettings.Section)
-            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:ActivationTimeout must be positive.")
-            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:InvitationEmailTimeout must be positive.")
-            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{TenantCreationSettings.Section}:CancellationTimeout must be positive.")
+        services.AddOptions<TenantCreationOptions>()
+            .BindConfiguration(TenantCreationOptions.Section)
+            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{TenantCreationOptions.Section}:ActivationTimeout must be positive.")
+            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{TenantCreationOptions.Section}:InvitationEmailTimeout must be positive.")
+            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{TenantCreationOptions.Section}:CancellationTimeout must be positive.")
             .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantCreationSettings>>().Value);
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantCreationOptions>>().Value);
         services.AddSingleton<TenantCreationAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it
@@ -94,9 +94,9 @@ public static class ControlPlaneInfrastructure
             .Validate(clerk => clerk.BackendApiUrl.IsAbsoluteUri, $"{ClerkOptions.Section}:BackendApiUrl must be an absolute URL.")
             .Validate(clerk => clerk.Timeout > TimeSpan.Zero, $"{ClerkOptions.Section}:Timeout must be positive.")
             .ValidateOnStart();
-        services.AddOptions<IdentityProviderSettings>()
-            .BindConfiguration(IdentityProviderSettings.Section)
-            .Validate(settings => settings.IsValid, $"{IdentityProviderSettings.Section}:RetryDelays must be positive pauses that grow.")
+        services.AddOptions<IdentityProviderOptions>()
+            .BindConfiguration(IdentityProviderOptions.Section)
+            .Validate(settings => settings.IsValid, $"{IdentityProviderOptions.Section}:RetryDelays must be positive pauses that grow.")
             .ValidateOnStart();
         services.AddSingleton<IWolverineExtension, IdentityProviderRetries>();
         services.AddHttpClient<IIdentityProvider, ClerkIdentityProvider>((provider, http) =>

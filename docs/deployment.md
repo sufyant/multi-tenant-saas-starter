@@ -84,7 +84,7 @@ The table holds names only. A value never goes into the repository.
 | Setting | Place | `staging` | `production` |
 | --- | --- | --- | --- |
 | The workflows, the image name, the Syft and Railway CLI image digests | Repository: `.github/workflows/` | same | same |
-| The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts` | same | same |
+| The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts`. The service names, the management port and the health path are in `.railway/api.json`, which the deploy scripts read too | same | same |
 | The PostgreSQL service `postgres`: Railway's template, its image `postgres-ssl:18` and its region | Repository: `.railway/railway.ts` | same | same |
 | Public access (TCP proxy) of `postgres` | Railway service settings, by hand (section 4, step 7) | own proxy | own proxy |
 | Backups and point-in-time recovery of `postgres` | Railway, by hand with the Railway CLI (section 4, step 11) | off | on |
@@ -96,15 +96,7 @@ The table holds names only. A value never goes into the repository.
 | `MIGRATIONS_ROOT_CERTIFICATE` | GitHub environment secret | the root certificate of the staging database | the root certificate of the production database |
 | `API_URL` | GitHub environment variable | the staging URL of `api-web` | the production URL of `api-web` |
 | `DEPLOY_STAGING`, `DEPLOY_PRODUCTION` | GitHub repository variables | `DEPLOY_STAGING=true` switches the staging deploy on | `DEPLOY_PRODUCTION=true` switches the production deploy and the release tag on |
-| `ConnectionStrings__Database` | Railway shared variable, sealed | the staging database | the production database |
-| `Authentication__Clerk__Issuer` | Railway shared variable | own value | own value |
-| `Authentication__Clerk__AuthorizedParties__0` | Railway shared variable | own value | own value |
-| `ControlPlane__FirstSystemAdminEmail` | Railway shared variable | own value | own value |
-| `ControlPlane__Clerk__SecretKey` | Railway shared variable, sealed | own value | own value |
-| `ControlPlane__Invitations__AcceptUrl` | Railway shared variable | own value | own value |
-| `Notifications__Resend__ApiKey` | Railway shared variable, sealed | own value | own value |
-| `Notifications__Resend__From` | Railway shared variable | own value | own value |
-| `Host__Cors__AllowedOrigins__0` | Railway shared variable | own value | own value |
+| Each name in `sharedVariables` of `.railway/railway.ts`. Three are secrets: `ConnectionStrings__Database`, `ControlPlane__Clerk__SecretKey` and `Notifications__Resend__ApiKey` | Railway shared variable. A secret is a sealed variable | own value | own value |
 | The image digest that each service runs | Railway service settings. `deploy.yml` sets it | the latest commit on `main` | the latest approved commit, or a rolled back release |
 | The generated domain of `api-web` | Railway service settings. It is not part of `.railway/railway.ts` | own domain | own domain |
 

@@ -8,14 +8,12 @@ namespace Api.Networking;
 // in configuration are believed.
 internal static class TrustedProxies
 {
-    private const string Section = "ForwardedHeaders";
-
     public static IServiceCollection AddTrustedProxies(this IServiceCollection services)
     {
         services.AddOptions<TrustedProxyOptions>()
-            .BindConfiguration(Section)
-            .Validate(trusted => trusted.KnownProxies.All(proxy => IPAddress.TryParse(proxy, out _)), $"{Section}:KnownProxies must list IP addresses.")
-            .Validate(trusted => trusted.KnownNetworks.All(network => System.Net.IPNetwork.TryParse(network, out _)), $"{Section}:KnownNetworks must list networks in CIDR notation.")
+            .BindConfiguration(TrustedProxyOptions.Section)
+            .Validate(trusted => trusted.KnownProxies.All(proxy => IPAddress.TryParse(proxy, out _)), $"{TrustedProxyOptions.Section}:KnownProxies must list IP addresses.")
+            .Validate(trusted => trusted.KnownNetworks.All(network => System.Net.IPNetwork.TryParse(network, out _)), $"{TrustedProxyOptions.Section}:KnownNetworks must list networks in CIDR notation.")
             .ValidateOnStart();
 
         return services;
@@ -50,6 +48,8 @@ internal static class TrustedProxies
 
     private sealed class TrustedProxyOptions
     {
+        public const string Section = "ForwardedHeaders";
+
         public string[] KnownProxies { get; set; } = [];
 
         public string[] KnownNetworks { get; set; } = [];

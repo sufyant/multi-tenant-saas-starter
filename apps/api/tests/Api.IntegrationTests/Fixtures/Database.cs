@@ -27,7 +27,7 @@ public sealed class Database : IAsyncLifetime
 
     // The tests run the application in many hosts at once, each with its own pools for requests and messages. The limit covers
     // their worst case within the connection budget (section 9, rule 7).
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder(File.ReadAllText("postgres-image").Trim())
         .WithDatabase(MainDatabase)
         .WithCommand("-c", "max_connections=1800")
         .Build();

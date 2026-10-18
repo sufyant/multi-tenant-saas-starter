@@ -49,21 +49,14 @@ internal static class ApiPipeline
             builder.AddPersistence();
         }
 
-        var host = builder.AddHostSettings();
+        var host = builder.AddHostingOptions();
         var role = openApiBuild ? HostRole.All : host.RoleOrNull;
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddApiPersistence();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<IIdempotencyExecutor, IdempotencyExecutor>();
-        builder.Services.AddOptions<IdempotencySettings>()
-            .BindConfiguration(IdempotencySettings.Section)
-            .Validate(settings => settings.IdempotencyKeyRetention >= TimeSpan.FromHours(24), "Api:IdempotencyKeyRetention must be at least 24 hours.")
-            .ValidateOnStart();
-        builder.Services.AddOptions<UnknownMessageSettings>()
-            .BindConfiguration(UnknownMessageSettings.Section)
-            .Validate(settings => settings.Delay > TimeSpan.Zero, $"{UnknownMessageSettings.Section}:Delay must be positive.")
-            .Validate(settings => settings.Tries > 0, $"{UnknownMessageSettings.Section}:Tries must be positive.")
-            .ValidateOnStart();
+        builder.Services.AddIdempotencyOptions();
+        builder.Services.AddUnknownMessageOptions();
 
         builder.AddObservability();
         builder.AddClerkAuthentication();

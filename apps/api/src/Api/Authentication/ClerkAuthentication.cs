@@ -12,8 +12,6 @@ namespace Api.Authentication;
 // a token without one is refused (API2).
 internal static class ClerkAuthentication
 {
-    public const string Section = "Authentication:Clerk";
-
     // Set only by the host, when the token's fva shows a second factor verified in the session.
     public const string SecondFactorClaim = "second_factor_verified";
 
@@ -22,11 +20,11 @@ internal static class ClerkAuthentication
         // Without a list of authorized parties the API accepts a session token issued to any origin of the Clerk instance. That is
         // convenient in Development; anywhere else the application does not start without the list of the clients allowed to use it.
         builder.Services.AddOptions<ClerkAuthenticationOptions>()
-            .BindConfiguration(Section)
-            .Validate(clerk => Uri.TryCreate(clerk.Issuer, UriKind.Absolute, out _), $"{Section}:Issuer must be the Frontend API URL of the Clerk instance.")
+            .BindConfiguration(ClerkAuthenticationOptions.Section)
+            .Validate(clerk => Uri.TryCreate(clerk.Issuer, UriKind.Absolute, out _), $"{ClerkAuthenticationOptions.Section}:Issuer must be the Frontend API URL of the Clerk instance.")
             .Validate<IHostEnvironment>(
                 (clerk, environment) => environment.IsDevelopment() || clerk.AuthorizedParties.Any(party => !string.IsNullOrWhiteSpace(party)),
-                $"{Section}:AuthorizedParties must list the origins of the clients allowed to use the API outside Development.")
+                $"{ClerkAuthenticationOptions.Section}:AuthorizedParties must list the origins of the clients allowed to use the API outside Development.")
             .ValidateOnStart();
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
@@ -95,6 +93,8 @@ internal static class ClerkAuthentication
 
 internal sealed class ClerkAuthenticationOptions
 {
+    public const string Section = "Authentication:Clerk";
+
     /// <summary>The Frontend API URL of the Clerk instance: the tokens' issuer and the source of their signing keys.</summary>
     public string? Issuer { get; set; }
 

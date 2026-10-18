@@ -4,7 +4,7 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// Configuration of tenant creation (section <c>ControlPlane</c>), validated at startup; public because a handler takes it as a
 /// parameter.
 /// </summary>
-public sealed class TenantCreationSettings
+public sealed class TenantCreationOptions
 {
     public const string Section = "ControlPlane";
 

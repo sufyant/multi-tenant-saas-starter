@@ -31,8 +31,8 @@ internal static class Handlers
             var (result, saga, activate, timeout) = await CreateTenantHandler.HandleAsync(
                 new CreateTenant(adminId, "Acme Ltd", slug, ownerEmail, null),
                 scope.GetRequiredService<ITenantCatalog>(),
-                scope.GetRequiredService<InvitationSettings>(),
-                scope.GetRequiredService<TenantCreationSettings>(),
+                scope.GetRequiredService<InvitationOptions>(),
+                scope.GetRequiredService<TenantCreationOptions>(),
                 scope.GetRequiredService<TimeProvider>(),
                 Cancellation);
             if (saga is not null)

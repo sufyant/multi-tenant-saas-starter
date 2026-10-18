@@ -4,7 +4,7 @@ namespace ControlPlane.Application.Invitations;
 /// Configuration of invitations (section <c>ControlPlane:Invitations</c>), checked on start; public because handlers take it as a
 /// parameter.
 /// </summary>
-public sealed class InvitationSettings
+public sealed class InvitationOptions
 {
     public const string Section = "ControlPlane:Invitations";
 

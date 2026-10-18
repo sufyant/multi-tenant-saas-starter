@@ -14,7 +14,7 @@ namespace ControlPlane.Application;
 /// Configuration of the calls to the identity provider (section <c>ControlPlane:Clerk</c>), checked on start. The retries of a call
 /// grow as the invitation email's do, because the provider may be down for a while.
 /// </summary>
-public sealed class IdentityProviderSettings
+public sealed class IdentityProviderOptions
 {
     public const string Section = "ControlPlane:Clerk";
 
@@ -33,7 +33,7 @@ public sealed class IdentityProviderSettings
 // queue. Each of these messages has one handler, so a retry may be scheduled (W5). A pause of a minute or more is a scheduled retry: the
 // message goes back to its queue with the time of its next try, so it holds no worker meanwhile. A shorter pause is waited out where the
 // handler runs.
-internal sealed class IdentityProviderRetries(IOptions<IdentityProviderSettings> settings) : IWolverineExtension, IHandlerPolicy
+internal sealed class IdentityProviderRetries(IOptions<IdentityProviderOptions> settings) : IWolverineExtension, IHandlerPolicy
 {
     private static readonly TimeSpan LongestInlinePause = TimeSpan.FromMinutes(1);
 

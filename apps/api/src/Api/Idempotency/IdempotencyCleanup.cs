@@ -9,7 +9,7 @@ public sealed record CleanIdempotencyKeys;
 
 public static class CleanIdempotencyKeysHandler
 {
-    public static async Task Handle(CleanIdempotencyKeys command, ApiDbContext api, IOptions<IdempotencySettings> settings, TimeProvider time, CancellationToken cancellationToken) =>
+    public static async Task Handle(CleanIdempotencyKeys command, ApiDbContext api, IOptions<IdempotencyOptions> settings, TimeProvider time, CancellationToken cancellationToken) =>
         await api.IdempotencyKeys.Where(row => row.CreatedAt < time.GetUtcNow() - settings.Value.IdempotencyKeyRetention
             && (row.LockedUntil == null || row.LockedUntil <= time.GetUtcNow())).ExecuteDeleteAsync(cancellationToken);
 }

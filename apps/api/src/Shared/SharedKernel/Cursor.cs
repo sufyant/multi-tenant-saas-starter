@@ -13,11 +13,12 @@ public readonly record struct CursorPosition(DateTimeOffset At, Guid Id);
 /// <summary>What a client asks of a cursor list: how many items, and the place after which the page starts; null is the first page.</summary>
 public sealed record CursorRequest(int Limit, CursorPosition? After)
 {
-    public const int MinLimit = 1;
+    // K5: a cursor list has the page size limits of a list.
+    public const int MinLimit = PageRequest.MinPageSize;
 
-    public const int DefaultLimit = 50;
+    public const int DefaultLimit = PageRequest.DefaultPageSize;
 
-    public const int MaxLimit = 100;
+    public const int MaxLimit = PageRequest.MaxPageSize;
 
     /// <summary>
     /// The page the client asked for, from what it sent. A limit left out takes the default. A cursor left out or empty is the first

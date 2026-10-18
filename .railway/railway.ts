@@ -24,6 +24,10 @@
 //   pnpm railway:apply    applies the changes
 // Read the plan first. After the first deploy, do not apply: follow docs/deployment.md, section 7.
 import { defineRailway, postgres, project, service } from "railway/iac";
+// The values that the deploy scripts read too: the service names, the management port and the
+// health path. The API's own defaults are the source of the port and the path;
+// InfrastructureValueTests in apps/api checks that this file names the same.
+import infrastructure from "./api.json" with { type: "json" };
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
 // Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3). One optional
@@ -35,6 +39,9 @@ import { defineRailway, postgres, project, service } from "railway/iac";
 //
 // No API service references a variable of the `postgres` service. DATABASE_URL, PGUSER and
 // PGPASSWORD hold the superuser; the API connects as api_application only (R2, R7).
+//
+// ConfigurationDocumentTests in apps/api checks that this file sets every required key, and only
+// keys that configuration.md documents.
 const sharedVariables = [
   "ConnectionStrings__Database",
   "Authentication__Clerk__Issuer",
@@ -66,14 +73,14 @@ export default defineRailway((ctx) => {
   const api = (name: string, role: "web" | "worker") =>
     service(name, {
       replicas: { [region]: 1 },
-      healthcheck: "/health/ready",
+      healthcheck: infrastructure.healthPath,
       env: {
         Host__Role: role,
         ASPNETCORE_ENVIRONMENT: "Production",
         // Railway's health check uses PORT; the public domain targets 8080. The API ignores PORT and
-        // answers the health endpoints only on its management port, 8081 (Railway docs,
-        // "Healthchecks", "Configure the healthcheck port").
-        PORT: "8081",
+        // answers the health endpoints only on its management port (Railway docs, "Healthchecks",
+        // "Configure the healthcheck port").
+        PORT: String(infrastructure.managementPort),
         ...Object.fromEntries(
           sharedVariables.map((name) => [name, ctx.shared[name]]),
         ),
@@ -81,6 +88,10 @@ export default defineRailway((ctx) => {
     });
 
   return project(ctx.projectName, {
-    resources: [database, api("api-web", "web"), api("api-worker", "worker")],
+    resources: [
+      database,
+      api(infrastructure.services.web, "web"),
+      api(infrastructure.services.worker, "worker"),
+    ],
   });
 });

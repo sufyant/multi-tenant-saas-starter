@@ -10,7 +10,7 @@ using Wolverine.Transports;
 namespace Api.Messaging;
 
 // How far apart, and how often, a node puts back a message it has no handler for (Messaging:UnknownMessages, W12).
-internal sealed class UnknownMessageSettings
+internal sealed class UnknownMessageOptions
 {
     public const string Section = "Messaging:UnknownMessages";
 
@@ -19,10 +19,24 @@ internal sealed class UnknownMessageSettings
     public int Tries { get; set; } = 10;
 }
 
+internal static class UnknownMessageOptionsExtensions
+{
+    public static IServiceCollection AddUnknownMessageOptions(this IServiceCollection services)
+    {
+        services.AddOptions<UnknownMessageOptions>()
+            .BindConfiguration(UnknownMessageOptions.Section)
+            .Validate(options => options.Delay > TimeSpan.Zero, $"{UnknownMessageOptions.Section}:Delay must be positive.")
+            .Validate(options => options.Tries > 0, $"{UnknownMessageOptions.Section}:Tries must be positive.")
+            .ValidateOnStart();
+
+        return services;
+    }
+}
+
 // W12. Wolverine marks the message as handled after this runs, so only the PostgreSQL queue, whose put-back leaves the inbox, can put
 // a message back; a durable local queue dead-letters it.
 internal sealed partial class UnknownMessages(
-    IOptions<UnknownMessageSettings> settings, TimeProvider time, ILogger<UnknownMessages> logger) : IMissingHandler
+    IOptions<UnknownMessageOptions> settings, TimeProvider time, ILogger<UnknownMessages> logger) : IMissingHandler
 {
     public const string TriesHeader = "unknown-message-tries";
 

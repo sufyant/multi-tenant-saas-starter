@@ -130,7 +130,8 @@ jobs:
           retention-days: 7
 
   # The image jobs test the images, not the business logic. The api job runs the test suite.
-  # Grype and PostgreSQL are pinned by digest. Dependabot does not update an image in a run step
+  # Grype is pinned by digest here. PostgreSQL is pinned by digest in apps/api/db/postgres-image,
+  # which the test fixtures and scripts/ci/run-api-image.sh read. Dependabot updates neither
   # (docs/github-settings.md, section 6).
   api-image:
     name: "API image: build, scan, run"
@@ -138,8 +139,6 @@ jobs:
     timeout-minutes: 10
     env:
       GRYPE_IMAGE: ghcr.io/anchore/grype:v0.120.1@sha256:e4a44ef45d285b829ce6efe2642980329661bd2d18eab5fc539138d4adaebbbe
-      # PostgreSQL 18.6
-      POSTGRES_IMAGE: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

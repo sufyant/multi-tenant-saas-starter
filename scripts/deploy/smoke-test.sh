@@ -2,9 +2,9 @@
 # Checks the public route after a deploy (Continuous Delivery, chapter 5: "Smoke-test your
 # deployments"). GET /v1/me/tenants needs a signed-in user and changes no data; without a token it
 # answers 401. A worker has no public port, so a 401 shows that the route reaches the web process and
-# its authentication. GET /health/ready must answer 404: the health endpoints answer only on the
-# management port, which no public route reaches (apps/api/docs/ARCHITECTURE.md section 8). Railway's
-# own health check covers readiness there. Retries for at most 60 seconds. Prints the status codes
+# its authentication. The health path of .railway/api.json must answer 404: the health endpoints
+# answer only on the management port, which no public route reaches (apps/api/docs/ARCHITECTURE.md
+# section 8). Railway's own health check covers readiness there. Retries for at most 60 seconds. Prints the status codes
 # only.
 #
 # Inputs: ENVIRONMENT (for the message), API_URL (the public URL of api-web).
@@ -38,5 +38,6 @@ expect() {
     sleep 5
   done
 }
+health_path=$(jq -r '.healthPath' "$(dirname "${BASH_SOURCE[0]}")/../../.railway/api.json")
 expect /v1/me/tenants 401
-expect /health/ready 404
+expect "$health_path" 404

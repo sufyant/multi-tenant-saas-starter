@@ -12,14 +12,14 @@ namespace Internal.Generated.WolverineHandlers
     public sealed class CleanIdempotencyKeysHandler1956292451 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
-        private readonly Microsoft.Extensions.Options.IOptions<Api.Idempotency.IdempotencySettings> _optionsOfIdempotencySettings;
+        private readonly Microsoft.Extensions.Options.IOptions<Api.Idempotency.IdempotencyOptions> _optionsOfIdempotencyOptions;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
 
-        public CleanIdempotencyKeysHandler1956292451(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Options.IOptions<Api.Idempotency.IdempotencySettings> optionsOfIdempotencySettings, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider)
+        public CleanIdempotencyKeysHandler1956292451(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Options.IOptions<Api.Idempotency.IdempotencyOptions> optionsOfIdempotencyOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider)
         {
             _serviceScopeFactory = serviceScopeFactory;
-            _optionsOfIdempotencySettings = optionsOfIdempotencySettings;
+            _optionsOfIdempotencyOptions = optionsOfIdempotencyOptions;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
             _timeProvider = timeProvider;
         }
@@ -49,7 +49,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Api.Idempotency.CleanIdempotencyKeysHandler");
                 
                 // The actual message execution
-                await Api.Idempotency.CleanIdempotencyKeysHandler.Handle(cleanIdempotencyKeys, apiDbContext, _optionsOfIdempotencySettings, _timeProvider, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.CleanIdempotencyKeysHandler.Handle(cleanIdempotencyKeys, apiDbContext, _optionsOfIdempotencyOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

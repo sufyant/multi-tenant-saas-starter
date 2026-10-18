@@ -2,7 +2,7 @@
 
 Every setting the API reads. Configuration comes from environment variables (section 7 of `ARCHITECTURE.md`): a key becomes a variable with `__` in place of `:`, and a list item gets its index (`Host__Cors__AllowedOrigins__0`). `appsettings.json` holds only the defaults below that are marked as coming from it; `appsettings.Example.json` lists the keys with placeholders.
 
-Each process checks its settings when it starts. If a required setting is missing or wrong, it stops and names the key. A test fails when a key the code binds has no row here.
+Each process checks its settings when it starts. If a required setting is missing or wrong, it stops and names the key. `ConfigurationDocumentTests` fails when a key the code binds has no row here, when `appsettings.Example.json` and this table list different keys, or when a default here differs from the code or from `appsettings.json`.
 
 "Required" means the process does not start without it. **Development** marks what `ASPNETCORE_ENVIRONMENT=Development` relaxes.
 
@@ -36,7 +36,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ControlPlane:Clerk:RetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of a call to the identity provider that failed: letting an invited address sign up, withdrawing it, deleting a user. Positive, and each longer than the one before. Configured pauses replace the defaults. After the last try the message goes to the dead letter queue |
 | `ControlPlane:Invitations:AcceptUrl` | Required | none | The frontend page that accepts an invitation. The invitation code is added as the `code` parameter |
 | `ControlPlane:Invitations:Lifetime` | Optional | `7.00:00:00` | How long an invitation can be accepted. At least one day: the invitation email says it in whole days, rounded down |
-| `ControlPlane:Invitations:DailyLimitPerTenant` | Optional | `50` | How many invitations a tenant may create in any 24 hours, cancelled and replaced ones included. Positive |
+| `ControlPlane:Invitations:DailyLimitPerTenant` | Optional | `50` | How many invitations a tenant may create in a rolling window of `InviteMemberHandler.LimitWindow`, cancelled and replaced ones included. Positive |
 | `ControlPlane:Tenants:ReopenPeriod` | Optional | `30.00:00:00` | How long after its closure a system admin can reopen a tenant (K4). Positive |
 | `Notifications:InvitationEmailRetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of an invitation email, to a tenant's first owner or to a person a member invited. Each is positive and longer than the one before |
 | `Notifications:Resend:ApiKey` | Required outside Development. **Development:** may be empty | none | Resend's API key. In Development without it, or without `From`, email is written to the log. With both set, email is really sent, in Development too |
