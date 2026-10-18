@@ -2,16 +2,17 @@ using Wolverine;
 
 namespace ControlPlane.Application.Invitations.SignUp;
 
-// The messages of an invitation's sign-up. Clerk is invite-only, so a person without an account can sign up only through Clerk's own
-// invitation. ControlPlane commits its invitation first; then a handler without a transaction asks Clerk for the sign-up link, another
-// records Clerk's invitation on ours and hands the link to Notifications, and a third withdraws Clerk's invitation when ours ends. Each
+// The messages of an invitation's sign-up. The identity provider is invite-only, so a person without an account can sign up only through
+// the identity provider's own invitation. ControlPlane commits its invitation first; then a handler without a transaction asks the
+// identity provider to open the sign-up and answer its link, another records the identity provider's invitation on ours and hands the
+// link to Notifications, and a third withdraws the identity provider's invitation when ours ends. Each
 // runs in the invitation's tenant, which the envelope carries. The owner of a new tenant and a member have a message each, so the tenant
 // creation saga hears of a failure for its owner only (S13).
 
-/// <summary>Lets a new tenant's first owner sign up. Sent by the tenant's activation.</summary>
+/// <summary>Opens the sign-up for a new tenant's first owner. Sent by the tenant's activation.</summary>
 public sealed record OpenOwnerSignUpCommand(Guid TenantId, Guid InvitationId, string Email, string TenantName, Uri AcceptLink, DateTimeOffset ExpiresAt);
 
-/// <summary>Lets a person a member invited sign up. Sent with the invitation.</summary>
+/// <summary>Opens the sign-up for a person a member invited. Sent with the invitation.</summary>
 public sealed record OpenMemberSignUpCommand(Guid TenantId, Guid InvitationId, string Email, string TenantName, Uri AcceptLink, DateTimeOffset ExpiresAt);
 
 /// <summary>

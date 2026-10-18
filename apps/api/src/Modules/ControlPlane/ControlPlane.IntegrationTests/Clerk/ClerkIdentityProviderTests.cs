@@ -49,12 +49,12 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
 
     // Clerk sends no email and keeps no name: the invitation carries only the address, our accept link and our expiry.
     [Fact]
-    public async Task AllowSignUp_EmailWithoutAccount_CreatesAnInvitationThatSendsNoEmail()
+    public async Task OpenSignUp_EmailWithoutAccount_CreatesAnInvitationThatSendsNoEmail()
     {
         _clerk.Respond("[]");
         _clerk.Respond("""{"object":"invitation","id":"inv_1","email_address":"ada@example.com","status":"pending","url":"https://clerk.test/v1/tickets/accept?ticket=t_1"}""");
 
-        var link = await Identity().AllowSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(7), Cancellation);
+        var link = await Identity().OpenSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(7), Cancellation);
 
         link.ShouldBe(new SignUpLink(new Uri("https://clerk.test/v1/tickets/accept?ticket=t_1"), "inv_1"));
         _clerk.Requests.Count.ShouldBe(2);
@@ -72,11 +72,11 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
 
     // A person with an account signs in and accepts; Clerk would refuse an invitation for their address.
     [Fact]
-    public async Task AllowSignUp_EmailWithAccount_CreatesNoInvitationAndAnswersTheAcceptLink()
+    public async Task OpenSignUp_EmailWithAccount_CreatesNoInvitationAndAnswersTheAcceptLink()
     {
         _clerk.Respond("""[{"id":"user_1","email_addresses":[]}]""");
 
-        var link = await Identity().AllowSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(7), Cancellation);
+        var link = await Identity().OpenSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(7), Cancellation);
 
         link.ShouldBe(new SignUpLink(AcceptLink, null));
         _clerk.Requests.ShouldHaveSingleItem().Method.ShouldBe(HttpMethod.Get);
@@ -88,12 +88,12 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
     [InlineData(0.1, 1)]
     [InlineData(-1, 1)]
     [InlineData(400, 365)]
-    public async Task AllowSignUp_Expiry_IsInWholeDaysRoundedUpWithinClerksRange(double daysLeft, int expected)
+    public async Task OpenSignUp_Expiry_IsInWholeDaysRoundedUpWithinClerksRange(double daysLeft, int expected)
     {
         _clerk.Respond("[]");
         _clerk.Respond("""{"id":"inv_1","url":"https://clerk.test/v1/tickets/accept?ticket=t_1"}""");
 
-        await Identity().AllowSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(daysLeft), Cancellation);
+        await Identity().OpenSignUpAsync("ada@example.com", AcceptLink, _time.GetUtcNow().AddDays(daysLeft), Cancellation);
 
         JsonNode.Parse(_clerk.Requests[1].Body!)!["expires_in_days"]!.GetValue<int>().ShouldBe(expected);
     }

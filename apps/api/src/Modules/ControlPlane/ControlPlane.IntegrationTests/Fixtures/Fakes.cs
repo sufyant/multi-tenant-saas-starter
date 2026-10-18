@@ -16,7 +16,7 @@ public sealed class FakeIdentityProvider : IIdentityProvider
     public void AddAccount(string externalUserId, params string[] verifiedEmails) => _accounts[externalUserId] = verifiedEmails;
 
     // Like Clerk, an address that belongs to an account needs no invitation; any other gets one, whose link leads to the accept link.
-    public Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public Task<SignUpLink> OpenSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
         if (_accounts.Values.Any(emails => emails.Contains(email, StringComparer.OrdinalIgnoreCase)))
         {

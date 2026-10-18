@@ -36,7 +36,7 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
     // The next calls fail, then Clerk recovers.
     public void FailNext(int calls) => _failures = calls;
 
-    public Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public Task<SignUpLink> OpenSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
         Answer();
         if (_accounts.Values.Any(emails => emails.Contains(email, StringComparer.OrdinalIgnoreCase)))

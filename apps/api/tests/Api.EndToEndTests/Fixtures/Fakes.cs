@@ -24,7 +24,7 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
         return new Uri($"{acceptLink}&__clerk_ticket={invitationId}");
     }
 
-    public Task<SignUpLink> AllowSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public Task<SignUpLink> OpenSignUpAsync(string email, Uri acceptLink, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
         if (_accounts.Values.Any(emails => emails.Contains(email, StringComparer.OrdinalIgnoreCase)))
         {

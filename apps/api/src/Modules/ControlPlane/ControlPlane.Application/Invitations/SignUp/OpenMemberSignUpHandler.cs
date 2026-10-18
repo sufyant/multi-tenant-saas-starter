@@ -10,7 +10,7 @@ public static class OpenMemberSignUpHandler
 {
     public static async Task<RecordSignUpCommand> HandleAsync(OpenMemberSignUpCommand open, IIdentityProvider identity, CancellationToken cancellationToken)
     {
-        var signUp = await identity.AllowSignUpAsync(open.Email, open.AcceptLink, open.ExpiresAt, cancellationToken);
+        var signUp = await identity.OpenSignUpAsync(open.Email, open.AcceptLink, open.ExpiresAt, cancellationToken);
         return new RecordSignUpCommand(
             open.TenantId, open.InvitationId, open.Email, open.TenantName, signUp.Link, signUp.InvitationId, open.ExpiresAt, ForFirstOwner: false);
     }
