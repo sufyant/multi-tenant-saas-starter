@@ -1,0 +1,76 @@
+{
+  "errors": {
+    "auth": {
+      "forbidden": "You do not have permission to do this.",
+      "unauthenticated": "Your session has ended. Sign in again."
+    },
+    "idempotency": {
+      "key_in_progress": "This request is still running. Wait a moment, then check the result.",
+      "key_invalid": "The request could not be sent. Reload the page and try again.",
+      "key_reused": "This request was already sent with other values. Reload the page and try again."
+    },
+    "invitation": {
+      "code_required": "The invitation link is incomplete. Open the link from the email again.",
+      "daily_limit_reached": "This organisation has sent the most invitations allowed today. Try again tomorrow.",
+      "email_mismatch": "This invitation is for another email address. Sign in with the address that received it.",
+      "expired": "This invitation has expired. Ask for a new one.",
+      "not_found": "This invitation does not exist. Check the link or ask for a new invitation.",
+      "not_pending": "This invitation is no longer pending.",
+      "owner_requires_owner": "Only an Owner can invite an Owner.",
+      "system_admin_cannot_join": "A system admin cannot join an organisation."
+    },
+    "member": {
+      "cannot_remove_self": "You cannot remove yourself.",
+      "exists": "This person is already a member.",
+      "last_owner": "An organisation needs at least one Owner.",
+      "not_found": "This member is no longer in the organisation.",
+      "owner_requires_owner": "Only an Owner can change or remove an Owner."
+    },
+    "paging": {
+      "cursor_invalid": "The list could not continue. Reload the page.",
+      "filter_invalid": "This filter is not valid. Clear it and try again.",
+      "limit_invalid": "The list could not load. Reload the page.",
+      "page_invalid": "This page does not exist. Go to the first page.",
+      "page_size_invalid": "The list could not load. Reload the page.",
+      "q_invalid": "The search is too long. Shorten it and try again.",
+      "sort_invalid": "This sort is not valid. Reload the page."
+    },
+    "rate_limit": {
+      "exceeded": "Too many requests. Wait a moment and try again."
+    },
+    "request": {
+      "invalid": "The request was not valid. Reload the page and try again.",
+      "timeout": "The request took too long. Try again.",
+      "too_large": "The request is too large.",
+      "unsupported_media_type": "The request was not valid. Reload the page and try again.",
+      "validation_failed": "Some fields need attention. Check them and try again."
+    },
+    "route": {
+      "method_not_allowed": "This action is not available here.",
+      "not_found": "This page does not exist."
+    },
+    "server": {
+      "error": "Something went wrong on our side. Your data is safe. Try again in a moment."
+    },
+    "tenant": {
+      "closed": "This organisation is closed.",
+      "has_owner": "This organisation already has an Owner.",
+      "name_invalid": "Enter a name for the organisation.",
+      "not_active": "This organisation is not active.",
+      "not_closed": "This organisation is not closed.",
+      "not_found": "This organisation does not exist, or you are not a member of it.",
+      "reopen_period_ended": "The time to reopen this organisation has ended.",
+      "slug_invalid": "Use lowercase letters, digits and single hyphens.",
+      "slug_taken": "Another organisation uses this slug. Choose another one.",
+      "suspended": "This organisation is suspended."
+    },
+    "user": {
+      "deleted": "This account was deleted.",
+      "has_memberships": "This user is still a member of an organisation.",
+      "is_system_admin": "A system admin cannot be deleted.",
+      "last_owner": "This user is the last Owner of an organisation. Make another member an Owner first.",
+      "not_found": "This user does not exist.",
+      "suspended": "Your account is suspended."
+    }
+  }
+}

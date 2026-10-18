@@ -1,0 +1,76 @@
+{
+  "errors": {
+    "auth": {
+      "forbidden": "Bu işlem için yetkiniz yok.",
+      "unauthenticated": "Oturumunuz sona erdi. Yeniden giriş yapın."
+    },
+    "idempotency": {
+      "key_in_progress": "Bu istek hâlâ sürüyor. Biraz bekleyin, sonra sonucu kontrol edin.",
+      "key_invalid": "İstek gönderilemedi. Sayfayı yenileyip yeniden deneyin.",
+      "key_reused": "Bu istek başka değerlerle zaten gönderildi. Sayfayı yenileyip yeniden deneyin."
+    },
+    "invitation": {
+      "code_required": "Davet bağlantısı eksik. E-postadaki bağlantıyı yeniden açın.",
+      "daily_limit_reached": "Bu kuruluş bugün izin verilen en fazla daveti gönderdi. Yarın yeniden deneyin.",
+      "email_mismatch": "Bu davet başka bir e-posta adresine gönderildi. Daveti alan adresle giriş yapın.",
+      "expired": "Bu davetin süresi doldu. Yeni bir davet isteyin.",
+      "not_found": "Bu davet yok. Bağlantıyı kontrol edin ya da yeni bir davet isteyin.",
+      "not_pending": "Bu davet artık beklemede değil.",
+      "owner_requires_owner": "Yalnızca bir Sahip, Sahip davet edebilir.",
+      "system_admin_cannot_join": "Sistem yöneticisi bir kuruluşa katılamaz."
+    },
+    "member": {
+      "cannot_remove_self": "Kendinizi çıkaramazsınız.",
+      "exists": "Bu kişi zaten üye.",
+      "last_owner": "Bir kuruluşun en az bir Sahibi olmalı.",
+      "not_found": "Bu üye artık kuruluşta değil.",
+      "owner_requires_owner": "Bir Sahibi yalnızca bir Sahip değiştirebilir ya da çıkarabilir."
+    },
+    "paging": {
+      "cursor_invalid": "Liste devam edemedi. Sayfayı yenileyin.",
+      "filter_invalid": "Bu filtre geçerli değil. Filtreyi temizleyip yeniden deneyin.",
+      "limit_invalid": "Liste yüklenemedi. Sayfayı yenileyin.",
+      "page_invalid": "Bu sayfa yok. İlk sayfaya gidin.",
+      "page_size_invalid": "Liste yüklenemedi. Sayfayı yenileyin.",
+      "q_invalid": "Arama çok uzun. Kısaltıp yeniden deneyin.",
+      "sort_invalid": "Bu sıralama geçerli değil. Sayfayı yenileyin."
+    },
+    "rate_limit": {
+      "exceeded": "Çok fazla istek gönderildi. Biraz bekleyip yeniden deneyin."
+    },
+    "request": {
+      "invalid": "İstek geçerli değil. Sayfayı yenileyip yeniden deneyin.",
+      "timeout": "İstek çok uzun sürdü. Yeniden deneyin.",
+      "too_large": "İstek çok büyük.",
+      "unsupported_media_type": "İstek geçerli değil. Sayfayı yenileyip yeniden deneyin.",
+      "validation_failed": "Bazı alanların düzeltilmesi gerekiyor. Kontrol edip yeniden deneyin."
+    },
+    "route": {
+      "method_not_allowed": "Bu işlem burada kullanılamaz.",
+      "not_found": "Bu sayfa yok."
+    },
+    "server": {
+      "error": "Bizim tarafımızda bir sorun oluştu. Verileriniz güvende. Biraz sonra yeniden deneyin."
+    },
+    "tenant": {
+      "closed": "Bu kuruluş kapatıldı.",
+      "has_owner": "Bu kuruluşun zaten bir Sahibi var.",
+      "name_invalid": "Kuruluş için bir ad girin.",
+      "not_active": "Bu kuruluş etkin değil.",
+      "not_closed": "Bu kuruluş kapalı değil.",
+      "not_found": "Bu kuruluş yok ya da üyesi değilsiniz.",
+      "reopen_period_ended": "Bu kuruluşu yeniden açma süresi doldu.",
+      "slug_invalid": "Küçük harf, rakam ve tek kısa çizgi kullanın.",
+      "slug_taken": "Bu kısa adı başka bir kuruluş kullanıyor. Başka bir ad seçin.",
+      "suspended": "Bu kuruluş askıya alındı."
+    },
+    "user": {
+      "deleted": "Bu hesap silindi.",
+      "has_memberships": "Bu kullanıcı hâlâ bir kuruluşun üyesi.",
+      "is_system_admin": "Sistem yöneticisi silinemez.",
+      "last_owner": "Bu kullanıcı bir kuruluşun son Sahibi. Önce başka bir üyeyi Sahip yapın.",
+      "not_found": "Bu kullanıcı yok.",
+      "suspended": "Hesabınız askıya alındı."
+    }
+  }
+}
