@@ -33,5 +33,7 @@ Run from this folder, or with `pnpm --filter @repo/ui` from the root.
 | `@clerk/nextjs` | A peer dependency that no file imports. It goes when the components move to Base UI | MIT |
 | `vitest` | The tests (development only) | MIT |
 | `typescript` | The types, and the parser of the architecture rules (development only) | Apache-2.0 |
+| `@types/node` | The types of Node, for the token script and the architecture rules (development only) | MIT |
+| `@repo/api-client` | The architecture tests read its generated enums (development only) | The repository's own |
 
 `.github/dependency-review-config.yml` holds the licenses a dependency may have.

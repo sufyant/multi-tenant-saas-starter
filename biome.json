@@ -39,7 +39,7 @@
           "level": "error",
           "options": {
             "deniedGlobals": {
-              "fetch": "Call the API through @repo/api-client. Only its mutator and the BFF route handler call fetch (decision 10 in docs/frontend/ARCHITECTURE.md)."
+              "fetch": "Call the API through @repo/api-client. Only its mutator and the BFF route handlers call fetch (F1 and F6 in docs/frontend/ARCHITECTURE.md)."
             }
           }
         },
@@ -47,15 +47,15 @@
           "level": "error",
           "options": {
             "paths": {
-              "lucide-react": "Import an icon through the Icon component of @repo/ui (rule N in docs/frontend/ARCHITECTURE.md).",
-              "sonner": "Use the Toast component of @repo/ui (decision 8 in docs/frontend/ARCHITECTURE.md).",
-              "@tanstack/react-table": "Use the Table component of @repo/ui (decision 3 in docs/frontend/ARCHITECTURE.md)."
+              "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
+              "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
+              "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
             },
             "patterns": [
               {
                 "group": ["@repo/api-client"],
                 "importNamePattern": "use[A-Z].*",
-                "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (decision 2 in docs/frontend/ARCHITECTURE.md)."
+                "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
               }
             ]
           }
@@ -89,10 +89,7 @@
       }
     },
     {
-      "includes": [
-        "packages/ui/src/components/ui/**",
-        "apps/web/src/components/**"
-      ],
+      "includes": ["packages/ui/src/components/ui/**"],
       "linter": {
         "rules": {
           "a11y": {
@@ -104,9 +101,34 @@
           },
           "suspicious": {
             "noDocumentCookie": "off"
-          },
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/ui/src/components/ui/**",
+        "apps/web/src/components/**"
+      ],
+      "linter": {
+        "rules": {
           "style": {
-            "noRestrictedImports": "off"
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
+                },
+                "patterns": [
+                  {
+                    "group": ["@repo/api-client"],
+                    "importNamePattern": "use[A-Z].*",
+                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
+                  }
+                ]
+              }
+            }
           }
         }
       }
@@ -133,14 +155,14 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "sonner": "Use the Toast component of @repo/ui (decision 8 in docs/frontend/ARCHITECTURE.md).",
-                  "@tanstack/react-table": "Use the Table component of @repo/ui (decision 3 in docs/frontend/ARCHITECTURE.md)."
+                  "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
                 },
                 "patterns": [
                   {
                     "group": ["@repo/api-client"],
                     "importNamePattern": "use[A-Z].*",
-                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (decision 2 in docs/frontend/ARCHITECTURE.md)."
+                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
                   }
                 ]
               }
@@ -158,14 +180,14 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "lucide-react": "Import an icon through the Icon component of @repo/ui (rule N in docs/frontend/ARCHITECTURE.md).",
-                  "@tanstack/react-table": "Use the Table component of @repo/ui (decision 3 in docs/frontend/ARCHITECTURE.md)."
+                  "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
                 },
                 "patterns": [
                   {
                     "group": ["@repo/api-client"],
                     "importNamePattern": "use[A-Z].*",
-                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (decision 2 in docs/frontend/ARCHITECTURE.md)."
+                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
                   }
                 ]
               }
@@ -183,14 +205,14 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "lucide-react": "Import an icon through the Icon component of @repo/ui (rule N in docs/frontend/ARCHITECTURE.md).",
-                  "sonner": "Use the Toast component of @repo/ui (decision 8 in docs/frontend/ARCHITECTURE.md)."
+                  "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
+                  "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md)."
                 },
                 "patterns": [
                   {
                     "group": ["@repo/api-client"],
                     "importNamePattern": "use[A-Z].*",
-                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (decision 2 in docs/frontend/ARCHITECTURE.md)."
+                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
                   }
                 ]
               }

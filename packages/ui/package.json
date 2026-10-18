@@ -23,7 +23,8 @@
   },
   "devDependencies": {
     "@clerk/nextjs": "^7.9.17",
-    "@types/node": "^22.20.5",
+    "@repo/api-client": "workspace:*",
+    "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",

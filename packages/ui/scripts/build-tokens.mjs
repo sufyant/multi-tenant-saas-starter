@@ -1,4 +1,4 @@
-// Writes src/styles/tokens.gen.css from tokens/tokens.json, the design tokens of the Starter design system (decision 13 in
+// Writes src/styles/tokens.gen.css from tokens/tokens.json, the design tokens of the Starter design system (F20 in
 // docs/frontend/ARCHITECTURE.md). Node only, no dependency. `pnpm generate` at the repository root runs it; CI fails when the
 // committed file differs (D1).
 import { readFileSync, writeFileSync } from "node:fs";

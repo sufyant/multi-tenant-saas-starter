@@ -20,7 +20,7 @@ export {
 export type Operation = (typeof operations)[number];
 export type OperationId = Operation["operationId"];
 
-/** The response headers that `v1.json` declares for an operation, on any of its answers (decision 10). */
+/** The response headers that `v1.json` declares for an operation, on any of its answers (F6). */
 export function declaredResponseHeaders(
   operationId: OperationId,
 ): readonly string[] {

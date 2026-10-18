@@ -1,4 +1,4 @@
-// Writes what Orval does not carry from the OpenAPI document (decision 10 in docs/frontend/ARCHITECTURE.md; D1):
+// Writes what Orval does not carry from the OpenAPI document (F1 and F6 in docs/frontend/ARCHITECTURE.md; D1):
 // - src/generated/operations.gen.ts: each operation's id, method, path and the response headers it declares. The BFF reads it to
 //   know which headers of an answer reach the browser.
 // - src/generated/msw.gen.ts: one module that re-exports the MSW handlers of every tag. Orval writes one file per tag.

@@ -379,7 +379,7 @@ export function errorCodeMessages(
 const dateFormatting =
   /\.toLocale(?:Date|Time)?String\(|\bIntl\.(?:DateTimeFormat|RelativeTimeFormat)\b/g;
 
-/** Rule F18: only `format-date-time.ts` formats a date or a time (decision 7). */
+/** Rule F18: only `format-date-time.ts` formats a date or a time. */
 export function dateFormattingOutsideFormatter(
   root: string,
   options: Options = {},
@@ -441,24 +441,23 @@ export function enumLiterals(
   return findings;
 }
 
-/** The enums whose values no screen writes by hand (F3). */
-export const contractEnums = [
-  "Language",
-  "MemberRole",
-  "Permission",
-  "ErrorCode",
-  "FieldErrorCode",
-  "AuditOperation",
-  "TenantResponseStatus",
-  "MyTenantResponseStatus",
-  "UserResponseStatus",
-  "UserMembershipResponseTenantStatus",
-  "InvitationResponseState",
-] as const;
+/**
+ * The enums whose values no screen writes by hand (F3): every const object of the generated client but the sort orders
+ * (`...Sort`) and the kinds (`...Kind`). Their values are common words of code and HTML (`email`, `name`, `user`, `platform`), so a
+ * check would refuse `type="email"`. A screen still writes them through the const object: `ListMembersSort.email`.
+ */
+export function contractEnumNames(generatedSchemasFile: string): string[] {
+  const text = readFileSync(generatedSchemasFile, "utf8");
+  return [...text.matchAll(/^export const (\w+) = \{/gm)]
+    .map((match) => match[1] ?? "")
+    .filter((name) => !name.endsWith("Sort") && !name.endsWith("Kind"));
+}
 
 /** Every value of the contract enums, read from the generated client. */
 export function contractEnumValues(generatedSchemasFile: string): Set<string> {
   return new Set(
-    contractEnums.flatMap((name) => enumValues(generatedSchemasFile, name)),
+    contractEnumNames(generatedSchemasFile).flatMap((name) =>
+      enumValues(generatedSchemasFile, name),
+    ),
   );
 }

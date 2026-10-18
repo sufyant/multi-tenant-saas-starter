@@ -2,7 +2,7 @@ import type { ProblemDetails } from "./generated/endpoints.schemas.gen";
 import { isProblemDetails } from "./problem-details";
 
 export type ApiClientOptions = {
-  /** Where the API's paths start. The apps use `/api`: the BFF route handler, which adds the token (decision 10). */
+  /** Where the API's paths start. The apps use `/api`: the BFF route handler, which adds the token (F6). */
   baseUrl: string;
   /** Headers that every request sends. */
   headers?: Record<string, string>;

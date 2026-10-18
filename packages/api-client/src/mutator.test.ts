@@ -8,14 +8,17 @@ import {
   expect,
   expectTypeOf,
   it,
+  vi,
 } from "vitest";
 import {
   acceptInvitation,
   configureApiClient,
   createTenant,
+  getMe,
   listMembers,
   listTenants,
   ProblemDetailsError,
+  removeMember,
   suspendTenant,
   type TenantResponse,
   TenantResponseStatus,
@@ -42,6 +45,16 @@ afterEach(() => {
 afterAll(() => server.close());
 
 describe("apiFetch", () => {
+  it("ApiFetch_BeforeConfigureApiClient_ThrowsAndSendsNothing", async () => {
+    vi.resetModules();
+    const { apiFetch } = await import("./mutator");
+
+    await expect(apiFetch("/v1/me")).rejects.toThrow(
+      "configureApiClient() must run before the first API call.",
+    );
+    expect(requests).toEqual([]);
+  });
+
   it("ListTenants_PlatformGet_SendsTheForwardedHeaders", async () => {
     configureApiClient({ baseUrl, headers: { "X-Request-Source": "test" } });
     const page = getListTenantsResponseMock();
@@ -144,6 +157,34 @@ describe("apiFetch", () => {
 
     expect(tenant.status).toBe(TenantResponseStatus.provisioning);
     expect(requests[0]?.headers.get("Idempotency-Key")).toBe("key-1");
+  });
+
+  it("GetMe_ErrorAnswerThatIsNoProblemDetails_ThrowsWithoutAProblem", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.get(
+        "*/v1/me",
+        () => new HttpResponse("<html>Bad gateway</html>", { status: 502 }),
+      ),
+    );
+
+    const error = await getMe().catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ProblemDetailsError);
+    expect((error as ProblemDetailsError).status).toBe(502);
+    expect((error as ProblemDetailsError).problem).toBeNull();
+  });
+
+  it("RemoveMember_NoContent_ReturnsUndefined", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.delete(
+        "*/v1/tenants/:tenantId/members/:userId",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+
+    expect(await removeMember(tenantId, tenantId)).toBeUndefined();
   });
 
   it("TenantResponseStatus_ValueTheDocumentDoesNotList_IsATypeError", () => {

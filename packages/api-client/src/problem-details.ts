@@ -4,7 +4,7 @@ import {
   type ProblemDetails,
 } from "./generated/endpoints.schemas.gen";
 
-/** What a screen does with an error answer (rule I in docs/frontend/ARCHITECTURE.md). */
+/** What a screen does with an error answer (F4 in docs/frontend/ARCHITECTURE.md). */
 export type ProblemAction =
   | { kind: "sign-in" }
   | { kind: "suspended" }

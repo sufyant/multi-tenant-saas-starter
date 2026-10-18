@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   type AuditDetailsResponse,
   declaredResponseHeaders,
+  findOperation,
   Language,
   MemberRole,
   type RoleResponse,
@@ -96,5 +97,24 @@ describe("declaredResponseHeaders", () => {
     expect(declaredResponseHeaders("GetMe")).not.toContain(
       "Idempotent-Replayed",
     );
+  });
+});
+
+describe("findOperation", () => {
+  it("FindOperation_MethodAndPathOfATenantOperation_IsThatOperation", () => {
+    const operation = findOperation(
+      "get",
+      "/v1/tenants/0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f/members",
+    );
+
+    expect(operation?.operationId).toBe("ListMembers");
+  });
+
+  it("FindOperation_PathTheDocumentLacks_IsUndefined", () => {
+    expect(findOperation("GET", "/v1/tenants/x/members/y/z")).toBeUndefined();
+  });
+
+  it("FindOperation_MethodTheDocumentLacksForThePath_IsUndefined", () => {
+    expect(findOperation("PUT", "/v1/me")).toBeUndefined();
   });
 });

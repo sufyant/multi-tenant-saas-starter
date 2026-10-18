@@ -21,7 +21,7 @@ export default defineConfig({
       override: {
         mutator: { path: "src/mutator.ts", name: "apiFetch" },
         // Orval writes a query's options function only together with its hook, so both exist. The apps use the options only
-        // (decision 2; Biome's noRestrictedImports refuses a `use...` import from this package).
+        // (F2; Biome's noRestrictedImports refuses a `use...` import from this package).
         fetch: { includeHttpResponseReturnType: false },
         query: {
           useMutation: false,

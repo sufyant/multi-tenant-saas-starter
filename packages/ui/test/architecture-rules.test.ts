@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   colorLiterals,
+  contractEnumValues,
   crossFeatureImports,
   dateFormattingOutsideFormatter,
   enumLiterals,
@@ -155,6 +156,21 @@ describe("architecture rules", () => {
 
     expect(enumLiterals(root, new Set(["tenant.not_found"]))).toEqual([
       'a.ts:1: enum value "tenant.not_found" as a literal',
+    ]);
+  });
+
+  it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {
+    const root = folder({
+      "schemas.gen.ts": [
+        "export const Language = {\n  en: 'en',\n  tr: 'tr',\n} as const;",
+        "export const ListMembersSort = {\n  email: 'email',\n} as const;",
+        "export const InviterNameResponseKind = {\n  user: 'user',\n} as const;",
+      ].join("\n"),
+    });
+
+    expect([...contractEnumValues(join(root, "schemas.gen.ts"))]).toEqual([
+      "en",
+      "tr",
     ]);
   });
 });

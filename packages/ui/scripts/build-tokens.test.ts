@@ -72,4 +72,38 @@ describe("buildTokensCss", () => {
     expect(css).toContain("--font-page-title-tracking: -0.02em;");
     expect(css).toContain("--font-mono:");
   });
+
+  it("BuildTokensCss_Breakpoint_GoesIntoTheTailwindThemeAsAValue", () => {
+    const source = {
+      ...tokens([]),
+      breakpoint: { tokens: [{ name: "bp-tablet", value: "768px" }] },
+    };
+
+    expect(buildTokensCss(source)).toContain(
+      "@theme {\n  --breakpoint-tablet: 768px;\n}",
+    );
+  });
+
+  it("BuildTokensCss_Shadow_HasALightAndADarkValue", () => {
+    const source = {
+      ...tokens([]),
+      shadow: {
+        tokens: [
+          {
+            name: "shadow-md",
+            value: { light: "0 4px 16px black", dark: "0 8px 24px black" },
+          },
+        ],
+      },
+    };
+
+    const css = buildTokensCss(source);
+
+    expect(css.slice(0, css.indexOf(".dark"))).toContain(
+      "--shadow-md: 0 4px 16px black;",
+    );
+    expect(css.slice(css.indexOf(".dark"))).toContain(
+      "--shadow-md: 0 8px 24px black;",
+    );
+  });
 });

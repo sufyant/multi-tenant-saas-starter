@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* The design tokens come from tokens.gen.css (decision 13). shadcn's variable names are the token names, so each Tailwind theme
+/* The design tokens come from tokens.gen.css (F20). shadcn's variable names are the token names, so each Tailwind theme
    variable reads the token of the same meaning. A token whose name Tailwind already uses (radius-md, shadow-md, font-sans) keeps
    its name: tokens.gen.css is outside every cascade layer, so its value wins over Tailwind's default in the theme layer. A shadow
    is named here too, because Tailwind writes its default shadow into the utility. */
