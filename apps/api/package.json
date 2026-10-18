@@ -5,6 +5,8 @@
   "scripts": {
     "build": "dotnet build Api.slnx",
     "test": "dotnet test --solution Api.slnx",
-    "codegen": "node -e \"require('fs').rmSync('src/Api/Internal/Generated', { recursive: true, force: true })\" && dotnet run --project src/Api -- codegen write"
+    "codegen": "node scripts/codegen.mjs",
+    "generate:permissions": "node scripts/generate-permissions.mjs",
+    "generate:openapi": "dotnet build src/Api"
   }
 }
