@@ -16,7 +16,7 @@ public partial class AuditOperationTests
     private static readonly string[] Records = ["AuditEntry", "PlatformAuditEntry"];
 
     [Fact]
-    public void WriteAuditRecord_EveryHandler_NamesItsOperationFromAuditOperations()
+    public void WriteAuditEntry_EveryHandler_NamesItsOperationFromAuditOperations()
     {
         var operations = OperationArgumentsOfEveryRecord();
 

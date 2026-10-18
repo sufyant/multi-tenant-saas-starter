@@ -7,7 +7,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Platform;
 
 // A system admin suspends a tenant, for a reason they write, and reactivates it, through the system door. A change of status is
-// announced, and Audit entries it under the tenant; a request that changes nothing announces nothing. SuspendedTenantTests follows
+// announced, and Audit records it under the tenant; a request that changes nothing announces nothing. SuspendedTenantTests follows
 // what a suspended tenant means to its members.
 public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
 {
@@ -184,7 +184,7 @@ public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
         (await SuspensionReasonOfAsync(await admin.GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation))).ShouldBeNull();
     }
 
-    // K3: the platform's record holds the admin's reason; the tenant's record, which its Owners and Admins read, does not.
+    // K3: the platform's entry holds the system admin's reason; the tenant's entry, which its Owners and Admins read, does not.
     [Fact]
     public async Task SuspendTenant_WithAReason_RecordsItInThePlatformEntryOnly()
     {

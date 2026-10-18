@@ -202,7 +202,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
 
     // A read: the invitation's row keeps its version, and neither log gets a record (K3).
     [Fact]
-    public async Task GetInvitationPreview_APendingInvitation_ChangesNothingAndWritesNoAuditRecord()
+    public async Task GetInvitationPreview_APendingInvitation_ChangesNothingAndWritesNoAuditEntry()
     {
         var tenant = await _catalog.AddTenantAsync();
         var invitation = await InvitationAsync(tenant.Id);

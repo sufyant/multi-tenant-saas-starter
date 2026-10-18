@@ -7,7 +7,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Platform;
 
 // PATCH /v1/platform/tenants/{tenantId}: only the platform renames a tenant, through the system door; the slug never changes (K4). A new
-// name is announced, and Audit entries it under the tenant with the old and the new name; the name the tenant has announces nothing.
+// name is announced, and Audit records it under the tenant with the old and the new name; the name the tenant has announces nothing.
 public sealed class TenantRenameTests(Database database) : IAsyncLifetime
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

@@ -81,8 +81,8 @@ public sealed partial class NamesAndPlacesTests
         catchAll.ShouldBeEmpty();
     }
 
-    // N10: a folder becomes a namespace, and a namespace hides a type of the same name (CS0118). A feature folder named after its
-    // action would hide its command, so a feature folder takes the noun form of its root.
+    // N10: a folder becomes a namespace, and a namespace hides a type of the same name (CS0118). No folder has the name of a type
+    // that its project sees; a use case folder may have its action's name, because the role suffix gives every type a longer name.
     [Fact]
     public void NameFolders_EveryProject_HasNoFolderNamedLikeATypeItSees()
     {
@@ -179,16 +179,16 @@ public sealed partial class NamesAndPlacesTests
     }
 
     // N8, the exception of rule 3b: a project's root holds only what the whole module shares: the error lists, the permission list, the
-    // list of audit operations, the DbContext and the module's registration file. Every other file sits in the folder of its resource or of what it is.
+    // list of audit operations and the module's registration file. The DbContext sits at the root of Persistence (rule 5). Every other file sits in the folder of its resource or of what it is.
     [Fact]
-    public void PlaceFiles_ModuleProjectRoot_HoldsOnlyTheModuleCatalogues()
+    public void PlaceFiles_ModuleProjectRoot_HoldsOnlyWhatTheModuleShares()
     {
         var rootFiles = Solution.ModuleProjects
             .SelectMany(project => Directory.EnumerateFiles(Solution.FolderOf(project), "*.cs").Select(file => (Project: project, File: Path.GetFileName(file))))
             .ToList();
 
         var misplaced = rootFiles
-            .Where(file => !ModuleCatalogue().IsMatch(file.File))
+            .Where(file => !SharedByTheModule().IsMatch(file.File))
             .Select(file => $"{file.Project}: {file.File}");
 
         rootFiles.ShouldNotBeEmpty();
@@ -331,6 +331,6 @@ public sealed partial class NamesAndPlacesTests
     [GeneratedRegex(@"^(public|internal)( (sealed|static|abstract|partial))* (class|record|struct|interface|enum) (?<name>\w+)", RegexOptions.Multiline)]
     private static partial Regex TopLevelType();
 
-    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|Permissions\.g|AuditOperations|\w+Module|\w+Infrastructure|\w+DbContext)\.cs$")]
-    private static partial Regex ModuleCatalogue();
+    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|Permissions\.g|AuditOperations|\w+Module|\w+Infrastructure)\.cs$")]
+    private static partial Regex SharedByTheModule();
 }
