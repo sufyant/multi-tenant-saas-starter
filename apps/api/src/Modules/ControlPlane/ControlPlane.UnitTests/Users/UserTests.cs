@@ -44,13 +44,14 @@ public class UserTests
         user.SuspendedBy.ShouldBeNull();
     }
 
-    // A person who joins through an invitation is created at that moment, and is the member of the tenant they join.
+    // A person who joins through an invitation is created at that moment. The catalog adds and counts the membership of the tenant they
+    // join, as it does for a known user (B8), so a new user starts with none.
     [Fact]
-    public void JoinUser_NewPerson_IsCreatedAtTheMomentWithOneMembership()
+    public void JoinUser_NewPerson_IsCreatedAtTheMomentWithNoMembershipYet()
     {
         var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
 
-        (user.CreatedAt, user.MembershipCount).ShouldBe((Now, 1));
+        (user.CreatedAt, user.MembershipCount).ShouldBe((Now, 0));
     }
 
     [Fact]

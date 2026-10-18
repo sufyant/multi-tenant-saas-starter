@@ -54,6 +54,21 @@ internal static class Catalog
         return user;
     }
 
+    // The user's stored count of memberships and the tenant's summary, as the commands leave them (R13). Neither table belongs to a tenant.
+    public static async Task<int> MembershipCountOfAsync(IServiceProvider services, User user)
+    {
+        await using var scope = services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().Users
+            .Where(found => found.Id == user.Id).Select(found => found.MembershipCount).SingleAsync(TestContext.Current.CancellationToken);
+    }
+
+    public static async Task<int> MemberCountOfAsync(IServiceProvider services, Tenant tenant)
+    {
+        await using var scope = services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().Tenants
+            .Where(found => found.Id == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
+    }
+
     private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)
     {
         await using var scope = services.CreateAsyncScope();

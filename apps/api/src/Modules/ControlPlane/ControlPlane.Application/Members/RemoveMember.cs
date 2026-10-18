@@ -52,10 +52,7 @@ public static class RemoveMemberHandler
             return (allowed, null);
         }
 
-        catalog.Remove(target);
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.CountMembershipAsync(target.UserId, -1, cancellationToken);
-        await catalog.SaveChangesAsync(cancellationToken);
+        await catalog.RemoveMembershipAsync(tenant, target, cancellationToken);
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);

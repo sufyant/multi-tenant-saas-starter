@@ -71,7 +71,8 @@ internal sealed class User(Guid id, string externalId)
 
     /// <summary>
     /// A person the catalog does not know joins through an invitation, at this moment: the invited address, which the identity provider
-    /// verified, and the names they typed, without the spaces around them. They are the member of the tenant they join.
+    /// verified, and the names they typed, without the spaces around them. They have no membership yet: the catalog adds the membership of
+    /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>
     public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language, DateTimeOffset now) =>
         new(id, externalId)
@@ -81,7 +82,6 @@ internal sealed class User(Guid id, string externalId)
             LastName = lastName.Trim(),
             Language = language,
             CreatedAt = now,
-            MembershipCount = 1,
         };
 
     /// <summary>

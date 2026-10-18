@@ -115,14 +115,7 @@ public static class AcceptInvitationHandler
             catalog.Add(user);
         }
 
-        catalog.AddMember(user.Id, invitation.RoleId, now);
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        if (existing is not null)
-        {
-            await catalog.CountMembershipAsync(existing.Id, 1, cancellationToken);
-        }
-
-        await catalog.SaveChangesAsync(cancellationToken);
+        await catalog.AddMembershipAsync(tenant, user.Id, invitation.RoleId, now, cancellationToken);
         return (
             TenantSummary.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
             new MemberJoined(Guid.CreateVersion7(now), now, tenant.Id, user.Id));

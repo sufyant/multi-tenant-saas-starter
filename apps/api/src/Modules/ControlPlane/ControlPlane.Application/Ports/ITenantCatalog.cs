@@ -114,21 +114,23 @@ public interface ITenantCatalog
     /// </summary>
     internal Task<User?> FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Adds the change to the user's count of memberships (R13), in the database, so two tenants' commands for one user never lose one.
-    /// The caller has added or removed the membership in the active tenant, under the tenant's lock (K6). It saves the pending changes
-    /// first, so a user the transaction adds is counted too.
-    /// </summary>
-    internal Task CountMembershipAsync(Guid userId, int change, CancellationToken cancellationToken);
-
     internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Whether the user is on the system admin list. The system admin list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
-    internal void AddMember(Guid userId, Guid roleId, DateTimeOffset joinedAt);
+    /// <summary>
+    /// Adds the user to the active tenant with the role, and keeps what follows from it (R13): the tenant's summary, and the user's count
+    /// of memberships, to which the database adds one, so two tenants' commands for one user never lose a change. Then it saves. The
+    /// caller holds the tenant's lock (K6). A user the transaction adds is saved before the count, so it is counted too.
+    /// </summary>
+    internal Task AddMembershipAsync(Tenant tenant, Guid userId, Guid roleId, DateTimeOffset joinedAt, CancellationToken cancellationToken);
 
-    internal void Remove(Membership membership);
+    /// <summary>
+    /// Removes the membership from the active tenant, and keeps what follows from it as <see cref="AddMembershipAsync"/> does: the
+    /// tenant's summary, and the user's count, from which the database takes one. Then it saves. The caller holds the tenant's lock (K6).
+    /// </summary>
+    internal Task RemoveMembershipAsync(Tenant tenant, Membership membership, CancellationToken cancellationToken);
 
     /// <summary>
     /// Adds the active tenant itself, which its creation adds, unless another tenant has its slug. The slug's unique index
