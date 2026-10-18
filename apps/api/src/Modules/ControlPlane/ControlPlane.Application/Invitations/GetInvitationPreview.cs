@@ -38,7 +38,7 @@ public static class GetInvitationPreviewHandler
         CancellationToken cancellationToken)
     {
         if (await catalog.FindTenantAsync(cancellationToken) is not { } tenant
-            || await catalog.FindInvitationAsync(InvitationToken.Hash(query.Secret), cancellationToken) is not { } invitation)
+            || await catalog.FindInvitationAsync(InvitationSecret.Hash(query.Secret), cancellationToken) is not { } invitation)
         {
             return Errors.InvitationNotFound;
         }

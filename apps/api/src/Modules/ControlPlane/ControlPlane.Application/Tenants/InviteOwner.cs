@@ -73,7 +73,7 @@ public static class InviteOwnerHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        var secret = InvitationToken.Generate();
+        var secret = InvitationSecret.Generate();
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now),
             tenant.Id,

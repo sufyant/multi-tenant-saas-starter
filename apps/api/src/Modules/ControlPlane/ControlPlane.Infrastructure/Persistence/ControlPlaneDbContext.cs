@@ -119,9 +119,11 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         {
             invitation.Property(i => i.Id).ValueGeneratedNever();
             invitation.Property(i => i.Email).HasMaxLength(Invitation.EmailMaxLength);
-            invitation.Property(i => i.TokenHash).HasMaxLength(64);
+            // The column keeps its first name until the maintainer decides its rename, an expand and contract change (deployment.md,
+            // section 8).
+            invitation.Property(i => i.SecretHash).HasMaxLength(64).HasColumnName("token_hash");
             invitation.Property(i => i.SignUpInvitationId).HasMaxLength(255);
-            invitation.HasIndex(i => i.TokenHash).IsUnique();
+            invitation.HasIndex(i => i.SecretHash).IsUnique().HasDatabaseName("ix_invitations_token_hash");
             // The partial unique index ix_invitations_pending_email keeps one pending invitation for each tenant and lower(email) (K2).
             // It is on an expression, which EF Core does not model, so the migration AddInvitationIndexes creates it in SQL.
             invitation.HasIndex(i => i.ExpiresAt);

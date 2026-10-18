@@ -4,8 +4,8 @@ using SharedKernel;
 namespace ControlPlane.Domain.Invitations;
 
 /// <summary>
-/// An invitation to join a tenant with a role. It is single-use and expires. Its token is born with it and only the token's hash is
-/// kept. Accepting it needs both the token and a verified email address of the accepting user that matches the invited one, so a
+/// An invitation to join a tenant with a role. It is single-use and expires. Its secret is born with it and only the secret's hash is
+/// kept. Accepting it needs both the secret and a verified email address of the accepting user that matches the invited one, so a
 /// forwarded link does not let someone else in.
 /// </summary>
 internal sealed class Invitation : ITenantEntity
@@ -24,7 +24,7 @@ internal sealed class Invitation : ITenantEntity
         Guid invitedBy,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
-        string tokenHash,
+        string secretHash,
         Language language)
     {
         Id = id;
@@ -34,7 +34,7 @@ internal sealed class Invitation : ITenantEntity
         InvitedBy = invitedBy;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
-        TokenHash = tokenHash;
+        SecretHash = secretHash;
         Language = language;
         Status = InvitationStatus.Pending;
     }
@@ -48,10 +48,10 @@ internal sealed class Invitation : ITenantEntity
     public Guid RoleId { get; private init; }
 
     /// <summary>
-    /// The SHA-256 hash of the token the invitation's link carries. Only an invitation from before tokens were born with their
+    /// The SHA-256 hash of the secret the invitation's link carries. Only an invitation from before secrets were born with their
     /// invitation has none; it can never be accepted.
     /// </summary>
-    public string? TokenHash { get; private init; }
+    public string? SecretHash { get; private init; }
 
     public Guid InvitedBy { get; private init; }
 
@@ -82,9 +82,9 @@ internal sealed class Invitation : ITenantEntity
         Guid invitedBy,
         DateTimeOffset now,
         TimeSpan lifetime,
-        string token,
+        string secret,
         Language language) =>
-        new(id, tenantId, email.Trim(), role.Id, invitedBy, now, now + lifetime, InvitationToken.Hash(token), language);
+        new(id, tenantId, email.Trim(), role.Id, invitedBy, now, now + lifetime, InvitationSecret.Hash(secret), language);
 
     /// <summary>
     /// Whether a member of the inviter's role may invite someone with the role (K1): only an Owner gives the Owner role. It changes

@@ -21,8 +21,8 @@ public class InvitationTests
     {
         var invitation = Invite("ada@example.com");
 
-        invitation.TokenHash.ShouldBe(InvitationToken.Hash(Token));
-        invitation.TokenHash.ShouldNotBeNull().ShouldNotContain(Token);
+        invitation.SecretHash.ShouldBe(InvitationSecret.Hash(Token));
+        invitation.SecretHash.ShouldNotBeNull().ShouldNotContain(Token);
     }
 
     // Decision 5 of step 20j: the invitation keeps the language of its email, and the person who accepts it starts with it.

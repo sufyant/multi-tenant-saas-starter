@@ -53,7 +53,7 @@ public static class AcceptInvitationHandler
         // A suspension then runs before or after the acceptance, never between its check and its change. A code that names no tenant
         // answers like an invitation that does not exist, and so does a cancelled invitation.
         if (await catalog.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
-            || await catalog.FindInvitationForUpdateAsync(InvitationToken.Hash(command.Secret), cancellationToken) is not { } invitation
+            || await catalog.FindInvitationForUpdateAsync(InvitationSecret.Hash(command.Secret), cancellationToken) is not { } invitation
             || invitation.Status == InvitationStatus.Cancelled)
         {
             return (Errors.InvitationNotFound, null);

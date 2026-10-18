@@ -78,7 +78,7 @@ public static class CreateTenantHandler
             return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
         }
 
-        var secret = InvitationToken.Generate();
+        var secret = InvitationSecret.Generate();
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now),
             tenant.Value.Id,

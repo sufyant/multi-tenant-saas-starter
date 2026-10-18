@@ -96,11 +96,11 @@ public interface ITenantCatalog
         BuiltInRole? role,
         CancellationToken cancellationToken);
 
-    /// <summary>The invitation with this token hash, without a lock, for a read; null when the active tenant has none.</summary>
-    internal Task<Invitation?> FindInvitationAsync(string tokenHash, CancellationToken cancellationToken);
+    /// <summary>The invitation with this secret hash, without a lock, for a read; null when the active tenant has none.</summary>
+    internal Task<Invitation?> FindInvitationAsync(string secretHash, CancellationToken cancellationToken);
 
-    /// <summary>The invitation with this token hash, locked for the rest of the transaction so it is accepted only once.</summary>
-    internal Task<Invitation?> FindInvitationForUpdateAsync(string tokenHash, CancellationToken cancellationToken);
+    /// <summary>The invitation with this secret hash, locked for the rest of the transaction so it is accepted only once.</summary>
+    internal Task<Invitation?> FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken);
 
     /// <summary>The invitation with this id, locked for the rest of the transaction so the steps that change it run one at a time.</summary>
     internal Task<Invitation?> FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken);

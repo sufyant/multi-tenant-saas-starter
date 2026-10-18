@@ -94,7 +94,7 @@ public static class InviteMemberHandler
             await catalog.SaveChangesAsync(cancellationToken);
         }
 
-        var secret = InvitationToken.Generate();
+        var secret = InvitationSecret.Generate();
         var language = command.Language ?? inviter.Language;
         var invitation = Invitation.Create(Guid.CreateVersion7(now), tenant.Id, email, role, inviter.Id, now, invitations.Lifetime, secret, language);
         catalog.Add(invitation);
