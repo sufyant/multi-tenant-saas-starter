@@ -156,6 +156,18 @@ A caller passes the three secrets to `deploy.yml` by name. The called job sets `
 
 `docs/deployment.md` gives the order of the first deployment and the format of each value.
 
+### 3.7 Repository secrets for the Playwright tests
+
+The job `e2e` in `.github/workflows/ci.yml` runs the Playwright tests of `apps/web` and `apps/platform` (F35 and F37 in `docs/frontend/ARCHITECTURE.md`). The tests sign in through a Clerk development instance, so the job needs three repository secrets. The script never sets or reads them.
+
+| Name | Kind | What it holds | Who sets it |
+| --- | --- | --- | --- |
+| `CLERK_PUBLISHABLE_KEY_TEST` | secret | The publishable key (`pk_test_...`) of the Clerk development instance. It is not confidential, but the job reads the three values from one place | The maintainer, with `gh secret set CLERK_PUBLISHABLE_KEY_TEST` |
+| `CLERK_SECRET_KEY_TEST` | secret | The secret key (`sk_test_...`) of the same instance. Never a key of the production instance | The maintainer, with `gh secret set CLERK_SECRET_KEY_TEST` |
+| `E2E_CLERK_USER_EMAIL` | secret | The address of a user of the same instance, with `+clerk_test` in it. It signs in with the code `424242`, and no email goes out | The maintainer, with `gh secret set E2E_CLERK_USER_EMAIL` |
+
+GitHub gives no repository secret to a workflow run from a fork's pull request, and gives a Dependabot pull request the Dependabot secrets only (GitHub Docs: "Using secrets in GitHub Actions", "Automating Dependabot with GitHub Actions"). `delivery.yml` passes no secret to `ci.yml`. In these runs the job skips its steps with the notice "E2E skipped" and passes. To run the tests on Dependabot pull requests too, set the same three values with `gh secret set <name> --app dependabot`.
+
 ## 4. Plan limits
 
 Rulesets, including tag rulesets, and environment secrets are enforced on private repositories only with GitHub Pro, Team or Enterprise. The same is true for environments and their deployment branches and tags.
@@ -216,7 +228,6 @@ Source: GitHub Docs: "Configuring a package's access control and visibility" and
 | --- | --- | --- |
 | `LICENSE` | After the maintainer decides the licence | The maintainer has not decided the licence. |
 | Required signed commits | After commit signing works for cloud agents | Cloud agents cannot sign commits yet. The rule would block their pull requests. |
-| Playwright end-to-end tests in CI | When a Clerk development instance and its keys exist as CI secrets | The tests need a real Clerk instance. |
 | Keep the Grype, Syft and Railway CLI image digests in `ci.yml`, `delivery.yml` and `deploy.yml`, and the PostgreSQL image digest in `apps/api/db/postgres-image`, current. Proposal: write the images as `FROM` lines in a file that Dependabot's `docker` ecosystem watches, for example `.github/images/Dockerfile`. The jobs read the references from that file. Dependabot then opens the pull requests | A later CI step | Dependabot's `github-actions` ecosystem does not update an image in a `run` step. Until then, the maintainer updates the digests by hand. |
 | NuGet lock files (`packages.lock.json`) and restore in locked mode | Later; check first that Dependabot updates them | A lock file that Dependabot does not update would block its pull requests. `setup-dotnet` caches NuGet packages only with lock files. |
 | Upgrade Node to the next LTS line (`.nvmrc`, the build image and the distroless runtime image together) | Before Node 22 reaches end of life (April 2027) | A major upgrade needs its own tested pull request. |
