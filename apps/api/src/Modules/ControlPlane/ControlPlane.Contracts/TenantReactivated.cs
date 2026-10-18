@@ -7,6 +7,6 @@ namespace ControlPlane.Contracts;
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="ReactivatedBy">The catalog user id of the system admin who reactivated the tenant.</param>
 /// <param name="TenantName">
-/// The tenant's name at that moment, for its audit record. Null only in an event published before the name was added.
+/// The tenant's name at that moment, for its audit entry. Null only in an event published before the name was added.
 /// </param>
 public sealed record TenantReactivatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReactivatedBy, string? TenantName);

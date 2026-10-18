@@ -4069,7 +4069,7 @@
           "platform"
         ],
         "type": "string",
-        "description": "The kind of actor of an audit record."
+        "description": "The kind of actor of an audit entry."
       },
       "AuditEntryResponse": {
         "required": [
@@ -4110,7 +4110,7 @@
             "$ref": "#/components/schemas/AuditTargetResponse"
           }
         },
-        "description": "One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record\nkeeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email\naddress."
+        "description": "One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry\nkeeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email\naddress."
       },
       "AuditOperation": {
         "enum": [
@@ -4133,7 +4133,7 @@
           "user.suspended"
         ],
         "type": "string",
-        "description": "The operation of an audit record, area.action."
+        "description": "The operation of an audit entry, area.action."
       },
       "AuditTargetResponse": {
         "required": [
@@ -4173,7 +4173,7 @@
           "invitation"
         ],
         "type": "string",
-        "description": "The kind of target of an audit record."
+        "description": "The kind of target of an audit entry."
       },
       "ChangeMemberRoleRequest": {
         "required": [

@@ -25,7 +25,7 @@ public sealed class RecordMemberJoinedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, joined.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberJoined_EventArrivesTwice_WritesOneEntry()
     {

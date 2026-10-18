@@ -8,7 +8,7 @@ namespace Audit.IntegrationTests.Tenants;
 
 // The Audit module records a tenant's suspension and its reactivation when ControlPlane announces them, in the tenant's transaction:
 // in the platform's log by the system admin, and in the tenant's own log by the platform, with no person in it (K3). Only the
-// platform's record of a suspension holds its reason.
+// platform's entry of a suspension holds its reason.
 public sealed class RecordTenantSuspensionTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -29,7 +29,7 @@ public sealed class RecordTenantSuspensionTests(Database database)
             .ShouldBe($"tenant.suspended|Platform|-|Tenant|{suspended.TenantId}|Acme");
     }
 
-    // The reason is the system admin's: the platform's record holds it, and the tenant's record, which its Owners and Admins read, does not.
+    // The reason is the system admin's: the platform's entry holds it, and the tenant's entry, which its Owners and Admins read, does not.
     [Fact]
     public async Task RecordTenantSuspended_TenantSuspended_KeepsTheReasonInThePlatformEntryOnly()
     {
@@ -57,7 +57,7 @@ public sealed class RecordTenantSuspensionTests(Database database)
             .ShouldBe($"tenant.reactivated|Platform|-|Tenant|{reactivated.TenantId}|Acme");
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id in each log, so each log holds it once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id in each log, so each log holds it once.
     [Fact]
     public async Task RecordTenantSuspended_EventArrivesTwice_WritesOneEntryInEachLog()
     {

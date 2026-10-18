@@ -9,7 +9,7 @@ namespace Audit.Infrastructure.Persistence;
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
 public sealed class AuditLog(AuditDbContext audit) : IAuditLog
 {
-    async Task IAuditLog.RecordAsync(PlatformAuditEntry? platform, AuditEntry? tenant, CancellationToken cancellationToken)
+    async Task IAuditLog.RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken)
     {
         var stored = tenant is not null
             ? await audit.Entries.AnyAsync(entry => entry.Id == tenant.Id, cancellationToken)
@@ -32,11 +32,11 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
         await audit.SaveChangesAsync(cancellationToken);
     }
 
-    async Task<IReadOnlyList<AuditRecord>> IAuditLog.ReadTenantLogAsync(CursorRequest page, CancellationToken cancellationToken) =>
+    async Task<IReadOnlyList<AuditEntry>> IAuditLog.ListTenantEntriesAsync(CursorRequest page, CancellationToken cancellationToken) =>
         await PageOf(audit.Entries, page).ToListAsync(cancellationToken);
 
     // An entry about a tenant has the tenant as its target. The index on the target and the order serves the filter (K5).
-    async Task<IReadOnlyList<AuditRecord>> IAuditLog.ReadPlatformLogAsync(CursorRequest page, Guid? tenantId, CancellationToken cancellationToken) =>
+    async Task<IReadOnlyList<AuditEntry>> IAuditLog.ListPlatformEntriesAsync(CursorRequest page, Guid? tenantId, CancellationToken cancellationToken) =>
         await PageOf(
                 tenantId is { } tenant
                     ? audit.PlatformEntries.Where(entry => entry.TargetKind == AuditTargetKind.Tenant && entry.TargetId == tenant)
@@ -46,16 +46,16 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
 
     // Newest first, by the moment and then the id. The cursor's place is compared as one row value, (occurred_at, id) < (at, id), which
     // the index on the same columns serves (K5).
-    private static IQueryable<AuditRecord> PageOf<TRecord>(IQueryable<TRecord> log, CursorRequest page)
-        where TRecord : AuditRecord
+    private static IQueryable<AuditEntry> PageOf<TEntry>(IQueryable<TEntry> log, CursorRequest page)
+        where TEntry : AuditEntry
     {
         var after = page.After is { } place
-            ? log.Where(record => EF.Functions.LessThan(ValueTuple.Create(record.OccurredAt, record.Id), ValueTuple.Create(place.At, place.Id)))
+            ? log.Where(entry => EF.Functions.LessThan(ValueTuple.Create(entry.OccurredAt, entry.Id), ValueTuple.Create(place.At, place.Id)))
             : log;
 
         return after
-            .OrderByDescending(record => record.OccurredAt)
-            .ThenByDescending(record => record.Id)
+            .OrderByDescending(entry => entry.OccurredAt)
+            .ThenByDescending(entry => entry.Id)
             .Take(page.Limit + 1)
             .AsNoTracking();
     }

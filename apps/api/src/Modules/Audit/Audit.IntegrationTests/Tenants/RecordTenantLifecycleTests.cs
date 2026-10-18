@@ -78,7 +78,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
             .ShouldBe($"tenant.reopened|Platform|-|Tenant|{reopened.TenantId}|Acme");
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id in each log, so each log holds it once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id in each log, so each log holds it once.
     [Fact]
     public async Task RecordTenantClosed_EventArrivesTwice_WritesOneEntryInEachLog()
     {

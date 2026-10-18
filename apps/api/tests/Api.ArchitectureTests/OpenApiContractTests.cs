@@ -198,7 +198,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         EnumOf(SchemaAt(MemberRoleSchema)).ShouldBe(JsonValuesOf(typeof(MemberRole)));
     }
 
-    // N11 and K3: the operations of the audit records are one enum in the document, so a client knows each one and hears of a new one.
+    // N11 and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.
     [Fact]
     public void BuildOpenApiDocument_AuditOperation_ListsEveryOperationOfAuditOperations()
     {

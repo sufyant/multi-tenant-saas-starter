@@ -400,12 +400,12 @@ export interface components {
             deleted: null | boolean;
         };
         /**
-         * @description The kind of actor of an audit record.
+         * @description The kind of actor of an audit entry.
          * @enum {string}
          */
         AuditActorResponseKind: "user" | "platform";
         /**
-         * @description One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record
+         * @description One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry
          *     keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
          *     address.
          */
@@ -420,7 +420,7 @@ export interface components {
             target: components["schemas"]["AuditTargetResponse"];
         };
         /**
-         * @description The operation of an audit record, area.action.
+         * @description The operation of an audit entry, area.action.
          * @enum {string}
          */
         AuditOperation: "invitation.revoked" | "member.invited" | "member.joined" | "member.removed" | "member.role_changed" | "tenant.closed" | "tenant.created" | "tenant.owner_invited" | "tenant.reactivated" | "tenant.renamed" | "tenant.reopened" | "tenant.suspended" | "user.deleted" | "user.preferences_changed" | "user.reactivated" | "user.renamed" | "user.suspended";
@@ -436,7 +436,7 @@ export interface components {
             deleted: null | boolean;
         };
         /**
-         * @description The kind of target of an audit record.
+         * @description The kind of target of an audit entry.
          * @enum {string}
          */
         AuditTargetResponseKind: "tenant" | "user" | "invitation";

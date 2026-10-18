@@ -87,7 +87,7 @@ public class UserTests
         user.SuspendedAt.ShouldBeNull();
     }
 
-    // A change is announced once, so Audit records it once (K3): only the first suspension changes the user.
+    // A change is announced once, so Audit entries it once (K3): only the first suspension changes the user.
     [Fact]
     public void SuspendUser_Twice_ChangesTheUserOnlyTheFirstTime()
     {
@@ -130,7 +130,7 @@ public class UserTests
         (user.FirstName, user.LastName).ShouldBe(("Ada", "King"));
     }
 
-    // Renaming sets a state: the same names, with spaces around them, change nothing, so Audit records nothing (K3).
+    // Renaming sets a state: the same names, with spaces around them, change nothing, so Audit entries nothing (K3).
     [Fact]
     public void RenameUser_SameNamesWithSpaces_IsNoChange()
     {
@@ -186,7 +186,7 @@ public class UserTests
         (user.Language, user.TimeZone).ShouldBe((Language.Ar, "Asia/Dubai"));
     }
 
-    // Changing the preferences sets a state (I1): the values the user has change nothing, so Audit records nothing (K3).
+    // Changing the preferences sets a state (I1): the values the user has change nothing, so Audit entries nothing (K3).
     [Fact]
     public void ChangePreferences_TheValuesTheUserHas_IsNoChange()
     {

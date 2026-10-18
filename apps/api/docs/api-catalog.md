@@ -97,7 +97,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 - A new invitation to an email with a pending invitation in the same tenant replaces it. The old link stops working at once. The emails are compared without case.
 - A replaced or a revoked invitation becomes `Cancelled`. Accepting it answers 404 `invitation.not_found`. There is no other status.
-- A replacement is one command and one audit record: `member.invited`, with the replaced invitation's id in its details. It writes no `invitation.revoked` record (K3).
+- A replacement is one command and one audit entry: `member.invited`, with the replaced invitation's id in its details. It writes no `invitation.revoked` record (K3).
 - "Send again" is not an endpoint of its own.
 - An invitation lives `ControlPlane:Invitations:Lifetime`, at least one day. The email says how long the link works, in whole days.
 - An invitation keeps the language of its email (K8).
@@ -110,11 +110,11 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K3. Audit
 
-- Every command that changes state writes one audit record in each log it belongs to. An architecture test enforces it. Reads write nothing.
+- Every command that changes state writes one audit entry in each log it belongs to. An architecture test enforces it. Reads write nothing.
 - An audit entry stores no personal name or email address. It stores the actor's catalog user id, the target's kind and id, and the target's name only when the target is not a person. A tenant's name stays in the entry.
 - A `member.invited` entry stores the invitation id, not the email address.
 - The Audit column of the endpoint tables lists every operation. It is the specification. `AuditOperations` in `Audit.Domain` declares each operation once, and every Audit handler names its operation from it. The OpenAPI document publishes them as the schema `AuditOperation`, the type of `operation` in both logs. `AuditOperationTests` fails when the column and the class differ. A stored operation never changes.
-- A role in the details of an entry is `owner`, `admin` or `member`, as the API names it (K5). ControlPlane names it once, in `Role.NameOf`, for its events, and Audit records that name.
+- A role in the details of an entry is `owner`, `admin` or `member`, as the API names it (K5). ControlPlane names it once, in `Role.NameOf`, for its events, and Audit entries that name.
 - The read side resolves names in one batch through an interface in `ControlPlane.Contracts` (API composition). Audit never reads `control_plane` tables directly.
 - When a system admin deletes a user, `DeleteUser` erases the catalog's email address and names, so the read side gives the user no name and marks them deleted, and the screen shows "Deleted user". No audit entry changes, and the entry stays (GDPR Article 17).
 - Every action of a system admin goes to the platform log. When it changes a tenant, it also goes to that tenant's log, with "Platform" in place of the person. In the tenant log, a system admin's action has the actor kind "platform" and no actor id.

@@ -5,14 +5,14 @@ using ControlPlane.Contracts;
 
 namespace Audit.Application.Members;
 
-// The audit record of a removed member, in the tenant's own log, under that tenant: the member who removed them acted, and the removed
+// The audit entry of a removed member, in the tenant's own log, under that tenant: the member who removed them acted, and the removed
 // member is the target, by id (K3). The details hold the role the member had.
 public static class RecordMemberRemovedHandler
 {
     public static Task HandleAsync(MemberRemovedEvent removed, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
-            new AuditEntry(
+            new TenantAuditEntry(
                 removed.EventId,
                 removed.OccurredAt,
                 AuditActor.User(removed.RemovedBy),

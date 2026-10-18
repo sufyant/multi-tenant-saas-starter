@@ -1,7 +1,7 @@
 namespace ControlPlane.Contracts;
 
 /// <summary>
-/// An Owner or an Admin invited someone to the tenant, with a role. Published through the outbox; Audit records it, in its own
+/// An Owner or an Admin invited someone to the tenant, with a role. Published through the outbox; Audit entries it, in its own
 /// transaction, as the tenant's id travels in the message's envelope. The email goes out later, once the identity provider has let the
 /// address sign up (<see cref="MemberInvitationReadyEvent"/>).
 /// </summary>

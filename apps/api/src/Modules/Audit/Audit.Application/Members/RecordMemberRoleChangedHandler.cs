@@ -5,14 +5,14 @@ using ControlPlane.Contracts;
 
 namespace Audit.Application.Members;
 
-// The audit record of a member's new role, in the tenant's own log, under that tenant: the member who changed it acted, and the member
+// The audit entry of a member's new role, in the tenant's own log, under that tenant: the member who changed it acted, and the member
 // whose role changed is the target, by id (K3). The details hold the old and the new role.
 public static class RecordMemberRoleChangedHandler
 {
     public static Task HandleAsync(MemberRoleChangedEvent changed, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
-            new AuditEntry(
+            new TenantAuditEntry(
                 changed.EventId,
                 changed.OccurredAt,
                 AuditActor.User(changed.ChangedBy),

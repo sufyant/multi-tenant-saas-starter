@@ -16,7 +16,7 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
 {
     public const string Schema = "audit";
 
-    internal DbSet<AuditEntry> Entries => Set<AuditEntry>();
+    internal DbSet<TenantAuditEntry> Entries => Set<TenantAuditEntry>();
 
     internal DbSet<PlatformAuditEntry> PlatformEntries => Set<PlatformAuditEntry>();
 
@@ -24,36 +24,36 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
     {
         modelBuilder.HasDefaultSchema(Schema);
 
-        modelBuilder.Entity<AuditEntry>(entry =>
+        modelBuilder.Entity<TenantAuditEntry>(entry =>
         {
             entry.ToTable("entries");
-            MapRecord(entry);
+            MapEntry(entry);
 
             // The cursor of the tenant's log reads newest first inside the tenant that row level security keeps (K5). "TenantId" is
             // the tenant column that TenantDbContext gives every tenant entity.
             entry.Property<Guid>("TenantId");
-            entry.HasIndex("TenantId", nameof(AuditRecord.OccurredAt), nameof(AuditRecord.Id));
+            entry.HasIndex("TenantId", nameof(AuditEntry.OccurredAt), nameof(AuditEntry.Id));
         });
 
         modelBuilder.Entity<PlatformAuditEntry>(entry =>
         {
             entry.ToTable("platform_entries");
-            MapRecord(entry);
+            MapEntry(entry);
             entry.HasIndex(e => new { e.OccurredAt, e.Id });
             // K5: the tenant filter of the platform's log reads the entries about one target, in the order of the log.
             entry.HasIndex(e => new { e.TargetKind, e.TargetId, e.OccurredAt, e.Id });
         });
     }
 
-    private static void MapRecord<TRecord>(EntityTypeBuilder<TRecord> entry)
-        where TRecord : AuditRecord
+    private static void MapEntry<TEntry>(EntityTypeBuilder<TEntry> entry)
+        where TEntry : AuditEntry
     {
         entry.Property(e => e.Id).ValueGeneratedNever();
         entry.Property(e => e.ActorKind).HasConversion<string>().HasMaxLength(20);
         entry.Property(e => e.Kind).HasConversion<string>().HasMaxLength(20);
-        entry.Property(e => e.Operation).HasMaxLength(AuditRecord.OperationMaxLength);
+        entry.Property(e => e.Operation).HasMaxLength(AuditEntry.OperationMaxLength);
         entry.Property(e => e.TargetKind).HasConversion<string>().HasMaxLength(20);
-        entry.Property(e => e.TargetName).HasMaxLength(AuditRecord.TargetNameMaxLength);
+        entry.Property(e => e.TargetName).HasMaxLength(AuditEntry.TargetNameMaxLength);
         entry.Property(e => e.Details).HasColumnType("jsonb");
     }
 }

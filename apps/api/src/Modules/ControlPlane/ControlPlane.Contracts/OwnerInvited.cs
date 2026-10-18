@@ -2,7 +2,7 @@ namespace ControlPlane.Contracts;
 
 /// <summary>
 /// A system admin invited an Owner into a tenant that has none, because its first Owner never accepted. Published through the outbox;
-/// Audit records it in the platform's log and in the tenant's, as the tenant's id travels in the message's envelope (K3). The email goes
+/// Audit entries it in the platform's log and in the tenant's, as the tenant's id travels in the message's envelope (K3). The email goes
 /// out later, once the identity provider has let the address sign up (<see cref="MemberInvitationReadyEvent"/>).
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>

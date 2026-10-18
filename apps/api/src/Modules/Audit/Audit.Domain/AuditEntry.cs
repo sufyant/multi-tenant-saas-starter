@@ -3,23 +3,23 @@ using SharedKernel;
 namespace Audit.Domain;
 
 /// <summary>
-/// One record of an audit log: who did what to what, and when. It holds no personal name and no email address (K3): the actor and a
+/// One entry of an audit log: who did what to what, and when. It holds no personal name and no email address (K3): the actor and a
 /// target person are catalog user ids, and the read side resolves their names through ControlPlane. A target that is not a person
-/// keeps its name as it was at that moment. Records are business data kept for years, and they are never changed once written.
+/// keeps its name as it was at that moment. Entries are business data kept for years, and they are never changed once written.
 /// </summary>
-internal abstract class AuditRecord
+internal abstract class AuditEntry
 {
     public const int OperationMaxLength = 500;
 
     public const int TargetNameMaxLength = 100;
 
-    // For EF Core, which reads a record back.
-    protected AuditRecord()
+    // For EF Core, which reads an entry back.
+    protected AuditEntry()
     {
         Operation = null!;
     }
 
-    protected AuditRecord(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details)
+    protected AuditEntry(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details)
     {
         (Id, OccurredAt, Operation, Details) = (id, occurredAt, operation, details);
         (ActorKind, ActorId) = (actor.Kind, actor.UserId);
@@ -50,21 +50,21 @@ internal abstract class AuditRecord
     public string? Details { get; private init; }
 }
 
-/// <summary>A record of a tenant's own log, under that tenant (row level security).</summary>
-internal sealed class AuditEntry : AuditRecord, ITenantEntity
+/// <summary>An entry of a tenant's own log, under that tenant (row level security).</summary>
+internal sealed class TenantAuditEntry : AuditEntry, ITenantEntity
 {
-    private AuditEntry()
+    private TenantAuditEntry()
     {
     }
 
-    public AuditEntry(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details = null)
+    public TenantAuditEntry(Guid id, DateTimeOffset occurredAt, AuditActor actor, string operation, AuditTarget target, string? details = null)
         : base(id, occurredAt, actor, operation, target, details)
     {
     }
 }
 
-/// <summary>A record of the platform's log: what system admins did, above tenants.</summary>
-internal sealed class PlatformAuditEntry : AuditRecord
+/// <summary>An entry of the platform's log: what system admins did, above tenants.</summary>
+internal sealed class PlatformAuditEntry : AuditEntry
 {
     private PlatformAuditEntry()
     {

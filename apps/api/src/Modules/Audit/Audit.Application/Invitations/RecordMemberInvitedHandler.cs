@@ -5,15 +5,15 @@ using ControlPlane.Contracts;
 
 namespace Audit.Application.Invitations;
 
-// The audit record of an invitation, in the tenant's own log, under that tenant: the member who invited acted, and the invitation is the
+// The audit entry of an invitation, in the tenant's own log, under that tenant: the member who invited acted, and the invitation is the
 // target, by its id. The details hold the role and the invitation it replaced. The event carries the invited address for Notifications;
-// the record stores none (K3).
+// the entry stores none (K3).
 public static class RecordMemberInvitedHandler
 {
     public static Task HandleAsync(MemberInvitedEvent invited, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
-            new AuditEntry(
+            new TenantAuditEntry(
                 invited.EventId,
                 invited.OccurredAt,
                 AuditActor.User(invited.InvitedBy),

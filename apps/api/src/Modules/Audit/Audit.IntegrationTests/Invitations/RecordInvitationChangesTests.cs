@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Audit.IntegrationTests.Invitations;
 
 // The Audit module records an invitation and its revocation in the tenant's own log: the member who acted, and the invitation by its
-// id. The invited email address travels in the event for Notifications, and never reaches a record (K3).
+// id. The invited email address travels in the event for Notifications, and never reaches an entry (K3).
 public sealed class RecordInvitationChangesTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -43,7 +43,7 @@ public sealed class RecordInvitationChangesTests(Database database)
         (await Logs.DetailsAsync(database.Services, Logs.Tenant, invited.TenantId, invited.EventId)).ShouldNotBeNull().ShouldNotContain("@");
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberInvited_EventArrivesTwice_WritesOneEntry()
     {

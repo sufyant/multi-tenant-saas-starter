@@ -267,7 +267,7 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
     }
 
-    // O3, K3: a user changes their preferences in the web host. Audit records the change in the worker, once.
+    // O3, K3: a user changes their preferences in the web host. Audit entries the change in the worker, once.
     [Fact]
     public async Task ChangePreferences_OnAWebAndAWorkerHost_RecordsOnceInTheWorker()
     {
@@ -289,7 +289,7 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, userId, "user.preferences_changed")).ShouldBe(1L);
     }
 
-    // O3, W4, W5: an invitation is created in the web host. Audit records its event in the worker, once. The identity provider's sign-up
+    // O3, W4, W5: an invitation is created in the web host. Audit entries its event in the worker, once. The identity provider's sign-up
     // runs in the worker, once, then the email: each message has one handler, so its retries may be scheduled. The language and the
     // lifetime travel through the PostgreSQL queue to the email.
     [Fact]

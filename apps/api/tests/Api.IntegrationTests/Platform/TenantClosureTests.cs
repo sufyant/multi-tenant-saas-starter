@@ -8,7 +8,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Platform;
 
 // A system admin closes a tenant and reopens it within the reopen period, 30 days by default, through the system door (K4). Closing
-// cancels the tenant's pending invitations in the same transaction. A change of status is announced, and Audit records it under the
+// cancels the tenant's pending invitations in the same transaction. A change of status is announced, and Audit entries it under the
 // tenant; a request that changes nothing announces nothing. ClosedTenantTests follows what a closed tenant means to its members.
 public sealed class TenantClosureTests(Database database) : IAsyncLifetime
 {

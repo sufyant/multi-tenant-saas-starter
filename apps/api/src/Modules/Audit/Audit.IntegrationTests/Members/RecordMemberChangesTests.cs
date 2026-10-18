@@ -47,7 +47,7 @@ public sealed class RecordMemberChangesTests(Database database)
     }
 
     // A system admin's deletion of a user takes the user out of the tenant. The tenant's log shows the platform, as for every action of a
-    // system admin on a tenant (K3); the deletion's own record is in the platform's log.
+    // system admin on a tenant (K3); the deletion's own entry is in the platform's log.
     [Fact]
     public async Task RecordMemberRemoved_UserMembershipRemoved_WritesTheTenantEntryByThePlatform()
     {
@@ -63,7 +63,7 @@ public sealed class RecordMemberChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, removed.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberRoleChanged_EventArrivesTwice_WritesOneEntry()
     {

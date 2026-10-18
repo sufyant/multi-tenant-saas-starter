@@ -13,22 +13,22 @@ namespace Audit.Application.Ports;
 public interface IAuditLog
 {
     /// <summary>
-    /// Writes the records of one event, unless they are stored already. An event may arrive twice; its id is each record's id. When
-    /// the event gives a tenant's record, that record decides: both are written in one transaction, and a transaction that declares
-    /// a tenant cannot read the platform's log (R11). Should two copies race, the second fails on the record's key, and its retry
-    /// finds the records stored.
+    /// Writes the entries of one event, unless they are stored already. An event may arrive twice; its id is each entry's id. When
+    /// the event gives a tenant's entry, that entry decides: both are written in one transaction, and a transaction that declares
+    /// a tenant cannot read the platform's log (R11). Should two copies race, the second fails on the entry's key, and its retry
+    /// finds the entries stored.
     /// </summary>
-    internal Task RecordAsync(PlatformAuditEntry? platform, AuditEntry? tenant, CancellationToken cancellationToken);
+    internal Task RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The records of the active tenant's log after the cursor's place, newest first, by the moment and then the id, both descending: one
+    /// The entries of the active tenant's log after the cursor's place, newest first, by the moment and then the id, both descending: one
     /// more than the limit when there are, so the caller knows a next page exists. Row level security keeps the log to the tenant.
     /// </summary>
-    internal Task<IReadOnlyList<AuditRecord>> ReadTenantLogAsync(CursorRequest page, CancellationToken cancellationToken);
+    internal Task<IReadOnlyList<AuditEntry>> ListTenantEntriesAsync(CursorRequest page, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The records of the platform's log, in the same order and the same way, or only those about the tenant: their target is the tenant.
+    /// The entries of the platform's log, in the same order and the same way, or only those about the tenant: their target is the tenant.
     /// Only a transaction that declares neither a tenant nor a user reads them (R11).
     /// </summary>
-    internal Task<IReadOnlyList<AuditRecord>> ReadPlatformLogAsync(CursorRequest page, Guid? tenantId, CancellationToken cancellationToken);
+    internal Task<IReadOnlyList<AuditEntry>> ListPlatformEntriesAsync(CursorRequest page, Guid? tenantId, CancellationToken cancellationToken);
 }

@@ -76,7 +76,7 @@ public sealed class RecordUserChangesTests(Database database)
             .ShouldBe($"user.deleted|User|{deleted.DeletedBy}|User|{deleted.UserId}|-");
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id, so it is written once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordUserSuspended_EventArrivesTwice_WritesOneEntry()
     {

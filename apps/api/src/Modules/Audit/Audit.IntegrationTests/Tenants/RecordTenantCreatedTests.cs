@@ -49,7 +49,7 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Tenant, Guid.NewGuid(), activated.EventId)).ShouldBe(0);
     }
 
-    // An event may arrive twice; its id, chosen by its publisher, is the record's id in each log, so each log holds it once.
+    // An event may arrive twice; its id, chosen by its publisher, is the entry's id in each log, so each log holds it once.
     [Fact]
     public async Task RecordTenantCreated_EventArrivesTwice_WritesOneEntryInEachLog()
     {
@@ -62,7 +62,7 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, activated.EventId)).ShouldBe(1);
     }
 
-    // Audit records are never changed once written: the application role may add and read them, nothing more.
+    // Audit entries are never changed once written: the application role may add and read them, nothing more.
     [Theory]
     [InlineData("UPDATE audit.entries SET operation = 'rewritten'")]
     [InlineData("DELETE FROM audit.entries")]

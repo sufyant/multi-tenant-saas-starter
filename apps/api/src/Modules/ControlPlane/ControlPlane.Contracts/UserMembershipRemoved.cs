@@ -1,7 +1,7 @@
 namespace ControlPlane.Contracts;
 
 /// <summary>
-/// A system admin's deletion of a user took the user out of a tenant. Published through the outbox, in that tenant; Audit records it in
+/// A system admin's deletion of a user took the user out of a tenant. Published through the outbox, in that tenant; Audit entries it in
 /// the tenant's log, as the platform's action (K3).
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>

@@ -12,5 +12,5 @@ public sealed record ListAuditEntriesQuery(CursorRequest Page);
 public static class ListAuditEntriesHandler
 {
     public static async Task<CursorPage<AuditEntryView>> HandleAsync(ListAuditEntriesQuery query, IAuditLog log, CancellationToken cancellationToken) =>
-        AuditEntryViews.PageOf(await log.ReadTenantLogAsync(query.Page, cancellationToken), query.Page);
+        AuditEntryViews.PageOf(await log.ListTenantEntriesAsync(query.Page, cancellationToken), query.Page);
 }

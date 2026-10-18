@@ -460,7 +460,7 @@ internal static partial class OpenApiContract
             .Order(StringComparer.Ordinal),
     ];
 
-    // K3: Audit declares the operation of every audit record once, in Audit.Domain's AuditOperations. The host does not reference a
+    // K3: Audit declares the operation of every audit entry once, in Audit.Domain's AuditOperations. The host does not reference a
     // Domain project (section 2), so it finds the class by its name, as it finds the error codes. OpenApiContractTests checks the enum.
     private static IReadOnlyList<string> DeclaredAuditOperations { get; } =
     [
@@ -482,7 +482,7 @@ internal static partial class OpenApiContract
             return Task.CompletedTask;
         }
 
-        schemas[AuditOperationSchema] = EnumSchema(DeclaredAuditOperations, "The operation of an audit record, area.action.");
+        schemas[AuditOperationSchema] = EnumSchema(DeclaredAuditOperations, "The operation of an audit entry, area.action.");
         foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(OperationMember) == true))
         {
             schema.Properties![OperationMember] = new OpenApiSchemaReference(AuditOperationSchema, document);

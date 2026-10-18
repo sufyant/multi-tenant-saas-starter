@@ -7,7 +7,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Platform;
 
 // A system admin suspends a tenant, for a reason they write, and reactivates it, through the system door. A change of status is
-// announced, and Audit records it under the tenant; a request that changes nothing announces nothing. SuspendedTenantTests follows
+// announced, and Audit entries it under the tenant; a request that changes nothing announces nothing. SuspendedTenantTests follows
 // what a suspended tenant means to its members.
 public sealed class TenantSuspensionTests(Database database) : IAsyncLifetime
 {

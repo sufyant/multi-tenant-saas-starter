@@ -35,7 +35,7 @@ public static class AuditLog
 }
 
 /// <summary>
-/// One record of an audit log: when, the operation (<c>member.invited</c>), who acted, what it was done to, and the details the record
+/// One entry of an audit log: when, the operation (<c>member.invited</c>), who acted, what it was done to, and the details the entry
 /// keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
 /// address.
 /// </summary>
@@ -60,7 +60,7 @@ public sealed record AuditActorResponse(AuditActorResponseKind Kind, Guid? UserI
 /// </summary>
 public sealed record AuditTargetResponse(AuditTargetResponseKind Kind, Guid Id, string? Name, bool? Deleted);
 
-/// <summary>The kind of actor of an audit record.</summary>
+/// <summary>The kind of actor of an audit entry.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<AuditActorResponseKind>))]
 public enum AuditActorResponseKind
 {
@@ -71,7 +71,7 @@ public enum AuditActorResponseKind
     Platform,
 }
 
-/// <summary>The kind of target of an audit record.</summary>
+/// <summary>The kind of target of an audit entry.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<AuditTargetResponseKind>))]
 public enum AuditTargetResponseKind
 {

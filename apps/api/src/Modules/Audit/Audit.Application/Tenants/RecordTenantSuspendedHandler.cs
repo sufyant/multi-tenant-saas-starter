@@ -5,9 +5,9 @@ using ControlPlane.Contracts;
 
 namespace Audit.Application.Tenants;
 
-// The audit records of a tenant's suspension, written when ControlPlane announces it, under that tenant. The system admin who suspended
+// The audit entries of a tenant's suspension, written when ControlPlane announces it, under that tenant. The system admin who suspended
 // the tenant acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3). The reason is the
-// system admin's: only the platform's record holds it, because a member never sees it, and the tenant's Owners and Admins read the tenant's log.
+// system admin's: only the platform's entry holds it, because a member never sees it, and the tenant's Owners and Admins read the tenant's log.
 public static class RecordTenantSuspendedHandler
 {
     public static Task HandleAsync(TenantSuspendedEvent suspended, IAuditLog log, CancellationToken cancellationToken)
@@ -21,7 +21,7 @@ public static class RecordTenantSuspendedHandler
                 AuditOperations.TenantSuspended,
                 tenant,
                 suspended.Reason is { } reason ? JsonSerializer.Serialize(new Details(reason), JsonSerializerOptions.Web) : null),
-            new AuditEntry(suspended.EventId, suspended.OccurredAt, AuditActor.Platform, AuditOperations.TenantSuspended, tenant),
+            new TenantAuditEntry(suspended.EventId, suspended.OccurredAt, AuditActor.Platform, AuditOperations.TenantSuspended, tenant),
             cancellationToken);
     }
 

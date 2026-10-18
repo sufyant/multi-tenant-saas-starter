@@ -56,7 +56,7 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(userId)).ShouldBeNull();
     }
 
-    // I1: setting the values the user has answers them, and writes neither the user's row nor an audit record.
+    // I1: setting the values the user has answers them, and writes neither the user's row nor an audit entry.
     [Fact]
     public async Task ChangePreferences_TheValuesTheUserHas_AnswersThemAndWritesNothing()
     {

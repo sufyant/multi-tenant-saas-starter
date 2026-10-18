@@ -5,7 +5,7 @@ using ControlPlane.Api.Tenant;
 namespace Api.ArchitectureTests;
 
 // The maintainer's decision in audit fix 04: a built-in role is one word in every place that names it. The API's MemberRole and the
-// domain's BuiltInRole and Role.NameOf each write the words; Audit records the word of ControlPlane's events. The API and the domain are
+// domain's BuiltInRole and Role.NameOf each write the words; Audit entries the word of ControlPlane's events. The API and the domain are
 // coupled by the member's name (ToString and Enum.Parse), so a renamed member compiles and throws at run time. The domain is internal
 // to its module, and only a module's own projects see its internals (InternalsVisibleToTests), so this system-wide test reads it by
 // reflection.
