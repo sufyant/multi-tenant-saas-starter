@@ -18,7 +18,7 @@ Run from the repository root.
 - Lint and format: `pnpm lint`, `pnpm format`.
 - Run every generator after a change to `v1.json`, `tokens.json` or another source of generated code: `pnpm generate`. It writes the token CSS, the API's generated files, `v1.json` and the client, in that order. Commit what it changes; the CI job `generated` fails otherwise (D1, F32).
 - Only the token CSS: `pnpm ui:tokens`. Only the client: `pnpm api:generate`.
-- One app in development: `pnpm --filter @repo/web dev`, `pnpm --filter @repo/platform dev`.
+- One app in development: `pnpm --filter @repo/web dev` (port 3000), `pnpm --filter @repo/platform dev` (port 3001).
 - Playwright: `pnpm --filter @repo/web test:e2e`.
 
 ## Closed decisions
@@ -47,7 +47,12 @@ These were decided with the maintainer in step 21a, with their sources. Do not r
 - A token whose name Tailwind also uses (`radius-md`, `shadow-md`, `font-sans`) keeps its name; `tokens.gen.css` is outside every cascade layer, so it wins. A shadow is named in `@theme inline` too, because Tailwind writes its default shadow into the utility. (F20)
 - A breakpoint cannot be a variable in a media query, so `tokens.gen.css` writes the breakpoints into an `@theme` block as values. (F20)
 - `next build` cleans `.next` while `next typegen` writes to it. In `turbo.json`, the web `build` depends on its own `check-types`.
-- The password strategy is off in Clerk (`.clerk/config.json`). Playwright signs in with a `+clerk_test` address and the code `424242`.
+- The password strategy is off in Clerk (`.clerk/config.json`). Playwright signs in with a `+clerk_test` address and the code `424242`. It needs `E2E_CLERK_USER_EMAIL` and the development keys in the app's `.env.local`.
+- jsdom has no `matchMedia`, `ResizeObserver` or `scrollIntoView`; `test/setup.ts` of each package and app stubs them, because next-themes, sonner and cmdk read them.
+- `/dev/components` is a `page.dev.tsx`. `next.config.ts` adds the page extension `dev.tsx` only outside production, so `next build` has no such route and `next dev` has it.
+- A value of a contract enum is never a literal, even when it is a word of our own: the action of a suspended user is `account-suspended`, not `suspended`, which `TenantResponseStatus` holds.
+- A command palette in shadcn on Base UI puts `Command` inside `CommandDialog`; without it, cmdk throws.
+- The apps read their variables at start (`instrumentation.ts`), so an image needs every variable of `.env.example` to start.
 
 ## How we design
 

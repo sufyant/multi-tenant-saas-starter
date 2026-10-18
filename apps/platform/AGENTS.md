@@ -16,3 +16,5 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - The routes have no tenant segment. A tenant is a record the platform lists, under its own sections: Organisations, Users and Activity, with Preferences under Settings.
 - An ink "Platform" label starts the top bar on every page and every screen size. There is no OrgMenu.
 - A signed-in user whose `GetMe.isSystemAdmin` is false sees "No access yet".
+- The platform runs on its own origin, so the API accepts its tokens through `Authentication__Clerk__AuthorizedParties__1` (`apps/api/docs/configuration.md`, `.railway/railway.ts`).
+- The dev server runs on port 3001, so both apps run side by side.
