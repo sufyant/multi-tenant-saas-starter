@@ -57,7 +57,7 @@ describe("buildTokensCss", () => {
   it("BuildTokensCss_RealTokens_WritesEveryKindOfToken", async () => {
     const { readFile } = await import("node:fs/promises");
     const source = JSON.parse(
-      await readFile(new URL("../tokens/tokens.json", import.meta.url), "utf8"),
+      await readFile(`${import.meta.dirname}/../tokens/tokens.json`, "utf8"),
     );
 
     const css = buildTokensCss(source);

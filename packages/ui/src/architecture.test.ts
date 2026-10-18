@@ -24,22 +24,20 @@ const generatedSchemas = join(
   "api-client/src/generated/endpoints.schemas.gen.ts",
 );
 const languages = enumValues(generatedSchemas, "Language");
-// The shadcn scaffold that the next pull request replaces with the design system's components.
-const scaffold = { ignore: ["components/ui/", "hooks/"] };
 
 describe("architecture of packages/ui", () => {
   it("F17_PackagesUi_UsesNoPhysicalDirectionClass", () => {
-    expect(physicalDirectionClasses(src, scaffold)).toEqual([]);
+    expect(physicalDirectionClasses(src)).toEqual([]);
   });
 
   it("F21_PackagesUi_UsesNoColourLiteral", () => {
-    expect(colorLiterals(src, scaffold)).toEqual([]);
+    expect(colorLiterals(src)).toEqual([]);
   });
 
   it("F25_PackagesUi_WritesNoUserFacingLiteral", () => {
     expect(
       userFacingLiterals(src, {
-        ignore: [...scaffold.ignore, "components/dev-components-page.tsx"],
+        ignore: ["components/dev-components-page.tsx"],
       }),
     ).toEqual([]);
   });
@@ -71,12 +69,10 @@ describe("architecture of packages/ui", () => {
   });
 
   it("F18_PackagesUi_FormatsDatesOnlyInFormatDateTime", () => {
-    expect(dateFormattingOutsideFormatter(src, scaffold)).toEqual([]);
+    expect(dateFormattingOutsideFormatter(src)).toEqual([]);
   });
 
   it("F3_PackagesUi_WritesNoEnumValueAsALiteral", () => {
-    expect(
-      enumLiterals(src, contractEnumValues(generatedSchemas), scaffold),
-    ).toEqual([]);
+    expect(enumLiterals(src, contractEnumValues(generatedSchemas))).toEqual([]);
   });
 });

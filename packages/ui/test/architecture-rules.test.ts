@@ -38,6 +38,15 @@ describe("architecture rules", () => {
     ]);
   });
 
+  it("PhysicalDirectionClasses_WordInAComment_IsNoFinding", () => {
+    const root = folder({
+      "a.tsx":
+        "/** It mirrors in right-to-left. */\nexport const A = 1; // left-aligned",
+    });
+
+    expect(physicalDirectionClasses(root)).toEqual([]);
+  });
+
   it("PhysicalDirectionClasses_LogicalClassesOnly_AreNoFinding", () => {
     const root = folder({
       "a.tsx":

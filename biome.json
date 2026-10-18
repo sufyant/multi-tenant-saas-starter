@@ -94,7 +94,8 @@
         "rules": {
           "a11y": {
             "useFocusableInteractive": "off",
-            "useSemanticElements": "off"
+            "useSemanticElements": "off",
+            "useKeyWithClickEvents": "off"
           },
           "correctness": {
             "useExhaustiveDependencies": "off"
