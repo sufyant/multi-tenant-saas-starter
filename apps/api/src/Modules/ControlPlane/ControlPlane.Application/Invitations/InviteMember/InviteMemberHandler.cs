@@ -11,8 +11,8 @@ using SharedKernel;
 namespace ControlPlane.Application.Invitations.InviteMember;
 
 // K6: an invitation belongs to the tenant aggregate, so the tenant row is locked first; two invitations at once then run one after the
-// other, and neither passes the daily limit nor leaves a second pending invitation. The checks run in the catalog's order: an inviter
-// who is no longer a member, a tenant that is no longer active, the role rule, a member's address, the daily limit. Rejections come
+// other, and neither passes the daily limit nor leaves a second pending invitation. The checks run in the order of api-catalog: an
+// inviter who is no longer a member, a tenant that is no longer active, the role rule, a member's address, the daily limit. Rejections come
 // first (W7). The secret is born here; only its hash is stored, and the link that carries it goes on to the identity provider's
 // sign-up, after the commit. A replaced invitation's sign-up is withdrawn.
 public static class InviteMemberHandler

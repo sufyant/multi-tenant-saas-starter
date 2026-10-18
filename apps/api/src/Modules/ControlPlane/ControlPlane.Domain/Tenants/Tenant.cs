@@ -66,7 +66,7 @@ internal sealed class Tenant
     /// <summary>How many of the members hold the Owner role, a deleted user's included (K1).</summary>
     public int OwnerCount { get; private set; }
 
-    /// <summary>The catalog user id of the Owner who joined first. None while the tenant has no Owner.</summary>
+    /// <summary>The user id of the Owner who joined first. None while the tenant has no Owner.</summary>
     public Guid? FirstOwnerId { get; private set; }
 
     /// <summary>

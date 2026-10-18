@@ -8,7 +8,8 @@ using Solution = Api.ArchitectureTests.Fixtures.Solution;
 namespace Api.ArchitectureTests;
 
 // K3: AuditOperations declares the operation of every audit entry once. Each Audit handler names its operation from it, and the
-// catalog's Audit column, the specification, lists exactly its operations. OpenApiContractTests checks the enum in the document.
+// operation list, the Audit column of api-catalog and the specification, holds exactly its operations. OpenApiContractTests checks the
+// enum in the document.
 public sealed partial class AuditOperationTests
 {
     private const string Audit = "Audit.Application";
@@ -28,9 +29,9 @@ public sealed partial class AuditOperationTests
     }
 
     [Fact]
-    public void DocumentAuditOperations_Catalog_ListsEveryOperationOfAuditOperations()
+    public void DocumentAuditOperations_OperationList_ListsEveryOperationOfAuditOperations()
     {
-        var documented = OperationsInTheCatalog();
+        var documented = OperationsInTheList();
 
         documented.ShouldBe(DeclaredOperations());
     }
@@ -58,12 +59,13 @@ public sealed partial class AuditOperationTests
         ?? creation.ArgumentList?.Arguments.ElementAtOrDefault(3)?.Expression.ToString()
         ?? "<no operation>";
 
-    // The operations in backticks in the Audit cell of each endpoint row of docs/api-catalog.md: the sixth cell, after the access.
-    private static List<string> OperationsInTheCatalog() =>
+    // The operation list: the operations in backticks in the Audit cell of each endpoint row of docs/api-catalog.md, the sixth cell, after
+    // the access.
+    private static List<string> OperationsInTheList() =>
     [
         .. File.ReadLines(Path.Combine(Solution.Root, "docs", "api-catalog.md"))
             .Where(line => EndpointRow().IsMatch(line))
-            .SelectMany(line => CatalogOperation().Matches(line.Split('|')[6]).Select(match => match.Groups["operation"].Value))
+            .SelectMany(line => ListedOperation().Matches(line.Split('|')[6]).Select(match => match.Groups["operation"].Value))
             .Distinct()
             .Order(StringComparer.Ordinal),
     ];
@@ -72,5 +74,5 @@ public sealed partial class AuditOperationTests
     private static partial Regex EndpointRow();
 
     [GeneratedRegex(@"`(?<operation>[a-z_]+\.[a-z_]+)`")]
-    private static partial Regex CatalogOperation();
+    private static partial Regex ListedOperation();
 }

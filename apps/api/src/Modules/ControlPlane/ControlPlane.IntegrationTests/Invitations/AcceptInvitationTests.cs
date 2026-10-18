@@ -35,9 +35,9 @@ public sealed class AcceptInvitationTests(Database database)
     [Fact]
     public async Task AcceptInvitation_ExistingUser_JoinsAnotherTenant()
     {
-        var other = await Catalog.AddTenantAsync(database.Services);
-        var invitee = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, other, invitee);
+        var other = await TestData.AddTenantAsync(database.Services);
+        var invitee = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, other, invitee);
         var (tenantId, email, code) = await InviteOwnerAsync();
         database.Identity.AddAccount(invitee.ExternalId, email);
 

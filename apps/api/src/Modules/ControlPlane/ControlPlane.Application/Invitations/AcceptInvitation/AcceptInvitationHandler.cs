@@ -68,7 +68,7 @@ public static class AcceptInvitationHandler
             return (Error.Conflict(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."), null);
         }
 
-        // A person the catalog does not know gives their names, as a validator would refuse them: a 400 that names each missing field. It
+        // A person who has not signed up yet gives their names, as a validator would refuse them: a 400 that names each missing field. It
         // comes after the invitation's own checks, so a stranger with the link learns nothing more, and before any change (W7).
         if (existing is null && (command.FirstName is null || command.LastName is null))
         {
@@ -96,7 +96,7 @@ public static class AcceptInvitationHandler
     private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>
         new (string Field, string? Value)[] { (nameof(command.FirstName), command.FirstName), (nameof(command.LastName), command.LastName) }
             .Where(field => field.Value is null)
-            .Select(field => new ValidationFailure(field.Field, $"{field.Field} is required for a person the catalog does not know.")
+            .Select(field => new ValidationFailure(field.Field, $"{field.Field} is required for a person who has not signed up yet.")
             {
                 ErrorCode = nameof(FieldErrorCode.Required),
             });

@@ -5,7 +5,7 @@ using ControlPlane.Contracts.Users;
 
 namespace Audit.Application.Users.RecordUserDeleted;
 
-// The audit entry of a catalog user's deletion, in the platform's log: a user belongs to no tenant. The system admin who deleted the
+// The audit entry of a user's deletion, in the platform's log: a user belongs to no tenant. The system admin who deleted the
 // user acted (K3). The event is handled in a transaction that declares nothing, so the entry goes only to the platform's log.
 public static class RecordUserDeletedHandler
 {

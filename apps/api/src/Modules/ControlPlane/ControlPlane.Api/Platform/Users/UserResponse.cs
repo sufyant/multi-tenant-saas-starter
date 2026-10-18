@@ -1,8 +1,8 @@
 namespace ControlPlane.Api.Platform.Users;
 
 /// <summary>
-/// A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or
-/// deleted), whether they are a system admin, how many tenants they are a member of, and when they joined the catalog.
+/// A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or
+/// deleted), whether they are a system admin, how many tenants they are a member of, and when they became a user.
 /// </summary>
 public sealed record UserResponse(
     Guid Id,

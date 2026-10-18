@@ -110,7 +110,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             total);
     }
 
-    // The catalog user is found by the identity provider's id in control_plane.users, which belongs to no tenant. The page is one query:
+    // The user is found by the identity provider's id in control_plane.users, which belongs to no tenant. The page is one query:
     // each membership's tenant and role are joined, with no query for each tenant.
     async Task<ListPage<MyTenantView>> ITenantQueries.ListMyTenantsAsync(string externalUserId, ListRequest<ListMyTenantsSort> list, CancellationToken cancellationToken)
     {

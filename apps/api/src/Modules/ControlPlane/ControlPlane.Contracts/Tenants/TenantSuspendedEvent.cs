@@ -7,7 +7,7 @@ namespace ControlPlane.Contracts.Tenants;
 /// id travels in the message's envelope.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
-/// <param name="SuspendedBy">The catalog user id of the system admin who suspended the tenant.</param>
+/// <param name="SuspendedBy">The user id of the system admin who suspended the tenant.</param>
 /// <param name="TenantName">
 /// The tenant's name at that moment, for its audit entry. Null only in an event published before the name was added.
 /// </param>

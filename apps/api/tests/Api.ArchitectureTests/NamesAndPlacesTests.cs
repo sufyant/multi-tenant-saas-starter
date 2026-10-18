@@ -18,7 +18,7 @@ public sealed partial class NamesAndPlacesTests
 
     private static readonly string[] Audiences = ["Platform", "Me", "Tenant"];
 
-    // Persistence holds Migrations, where EF Core's tool expects them, and Lists, the search and the sort that the catalogs share (N8).
+    // Persistence holds Migrations, where EF Core's tool expects them, and Lists, the search and the sort that the query classes share (N8).
     private static readonly string[] PersistencePieces = ["Migrations", "Lists"];
 
     public static TheoryData<string> ModuleDbContextNames => [.. ModuleDbContexts.Types().Select(type => type.FullName!)];

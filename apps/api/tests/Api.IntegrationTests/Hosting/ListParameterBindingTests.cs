@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Hosting;
 // of the page contract; a list with a cursor (the audit logs) has no sort and no filter.
 public sealed class ListParameterBindingTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -79,15 +79,15 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
     // A caller who may read the list: a system admin, a user, or a member of a new tenant.
     private async Task<(HttpClient Client, string Url)> CallerAsync(string caller, string path) => caller switch
     {
-        "platform" => (_api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true), path),
-        "user" => (_api.CreateClient(await _catalog.AddUserAsync()), path),
+        "platform" => (_api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true), path),
+        "user" => (_api.CreateClient(await _testData.AddUserAsync()), path),
         _ => await MemberOfANewTenantAsync(path),
     };
 
     private async Task<(HttpClient Client, string Url)> MemberOfANewTenantAsync(string path)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         return (_api.CreateClient(member), path.Replace("{tenantId}", tenant.Id.ToString(), StringComparison.Ordinal));
     }
 

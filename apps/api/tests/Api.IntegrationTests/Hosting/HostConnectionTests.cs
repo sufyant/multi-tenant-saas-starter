@@ -13,9 +13,9 @@ public sealed class HostConnectionTests(Database database)
     public async Task StopApiFactory_AfterAMessage_OpensAtMostFortyConnections()
     {
         var name = await database.CreateMigratedDatabaseAsync();
-        var catalog = new Catalog(database, name);
-        var admin = await catalog.AddSystemAdminAsync();
-        var tenant = await catalog.AddTenantAsync(status: "Active");
+        var testData = new TestData(database, name);
+        var admin = await testData.AddSystemAdminAsync();
+        var tenant = await testData.AddTenantAsync(status: "Active");
         var connection = new NpgsqlConnectionStringBuilder(database.ConnectionStringFor(DatabaseRoles.Application, name))
         {
             ConnectionIdleLifetime = new NpgsqlConnectionStringBuilder().ConnectionIdleLifetime,

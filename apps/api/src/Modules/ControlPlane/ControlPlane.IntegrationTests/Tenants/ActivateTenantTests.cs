@@ -19,15 +19,15 @@ using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 
 namespace ControlPlane.IntegrationTests.Tenants;
 
-// ActivateTenantCommand, run the way Wolverine runs a step of the tenant creation saga: it writes the catalog in the new tenant's
-// transaction, and it may run twice (S7).
+// ActivateTenantCommand, run the way Wolverine runs a step of the tenant creation saga: it writes ControlPlane's tables in the new
+// tenant's transaction, and it may run twice (S7).
 public sealed class ActivateTenantTests(Database database)
 {
     // Step 3 starts with the activation: the identity provider lets the owner sign up, until the invitation expires.
     [Fact]
     public async Task ActivateTenant_Provisioning_ActivatesItAnnouncesTheTenantAndOpensTheOwnersSignUp()
     {
-        var admin = await Catalog.AddUserAsync(database.Services);
+        var admin = await TestData.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
         var owner = Unique.Email();
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), owner);

@@ -5,7 +5,7 @@ namespace Api.IntegrationTests.Tenant;
 [RuntimeHandlerCode]
 public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
     private PipelineHost _host = null!;
 
     public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
@@ -15,8 +15,8 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ResolveTenant_Member_ReachesTheTenant()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var response = await _host.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/ping", TestContext.Current.CancellationToken);
 
@@ -27,8 +27,8 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ResolveTenant_TheSlugInThePath_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var response = await _host.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Slug}/ping", TestContext.Current.CancellationToken);
 
@@ -38,7 +38,7 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ResolveTenant_WithoutAUser_IsUnauthorized()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await _host.CreateClient().GetAsync($"/v1/tenants/{tenant.Id}/ping", TestContext.Current.CancellationToken);
 
@@ -50,8 +50,8 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ResolveTenant_UserNotAMember_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var outsider = await _catalog.AddUserAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var outsider = await _testData.AddUserAsync();
 
         var response = await _host.CreateClient(outsider).GetAsync($"/v1/tenants/{tenant.Id}/ping", TestContext.Current.CancellationToken);
 
@@ -62,7 +62,7 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ResolveTenant_UnknownTenant_IsNotFound()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var response = await _host.CreateClient(user).GetAsync($"/v1/tenants/{Guid.NewGuid()}/ping", TestContext.Current.CancellationToken);
 
@@ -73,8 +73,8 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ResolveTenant_MemberOfATenantNotActive_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync(status: "Provisioning");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync(status: "Provisioning");
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var response = await _host.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/ping", TestContext.Current.CancellationToken);
 

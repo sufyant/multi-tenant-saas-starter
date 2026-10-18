@@ -6,7 +6,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Users;
 
-// GET /v1/platform/users/{userId}: one catalog user for the system admin, with their memberships in every tenant. The memberships are
+// GET /v1/platform/users/{userId}: one user for the system admin, with their memberships in every tenant. The memberships are
 // under row level security, so the read declares the user (R11), as a user's deletion does, and reads them in one query. Whether the user
 // is a tenant's last Owner comes from the tenant's summary (R12): the suspend dialog warns with it, and the delete refusal names those
 // tenants.
@@ -14,7 +14,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
 {
     private static readonly DateTimeOffset Created = new(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -33,19 +33,19 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     public async Task GetUser_AMemberOfSeveralTenants_ReturnsTheUserAndEachMembershipByTenantName()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var user = await _catalog.AddUserAsync(email: email, firstName: "Ada", lastName: "Lovelace", createdAt: Created);
-        var alone = await _catalog.AddTenantAsync(name: "Alpha Ltd");
-        var shared = await _catalog.AddTenantAsync(name: "Bravo Ltd");
-        var suspended = await _catalog.AddTenantAsync(name: "Charlie Ltd", status: "Suspended");
-        var closed = await _catalog.AddTenantAsync(name: "Delta Ltd", status: "Closed", closedAt: DateTimeOffset.UtcNow);
+        var user = await _testData.AddUserAsync(email: email, firstName: "Ada", lastName: "Lovelace", createdAt: Created);
+        var alone = await _testData.AddTenantAsync(name: "Alpha Ltd");
+        var shared = await _testData.AddTenantAsync(name: "Bravo Ltd");
+        var suspended = await _testData.AddTenantAsync(name: "Charlie Ltd", status: "Suspended");
+        var closed = await _testData.AddTenantAsync(name: "Delta Ltd", status: "Closed", closedAt: DateTimeOffset.UtcNow);
         var joined = new DateTimeOffset(2026, 4, 5, 6, 7, 8, TimeSpan.Zero);
-        await _catalog.AddMemberAsync(closed.Id, user, role: "Member", joinedAt: joined);
-        await _catalog.AddMemberAsync(suspended.Id, user, role: "Admin", joinedAt: joined);
-        await _catalog.AddMemberAsync(shared.Id, user, role: "Owner", joinedAt: joined);
-        await _catalog.AddMemberAsync(shared.Id, role: "Owner");
-        await _catalog.AddMemberAsync(alone.Id, user, role: "Owner", joinedAt: joined);
+        await _testData.AddMemberAsync(closed.Id, user, role: "Member", joinedAt: joined);
+        await _testData.AddMemberAsync(suspended.Id, user, role: "Admin", joinedAt: joined);
+        await _testData.AddMemberAsync(shared.Id, user, role: "Owner", joinedAt: joined);
+        await _testData.AddMemberAsync(shared.Id, role: "Owner");
+        await _testData.AddMemberAsync(alone.Id, user, role: "Owner", joinedAt: joined);
         await SummarizeAsync(alone.Id, shared.Id, suspended.Id, closed.Id);
-        var id = await _catalog.UserIdOfAsync(user);
+        var id = await _testData.UserIdOfAsync(user);
 
         var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/users/{id}", Cancellation);
 
@@ -73,7 +73,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_AUserWithNoMembership_HasAnEmptyListAndNoSuspension()
     {
-        var id = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
+        var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
 
         var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
@@ -83,15 +83,15 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         found.GetProperty("suspendedBy").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
-    // The system admin who suspended the user is named as the catalog names them now.
+    // The system admin who suspended the user is named as they are named now.
     [Fact]
     public async Task GetUser_ASuspendedUser_SaysWhenAndNamesTheSystemAdminWhoSuspendedThem()
     {
-        var admin = await _catalog.AddUserAsync(firstName: "Sys", lastName: "Admin");
+        var admin = await _testData.AddUserAsync(firstName: "Sys", lastName: "Admin");
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'");
         var client = _api.CreateClient(admin, secondFactor: true);
-        var id = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync());
+        var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
         (await client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation)).EnsureSuccessStatusCode();
 
         var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
@@ -106,7 +106,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     public async Task GetUser_AUserSuspendedAndReactivated_HasNoSuspension()
     {
         var client = await SystemAdminAsync();
-        var id = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync());
+        var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
         (await client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation)).EnsureSuccessStatusCode();
         (await client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
 
@@ -121,9 +121,9 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_ADeletedUser_HasNoEmailNoNamesAndNoMemberships()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var user = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Gone"));
-        var id = await _catalog.UserIdOfAsync(user);
+        var tenant = await _testData.AddTenantAsync();
+        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Gone"));
+        var id = await _testData.UserIdOfAsync(user);
         var client = await SystemAdminAsync();
         (await _api.WaitingForMessagesAsync(() => client.DeleteAsync($"/v1/platform/users/{id}", Cancellation))).EnsureSuccessStatusCode();
 
@@ -138,8 +138,8 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_ASystemAdmin_SaysSo()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
-        var id = await _catalog.UserIdOfAsync(admin);
+        var admin = await _testData.AddSystemAdminAsync();
+        var id = await _testData.UserIdOfAsync(admin);
 
         var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
@@ -159,10 +159,10 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_AsATenantOwner_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
-        var response = await _api.CreateClient(owner, secondFactor: true).GetAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(owner)}", Cancellation);
+        var response = await _api.CreateClient(owner, secondFactor: true).GetAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(owner)}", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -172,13 +172,13 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     public async Task GetUser_AUserInMoreTenants_SendsNoMoreSqlCommands()
     {
         using var commands = new SqlCommands();
-        var admin = await _catalog.AddSystemAdminAsync();
-        var one = await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id);
-        var three = await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id);
-        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, three);
-        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, three);
-        var oneId = await _catalog.UserIdOfAsync(one);
-        var threeId = await _catalog.UserIdOfAsync(three);
+        var admin = await _testData.AddSystemAdminAsync();
+        var one = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id);
+        var three = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id);
+        await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, three);
+        await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, three);
+        var oneId = await _testData.UserIdOfAsync(one);
+        var threeId = await _testData.UserIdOfAsync(three);
 
         var forOne = await commands.CountAsync(() => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/users/{oneId}", Cancellation));
         var forThree = await commands.CountAsync(() => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/users/{threeId}", Cancellation));
@@ -199,13 +199,13 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             membership.GetProperty("lastOwner").GetBoolean())),
     ];
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private async Task SummarizeAsync(params Guid[] tenantIds)
     {
         foreach (var tenantId in tenantIds)
         {
-            await _catalog.SummarizeAsync(tenantId);
+            await _testData.SummarizeAsync(tenantId);
         }
     }
 }

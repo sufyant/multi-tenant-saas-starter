@@ -11,7 +11,7 @@ namespace Api.IntegrationTests.Tenant.Tenants;
 // door as every tenant route does.
 public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -34,8 +34,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     public async Task GetMyTenant_AMemberOfEveryBuiltInRole_ReturnsTheTenantTheirRoleAndWhenItWasCreated(string role, string name)
     {
         var createdAt = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
-        var tenant = await _catalog.AddTenantAsync(name: "Profile Ltd", createdAt: createdAt);
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: role);
+        var tenant = await _testData.AddTenantAsync(name: "Profile Ltd", createdAt: createdAt);
+        var member = await _testData.AddMemberAsync(tenant.Id, role: role);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}", Cancellation);
 
@@ -64,8 +64,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     [InlineData("Member", new[] { Permissions.TenantMembersRead, Permissions.TenantProfileRead })]
     public async Task GetMyTenant_AMemberOfEveryBuiltInRole_ReturnsTheRolesPermissionsSorted(string role, string[] permissions)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: role);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: role);
 
         var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
@@ -76,8 +76,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMyTenant_AMemberWithoutAPermission_IsStillRefusedByTheEndpointThatNeedsIt()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Member");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Member");
         var client = _api.CreateClient(member);
 
         var found = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
@@ -91,9 +91,9 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMyTenant_AsAUserWhoIsNotAMember_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var outsider = await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var outsider = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, role: "Owner");
 
         var response = await _api.CreateClient(outsider).GetAsync($"/v1/tenants/{tenant.Id}", Cancellation);
 
@@ -103,7 +103,7 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMyTenant_UnknownTenantId_IsNotFound()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var response = await _api.CreateClient(user).GetAsync($"/v1/tenants/{Guid.NewGuid()}", Cancellation);
 
@@ -113,8 +113,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMyTenant_ASuspendedTenant_IsForbiddenAndToldWhy()
     {
-        var tenant = await _catalog.AddTenantAsync(status: "Suspended");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync(status: "Suspended");
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}", Cancellation);
 

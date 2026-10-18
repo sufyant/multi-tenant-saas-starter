@@ -40,7 +40,7 @@ internal sealed class SystemAdminDirectory(
     private Task<bool> IsSystemAdminAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => controlPlane.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);
 
-    // One statement writes the catalog user, if the catalog does not know them yet, with the configured address, which the identity
+    // One statement writes the user, if they are not a user yet, with the configured address, which the identity
     // provider verified, no names and English, as no invitation chose a language, and the grant, and it writes the grant only while the
     // system admin list is empty: of two pods that let the same person in at the same moment, one writes it. A system admin gives the first one
     // their names (A7).

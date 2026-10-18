@@ -15,7 +15,7 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // follows what a closed tenant means to its members.
 public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -27,7 +27,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
+    private SignUpInvitations SignUps => new(_api, _testData, database);
 
     public ValueTask InitializeAsync()
     {
@@ -42,7 +42,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("Suspended")]
     public async Task CloseTenant_ActiveOrSuspended_AnswersTheTenantClosedAtThatMoment(string status)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
@@ -50,14 +50,14 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (body.GetProperty("id").GetGuid(), body.GetProperty("status").GetString(), body.GetProperty("closedAt").GetDateTimeOffset())
             .ShouldBe((tenant.Id, "closed", _time.GetUtcNow()));
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
     }
 
     // Closing sets a state (I1): a closed tenant answers as it is, keeps the moment of its first closure, and writes nothing again.
     [Fact]
     public async Task CloseTenant_Twice_KeepsTheFirstMomentAndIsRecordedOnceInEachLog()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
         var closedAt = _time.GetUtcNow();
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
@@ -75,29 +75,29 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("Cancelled")]
     public async Task CloseTenant_ProvisioningOrCancelled_IsAConflictAndChangesNothing(string status)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_active");
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
     }
 
     // K2: closing cancels every pending invitation, expired or not, in the same transaction; a used or a cancelled one stays as it is.
     [Fact]
     public async Task CloseTenant_WithInvitations_CancelsEveryPendingOne()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var pending = await _catalog.AddInvitationAsync(tenant.Id);
-        var expired = await _catalog.AddInvitationAsync(tenant.Id, expiresAt: _time.GetUtcNow().AddDays(-1));
-        var accepted = await _catalog.AddInvitationAsync(tenant.Id, status: "Accepted");
+        var tenant = await _testData.AddTenantAsync();
+        var pending = await _testData.AddInvitationAsync(tenant.Id);
+        var expired = await _testData.AddInvitationAsync(tenant.Id, expiresAt: _time.GetUtcNow().AddDays(-1));
+        var accepted = await _testData.AddInvitationAsync(tenant.Id, status: "Accepted");
 
         (await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        (await _catalog.InvitationStatusOfAsync(pending)).ShouldBe("Cancelled");
-        (await _catalog.InvitationStatusOfAsync(expired)).ShouldBe("Cancelled");
-        (await _catalog.InvitationStatusOfAsync(accepted)).ShouldBe("Accepted");
+        (await _testData.InvitationStatusOfAsync(pending)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(expired)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(accepted)).ShouldBe("Accepted");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -106,8 +106,8 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CloseTenantAndInviteMember_AtOnceWithTheClosureFirst_LeaveNoPendingInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
@@ -125,8 +125,8 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CloseTenantAndInviteMember_AtOnceWithTheInvitationFirst_LeaveNoPendingInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
@@ -147,10 +147,10 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("RemoveMember")]
     public async Task TenantCommand_WaitingWhileTheTenantCloses_IsForbiddenAndChangesNothing(string command)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+        var invitation = await _testData.AddInvitationAsync(tenant.Id);
         var members = await MembersOfAsync(tenant.Id);
         var admin = await SystemAdminAsync();
 
@@ -172,10 +172,10 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("RemoveMember")]
     public async Task TenantCommand_WaitingWhileTheTenantIsSuspended_IsForbiddenAndChangesNothing(string command)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+        var invitation = await _testData.AddInvitationAsync(tenant.Id);
         var members = await MembersOfAsync(tenant.Id);
         var admin = await SystemAdminAsync();
 
@@ -186,7 +186,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(responses[1])).ShouldBe("tenant.suspended");
         (await MembersOfAsync(tenant.Id)).ShouldBe(members);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(1);
-        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
         var (_, first) = await SignUps.InviteAsync(tenantId, owner);
         var (_, second) = await SignUps.InviteAsync(tenantId, owner);
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
         await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenantId}/close", null, Cancellation));
         await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenantId}/close", null, Cancellation));
@@ -218,7 +218,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<string?> MembersOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(

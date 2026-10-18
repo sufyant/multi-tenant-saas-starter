@@ -37,7 +37,7 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
             cancellationToken);
 
     /// <summary>
-    /// Declares the catalog user for the rest of the current transaction, the way the tenant is declared, for the one policy that
+    /// Declares the user for the rest of the current transaction, the way the tenant is declared, for the one policy that
     /// reads by user rather than by tenant (R11). Outside a transaction it is refused; so is a transaction that has declared a
     /// tenant.
     /// </summary>

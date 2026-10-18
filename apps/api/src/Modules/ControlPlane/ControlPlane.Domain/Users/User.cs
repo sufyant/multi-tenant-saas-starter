@@ -4,7 +4,7 @@ using SharedKernel;
 namespace ControlPlane.Domain.Users;
 
 /// <summary>
-/// One identity across tenants, matched to the identity provider's user id. The catalog owns the email address and the names (A7):
+/// One identity across tenants, matched to the identity provider's user id. ControlPlane owns the email address and the names (A7):
 /// the identity provider keeps no name, and only a system admin changes one.
 /// </summary>
 internal sealed class User(Guid id, string externalId)
@@ -12,7 +12,7 @@ internal sealed class User(Guid id, string externalId)
     public const int NameMaxLength = 100;
 
     /// <summary>
-    /// The longest time zone name the catalog keeps. The longest IANA name today has 32 characters, and the IANA rules allow 14 for each
+    /// The longest time zone name ControlPlane keeps. The longest IANA name today has 32 characters, and the IANA rules allow 14 for each
     /// part of a name.
     /// </summary>
     public const int TimeZoneMaxLength = 64;
@@ -25,7 +25,7 @@ internal sealed class User(Guid id, string externalId)
 
     /// <summary>
     /// The user's status: a deletion outranks a suspension, because the identity provider no longer knows the person. It is an
-    /// expression, so the catalog's queries filter by the same rule (B9).
+    /// expression, so the queries filter by the same rule (B9).
     /// </summary>
     public static Expression<Func<User, UserStatus>> StatusOf => StatusExpression;
 
@@ -51,11 +51,11 @@ internal sealed class User(Guid id, string externalId)
     /// <summary>When a system admin suspended the user. A suspended user is refused on every me and tenant endpoint (A9).</summary>
     public DateTimeOffset? SuspendedAt { get; private set; }
 
-    /// <summary>The catalog user id of the system admin who suspended the user, while the user is suspended.</summary>
+    /// <summary>The user id of the system admin who suspended the user, while the user is suspended.</summary>
     public Guid? SuspendedBy { get; private set; }
 
     /// <summary>
-    /// When the user joined the catalog: when they accepted their first invitation, or when the first system admin was written.
+    /// When the person became a user: when they accepted their first invitation, or when the first system admin was written.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
@@ -73,8 +73,8 @@ internal sealed class User(Guid id, string externalId)
         Expression.Lambda<Func<User, bool>>(Expression.Equal(StatusOf.Body, Expression.Constant(status)), StatusOf.Parameters);
 
     /// <summary>
-    /// A person the catalog does not know joins through an invitation, at this moment: the invited address, which the identity provider
-    /// verified, and the names they typed, without the spaces around them. They have no membership yet: the catalog adds the membership of
+    /// A person who has not signed up yet joins through an invitation, at this moment: the invited address, which the identity provider
+    /// verified, and the names they typed, without the spaces around them. They have no membership yet: ControlPlane adds the membership of
     /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>
     public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language, DateTimeOffset now) =>

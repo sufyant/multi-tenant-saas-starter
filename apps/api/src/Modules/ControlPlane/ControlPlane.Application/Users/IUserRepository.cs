@@ -14,13 +14,13 @@ public interface IUserRepository
 
     internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 
-    /// <summary>The catalog id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
+    /// <summary>The id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
     internal Task<Guid?> FindUserIdAsync(string externalUserId, CancellationToken cancellationToken);
 
     /// <summary>The user with this identity provider id, locked for the rest of the transaction, so two events change it one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>The user with this catalog id, locked for the rest of the transaction, so two changes of their state run one at a time.</summary>
+    /// <summary>The user with this id, locked for the rest of the transaction, so two changes of their state run one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>

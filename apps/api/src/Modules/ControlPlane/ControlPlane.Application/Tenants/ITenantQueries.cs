@@ -25,7 +25,7 @@ public interface ITenantQueries
 
     /// <summary>
     /// The active tenant as the member with this identity provider id sees it, with their role and its permissions; null when no tenant
-    /// has the active tenant's id, the catalog does not know the person, or they are no member of it (T3).
+    /// has the active tenant's id, the person is not a user, or they are no member of it (T3).
     /// </summary>
     internal Task<MyTenantDetailView?> FindMyTenantAsync(string externalUserId, CancellationToken cancellationToken);
 
@@ -42,7 +42,7 @@ public interface ITenantQueries
 
     /// <summary>
     /// A page of the active, suspended and closed tenants the user is a member of, each with the user's role there, whose name or slug
-    /// contains the search, by the sort field, then id; none for a user the catalog does not know. It runs outside any tenant (T4),
+    /// contains the search, by the sort field, then id; none for an unknown user. It runs outside any tenant (T4),
     /// through the user's own memberships, which the database lets the declared user read in every tenant (R11).
     /// </summary>
     internal Task<ListPage<MyTenantView>> ListMyTenantsAsync(string externalUserId, ListRequest<ListMyTenantsSort> list, CancellationToken cancellationToken);

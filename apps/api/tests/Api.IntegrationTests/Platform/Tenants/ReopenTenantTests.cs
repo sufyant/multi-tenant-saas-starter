@@ -16,7 +16,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 {
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -43,15 +43,15 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CloseAndReopenTenant_EachChange_IsRecordedOnceInBothLogs()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddSystemAdminAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var client = _api.CreateClient(admin, secondFactor: true);
 
         await _api.WaitingForMessagesAsync(() => client.CloseTenantAsync(tenant.Id));
         _time.Advance(TimeSpan.FromMinutes(1));
         await _api.WaitingForMessagesAsync(() => client.ReopenTenantAsync(tenant.Id));
 
-        var adminId = await _catalog.UserIdOfAsync(admin);
+        var adminId = await _testData.UserIdOfAsync(admin);
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe(
             $"tenant.closed|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd, tenant.reopened|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe(
@@ -62,7 +62,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReopenTenant_WithinThePeriod_AnswersTheTenantActive()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
         _time.Advance(ReopenPeriod - TimeSpan.FromSeconds(1));
@@ -72,13 +72,13 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (body.GetProperty("status").GetString(), body.GetProperty("closedAt").ValueKind).ShouldBe(("active", JsonValueKind.Null));
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe("Active");
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Active");
     }
 
     [Fact]
     public async Task ReopenTenant_WhenThePeriodEnds_IsAConflictAndStaysClosed()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
         _time.Advance(ReopenPeriod);
@@ -87,7 +87,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.reopen_period_ended");
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
         (await AuditEntryCountAsync(tenant.Id)).ShouldBe(2);
     }
 
@@ -95,7 +95,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReopenTenant_ClosedAfterASuspension_ForgetsTheReason()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
         await admin.SuspendTenantAsync(tenant.Id);
         var closed = await admin.CloseTenantAsync(tenant.Id);
@@ -110,7 +110,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReopenTenant_Active_AnswersAsItIsAndRecordsNothing()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id));
 
@@ -125,13 +125,13 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     [InlineData("Suspended")]
     public async Task ReopenTenant_NeitherClosedNorActive_IsAConflictAndChangesNothing(string status)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_closed");
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
     }
 
     public ValueTask InitializeAsync()
@@ -148,7 +148,7 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(

@@ -14,7 +14,7 @@ public static class ChangePreferencesHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        // A person becomes a catalog user only through an invitation or as the first system admin, as GetMe answers.
+        // A person becomes a user only through an invitation or as the first system admin, as GetMe answers.
         if (await users.FindUserForUpdateAsync(command.ActorId, cancellationToken) is not { } user)
         {
             return (Errors.UserNotFound, null);

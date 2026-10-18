@@ -16,7 +16,7 @@ namespace Api.IntegrationTests.Platform.Invitations;
 // and the old link answers as a cancelled one. A tenant with an Owner is refused, under the tenant's lock (K6).
 public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -54,7 +54,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (invitation.GetProperty("email").GetString(), Roles.Of(invitation)).ShouldBe((owner, Roles.BuiltIn("owner")));
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":null,"lastName":null,"deleted":false}""");
         var id = invitation.GetProperty("id").GetGuid();
-        (await _catalog.InvitationStatusOfAsync(id)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(id)).ShouldBe("Pending");
         _api.Email.Sent.Where(email => email.To == owner).ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{id}");
         (await _tenants.AcceptAsync(id, owner)).Accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
         await _summaries.ShouldMatchTheRowsAsync(tenant);
@@ -72,7 +72,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, PlatformTenants.Email()));
 
-        (await _catalog.InvitationStatusOfAsync(replaced)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(replaced)).ShouldBe("Cancelled");
         (await PendingInvitationsOfAsync(tenant)).ShouldBe(1);
         var accepted = await _tenants.AcceptAsync(replaced, first);
         accepted.Accepted.StatusCode.ShouldBe(HttpStatusCode.NotFound);
@@ -93,8 +93,8 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         var invited = await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, owner.ToUpperInvariant()));
 
         var id = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        (await _catalog.InvitationStatusOfAsync(replaced)).ShouldBe("Cancelled");
-        (await _catalog.InvitationStatusOfAsync(id)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(replaced)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(id)).ShouldBe("Pending");
         (await _tenants.AcceptAsync(replaced, owner)).Accepted.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await _tenants.AcceptAsync(id, owner)).Accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -121,7 +121,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [InlineData("Closed")]
     public async Task InviteOwner_ATenantThatIsNotActive_IsAConflictAndInvitesNobody(string status)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var invited = await (await SystemAdminAsync()).InviteOwnerAsync(tenant.Id, PlatformTenants.Email());
 
@@ -144,7 +144,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [InlineData("", "required")]
     public async Task InviteOwner_AnEmailThatIsNoEmailAddress_IsABadRequest(string email, string fieldCode)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var invited = await (await SystemAdminAsync()).InviteOwnerAsync(tenant.Id, email);
 
@@ -159,13 +159,13 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [InlineData("ar", "ar")]
     public async Task InviteOwner_WithOrWithoutALanguage_KeepsTheLanguageOfItsEmail(string? language, string kept)
     {
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(language: "tr"), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(language: "tr"), secondFactor: true);
         var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
         var owner = PlatformTenants.Email();
 
         await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, owner, language));
 
-        (await _catalog.InvitationLanguageOfAsync(owner)).ShouldBe(kept);
+        (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe(kept);
     }
 
     // I1: the endpoint creates an invitation, so the same key with the same request answers with the first invitation again.
@@ -191,7 +191,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_ATenantWithoutAnOwner_RecordsItInBothLogs()
     {
-        var adminId = await _catalog.AddSystemAdminAsync();
+        var adminId = await _testData.AddSystemAdminAsync();
         var admin = _api.CreateClient(adminId, secondFactor: true);
         var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
         var replaced = await _tenants.LatestInvitationAsync(tenant);
@@ -200,7 +200,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         var invited = await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, owner));
 
         var id = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        var admins = await _catalog.UserIdOfAsync(adminId);
+        var admins = await _testData.UserIdOfAsync(adminId);
         (await _audit.PlatformLogAsync(tenant)).ShouldBe(
             $"tenant.created|User|{admins}|Tenant|{tenant}|Acme Ltd, tenant.owner_invited|User|{admins}|Tenant|{tenant}|Acme Ltd");
         (await _audit.TenantLogAsync(tenant)).ShouldBe(
@@ -225,8 +225,8 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteOwner_AsATenantMember_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        var member = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), secondFactor: true);
 
         var invited = await member.InviteOwnerAsync(tenant.Id, PlatformTenants.Email());
 
@@ -284,7 +284,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> InvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");

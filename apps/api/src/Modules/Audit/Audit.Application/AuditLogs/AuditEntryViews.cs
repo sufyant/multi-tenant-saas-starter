@@ -14,7 +14,7 @@ internal static class AuditEntryViews
         CursorPage.Of(found, request, entry => new CursorPosition(entry.OccurredAt, entry.Id))
             .Map(entry => new AuditEntryView(entry.Id, entry.OccurredAt, entry.Operation, entry.Details, ActorOf(entry), TargetOf(entry)));
 
-    /// <summary>The page with each user, actor or target, named by the catalog now.</summary>
+    /// <summary>The page with each user, actor or target, named by ControlPlane now.</summary>
     public static async Task<CursorPage<AuditEntryView>> NamedAsync(
         CursorPage<AuditEntryView> page,
         IUserDirectory users,
@@ -46,7 +46,7 @@ internal static class AuditEntryViews
     private static AuditTargetView TargetOf(AuditEntry entry) =>
         new(entry.TargetKind.ToString(), entry.TargetId, entry.TargetName, entry.TargetKind == AuditTargetKind.User ? false : null);
 
-    // An id the catalog does not know has no name, and is not known to be deleted.
+    // An unknown id has no name, and is not known to be deleted.
     private static string? NameOf(Guid userId, IReadOnlyDictionary<Guid, UserName> names) =>
         names.TryGetValue(userId, out var name) ? name.DisplayName : null;
 

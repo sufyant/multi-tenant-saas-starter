@@ -4027,7 +4027,7 @@
             ]
           }
         },
-        "description": "The invitation code from the invitation link, and the names of a person the catalog does not know yet, each within the API's limit.\nThe API trims each name before it counts its length. A user the catalog knows sends none."
+        "description": "The invitation code from the invitation link, and the names of a person who has not signed up yet, each within the API's limit.\nThe API trims each name before it counts its length. A known user sends none."
       },
       "AuditActorResponse": {
         "required": [
@@ -4061,7 +4061,7 @@
             ]
           }
         },
-        "description": "Who acted: a user, by catalog user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a\nuser's real name, or null: for a user without a name, a deleted user, a user the catalog does not know, and for the platform, which\nthe screen names from `kind` in its own language. `deleted` is set for a user only."
+        "description": "Who acted: a user, by user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a\nuser's real name, or null: for a user without a name, a deleted user, an unknown user, and for the platform, which\nthe screen names from `kind` in its own language. `deleted` is set for a user only."
       },
       "AuditActorResponseKind": {
         "enum": [
@@ -4414,7 +4414,7 @@
             "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "A pending invitation: the invited address, its role, the catalog user id of the member who invited and their names as the catalog\nholds them now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one."
+        "description": "A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one."
       },
       "InvitationResponseState": {
         "enum": [
@@ -4509,7 +4509,7 @@
             ]
           }
         },
-        "description": "Who invited: a user, with the names the catalog holds now and `deleted` for a user a system admin deleted, or the platform,\nwith no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do."
+        "description": "Who invited: a user, with the names stored now and `deleted` for a user a system admin deleted, or the platform,\nwith no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do."
       },
       "InviterNameResponseKind": {
         "enum": [
@@ -4777,7 +4777,7 @@
             ]
           }
         },
-        "description": "The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
+        "description": "The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
       "MyTenantDetailResponse": {
         "required": [
@@ -5252,7 +5252,7 @@
             ]
           }
         },
-        "description": "An Owner of a tenant: the catalog user's id, names and address."
+        "description": "An Owner of a tenant: the user's id, names and address."
       },
       "TenantResponse": {
         "required": [
@@ -5381,7 +5381,7 @@
             }
           }
         },
-        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended), and every membership by the tenant's name."
+        "description": "One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended), and every membership by the tenant's name."
       },
       "UserMembershipResponse": {
         "required": [
@@ -5454,7 +5454,7 @@
             "type": "boolean"
           }
         },
-        "description": "A user's names as the catalog holds them now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows \"Deleted user\". It holds no email address."
+        "description": "A user's names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows \"Deleted user\". It holds no email address."
       },
       "UserResponse": {
         "required": [
@@ -5506,7 +5506,7 @@
             "format": "date-time"
           }
         },
-        "description": "A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many tenants they are a member of, and when they joined the catalog."
+        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many tenants they are a member of, and when they became a user."
       },
       "UserResponseStatus": {
         "enum": [
@@ -5515,7 +5515,7 @@
           "deleted"
         ],
         "type": "string",
-        "description": "The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs."
+        "description": "The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs."
       }
     },
     "securitySchemes": {

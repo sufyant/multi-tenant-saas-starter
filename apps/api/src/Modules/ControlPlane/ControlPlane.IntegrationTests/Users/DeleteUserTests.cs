@@ -19,10 +19,10 @@ public sealed class DeleteUserTests(Database database)
     [Fact]
     public async Task DeleteUser_UserStillAMember_IsAConflictAndErasesNothing()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
-        var user = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, tenant, user);
-        var admin = await Catalog.AddUserAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var user = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, tenant, user);
+        var admin = await TestData.AddUserAsync(database.Services);
 
         var (result, deleted, identity) = await DeleteAsync(new DeleteUserCommand(admin.ExternalId, user.Id));
 
@@ -35,8 +35,8 @@ public sealed class DeleteUserTests(Database database)
     private async Task<(SharedKernel.Result Result, ControlPlane.Contracts.Users.UserDeletedEvent? Deleted, DeleteIdentityAccountCommand? Identity)> DeleteAsync(DeleteUserCommand command)
     {
         await using var scope = database.Services.CreateAsyncScope();
-        var catalog = scope.ServiceProvider.GetRequiredService<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>();
-        await using var transaction = await catalog.Database.BeginTransactionAsync(Cancellation);
+        var controlPlane = scope.ServiceProvider.GetRequiredService<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>();
+        await using var transaction = await controlPlane.Database.BeginTransactionAsync(Cancellation);
         var returned = await DeleteUserHandler.HandleAsync(
             command, scope.ServiceProvider.GetRequiredService<IUserRepository>(), scope.ServiceProvider.GetRequiredService<TimeProvider>(), Cancellation);
         await transaction.CommitAsync(Cancellation);

@@ -23,7 +23,7 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // the Owner's invitation email, or to its compensation. TenantCreationTests follows what the saga does with its own record.
 public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -89,27 +89,27 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_WithoutALanguage_InvitesTheOwnerInTheSystemAdminsLanguage()
     {
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(language: "ar"), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(language: "ar"), secondFactor: true);
         var owner = $"{Guid.NewGuid():N}@example.com";
 
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = owner }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.InvitationLanguageOfAsync(owner)).ShouldBe("ar");
+        (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe("ar");
         _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
     }
 
     [Fact]
     public async Task CreateTenant_WithALanguage_InvitesTheOwnerInIt()
     {
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(language: "ar"), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(language: "ar"), secondFactor: true);
         var owner = $"{Guid.NewGuid():N}@example.com";
 
         var created = await _api.WaitingForMessagesAsync(
             () => admin.CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = owner, language = "tr" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.InvitationLanguageOfAsync(owner)).ShouldBe("tr");
+        (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe("tr");
         _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("Acme Ltd adlı kuruluşa davet edildiniz");
     }
 
@@ -129,7 +129,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     public async Task CreateTenant_SlugTaken_IsAConflict()
     {
         var admin = await SystemAdminAsync();
-        var existing = await _catalog.AddTenantAsync();
+        var existing = await _testData.AddTenantAsync();
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = existing.Slug, ownerEmail = "owner@example.com" });
 
@@ -292,8 +292,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_AsATenantMember_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var created = await _api.CreateClient(owner, secondFactor: true)
             .CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" });
@@ -444,7 +444,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await IdOfAsync(bySecond)).ShouldNotBe(await IdOfAsync(byFirst));
     }
 
-    // A7: the first system admin's first visit writes their catalog user with the configured address, which the identity provider
+    // A7: the first system admin's first visit writes their user with the configured address, which the identity provider
     // verified, and no names: the identity provider keeps none, and a system admin gives them. No invitation chose their language, so
     // they start with English (decision 6 of step 20j). Their system admin list is empty, so the test has a database of its own.
     [Fact]
@@ -459,13 +459,13 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
             () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.FirstSystemAdminEmail, null, null, Deleted: false, "en", null));
+        (await _testData.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.FirstSystemAdminEmail, null, null, Deleted: false, "en", null));
     }
 
     [Fact]
     public async Task CreateTenant_EveryStepSucceeds_ActivatesTheTenantInvitesTheOwnerOnceAndRecordsIt()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var owner = Email();
 
         var created = await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), owner));
@@ -475,7 +475,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await TenantStatusAsync(tenantId)).ShouldBe("Active");
         (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
         _api.Email.Sent.Where(email => email.To == owner).ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{invitationId}");
-        (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{await _catalog.UserIdOfAsync(admin)}|Tenant|{tenantId}|Acme Ltd");
+        (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{await _testData.UserIdOfAsync(admin)}|Tenant|{tenantId}|Acme Ltd");
         (await _audit.TenantLogAsync(tenantId)).ShouldBe($"{tenantId}:tenant.created|Platform|-|Tenant|{tenantId}|Acme Ltd");
         (await SagaStateAsync(tenantId)).ShouldBe("Completed");
         await _summaries.ShouldMatchTheRowsAsync(tenantId);
@@ -486,7 +486,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_OwnerWithoutAnAccount_CreatesOneClerkInvitationAndEmailsItsLink()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var owner = Email();
 
         var created = await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), owner));
@@ -502,7 +502,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TheSagaCannotBeWritten_WritesNoTenantAndNoInvitation()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var slug = Slug();
         var owner = Email();
         await database.RefuseAsync("tenant_creation_sagas", "INSERT", $"NEW.tenant_id IN (SELECT id FROM control_plane.tenants WHERE slug = '{slug}')");
@@ -518,7 +518,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TheActivationKeepsFailing_CancelsTheTenantAndItsInvitation()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var slug = Slug();
         var owner = Email();
         await database.RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
@@ -547,7 +547,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_TheEmailKeepsFailing_LeavesTheTenantActiveCancelsTheInvitationAndRaisesTheAlarm()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         _api.Email.IsDown = true;
         using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_creation.needs_attention");
 
@@ -572,7 +572,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_ClerkKeepsFailing_LeavesTheTenantActiveCancelsTheInvitationSendsNoEmailAndRaisesTheAlarm()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var owner = Email();
         _api.Identity.IsDown = true;
         using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_creation.needs_attention");
@@ -589,7 +589,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
     }
 
-    // The secret travels in the accept link, inside the tenant creation's messages (see the deviations list); the catalog keeps only its
+    // The secret travels in the accept link, inside the tenant creation's messages (see the deviations list); ControlPlane keeps only its
     // hash.
     [Fact]
     public async Task CreateTenant_TheAcceptLinksSecret_IsStoredOnlyAsItsHash()
@@ -629,7 +629,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     private static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> CountAsync(string sql) => database.ScalarAsSuperuserAsync<long>(sql);
 
@@ -654,7 +654,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     private async Task<string> CreateTenantWithOwnerAsync(string ownerEmail, string language = "en")
     {
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         (await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail, language })).EnsureSuccessStatusCode();
 
         return slug;

@@ -27,7 +27,7 @@ public sealed class InvitationDeliveryTests(Database database)
         ["Notifications:Resend:ApiUrl"] = "https://api.resend.test/",
     };
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -107,7 +107,7 @@ public sealed class InvitationDeliveryTests(Database database)
     public async Task SendInvitation_TheNextTryIsAMinuteAway_IsScheduledWhileTheQueueHandlesTheNextInvitation()
     {
         var name = await database.CreateMigratedDatabaseAsync();
-        var catalog = new Catalog(database, name);
+        var testData = new TestData(database, name);
         await using var api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
@@ -125,8 +125,8 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(
             async () =>
             {
-                await CreateTenantForOwnerAsync(api, refused, catalog);
-                await CreateTenantForOwnerAsync(api, next, catalog);
+                await CreateTenantForOwnerAsync(api, refused, testData);
+                await CreateTenantForOwnerAsync(api, next, testData);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
@@ -142,7 +142,7 @@ public sealed class InvitationDeliveryTests(Database database)
     public async Task SendInvitation_TheTimeOfTheNextTryIsWrittenLate_IsStillScheduledAMinuteAway()
     {
         var name = await database.CreateMigratedDatabaseAsync();
-        var catalog = new Catalog(database, name);
+        var testData = new TestData(database, name);
         await using var api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
@@ -161,8 +161,8 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(
             async () =>
             {
-                await CreateTenantForOwnerAsync(api, refused, catalog);
-                await CreateTenantForOwnerAsync(api, next, catalog);
+                await CreateTenantForOwnerAsync(api, refused, testData);
+                await CreateTenantForOwnerAsync(api, next, testData);
             },
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
@@ -176,9 +176,9 @@ public sealed class InvitationDeliveryTests(Database database)
     // every handler that still runs, so the retry is complete before the test reads it.
     private static Task StopAndDrainAsync(ApiFactory api) => api.Services.GetRequiredService<IHost>().StopAsync(Cancellation);
 
-    private static async Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email, Catalog catalog)
+    private static async Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email, TestData testData)
     {
-        var admin = await catalog.AddSystemAdminAsync();
+        var admin = await testData.AddSystemAdminAsync();
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
 
         return await api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email });
@@ -199,7 +199,7 @@ public sealed class InvitationDeliveryTests(Database database)
             }
         });
 
-    private Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email) => CreateTenantForOwnerAsync(api, email, _catalog);
+    private Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email) => CreateTenantForOwnerAsync(api, email, _testData);
 
     // Holds up Wolverine's log line about a rescheduled envelope, which it writes after it records the retry and before it sets the time.
     private sealed class SlowRescheduleLog : ILoggerProvider, ILogger

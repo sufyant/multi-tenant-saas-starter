@@ -14,7 +14,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
 {
     private readonly DateTimeOffset _start = FarFuture();
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -33,7 +33,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_AsASystemAdmin_ReturnsTheNewestEntriesFirst()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var older = await AddEntryAsync(_start);
         var newer = await AddEntryAsync(_start.AddTicks(10));
 
@@ -48,8 +48,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_AsATenantOwner_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var response = await _api.CreateClient(owner, secondFactor: true).GetAsync("/v1/platform/audit-log", Cancellation);
 
@@ -59,7 +59,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_TwoPages_ComeInOrder()
     {
-        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var oldest = await AddEntryAsync(_start);
         var middle = await AddEntryAsync(_start.AddTicks(10));
         var newest = await AddEntryAsync(_start.AddTicks(20));
@@ -74,7 +74,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_ACursorThatDoesNotDecode_IsRejected()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
 
         var response = await _api.CreateClient(admin, secondFactor: true).GetAsync("/v1/platform/audit-log?cursor=AQ", Cancellation);
 
@@ -87,11 +87,11 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_ActorsAndTargets_AreNamedOnRead()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
-        var grace = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(firstName: "Grace", lastName: "Hopper"));
-        var deletedUser = await _catalog.AddUserAsync(firstName: "Gone", lastName: "Away");
-        await _catalog.DeleteUserAsync(deletedUser);
-        var deleted = await _catalog.UserIdOfAsync(deletedUser);
+        var admin = await _testData.AddSystemAdminAsync();
+        var grace = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Grace", lastName: "Hopper"));
+        var deletedUser = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
+        await _testData.DeleteUserAsync(deletedUser);
+        var deleted = await _testData.UserIdOfAsync(deletedUser);
         var tenant = Guid.CreateVersion7();
         await _audit.AddPlatformEntryAsync(_start, "User", grace, "User", deleted, "user.deleted");
         await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", grace, "Tenant", tenant, "tenant.suspended", "Globex");
@@ -109,14 +109,14 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     public async Task ListPlatformAuditEntries_AUserWithAnEmailAddress_AnswersNoEmailAddress()
     {
         var marker = Guid.NewGuid().ToString("N");
-        var admin = await _catalog.AddSystemAdminAsync(email: $"admin-{marker}@example.com");
-        var target = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"target-{marker}@example.com", firstName: "Ada"));
-        await _audit.AddPlatformEntryAsync(_start, "User", await _catalog.UserIdOfAsync(admin), "User", target);
+        var admin = await _testData.AddSystemAdminAsync(email: $"admin-{marker}@example.com");
+        var target = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"target-{marker}@example.com", firstName: "Ada"));
+        await _audit.AddPlatformEntryAsync(_start, "User", await _testData.UserIdOfAsync(admin), "User", target);
 
         var answer = await _api.CreateClient(admin, secondFactor: true).GetStringAsync("/v1/platform/audit-log?limit=1", Cancellation);
 
         answer.ShouldNotContain(marker);
-        ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _catalog.UserIdOfAsync(admin)}|-|false|user|{target}|Ada|false"]);
+        ListAuditEntriesTests.Described(JsonElement.Parse(answer)).ShouldBe([$"user.suspended|user|{await _testData.UserIdOfAsync(admin)}|-|false|user|{target}|Ada|false"]);
     }
 
     // The Activity tab of a tenant: the platform's entries about that tenant, newest first, a page at a time. An entry about
@@ -124,7 +124,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilter_ReturnsTheEntriesAboutThatTenantOnly()
     {
-        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var (tenant, other) = (Guid.CreateVersion7(), Guid.CreateVersion7());
         var created = await _audit.AddPlatformEntryAsync(_start, "User", Guid.CreateVersion7(), "Tenant", tenant, "tenant.created", "Acme Ltd");
         await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", Guid.CreateVersion7(), "Tenant", other, "tenant.created", "Globex");
@@ -144,7 +144,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
     {
-        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
         var response = await client.GetAsync("/v1/platform/audit-log?tenantId=acme", Cancellation);
 

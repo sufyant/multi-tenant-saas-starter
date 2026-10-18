@@ -5,7 +5,7 @@ using ControlPlane.Contracts.Users;
 
 namespace Audit.Application.Users.RecordUserSuspended;
 
-// The audit entry of a catalog user's suspension, in the platform's log: a user belongs to no tenant. The system admin who suspended the
+// The audit entry of a user's suspension, in the platform's log: a user belongs to no tenant. The system admin who suspended the
 // user acted (K3). The event is handled in a transaction that declares nothing, so the entry goes only to the platform's log.
 public static class RecordUserSuspendedHandler
 {

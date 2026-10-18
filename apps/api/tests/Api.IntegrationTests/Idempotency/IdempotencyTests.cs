@@ -22,7 +22,7 @@ public sealed class IdempotencyTests(Database database)
             services.AddSingleton(failure);
             services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime().Policies.Add<IdempotencyCommitFailurePolicy>());
         });
-        var client = api.CreateClient(await new Catalog(database).AddSystemAdminAsync(), secondFactor: true);
+        var client = api.CreateClient(await new TestData(database).AddSystemAdminAsync(), secondFactor: true);
         var slug = $"rollback-{Guid.NewGuid():N}";
 
         var failed = await client.CreateTenantAsync(new { name = "Acme", slug, ownerEmail = "owner@example.com" }, key);
@@ -37,7 +37,7 @@ public sealed class IdempotencyTests(Database database)
     public async Task CreateTenant_FirstRequest_SavesTheHandlerResultWithoutTheRequestBody()
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);
-        var admin = await new Catalog(database).AddSystemAdminAsync();
+        var admin = await new TestData(database).AddSystemAdminAsync();
         var client = api.CreateClient(admin, secondFactor: true);
         var key = Guid.NewGuid().ToString();
 
@@ -54,7 +54,7 @@ public sealed class IdempotencyTests(Database database)
     public async Task CreateTenant_ValidationFails_DoesNotSaveAndCorrectedRetryRuns(string ownerEmail)
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);
-        var client = api.CreateClient(await new Catalog(database).AddSystemAdminAsync(), secondFactor: true);
+        var client = api.CreateClient(await new TestData(database).AddSystemAdminAsync(), secondFactor: true);
         var key = Guid.NewGuid().ToString();
         var slug = $"validation-{Guid.NewGuid():N}";
 
@@ -70,7 +70,7 @@ public sealed class IdempotencyTests(Database database)
     public async Task CreateTenant_DomainValidationFails_DoesNotSaveAndCorrectedRetryRuns()
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);
-        var client = api.CreateClient(await new Catalog(database).AddSystemAdminAsync(), secondFactor: true);
+        var client = api.CreateClient(await new TestData(database).AddSystemAdminAsync(), secondFactor: true);
         var key = Guid.NewGuid().ToString();
         var slug = $"domain-{Guid.NewGuid():N}";
 
@@ -86,9 +86,9 @@ public sealed class IdempotencyTests(Database database)
     public async Task CreateTenant_BusinessRejection_ReplaysTheExactStatusAndBody()
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);
-        var catalog = new Catalog(database);
-        var client = api.CreateClient(await catalog.AddSystemAdminAsync(), secondFactor: true);
-        var tenant = await catalog.AddTenantAsync();
+        var testData = new TestData(database);
+        var client = api.CreateClient(await testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await testData.AddTenantAsync();
         var key = Guid.NewGuid().ToString();
         var body = new { name = "Acme", slug = tenant.Slug, ownerEmail = "owner@example.com" };
         var first = await client.CreateTenantAsync(body, key);

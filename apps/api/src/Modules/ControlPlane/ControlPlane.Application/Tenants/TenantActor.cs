@@ -23,7 +23,7 @@ internal sealed record TenantActor(Tenant Tenant, User User, Membership Membersh
         var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
         var user = await users.FindUserAsync(actorId, cancellationToken)
-            ?? throw new InvalidOperationException("A member is always a catalog user.");
+            ?? throw new InvalidOperationException("A member is always a user.");
         if (await tenants.FindMembershipAsync(user.Id, cancellationToken) is not { } membership)
         {
             return Errors.TenantNotFound;

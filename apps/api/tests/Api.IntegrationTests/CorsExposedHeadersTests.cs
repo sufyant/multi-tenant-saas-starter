@@ -11,7 +11,7 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 {
     private const string AllowedOrigin = "https://app.test";
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -64,7 +64,7 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 
     private async Task<HttpClient> CrossOriginAdminAsync()
     {
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         admin.DefaultRequestHeaders.Add("Origin", AllowedOrigin);
         return admin;
     }

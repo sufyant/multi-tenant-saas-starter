@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ControlPlane.Infrastructure.Persistence.Users;
 
 /// <summary>
-/// The catalog users in control_plane.users, which belongs to no tenant (R6), for the commands. A user command's message has no tenant,
+/// The users in control_plane.users, which belongs to no tenant (R6), for the commands. A user command's message has no tenant,
 /// so the transaction declares none; it declares the user only to read the user's own memberships (R11).
 /// </summary>
 /// <remarks>Public (W1, W9).</remarks>

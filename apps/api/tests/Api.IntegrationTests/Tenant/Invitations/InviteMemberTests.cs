@@ -21,7 +21,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 {
     private const int DailyLimit = 2;
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -33,7 +33,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
+    private SignUpInvitations SignUps => new(_api, _testData, database);
 
     public ValueTask InitializeAsync()
     {
@@ -51,8 +51,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [InlineData("Admin")]
     public async Task InviteMember_AsAnOwnerOrAnAdmin_CreatesAPendingInvitation(string inviterRole)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: inviterRole);
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: inviterRole);
         var email = NewEmail();
 
         var invited = await _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email);
@@ -65,10 +65,10 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
         Roles.Of(invitation).ShouldBe(Roles.BuiltIn("member"));
-        invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _catalog.UserIdOfAsync(inviter));
+        invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _testData.UserIdOfAsync(inviter));
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
-        (await _catalog.InvitationStatusOfAsync(invitation.GetProperty("id").GetGuid())).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(invitation.GetProperty("id").GetGuid())).ShouldBe("Pending");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -76,28 +76,28 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_WithoutALanguage_InvitesInTheInvitersLanguage()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(language: "tr"), role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: "tr"), role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.InvitationLanguageOfAsync(email)).ShouldBe("tr");
+        (await _testData.InvitationLanguageOfAsync(email)).ShouldBe("tr");
         _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("Acme Ltd adlı kuruluşa davet edildiniz");
     }
 
     [Fact]
     public async Task InviteMember_WithALanguage_InvitesInIt()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(language: "tr"), role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: "tr"), role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email, language: "ar"));
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _catalog.InvitationLanguageOfAsync(email)).ShouldBe("ar");
+        (await _testData.InvitationLanguageOfAsync(email)).ShouldBe("ar");
         _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
     }
 
@@ -105,8 +105,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_WithALanguageNotOfTheList_IsABadRequestAndInvitesNobody()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var invited = await _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, NewEmail(), language: "fr");
 
@@ -117,8 +117,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_AsAMember_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Member");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Member");
 
         var invited = await _api.CreateClient(member).InviteMemberAsync(tenant.Id, NewEmail());
 
@@ -130,8 +130,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_AnAdminForTheOwnerRole_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
 
         var invited = await _api.CreateClient(admin).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
@@ -143,8 +143,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_AnOwnerForTheOwnerRole_CreatesTheInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
@@ -158,8 +158,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [InlineData("   ", "member")]
     public async Task InviteMember_AnEmailThatIsNoEmailAddress_IsABadRequest(string email, string role)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, email, role);
 
@@ -179,8 +179,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [InlineData("""{ "email": "ada@example.com", "role": "OWNER" }""")]
     public async Task InviteMember_WithoutAKnownRole_IsABadRequest(string body)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/tenants/{tenant.Id}/invitations")
         {
             Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
@@ -197,8 +197,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_AnEmailWithSpacesAround_IsStoredTrimmed()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"  {email} ");
@@ -210,8 +210,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TheSameEmailAgain_CancelsTheFirstAndOnlyTheSecondLinkWorks()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var (invitee, email) = InviteeWithAnAccount();
         var first = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email)));
         var second = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email)));
@@ -219,7 +219,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var withTheFirstLink = await AcceptAsync(invitee, _api.Email.CodeSentFor(first));
         var withTheSecondLink = await AcceptAsync(invitee, _api.Email.CodeSentFor(second));
 
-        (await _catalog.InvitationStatusOfAsync(first)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(first)).ShouldBe("Cancelled");
         withTheFirstLink.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         withTheSecondLink.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -228,10 +228,10 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TheSameEmailAgain_RecordsOneMemberInvitedEntryForEachCommand()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var owner = _api.CreateClient(inviter);
-        var inviterId = await _catalog.UserIdOfAsync(inviter);
+        var inviterId = await _testData.UserIdOfAsync(inviter);
         var email = NewEmail();
         var first = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email)));
 
@@ -248,15 +248,15 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TheSameEmailInAnotherCase_ReplacesThePendingInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var local = Guid.NewGuid().ToString("N");
         var first = await IdOfAsync(await owner.InviteMemberAsync(tenant.Id, $"Ada.{local}@Example.com"));
 
         var second = await IdOfAsync(await owner.InviteMemberAsync(tenant.Id, $"ada.{local}@example.COM"));
 
-        (await _catalog.InvitationStatusOfAsync(first)).ShouldBe("Cancelled");
-        (await _catalog.InvitationStatusOfAsync(second)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(first)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(second)).ShouldBe("Pending");
     }
 
     // K2, K6: a unique index keeps one pending invitation for each tenant and address, in any case. The lock is the first guard; the
@@ -264,11 +264,11 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task StoreInvitation_ASecondPendingOneToTheSameEmailInAnotherCase_IsRefusedByTheIndex()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var local = Guid.NewGuid().ToString("N");
-        await _catalog.AddInvitationAsync(tenant.Id, $"ada.{local}@example.com");
+        await _testData.AddInvitationAsync(tenant.Id, $"ada.{local}@example.com");
 
-        var second = () => _catalog.AddInvitationAsync(tenant.Id, $"ADA.{local}@example.com");
+        var second = () => _testData.AddInvitationAsync(tenant.Id, $"ADA.{local}@example.com");
 
         (await second.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.UniqueViolation);
     }
@@ -277,25 +277,25 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task StoreInvitation_APendingOneBesideACancelledAndAnAcceptedOne_IsStored()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var email = NewEmail();
-        await _catalog.AddInvitationAsync(tenant.Id, email, status: "Cancelled");
-        await _catalog.AddInvitationAsync(tenant.Id, email, status: "Accepted");
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Cancelled");
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted");
 
-        var pending = await _catalog.AddInvitationAsync(tenant.Id, email);
+        var pending = await _testData.AddInvitationAsync(tenant.Id, email);
 
-        (await _catalog.InvitationStatusOfAsync(pending)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(pending)).ShouldBe("Pending");
     }
 
     // Row level security keeps the check to the tenant's own members: a member of another tenant with the address is no member here.
     [Fact]
     public async Task InviteMember_TheEmailOfAMemberOfAnotherTenant_CreatesTheInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var email = NewEmail();
-        await _catalog.AddMemberAsync(other.Id, await _catalog.AddUserAsync(email: email));
+        await _testData.AddMemberAsync(other.Id, await _testData.AddUserAsync(email: email));
 
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, email);
 
@@ -306,10 +306,10 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_AnotherTenantAtItsLimit_CreatesTheInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var otherOwner = _api.CreateClient(await _catalog.AddMemberAsync(other.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var otherOwner = _api.CreateClient(await _testData.AddMemberAsync(other.Id, role: "Owner"));
         (await otherOwner.InviteMemberAsync(other.Id, NewEmail())).StatusCode.ShouldBe(HttpStatusCode.Created);
         (await otherOwner.InviteMemberAsync(other.Id, NewEmail())).StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -318,14 +318,14 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
-    // The catalog's copy of a member's address, compared without case.
+    // Our copy of a member's address, compared without case.
     [Fact]
     public async Task InviteMember_TheEmailOfAMember_IsAConflict()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var local = Guid.NewGuid().ToString("N");
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: $"Grace.{local}@Navy.mil"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"Grace.{local}@Navy.mil"));
 
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"grace.{local}@navy.MIL");
 
@@ -338,8 +338,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_OverTheDailyLimit_IsTooManyRequestsUntil24HoursHavePassed()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var email = NewEmail();
         (await owner.InviteMemberAsync(tenant.Id, email)).StatusCode.ShouldBe(HttpStatusCode.Created);
         _time.Advance(TimeSpan.FromHours(1));
@@ -359,8 +359,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TwoAtOnceToTheSameEmail_EndWithOnePendingInvitation()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var email = NewEmail();
 
         var statuses = await WhileTheTenantIsHeldAsync(tenant.Id, () => owner.InviteMemberAsync(tenant.Id, email), () => owner.InviteMemberAsync(tenant.Id, email));
@@ -375,8 +375,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TwoAtOnceWithOnePlaceLeft_NeverPassTheLimit()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         // The first invitation's sign-up locks the tenant row too, after the commit; it ends before the holder counts its waiters.
         (await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, NewEmail()))).StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -392,10 +392,10 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_ByAnAdminRemovedWhileItWaited_IsNotFoundAndCreatesNothing()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
-        var adminId = await _catalog.UserIdOfAsync(admin);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var adminId = await _testData.UserIdOfAsync(admin);
 
         var responses = await database.OneAfterTheOtherAsync(
             tenant.Id,
@@ -412,8 +412,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TheSameIdempotencyKeyTwice_CreatesOneInvitationAndSendsOneEmail()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var email = NewEmail();
         var key = Guid.NewGuid().ToString();
         var first = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email, idempotencyKey: key));
@@ -430,8 +430,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_ANewInvitation_EmailsTheTenantsNameAndTheLinkToTheInvitedAddress()
     {
-        var tenant = await _catalog.AddTenantAsync(name: "Globex Corp");
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync(name: "Globex Corp");
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var email = NewEmail();
 
         var invitation = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email)));
@@ -447,8 +447,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_TheEmailServiceFailsOnce_SendsTheEmailOnTheNextTry()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var email = NewEmail();
         _api.Email.FailNext(1);
 
@@ -487,8 +487,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_ANewInvitation_LeavesTheEmailOutOfTheAuditLog()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var email = NewEmail();
 
         var invitation = await IdOfAsync(await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenant.Id, email)));
@@ -581,7 +581,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
         messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUpCommand>().InvitationId.ShouldBe(invitationId);
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == email);
-        (await _catalog.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
     }
 
     private static (string? Role, string? ReplacedInvitationId) Details(string? json)

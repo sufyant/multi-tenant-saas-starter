@@ -61,7 +61,7 @@ public sealed class BuiltInRolesTests
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
 
-    // Activity, the tenant's audit log, is the Owners' and the Admins' to read (catalog, step 20f; K7).
+    // Activity, the tenant's audit log, is the Owners' and the Admins' to read (api-catalog, step 20f; K7).
     [Fact]
     public void ReadAuditLog_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot()
     {

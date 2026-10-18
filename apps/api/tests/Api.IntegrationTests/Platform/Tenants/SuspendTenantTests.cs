@@ -12,7 +12,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
 {
     private const string Reason = "Unpaid invoices";
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -32,7 +32,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendTenant_Twice_IsRecordedOnceInEachLog()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
         await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id));
 
@@ -47,7 +47,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendTenant_WithAReason_KeepsItTrimmedAndShowsItToTheAdmin()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
 
         var response = await admin.SuspendTenantAsync(tenant.Id, "  Unpaid invoices ");
@@ -59,7 +59,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendTenant_AReasonOfFiveHundredCharactersWithSpacesAround_IsAccepted()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var reason = new string('r', 500);
 
         var response = await (await SystemAdminAsync()).SuspendTenantAsync(tenant.Id, $" {reason} ");
@@ -72,7 +72,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     [MemberData(nameof(WrongReasons))]
     public async Task SuspendTenant_WithoutAReasonOrWithOneTooLong_IsABadRequestAndChangesNothing(string body, string fieldCode)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await (await SystemAdminAsync()).PostAsync(
             $"/v1/platform/tenants/{tenant.Id}/suspend", new StringContent(body, System.Text.Encoding.UTF8, "application/json"), Cancellation);
@@ -81,14 +81,14 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
         problem.GetProperty("errors").GetProperty("reason").EnumerateArray().Select(code => code.GetString()).ShouldBe([fieldCode]);
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe("Active");
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Active");
     }
 
     // K3: the platform's entry holds the system admin's reason; the tenant's entry, which its Owners and Admins read, does not.
     [Fact]
     public async Task SuspendTenant_WithAReason_RecordsItInThePlatformEntryOnly()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
 
         await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id));
@@ -109,7 +109,7 @@ public sealed class SuspendTenantTests(Database database) : IAsyncLifetime
     private static async Task<string?> SuspensionReasonOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("suspensionReason").GetString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(

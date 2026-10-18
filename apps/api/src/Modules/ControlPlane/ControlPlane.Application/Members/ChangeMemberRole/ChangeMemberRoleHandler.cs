@@ -42,7 +42,7 @@ public static class ChangeMemberRoleHandler
         }
 
         var user = await users.FindUserAsync(target.UserId, cancellationToken)
-            ?? throw new InvalidOperationException("A member is always a catalog user.");
+            ?? throw new InvalidOperationException("A member is always a user.");
         var member = new MemberView(user.Id, user.Email, user.FirstName, user.LastName, RoleView.Of(role), user.DeletedAt is not null, target.JoinedAt);
         if (changed.Value == StateChange.Unchanged)
         {

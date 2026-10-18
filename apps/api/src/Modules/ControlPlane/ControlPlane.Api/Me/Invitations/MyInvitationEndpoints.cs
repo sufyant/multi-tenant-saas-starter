@@ -35,7 +35,7 @@ public static class MyInvitationEndpoints
     // Accepting starts outside any tenant. The invitation code names the tenant, which is declared before the invitation is looked up
     // by its secret, so a wrong tenant, a wrong secret and a malformed code all answer the same 404; a request without a code, or with
     // an empty or blank one, is a bad request. The identity provider is asked first, so its call never runs while the acceptance holds
-    // the invitation locked. A person the catalog does not know gives their first and last name; the email address is the invited one.
+    // the invitation locked. A person who has not signed up yet gives their first and last name; the email address is the invited one.
     private static async Task<Result<MyTenantResponse>> AcceptInvitation(
         AcceptInvitationRequest request,
         ClaimsPrincipal user,

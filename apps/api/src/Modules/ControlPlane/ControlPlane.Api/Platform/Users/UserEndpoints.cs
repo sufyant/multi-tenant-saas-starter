@@ -22,7 +22,7 @@ using Wolverine;
 
 namespace ControlPlane.Api.Platform.Users;
 
-/// <summary>The catalog users a system admin works with. Users belong to no tenant, so every command runs without one.</summary>
+/// <summary>The users a system admin works with. Users belong to no tenant, so every command runs without one.</summary>
 public static class UserEndpoints
 {
     public static void Map(RouteGroupBuilder platform)
@@ -86,7 +86,7 @@ public static class UserEndpoints
     // in a transaction of its own. First the check: a tenant always has at least one Owner (K1), so the user's tenants where they are the
     // last Owner answer 409 and nothing changes. Then the user leaves each tenant, under that tenant's lock, which checks again; a tenant
     // whose last Owner the user became meanwhile stops the deletion with the same 409, and the tenants the user already left stay left.
-    // Last, with no membership left, the catalog erases the user, and the identity provider deletes its user after that commit. A
+    // Last, with no membership left, ControlPlane erases the user, and the identity provider deletes its user after that commit. A
     // deletion sets a state, so it takes no idempotency key (I1); a second one answers 204 again.
     private static async Task<Result> DeleteUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken)
     {

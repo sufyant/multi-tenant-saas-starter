@@ -28,7 +28,7 @@ public static class ReopenTenantHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (TenantView.Of(tenant), new TenantReopenedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name));

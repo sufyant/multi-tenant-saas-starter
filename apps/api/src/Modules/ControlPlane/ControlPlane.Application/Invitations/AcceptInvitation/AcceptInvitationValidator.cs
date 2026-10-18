@@ -9,7 +9,7 @@ public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitati
 {
     public AcceptInvitationValidator()
     {
-        // A name is checked when it is given; whether it must be given depends on the catalog, which the handler reads. The user keeps a
+        // A name is checked when it is given; whether it must be given depends on whether the person is a user, which the handler reads. The user keeps a
         // name without the spaces around it, so its length is counted without them.
         RuleFor(command => command.FirstName!)
             .Cascade(CascadeMode.Stop)

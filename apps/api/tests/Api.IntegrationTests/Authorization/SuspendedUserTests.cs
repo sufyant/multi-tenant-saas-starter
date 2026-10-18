@@ -9,7 +9,7 @@ namespace Api.IntegrationTests.Authorization;
 // reactivated through the system door.
 public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -26,8 +26,8 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMyTenants_SuspendedUser_IsForbiddenAndToldWhy()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var user = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var user = await _testData.AddMemberAsync(tenant.Id);
         await SuspendAsync(user);
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me/tenants", Cancellation);
@@ -40,7 +40,7 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_SuspendedUser_IsForbiddenAndJoinsNothing()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
         await SuspendAsync(user);
         var email = $"{Guid.NewGuid():N}@example.com";
         _api.Identity.AddAccount(user, email);
@@ -59,8 +59,8 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_SuspendedMember_IsForbiddenAndToldWhy()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         await SuspendAsync(member);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -73,8 +73,8 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_SuspendedMemberOfASuspendedTenant_IsToldTheUserIsSuspended()
     {
-        var tenant = await _catalog.AddTenantAsync(status: "Suspended");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync(status: "Suspended");
+        var member = await _testData.AddMemberAsync(tenant.Id);
         await SuspendAsync(member);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -86,10 +86,10 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReactivateUser_TheUser_GetsInAgain()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
         await SuspendAsync(member);
-        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(member)}/reactivate", null, Cancellation))
+        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(member)}/reactivate", null, Cancellation))
             .EnsureSuccessStatusCode();
 
         var tenants = await _api.CreateClient(member).GetAsync("/v1/me/tenants", Cancellation);
@@ -103,8 +103,8 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
     private async Task SuspendAsync(string externalId) =>
-        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
+        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
             .EnsureSuccessStatusCode();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 }

@@ -9,14 +9,14 @@ namespace Api.IntegrationTests.Fixtures;
 // The identity provider's sign-up of a member's invitation, driven through one test's host (section 6, "Invitation sign-up"): a tenant
 // with an Owner, an invitation to a person without an account with its email sent, the id of the Clerk invitation that ours records,
 // and the expiry of the invitation's lifetime. The use case classes that check a sign-up share it.
-internal sealed class SignUpInvitations(ApiFactory api, Catalog catalog, Database database)
+internal sealed class SignUpInvitations(ApiFactory api, TestData testData, Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public async Task<(Guid TenantId, HttpClient Owner)> TenantWithOwnerAsync()
     {
-        var tenant = await catalog.AddTenantAsync();
-        return (tenant.Id, api.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner")));
+        var tenant = await testData.AddTenantAsync();
+        return (tenant.Id, api.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner")));
     }
 
     // An invitation to a person without an account, with its email sent: its id and the id of Clerk's invitation.

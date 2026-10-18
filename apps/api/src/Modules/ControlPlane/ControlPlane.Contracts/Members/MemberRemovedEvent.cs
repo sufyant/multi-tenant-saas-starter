@@ -7,8 +7,8 @@ namespace ControlPlane.Contracts.Members;
 /// handles it in the tenant's transaction, as the tenant's id travels in the message's envelope.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
-/// <param name="UserId">The catalog user id of the member who was removed.</param>
-/// <param name="RemovedBy">The catalog user id of the member who removed them, who acted.</param>
+/// <param name="UserId">The user id of the member who was removed.</param>
+/// <param name="RemovedBy">The user id of the member who removed them, who acted.</param>
 /// <param name="Role">The built-in role the member had: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
 [MessageName("member-removed")]
 public sealed record MemberRemovedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, Guid RemovedBy, string Role);

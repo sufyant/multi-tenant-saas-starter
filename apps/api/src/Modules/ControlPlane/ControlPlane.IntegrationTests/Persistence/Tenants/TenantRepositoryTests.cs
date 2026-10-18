@@ -15,12 +15,12 @@ public sealed class TenantRepositoryTests(Database database)
     [Fact]
     public async Task ReadMemberships_InATenant_ReturnsOnlyItsOwn()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
-        var other = await Catalog.AddTenantAsync(database.Services);
-        var member = await Catalog.AddUserAsync(database.Services);
-        var outsider = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, tenant, member);
-        await Catalog.AddMemberAsync(database.Services, other, outsider);
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var other = await TestData.AddTenantAsync(database.Services);
+        var member = await TestData.AddUserAsync(database.Services);
+        var outsider = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, tenant, member);
+        await TestData.AddMemberAsync(database.Services, other, outsider);
 
         var members = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
             ((TenantRepository)scope.GetRequiredService<ITenantRepository>()).Memberships.Select(membership => membership.UserId).ToListAsync(Cancellation));
@@ -32,8 +32,8 @@ public sealed class TenantRepositoryTests(Database database)
     [Fact]
     public async Task AddMembership_InATenant_BelongsToThatTenantAndIsCountedAndSummarized()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
-        var user = await Catalog.AddUserAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var user = await TestData.AddUserAsync(database.Services);
 
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
@@ -46,15 +46,15 @@ public sealed class TenantRepositoryTests(Database database)
         var memberships = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
             ((TenantRepository)scope.GetRequiredService<ITenantRepository>()).Memberships.Select(membership => membership.TenantId).ToListAsync(Cancellation));
         memberships.ShouldBe([tenant.Id]);
-        (await Catalog.MembershipCountOfAsync(database.Services, user)).ShouldBe(1);
-        (await Catalog.MemberCountOfAsync(database.Services, tenant)).ShouldBe(1);
+        (await TestData.MembershipCountOfAsync(database.Services, user)).ShouldBe(1);
+        (await TestData.MemberCountOfAsync(database.Services, tenant)).ShouldBe(1);
     }
 
     [Fact]
     public async Task RemoveMembership_InATenant_IsGoneAndUncountedAndSummarized()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
-        var user = await Catalog.AddUserAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var user = await TestData.AddUserAsync(database.Services);
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
@@ -70,8 +70,8 @@ public sealed class TenantRepositoryTests(Database database)
             return SharedKernel.Result.Success();
         });
 
-        (await Catalog.MembershipCountOfAsync(database.Services, user)).ShouldBe(0);
-        (await Catalog.MemberCountOfAsync(database.Services, tenant)).ShouldBe(0);
+        (await TestData.MembershipCountOfAsync(database.Services, user)).ShouldBe(0);
+        (await TestData.MemberCountOfAsync(database.Services, tenant)).ShouldBe(0);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class TenantRepositoryTests(Database database)
         var email = Unique.Email();
         var (_, _, ready) = await Handlers.CreateActiveTenantAsync(database.Services, email);
         var tokenHash = InvitationSecret.Hash(Handlers.SecretOf(Handlers.CodeOf(ready.AcceptLink)));
-        var tenant = await Catalog.AddTenantAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services);
 
         var found = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
             scope.GetRequiredService<ITenantRepository>().FindInvitationForUpdateAsync(tokenHash, Cancellation));
@@ -104,7 +104,7 @@ public sealed class TenantRepositoryTests(Database database)
     {
         var (_, _, ready) = await Handlers.CreateActiveTenantAsync(database.Services, Unique.Email());
         var invitationId = ready.InvitationId;
-        var tenant = await Catalog.AddTenantAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services);
 
         var found = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
             scope.GetRequiredService<ITenantRepository>().FindInvitationForUpdateAsync(invitationId, Cancellation));

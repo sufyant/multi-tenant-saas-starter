@@ -7,7 +7,7 @@ namespace Api.IntegrationTests.Tenant;
 // tenant.not_found, so neither its status nor its body, apart from the trace id, says which one it was.
 public sealed class TenantNotFoundTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -24,9 +24,9 @@ public sealed class TenantNotFoundTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_NotAMemberOrNoSuchTenant_AnswersTheHandlersTenantNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var outsider = _api.CreateClient(await _catalog.AddUserAsync());
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        var outsider = _api.CreateClient(await _testData.AddUserAsync());
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
         var notAMember = await outsider.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
         var noSuchTenant = await outsider.GetAsync($"/v1/tenants/{Guid.NewGuid()}/members", Cancellation);

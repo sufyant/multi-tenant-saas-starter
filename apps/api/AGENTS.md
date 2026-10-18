@@ -27,7 +27,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - The tenant creation saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6; rules S1 to S13 in section 3)
 - The tenant id is in the API path and is proven by membership. It never comes from the token, the body, the query or a header. (T1, T2, Deviations)
 - The identity provider only authenticates. Tenants, roles and permissions live in our tables. (T6, A1 to A6)
-- The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. The catalog owns the names; the provider keeps none, and no webhook flows back. (A7, A8; section 6, "Invitation sign-up"; the maintainer's decisions in step 20i)
+- The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. ControlPlane owns the names; the provider keeps none, and no webhook flows back. (A7, A8; section 6, "Invitation sign-up"; the maintainer's decisions in step 20i)
 - RLS is the only tenant filter. No EF Core query filters as a second layer. (R1 to R11)
 - Wolverine is used as it is: dispatcher, EF Core transactions, outbox, PostgreSQL transport, saga. No custom transaction wrapper, mediator, outbox or saga store. No Wolverine.Http. (Section 3, W1 to W10)
 - One build output, two process roles: web and worker. (Section 1, W5)

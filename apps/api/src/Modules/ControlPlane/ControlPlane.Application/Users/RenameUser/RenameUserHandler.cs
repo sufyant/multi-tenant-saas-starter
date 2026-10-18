@@ -26,7 +26,7 @@ public static class RenameUserHandler
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
         return (UserView.Of(user, isSystemAdmin), new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, actor));

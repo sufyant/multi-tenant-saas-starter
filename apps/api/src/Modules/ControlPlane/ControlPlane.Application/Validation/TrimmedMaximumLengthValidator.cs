@@ -4,7 +4,7 @@ using FluentValidation.Validators;
 namespace ControlPlane.Application.Validation;
 
 /// <summary>
-/// A text that the catalog keeps without the spaces around it is at most <see cref="Max"/> characters, counted without them. The rule
+/// A text that ControlPlane keeps without the spaces around it is at most <see cref="Max"/> characters, counted without them. The rule
 /// is a length rule (<see cref="ILengthValidator"/>), so the OpenAPI document reads its limits (N11). A null value passes: another rule
 /// says whether the value is required.
 /// </summary>

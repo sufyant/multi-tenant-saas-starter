@@ -6,11 +6,11 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Users;
 
-// PATCH /v1/platform/users/{userId}: only a system admin changes a user's names, in the catalog only (A7). The identity provider keeps no
-// name, so it is not told.
+// PATCH /v1/platform/users/{userId}: only a system admin changes a user's names, in ControlPlane only (A7). The identity provider
+// keeps no name, so it is not told.
 public sealed class RenameUserTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -31,10 +31,10 @@ public sealed class RenameUserTests(Database database) : IAsyncLifetime
     public async Task RenameUser_NewNames_AnswersTheUserWithThemAndRecordsTheChange()
     {
         var created = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
-        var user = await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Byron", createdAt: created);
-        await _catalog.AddMemberAsync((await _catalog.AddTenantAsync()).Id, user);
-        var id = await _catalog.UserIdOfAsync(user);
-        var admin = await _catalog.AddSystemAdminAsync();
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Byron", createdAt: created);
+        await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, user);
+        var id = await _testData.UserIdOfAsync(user);
+        var admin = await _testData.AddSystemAdminAsync();
 
         var renamed = await _api.WaitingForMessagesAsync(() => RenameAsync(admin, id, " Ada ", "Lovelace "));
 
@@ -42,10 +42,10 @@ public sealed class RenameUserTests(Database database) : IAsyncLifetime
         var body = await renamed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (body.GetProperty("firstName").GetString(), body.GetProperty("lastName").GetString()).ShouldBe(("Ada", "Lovelace"));
         (body.GetProperty("membershipCount").GetInt32(), body.GetProperty("createdAt").GetDateTimeOffset()).ShouldBe((1, created));
-        (await _catalog.UserOfAsync(user)).ShouldSatisfyAllConditions(
+        (await _testData.UserOfAsync(user)).ShouldSatisfyAllConditions(
             stored => stored.FirstName.ShouldBe("Ada"),
             stored => stored.LastName.ShouldBe("Lovelace"));
-        (await _audit.PlatformLogAsync(id)).ShouldBe($"user.renamed|User|{await _catalog.UserIdOfAsync(admin)}|User|{id}|-");
+        (await _audit.PlatformLogAsync(id)).ShouldBe($"user.renamed|User|{await _testData.UserIdOfAsync(admin)}|User|{id}|-");
         _api.Identity.Calls.ShouldBe(0);
     }
 
@@ -53,10 +53,10 @@ public sealed class RenameUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameUser_TheNamesTheUserHas_RecordsNothing()
     {
-        var user = await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
-        var id = await _catalog.UserIdOfAsync(user);
+        var user = await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
+        var id = await _testData.UserIdOfAsync(user);
 
-        var renamed = await _api.WaitingForMessagesAsync(async () => await RenameAsync(await _catalog.AddSystemAdminAsync(), id, "Ada", "Lovelace"));
+        var renamed = await _api.WaitingForMessagesAsync(async () => await RenameAsync(await _testData.AddSystemAdminAsync(), id, "Ada", "Lovelace"));
 
         renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await _audit.PlatformLogAsync(id)).ShouldBeNull();
@@ -68,14 +68,14 @@ public sealed class RenameUserTests(Database database) : IAsyncLifetime
     [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "too_long")]
     public async Task RenameUser_WrongFirstName_IsABadRequestForThatField(string firstName, string fieldCode)
     {
-        var user = await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
 
-        var renamed = await RenameAsync(await _catalog.AddSystemAdminAsync(), await _catalog.UserIdOfAsync(user), firstName, "Lovelace");
+        var renamed = await RenameAsync(await _testData.AddSystemAdminAsync(), await _testData.UserIdOfAsync(user), firstName, "Lovelace");
 
         renamed.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await renamed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe([fieldCode]);
-        (await _catalog.UserOfAsync(user)).FirstName.ShouldBe("Ada");
+        (await _testData.UserOfAsync(user)).FirstName.ShouldBe("Ada");
     }
 
     // The API trims a name before it counts its length, so spaces around a name of the longest length do not make it too long.
@@ -83,32 +83,32 @@ public sealed class RenameUserTests(Database database) : IAsyncLifetime
     public async Task RenameUser_LongestNameWithSpacesAround_IsAccepted()
     {
         var longest = new string('a', 100);
-        var user = await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
 
-        var renamed = await RenameAsync(await _catalog.AddSystemAdminAsync(), await _catalog.UserIdOfAsync(user), $"  {longest}  ", "Lovelace");
+        var renamed = await RenameAsync(await _testData.AddSystemAdminAsync(), await _testData.UserIdOfAsync(user), $"  {longest}  ", "Lovelace");
 
         renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(user)).FirstName.ShouldBe(longest);
+        (await _testData.UserOfAsync(user)).FirstName.ShouldBe(longest);
     }
 
     // The deletion erased the names; a new one would bring personal data back.
     [Fact]
     public async Task RenameUser_DeletedUser_IsAConflictAndStaysErased()
     {
-        var user = await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
-        await _catalog.DeleteUserAsync(user);
+        var user = await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
+        await _testData.DeleteUserAsync(user);
 
-        var renamed = await RenameAsync(await _catalog.AddSystemAdminAsync(), await _catalog.UserIdOfAsync(user), "Ada", "King");
+        var renamed = await RenameAsync(await _testData.AddSystemAdminAsync(), await _testData.UserIdOfAsync(user), "Ada", "King");
 
         renamed.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(renamed)).ShouldBe("user.deleted");
-        (await _catalog.UserOfAsync(user)).FirstName.ShouldBeNull();
+        (await _testData.UserOfAsync(user)).FirstName.ShouldBeNull();
     }
 
     [Fact]
     public async Task RenameUser_UnknownUser_IsNotFound()
     {
-        var renamed = await RenameAsync(await _catalog.AddSystemAdminAsync(), Guid.NewGuid(), "Ada", "Lovelace");
+        var renamed = await RenameAsync(await _testData.AddSystemAdminAsync(), Guid.NewGuid(), "Ada", "Lovelace");
 
         renamed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(renamed)).ShouldBe("user.not_found");

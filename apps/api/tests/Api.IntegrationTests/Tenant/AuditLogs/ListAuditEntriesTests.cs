@@ -13,7 +13,7 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
 {
     private static readonly DateTimeOffset Start = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -32,8 +32,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_AsAnOwner_ReturnsTheTenantsEntriesNewestFirst()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var older = await _audit.AddTenantEntryAsync(tenant.Id, Start);
         var newer = await _audit.AddTenantEntryAsync(tenant.Id, Start.AddMinutes(1));
 
@@ -51,8 +51,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_AsAnAdmin_IsAllowed()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
 
         var response = await _api.CreateClient(admin).GetAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
 
@@ -62,8 +62,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_AsAMember_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Member");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Member");
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
 
@@ -75,9 +75,9 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_RecordsOfAnotherTenantAndOfThePlatform_NeverAppear()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var own = await _audit.AddTenantEntryAsync(tenant.Id, Start);
         await _audit.AddTenantEntryAsync(other.Id, Start.AddMinutes(1));
         await _audit.AddPlatformEntryAsync(Start.AddMinutes(2), "User", Guid.CreateVersion7(), "Tenant", tenant.Id, "tenant.suspended", "Acme Ltd");
@@ -90,8 +90,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_ThreePages_ComeInOrderAndTheLastHasNoNextCursor()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var client = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var client = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var entries = await AddEntriesAsync(tenant.Id, 5);
 
         var first = await PageAsync(client, tenant.Id, "limit=2");
@@ -108,8 +108,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_AnEntryWrittenBetweenTwoRequests_DoesNotShiftThePage()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var client = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var client = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var entries = await AddEntriesAsync(tenant.Id, 4);
         var first = await PageAsync(client, tenant.Id, "limit=2");
         await _audit.AddTenantEntryAsync(tenant.Id, Start.AddHours(1));
@@ -123,8 +123,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_TwoEntriesAtTheSameMomentAcrossAPageEdge_AppearOnceEach()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var client = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var client = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var one = await _audit.AddTenantEntryAsync(tenant.Id, Start);
         var another = await _audit.AddTenantEntryAsync(tenant.Id, Start);
 
@@ -140,8 +140,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [InlineData("limit=101", "paging.limit_invalid")]
     public async Task ListAuditEntries_AnInvalidCursorOrLimit_IsRejected(string query, string code)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var response = await _api.CreateClient(owner).GetAsync($"/v1/tenants/{tenant.Id}/audit-log?{query}", Cancellation);
 
@@ -152,8 +152,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_ACursorThatWasChanged_IsRejected()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var client = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var client = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         await AddEntriesAsync(tenant.Id, 2);
         var changed = Changed((await PageAsync(client, tenant.Id, "limit=1")).GetProperty("nextCursor").GetString()!);
 
@@ -163,19 +163,19 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("paging.cursor_invalid");
     }
 
-    // K3: the actor and a target person are ids; their names come from the catalog when the log is read. A name is only a person's real
+    // K3: the actor and a target person are ids; their names come from ControlPlane when the log is read. A name is only a person's real
     // name: the platform, which stands for a system admin in a tenant's log, has none, and the screen names it from its kind. A deleted
-    // user has no name and is marked deleted; an id the catalog does not know has no name. A tenant keeps its name of that moment; an
+    // user has no name and is marked deleted; an unknown id has no name. A tenant keeps its name of that moment; an
     // invitation has none.
     [Fact]
     public async Task ListAuditEntries_ActorsAndTargets_AreNamedOnRead()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var ada = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace"));
-        var deletedUser = await _catalog.AddUserAsync(firstName: "Gone", lastName: "Away");
-        await _catalog.DeleteUserAsync(deletedUser);
-        var deleted = await _catalog.UserIdOfAsync(deletedUser);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var ada = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"));
+        var deletedUser = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
+        await _testData.DeleteUserAsync(deletedUser);
+        var deleted = await _testData.UserIdOfAsync(deletedUser);
         var unknown = Guid.CreateVersion7();
         var invitation = Guid.CreateVersion7();
         await _audit.AddTenantEntryAsync(tenant.Id, Start, "User", ada, "member.removed", "User", deleted);
@@ -195,8 +195,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListAuditEntries_DetailsOfARecord_AreItsStoredObject()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         await _audit.AddTenantEntryAsync(tenant.Id, Start, details: """{"oldRole":"member","newRole":"admin"}""");
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
@@ -211,10 +211,10 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     public async Task ListAuditEntries_UsersWithAndWithoutAName_AnswerNoEmailAddress()
     {
         var marker = Guid.NewGuid().ToString("N");
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var named = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"named-{marker}@example.com", firstName: "Ada", lastName: "Lovelace"));
-        var unnamed = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync(email: $"unnamed-{marker}@example.com"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var named = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"named-{marker}@example.com", firstName: "Ada", lastName: "Lovelace"));
+        var unnamed = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"unnamed-{marker}@example.com"));
         await _audit.AddTenantEntryAsync(tenant.Id, Start, "User", named, "member.role_changed", "User", unnamed);
 
         var answer = await _api.CreateClient(owner).GetStringAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);

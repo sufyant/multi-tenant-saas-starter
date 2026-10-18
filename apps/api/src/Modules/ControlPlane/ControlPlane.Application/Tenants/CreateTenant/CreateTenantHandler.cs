@@ -27,7 +27,7 @@ public static class CreateTenantHandler
         CancellationToken cancellationToken)
     {
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var now = time.GetUtcNow();
         var tenant = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);

@@ -21,7 +21,7 @@ using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 namespace ControlPlane.IntegrationTests.Tenants;
 
 // CancelTenantCommand, the saga's compensation of a tenant that is still provisioning, run the way Wolverine runs a step of the tenant
-// creation saga: it writes the catalog in the new tenant's transaction, and it may run twice (S7).
+// creation saga: it writes ControlPlane's tables in the new tenant's transaction, and it may run twice (S7).
 public sealed class CancelTenantTests(Database database)
 {
     [Fact]

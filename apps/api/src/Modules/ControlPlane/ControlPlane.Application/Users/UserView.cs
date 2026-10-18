@@ -3,8 +3,8 @@ using ControlPlane.Domain.Users;
 namespace ControlPlane.Application.Users;
 
 /// <summary>
-/// A catalog user as the system admin sees them: the copy of their profile, their status (Active, Suspended or Deleted), whether they
-/// are a system admin, how many tenants they are a member of (R13) and when they joined the catalog. The id is the catalog's, not the
+/// A user as the system admin sees them: the copy of their profile, their status (Active, Suspended or Deleted), whether they
+/// are a system admin, how many tenants they are a member of (R13) and when they became a user. The id is ours, not the
 /// identity provider's.
 /// </summary>
 public sealed record UserView(

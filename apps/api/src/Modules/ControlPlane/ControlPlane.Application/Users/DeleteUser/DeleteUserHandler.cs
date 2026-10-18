@@ -35,7 +35,7 @@ public static class DeleteUserHandler
         var now = time.GetUtcNow();
         var deleted = user.Delete(now);
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
 
         return (

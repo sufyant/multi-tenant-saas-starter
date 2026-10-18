@@ -155,7 +155,7 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var tenant = await new Catalog(database, name).AddTenantAsync();
+        var tenant = await new TestData(database, name).AddTenantAsync();
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var suspended = await admin.SuspendTenantAsync(tenant.Id);
@@ -177,7 +177,7 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var tenant = await new Catalog(database, name).AddTenantAsync();
+        var tenant = await new TestData(database, name).AddTenantAsync();
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var closed = await admin.CloseTenantAsync(tenant.Id);
@@ -199,7 +199,7 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var tenant = await new Catalog(database, name).AddTenantAsync();
+        var tenant = await new TestData(database, name).AddTenantAsync();
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var renamed = await admin.RenameTenantAsync(tenant.Id, "Globex Corp");
@@ -221,7 +221,7 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var tenant = await new Catalog(database, name).AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow);
+        var tenant = await new TestData(database, name).AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow);
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var reopened = await admin.ReopenTenantAsync(tenant.Id);
@@ -244,8 +244,8 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var userId = await catalog.UserIdOfAsync(await catalog.AddUserAsync());
+        var testData = new TestData(database, name);
+        var userId = await testData.UserIdOfAsync(await testData.AddUserAsync());
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var suspended = await admin.PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation);
@@ -267,10 +267,10 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var tenant = await catalog.AddTenantAsync();
-        var user = await catalog.AddMemberAsync(tenant.Id);
-        var userId = await catalog.UserIdOfAsync(user);
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var user = await testData.AddMemberAsync(tenant.Id);
+        var userId = await testData.UserIdOfAsync(user);
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var renamed = await admin.PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
@@ -310,9 +310,9 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var user = await catalog.AddUserAsync();
-        var userId = await catalog.UserIdOfAsync(user);
+        var testData = new TestData(database, name);
+        var user = await testData.AddUserAsync();
+        var userId = await testData.UserIdOfAsync(user);
 
         var changed = await web.CreateClient(user).PatchAsJsonAsync("/v1/me/preferences", new { language = "ar", timeZone = "Asia/Dubai" }, Cancellation);
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.preferences_changed") > 0);
@@ -334,9 +334,9 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var tenant = await catalog.AddTenantAsync();
-        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, await catalog.AddUserAsync(language: "tr"), role: "Owner"));
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(language: "tr"), role: "Owner"));
 
         var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test");
         await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);
@@ -367,10 +367,10 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var tenant = await catalog.AddTenantAsync();
-        await catalog.AddInvitationAsync(tenant.Id, role: "Owner");
-        var admin = web.CreateClient(await catalog.AddSystemAdminAsync(), secondFactor: true);
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        await testData.AddInvitationAsync(tenant.Id, role: "Owner");
+        var admin = web.CreateClient(await testData.AddSystemAdminAsync(), secondFactor: true);
 
         var invited = await admin.InviteOwnerAsync(tenant.Id, "grace@navy.test");
         await Waiting.UntilAsync(async () =>
@@ -402,10 +402,10 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var tenant = await catalog.AddTenantAsync();
-        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var invitation = await catalog.AddInvitationAsync(tenant.Id);
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var invitation = await testData.AddInvitationAsync(tenant.Id);
 
         var revoked = await owner.DeleteAsync($"/v1/tenants/{tenant.Id}/invitations/{invitation}", Cancellation);
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "invitation.revoked") > 0);
@@ -425,10 +425,10 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var tenant = await catalog.AddTenantAsync();
-        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var member = await catalog.UserIdOfAsync(await catalog.AddMemberAsync(tenant.Id));
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id));
 
         var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "admin");
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0);
@@ -448,10 +448,10 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var catalog = new Catalog(database, name);
-        var tenant = await catalog.AddTenantAsync();
-        var owner = web.CreateClient(await catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var member = await catalog.UserIdOfAsync(await catalog.AddMemberAsync(tenant.Id));
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id));
 
         var removed = await owner.RemoveMemberAsync(tenant.Id, member);
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
@@ -471,7 +471,7 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        var tenant = await new Catalog(database, name).AddTenantAsync(status: "Suspended");
+        var tenant = await new TestData(database, name).AddTenantAsync(status: "Suspended");
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var reactivated = await admin.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation);

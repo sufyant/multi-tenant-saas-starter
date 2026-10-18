@@ -18,7 +18,7 @@ namespace Api.IntegrationTests.Messaging;
 // handlers that return a Result rejects before it changes anything: a rejected command leaves no row and sends no message.
 public sealed class RejectionTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -35,43 +35,43 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CreateTenant_InvalidName_ChangesNoRowAndSendsNoMessage()
     {
-        var admin = await _catalog.AddUserAsync();
+        var admin = await _testData.AddUserAsync();
         var tenantId = Guid.NewGuid();
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantView>>(
             tenantId, new CreateTenantCommand(admin, " ", Slug(), Email(), null));
 
         result.Error.Code.Value.ShouldBe("tenant.name_invalid");
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
     [Fact]
     public async Task CreateTenant_SlugTaken_ChangesNoRowAndSendsNoMessage()
     {
-        var admin = await _catalog.AddUserAsync();
-        var existing = await _catalog.AddTenantAsync();
+        var admin = await _testData.AddUserAsync();
+        var existing = await _testData.AddTenantAsync();
         var tenantId = Guid.NewGuid();
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantView>>(
             tenantId, new CreateTenantCommand(admin, "Acme Ltd", existing.Slug, Email(), null));
 
         result.Error.Code.Value.ShouldBe("tenant.slug_taken");
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
     [Fact]
     public async Task AcceptInvitation_UnknownSecret_ChangesNoRowAndSendsNoMessage()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<MyTenantView>>(
             tenant.Id, new AcceptInvitationCommand(user, "no-such-secret", [Email()], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.not_found");
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -86,7 +86,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Error.Code.Value.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -95,7 +95,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
     {
         var email = Email();
         var (tenantId, secret) = await InviteOwnerAsync(email);
-        var member = await _catalog.AddMemberAsync(tenantId);
+        var member = await _testData.AddMemberAsync(tenantId);
 
         var (result, session) = await InvokeForTenantAsync<Result<MyTenantView>>(
             tenantId, new AcceptInvitationCommand(member, secret, [email], "Ada", "Lovelace"));
@@ -110,8 +110,8 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_PageBeyondTheEnd_ChangesNoRowAndSendsNoMessage()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id);
 
         var (result, session) = await InvokeForTenantAsync<Result<ListPage<MemberView>>>(
             tenant.Id, new ListMembersQuery(ListRequest.Create<ListMembersSort>(2, 50, null, null).Value, Role: null));
@@ -122,7 +122,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ListMyTenants_UserTheCatalogDoesNotKnow_ChangesNoRowAndSendsNoMessage()
+    public async Task ListMyTenants_APersonWhoIsNotAUserYet_ChangesNoRowAndSendsNoMessage()
     {
         var user = $"user_{Guid.NewGuid():N}";
         var result = default(Result<ListPage<MyTenantView>>)!;
@@ -131,7 +131,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
             result = await Bus().InvokeAsync<Result<ListPage<MyTenantView>>>(new ListMyTenantsQuery(user, ListRequest.Create<ListMyTenantsSort>(null, null, null, null).Value), Cancellation));
 
         result.Value.Items.ShouldBeEmpty();
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
@@ -155,7 +155,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
     {
         _api.Identity.AddAccount($"user_{Guid.NewGuid():N}", ownerEmail);
         var slug = Slug();
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         await _api.WaitingForMessagesAsync(async () =>
             (await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail })).EnsureSuccessStatusCode());
         var code = _api.Email.CodeSentTo(ownerEmail);

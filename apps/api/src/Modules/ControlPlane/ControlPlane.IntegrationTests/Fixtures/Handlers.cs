@@ -85,10 +85,10 @@ internal static class Handlers
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
 
-    // A tenant whose creation has started, by a new catalog user: its id and the id of the Owner's invitation that the activation names.
+    // A tenant whose creation has started, by a new user: its id and the id of the Owner's invitation that the activation names.
     public static async Task<(Guid TenantId, Guid InvitationId)> StartTenantCreationAsync(IServiceProvider services)
     {
-        var actor = await Catalog.AddUserAsync(services);
+        var actor = await TestData.AddUserAsync(services);
         var tenantId = Guid.CreateVersion7();
         var started = await CreateTenantAsync(services, tenantId, actor.ExternalId, Unique.Slug(), Unique.Email());
 
@@ -99,7 +99,7 @@ internal static class Handlers
     // from.
     public static async Task<(Guid TenantId, string Slug, OpenOwnerSignUpCommand SignUp)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
     {
-        var admin = await Catalog.AddUserAsync(services);
+        var admin = await TestData.AddUserAsync(services);
         var tenantId = Guid.CreateVersion7();
         var slug = Unique.Slug();
         var started = await CreateTenantAsync(services, tenantId, admin.ExternalId, slug, ownerEmail);
@@ -109,7 +109,7 @@ internal static class Handlers
     }
 
     // Accepting starts outside any tenant: the invitation code names the tenant, the identity provider is asked for the user's
-    // verified email addresses, and then the invitation is found by its secret in that tenant. A person the catalog does not know
+    // verified email addresses, and then the invitation is found by its secret in that tenant. A person who has not signed up yet
     // gives their names.
     public static async Task<Result<MyTenantView>> AcceptAsync(
         IServiceProvider services,

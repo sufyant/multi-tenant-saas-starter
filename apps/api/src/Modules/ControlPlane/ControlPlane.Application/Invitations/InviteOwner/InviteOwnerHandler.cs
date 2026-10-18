@@ -39,7 +39,7 @@ public static class InviteOwnerHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var withdrawals = new OutgoingMessages();
         var replaced = await tenants.FindPendingInvitationsAsync(cancellationToken);

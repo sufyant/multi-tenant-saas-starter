@@ -13,7 +13,7 @@ public sealed class DefaultLoggingTests(Database database)
     [Fact]
     public async Task CreateTenant_WithTheDefaultLogSettings_LogsEachHandledMessageAndNoSql()
     {
-        var admin = await new Catalog(database).AddSystemAdminAsync();
+        var admin = await new TestData(database).AddSystemAdminAsync();
         await using var api = new ApiFactory(database.ApplicationConnectionString, configureServices: services => services.AddFakeLogging());
         var client = api.CreateClient(admin, secondFactor: true);
 

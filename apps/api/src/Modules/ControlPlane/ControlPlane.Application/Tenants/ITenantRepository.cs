@@ -35,7 +35,7 @@ public interface ITenantRepository
     internal Task<int> CountOwnersAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Whether a member of the active tenant has this email address, in the catalog's copy of their profile, compared without case.
+    /// Whether a member of the active tenant has this email address, in our copy of their profile, compared without case.
     /// The search starts from the tenant's memberships, never from the users.
     /// </summary>
     internal Task<bool> IsMemberEmailAsync(string email, CancellationToken cancellationToken);

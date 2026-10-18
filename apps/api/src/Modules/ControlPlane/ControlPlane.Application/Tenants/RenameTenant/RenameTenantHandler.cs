@@ -27,7 +27,7 @@ public static class RenameTenantHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

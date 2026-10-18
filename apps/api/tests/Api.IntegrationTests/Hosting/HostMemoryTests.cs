@@ -37,12 +37,12 @@ public sealed class HostMemoryTests(Database database)
     // Each host handles a command and the event it announces, as most tests do, and stops.
     private async Task RunHostsAsync(int count)
     {
-        var catalog = new Catalog(database);
+        var testData = new TestData(database);
         for (var host = 0; host < count; host++)
         {
             await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
-            var admin = api.CreateClient(await catalog.AddSystemAdminAsync(), secondFactor: true);
-            var tenant = await catalog.AddTenantAsync(status: "Active");
+            var admin = api.CreateClient(await testData.AddSystemAdminAsync(), secondFactor: true);
+            var tenant = await testData.AddTenantAsync(status: "Active");
 
             await api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id));
         }
