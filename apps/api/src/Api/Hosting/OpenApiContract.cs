@@ -24,8 +24,8 @@ namespace Api.Hosting;
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
 // sort and filters, the limits of a request and of a list, the values of an enum with a converter of its own, the idempotency key and
 // the headers of an answer, the bearer scheme, the members of the one error schema with the enums of the error codes, the enum of the
-// permissions, and the enum of the audit operations. They change the document only. The one rule here that the wire follows is how JSON reads a number, because the document
-// describes the numbers from it.
+// permissions, and the enum of the audit operations. They change the document only. The one rule here that the wire follows is how
+// JSON reads a number, because the document describes the numbers from it.
 internal static class OpenApiContract
 {
     private const string BearerScheme = "bearer";
@@ -228,9 +228,9 @@ internal static class OpenApiContract
 
     // Decision 1 of audit fix 09: the validators are the one source of a request's limits. The command X of a request XRequest carries
     // the request's fields under the same names (K5), so the rules of X's validator describe XRequest. The validator's descriptor lists
-    // its rules: a length rule gives minLength and maxLength, an email rule format email, an inclusive range minimum and maximum, and a
-    // rule that needs a value, without a condition, required. A rule written as a predicate (Must) has no form to read, so the document
-    // leaves it out. OpenApiContractTests checks the lengths and the emails.
+    // its rules: a length rule gives minLength and maxLength, an email rule format email, and a rule that needs a value, without a
+    // condition, required. No request body takes a number, so no rule is a range. Any other rule, such as a predicate (Must), stays out
+    // of the document, and OpenApiContractTests lists each one, so a new kind fails until someone decides how the document shows it.
     private static Task DescribeRequestRules(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (!RequestValidators.TryGetValue(context.JsonTypeInfo.Type.Name, out var validatorType))
@@ -257,10 +257,6 @@ internal static class OpenApiContract
                         break;
                     case IEmailValidator:
                         field.Format = "email";
-                        break;
-                    case IBetweenValidator { Name: "InclusiveBetweenValidator" } range:
-                        field.Minimum = Convert.ToString(range.From, CultureInfo.InvariantCulture);
-                        field.Maximum = Convert.ToString(range.To, CultureInfo.InvariantCulture);
                         break;
                     case INotNullValidator or INotEmptyValidator when !component.HasCondition && !component.HasAsyncCondition:
                         schema.Required ??= new HashSet<string>();
@@ -375,8 +371,8 @@ internal static class OpenApiContract
     }
 
     // The host's assembly and each assembly it references, directly or not, that references SharedKernel: only such an assembly can
-    // declare an error code, the audit operations or a command's validator, and each module's Domain and Application project is one. The search starts at the host and follows
-    // only those references.
+    // declare an error code, the audit operations or a command's validator, and each module's Domain and Application project is one.
+    // The search starts at the host and follows only those references.
     private static IReadOnlyList<Assembly> AssembliesThatReachSharedKernel { get; } = FindAssembliesThatReachSharedKernel();
 
     private static List<Assembly> FindAssembliesThatReachSharedKernel()

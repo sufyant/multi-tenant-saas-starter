@@ -443,6 +443,75 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
+    // Decision 1 of audit fix 09: a rule that needs a value, without a condition, makes its field required. The generator already marks
+    // each of these fields required, from the request's constructor, and the transformer keeps it so.
+    [Fact]
+    public void BuildOpenApiDocument_RequestFieldWithARequiredRule_IsRequired()
+    {
+        var required = RequestRules()
+            .Where(rule => rule.Rule is INotNullValidator or INotEmptyValidator && !rule.Conditional)
+            .Select(rule => rule.Field)
+            .ToList();
+
+        var missing = required.Except(RequiredRequestFields());
+
+        required.ShouldNotBeEmpty();
+        missing.ShouldBeEmpty();
+    }
+
+    // Decision 1 of audit fix 09: a rule that the document cannot read is reported, never copied as a number. Each one is listed here, so
+    // a new kind of rule, such as a range, fails the test until someone decides how the document shows it. A predicate (Must) has no
+    // form to read; the document writes no pattern.
+    [Fact]
+    public void BuildOpenApiDocument_RuleTheDocumentCannotRead_IsAKnownOne()
+    {
+        string[] known =
+        [
+            "AcceptInvitationRequest.firstName PredicateValidator",
+            "AcceptInvitationRequest.lastName PredicateValidator",
+            "ChangePreferencesRequest.timeZone RegularExpressionValidator",
+            "RenameUserRequest.firstName PredicateValidator",
+            "RenameUserRequest.lastName PredicateValidator",
+            "SuspendTenantRequest.reason PredicateValidator",
+        ];
+
+        var unread = RequestRules()
+            .Where(rule => rule.Rule is not (ILengthValidator or IEmailValidator or INotNullValidator or INotEmptyValidator))
+            .Select(rule => $"{rule.Field} {rule.Rule.Name}")
+            .Distinct();
+
+        unread.ShouldBe(known, ignoreOrder: true);
+    }
+
+    // Decision 4 of audit fix 09: the limits of a list's query are the constants that the API checks, and the search says that the API
+    // trims it.
+    [Fact]
+    public void BuildOpenApiDocument_QueryParameterOfAList_HasTheLimitsTheApiChecks()
+    {
+        var expected = new Dictionary<string, string>
+        {
+            ["page"] = $"minimum {PageRequest.FirstPage}",
+            ["pageSize"] = $"minimum {PageRequest.MinPageSize}, maximum {PageRequest.MaxPageSize}",
+            ["limit"] = $"minimum {CursorRequest.MinLimit}, maximum {CursorRequest.MaxLimit}",
+            ["q"] = $"maxLength {ListRequest.SearchMaxLength}",
+        };
+        var parameters = Operations()
+            .SelectMany(operation => QueryParametersOf(operation.Value).Select(parameter => (Operation: OperationIdOf(operation.Value), Parameter: parameter)))
+            .Where(found => expected.ContainsKey(found.Parameter.GetProperty("name").GetString()!))
+            .ToList();
+
+        var wrong = parameters
+            .Where(found => LimitsOf(found.Parameter.GetProperty("schema")) != expected[found.Parameter.GetProperty("name").GetString()!])
+            .Select(found => $"{found.Operation} {found.Parameter.GetProperty("name").GetString()}: {LimitsOf(found.Parameter.GetProperty("schema"))}");
+        var untrimmed = parameters
+            .Where(found => found.Parameter.GetProperty("name").GetString() == "q" && !DescriptionOf(found.Parameter).Contains("trims", StringComparison.Ordinal))
+            .Select(found => found.Operation);
+
+        parameters.Select(found => found.Parameter.GetProperty("name").GetString()).Distinct().ShouldBe(expected.Keys, ignoreOrder: true);
+        wrong.ShouldBeEmpty();
+        untrimmed.ShouldBeEmpty();
+    }
+
     // Decision 2 of audit fix 09: a description names the API's limit, never its number, so the number has one owner, the rule, and a
     // changed rule never leaves an old number in the document. The numbers are each maximum length a Domain project declares and the
     // limits of a list.
@@ -470,13 +539,33 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     // The rules of every validator, by the request field each names. The command X of a request XRequest carries the request's fields
     // under the same names, and a validation answer names a field by its command property in camel case (K5).
-    private static IEnumerable<(string Field, IPropertyValidator Rule)> RequestRules() =>
+    private static IEnumerable<(string Field, IPropertyValidator Rule, bool Conditional)> RequestRules() =>
         Solution.Modules
             .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
             .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
             .SelectMany(type => ((IValidator)Activator.CreateInstance(type)!).CreateDescriptor().GetMembersWithValidators()
                 .SelectMany(member => member.Select(rule =>
-                    ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}", rule.Validator))));
+                    ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
+                        rule.Validator,
+                        rule.Options.HasCondition || rule.Options.HasAsyncCondition))));
+
+    private IEnumerable<string> RequiredRequestFields() =>
+        Schemas()
+            .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
+            .SelectMany(schema => RequiredOf(schema.Value).Select(field => $"{schema.Name}.{field}"));
+
+    private static IEnumerable<JsonElement> QueryParametersOf(JsonElement operation) =>
+        operation.TryGetProperty("parameters", out var parameters)
+            ? parameters.EnumerateArray().Where(parameter => parameter.GetProperty("in").GetString() == "query")
+            : [];
+
+    private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
+
+    // The numeric and length limits of a schema, in one order.
+    private static string LimitsOf(JsonElement schema) =>
+        string.Join(", ", Limits
+            .Where(limit => schema.TryGetProperty(limit, out _))
+            .Select(limit => $"{limit} {schema.GetProperty(limit).GetInt32()}"));
 
     private IEnumerable<(string Name, JsonElement Value)> RequestFields() =>
         Schemas()
