@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Tenants;
 
 /// <summary>
@@ -13,4 +15,5 @@ namespace ControlPlane.Contracts.Tenants;
 /// The system admin's reason, for the platform's audit entry only: a member never sees it. Null only in an event published before the
 /// reason was added.
 /// </param>
+[MessageName("tenant-suspended")]
 public sealed record TenantSuspendedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid SuspendedBy, string? TenantName, string? Reason);

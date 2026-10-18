@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Application.Invitations.GetInvitationPreview;
 
 /// <summary>
@@ -5,4 +7,5 @@ namespace ControlPlane.Application.Invitations.GetInvitationPreview;
 /// finds it (section 6). The signed-in user's verified email addresses are read from the identity provider before the transaction
 /// begins. It reads only: it changes nothing and publishes nothing, so no audit entry is written (K3).
 /// </summary>
+[MessageName("get-invitation-preview")]
 public sealed record GetInvitationPreviewQuery(string Secret, IReadOnlyList<string> VerifiedEmails);

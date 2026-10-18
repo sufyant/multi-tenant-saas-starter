@@ -135,6 +135,24 @@ public sealed partial class NamesAndPlacesTests
         misnamed.ShouldBeEmpty();
     }
 
+    // N8, rule 6 and W12: every message has a fixed name on the wire, in kebab case, so a moved or renamed type keeps it. No two
+    // messages share a name, or one would arrive at the other's handler.
+    [Fact]
+    public void NameMessages_EveryHandledMessage_HasAFixedNameOfItsOwn()
+    {
+        var messages = Handlers().Select(handler => handler.Message).Where(message => !message.IsGenericType).Distinct().ToList();
+        var names = messages.Select(message => message.GetCustomAttribute<SharedKernel.MessageNameAttribute>()?.Name).ToList();
+
+        var unnamed = messages.Where(message => message.GetCustomAttribute<SharedKernel.MessageNameAttribute>() is null).Select(message => message.FullName);
+        var misnamed = names.OfType<string>().Where(name => !KebabCase().IsMatch(name));
+        var shared = names.OfType<string>().GroupBy(name => name).Where(name => name.Count() > 1).Select(name => name.Key);
+
+        messages.ShouldNotBeEmpty();
+        unnamed.ShouldBeEmpty();
+        misnamed.ShouldBeEmpty();
+        shared.ShouldBeEmpty();
+    }
+
     // N8, rule 2: the handler of a command or a query is named after it: InviteMemberCommand has InviteMemberHandler.
     [Fact]
     public void NameHandlers_HandlerOfACommandOrQuery_IsNamedAfterIt()
@@ -327,6 +345,9 @@ public sealed partial class NamesAndPlacesTests
 
     [GeneratedRegex("(?<=[a-z0-9])([A-Z])")]
     private static partial Regex WordStart();
+
+    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$")]
+    private static partial Regex KebabCase();
 
     [GeneratedRegex(@"^(public|internal)( (sealed|static|abstract|partial))* (class|record|struct|interface|enum) (?<name>\w+)", RegexOptions.Multiline)]
     private static partial Regex TopLevelType();

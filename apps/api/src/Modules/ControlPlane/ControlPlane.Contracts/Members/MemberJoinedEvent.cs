@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Members;
 
 /// <summary>
@@ -6,4 +8,5 @@ namespace ControlPlane.Contracts.Members;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the new member, who acted.</param>
+[MessageName("member-joined")]
 public sealed record MemberJoinedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId);

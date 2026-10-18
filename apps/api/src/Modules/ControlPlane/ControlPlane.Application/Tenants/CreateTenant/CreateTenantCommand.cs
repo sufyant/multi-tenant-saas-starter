@@ -8,4 +8,5 @@ namespace ControlPlane.Application.Tenants.CreateTenant;
 /// the HTTP request (section 3). The command carries no request key. The owner's invitation email is in the language given, else in
 /// the system admin's own.
 /// </summary>
+[MessageName("create-tenant")]
 public sealed record CreateTenantCommand(string ActorId, string Name, string Slug, string OwnerEmail, Language? Language);

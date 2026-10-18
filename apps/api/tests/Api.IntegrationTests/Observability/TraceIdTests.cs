@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
 using ControlPlane.Application.Invitations.OpenOwnerSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Tenants.ActivateTenant;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Notifications.Contracts.Invitations;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
+using SharedKernel;
 using Tenancy;
 
 namespace Api.IntegrationTests.Observability;
@@ -18,17 +20,17 @@ namespace Api.IntegrationTests.Observability;
 // too. Here the request reaches a web host and every later step runs in a worker, so the trace crosses the PostgreSQL queue.
 public sealed class TraceIdTests(Database database)
 {
-    // Every handler of the tenant creation, as section 6 lists them, by the message it handles.
+    // Every handler of the tenant creation, as section 6 lists them, by the name of the message it handles (W12).
     private static readonly string[] TenantCreationHandlers =
     [
-        typeof(CreateTenantCommand).FullName!,
-        typeof(ActivateTenantCommand).FullName!,
-        typeof(ActivateTenantReply).FullName!,
-        typeof(TenantActivatedEvent).FullName!,
-        typeof(OpenOwnerSignUpCommand).FullName!,
-        typeof(RecordSignUpCommand).FullName!,
-        typeof(OwnerInvitationReadyEvent).FullName!,
-        typeof(SendInvitationEmailReply).FullName!,
+        NameOf(typeof(CreateTenantCommand)),
+        NameOf(typeof(ActivateTenantCommand)),
+        NameOf(typeof(ActivateTenantReply)),
+        NameOf(typeof(TenantActivatedEvent)),
+        NameOf(typeof(OpenOwnerSignUpCommand)),
+        NameOf(typeof(RecordSignUpCommand)),
+        NameOf(typeof(OwnerInvitationReadyEvent)),
+        NameOf(typeof(SendInvitationEmailReply)),
     ];
 
     [Fact]
@@ -46,13 +48,15 @@ public sealed class TraceIdTests(Database database)
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
         var tenantId = await TwoWorkers.IdOfAsync(created);
-        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == typeof(SendInvitationEmailReply).FullName));
+        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == NameOf(typeof(SendInvitationEmailReply))));
         var handlers = spans.OfTenant(tenantId);
 
         handlers.Select(span => span.MessageType).Distinct().ShouldBe(TenantCreationHandlers, ignoreOrder: true);
         handlers.Select(span => span.TraceId).Distinct().ShouldBe([traceId]);
         logs.TraceIdsOfEmailsTo("owner@acme.test").ShouldBe([traceId]);
     }
+
+    private static string NameOf(Type message) => message.GetCustomAttribute<MessageNameAttribute>()!.Name;
 
     // The worker writes the invitation email to its log: in Development without Resend, that is the email channel.
     private ApiFactory Host(string databaseName, string role, LogRecords logs) => new(
@@ -61,7 +65,8 @@ public sealed class TraceIdTests(Database database)
         settings: new Dictionary<string, string?> { ["Host:Role"] = role },
         configureServices: services => services.ConfigureOpenTelemetryLoggerProvider(logging => logging.AddProcessor(logs)));
 
-    // The handler spans Wolverine starts in any host of this process. It names a handler's span after the message type it handles.
+    // The handler spans Wolverine starts in any host of this process. It names a handler's span after the name of the message it
+    // handles.
     private sealed class HandlerSpans : IDisposable
     {
         private readonly ConcurrentQueue<Activity> _stopped = new();

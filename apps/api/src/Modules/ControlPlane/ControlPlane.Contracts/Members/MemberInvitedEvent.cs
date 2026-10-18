@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Members;
 
 /// <summary>
@@ -9,6 +11,7 @@ namespace ControlPlane.Contracts.Members;
 /// <param name="InvitedBy">The catalog user id of the member who invited, who acted.</param>
 /// <param name="Role">The built-in role the invitation gives: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
 /// <param name="ReplacedInvitationId">The pending invitation to the same address that this one cancelled, if there was one (K2).</param>
+[MessageName("member-invited")]
 public sealed record MemberInvitedEvent(
     Guid EventId,
     DateTimeOffset OccurredAt,

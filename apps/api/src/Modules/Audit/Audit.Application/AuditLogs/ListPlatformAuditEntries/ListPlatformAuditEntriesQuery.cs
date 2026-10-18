@@ -7,4 +7,5 @@ namespace Audit.Application.AuditLogs.ListPlatformAuditEntries;
 /// tab on the platform. It runs without a tenant and without a user (R11): it never reads the tenant's own log. No user is named yet:
 /// <see cref="GetAuditEntryNamesQuery"/> names them.
 /// </summary>
+[MessageName("list-platform-audit-entries")]
 public sealed record ListPlatformAuditEntriesQuery(CursorRequest Page, Guid? TenantId = null);

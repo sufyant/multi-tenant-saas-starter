@@ -52,6 +52,7 @@ using Notifications.Contracts.Invitations;
 using Tenancy;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
+using Wolverine.Util;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -113,7 +114,7 @@ public sealed class HostRoleTests(Database database)
             SELECT count(*) FROM (
                 SELECT message_type FROM wolverine.wolverine_queue_messages
                 UNION ALL SELECT message_type FROM wolverine.wolverine_outgoing_envelopes) AS waiting
-            WHERE message_type LIKE '%ActivateTenantCommand'
+            WHERE message_type = 'activate-tenant'
             """,
             database: name);
 
@@ -596,7 +597,7 @@ public sealed class HostRoleTests(Database database)
 
     private Task<long> DeadLettersOfAsync<TMessage>(string databaseName) =>
         database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM wolverine.wolverine_dead_letters WHERE message_type = '{typeof(TMessage).FullName}'", databaseName);
+            $"SELECT count(*) FROM wolverine.wolverine_dead_letters WHERE message_type = '{typeof(TMessage).ToMessageTypeName()}'", databaseName);
 
     private async Task<string> AddSystemAdminAsync(string databaseName)
     {

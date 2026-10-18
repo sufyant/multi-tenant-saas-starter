@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Users;
 
 /// <summary>
@@ -6,4 +8,5 @@ namespace ControlPlane.Contracts.Users;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the user, who acted for themselves.</param>
+[MessageName("user-preferences-changed")]
 public sealed record UserPreferencesChangedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid UserId);

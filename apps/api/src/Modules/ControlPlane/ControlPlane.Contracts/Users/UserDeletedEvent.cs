@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Users;
 
 /// <summary>
@@ -7,4 +9,5 @@ namespace ControlPlane.Contracts.Users;
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the deleted user.</param>
 /// <param name="DeletedBy">The catalog user id of the system admin who deleted the user.</param>
+[MessageName("user-deleted")]
 public sealed record UserDeletedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid UserId, Guid DeletedBy);

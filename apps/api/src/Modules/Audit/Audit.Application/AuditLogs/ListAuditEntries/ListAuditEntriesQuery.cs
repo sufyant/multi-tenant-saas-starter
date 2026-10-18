@@ -6,4 +6,5 @@ namespace Audit.Application.AuditLogs.ListAuditEntries;
 /// The active tenant's audit log, a page at a time, newest first (K5's cursor). The screen calls it "Activity". No user is
 /// named yet: <see cref="GetAuditEntryNamesQuery"/> names them.
 /// </summary>
+[MessageName("list-audit-entries")]
 public sealed record ListAuditEntriesQuery(CursorRequest Page);

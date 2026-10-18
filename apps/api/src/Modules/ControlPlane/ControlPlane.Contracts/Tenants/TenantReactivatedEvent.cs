@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Tenants;
 
 /// <summary>
@@ -9,4 +11,5 @@ namespace ControlPlane.Contracts.Tenants;
 /// <param name="TenantName">
 /// The tenant's name at that moment, for its audit entry. Null only in an event published before the name was added.
 /// </param>
+[MessageName("tenant-reactivated")]
 public sealed record TenantReactivatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReactivatedBy, string? TenantName);

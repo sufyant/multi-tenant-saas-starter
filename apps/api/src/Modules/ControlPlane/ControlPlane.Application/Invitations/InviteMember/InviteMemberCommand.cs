@@ -7,4 +7,5 @@ namespace ControlPlane.Application.Invitations.InviteMember;
 /// in a language for the invitation's email: without one, the inviter's own. The host's idempotency layer protects the HTTP request (I1);
 /// the command carries no request key, and the server chooses the invitation's id.
 /// </summary>
+[MessageName("invite-member")]
 public sealed record InviteMemberCommand(string ActorId, string Email, string Role, Language? Language);

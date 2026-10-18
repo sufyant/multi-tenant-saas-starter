@@ -92,6 +92,9 @@ internal static class ApiPipeline
             // A stopping host stops taking messages and finishes the ones it has, within the host's shutdown time.
             options.Durability.DrainTimeout = host.ShutdownTimeout;
 
+            // Each message travels and is stored under its fixed name (W12).
+            MessageNames.Register();
+
             // A message that fails for good goes to the dead letter queue, and its fault is published for a flow that has to react,
             // such as a saga's compensation. Faults are stored messages, so they carry only the exception's type.
             options.PublishFaultEvents(includeExceptionMessage: false, includeStackTrace: false);

@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Application.Invitations.AcceptInvitation;
 
 /// <summary>
@@ -7,4 +9,5 @@ namespace ControlPlane.Application.Invitations.AcceptInvitation;
 /// process while the invitation is locked. A new catalog user gets the invited address, the names the person typed (A7) and the
 /// invitation's language; a user the catalog knows needs no names and keeps their language.
 /// </summary>
+[MessageName("accept-invitation")]
 public sealed record AcceptInvitationCommand(string ActorId, string Secret, IReadOnlyList<string> VerifiedEmails, string? FirstName, string? LastName);

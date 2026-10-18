@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Invitations;
 
 /// <summary>
@@ -6,4 +8,5 @@ namespace ControlPlane.Contracts.Invitations;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="RevokedBy">The catalog user id of the member who revoked it, who acted.</param>
+[MessageName("invitation-revoked")]
 public sealed record InvitationRevokedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid InvitationId, Guid RevokedBy);

@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Contracts.Invitations;
 
 /// <summary>
@@ -9,6 +11,7 @@ namespace ControlPlane.Contracts.Invitations;
 /// <param name="InvitedBy">The catalog user id of the system admin who invited, who acted.</param>
 /// <param name="TenantName">The tenant's name at that moment, which the records keep.</param>
 /// <param name="ReplacedInvitationId">The pending Owner invitation that this one cancelled, if there was one.</param>
+[MessageName("owner-invited")]
 public sealed record OwnerInvitedEvent(
     Guid EventId,
     DateTimeOffset OccurredAt,

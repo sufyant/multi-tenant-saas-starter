@@ -1,3 +1,5 @@
+using SharedKernel;
+
 namespace ControlPlane.Application.Users.DeleteUser;
 
 /// <summary>
@@ -5,4 +7,5 @@ namespace ControlPlane.Application.Users.DeleteUser;
 /// and names and marks the user deleted (A8). The row stays, because audit entries point to it. The identity provider deletes its user
 /// after the commit. It runs without a tenant, with the user declared (R11).
 /// </summary>
+[MessageName("delete-user")]
 public sealed record DeleteUserCommand(string ActorId, Guid UserId);
