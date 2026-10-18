@@ -10,16 +10,11 @@ public static class ListTenantsHandler
         ITenantQueries tenants,
         TenantOptions settings,
         TimeProvider time,
-        CancellationToken cancellationToken)
-    {
-        var now = time.GetUtcNow();
-        return (await tenants.ListTenantsAsync(query.List, query.Status is { } status ? Enum.Parse<TenantStatus>(status) : null, cancellationToken))
-            .Map(found => new TenantListItemView(
-                TenantView.Of(found.Tenant),
-                found.Tenant.ReopenableUntil(settings.ReopenPeriod),
-                found.Tenant.MemberCount,
-                found.Tenant.OwnerCount,
-                found.FirstOwner is { } owner ? TenantOwnerView.Of(owner) : null,
-                OwnerInvitationView.Of(found.Tenant, now)));
-    }
+        CancellationToken cancellationToken) =>
+        await tenants.ListTenantsAsync(
+            query.List,
+            query.Status is { } status ? Enum.Parse<TenantStatus>(status) : null,
+            settings.ReopenPeriod,
+            time.GetUtcNow(),
+            cancellationToken);
 }

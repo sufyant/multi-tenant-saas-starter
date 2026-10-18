@@ -8,6 +8,5 @@ public static class ListMyTenantsHandler
         ListMyTenantsQuery query,
         ITenantQueries tenants,
         CancellationToken cancellationToken) =>
-        (await tenants.ListPastCreationAsync(query.ActorId, query.List, cancellationToken))
-            .Map(found => MyTenantView.Of(found.Tenant, found.Role));
+        await tenants.ListMyTenantsAsync(query.ActorId, query.List, cancellationToken);
 }

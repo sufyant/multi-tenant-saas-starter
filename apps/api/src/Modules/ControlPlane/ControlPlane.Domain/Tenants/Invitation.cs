@@ -95,6 +95,16 @@ internal sealed class Invitation : ITenantEntity
             ? Error.Forbidden(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner, "Only an Owner can invite an Owner.")
             : Result.Success();
 
+    /// <summary>
+    /// Whether one of these verified email addresses is the invited address, compared without case, whatever the invitation's status. The
+    /// preview asks it of the invitation it read, before it reads anything else, so a holder of the link without the invited address learns
+    /// nothing more than the email told them; the acceptance asks it last, with the same error.
+    /// </summary>
+    public static Result CheckEmail(string invitedEmail, IEnumerable<string> verifiedEmails) =>
+        verifiedEmails.Any(email => string.Equals(email.Trim(), invitedEmail, StringComparison.OrdinalIgnoreCase))
+            ? Result.Success()
+            : EmailMismatch;
+
     /// <summary>Cancels a pending invitation, as when nobody could be told of it. A used or cancelled one stays as it is.</summary>
     public StateChange Cancel()
     {
@@ -159,15 +169,8 @@ internal sealed class Invitation : ITenantEntity
         return CheckEmail(verifiedEmails);
     }
 
-    /// <summary>
-    /// Whether one of these verified email addresses is the invited one, compared without case, whatever the invitation's status. The
-    /// preview asks it before anything else, so a holder of the link without the invited address learns nothing more than the email told
-    /// them; the acceptance asks it last, with the same error.
-    /// </summary>
-    public Result CheckEmail(IEnumerable<string> verifiedEmails) =>
-        verifiedEmails.Any(email => string.Equals(email.Trim(), Email, StringComparison.OrdinalIgnoreCase))
-            ? Result.Success()
-            : EmailMismatch;
+    /// <summary>Whether one of these verified email addresses is this invitation's address (<see cref="CheckEmail(string, IEnumerable{string})"/>).</summary>
+    public Result CheckEmail(IEnumerable<string> verifiedEmails) => CheckEmail(Email, verifiedEmails);
 
     /// <summary>The state of the invitation at this moment: a pending invitation is expired from its expiry on.</summary>
     public InvitationState StateAt(DateTimeOffset now) => Status switch

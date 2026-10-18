@@ -1,7 +1,6 @@
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Domain.Roles;
-using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -15,12 +14,9 @@ namespace ControlPlane.Infrastructure.Persistence.Members;
 /// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
 public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQueries
 {
-    Task<Membership?> IMemberQueries.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
-        controlPlane.TenantMemberships.AsNoTracking().SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
-
     // Row level security keeps the list to the active tenant; the query names no tenant. The users table is not under row level security
     // (R6), so the query starts from the memberships and joins each member's user: a user of another tenant never enters it.
-    async Task<ListPage<(Guid UserId, string? Email, string? FirstName, string? LastName, BuiltInRole Role, bool Deleted, DateTimeOffset JoinedAt)>> IMemberQueries.ListMembersAsync(
+    async Task<ListPage<MemberView>> IMemberQueries.ListMembersAsync(
         ListRequest<ListMembersSort> list,
         BuiltInRole? role,
         CancellationToken cancellationToken)
@@ -60,6 +56,9 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             .Take(list.Paging.PageSize)
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(member => (member.UserId, member.Email, member.FirstName, member.LastName, member.BuiltIn, member.Deleted, member.JoinedAt))], list.Paging, total);
+        return ListPage.Of(
+            [.. page.Select(member => new MemberView(member.UserId, member.Email, member.FirstName, member.LastName, RoleView.Of(member.BuiltIn), member.Deleted, member.JoinedAt))],
+            list.Paging,
+            total);
     }
 }

@@ -9,6 +9,5 @@ public static class ListMembersHandler
         ListMembersQuery query,
         IMemberQueries members,
         CancellationToken cancellationToken) =>
-        (await members.ListMembersAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
-            .Map(member => new MemberView(member.UserId, member.Email, member.FirstName, member.LastName, RoleView.Of(member.Role), member.Deleted, member.JoinedAt));
+        await members.ListMembersAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken);
 }

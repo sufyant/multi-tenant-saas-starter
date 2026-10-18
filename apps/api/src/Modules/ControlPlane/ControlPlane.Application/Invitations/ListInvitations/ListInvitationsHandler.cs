@@ -9,10 +9,10 @@ public static class ListInvitationsHandler
         ListInvitationsQuery query,
         IInvitationQueries invitations,
         TimeProvider time,
-        CancellationToken cancellationToken)
-    {
-        var now = time.GetUtcNow();
-        return (await invitations.ListPendingInvitationsAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
-            .Map(found => InvitationView.Of(found.Invitation, found.Inviter, now));
-    }
+        CancellationToken cancellationToken) =>
+        await invitations.ListPendingInvitationsAsync(
+            query.List,
+            query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null,
+            time.GetUtcNow(),
+            cancellationToken);
 }

@@ -2,7 +2,6 @@ using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Invitations.ListInvitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
 using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -19,9 +18,10 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
     // Row level security keeps the list to the active tenant; the query names no tenant. Two pending invitations never share an address,
     // so only the expiry can tie, and the id breaks every tie (K5). The users table is not under row level security (R6): the page joins
     // each inviter's user in the same query, so their names are read with the page, with no query for each invitation.
-    async Task<ListPage<(Invitation Invitation, User Inviter)>> IInvitationQueries.ListPendingInvitationsAsync(
+    async Task<ListPage<InvitationView>> IInvitationQueries.ListPendingInvitationsAsync(
         ListRequest<ListInvitationsSort> list,
         BuiltInRole? role,
+        DateTimeOffset now,
         CancellationToken cancellationToken)
     {
         var invitations = controlPlane.TenantInvitations.Where(invitation => invitation.Status == InvitationStatus.Pending);
@@ -51,10 +51,19 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(row => (row.Invitation, row.Inviter))], list.Paging, total);
+        return ListPage.Of([.. page.Select(row => InvitationView.Of(row.Invitation, row.Inviter, now))], list.Paging, total);
     }
 
-    // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none.
-    Task<Invitation?> IInvitationQueries.FindInvitationAsync(string secretHash, CancellationToken cancellationToken) =>
-        controlPlane.TenantInvitations.AsNoTracking().SingleOrDefaultAsync(invitation => invitation.SecretHash == secretHash, cancellationToken);
+    // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none. The users
+    // table is not under row level security (R6): one query joins the inviter's user, as the list does.
+    async Task<InvitationView?> IInvitationQueries.FindInvitationAsync(string secretHash, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.TenantInvitations
+            .Where(invitation => invitation.SecretHash == secretHash)
+            .Join(controlPlane.Users, invitation => invitation.InvitedBy, user => user.Id, (invitation, user) => new { Invitation = invitation, Inviter = user })
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return found is null ? null : InvitationView.Of(found.Invitation, found.Inviter, now);
+    }
 }
