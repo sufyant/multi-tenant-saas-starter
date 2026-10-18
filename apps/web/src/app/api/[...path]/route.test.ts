@@ -136,6 +136,15 @@ describe("BFF", () => {
     expect(requests[0]?.headers.has("Cookie")).toBe(false);
   });
 
+  it("GetMe_ApiUnreachable_Answers502WithAProblem", async () => {
+    server.use(http.get(`${api}/v1/me`, () => HttpResponse.error()));
+
+    const answer = await GET(new Request(`${web}/api/v1/me`));
+
+    expect(answer.status).toBe(502);
+    expect((await answer.json()).code).toBe("server.error");
+  });
+
   it("GetMe_WithoutASession_Answers401AndCallsNothing", async () => {
     getToken.mockResolvedValue(null);
 

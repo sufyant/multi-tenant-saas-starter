@@ -59,12 +59,18 @@ export function createBff({
       if (value !== null) headers.set(name, value);
     }
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
-    const answer = await send(`${apiUrl}${path}${url.search}`, {
-      method: request.method,
-      headers,
-      body: hasBody ? await request.arrayBuffer() : undefined,
-      redirect: "manual",
-    });
+    let answer: Response;
+    try {
+      answer = await send(`${apiUrl}${path}${url.search}`, {
+        method: request.method,
+        headers,
+        body: hasBody ? await request.arrayBuffer() : undefined,
+        redirect: "manual",
+      });
+    } catch {
+      // The API did not answer: down, unreachable or timed out. The browser gets Problem Details, as for any error (F4).
+      return problem(502, ErrorCode.servererror);
+    }
 
     const passed = new Headers();
     for (const name of [

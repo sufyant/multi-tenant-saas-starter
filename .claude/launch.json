@@ -8,6 +8,12 @@
       "port": 3000
     },
     {
+      "name": "platform",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@repo/platform", "dev"],
+      "port": 3001
+    },
+    {
       "name": "api",
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "apps/api/src/Api", "--urls", "http://localhost:5050"],
