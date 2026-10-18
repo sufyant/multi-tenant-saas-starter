@@ -32,7 +32,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
     }
 
     // Without a moment, the member joins at the insert. The user's membership count follows, as the commands keep it, so a command that
-    // removes the membership later counts down from a true value; a schema before step 20l has no count, for a test of a migration.
+    // removes the membership later counts down from a true value.
     public async Task<string> AddMemberAsync(Guid tenantId, string? externalId = null, string role = "Member", DateTimeOffset? joinedAt = null)
     {
         externalId ??= await AddUserAsync();
@@ -43,13 +43,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
             SELECT '{tenantId}', users.id, roles.id{Value(joinedAt)}
             FROM control_plane.users, control_plane.roles
             WHERE users.external_id = '{externalId}' AND roles.built_in = '{role}';
-            DO $count$ BEGIN
-                IF EXISTS (
-                    SELECT FROM information_schema.columns
-                    WHERE table_schema = 'control_plane' AND table_name = 'users' AND column_name = 'membership_count') THEN
-                    UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE external_id = '{externalId}';
-                END IF;
-            END $count$;
+            UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE external_id = '{externalId}';
             """,
             database: databaseName);
 

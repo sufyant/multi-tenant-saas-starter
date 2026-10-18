@@ -218,7 +218,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - One place writes it: `Tenant.Summarize`, from the tenant's own rows. Every command that changes a membership or an invitation calls it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembership`, `CloseTenant`, `InviteOwner`, and the saga's compensations `CancelTenant` and `CancelInvitation`. A test compares the summary with the rows after each of them, the race tests included (`TenantSummaries`).
 - The Owner invitation's email is personal data. The row keeps it only while the tenant has no Owner, and clears it when an Owner joins. The state `expired` comes from the expiry at the moment of a read, never from a stored value.
 - A membership keeps when its user joined (`joined_at`). The first Owner is the Owner with the earliest one, then the lowest user id.
-- The migration gave the tenants that existed their summary, declaring each tenant in turn.
 
 ### K11. The user's membership count
 
@@ -226,7 +225,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - It changes by one, in the command's own transaction, under the tenant's lock (K6): `AcceptInvitation` adds one, `RemoveMember` and `RemoveUserMembership` take one away. The database adds the change to the stored value, so two tenants' commands for one user never lose one. A test compares the count with the rows after each of them.
 - `AcceptInvitation` locks a known user's row for an update, not a share lock, so two acceptances of one user in two tenants run one after the other.
 - A deleted user has no membership, so their count is 0.
-- The migration gave the users that existed their count, declaring each user in turn.
 
 ### K12. The invitation preview
 
