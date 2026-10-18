@@ -18,7 +18,7 @@ Sources:
 
 | File | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `api-image`, `web-image`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
+| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `generated`, `api-image`, `web-image`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
 | `delivery.yml` | `push` to `main` | Calls `ci.yml`, then `publish-api`, `deploy-staging`, `deploy-production`, `tag-release`, in this order |
 | `deploy.yml` | `workflow_call` | The only copy of the deploy steps, for staging and production |
 | `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the image of that release to **production**, after the approval |
