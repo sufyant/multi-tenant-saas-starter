@@ -43,9 +43,9 @@ public sealed partial class CreateTenantValidator : AbstractValidator<CreateTena
     }
 
     // Parts of lowercase ASCII letters and digits, joined by single hyphens. The OpenAPI document writes it as the slug's pattern, so
-    // .NET and ECMAScript must read it the same way: no \z and no lookbehind. In .NET, $ also matches before a last line break; the
-    // tenant's own check refuses such a slug.
-    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    // .NET and ECMAScript must read it the same way: no \z and no lookbehind. A $ would not do: in .NET it also matches before a last
+    // line break. (?![\s\S]), no character after, is the end of the text in both.
+    [GeneratedRegex(@"^[a-z0-9]+(-[a-z0-9]+)*(?![\s\S])", RegexOptions.CultureInvariant)]
     private static partial Regex Slug();
 }
 

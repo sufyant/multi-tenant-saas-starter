@@ -272,8 +272,10 @@ internal static partial class OpenApiContract
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 
-    // A pattern of the document is an ECMAScript regex (OpenAPI 3.1, JSON Schema Validation, section 6.3.3). These .NET anchors and
-    // lookbehinds have no ECMAScript form, or another meaning there, so a regex with one is no pattern: \A, \Z, \z, (?<= and (?<!.
+    // A pattern of the document is an ECMAScript regex (OpenAPI 3.1, JSON Schema Validation, section 6.3.3). The anchors \A, \Z and \z
+    // have no ECMAScript form, so a regex with one is no pattern. A lookbehind, (?<= or (?<!, is left out too: ECMAScript has it only
+    // since ES2018, and an older engine refuses it (the maintainer's decision 3 after audit fix 09). Only the text is checked: a regex
+    // option, such as IgnoreCase, does not reach the document, so a rule with one would need its own decision.
     [GeneratedRegex(@"\\[AZz]|\(\?<[=!]")]
     private static partial Regex NotEcmaScript();
 

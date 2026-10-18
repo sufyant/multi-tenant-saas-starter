@@ -180,7 +180,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     }
 
     public static TheoryData<string> InvalidSlugs =>
-        ["", "ab", new string('s', 64), "Acme", "acme corp", "acme_corp", "-acme", "acme-", "acme--corp", "acmé"];
+        ["", "ab", new string('s', 64), "Acme", "acme corp", "acme_corp", "-acme", "acme-", "acme--corp", "acmé", "acme\n"];
 
     // The maintainer's decision 3 after audit fix 09: the validator checks the slug's length and shape, so the document states both.
     [Theory]
