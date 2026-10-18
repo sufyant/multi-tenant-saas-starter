@@ -87,15 +87,17 @@ public static class MyInvitationEndpoints
             code.TenantId.ToString(),
             new GetInvitationPreviewQuery(code.Secret, verifiedEmails),
             cancellationToken);
-        return preview.Map(found => new InvitationPreviewResponse(
-            found.TenantName,
-            new InviterNameResponse(
-                ResponseStatus.OfInviter(found.Inviter.Kind),
-                found.Inviter.Name?.FirstName,
-                found.Inviter.Name?.LastName,
-                found.Inviter.Name?.Deleted),
-            MemberEndpoints.ToResponse(found.Role),
-            found.ExpiresAt,
-            ResponseStatus.OfInvitation(found.State)));
+        return preview.Map(ToResponse);
     }
+
+    private static InvitationPreviewResponse ToResponse(InvitationPreviewView preview) => new(
+        preview.TenantName,
+        new InviterNameResponse(
+            ResponseStatus.OfInviter(preview.Inviter.Kind),
+            preview.Inviter.Name?.FirstName,
+            preview.Inviter.Name?.LastName,
+            preview.Inviter.Name?.Deleted),
+        MemberEndpoints.ToResponse(preview.Role),
+        preview.ExpiresAt,
+        ResponseStatus.OfInvitation(preview.State));
 }

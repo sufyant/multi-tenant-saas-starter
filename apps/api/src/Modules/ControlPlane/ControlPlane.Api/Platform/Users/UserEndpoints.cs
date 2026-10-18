@@ -64,27 +64,7 @@ public static class UserEndpoints
 
     // The user's memberships are under row level security; the query declares the user (R11), as a user's deletion does.
     private static async Task<Result<UserDetailResponse>> GetUser(Guid userId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserDetailView>>(new GetUserQuery(userId), cancellationToken)).Map(found => new UserDetailResponse(
-            found.User.Id,
-            found.User.Email,
-            found.User.FirstName,
-            found.User.LastName,
-            ResponseStatus.OfUser(found.User.Status),
-            found.User.IsSystemAdmin,
-            found.User.MembershipCount,
-            found.User.CreatedAt,
-            found.SuspendedAt,
-            found.SuspendedBy is { } suspendedBy ? InvitationEndpoints.ToResponse(suspendedBy) : null,
-            [
-                .. found.Memberships.Select(membership => new UserMembershipResponse(
-                    membership.TenantId,
-                    membership.TenantName,
-                    membership.TenantSlug,
-                    ResponseStatus.OfUserMembership(membership.TenantStatus),
-                    MemberEndpoints.ToResponse(membership.Role),
-                    membership.JoinedAt,
-                    membership.LastOwner)),
-            ]));
+        (await bus.InvokeAsync<Result<UserDetailView>>(new GetUserQuery(userId), cancellationToken)).Map(ToResponse);
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
     private static async Task<Result<UserResponse>> SuspendUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
@@ -151,4 +131,26 @@ public static class UserEndpoints
         user.IsSystemAdmin,
         user.MembershipCount,
         user.CreatedAt);
+
+    private static UserDetailResponse ToResponse(UserDetailView user) => new(
+        user.User.Id,
+        user.User.Email,
+        user.User.FirstName,
+        user.User.LastName,
+        ResponseStatus.OfUser(user.User.Status),
+        user.User.IsSystemAdmin,
+        user.User.MembershipCount,
+        user.User.CreatedAt,
+        user.SuspendedAt,
+        user.SuspendedBy is { } suspendedBy ? InvitationEndpoints.ToResponse(suspendedBy) : null,
+        [.. user.Memberships.Select(ToResponse)]);
+
+    private static UserMembershipResponse ToResponse(UserMembershipView membership) => new(
+        membership.TenantId,
+        membership.TenantName,
+        membership.TenantSlug,
+        ResponseStatus.OfUserMembership(membership.TenantStatus),
+        MemberEndpoints.ToResponse(membership.Role),
+        membership.JoinedAt,
+        membership.LastOwner);
 }
