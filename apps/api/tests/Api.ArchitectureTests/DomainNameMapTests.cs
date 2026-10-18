@@ -1,5 +1,5 @@
 using System.Reflection;
-using Audit.Api.Tenant.AuditLogs;
+using Audit.Api;
 using ControlPlane.Api;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.Users;
@@ -8,10 +8,12 @@ namespace Api.ArchitectureTests;
 
 // A14 and B9: a Domain status crosses to a module's Api as its name, and the Api maps the name to the enum of a response (N7). A new
 // Domain value compiles and then answers 500, so this test feeds every name of each Domain enum through each map. The Domain enums and
-// ControlPlane's ResponseStatus are internal to their modules, so this system-wide test reads them by reflection, as RoleNameTests does.
+// the ResponseStatus of each module's Api are internal to their modules, so this system-wide test reads them by reflection, as RoleNameTests does.
 public class DomainNameMapTests
 {
     private static readonly Type ResponseStatus = typeof(ControlPlaneModule).Assembly.GetType("ControlPlane.Api.Statuses.ResponseStatus", throwOnError: true)!;
+
+    private static readonly Type AuditResponseStatus = typeof(AuditModule).Assembly.GetType("Audit.Api.Statuses.ResponseStatus", throwOnError: true)!;
 
     private static readonly string[] TenantStatusNames = NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.TenantStatus");
 
@@ -88,22 +90,24 @@ public class DomainNameMapTests
             .ShouldContain((string)ResponseStatus.GetMethod("OfUser", [typeof(UserResponseStatus)])!.Invoke(null, [status])!);
     }
 
-    // Audit's kinds keep the Domain's names, and its Api parses each name as the response's kind.
+    // Audit's kinds keep the Domain's names, and its Api maps each name to the response's kind.
     [Theory]
     [MemberData(nameof(AuditActorKinds))]
     public void MapAnAuditActor_EveryDomainKind_HasAResponseKind(string kind)
     {
-        Enum.IsDefined(Enum.Parse<AuditActorResponseKind>(kind)).ShouldBeTrue();
+        AuditMap("OfActor", kind).ShouldNotBeNull();
     }
 
     [Theory]
     [MemberData(nameof(AuditTargetKinds))]
     public void MapAnAuditTarget_EveryDomainKind_HasAResponseKind(string kind)
     {
-        Enum.IsDefined(Enum.Parse<AuditTargetResponseKind>(kind)).ShouldBeTrue();
+        AuditMap("OfTarget", kind).ShouldNotBeNull();
     }
 
     private static object? Map(string method, string name) => ResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
+
+    private static object? AuditMap(string method, string name) => AuditResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
 
     private static string[] NamesOf(string assembly, string type) => Enum.GetNames(Solution.Load(assembly).GetType(type, throwOnError: true)!);
 }

@@ -39,6 +39,6 @@ public static class PlatformAuditLogEndpoints
         }
 
         var named = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new GetAuditEntryNamesQuery(entries.Value), cancellationToken);
-        return named.Map(AuditEntryResponses.Of);
+        return named.Map(found => found.Map(AuditLogEndpoints.ToResponse));
     }
 }
