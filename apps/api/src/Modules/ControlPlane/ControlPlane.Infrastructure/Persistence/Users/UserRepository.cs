@@ -13,14 +13,23 @@ namespace ControlPlane.Infrastructure.Persistence.Users;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRepository
 {
-    Task<User?> IUserRepository.FindUserAsync(string externalUserId, CancellationToken cancellationToken) =>
-        controlPlane.Users.SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken);
-
-    Task<User?> IUserRepository.FindUserAsync(Guid userId, CancellationToken cancellationToken) =>
-        controlPlane.Users.SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
-
     async Task<Guid?> IUserRepository.FindUserIdAsync(string externalUserId, CancellationToken cancellationToken) =>
         await controlPlane.Users.Where(user => user.ExternalId == externalUserId).Select(user => (Guid?)user.Id).SingleOrDefaultAsync(cancellationToken);
+
+    Task<UserProfile?> IUserRepository.FindProfileAsync(string externalUserId, CancellationToken cancellationToken) =>
+        controlPlane.Users
+            .Where(user => user.ExternalId == externalUserId)
+            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    Task<UserProfile?> IUserRepository.FindProfileAsync(Guid userId, CancellationToken cancellationToken) =>
+        controlPlane.Users
+            .Where(user => user.Id == userId)
+            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    Task<bool> IUserRepository.UserExistsAsync(Guid userId, CancellationToken cancellationToken) =>
+        controlPlane.Users.AnyAsync(user => user.Id == userId, cancellationToken);
 
     async Task<User?> IUserRepository.FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken)
     {

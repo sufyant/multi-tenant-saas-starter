@@ -2,7 +2,6 @@ using ControlPlane.Application.Members;
 using ControlPlane.Application.Users;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
 
 namespace ControlPlane.Application.Invitations;
 
@@ -21,12 +20,12 @@ public sealed record InvitationView(
     DateTimeOffset ExpiresAt,
     string State)
 {
-    internal static InvitationView Of(Invitation invitation, User inviter, DateTimeOffset now) => new(
+    internal static InvitationView Of(Invitation invitation, UserNameView inviterName, DateTimeOffset now) => new(
         invitation.Id,
         invitation.Email,
         RoleView.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
         invitation.InvitedBy,
-        UserNameView.Of(inviter),
+        inviterName,
         invitation.CreatedAt,
         invitation.ExpiresAt,
         invitation.StateAt(now).ToString());

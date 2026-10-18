@@ -38,7 +38,7 @@ public static class InviteOwnerHandler
             return (allowed.Error, null, null, []);
         }
 
-        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindProfileAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var withdrawals = new OutgoingMessages();
@@ -71,7 +71,7 @@ public static class InviteOwnerHandler
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationView.Of(invitation, actor, now),
+            InvitationView.Of(invitation, UserNameView.Of(actor), now),
             new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
             new OpenMemberSignUpCommand(
                 tenant.Id,

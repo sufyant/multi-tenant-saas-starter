@@ -11,7 +11,7 @@ public static class ListUserMembershipsHandler
         IUserRepository users,
         CancellationToken cancellationToken)
     {
-        if (await users.FindUserAsync(query.UserId, cancellationToken) is null)
+        if (!await users.UserExistsAsync(query.UserId, cancellationToken))
         {
             return Errors.UserNotFound;
         }

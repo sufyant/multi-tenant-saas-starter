@@ -72,7 +72,7 @@ public static class InviteMemberHandler
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationView.Of(invitation, actor, now),
+            InvitationView.Of(invitation, UserNameView.Of(actor), now),
             new MemberInvitedEvent(
                 Guid.CreateVersion7(now),
                 now,

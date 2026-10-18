@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Invitations.ListInvitations;
+using ControlPlane.Application.Users;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence.Lists;
@@ -51,7 +52,7 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(row => InvitationView.Of(row.Invitation, row.Inviter, now))], list.Paging, total);
+        return ListPage.Of([.. page.Select(row => InvitationView.Of(row.Invitation, UserNameView.Of(row.Inviter), now))], list.Paging, total);
     }
 
     // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none. The users
@@ -64,6 +65,6 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
             .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
 
-        return found is null ? null : InvitationView.Of(found.Invitation, found.Inviter, now);
+        return found is null ? null : InvitationView.Of(found.Invitation, UserNameView.Of(found.Inviter), now);
     }
 }
