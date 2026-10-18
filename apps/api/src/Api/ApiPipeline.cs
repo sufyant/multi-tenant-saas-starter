@@ -34,12 +34,80 @@ internal static class ApiPipeline
 
     // FluentValidation validators are found only in the handler assemblies known when validation is switched on, so they are
     // passed here rather than added to Wolverine's discovery afterwards. Returns the role the host runs as, or null when the setting
-    // is wrong and the host will not start.
+    // is wrong and the host will not start. Each concern has a method of its own; the order of the registrations is the order below.
     public static HostRole? AddApiPipeline(this WebApplicationBuilder builder, params Assembly[] handlerAssemblies)
     {
-        // The OpenAPI document build only describes the API: it has no configuration and no database, so it registers no database
-        // and checks nothing while it starts. Every other start checks every setting first (section 7).
         var openApiBuild = OpenApiDocumentBuild.IsRunning;
+        builder.AddStartChecks(openApiBuild);
+
+        var host = builder.AddHostingOptions();
+        var role = openApiBuild ? HostRole.All : host.RoleOrNull;
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddIdempotency();
+        builder.Services.AddUnknownMessageOptions();
+
+        builder.AddObservability();
+        builder.AddAccess();
+        builder.Services.AddErrorHandling();
+        builder.AddMessaging(host, role, openApiBuild, handlerAssemblies);
+
+        if (!openApiBuild && role is HostRole.Worker or HostRole.All)
+        {
+            builder.Services.AddHostedService<IdempotencyCleanup>();
+        }
+
+        builder.Services.AddApiCors(host);
+        builder.Services.AddUserRateLimiting();
+        builder.Services.AddHealthChecks();
+        builder.Services.AddApiContract();
+
+        return role;
+    }
+
+    public static WebApplication UseApiPipeline(this WebApplication app)
+    {
+        // The client address is settled first, so logging and rate limiting see the client rather than the proxy.
+        app.UseTrustedProxies();
+
+        // Request logging sits outside the exception handler so it logs the 500 response, not the exception a second time.
+        // Health checks are polled every few seconds and would drown the log.
+        app.UseWhen(
+            context => !context.Request.Path.StartsWithSegments(HealthPath),
+            requests => requests.UseSerilogRequestLogging(options => options.Logger = app.Services.GetRequiredService<Serilog.ILogger>()));
+        // A request the server refuses while reading it, such as a body over its endpoint's size limit, keeps the status the server
+        // gives it (413); any other exception is a 500.
+        app.UseExceptionHandler(new ExceptionHandlerOptions
+        {
+            StatusCodeSelector = exception => exception is BadHttpRequestException refused ? refused.StatusCode : StatusCodes.Status500InternalServerError,
+        });
+        app.UseStatusCodePages();
+
+        // The management port answers the health endpoints and nothing else; no other port answers them (section 8). The branch
+        // reads the port the connection arrived on, because a client can send any Host header (Microsoft Learn, Health checks in
+        // ASP.NET Core, Require host). Any other request there ends as not found, before anything asks who the caller is.
+        var managementPort = app.Configuration.Read().ManagementPort;
+        app.MapWhen(context => context.Connection.LocalPort == managementPort, management => management
+            .UseHealthChecks($"{HealthPath}/live", new HealthCheckOptions { Predicate = _ => false })
+            .UseHealthChecks($"{HealthPath}/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }));
+
+        // Routing runs first so tenant resolution sees the tenant id. A browser's preflight is answered before anything asks who the
+        // caller is. The rate limiter needs only the user, so a caller over their limit costs no membership lookup. Authorization comes
+        // last, so callers it turns away have been rate limited too.
+        app.UseRouting();
+        app.UseCors();
+        app.UseAuthentication();
+        app.UseRateLimiter();
+        app.UseMiddleware<TenantResolutionMiddleware>();
+        app.UseAuthorization();
+        app.UseMiddleware<IdempotencyMiddleware>();
+
+        return app;
+    }
+
+    // The OpenAPI document build only describes the API: it has no configuration and no database, so it registers no database
+    // and checks nothing while it starts. Every other start checks every setting first (section 7).
+    private static void AddStartChecks(this WebApplicationBuilder builder, bool openApiBuild)
+    {
         if (openApiBuild)
         {
             builder.Services.AddSingleton<IStartupValidator, OpenApiDocumentBuild.NothingToCheck>();
@@ -48,28 +116,34 @@ internal static class ApiPipeline
         {
             builder.AddPersistence();
         }
+    }
 
-        var host = builder.AddHostingOptions();
-        var role = openApiBuild ? HostRole.All : host.RoleOrNull;
-        builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddApiPersistence();
-        builder.Services.AddHttpContextAccessor();
-        builder.Services.AddScoped<IIdempotencyExecutor, IdempotencyExecutor>();
-        builder.Services.AddIdempotencyOptions();
-        builder.Services.AddUnknownMessageOptions();
+    private static void AddIdempotency(this IServiceCollection services)
+    {
+        services.AddApiPersistence();
+        services.AddHttpContextAccessor();
+        services.AddScoped<IIdempotencyExecutor, IdempotencyExecutor>();
+        services.AddIdempotencyOptions();
+    }
 
-        builder.AddObservability();
+    private static void AddAccess(this WebApplicationBuilder builder)
+    {
         builder.AddClerkAuthentication();
         builder.Services.AddTrustedProxies();
         builder.Services.AddAccessAuthorization();
+    }
 
-        builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = Problems.Describe);
-        builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+    private static void AddErrorHandling(this IServiceCollection services)
+    {
+        services.AddProblemDetails(options => options.CustomizeProblemDetails = Problems.Describe);
+        services.AddExceptionHandler<ValidationExceptionHandler>();
 
         // A request an endpoint cannot read answers 400 in every environment. Development would otherwise throw, and the exception
         // handler would answer 500 (OWASP API8).
-        builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
+        services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
+    }
 
+    private static void AddMessaging(this WebApplicationBuilder builder, HostingOptions host, HostRole? role, bool openApiBuild, Assembly[] handlerAssemblies) =>
         builder.Services.AddWolverine(options =>
         {
             // The handler code is written by `codegen write`, committed in Internal/Generated and loaded as static types (W10). The
@@ -120,65 +194,16 @@ internal static class ApiPipeline
             options.Policies.MessageSuccessLogLevel(LogLevel.Information);
         });
 
-        if (!openApiBuild && role is HostRole.Worker or HostRole.All)
-        {
-            builder.Services.AddHostedService<IdempotencyCleanup>();
-        }
-
-        // API8. The options are built at their first use, after the endpoints are mapped, so the methods and the exposed headers come
-        // from the endpoints and from no list.
-        builder.Services.AddCors();
-        builder.Services.AddOptions<CorsOptions>().Configure<EndpointDataSource>((cors, endpoints) => cors.AddDefaultPolicy(policy => policy
+    // API8. The options are built at their first use, after the endpoints are mapped, so the methods and the exposed headers come
+    // from the endpoints and from no list.
+    private static void AddApiCors(this IServiceCollection services, HostingOptions host)
+    {
+        services.AddCors();
+        services.AddOptions<CorsOptions>().Configure<EndpointDataSource>((cors, endpoints) => cors.AddDefaultPolicy(policy => policy
             .WithOrigins(host.Cors.AllowedOrigins)
             .WithMethods(MethodsOf(endpoints))
             .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyMiddleware.Header)
             .WithExposedHeaders(ExposedHeadersOf(endpoints))));
-
-        builder.Services.AddUserRateLimiting();
-        builder.Services.AddHealthChecks();
-        builder.Services.AddApiContract();
-
-        return role;
-    }
-
-    public static WebApplication UseApiPipeline(this WebApplication app)
-    {
-        // The client address is settled first, so logging and rate limiting see the client rather than the proxy.
-        app.UseTrustedProxies();
-
-        // Request logging sits outside the exception handler so it logs the 500 response, not the exception a second time.
-        // Health checks are polled every few seconds and would drown the log.
-        app.UseWhen(
-            context => !context.Request.Path.StartsWithSegments(HealthPath),
-            requests => requests.UseSerilogRequestLogging(options => options.Logger = app.Services.GetRequiredService<Serilog.ILogger>()));
-        // A request the server refuses while reading it, such as a body over its endpoint's size limit, keeps the status the server
-        // gives it (413); any other exception is a 500.
-        app.UseExceptionHandler(new ExceptionHandlerOptions
-        {
-            StatusCodeSelector = exception => exception is BadHttpRequestException refused ? refused.StatusCode : StatusCodes.Status500InternalServerError,
-        });
-        app.UseStatusCodePages();
-
-        // The management port answers the health endpoints and nothing else; no other port answers them (section 8). The branch
-        // reads the port the connection arrived on, because a client can send any Host header (Microsoft Learn, Health checks in
-        // ASP.NET Core, Require host). Any other request there ends as not found, before anything asks who the caller is.
-        var managementPort = app.Configuration.Read().ManagementPort;
-        app.MapWhen(context => context.Connection.LocalPort == managementPort, management => management
-            .UseHealthChecks($"{HealthPath}/live", new HealthCheckOptions { Predicate = _ => false })
-            .UseHealthChecks($"{HealthPath}/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }));
-
-        // Routing runs first so tenant resolution sees the tenant id. A browser's preflight is answered before anything asks who the
-        // caller is. The rate limiter needs only the user, so a caller over their limit costs no membership lookup. Authorization comes
-        // last, so callers it turns away have been rate limited too.
-        app.UseRouting();
-        app.UseCors();
-        app.UseAuthentication();
-        app.UseRateLimiter();
-        app.UseMiddleware<TenantResolutionMiddleware>();
-        app.UseAuthorization();
-        app.UseMiddleware<IdempotencyMiddleware>();
-
-        return app;
     }
 
     // The HTTP methods of the endpoints under /v1, in ordinal order. A worker maps none.
