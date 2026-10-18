@@ -43,17 +43,13 @@ public static class MyInvitationEndpoints
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Code))
+        var read = await ReadCodeAsync(request.Code, user, identity, cancellationToken);
+        if (!read.IsSuccess)
         {
-            return Errors.InvitationCodeRequired;
+            return read.Error;
         }
 
-        if (InvitationCode.Parse(request.Code) is not { } code)
-        {
-            return Errors.InvitationNotFound;
-        }
-
-        var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
+        var (code, verifiedEmails) = read.Value;
         var accepted = await bus.InvokeForTenantAsync<Result<MyTenantView>>(
             code.TenantId.ToString(),
             new AcceptInvitationCommand(user.Id(), code.Secret, verifiedEmails, request.FirstName, request.LastName),
@@ -72,22 +68,39 @@ public static class MyInvitationEndpoints
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Code))
+        var read = await ReadCodeAsync(request.Code, user, identity, cancellationToken);
+        if (!read.IsSuccess)
         {
-            return Errors.InvitationCodeRequired;
+            return read.Error;
         }
 
-        if (InvitationCode.Parse(request.Code) is not { } code)
-        {
-            return Errors.InvitationNotFound;
-        }
-
-        var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
+        var (code, verifiedEmails) = read.Value;
         var preview = await bus.InvokeForTenantAsync<Result<InvitationPreviewView>>(
             code.TenantId.ToString(),
             new GetInvitationPreviewQuery(code.Secret, verifiedEmails),
             cancellationToken);
         return preview.Map(ToResponse);
+    }
+
+    // Both endpoints read the code the same way: a missing or blank code is a bad request, a code that names no tenant is not found, and
+    // the identity provider then gives the caller's verified email addresses.
+    private static async Task<Result<(InvitationCode Code, IReadOnlyList<string> VerifiedEmails)>> ReadCodeAsync(
+        string? code,
+        ClaimsPrincipal user,
+        IIdentityProvider identity,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return Errors.InvitationCodeRequired;
+        }
+
+        if (InvitationCode.Parse(code) is not { } parsed)
+        {
+            return Errors.InvitationNotFound;
+        }
+
+        return (parsed, await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken));
     }
 
     private static InvitationPreviewResponse ToResponse(InvitationPreviewView preview) => new(
