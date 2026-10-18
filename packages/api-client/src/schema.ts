@@ -810,7 +810,7 @@ export interface components {
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
          * @description One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
-         *     (null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name.
+         *     (null when the user is not suspended), and every membership by the tenant's name.
          */
         UserDetailResponse: {
             /** Format: uuid */

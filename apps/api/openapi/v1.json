@@ -5397,7 +5397,7 @@
             }
           }
         },
-        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name."
+        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended), and every membership by the tenant's name."
       },
       "UserMembershipResponse": {
         "required": [
