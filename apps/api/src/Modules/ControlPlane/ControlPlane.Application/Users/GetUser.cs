@@ -43,7 +43,7 @@ public static class GetUserHandler
             return Errors.UserNotFound;
         }
 
-        var suspendedBy = user.SuspendedBy is { } adminId ? await users.FindUserAsync(adminId, cancellationToken) : null;
+        var suspendedBy = user.SuspendedBy is { } suspenderId ? await users.FindUserAsync(suspenderId, cancellationToken) : null;
         var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
         return new UserDetailView(
             UserView.Of(user, isSystemAdmin),

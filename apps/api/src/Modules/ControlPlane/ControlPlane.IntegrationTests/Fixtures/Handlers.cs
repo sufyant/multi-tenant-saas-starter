@@ -105,7 +105,7 @@ internal static class Handlers
         }
 
         var (accepted, _) = await InTenant.RunAsync(services, TenantIdOf(code), scope => AcceptInvitationHandler.HandleAsync(
-            new AcceptInvitationCommand(SecretOf(code), userId, verifiedEmails, firstName, lastName),
+            new AcceptInvitationCommand(userId, SecretOf(code), verifiedEmails, firstName, lastName),
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));

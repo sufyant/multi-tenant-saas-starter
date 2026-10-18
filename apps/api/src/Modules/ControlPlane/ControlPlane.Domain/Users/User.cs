@@ -133,14 +133,14 @@ internal sealed class User(Guid id, string externalId)
     /// A system admin suspends the user. A second suspension keeps the first time and the first system admin. The identity provider is
     /// not told. True when the user was not suspended.
     /// </summary>
-    public bool Suspend(DateTimeOffset now, Guid adminId)
+    public bool Suspend(DateTimeOffset now, Guid suspendedBy)
     {
         if (SuspendedAt is not null)
         {
             return false;
         }
 
-        (SuspendedAt, SuspendedBy) = (now, adminId);
+        (SuspendedAt, SuspendedBy) = (now, suspendedBy);
         return true;
     }
 

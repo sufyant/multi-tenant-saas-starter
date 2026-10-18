@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Users.UserDeletion;
 /// and names and marks the user deleted (A8). The row stays, because audit entries point to it. The identity provider deletes its user
 /// after the commit. It runs without a tenant, with the user declared (R11).
 /// </summary>
-public sealed record DeleteUserCommand(Guid UserId, string AdminId);
+public sealed record DeleteUserCommand(string ActorId, Guid UserId);
 
 // The command locks the user row. A membership that appeared after the user left their tenants, such as an invitation accepted at the
 // same moment, stops it: a deleted user is never a member (A8). A user already deleted answers as they are, and is not announced again;
@@ -41,13 +41,13 @@ public static class DeleteUserHandler
 
         var now = time.GetUtcNow();
         var first = user.Delete(now);
-        var admin = await users.FindUserIdAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
         await users.SaveChangesAsync(cancellationToken);
 
         return (
             Result.Success(),
-            first ? new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, admin) : null,
+            first ? new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, actor) : null,
             new DeleteIdentityAccountCommand(user.ExternalId));
     }
 }

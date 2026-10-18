@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin gives a tenant a new name; the slug never changes (K4). Only the platform renames a tenant: a member cannot. It runs
 /// inside that tenant, which the platform route names, with the tenant locked.
 /// </summary>
-public sealed record RenameTenantCommand(string AdminId, string Name);
+public sealed record RenameTenantCommand(string ActorId, string Name);
 
 public sealed class RenameTenantValidator : AbstractValidator<RenameTenantCommand>
 {
@@ -47,11 +47,11 @@ public static class RenameTenantHandler
             return (renamed.Map(_ => TenantView.Of(tenant)), null);
         }
 
-        var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, oldName, tenant.Name));
+        return (TenantView.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, oldName, tenant.Name));
     }
 }

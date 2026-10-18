@@ -16,7 +16,7 @@ public enum ListMyTenantsSort
 /// The signed-in user's active, suspended and closed tenants, a page at a time, sorted by one field, then by id. The search matches the name
 /// or the slug. It runs without a tenant.
 /// </summary>
-public sealed record ListMyTenantsQuery(string UserId, ListRequest<ListMyTenantsSort> List);
+public sealed record ListMyTenantsQuery(string ActorId, ListRequest<ListMyTenantsSort> List);
 
 /// <summary>
 /// A tenant as its members see it: active, or suspended or closed so that they cannot enter it, with the role the user holds there.
@@ -32,6 +32,6 @@ public static class ListMyTenantsHandler
         ListMyTenantsQuery query,
         IUserTenants tenants,
         CancellationToken cancellationToken) =>
-        (await tenants.ListPastCreationAsync(query.UserId, query.List, cancellationToken))
+        (await tenants.ListPastCreationAsync(query.ActorId, query.List, cancellationToken))
             .Map(found => MyTenantView.Of(found.Tenant, found.Role));
 }

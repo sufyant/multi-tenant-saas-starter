@@ -8,7 +8,7 @@ namespace ControlPlane.Application.Tenants;
 /// The tenant of the route, for one of its members: the app shell and Settings › General. The tenant door has let the member in, so the
 /// tenant is active.
 /// </summary>
-public sealed record GetMyTenantQuery(string UserId);
+public sealed record GetMyTenantQuery(string ActorId);
 
 /// <summary>
 /// The tenant as its member sees it, when it was created, and the member's role and the names of its permissions, in ordinal order.
@@ -23,7 +23,7 @@ public static class GetMyTenantHandler
     public static async Task<Result<MyTenantDetailView>> HandleAsync(GetMyTenantQuery query, ITenantCatalog catalog, CancellationToken cancellationToken)
     {
         if (await catalog.FindTenantAsync(cancellationToken) is not { } tenant
-            || await catalog.FindUserAsync(query.UserId, cancellationToken) is not { } user
+            || await catalog.FindUserAsync(query.ActorId, cancellationToken) is not { } user
             || await catalog.FindMembershipAsync(user.Id, cancellationToken) is not { } membership)
         {
             return Errors.TenantNotFound;

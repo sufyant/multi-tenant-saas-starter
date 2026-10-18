@@ -15,7 +15,7 @@ namespace ControlPlane.Application.Tenants;
 /// in a language for the invitation's email: without one, the system admin's own (K8). The host's idempotency layer protects the HTTP
 /// request (I1); the command carries no request key, and the server chooses the invitation's id.
 /// </summary>
-public sealed record InviteOwnerCommand(string AdminId, string Email, Language? Language);
+public sealed record InviteOwnerCommand(string ActorId, string Email, Language? Language);
 
 public sealed class InviteOwnerValidator : AbstractValidator<InviteOwnerCommand>
 {
@@ -56,8 +56,8 @@ public static class InviteOwnerHandler
             return (allowed.Error, null, null, []);
         }
 
-        var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
 
         var withdrawals = new OutgoingMessages();
         var replaced = await catalog.FindPendingInvitationsAsync(cancellationToken);
@@ -79,18 +79,18 @@ public static class InviteOwnerHandler
             tenant.Id,
             command.Email,
             BuiltInRoles.Owner,
-            admin.Id,
+            actor.Id,
             now,
             invitations.Lifetime,
             secret,
-            command.Language ?? admin.Language);
+            command.Language ?? actor.Language);
         catalog.Add(invitation);
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationView.Of(invitation, admin, now),
-            new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, admin.Id, replaced.SingleOrDefault()?.Id),
+            InvitationView.Of(invitation, actor, now),
+            new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
             new OpenMemberSignUpCommand(
                 tenant.Id,
                 invitation.Id,

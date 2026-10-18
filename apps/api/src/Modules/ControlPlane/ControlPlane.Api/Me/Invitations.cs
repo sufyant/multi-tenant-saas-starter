@@ -53,7 +53,7 @@ public static class Invitations
         var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
         var accepted = await bus.InvokeForTenantAsync<Result<MyTenantView>>(
             code.TenantId.ToString(),
-            new AcceptInvitationCommand(code.Secret, user.Id(), verifiedEmails, request.FirstName, request.LastName),
+            new AcceptInvitationCommand(user.Id(), code.Secret, verifiedEmails, request.FirstName, request.LastName),
             cancellationToken);
         return accepted.Map(MyTenants.ToResponse);
     }

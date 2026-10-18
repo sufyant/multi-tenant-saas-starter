@@ -65,7 +65,7 @@ public static class Users
             found.User.MembershipCount,
             found.User.CreatedAt,
             found.SuspendedAt,
-            found.SuspendedBy is { } admin ? Tenant.Invitations.ToResponse(admin) : null,
+            found.SuspendedBy is { } suspendedBy ? Tenant.Invitations.ToResponse(suspendedBy) : null,
             [
                 .. found.Memberships.Select(membership => new UserMembershipResponse(
                     membership.TenantId,
@@ -79,10 +79,10 @@ public static class Users
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
     private static async Task<Result<UserResponse>> SuspendUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserView>>(new SuspendUserCommand(userId, user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserView>>(new SuspendUserCommand(user.Id(), userId), cancellationToken)).Map(ToResponse);
 
     private static async Task<Result<UserResponse>> ReactivateUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserView>>(new ReactivateUserCommand(userId, user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserView>>(new ReactivateUserCommand(user.Id(), userId), cancellationToken)).Map(ToResponse);
 
     // Renaming sets a state, so it takes no idempotency key (I1).
     private static async Task<Result<UserResponse>> RenameUser(
@@ -91,7 +91,7 @@ public static class Users
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserView>>(new RenameUserCommand(userId, user.Id(), request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserView>>(new RenameUserCommand(user.Id(), userId, request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
 
     // A user's memberships are under row level security, and a transaction declares one tenant (R4), so the deletion runs in steps, each
     // in a transaction of its own. First the check: a tenant always has at least one Owner (K1), so the user's tenants where they are the
@@ -130,7 +130,7 @@ public static class Users
             }
         }
 
-        return await bus.InvokeAsync<Result>(new DeleteUserCommand(userId, user.Id()), cancellationToken);
+        return await bus.InvokeAsync<Result>(new DeleteUserCommand(user.Id(), userId), cancellationToken);
     }
 
     private static UserResponse ToResponse(UserView user) => new(

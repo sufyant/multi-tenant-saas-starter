@@ -19,7 +19,7 @@ namespace ControlPlane.Application.Invitations;
 /// process while the invitation is locked. A new catalog user gets the invited address, the names the person typed (A7) and the
 /// invitation's language; a user the catalog knows needs no names and keeps their language.
 /// </summary>
-public sealed record AcceptInvitationCommand(string Secret, string UserId, IReadOnlyList<string> VerifiedEmails, string? FirstName, string? LastName);
+public sealed record AcceptInvitationCommand(string ActorId, string Secret, IReadOnlyList<string> VerifiedEmails, string? FirstName, string? LastName);
 
 public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitationCommand>
 {
@@ -66,7 +66,7 @@ public static class AcceptInvitationHandler
         // unless the deletion committed after it let them in. The acceptance counts the membership on the user row (R13), so it takes the
         // row's update lock at once: two acceptances of one user in two tenants then run one after the other, where two share locks
         // that both wait to update would deadlock.
-        var existing = await catalog.FindUserForUpdateAsync(command.UserId, cancellationToken);
+        var existing = await catalog.FindUserForUpdateAsync(command.ActorId, cancellationToken);
         if (existing?.DeletedAt is not null)
         {
             return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), null);
@@ -103,7 +103,7 @@ public static class AcceptInvitationHandler
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.UserId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language, now);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language, now);
         var accepted = invitation.Accept(command.VerifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {

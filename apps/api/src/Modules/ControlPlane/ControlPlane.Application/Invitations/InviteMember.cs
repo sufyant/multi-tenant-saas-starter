@@ -15,7 +15,7 @@ namespace ControlPlane.Application.Invitations;
 /// in a language for the invitation's email: without one, the inviter's own. The host's idempotency layer protects the HTTP request (I1);
 /// the command carries no request key, and the server chooses the invitation's id.
 /// </summary>
-public sealed record InviteMemberCommand(string InviterId, string Email, string Role, Language? Language);
+public sealed record InviteMemberCommand(string ActorId, string Email, string Role, Language? Language);
 
 public sealed class InviteMemberValidator : AbstractValidator<InviteMemberCommand>
 {
@@ -47,7 +47,7 @@ public static class InviteMemberHandler
     {
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var inviter = await catalog.FindUserAsync(command.InviterId, cancellationToken)
+        var inviter = await catalog.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
 
         // The door let the inviter in, but a change that held the lock before may have removed them: to a non-member the tenant does not

@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Invitations;
 /// An Owner or an Admin revokes a pending invitation of the active tenant; its link stops working at once (K2), and the identity provider's
 /// invitation behind it is withdrawn after the commit.
 /// </summary>
-public sealed record RevokeInvitationCommand(string RevokerId, Guid InvitationId);
+public sealed record RevokeInvitationCommand(string ActorId, Guid InvitationId);
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row is
 // locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
@@ -26,7 +26,7 @@ public static class RevokeInvitationHandler
     {
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var revoker = await catalog.FindUserAsync(command.RevokerId, cancellationToken)
+        var revoker = await catalog.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
 
         // The door let the revoker in, but a change that held the lock before may have removed them: to a non-member the tenant does not

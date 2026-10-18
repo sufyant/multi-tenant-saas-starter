@@ -7,7 +7,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Users;
 
 /// <summary>A system admin changes a catalog user's names, in the catalog only (A7). It runs without a tenant.</summary>
-public sealed record RenameUserCommand(Guid UserId, string AdminId, string FirstName, string LastName);
+public sealed record RenameUserCommand(string ActorId, Guid UserId, string FirstName, string LastName);
 
 public sealed class RenameUserValidator : AbstractValidator<RenameUserCommand>
 {
@@ -48,10 +48,10 @@ public static class RenameUserHandler
             return (renamed.Map(_ => UserView.Of(user, isSystemAdmin)), null);
         }
 
-        var admin = await users.FindUserIdAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (UserView.Of(user, isSystemAdmin), new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, admin));
+        return (UserView.Of(user, isSystemAdmin), new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, actor));
     }
 }

@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin suspends a tenant, for a reason they write. It runs inside that tenant, which the platform route names, with the tenant
 /// locked, so a suspension and a reactivation run one at a time.
 /// </summary>
-public sealed record SuspendTenantCommand(string AdminId, string Reason);
+public sealed record SuspendTenantCommand(string ActorId, string Reason);
 
 public sealed class SuspendTenantValidator : AbstractValidator<SuspendTenantCommand>
 {
@@ -45,11 +45,11 @@ public static class SuspendTenantHandler
             return (suspended.Map(_ => TenantView.Of(tenant)), null);
         }
 
-        var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name, tenant.SuspensionReason));
+        return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name, tenant.SuspensionReason));
     }
 }

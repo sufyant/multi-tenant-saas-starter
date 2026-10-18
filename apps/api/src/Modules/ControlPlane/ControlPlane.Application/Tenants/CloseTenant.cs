@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin closes an active or a suspended tenant: its members cannot enter, its data stays, and it can be reopened within the
 /// reopen period (K4). It runs inside that tenant, which the platform route names, with the tenant locked.
 /// </summary>
-public sealed record CloseTenantCommand(string AdminId);
+public sealed record CloseTenantCommand(string ActorId);
 
 // The command sets a state (I1): a closed tenant answers as it is, and nothing is announced again. K6: every change to an invitation
 // locks the tenant row first, so under this lock no invitation can be added or accepted: the closure cancels every pending invitation
@@ -47,11 +47,11 @@ public static class CloseTenantHandler
             }
         }
 
-        var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
-        return (TenantView.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);
+        return (TenantView.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name), withdrawals);
     }
 }

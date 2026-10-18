@@ -11,7 +11,7 @@ namespace ControlPlane.Application.Users;
 /// The signed-in user sets their own language and time zone, which follow them to every tenant and device. It runs without a tenant.
 /// The time zone is an IANA name, such as <c>Europe/Dublin</c>, or null for "not set".
 /// </summary>
-public sealed record ChangePreferencesCommand(string UserId, Language Language, string? TimeZone);
+public sealed record ChangePreferencesCommand(string ActorId, Language Language, string? TimeZone);
 
 /// <summary>The user's preferences, as the user keeps them.</summary>
 public sealed record PreferencesView(Language Language, string? TimeZone);
@@ -48,7 +48,7 @@ public static class ChangePreferencesHandler
         CancellationToken cancellationToken)
     {
         // A person becomes a catalog user only through an invitation or as the first system admin, as GetMe answers.
-        if (await users.FindUserForUpdateAsync(command.UserId, cancellationToken) is not { } user)
+        if (await users.FindUserForUpdateAsync(command.ActorId, cancellationToken) is not { } user)
         {
             return (Errors.UserNotFound, null);
         }

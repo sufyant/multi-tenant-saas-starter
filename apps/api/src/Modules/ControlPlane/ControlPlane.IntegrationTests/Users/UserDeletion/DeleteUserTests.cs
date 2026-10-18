@@ -21,7 +21,7 @@ public sealed class DeleteUserTests(Database database)
         await Catalog.AddMemberAsync(database.Services, tenant, user);
         var admin = await Catalog.AddUserAsync(database.Services);
 
-        var (result, deleted, identity) = await DeleteAsync(new DeleteUserCommand(user.Id, admin.ExternalId));
+        var (result, deleted, identity) = await DeleteAsync(new DeleteUserCommand(admin.ExternalId, user.Id));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserHasMemberships);
         deleted.ShouldBeNull();

@@ -18,7 +18,7 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// the HTTP request (section 3). The command carries no request key. The owner's invitation email is in the language given, else in
 /// the system admin's own.
 /// </summary>
-public sealed record CreateTenantCommand(string AdminId, string Name, string Slug, string OwnerEmail, Language? Language);
+public sealed record CreateTenantCommand(string ActorId, string Name, string Slug, string OwnerEmail, Language? Language);
 
 public sealed partial class CreateTenantValidator : AbstractValidator<CreateTenantCommand>
 {
@@ -63,8 +63,8 @@ public static class CreateTenantHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
-            ?? throw new InvalidOperationException("A system admin is always a catalog user.");
+        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
 
         var now = time.GetUtcNow();
         var tenant = Tenant.Create(catalog.TenantId, command.Name, command.Slug, now);
@@ -84,11 +84,11 @@ public static class CreateTenantHandler
             tenant.Value.Id,
             command.OwnerEmail,
             BuiltInRoles.Owner,
-            admin.Id,
+            actor.Id,
             now,
             invitations.Lifetime,
             secret,
-            command.Language ?? admin.Language);
+            command.Language ?? actor.Language);
         catalog.Add(invitation);
 
         // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to change it.
