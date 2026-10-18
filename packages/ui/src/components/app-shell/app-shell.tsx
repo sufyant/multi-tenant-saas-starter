@@ -242,7 +242,6 @@ export function AppShell({
           <button
             type="button"
             onClick={() => setPalette(true)}
-            aria-label={labels.search}
             className="hidden h-control-md w-56 items-center gap-2 rounded-md border border-input bg-card px-3 text-body text-muted-foreground shadow-xs tablet:flex"
           >
             <Icon icon={SearchIcon} />

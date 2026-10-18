@@ -62,11 +62,10 @@ export function UserMenu({
   const themeId = useId();
   return (
     <DropdownMenu defaultOpen={open}>
-      <DropdownMenuTrigger
-        aria-label={label}
-        className="flex size-control-md items-center justify-center rounded-full bg-muted text-small font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:size-control-lg"
-      >
+      <DropdownMenuTrigger className="flex size-control-md items-center justify-center rounded-full bg-muted text-small font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:size-control-lg">
+        {/* WCAG 2.5.3: the visible initials stay in the accessible name: "AY Account". */}
         {initials}
+        <span className="sr-only"> {label}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuGroup>

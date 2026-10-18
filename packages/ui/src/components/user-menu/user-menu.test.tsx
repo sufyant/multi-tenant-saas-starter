@@ -28,7 +28,7 @@ describe("UserMenu", () => {
       <UserMenu {...props} onThemeChange={onThemeChange} onSignOut={vi.fn()} />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Account" }));
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     await userEvent.click(await screen.findByRole("button", { name: "Dark" }));
 
     expect(onThemeChange).toHaveBeenCalledWith("dark");
@@ -40,7 +40,7 @@ describe("UserMenu", () => {
       <UserMenu {...props} onThemeChange={vi.fn()} onSignOut={onSignOut} />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Account" }));
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
     const items = await screen.findAllByRole("menuitem");
     await userEvent.click(items[items.length - 1] as HTMLElement);
 
