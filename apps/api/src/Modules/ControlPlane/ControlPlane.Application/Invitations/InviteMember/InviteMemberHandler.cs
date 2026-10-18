@@ -27,25 +27,13 @@ public static class InviteMemberHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
-            ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var inviter = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A member is always a catalog user.");
-
-        // The door let the inviter in, but a change that held the lock before may have removed them: to a non-member the tenant does not
-        // exist (T3).
-        if (await tenants.FindMembershipAsync(inviter.Id, cancellationToken) is not { } membership)
+        var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
+        if (!start.IsSuccess)
         {
-            return (Errors.TenantNotFound, null, null, null);
+            return (start.Error, null, null, null);
         }
 
-        // The door let the inviter into an active tenant, but a system admin may have suspended or closed it while this request waited for
-        // the lock: under the lock, a tenant that is no longer active is refused (K6).
-        var access = Tenant.CheckMemberAccess(tenant.Status);
-        if (!access.IsSuccess)
-        {
-            return (access.Error, null, null, null);
-        }
+        var (tenant, inviter, membership) = start.Value;
 
         var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
 
