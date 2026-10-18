@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using Api.Routing;
 using ControlPlane.Application.Identity;
 using ControlPlane.Infrastructure;
+using JasperFx.CodeGeneration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -72,6 +73,7 @@ internal sealed class PipelineHost : IAsyncDisposable
             TenancyServiceCollectionExtensions.MessageSchema);
         builder.Services.AddModuleMigrations<ProbeDbContext>(ProbeDbContext.Schema);
         builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
+        builder.Services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
         builder.Services.TrustTestKey();
         builder.Services.AddSingleton<IdempotencyGate>();
         builder.Services.AddSingleton<RetryAttempts>();

@@ -1,4 +1,5 @@
 using ControlPlane.Application.Identity;
+using JasperFx.CodeGeneration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -162,6 +163,7 @@ internal sealed class ApiFactory(
         builder.ConfigureTestServices(services =>
         {
             services.TrustTestKey();
+            services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
             // The services hold the host's own lifetime too, so they dispose it with the host.
             var lifetime = services.Single(service => service.ServiceType == typeof(IHostLifetime)).ImplementationType!;
             services.AddSingleton(lifetime);

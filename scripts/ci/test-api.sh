@@ -2,10 +2,12 @@
 # Runs the API's tests and watches the resident memory of every test process (section 9, rule 11 of
 # apps/api/docs/ARCHITECTURE.md). All of Api.IntegrationTests in one process peaked at 8.9 GB in one run and
 # at 11.0 GB in the next, on a runner with 16 GB. Most of it comes from the hosts that generate their handler
-# code at runtime. So the tests run in two parts, one after the other, until a stopped test host leaves no
-# memory behind. The first part runs every test that is not marked [RuntimeHandlerCode], in every project; the
-# second part runs the marked classes. A process that passes 11 GB is stopped, so a regression fails this step
-# with its reason, not a runner that runs out of memory and leaves no log.
+# code at runtime. So the tests run in two parts, one after the other. The first part runs every test that is
+# not marked [RuntimeHandlerCode], in every project; the second part runs the marked classes. Each part peaks
+# at or under 75 percent of the limit. The second part stays there because a full collection after each
+# runtime compile starts the finalizers that free the compiler's native memory (CollectingAssemblyGenerator).
+# A process that passes 11 GB is stopped, so a regression fails this step with its reason, not a runner that
+# runs out of memory and leaves no log.
 #
 # Inputs: none; run it from the repository root. Exit codes: the exit code of the first part of dotnet test
 # that fails; 1 when a test process passed the limit. It prints the peak resident memory of each test process.
