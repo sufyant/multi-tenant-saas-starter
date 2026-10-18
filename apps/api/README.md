@@ -6,6 +6,8 @@ The API of the multi-tenant SaaS starter template: a .NET modular monolith on Po
 - [docs/configuration.md](docs/configuration.md): every setting, whether it is required, and its default.
 - [docs/setup.md](docs/setup.md): what the API needs from its database and identity providers.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the architectural rules. They are authoritative.
+- [docs/api-catalog.md](docs/api-catalog.md): every endpoint, who may call it, the audit entry it writes and the notification it sends.
+- [docs/licenses.md](docs/licenses.md): every package and its license.
 
 Build and test from this folder:
 

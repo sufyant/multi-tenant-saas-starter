@@ -6,7 +6,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
 
 - `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`). It is authoritative. If this file and it disagree, it wins.
 - Read the section of `ARCHITECTURE.md` for the area before you change anything in it. Cite a rule by its id; do not copy rules into code comments.
-- Other documents: `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
+- Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
 
