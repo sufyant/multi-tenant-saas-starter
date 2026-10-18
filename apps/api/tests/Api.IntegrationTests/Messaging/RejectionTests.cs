@@ -1,8 +1,10 @@
 using System.Net.Http.Json;
-using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Invitations.AcceptInvitation;
 using ControlPlane.Application.Members;
+using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Tenants;
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Tenants.CreateTenant;
+using ControlPlane.Application.Tenants.ListMyTenants;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SharedKernel;

@@ -1,7 +1,6 @@
-using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Members;
-using ControlPlane.Application.Tenants;
-using ControlPlane.Domain.Invitations;
+using ControlPlane.Application.Invitations.ListInvitations;
+using ControlPlane.Application.Members.ListMembers;
+using ControlPlane.Application.Tenants.ListTenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;

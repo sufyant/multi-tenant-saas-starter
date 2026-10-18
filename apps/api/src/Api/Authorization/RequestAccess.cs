@@ -1,4 +1,4 @@
-using ControlPlane.Contracts;
+using ControlPlane.Contracts.Tenants;
 using SharedKernel;
 
 namespace Api.Authorization;

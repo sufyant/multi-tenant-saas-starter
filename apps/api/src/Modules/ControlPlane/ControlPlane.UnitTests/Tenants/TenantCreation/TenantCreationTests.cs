@@ -1,7 +1,11 @@
-using ControlPlane.Application.Invitations.SignUp;
+using ControlPlane.Application.Invitations.CancelInvitation;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Tenants.CancelTenant;
+using ControlPlane.Application.Tenants.RaiseTenantCreationAlarm;
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
-using Notifications.Contracts;
+using ControlPlane.Contracts.Invitations;
+using Notifications.Contracts.Invitations;
 using SharedKernel;
 using Wolverine;
 

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Identity;
 
 namespace ControlPlane.Infrastructure.Clerk;
 

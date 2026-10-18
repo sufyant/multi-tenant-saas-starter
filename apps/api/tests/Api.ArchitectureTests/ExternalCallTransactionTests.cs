@@ -1,10 +1,12 @@
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Application.Ports;
-using ControlPlane.Application.Users.UserDeletion;
-using ControlPlane.Contracts;
+using ControlPlane.Application.Identity;
+using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.WithdrawSignUp;
+using ControlPlane.Application.Users.DeleteIdentityAccount;
+using ControlPlane.Contracts.Invitations;
 using JasperFx;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Application.Ports;
+using Notifications.Application.Email;
 using Wolverine.Runtime.Handlers;
 
 namespace Api.ArchitectureTests;

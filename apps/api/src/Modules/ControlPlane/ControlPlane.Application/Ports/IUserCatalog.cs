@@ -1,5 +1,5 @@
 using ControlPlane.Application.Users;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Users.ListUsers;
 using ControlPlane.Domain.Users;
 using SharedKernel;
 

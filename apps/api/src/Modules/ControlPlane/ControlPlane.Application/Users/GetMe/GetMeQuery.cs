@@ -1,0 +1,7 @@
+namespace ControlPlane.Application.Users.GetMe;
+
+/// <summary>
+/// The signed-in user, found by the identity provider's id. A person becomes a catalog user only through an invitation or as the first
+/// system admin, so a person the catalog does not know is not found. It runs without a tenant.
+/// </summary>
+public sealed record GetMeQuery(string ActorId);

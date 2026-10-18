@@ -1,7 +1,8 @@
 using System.Text.Json;
-using Audit.Application.Ports;
-using Audit.Application.Tenants;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Tenants.RecordTenantReactivated;
+using Audit.Application.Tenants.RecordTenantSuspended;
+using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Tenants;

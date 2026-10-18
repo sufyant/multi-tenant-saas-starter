@@ -1,4 +1,4 @@
-using Audit.Domain;
+using Audit.Domain.AuditEntries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tenancy;

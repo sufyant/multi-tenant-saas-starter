@@ -1,4 +1,4 @@
-using ControlPlane.Application.IdentityProvider;
+using ControlPlane.Application.Identity;
 
 namespace ControlPlane.Infrastructure.Clerk;
 

@@ -1,6 +1,6 @@
-using Audit.Application.Members;
-using Audit.Application.Ports;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Members.RecordMemberJoined;
+using ControlPlane.Contracts.Members;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Members;

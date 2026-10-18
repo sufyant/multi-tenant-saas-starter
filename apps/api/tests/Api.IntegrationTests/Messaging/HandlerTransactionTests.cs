@@ -1,8 +1,8 @@
 using System.Reflection;
-using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Application.Users;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Invitations.AcceptInvitation;
+using ControlPlane.Application.Invitations.RecordSignUp;
+using ControlPlane.Application.Users.DeleteUser;
+using ControlPlane.Application.Users.RenameUser;
 using JasperFx;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

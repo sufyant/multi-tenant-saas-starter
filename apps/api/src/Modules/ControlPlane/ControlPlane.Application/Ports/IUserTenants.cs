@@ -1,4 +1,4 @@
-using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.ListMyTenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;

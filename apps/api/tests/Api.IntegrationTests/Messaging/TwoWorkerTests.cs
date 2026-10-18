@@ -1,6 +1,6 @@
 using System.Net;
-using ControlPlane.Contracts;
-using Notifications.Application.Invitations.InvitationEmail;
+using ControlPlane.Contracts.Invitations;
+using Notifications.Application.Invitations.SendInvitationEmail;
 
 namespace Api.IntegrationTests.Messaging;
 

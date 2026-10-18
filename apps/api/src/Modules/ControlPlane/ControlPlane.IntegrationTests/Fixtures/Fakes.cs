@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Identity;
 
 namespace ControlPlane.IntegrationTests.Fixtures;
 

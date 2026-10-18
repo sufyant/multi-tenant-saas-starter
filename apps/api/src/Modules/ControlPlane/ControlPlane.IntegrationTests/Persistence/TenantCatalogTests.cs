@@ -1,6 +1,6 @@
 using ControlPlane.Application.Ports;
-using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

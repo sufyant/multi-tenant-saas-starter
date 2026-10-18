@@ -4,8 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Notifications.Application;
-using Notifications.Application.Ports;
+using Notifications.Application.Email;
 using Notifications.Infrastructure;
 
 namespace Notifications.UnitTests.Email;

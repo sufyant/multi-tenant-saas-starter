@@ -1,6 +1,6 @@
 using ControlPlane.Domain;
-using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
 namespace ControlPlane.UnitTests.Invitations;

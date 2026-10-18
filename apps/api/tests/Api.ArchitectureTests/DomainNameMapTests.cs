@@ -1,8 +1,8 @@
 using System.Reflection;
-using Audit.Api.Tenant;
+using Audit.Api.Tenant.AuditLogs;
 using ControlPlane.Api;
-using ControlPlane.Api.Platform;
-using ControlPlane.Api.Tenant;
+using ControlPlane.Api.Platform.Tenants;
+using ControlPlane.Api.Platform.Users;
 
 namespace Api.ArchitectureTests;
 
@@ -11,7 +11,7 @@ namespace Api.ArchitectureTests;
 // ControlPlane's ResponseStatus are internal to their modules, so this system-wide test reads them by reflection, as RoleNameTests does.
 public class DomainNameMapTests
 {
-    private static readonly Type ResponseStatus = typeof(ControlPlaneModule).Assembly.GetType("ControlPlane.Api.ResponseStatus", throwOnError: true)!;
+    private static readonly Type ResponseStatus = typeof(ControlPlaneModule).Assembly.GetType("ControlPlane.Api.Statuses.ResponseStatus", throwOnError: true)!;
 
     private static readonly string[] TenantStatusNames = NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.TenantStatus");
 
@@ -20,7 +20,7 @@ public class DomainNameMapTests
     // A pending invitation and an Owner invitation both answer the one invitation state (N7).
     public static TheoryData<string> InvitationStates =>
     [
-        .. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Invitations.InvitationState"),
+        .. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.InvitationState"),
         .. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.OwnerInvitationState"),
     ];
 
@@ -30,9 +30,9 @@ public class DomainNameMapTests
 
     public static TheoryData<UserResponseStatus> UserFilters => [.. Enum.GetValues<UserResponseStatus>()];
 
-    public static TheoryData<string> AuditActorKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditActorKind")];
+    public static TheoryData<string> AuditActorKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditActorKind")];
 
-    public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditTargetKind")];
+    public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditTargetKind")];
 
     [Theory]
     [MemberData(nameof(TenantStatuses))]

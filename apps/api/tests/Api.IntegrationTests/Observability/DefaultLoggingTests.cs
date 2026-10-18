@@ -1,4 +1,4 @@
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Tenants.ActivateTenant;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;

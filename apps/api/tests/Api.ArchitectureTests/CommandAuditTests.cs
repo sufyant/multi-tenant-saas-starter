@@ -1,6 +1,6 @@
 using System.Reflection;
-using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Tenants.CreateTenant;
+using ControlPlane.Application.Users.DeleteUser;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.DependencyInjection;

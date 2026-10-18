@@ -1,24 +1,21 @@
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Contracts;
-using Notifications.Contracts;
+using ControlPlane.Application.Invitations.CancelInvitation;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Tenants.CancelTenant;
+using ControlPlane.Application.Tenants.RaiseTenantCreationAlarm;
+using ControlPlane.Contracts.Invitations;
+using Notifications.Contracts.Invitations;
 using SharedKernel;
 using Wolverine;
 using Wolverine.Persistence.Sagas;
 
 namespace ControlPlane.Application.Tenants.TenantCreation;
 
-public enum TenantCreationSagaState
-{
-    Activating,
-    SendingInvitation,
-    Completed,
-    Cancelling,
-    Cancelled,
-    NeedsAttention,
-}
-
-/// <summary>How long the tenant creation waits for the activation, the invitation email and the cancellation (S10).</summary>
-public sealed record TenantCreationTimeouts(TimeSpan Activation, TimeSpan InvitationEmail, TimeSpan Cancellation);
+// The messages of the saga inside ControlPlane carry the new tenant, which is also the saga's id; the envelope carries the same tenant,
+// so every step runs in it. The events that leave the module are in ControlPlane.Contracts and Notifications.Contracts. Each step and
+// compensation (ActivateTenantHandler, CancelTenantHandler, CancelInvitationHandler) runs in the new tenant, may run twice (S7), and
+// returns its result as a message. A step that fails for good goes to the dead letter queue, and the saga hears of it through the fault
+// Wolverine publishes.
 
 /// <summary>
 /// The tenant creation process of section 6, orchestrated in one place (S3, S4). Its id is the tenant's id, and its record belongs

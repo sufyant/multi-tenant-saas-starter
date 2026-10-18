@@ -1,7 +1,6 @@
-using ControlPlane.Contracts;
-using Notifications.Application;
-using Notifications.Application.Invitations.InvitationEmail;
-using Notifications.Application.Ports;
+using ControlPlane.Contracts.Invitations;
+using Notifications.Application.Email;
+using Notifications.Application.Invitations.SendMemberInvitationEmail;
 using SharedKernel;
 
 namespace Notifications.UnitTests.Invitations.InvitationEmail;

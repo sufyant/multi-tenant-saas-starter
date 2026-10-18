@@ -1,6 +1,6 @@
-using Audit.Application.Ports;
-using Audit.Application.Tenants;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Tenants.RecordTenantCreated;
+using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 

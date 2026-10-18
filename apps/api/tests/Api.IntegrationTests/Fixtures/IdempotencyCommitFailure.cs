@@ -1,4 +1,4 @@
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Infrastructure.Persistence;
 using JasperFx;
 using JasperFx.CodeGeneration;

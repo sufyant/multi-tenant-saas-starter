@@ -1,6 +1,5 @@
 using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;

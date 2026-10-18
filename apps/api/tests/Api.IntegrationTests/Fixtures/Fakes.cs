@@ -1,8 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using ControlPlane.Application.Ports;
-using Notifications.Application;
-using Notifications.Application.Ports;
+using ControlPlane.Application.Identity;
+using Notifications.Application.Email;
 
 namespace Api.IntegrationTests.Fixtures;
 

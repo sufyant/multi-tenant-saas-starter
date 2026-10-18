@@ -1,10 +1,13 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.RecordSignUp;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Tenants.CreateTenant;
+using ControlPlane.Contracts.Invitations;
+using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Contracts;
+using Notifications.Contracts.Invitations;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using Tenancy;

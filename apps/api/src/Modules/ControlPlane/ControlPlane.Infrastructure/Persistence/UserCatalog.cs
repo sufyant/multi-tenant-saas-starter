@@ -1,10 +1,11 @@
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Users;
-using ControlPlane.Application.Users.UserDeletion;
+using ControlPlane.Application.Users.ListUsers;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 

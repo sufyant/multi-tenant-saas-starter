@@ -1,11 +1,11 @@
-using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Members;
+using ControlPlane.Application.Invitations.ListInvitations;
+using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Ports;
-using ControlPlane.Application.Tenants;
-using ControlPlane.Domain.Invitations;
+using ControlPlane.Application.Tenants.ListTenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 

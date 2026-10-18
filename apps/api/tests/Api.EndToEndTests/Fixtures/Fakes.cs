@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
-using ControlPlane.Application.Ports;
-using Notifications.Application;
-using Notifications.Application.Ports;
+using ControlPlane.Application.Identity;
+using Notifications.Application.Email;
 
 namespace Api.EndToEndTests.Fixtures;
 

@@ -8,7 +8,7 @@
     "/v1/platform/tenants": {
       "post": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "CreateTenant",
         "parameters": [
@@ -210,7 +210,7 @@
       },
       "get": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "ListTenants",
         "parameters": [
@@ -369,7 +369,7 @@
     "/v1/platform/tenants/{tenantId}": {
       "get": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "GetTenant",
         "parameters": [
@@ -487,7 +487,7 @@
       },
       "patch": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "RenameTenant",
         "parameters": [
@@ -617,7 +617,7 @@
     "/v1/platform/tenants/{tenantId}/suspend": {
       "post": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "SuspendTenant",
         "parameters": [
@@ -747,7 +747,7 @@
     "/v1/platform/tenants/{tenantId}/reactivate": {
       "post": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "ReactivateTenant",
         "parameters": [
@@ -867,7 +867,7 @@
     "/v1/platform/tenants/{tenantId}/close": {
       "post": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "CloseTenant",
         "parameters": [
@@ -987,7 +987,7 @@
     "/v1/platform/tenants/{tenantId}/reopen": {
       "post": {
         "tags": [
-          "Tenants"
+          "TenantEndpoints"
         ],
         "operationId": "ReopenTenant",
         "parameters": [
@@ -1107,7 +1107,7 @@
     "/v1/platform/tenants/{tenantId}/invitations": {
       "post": {
         "tags": [
-          "Tenants"
+          "PlatformInvitationEndpoints"
         ],
         "description": "Answers 201 with the invitation and without Location: the API has no GET for one invitation, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
         "operationId": "InviteOwner",
@@ -1313,7 +1313,7 @@
     "/v1/platform/users": {
       "get": {
         "tags": [
-          "Users"
+          "UserEndpoints"
         ],
         "operationId": "ListUsers",
         "parameters": [
@@ -1472,7 +1472,7 @@
     "/v1/platform/users/{userId}": {
       "get": {
         "tags": [
-          "Users"
+          "UserEndpoints"
         ],
         "operationId": "GetUser",
         "parameters": [
@@ -1590,7 +1590,7 @@
       },
       "patch": {
         "tags": [
-          "Users"
+          "UserEndpoints"
         ],
         "operationId": "RenameUser",
         "parameters": [
@@ -1718,7 +1718,7 @@
       },
       "delete": {
         "tags": [
-          "Users"
+          "UserEndpoints"
         ],
         "operationId": "DeleteUser",
         "parameters": [
@@ -1831,7 +1831,7 @@
     "/v1/platform/users/{userId}/suspend": {
       "post": {
         "tags": [
-          "Users"
+          "UserEndpoints"
         ],
         "operationId": "SuspendUser",
         "parameters": [
@@ -1951,7 +1951,7 @@
     "/v1/platform/users/{userId}/reactivate": {
       "post": {
         "tags": [
-          "Users"
+          "UserEndpoints"
         ],
         "operationId": "ReactivateUser",
         "parameters": [
@@ -2071,7 +2071,7 @@
     "/v1/platform/audit-log": {
       "get": {
         "tags": [
-          "AuditLog"
+          "PlatformAuditLogEndpoints"
         ],
         "operationId": "ListPlatformAuditEntries",
         "parameters": [
@@ -2207,7 +2207,7 @@
     "/v1/tenants/{tenantId}": {
       "get": {
         "tags": [
-          "Profile"
+          "TenantProfileEndpoints"
         ],
         "operationId": "GetMyTenant",
         "parameters": [
@@ -2327,7 +2327,7 @@
     "/v1/tenants/{tenantId}/members": {
       "get": {
         "tags": [
-          "Members"
+          "MemberEndpoints"
         ],
         "operationId": "ListMembers",
         "parameters": [
@@ -2497,7 +2497,7 @@
     "/v1/tenants/{tenantId}/members/{userId}": {
       "patch": {
         "tags": [
-          "Members"
+          "MemberEndpoints"
         ],
         "operationId": "ChangeMemberRole",
         "parameters": [
@@ -2634,7 +2634,7 @@
       },
       "delete": {
         "tags": [
-          "Members"
+          "MemberEndpoints"
         ],
         "operationId": "RemoveMember",
         "parameters": [
@@ -2756,7 +2756,7 @@
     "/v1/tenants/{tenantId}/invitations": {
       "post": {
         "tags": [
-          "Invitations"
+          "InvitationEndpoints"
         ],
         "description": "Answers 201 with the invitation and without Location: the API has no GET for one invitation, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
         "operationId": "InviteMember",
@@ -2960,7 +2960,7 @@
       },
       "get": {
         "tags": [
-          "Invitations"
+          "InvitationEndpoints"
         ],
         "operationId": "ListInvitations",
         "parameters": [
@@ -3128,7 +3128,7 @@
     "/v1/tenants/{tenantId}/invitations/{invitationId}": {
       "delete": {
         "tags": [
-          "Invitations"
+          "InvitationEndpoints"
         ],
         "operationId": "RevokeInvitation",
         "parameters": [
@@ -3250,7 +3250,7 @@
     "/v1/tenants/{tenantId}/audit-log": {
       "get": {
         "tags": [
-          "AuditLog"
+          "AuditLogEndpoints"
         ],
         "operationId": "ListAuditEntries",
         "parameters": [
@@ -3387,7 +3387,7 @@
     "/v1/me": {
       "get": {
         "tags": [
-          "MyProfile"
+          "MyProfileEndpoints"
         ],
         "operationId": "GetMe",
         "responses": {
@@ -3496,7 +3496,7 @@
     "/v1/me/preferences": {
       "patch": {
         "tags": [
-          "MyProfile"
+          "MyProfileEndpoints"
         ],
         "operationId": "ChangePreferences",
         "requestBody": {
@@ -3615,7 +3615,7 @@
     "/v1/me/tenants": {
       "get": {
         "tags": [
-          "MyTenants"
+          "MyTenantEndpoints"
         ],
         "operationId": "ListMyTenants",
         "parameters": [
@@ -3765,7 +3765,7 @@
     "/v1/me/invitations/accept": {
       "post": {
         "tags": [
-          "Invitations"
+          "MyInvitationEndpoints"
         ],
         "operationId": "AcceptInvitation",
         "requestBody": {
@@ -3884,7 +3884,7 @@
     "/v1/me/invitations/preview": {
       "post": {
         "tags": [
-          "Invitations"
+          "MyInvitationEndpoints"
         ],
         "operationId": "GetInvitationPreview",
         "requestBody": {
@@ -5534,28 +5534,37 @@
   ],
   "tags": [
     {
-      "name": "Tenants"
+      "name": "TenantEndpoints"
     },
     {
-      "name": "Users"
+      "name": "PlatformInvitationEndpoints"
     },
     {
-      "name": "AuditLog"
+      "name": "UserEndpoints"
     },
     {
-      "name": "Profile"
+      "name": "PlatformAuditLogEndpoints"
     },
     {
-      "name": "Members"
+      "name": "TenantProfileEndpoints"
     },
     {
-      "name": "Invitations"
+      "name": "MemberEndpoints"
     },
     {
-      "name": "MyProfile"
+      "name": "InvitationEndpoints"
     },
     {
-      "name": "MyTenants"
+      "name": "AuditLogEndpoints"
+    },
+    {
+      "name": "MyProfileEndpoints"
+    },
+    {
+      "name": "MyTenantEndpoints"
+    },
+    {
+      "name": "MyInvitationEndpoints"
     }
   ]
 }

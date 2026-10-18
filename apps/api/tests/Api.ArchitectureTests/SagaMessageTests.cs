@@ -1,6 +1,6 @@
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Tenants.ActivateTenant;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Contracts;
+using Notifications.Contracts.Invitations;
 using Wolverine;
 using Wolverine.Runtime.Handlers;
 

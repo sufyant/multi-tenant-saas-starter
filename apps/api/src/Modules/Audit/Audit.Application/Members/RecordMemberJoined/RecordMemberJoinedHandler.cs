@@ -1,0 +1,17 @@
+using Audit.Application.AuditLogs;
+using Audit.Domain;
+using Audit.Domain.AuditEntries;
+using ControlPlane.Contracts.Members;
+
+namespace Audit.Application.Members.RecordMemberJoined;
+
+// The audit entry of a user who accepted an invitation, in the tenant's own log, under that tenant. The new member acted, and is the
+// target too.
+public static class RecordMemberJoinedHandler
+{
+    public static Task HandleAsync(MemberJoinedEvent joined, IAuditLog log, CancellationToken cancellationToken) =>
+        log.RecordAsync(
+            null,
+            new TenantAuditEntry(joined.EventId, joined.OccurredAt, AuditActor.User(joined.UserId), AuditOperations.MemberJoined, AuditTarget.User(joined.UserId)),
+            cancellationToken);
+}

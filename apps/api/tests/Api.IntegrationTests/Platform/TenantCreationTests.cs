@@ -1,14 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.SignUp;
-using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Contracts;
+using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Contracts.Invitations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Notifications.Contracts.Invitations;
 using Npgsql;
 using SharedKernel;
 using Tenancy;
@@ -223,7 +224,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
             VALUES ('{tenantId}', 'Activating', '{invitationId}', interval '2 hours', interval '10 minutes', 0)
             """);
         var now = DateTimeOffset.UtcNow;
-        var emailSent = new Notifications.Contracts.SendInvitationEmailReply(Guid.CreateVersion7(), now, tenantId, invitationId);
+        var emailSent = new Notifications.Contracts.Invitations.SendInvitationEmailReply(Guid.CreateVersion7(), now, tenantId, invitationId);
         var activated = new ActivateTenantReply(tenantId);
         await using var hold = await HoldSagaAsync(tenantId);
 

@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
-using Notifications.Application.Ports;
-using Notifications.Application;
+using Notifications.Application.Email;
 
 namespace Notifications.Infrastructure.Email;
 

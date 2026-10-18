@@ -1,6 +1,10 @@
-using Audit.Application.Ports;
-using Audit.Application.Users;
-using ControlPlane.Contracts;
+using Audit.Application.AuditLogs;
+using Audit.Application.Users.RecordUserDeleted;
+using Audit.Application.Users.RecordUserPreferencesChanged;
+using Audit.Application.Users.RecordUserReactivated;
+using Audit.Application.Users.RecordUserRenamed;
+using Audit.Application.Users.RecordUserSuspended;
+using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Users;

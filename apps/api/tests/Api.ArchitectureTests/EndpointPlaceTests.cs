@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.ArchitectureTests;
 
-// N5 and N7: an endpoint of a module sits in the folder of its audience, the same word as its route group: Platform for /v1/platform,
-// Me for /v1/me and Tenant for /v1/tenants/{tenantId}. Read from the endpoints of the composed application: the method that
+// N5, N7 and N8: an endpoint of a module sits in the folder of its audience, the same word as its route group: Platform for
+// /v1/platform, Me for /v1/me and Tenant for /v1/tenants/{tenantId}; below it, in the folder of its resource. Read from the endpoints of the composed application: the method that
 // handles each one, the type that declares it, and the file of that type in the module's Api project.
 public sealed class EndpointPlaceTests : IAsyncLifetime
 {
@@ -60,8 +60,10 @@ public sealed class EndpointPlaceTests : IAsyncLifetime
             return false;
         }
 
+        // N8: below the audience folder, the folder of the resource: Platform/Tenants/TenantEndpoints.cs.
         var project = type.Assembly.GetName().Name!;
-        return type.Namespace == $"{project}.{audience}"
-            && File.Exists(Path.Combine(Solution.FolderOf(project), audience, $"{type.Name}.cs"));
+        var folders = type.Namespace?.Split('.')[project.Split('.').Length..] ?? [];
+        return folders is [var folder, var resource] && folder == audience
+            && File.Exists(Path.Combine(Solution.FolderOf(project), audience, resource, $"{type.Name}.cs"));
     }
 }
