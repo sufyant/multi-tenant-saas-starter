@@ -68,7 +68,7 @@ public sealed class TenantCreationTests(Database database)
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
 
         var secret = Handlers.SecretOf(Handlers.CodeOf(started.Activate.ShouldNotBeNull().Message.AcceptLink));
-        (await ScalarAsync<string>($"SELECT token_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
+        (await ScalarAsync<string>($"SELECT secret_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
     }
 
     // The steps it starts carry the saga's id on their envelopes, so the fault of one that fails for good finds the saga.

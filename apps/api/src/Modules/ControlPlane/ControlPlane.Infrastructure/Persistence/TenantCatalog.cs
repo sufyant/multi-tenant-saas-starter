@@ -255,7 +255,7 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     async Task<Invitation?> ITenantCatalog.FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Invitations
-            .FromSql($"SELECT * FROM control_plane.invitations WHERE token_hash = {secretHash} FOR UPDATE")
+            .FromSql($"SELECT * FROM control_plane.invitations WHERE secret_hash = {secretHash} FOR UPDATE")
             .ToListAsync(cancellationToken);
 
         return found.SingleOrDefault();
