@@ -497,6 +497,27 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         predicates.ShouldBeEmpty();
     }
 
+    // N7, N8: an operation has one tag, the folder of its endpoints below the module's Api project, {Audience}/{Resource}, so the API
+    // reference and a generated client group the operations as the folders do. The document lists each tag it uses.
+    [Fact]
+    public void BuildOpenApiDocument_EveryOperation_HasOneTagThatIsAnAudienceAndResourceFolder()
+    {
+        var tags = Operations().Select(operation => (Operation: $"{operation.Method} {operation.Path}", Tags: TagsOf(operation.Value))).ToList();
+        var folders = Solution.LayerOfEveryModule("Api")
+            .SelectMany(project => Directory.EnumerateDirectories(Solution.FolderOf(project)).SelectMany(Directory.EnumerateDirectories)
+                .Select(folder => Path.GetRelativePath(Solution.FolderOf(project), folder).Replace(Path.DirectorySeparatorChar, '/')))
+            .ToHashSet();
+        var listed = _document.GetProperty("tags").EnumerateArray().Select(tag => tag.GetProperty("name").GetString()!);
+
+        var notOne = tags.Where(operation => operation.Tags.Count != 1).Select(operation => operation.Operation);
+        var noFolder = tags.SelectMany(operation => operation.Tags).Where(tag => !folders.Contains(tag)).Distinct();
+
+        tags.ShouldNotBeEmpty();
+        notOne.ShouldBeEmpty();
+        noFolder.ShouldBeEmpty();
+        listed.ShouldBe(tags.SelectMany(operation => operation.Tags).Distinct(), ignoreOrder: true);
+    }
+
     // Decision 1 of audit fix 09 and N8: the document finds a command's validator by the request that carries the command, XRequest for
     // XCommand. A validator whose request does not exist describes nothing in the document.
     [Fact]
@@ -782,6 +803,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         schema.TryGetProperty("$ref", out var reference)
             ? _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.GetString()!.Split('/')[^1])
             : schema;
+
+    private static List<string> TagsOf(JsonElement operation) =>
+        operation.TryGetProperty("tags", out var tags) ? [.. tags.EnumerateArray().Select(tag => tag.GetString()!)] : [];
 
     private IEnumerable<(string Method, string Path, JsonElement Value)> Operations() =>
         _document.GetProperty("paths").EnumerateObject()

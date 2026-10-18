@@ -50,6 +50,7 @@ internal static partial class OpenApiContract
                 options.CreateSchemaReferenceId = NameSchema;
                 options
                     .AddOperationTransformer(NameOperation)
+                    .AddOperationTransformer(TagOperation)
                     .AddOperationTransformer(DeclarePathParameters)
                     .AddOperationTransformer(DescribeListParameters)
                     .AddOperationTransformer(DescribeListLimits)
@@ -57,6 +58,7 @@ internal static partial class OpenApiContract
                     .AddOperationTransformer(DescribeResponseHeaders)
                     .AddSchemaTransformer(DescribeEnumValues)
                     .AddSchemaTransformer(DescribeRequestRules)
+                    .AddDocumentTransformer(ListTags)
                     .AddDocumentTransformer(RequireBearerToken)
                     .AddDocumentTransformer(DescribeProblemDetails)
                     .AddDocumentTransformer(DescribePermissions)
@@ -73,6 +75,47 @@ internal static partial class OpenApiContract
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         operation.OperationId ??= context.Description.ActionDescriptor.EndpointMetadata.OfType<MethodInfo>().FirstOrDefault()?.Name;
+        return Task.CompletedTask;
+    }
+
+    // N7, N8: an operation's one tag is the folder of its endpoints below the module's Api project, its audience and its resource
+    // (Platform/Tenants), so the API reference and a generated client group the operations as the folders do, never by a class name.
+    private static Task TagOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (TagOf(context.Description.ActionDescriptor.EndpointMetadata.OfType<MethodInfo>().FirstOrDefault()?.DeclaringType) is { } tag)
+        {
+            operation.Tags = new HashSet<OpenApiTagReference> { new(tag, context.Document) };
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // The namespace {Module}.Api.{Audience}.{Resource} of an endpoint class, which follows its folder (IDE0130), gives
+    // {Audience}/{Resource}. A lambda's method sits in a closure type inside the class.
+    private static string? TagOf(Type? type)
+    {
+        while (type?.DeclaringType is { } outer)
+        {
+            type = outer;
+        }
+
+        var project = type?.Assembly.GetName().Name;
+        return type?.Namespace is { } name && project is not null && name.StartsWith($"{project}.", StringComparison.Ordinal)
+            ? name[(project.Length + 1)..].Replace('.', '/')
+            : null;
+    }
+
+    // The document lists each tag its operations use once, in ordinal order, in place of the class names the generator collected.
+    private static Task ListTags(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        var used = document.Paths.Values
+            .SelectMany(path => path.Operations ?? [])
+            .SelectMany(operation => operation.Value.Tags ?? new HashSet<OpenApiTagReference>())
+            .Select(tag => tag.Name)
+            .OfType<string>()
+            .Distinct()
+            .Order(StringComparer.Ordinal);
+        document.Tags = new HashSet<OpenApiTag>(used.Select(name => new OpenApiTag { Name = name }));
         return Task.CompletedTask;
     }
 
