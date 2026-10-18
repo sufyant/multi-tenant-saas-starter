@@ -19,7 +19,7 @@ using SharedKernel;
 namespace Api.ArchitectureTests;
 
 // N11: the committed OpenAPI document is the contract every client is generated from. Each operation has its endpoint's name as its
-// id, each status in a response lists exactly the values of its own enum (N7), each path parameter is declared, and each error
+// id, each enum in a response lists exactly the values of its own enum (N7), each path parameter is declared, and each error
 // answer is the one Problem Details schema, whose code is the one enum of error codes (K5). OpenApiDocumentFileTests checks that the committed file is the one the
 // build writes.
 public sealed partial class OpenApiContractTests : IAsyncLifetime
@@ -32,6 +32,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string InvitationStateSchema = "#/components/schemas/InvitationResponseState";
     private const string RoleSchema = "#/components/schemas/RoleResponse";
     private const string MemberRoleSchema = "#/components/schemas/MemberRole";
+
+    // The enums the host adds to fields that are strings in C# (N11): the permissions and the audit operations.
+    private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema];
 
     private readonly ComposedApplication _application = new();
     private JsonElement _document;
@@ -66,18 +69,26 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         ids.Where(id => !PascalCaseName().IsMatch(id)).ShouldBeEmpty();
     }
 
-    // N7: the Status of each response is its own enum, with only the values that response can carry.
+    // N7: every enum of a response lists exactly the values of its C# enum: a status, a state, a kind, a role or a language (A18). The
+    // host adds two enums to fields that stay strings in C#, so the C# types cannot show them: their own tests read them.
     [Fact]
-    public void BuildOpenApiDocument_StatusOfAResponse_ListsExactlyTheValuesOfItsEnum()
+    public void BuildOpenApiDocument_EveryEnumOfAResponse_ListsExactlyTheValuesOfItsEnum()
     {
-        var expected = typeof(ControlPlaneModule).Assembly.GetTypes()
-            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Status") is not null)
-            .Select(type => $"{type.Name}: {JsonValuesOf(type.GetProperty("Status")!.PropertyType)}");
+        var expected = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
+            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal))
+            .SelectMany(type => type.GetProperties()
+                .Where(property => EnumTypeOf(property.PropertyType) is not null)
+                .Select(property => $"{type.Name}.{JsonNamingPolicy.CamelCase.ConvertName(property.Name)}: {JsonValuesOf(EnumTypeOf(property.PropertyType)!)}"));
 
         var documented = Schemas()
-            .Where(schema => schema.Name.EndsWith("Response", StringComparison.Ordinal))
-            .Where(schema => schema.Value.GetProperty("properties").TryGetProperty("status", out _))
-            .Select(schema => $"{schema.Name}: {EnumOf(Resolve(schema.Value.GetProperty("properties").GetProperty("status")))}");
+            .Where(schema => schema.Name.EndsWith("Response", StringComparison.Ordinal) && schema.Value.TryGetProperty("properties", out _))
+            .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
+                .SelectMany(property => ReferencesIn(property.Value)
+                    .Where(reference => !EnumsOfStrings.Contains(reference))
+                    .Select(SchemaAt)
+                    .Where(found => found.TryGetProperty("enum", out _))
+                    .Select(found => $"{schema.Name}.{property.Name}: {EnumOf(found)}")));
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
@@ -614,6 +625,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     private static string EnumOf(JsonElement schema) =>
         schema.TryGetProperty("enum", out var values) ? string.Join(", ", values.EnumerateArray().Select(value => value.GetString())) : "<no enum>";
+
+    private static Type? EnumTypeOf(Type type) => (Nullable.GetUnderlyingType(type) ?? type) is { IsEnum: true } found ? found : null;
 
     // The values an enum has in JSON, from SharedKernel's one source of them (B10).
     private static string JsonValuesOf(Type type) =>
