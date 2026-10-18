@@ -43,7 +43,7 @@ The first template runs one flow from start to end: tenant creation.
 | `GET /v1/platform/tenants` and `GET /v1/platform/users` | The platform app lists every tenant and every user. Each tenant shows its members and Owners counted, its first Owner, and, while it has no Owner, its Owner invitation, from the tenant's summary (R12; catalog, K10). Each user shows how many tenants they are a member of, from the user's count (R13; catalog, K11) |
 | `GET /v1/platform/users/{userId}` | The platform's user detail: the user, who suspended them, and every membership, with whether the user is the tenant's last Owner (catalog, step 20l; section 6, "What the screens read") |
 | `POST /v1/me/invitations/preview` | The accept screen names the tenant, the inviter and the role before the person accepts, and says when the link is expired, used or cancelled (api-catalog, K12; section 6, "What the screens read") |
-| `POST /v1/platform/tenants/{tenantId}/owner-invitation` | A tenant whose first Owner never accepted has no Owner; the platform invites one (api-catalog, K9; section 6, "Owner invitation") |
+| `POST /v1/platform/tenants/{tenantId}/invitations` | A tenant whose first Owner never accepted has no Owner; the platform invites one (api-catalog, K9; section 6, "Owner invitation") |
 | `POST /v1/platform/tenants/{tenantId}/suspend` and `.../reactivate` | A system admin stops a tenant's members, for a reason, and lets them in again (section 6) |
 | `PATCH /v1/platform/tenants/{tenantId}`, `POST .../close` and `.../reopen` | Only the platform renames a tenant; a system admin closes a tenant and reopens it within the reopen period (api-catalog, K4, step 20h; section 6, "Tenant lifecycle") |
 | `POST /v1/platform/users/{userId}/suspend` and `.../reactivate` | A system admin stops a user in every tenant, and lets them in again (A9) |
@@ -461,7 +461,7 @@ A tenant has no Owner only when its first Owner never accepted, because the last
 
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
-| `InviteOwner` | `POST /v1/platform/tenants/{tenantId}/owner-invitation` | ControlPlane, `InviteOwnerHandler` | Yes |
+| `InviteOwner` | `POST /v1/platform/tenants/{tenantId}/invitations` | ControlPlane, `InviteOwnerHandler` | Yes |
 | `OwnerInvitedEvent` | `InviteOwnerHandler` | Audit, `RecordOwnerInvitedHandler` (`tenant.owner_invited`, both logs) | Yes |
 | `OpenMemberSignUpCommand` | `InviteOwnerHandler` | ControlPlane, `OpenMemberSignUpHandler` ("Invitation sign-up") | No |
 | `WithdrawSignUpCommand` | `InviteOwnerHandler`, for the replaced invitation | ControlPlane, `WithdrawSignUpHandler` | No |

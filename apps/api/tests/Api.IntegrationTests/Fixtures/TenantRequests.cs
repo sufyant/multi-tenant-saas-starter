@@ -19,7 +19,7 @@ internal static class TenantRequests
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
-    // POST /v1/platform/tenants/{tenantId}/owner-invitation creates an invitation, so it is safe to repeat only under the key the client
+    // POST /v1/platform/tenants/{tenantId}/invitations creates an invitation, so it is safe to repeat only under the key the client
     // gives it (I1).
     public static async Task<HttpResponseMessage> InviteOwnerAsync(
         this HttpClient client,
@@ -28,7 +28,7 @@ internal static class TenantRequests
         string? language = null,
         string? idempotencyKey = null)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"{Path}/{tenantId}/owner-invitation")
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{Path}/{tenantId}/invitations")
         {
             Content = language is null ? JsonContent.Create(new { email }) : JsonContent.Create(new { email, language }),
         };

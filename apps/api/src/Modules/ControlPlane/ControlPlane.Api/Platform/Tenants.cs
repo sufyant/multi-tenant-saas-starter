@@ -30,7 +30,7 @@ public static class Tenants
         platform.MapPost("/tenants/{tenantId:guid}/reactivate", ReactivateTenant).RequireAuthorization(Permissions.PlatformTenantsReactivate);
         platform.MapPost("/tenants/{tenantId:guid}/close", CloseTenant).RequireAuthorization(Permissions.PlatformTenantsClose);
         platform.MapPost("/tenants/{tenantId:guid}/reopen", ReopenTenant).RequireAuthorization(Permissions.PlatformTenantsReopen);
-        platform.MapPost("/tenants/{tenantId:guid}/owner-invitation", InviteOwner)
+        platform.MapPost("/tenants/{tenantId:guid}/invitations", InviteOwner)
             .WithMetadata(new IdempotencyKeyRequired())
             .WithDescription(Invitations.NoLocation)
             .RequireAuthorization(Permissions.PlatformTenantsInviteOwner)

@@ -100,7 +100,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/platform/tenants/{tenantId}/owner-invitation": {
+    "/v1/platform/tenants/{tenantId}/invitations": {
         parameters: {
             query?: never;
             header?: never;

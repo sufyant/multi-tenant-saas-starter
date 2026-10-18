@@ -1104,7 +1104,7 @@
         }
       }
     },
-    "/v1/platform/tenants/{tenantId}/owner-invitation": {
+    "/v1/platform/tenants/{tenantId}/invitations": {
       "post": {
         "tags": [
           "Tenants"
