@@ -14,7 +14,7 @@ public sealed class Database : IAsyncLifetime
 {
     private const string Password = "test-password";
 
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18").Build();
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder(File.ReadAllText("postgres-image").Trim()).Build();
 
     public string OwnerConnectionString => ConnectionStringFor(DatabaseRoles.Owner);
 

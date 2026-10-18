@@ -14,10 +14,10 @@ These steps take an empty machine to a created tenant and an accepted invitation
 
 ## 2. Database
 
-Start PostgreSQL 18 with a database for the API, for example in a container:
+Start PostgreSQL 18 with a database for the API, for example in a container. `apps/api/db/postgres-image` names the image that the tests and CI run:
 
 ```sh
-docker run -d --name api-db -e POSTGRES_PASSWORD=<superuser password> -e POSTGRES_DB=app -p 5432:5432 postgres:18
+docker run -d --name api-db -e POSTGRES_PASSWORD=<superuser password> -e POSTGRES_DB=app -p 5432:5432 "$(cat apps/api/db/postgres-image)"
 ```
 
 Create the two roles (R2, R7). This is the only step that uses the superuser. Connect to the API's database, not to `postgres`:
