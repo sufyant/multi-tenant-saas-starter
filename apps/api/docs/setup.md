@@ -55,36 +55,36 @@ On Clerk:
 
 ### Clerk settings as code
 
-The Clerk instance settings are code, as the Railway settings are. Each Clerk instance has one file in `.clerk/` at the repository root. A file holds only the settings below, as a partial instance config (`clerk config schema` lists the keys). Change a setting in its file, in a pull request. The maintainer then applies it. Nobody changes a setting in the Clerk dashboard, except for the manual steps below.
+The Clerk instance settings are code, as the Railway settings are. One file, `.clerk/config.json` at the repository root, holds the settings of both instances. It holds only the settings below, as a partial instance config (`clerk config schema` lists the keys). It is the one source of the values. Change a setting in the file, in a pull request. The maintainer then applies it to each instance. Nobody changes a setting in the Clerk dashboard, except for the manual steps below.
 
-| Instance | File | Serves |
-| --- | --- | --- |
-| development | `.clerk/development.json` | local and staging |
-| production | `.clerk/production.json` | production. `clerk deploy` creates it (see the manual steps below) |
+| Instance | Serves |
+| --- | --- |
+| development | local and staging |
+| production | production. `clerk deploy` creates it (see the manual steps below) |
 
-Each Clerk application has these two instances. The repository names no application: each maintainer links their own checkout to their own application.
+The two instances do not differ today, so the file has no override for one instance. A change that needs a difference adds the override. Each Clerk application has these two instances. The repository names no application: each maintainer links their own checkout to their own application.
 
 1. `clerk auth login` (or set `CLERK_PLATFORM_API_KEY`).
 2. `clerk link`, from the repository root. It asks for the application and stores the link in the CLI's own settings, not in the repository, as `railway link` does. Instead of a link, `CLERK_APP_ID` can name the application, for example in CI.
-3. `pnpm clerk:plan` prints, for each instance, the difference between its file and the live instance. It changes nothing. Add `development` or `production` to plan one instance only.
+3. `pnpm clerk:plan` prints, for each instance, the difference between the file and the live instance. It changes nothing. Add `development` or `production` to plan one instance only.
 4. `pnpm clerk:apply development` or `pnpm clerk:apply production` prints the same difference for that instance, asks, then applies it. It needs the instance name. Read the plan first.
 
 Without a link and without `CLERK_APP_ID`, the script stops and says so.
 
-The settings:
+The settings. The values are in `.clerk/config.json` only.
 
-| Setting | Key | Value |
+| Setting | Key | Why it is set |
 | --- | --- | --- |
-| Sign-up mode | `auth_access_control.sign_up_mode` | `restricted`: only an invitation lets a person sign up |
-| Email sign-in and verification | `auth_email.sign_in_strategies`, `auth_email.verification_strategies` | `email_code` only, no magic link |
-| Password | `auth_password.enabled`, `auth_password.required` | off |
-| Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | on. A new person still needs an invitation |
-| First and last name | `user_model.first_name`, `user_model.last_name` | off. The API keeps the names |
-| Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | on |
-| Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | on |
-| User enumeration protection | `auth_attack_protection.enumeration_protection` | `strict`: sign-in never tells a visitor whether an address has an account or an invitation |
+| Sign-up mode | `auth_access_control.sign_up_mode` | Only an invitation lets a person sign up (A7) |
+| Email sign-in and verification | `auth_email.used_for_sign_in`, `auth_email.sign_in_strategies`, `auth_email.verify_at_sign_up`, `auth_email.verification_strategies` | A person signs in with an email code and verifies their address at sign-up. No magic link |
+| Password | `auth_password.enabled`, `auth_password.required` | No password: an email code, Google or Microsoft signs a person in |
+| Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | Google and Microsoft sign a person in. A new person still needs an invitation |
+| First and last name | `user_model.first_name`, `user_model.last_name` | Clerk keeps no names. The API keeps them |
+| Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | The system door needs a verified second factor (`fva`). A backup code signs in a person who lost their device |
+| Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | Stops automated sign-up attempts |
+| User enumeration protection | `auth_attack_protection.enumeration_protection` | Sign-in never tells a visitor whether an address has an account or an invitation |
 
-Secrets are not in the files. The CLI gets its credentials from `clerk auth login` or `CLERK_PLATFORM_API_KEY`; it does not need the instance secret key. The development instance uses Clerk's shared Google and Microsoft credentials. An apply to production reads the OAuth credentials from `CLERK_GOOGLE_CLIENT_ID`, `CLERK_GOOGLE_CLIENT_SECRET`, `CLERK_MICROSOFT_CLIENT_ID` and `CLERK_MICROSOFT_CLIENT_SECRET`, and stops if one is missing. The script never prints them.
+Secrets are not in the file. The CLI gets its credentials from `clerk auth login` or `CLERK_PLATFORM_API_KEY`; it does not need the instance secret key. The development instance uses Clerk's shared Google and Microsoft credentials. An apply to production reads the OAuth credentials from `CLERK_GOOGLE_CLIENT_ID`, `CLERK_GOOGLE_CLIENT_SECRET`, `CLERK_MICROSOFT_CLIENT_ID` and `CLERK_MICROSOFT_CLIENT_SECRET`, and stops if one is missing. The script never prints them.
 
 The instance config has no key for these. The maintainer does them by hand:
 

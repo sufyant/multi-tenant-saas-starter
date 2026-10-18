@@ -45,7 +45,8 @@ public sealed class OwnerInvitationTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         invitation.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state"], ignoreOrder: true);
+        invitation.GetProperty("state").GetString().ShouldBe("pending");
         (invitation.GetProperty("email").GetString(), invitation.GetProperty("role").GetString()).ShouldBe((owner, "owner"));
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":null,"lastName":null,"deleted":false}""");
         var id = invitation.GetProperty("id").GetGuid();

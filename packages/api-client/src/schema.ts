@@ -481,8 +481,8 @@ export interface components {
         };
         /**
          * @description What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
-         *     gives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request. Only a caller with
-         *     the invited address gets it.
+         *     gives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request: `pending`,
+         *     `expired`, `accepted` or `cancelled`. Only a caller with the invited address gets it.
          */
         InvitationPreviewResponse: {
             tenantName: string;
@@ -490,17 +490,13 @@ export interface components {
             role: string;
             /** Format: date-time */
             expiresAt: string;
-            state: components["schemas"]["InvitationPreviewResponseState"];
+            state: components["schemas"]["InvitationResponseState"];
         };
         /**
-         * @description The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
-         *     (revoked, replaced, or cancelled with its tenant).
-         * @enum {unknown}
-         */
-        InvitationPreviewResponseState: "pending" | "expired" | "accepted" | "cancelled";
-        /**
          * @description A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their
-         *     names as the catalog holds them now, and when it was created and expires. The screen shows an expired invitation from its expiry.
+         *     names as the catalog holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or
+         *     `expired` once its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
+         *     only, and inviting answers the new one.
          */
         InvitationResponse: {
             /** Format: uuid */
@@ -514,7 +510,15 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             expiresAt: string;
+            state: components["schemas"]["InvitationResponseState"];
         };
+        /**
+         * @description The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
+         *     (revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says
+         *     which of its values it can hold.
+         * @enum {unknown}
+         */
+        InvitationResponseState: "pending" | "expired" | "accepted" | "cancelled";
         /**
          * @description The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the
          *     inviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value.
@@ -668,18 +672,17 @@ export interface components {
          * @enum {unknown}
          */
         MyTenantResponseStatus: "active" | "suspended" | "closed";
-        /** @description The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request. */
+        /**
+         * @description The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
+         *     `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
+         *     while the tenant has no Owner.
+         */
         OwnerInvitationResponse: {
             email: string;
             /** Format: date-time */
             expiresAt: string;
-            state: components["schemas"]["OwnerInvitationResponseState"];
+            state: components["schemas"]["InvitationResponseState"];
         };
-        /**
-         * @description The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled.
-         * @enum {unknown}
-         */
-        OwnerInvitationResponseState: "pending" | "expired" | "cancelled";
         /**
          * @description A permission of the catalogue. Every endpoint checks its own permission.
          * @enum {string}

@@ -89,7 +89,7 @@ public static class InviteOwnerHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationSummary.Of(invitation, admin),
+            InvitationSummary.Of(invitation, admin, now),
             new OwnerInvited(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, admin.Id, replaced.SingleOrDefault()?.Id),
             new OpenMemberSignUp(
                 tenant.Id,

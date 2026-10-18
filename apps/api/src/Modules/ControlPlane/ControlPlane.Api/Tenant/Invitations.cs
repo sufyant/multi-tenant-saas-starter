@@ -85,7 +85,8 @@ public static class Invitations
         invitation.InvitedBy,
         ToResponse(invitation.InvitedByName),
         invitation.CreatedAt,
-        invitation.ExpiresAt);
+        invitation.ExpiresAt,
+        ResponseStatus.OfInvitation(invitation.State));
 
     // The platform's user detail names the system admin who suspended a user in the same shape (N7).
     internal static UserNameResponse ToResponse(PersonName name) => new(name.FirstName, name.LastName, name.Deleted);
@@ -99,7 +100,9 @@ public sealed record InviteMemberRequest(string Email, [property: JsonRequired] 
 
 /// <summary>
 /// A pending invitation: the invited address, its role (<c>owner</c>, <c>admin</c> or <c>member</c>), the catalog user id of the member who invited and their
-/// names as the catalog holds them now, and when it was created and expires. The screen shows an expired invitation from its expiry.
+/// names as the catalog holds them now, when it was created and expires, and its state at the moment of the request: <c>pending</c>, or
+/// <c>expired</c> once its expiry has passed. It is never <c>accepted</c> or <c>cancelled</c>, because the list holds pending invitations
+/// only, and inviting answers the new one.
 /// </summary>
 public sealed record InvitationResponse(
     Guid Id,
@@ -108,10 +111,32 @@ public sealed record InvitationResponse(
     Guid InvitedBy,
     UserNameResponse InvitedByName,
     DateTimeOffset CreatedAt,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt,
+    InvitationResponseState State);
 
 /// <summary>
 /// A user's names as the catalog holds them now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
 /// names and <c>deleted</c>, and the screen shows "Deleted user". It holds no email address.
 /// </summary>
 public sealed record UserNameResponse(string? FirstName, string? LastName, bool Deleted);
+
+/// <summary>
+/// The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
+/// (revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says
+/// which of its values it can hold.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<InvitationResponseState>))]
+public enum InvitationResponseState
+{
+    [JsonStringEnumMemberName("pending")]
+    Pending,
+
+    [JsonStringEnumMemberName("expired")]
+    Expired,
+
+    [JsonStringEnumMemberName("accepted")]
+    Accepted,
+
+    [JsonStringEnumMemberName("cancelled")]
+    Cancelled,
+}

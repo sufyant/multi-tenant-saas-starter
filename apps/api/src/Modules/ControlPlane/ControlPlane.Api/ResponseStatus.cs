@@ -1,12 +1,14 @@
 using ControlPlane.Api.Platform;
 using ControlPlane.Api.Me;
+using ControlPlane.Api.Tenant;
 
 namespace ControlPlane.Api;
 
 /// <summary>
 /// Maps each of ControlPlane's statuses to the status enum of a response (N7), and the status a list filter names back to ControlPlane's
 /// (K5). Every response maps its status here when it is built, so a saved idempotent result, which holds ControlPlane's name, replays to
-/// the same answer. A status a response cannot carry is a fault, not an answer.
+/// the same answer. A status a response cannot carry is a fault, not an answer. An invitation's state maps to the one enum of every
+/// response (N7), whose description says which values it holds.
 /// </summary>
 internal static class ResponseStatus
 {
@@ -46,12 +48,12 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
-    public static InvitationPreviewResponseState OfInvitationPreview(string state) => state switch
+    public static InvitationResponseState OfInvitation(string state) => state switch
     {
-        "Pending" => InvitationPreviewResponseState.Pending,
-        "Expired" => InvitationPreviewResponseState.Expired,
-        "Accepted" => InvitationPreviewResponseState.Accepted,
-        "Cancelled" => InvitationPreviewResponseState.Cancelled,
+        "Pending" => InvitationResponseState.Pending,
+        "Expired" => InvitationResponseState.Expired,
+        "Accepted" => InvitationResponseState.Accepted,
+        "Cancelled" => InvitationResponseState.Cancelled,
         _ => throw Unknown(state),
     };
 
@@ -60,14 +62,6 @@ internal static class ResponseStatus
         "User" => InviterNameResponseKind.User,
         "Platform" => InviterNameResponseKind.Platform,
         _ => throw Unknown(kind),
-    };
-
-    public static OwnerInvitationResponseState OfOwnerInvitation(string state) => state switch
-    {
-        "Pending" => OwnerInvitationResponseState.Pending,
-        "Expired" => OwnerInvitationResponseState.Expired,
-        "Cancelled" => OwnerInvitationResponseState.Cancelled,
-        _ => throw Unknown(state),
     };
 
     // A filter's value is the status of a response; the query names ControlPlane's status.

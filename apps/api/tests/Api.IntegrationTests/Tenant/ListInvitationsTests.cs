@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 
 namespace Api.IntegrationTests.Tenant;
@@ -14,17 +15,19 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
     private static readonly DateTimeOffset Soon = DateTimeOffset.UtcNow.AddDays(1);
 
     private readonly Catalog _catalog = new(database);
+    // A whole second: PostgreSQL rounds a stored time to microseconds, so a clock with ticks could store an expiry after the clock's.
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
     private ApiFactory _api = null!;
 
     public ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time);
         return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    // The screen shows an expired invitation from its expiry; a cancelled or accepted one is gone from the list.
+    // An expired invitation stays in the list; a cancelled or accepted one is gone from it.
     [Fact]
     public async Task ListInvitations_AsAnOwner_ReturnsThePendingInvitationsOfThatTenantOnlyExpiredOnesIncluded()
     {
@@ -46,7 +49,25 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state"], ignoreOrder: true);
+    }
+
+    // The API answers the state from the invitation's expiry by its own clock (Invitation.StateAt), so the screen never reads it from the
+    // browser's clock. A pending invitation is pending until its expiry, and expired from that moment on.
+    [Fact]
+    public async Task ListInvitations_APendingInvitationAtItsExpiryByTheClock_TurnsFromPendingToExpired()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        await _catalog.AddInvitationAsync(tenant.Id, expiresAt: _time.GetUtcNow().AddDays(1));
+        var url = $"/v1/tenants/{tenant.Id}/invitations";
+
+        var before = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>(url, Cancellation);
+        _time.Advance(TimeSpan.FromDays(1));
+        var after = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>(url, Cancellation);
+
+        before.GetProperty("items")[0].GetProperty("state").GetString().ShouldBe("pending");
+        after.GetProperty("items")[0].GetProperty("state").GetString().ShouldBe("expired");
     }
 
     // The inviter's name is resolved on read, as the audit names are (K3): a rename shows, and a deleted inviter has no name and says
