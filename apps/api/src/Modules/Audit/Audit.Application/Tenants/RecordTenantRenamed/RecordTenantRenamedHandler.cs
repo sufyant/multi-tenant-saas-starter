@@ -14,12 +14,10 @@ public static class RecordTenantRenamedHandler
     public static Task HandleAsync(TenantRenamedEvent renamed, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(renamed.TenantId, renamed.NewName);
-        var details = JsonSerializer.Serialize(new Details(renamed.OldName, renamed.NewName), JsonSerializerOptions.Web);
+        var details = JsonSerializer.Serialize(new TenantRenamedDetails(renamed.OldName, renamed.NewName), JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(renamed.EventId, renamed.OccurredAt, AuditActor.User(renamed.RenamedBy), AuditOperations.TenantRenamed, tenant, details),
             new TenantAuditEntry(renamed.EventId, renamed.OccurredAt, AuditActor.Platform, AuditOperations.TenantRenamed, tenant, details),
             cancellationToken);
     }
-
-    private sealed record Details(string OldName, string NewName);
 }

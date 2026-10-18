@@ -3,9 +3,10 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Audit.Api.Tenant.AuditLogs;
 using Audit.Domain;
-using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Contracts;
+using ControlPlane.Contracts.Members;
 using FluentValidation;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Authorization;
@@ -83,9 +84,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [Fact]
     public void BuildOpenApiDocument_EveryEnumOfAResponse_ListsExactlyTheValuesOfItsEnum()
     {
-        var expected = Solution.Modules
-            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
-            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal))
+        var expected = ResponseTypes()
             .SelectMany(type => type.GetProperties()
                 .Where(property => EnumTypeOf(property.PropertyType) is not null)
                 .Select(property => $"{type.Name}.{JsonNamingPolicy.CamelCase.ConvertName(property.Name)}: {JsonValuesOf(EnumTypeOf(property.PropertyType)!)}"));
@@ -167,9 +166,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [Fact]
     public void BuildOpenApiDocument_EveryResponseFieldNamedPermissions_IsAnArrayOfPermission()
     {
-        var expected = Solution.Modules
-            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
-            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Permissions") is not null)
+        var expected = ResponseTypes()
+            .Where(type => type.GetProperty("Permissions") is not null)
             .Select(type => $"{type.Name}.permissions");
 
         var documented = Schemas()
@@ -184,19 +182,20 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     // N7k and K5, the maintainer's decision in audit fix 04: every response field that holds a role is the one schema RoleResponse,
     // { builtIn, name }. builtIn is the enum MemberRole, or null for a custom role later, so a client compares it with an enum value
-    // and never with a string it writes by hand. A field is found by its name, as the permissions are.
+    // and never with a string it writes by hand. A field holds a role when it is named role, or when its type is RoleResponse, as the
+    // old and the new role of an audit entry's details are.
     [Fact]
-    public void BuildOpenApiDocument_EveryResponseFieldNamedRole_RefersToTheOneRoleSchema()
+    public void BuildOpenApiDocument_EveryResponseFieldThatHoldsARole_RefersToTheOneRoleSchema()
     {
-        var expected = Solution.Modules
-            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
-            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Role") is not null)
-            .Select(type => $"{type.Name}.role {RoleSchema}");
+        var expected = ResponseTypes()
+            .SelectMany(type => type.GetProperties()
+                .Where(property => property.Name == "Role" || property.PropertyType == typeof(RoleResponse))
+                .Select(property => $"{type.Name}.{JsonNamingPolicy.CamelCase.ConvertName(property.Name)} {RoleSchema}"));
 
         var documented = ResponseSchemas()
             .SelectMany(schema => PropertiesOf(schema.Value)
-                .Where(property => property.Name == "role")
-                .Select(property => $"{schema.Name}.role {string.Join(", ", ReferencesIn(property.Value))}"));
+                .Where(property => property.Name == "role" || ReferencesIn(property.Value).Contains(RoleSchema))
+                .Select(property => $"{schema.Name}.{property.Name} {string.Join(", ", ReferencesIn(property.Value))}"));
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
@@ -227,9 +226,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [Fact]
     public void BuildOpenApiDocument_EveryResponseFieldNamedOperation_IsAnAuditOperation()
     {
-        var expected = Solution.Modules
-            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
-            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Operation") is not null)
+        var expected = ResponseTypes()
+            .Where(type => type.GetProperty("Operation") is not null)
             .Select(type => $"{type.Name}.operation");
 
         var documented = Schemas()
@@ -238,6 +236,28 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .Where(property => ReferencesIn(property.Value).Contains(AuditOperationSchema))
                 .Select(property => $"{schema.Name}.{property.Name}"));
 
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // K3 and D1: the details of an audit entry are one of its shapes, by its operation. The discriminator maps each operation to the schema
+    // of its shape, by the shape's own name. Each shape requires the operation and holds only that one value, so a generated client narrows
+    // the details by it.
+    [Fact]
+    public void BuildOpenApiDocument_DetailsOfAnAuditEntry_AreAShapeForEachOperationThatKeepsDetails()
+    {
+        var expected = typeof(AuditDetailsResponse).GetCustomAttributes<JsonDerivedTypeAttribute>()
+            .Select(shape => $"{shape.TypeDiscriminator} {shape.DerivedType.Name}: requires operation True, {shape.TypeDiscriminator}");
+        var details = Schemas().Single(schema => schema.Name == nameof(AuditDetailsResponse)).Value;
+
+        var documented = details.GetProperty("discriminator").GetProperty("mapping").EnumerateObject()
+            .Select(shape => (Operation: shape.Name, Name: shape.Value.GetString()!.Split('/')[^1], Schema: SchemaAt(shape.Value.GetString()!)))
+            .Select(shape => $"{shape.Operation} {shape.Name}: requires operation {RequiredOf(shape.Schema).Contains("operation")}, "
+                + EnumOf(shape.Schema.GetProperty("properties").GetProperty("operation")));
+
+        details.GetProperty("discriminator").GetProperty("propertyName").GetString().ShouldBe("operation");
+        ReferencesIn(details.GetProperty("anyOf")).Order(StringComparer.Ordinal)
+            .ShouldBe(details.GetProperty("discriminator").GetProperty("mapping").EnumerateObject().Select(shape => shape.Value.GetString()!).Order(StringComparer.Ordinal));
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
     }
@@ -745,6 +765,12 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .Where(parameter => parameter.GetProperty("in").GetString() == "path" && parameter.GetProperty("required").GetBoolean())
                 .Select(parameter => $"{parameter.GetProperty("name").GetString()} {FormatOf(parameter.GetProperty("schema"))}")
             : [];
+
+    // The response types of every module: those of its Api project, and those its Contracts shares with another module (N8).
+    private static IEnumerable<Type> ResponseTypes() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes().Concat(Solution.Load($"{module}.Contracts").GetExportedTypes()))
+            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal));
 
     private static bool HoldsALanguage(PropertyInfo property) =>
         (Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType) == typeof(Language);

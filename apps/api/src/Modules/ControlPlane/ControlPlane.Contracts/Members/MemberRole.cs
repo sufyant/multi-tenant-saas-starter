@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using SharedKernel;
 
-namespace ControlPlane.Api.Tenant.Members;
+namespace ControlPlane.Contracts.Members;
 
 /// <summary>
 /// A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an

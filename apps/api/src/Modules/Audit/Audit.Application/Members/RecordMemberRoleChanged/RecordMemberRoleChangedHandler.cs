@@ -19,8 +19,6 @@ public static class RecordMemberRoleChangedHandler
                 AuditActor.User(changed.ChangedBy),
                 AuditOperations.MemberRoleChanged,
                 AuditTarget.User(changed.UserId),
-                JsonSerializer.Serialize(new Details(changed.OldRole, changed.NewRole), JsonSerializerOptions.Web)),
+                JsonSerializer.Serialize(new MemberRoleChangedDetails(changed.OldRole, changed.NewRole), JsonSerializerOptions.Web)),
             cancellationToken);
-
-    private sealed record Details(string OldRole, string NewRole);
 }

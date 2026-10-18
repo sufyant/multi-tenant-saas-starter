@@ -7,6 +7,9 @@ public sealed class ReferenceRuleTests
 {
     private const string DbContext = "Microsoft.EntityFrameworkCore.DbContext";
 
+    // N8: the response types that two modules answer. Each lives in its owner's Contracts.
+    private static readonly string[] SharedResponses = ["ControlPlane.Contracts.Members.RoleResponse", "ControlPlane.Contracts.Members.MemberRole"];
+
     public static TheoryData<string> Modules => [.. Solution.Modules];
 
     public static TheoryData<string> DomainAndContractsProjects =>
@@ -68,15 +71,27 @@ public sealed class ReferenceRuleTests
         violations.ShouldBeEmpty();
     }
 
+    // Section 2 and N8: an Api project sees its own Application and Contracts and SharedKernel. Of another module's Contracts it sees only
+    // a response type that two modules answer, which lives in its owner's Contracts.
     [Theory]
     [MemberData(nameof(Modules))]
-    public void DependOnProjects_Api_OnlyItsApplicationContractsAndSharedKernel(string module)
+    public void DependOnProjects_Api_OnlyItsApplicationContractsSharedKernelAndSharedResponses(string module)
     {
+        string[] otherContracts = [.. Solution.LayerOfEveryModule("Contracts").Where(project => project != $"{module}.Contracts")];
+        string[] otherContractTypes =
+        [
+            .. otherContracts.SelectMany(project => Solution.Load(project).GetExportedTypes())
+                .Select(type => type.FullName!)
+                .Except(SharedResponses),
+        ];
+
         var violations = TypesDependingOnProjectsOtherThan(
             $"{module}.Api",
-            [$"{module}.Application", $"{module}.Contracts", Solution.SharedKernel]);
+            [$"{module}.Application", $"{module}.Contracts", .. otherContracts, Solution.SharedKernel]);
+        var contractViolations = FailuresOf(Types.InAssembly(Solution.Load($"{module}.Api")).ShouldNot().HaveDependencyOnAny(otherContractTypes).GetResult());
 
         violations.ShouldBeEmpty();
+        contractViolations.ShouldBeEmpty();
     }
 
     // Section 2: the Api project cannot reach the DbContext, through its own module's Infrastructure or any other way.

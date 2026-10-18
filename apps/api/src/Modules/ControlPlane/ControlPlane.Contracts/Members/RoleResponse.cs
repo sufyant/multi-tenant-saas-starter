@@ -1,4 +1,4 @@
-namespace ControlPlane.Api.Tenant.Members;
+namespace ControlPlane.Contracts.Members;
 
 /// <summary>
 /// A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers

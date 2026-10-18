@@ -405,9 +405,14 @@ export interface components {
          */
         AuditActorResponseKind: "user" | "platform";
         /**
+         * @description The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
+         *     `details` by it. It is the entry's own operation.
+         */
+        AuditDetailsResponse: components["schemas"]["MemberInvitedDetailsResponse"] | components["schemas"]["MemberRemovedDetailsResponse"] | components["schemas"]["MemberRoleChangedDetailsResponse"] | components["schemas"]["OwnerInvitedDetailsResponse"] | components["schemas"]["TenantRenamedDetailsResponse"] | components["schemas"]["TenantSuspendedDetailsResponse"];
+        /**
          * @description One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry
-         *     keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
-         *     address.
+         *     keeps: the shape of its operation, or null for an operation without details. Names are resolved when the log is read; a name is only
+         *     a person's real name. It holds no email address.
          */
         AuditEntryResponse: {
             /** Format: uuid */
@@ -415,7 +420,7 @@ export interface components {
             /** Format: date-time */
             occurredAt: string;
             operation: components["schemas"]["AuditOperation"];
-            details: null | components["schemas"]["JsonElement"];
+            details: null | components["schemas"]["AuditDetailsResponse"];
             actor: components["schemas"]["AuditActorResponse"];
             target: components["schemas"]["AuditTargetResponse"];
         };
@@ -558,7 +563,6 @@ export interface components {
          * @enum {string}
          */
         InviterNameResponseKind: "user" | "platform";
-        JsonElement: unknown;
         /**
          * @description A language the web speaks, by its BCP 47 language tag.
          * @enum {string}
@@ -609,6 +613,20 @@ export interface components {
             /** Format: int32 */
             total: number;
         };
+        /** @description The details of `member.invited`: the role the invitation gives, and the pending invitation it replaced, if any. */
+        MemberInvitedDetailsResponse: {
+            /** @enum {string} */
+            operation: "member.invited";
+            role: components["schemas"]["RoleResponse"];
+            /** Format: uuid */
+            replacedInvitationId: null | string;
+        };
+        /** @description The details of `member.removed`: the role the member had. */
+        MemberRemovedDetailsResponse: {
+            /** @enum {string} */
+            operation: "member.removed";
+            role: components["schemas"]["RoleResponse"];
+        };
         /**
          * @description A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted
          *     the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
@@ -631,6 +649,13 @@ export interface components {
          * @enum {string}
          */
         MemberRole: "owner" | "admin" | "member";
+        /** @description The details of `member.role_changed`: the member's old and new role. */
+        MemberRoleChangedDetailsResponse: {
+            /** @enum {string} */
+            operation: "member.role_changed";
+            oldRole: components["schemas"]["RoleResponse"];
+            newRole: components["schemas"]["RoleResponse"];
+        };
         /**
          * @description The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and
          *     their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
@@ -688,6 +713,15 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             state: components["schemas"]["InvitationResponseState"];
+        };
+        /** @description The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any. */
+        OwnerInvitedDetailsResponse: {
+            /** @enum {string} */
+            operation: "tenant.owner_invited";
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            replacedInvitationId: null | string;
         };
         /**
          * @description A name of the permission list. Every endpoint checks its own permission.
@@ -789,6 +823,13 @@ export interface components {
             lastName: null | string;
             email: null | string;
         };
+        /** @description The details of `tenant.renamed`: the tenant's old and new name. */
+        TenantRenamedDetailsResponse: {
+            /** @enum {string} */
+            operation: "tenant.renamed";
+            oldName: string;
+            newName: string;
+        };
         /**
          * @description A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its
          *     closure while it is closed. Only a system admin sees this shape.
@@ -808,6 +849,12 @@ export interface components {
          * @enum {string}
          */
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
+        /** @description The details of `tenant.suspended`: the system admin's reason. Only the platform's log holds it. */
+        TenantSuspendedDetailsResponse: {
+            /** @enum {string} */
+            operation: "tenant.suspended";
+            reason: string;
+        };
         /**
          * @description One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
          *     (null when the user is not suspended), and every membership by the tenant's name.

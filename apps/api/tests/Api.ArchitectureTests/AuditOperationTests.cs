@@ -1,5 +1,8 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Audit.Api.Tenant.AuditLogs;
+using Audit.Application.AuditLogs;
 using Audit.Domain;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -34,6 +37,45 @@ public sealed partial class AuditOperationTests
         var documented = OperationsInTheList();
 
         documented.ShouldBe(DeclaredOperations());
+    }
+
+    // K3: every operation has a decision about its details: the one type of its details, or none. A new operation without a decision
+    // fails here.
+    [Fact]
+    public void DeclareAuditDetails_EveryOperation_HasADecision()
+    {
+        var decided = AuditDetailsTypes.OfOperation.Keys.Order(StringComparer.Ordinal);
+
+        decided.ShouldBe(DeclaredOperations());
+    }
+
+    // K3: every type of details belongs to exactly one operation.
+    [Fact]
+    public void DeclareAuditDetails_EveryDetailsType_BelongsToExactlyOneOperation()
+    {
+        var types = typeof(AuditDetails).Assembly.GetTypes()
+            .Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(AuditDetails)))
+            .Select(type => type.Name)
+            .Order(StringComparer.Ordinal);
+
+        var mapped = AuditDetailsTypes.OfOperation.Values.OfType<Type>().Select(type => type.Name).Order(StringComparer.Ordinal);
+
+        types.ShouldNotBeEmpty();
+        mapped.ShouldBe(types);
+    }
+
+    // K3 and N7: every type of details has one response shape, named after it, whose discriminator is its operation.
+    [Fact]
+    public void AnswerAuditDetails_EveryDetailsType_HasOneResponseShapeWithItsOperation()
+    {
+        var expected = AuditDetailsTypes.OfOperation
+            .Where(decision => decision.Value is not null)
+            .Select(decision => $"{decision.Key} {decision.Value!.Name}Response");
+
+        var answered = typeof(AuditDetailsResponse).GetCustomAttributes<JsonDerivedTypeAttribute>()
+            .Select(shape => $"{shape.TypeDiscriminator} {shape.DerivedType.Name}");
+
+        answered.ShouldBe(expected, ignoreOrder: true);
     }
 
     private static List<string> DeclaredOperations() =>

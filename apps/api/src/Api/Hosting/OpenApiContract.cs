@@ -121,6 +121,7 @@ internal static partial class OpenApiContract
                     .AddDocumentTransformer(RequireBearerToken)
                     .AddDocumentTransformer(DescribeProblemDetails)
                     .AddDocumentTransformer(DescribePermissions)
+                    .AddDocumentTransformer(DescribeDiscriminators)
                     .AddDocumentTransformer(DescribeAuditOperations);
             });
 
@@ -530,7 +531,8 @@ internal static partial class OpenApiContract
 
     // The operations of both audit logs are one enum in the document, so a client has a type for them and hears of a new one. A
     // response keeps the operation as a string, so each field that holds one, a field named operation, refers to the enum
-    // (AuditEntryResponse.operation). OpenApiContractTests checks both.
+    // (AuditEntryResponse.operation). A shape of the details keeps its own operation as the value of its discriminator, so a client
+    // narrows the details by it. OpenApiContractTests checks both.
     private static Task DescribeAuditOperations(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         if (document.Components?.Schemas is not { } schemas)
@@ -539,13 +541,62 @@ internal static partial class OpenApiContract
         }
 
         schemas[AuditOperationSchema] = EnumSchema(DeclaredAuditOperations, "The operation of an audit entry, area.action.");
-        foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(OperationMember) == true))
+        var shapes = DiscriminatedShapes(schemas).ToHashSet(StringComparer.Ordinal);
+        foreach (var schema in schemas
+            .Where(schema => !shapes.Contains(schema.Key))
+            .Select(schema => schema.Value)
+            .OfType<OpenApiSchema>()
+            .Where(schema => schema.Properties?.ContainsKey(OperationMember) == true))
         {
             schema.Properties![OperationMember] = new OpenApiSchemaReference(AuditOperationSchema, document);
         }
 
         return Task.CompletedTask;
     }
+
+    // A polymorphic response (AuditDetailsResponse) has a discriminator, which System.Text.Json writes into each of its shapes. .NET names
+    // the schema of a shape after the base type and the shape (AuditDetailsResponseTenantRenamedDetailsResponse); here it takes the
+    // shape's own name, as every other schema does (N7t). The discriminator is always on the wire, so each shape requires it.
+    private static Task DescribeDiscriminators(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas is not { } schemas)
+        {
+            return Task.CompletedTask;
+        }
+
+        var polymorphic = schemas
+            .Where(schema => schema.Value is OpenApiSchema { Discriminator.Mapping: not null, AnyOf: not null })
+            .Select(schema => (Name: schema.Key, Schema: (OpenApiSchema)schema.Value))
+            .ToList();
+        foreach (var (baseName, schema) in polymorphic)
+        {
+            var mapping = schema.Discriminator!.Mapping!;
+            foreach (var (value, reference) in mapping.ToList())
+            {
+                var oldName = reference.Reference.Id!;
+                var name = oldName.StartsWith(baseName, StringComparison.Ordinal) ? oldName[baseName.Length..] : oldName;
+                var shape = (OpenApiSchema)schemas[oldName];
+                schemas.Remove(oldName);
+                schemas[name] = shape;
+                shape.Required ??= new HashSet<string>(StringComparer.Ordinal);
+                shape.Required.Add(schema.Discriminator.PropertyName!);
+
+                var renamed = new OpenApiSchemaReference(name, document);
+                mapping[value] = renamed;
+                var index = schema.AnyOf!.IndexOf(schema.AnyOf.OfType<OpenApiSchemaReference>().Single(found => found.Reference.Id == oldName));
+                schema.AnyOf[index] = renamed;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // The names of the schemas that a discriminator maps to.
+    private static IEnumerable<string> DiscriminatedShapes(IDictionary<string, IOpenApiSchema> schemas) =>
+        schemas.Values
+            .OfType<OpenApiSchema>()
+            .SelectMany(schema => schema.Discriminator?.Mapping?.Values ?? [])
+            .Select(reference => reference.Reference.Id!);
 
     // The web shows an action only when the member's permissions hold its name (section 6, "What the screens read"). The names are one
     // enum in the document, every constant of the permission list (Permissions), so a generated client has a type for them. A response keeps

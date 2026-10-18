@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
-using ControlPlane.Api.Tenant.Members;
+using ControlPlane.Contracts.Members;
 
 namespace Api.ArchitectureTests;
 

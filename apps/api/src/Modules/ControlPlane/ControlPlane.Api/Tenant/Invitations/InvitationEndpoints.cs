@@ -8,6 +8,7 @@ using ControlPlane.Application.Invitations.ListInvitations;
 using ControlPlane.Application.Invitations.RevokeInvitation;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
+using ControlPlane.Contracts.Members;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

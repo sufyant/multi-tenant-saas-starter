@@ -192,17 +192,63 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         ]);
     }
 
-    [Fact]
-    public async Task ListAuditEntries_DetailsOfARecord_AreItsStoredObject()
+    // K3: the rows keep the JSON their handlers wrote, and a stored entry never changes. Each stored shape, as its handler writes it,
+    // answers the shape of its operation, with the operation as its discriminator. A role answers the one RoleResponse (N7k): a built-in
+    // role by its name, and any other name as a custom role, which comes later (A3).
+    [Theory]
+    [InlineData(
+        "member.invited",
+        """{"role":"admin","replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""",
+        """{"operation":"member.invited","role":{"builtIn":"admin","name":"admin"},"replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""")]
+    [InlineData(
+        "member.invited",
+        """{"role":"member","replacedInvitationId":null}""",
+        """{"operation":"member.invited","role":{"builtIn":"member","name":"member"},"replacedInvitationId":null}""")]
+    [InlineData(
+        "member.role_changed",
+        """{"oldRole":"owner","newRole":"admin"}""",
+        """{"operation":"member.role_changed","oldRole":{"builtIn":"owner","name":"owner"},"newRole":{"builtIn":"admin","name":"admin"}}""")]
+    [InlineData(
+        "member.removed",
+        """{"role":"admin"}""",
+        """{"operation":"member.removed","role":{"builtIn":"admin","name":"admin"}}""")]
+    [InlineData(
+        "member.removed",
+        """{"role":"auditor"}""",
+        """{"operation":"member.removed","role":{"builtIn":null,"name":"auditor"}}""")]
+    [InlineData(
+        "tenant.renamed",
+        """{"oldName":"Acme","newName":"Acme Ltd"}""",
+        """{"operation":"tenant.renamed","oldName":"Acme","newName":"Acme Ltd"}""")]
+    [InlineData(
+        "tenant.owner_invited",
+        """{"invitationId":"0199f7a0-0000-7000-8000-000000000002","replacedInvitationId":null}""",
+        """{"operation":"tenant.owner_invited","invitationId":"0199f7a0-0000-7000-8000-000000000002","replacedInvitationId":null}""")]
+    [InlineData(
+        "tenant.suspended",
+        """{"reason":"Unpaid invoices"}""",
+        """{"operation":"tenant.suspended","reason":"Unpaid invoices"}""")]
+    public async Task ListAuditEntries_AStoredShapeOfDetails_AnswersTheShapeOfItsOperation(string operation, string stored, string answered)
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        await _audit.AddTenantEntryAsync(tenant.Id, Start, details: """{"oldRole":"member","newRole":"admin"}""");
+        await _audit.AddTenantEntryAsync(tenant.Id, Start, operation: operation, details: stored);
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
 
-        var details = page.GetProperty("items")[0].GetProperty("details");
-        (details.GetProperty("oldRole").GetString(), details.GetProperty("newRole").GetString()).ShouldBe(("member", "admin"));
+        page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe(answered);
+    }
+
+    [Fact]
+    public async Task ListAuditEntries_AnEntryWithoutDetails_AnswersNull()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _audit.AddTenantEntryAsync(tenant.Id, Start, operation: "tenant.suspended");
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
+
+        page.GetProperty("items")[0].GetProperty("details").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     // The screen shows names; an email address is a person's data that Activity does not need, even for a user without a name, who gets

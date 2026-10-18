@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using ControlPlane.Api.Tenant.Members;
+using ControlPlane.Contracts.Members;
 using SharedKernel;
 
 namespace ControlPlane.Api.Tenant.Invitations;

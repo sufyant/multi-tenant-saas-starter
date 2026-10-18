@@ -141,6 +141,20 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         second.GetProperty("nextCursor").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
+    // K3: the reason of a suspension is in the platform's log only. The stored shape, as RecordTenantSuspendedHandler writes it, answers
+    // the shape of tenant.suspended.
+    [Fact]
+    public async Task ListPlatformAuditEntries_AStoredReasonOfASuspension_AnswersTheShapeOfTenantSuspended()
+    {
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = Guid.CreateVersion7();
+        await _audit.AddPlatformEntryAsync(_start, "User", Guid.CreateVersion7(), "Tenant", tenant, "tenant.suspended", "Acme Ltd", """{"reason":"Unpaid invoices"}""");
+
+        var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
+
+        page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe("""{"operation":"tenant.suspended","reason":"Unpaid invoices"}""");
+    }
+
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
     {
