@@ -26,7 +26,7 @@ internal static class TestTokens
         });
 
     // fva holds the minutes since the first and the second factor were verified; -1 means no second factor.
-    public static string For(string userId, bool secondFactor)
+    public static string For(string userId, bool secondFactor = false)
     {
         var now = DateTime.UtcNow;
 
