@@ -18,7 +18,7 @@ Sources:
 
 | File | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `api-image`, `web-image`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
+| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `generated`, `api-image`, `web-image`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
 | `delivery.yml` | `push` to `main` | Calls `ci.yml`, then `publish-api`, `deploy-staging`, `deploy-production`, `tag-release`, in this order |
 | `deploy.yml` | `workflow_call` | The only copy of the deploy steps, for staging and production |
 | `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the image of that release to **production**, after the approval |
@@ -36,7 +36,7 @@ Which file to open:
 
 A workflow calls a script for each long step. A script reads its inputs from environment variables, and its header says how to run it locally when it needs no secret (Humble and Farley, *Continuous Delivery*, chapter 6, "Build and Deployment Scripting").
 
-On a push to `main`, after `ci.yml` passed (the jobs `node`, `api`, `api-image`, `web-image` and `CI`):
+On a push to `main`, after `ci.yml` passed (the jobs `node`, `api`, `generated`, `api-image`, `web-image` and `CI`):
 
 1. `publish-api` pushes the tested image to GHCR as `ghcr.io/<owner>/<repo>/api`, with the tags `<commit SHA>` and `main`. It reads the digest from the registry. It attests the build provenance and an SPDX SBOM to that digest, and verifies both attestations.
 2. `deploy-staging` calls `deploy.yml` for `staging`, when the repository variable `DEPLOY_STAGING` is `true`.

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using SharedKernel;
 
 namespace ControlPlane.Domain.Users;
@@ -54,8 +55,24 @@ internal sealed class User(Guid id, string externalId)
     public int MembershipCount { get; private init; }
 
     /// <summary>
+    /// The user's status: a deletion outranks a suspension, because the identity provider no longer knows the person. It is an
+    /// expression, so the catalog's queries filter by the same rule (B9).
+    /// </summary>
+    public static Expression<Func<User, UserStatus>> StatusOf { get; } = user =>
+        user.DeletedAt != null ? UserStatus.Deleted : user.SuspendedAt != null ? UserStatus.Suspended : UserStatus.Active;
+
+    private static readonly Func<User, UserStatus> CompiledStatusOf = StatusOf.Compile();
+
+    public UserStatus Status => CompiledStatusOf(this);
+
+    /// <summary>The users in a status, as a query reads them: <see cref="StatusOf"/> compared with the status.</summary>
+    public static Expression<Func<User, bool>> InStatus(UserStatus status) =>
+        Expression.Lambda<Func<User, bool>>(Expression.Equal(StatusOf.Body, Expression.Constant(status)), StatusOf.Parameters);
+
+    /// <summary>
     /// A person the catalog does not know joins through an invitation, at this moment: the invited address, which the identity provider
-    /// verified, and the names they typed, without the spaces around them. They are the member of the tenant they join.
+    /// verified, and the names they typed, without the spaces around them. They have no membership yet: the catalog adds the membership of
+    /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>
     public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language, DateTimeOffset now) =>
         new(id, externalId)
@@ -65,7 +82,6 @@ internal sealed class User(Guid id, string externalId)
             LastName = lastName.Trim(),
             Language = language,
             CreatedAt = now,
-            MembershipCount = 1,
         };
 
     /// <summary>

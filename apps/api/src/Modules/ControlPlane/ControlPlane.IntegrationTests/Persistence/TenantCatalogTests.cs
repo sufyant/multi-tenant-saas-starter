@@ -28,23 +28,50 @@ public sealed class TenantCatalogTests(Database database)
         members.ShouldBe([member.Id]);
     }
 
+    // B8: one port method writes the membership, the tenant's summary and the user's count (R13).
     [Fact]
-    public async Task AddMember_InATenant_BelongsToThatTenant()
+    public async Task AddMembership_InATenant_BelongsToThatTenantAndIsCountedAndSummarized()
     {
         var tenant = await Catalog.AddTenantAsync(database.Services);
         var user = await Catalog.AddUserAsync(database.Services);
 
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
-            var catalog = ((TenantCatalog)scope.GetRequiredService<ITenantCatalog>());
-            catalog.AddMember(user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow);
-            await catalog.SaveChangesAsync(Cancellation);
+            var catalog = scope.GetRequiredService<ITenantCatalog>();
+            var locked = (await catalog.FindTenantForUpdateAsync(Cancellation))!;
+            await catalog.AddMembershipAsync(locked, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
         var memberships = await InTenant.ReadAsync(database.Services, tenant.Id, scope =>
             ((TenantCatalog)scope.GetRequiredService<ITenantCatalog>()).Memberships.Select(membership => membership.TenantId).ToListAsync(Cancellation));
         memberships.ShouldBe([tenant.Id]);
+        (await Catalog.MembershipCountOfAsync(database.Services, user)).ShouldBe(1);
+        (await Catalog.MemberCountOfAsync(database.Services, tenant)).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task RemoveMembership_InATenant_IsGoneAndUncountedAndSummarized()
+    {
+        var tenant = await Catalog.AddTenantAsync(database.Services);
+        var user = await Catalog.AddUserAsync(database.Services);
+        await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var catalog = scope.GetRequiredService<ITenantCatalog>();
+            await catalog.AddMembershipAsync((await catalog.FindTenantForUpdateAsync(Cancellation))!, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            return SharedKernel.Result.Success();
+        });
+
+        await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var catalog = scope.GetRequiredService<ITenantCatalog>();
+            var locked = (await catalog.FindTenantForUpdateAsync(Cancellation))!;
+            await catalog.RemoveMembershipAsync(locked, (await catalog.FindMembershipAsync(user.Id, Cancellation))!, Cancellation);
+            return SharedKernel.Result.Success();
+        });
+
+        (await Catalog.MembershipCountOfAsync(database.Services, user)).ShouldBe(0);
+        (await Catalog.MemberCountOfAsync(database.Services, tenant)).ShouldBe(0);
     }
 
     [Fact]

@@ -1,7 +1,5 @@
-using System.Diagnostics;
-using System.Reflection;
-using System.Text.Json.Serialization;
 using Api.Idempotency;
+using Api.Observability;
 using SharedKernel;
 
 namespace Api.ErrorHandling;
@@ -20,7 +18,7 @@ internal static class Problems
     public const string TenantIdsMember = "tenantIds";
 
     /// <summary>The JSON names of every field code of a validation answer.</summary>
-    public static IReadOnlyList<string> FieldCodes { get; } = [.. Enum.GetValues<FieldErrorCode>().Select(NameOf)];
+    public static IReadOnlyList<string> FieldCodes { get; } = JsonEnum<FieldErrorCode>.Names;
 
     /// <summary>
     /// The answer to a failed result, or to a refusal: its status, its English detail and its code, and the tenants it is about when it
@@ -48,14 +46,11 @@ internal static class Problems
         var problem = context.ProblemDetails;
         problem.Extensions.TryAdd(CodeMember, CodeOf(problem.Status ?? context.HttpContext.Response.StatusCode).Value);
         problem.Extensions[TraceIdMember] =
-            context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+            context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? TraceIds.Of(context.HttpContext);
     }
 
-    public static string NameOf<TEnum>(TEnum value)
-        where TEnum : struct, Enum =>
-        typeof(TEnum).GetField(value.ToString())!.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()!.Name;
-
-    private static int StatusCodeFor(ErrorType type) => type switch
+    /// <summary>The status of the answer to an error of the type.</summary>
+    public static int StatusCodeFor(ErrorType type) => type switch
     {
         ErrorType.Validation => StatusCodes.Status400BadRequest,
         ErrorType.NotFound => StatusCodes.Status404NotFound,

@@ -1,4 +1,5 @@
 using System.Net.Mail;
+using ControlPlane.Application.Tenants.TenantCreation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -8,7 +9,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 // The first system admin's email address (section ControlPlane), checked on start.
 internal sealed class SystemAdminOptions
 {
-    public const string Section = "ControlPlane";
+    public const string Section = TenantCreationOptions.Section;
 
     public string? FirstSystemAdminEmail { get; set; }
 

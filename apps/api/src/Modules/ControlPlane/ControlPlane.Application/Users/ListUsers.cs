@@ -1,4 +1,5 @@
 using ControlPlane.Application.Ports;
+using ControlPlane.Domain.Users;
 using SharedKernel;
 
 namespace ControlPlane.Application.Users;
@@ -23,5 +24,5 @@ public static class ListUsersHandler
         ListUsers query,
         IUserCatalog users,
         CancellationToken cancellationToken) =>
-        (await users.ListUsersAsync(query.List, query.Status, cancellationToken)).Map(found => UserDetails.Of(found.User, found.IsSystemAdmin));
+        (await users.ListUsersAsync(query.List, query.Status is { } status ? Enum.Parse<UserStatus>(status) : null, cancellationToken)).Map(found => UserDetails.Of(found.User, found.IsSystemAdmin));
 }

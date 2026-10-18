@@ -16,7 +16,7 @@
       "!.turbo",
       "!.claude",
       "!apps/api",
-      "!packages/api-client/src/schema.ts"
+      "!packages/api-client/src/schema.gen.ts"
     ]
   },
   "formatter": {

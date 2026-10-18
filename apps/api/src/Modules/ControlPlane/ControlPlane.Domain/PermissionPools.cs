@@ -4,8 +4,9 @@ namespace ControlPlane.Domain;
 
 /// <summary>
 /// The permissions of the catalogue in their two pools. Tenant roles choose from the tenant pool only; system admins hold the
-/// system pool (A4). Domain does not reference Contracts (section 2), so the names are stated here as well; a unit test keeps
-/// them the same as the catalogue in <c>ControlPlane.Contracts</c>.
+/// system pool (A4). The names are declared once, here. Contracts does not reference Domain (section 2), so
+/// <c>apps/api/scripts/generate-permissions.mjs</c> writes the catalogue, <c>ControlPlane.Contracts/Permissions.g.cs</c>, from these
+/// constants (B18).
 /// </summary>
 internal static class PermissionPools
 {

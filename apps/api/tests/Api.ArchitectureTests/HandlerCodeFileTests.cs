@@ -57,7 +57,8 @@ public sealed class HandlerCodeFileTests
             await command.WaitForExitAsync(TestContext.Current.CancellationToken);
 
             command.ExitCode.ShouldBe(0, $"codegen write failed:{Environment.NewLine}{await standardOutput}{await standardError}");
-            return FilesIn(Path.Combine(folder, "Internal", "Generated"));
+            // `pnpm api:codegen` names each file it writes as a generated C# file (scripts/codegen.mjs), so a committed file ends in .g.cs.
+            return FilesIn(Path.Combine(folder, "Internal", "Generated")).ToDictionary(file => Path.ChangeExtension(file.Key, ".g.cs"), file => file.Value);
         }
         finally
         {

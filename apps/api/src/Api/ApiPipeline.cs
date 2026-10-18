@@ -187,34 +187,15 @@ internal static class ApiPipeline
             .Order(StringComparer.Ordinal),
     ];
 
-    // The response headers that the OpenAPI document declares for the endpoints under /v1, in ordinal order. Each comes from the metadata
-    // that makes the host send it: CreatedLocation gives Location (N11), IdempotencyKeyRequired gives Idempotent-Replayed (I5), and the
-    // rate limiter's metadata gives Retry-After (UserRateLimiting.Covers).
+    // The response headers that the endpoints under /v1 make the host send, in ordinal order, from the one map that the OpenAPI document
+    // reads too (ResponseHeaders).
     private static string[] ExposedHeadersOf(EndpointDataSource endpoints) =>
     [
         .. V1Endpoints(endpoints)
-            .SelectMany(endpoint => HeadersSentBy(endpoint.Metadata))
+            .SelectMany(endpoint => ResponseHeaders.SentBy(endpoint.Metadata))
             .Distinct()
             .Order(StringComparer.Ordinal),
     ];
-
-    private static IEnumerable<string> HeadersSentBy(EndpointMetadataCollection metadata)
-    {
-        if (metadata.GetMetadata<CreatedLocation>() is not null)
-        {
-            yield return HeaderNames.Location;
-        }
-
-        if (metadata.GetMetadata<IdempotencyKeyRequired>() is not null)
-        {
-            yield return IdempotencyExecutor.ReplayedHeader;
-        }
-
-        if (UserRateLimiting.Covers(metadata))
-        {
-            yield return HeaderNames.RetryAfter;
-        }
-    }
 
     private static IEnumerable<RouteEndpoint> V1Endpoints(EndpointDataSource endpoints) =>
         endpoints.Endpoints

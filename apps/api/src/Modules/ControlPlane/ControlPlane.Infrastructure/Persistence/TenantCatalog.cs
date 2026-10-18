@@ -286,24 +286,24 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
 
     // The database adds the change to the stored count, so the statement reads and writes the row under its own lock: two transactions of
     // two tenants that count for one user run one after the other, and neither loses the other's change.
-    async Task ITenantCatalog.CountMembershipAsync(Guid userId, int change, CancellationToken cancellationToken)
-    {
-        await controlPlane.SaveChangesAsync(cancellationToken);
-        await controlPlane.Database.ExecuteSqlAsync(
-            $"UPDATE control_plane.users SET membership_count = membership_count + {change} WHERE id = {userId}",
-            cancellationToken);
-    }
-
     Task<User?> ITenantCatalog.FindUserAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.Users.SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
     Task<bool> ITenantCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
-    public void AddMember(Guid userId, Guid roleId, DateTimeOffset joinedAt) =>
+    // B8: the one sequence of a membership's change (R13): the membership, the tenant's summary, the user's count, and the save.
+    async Task ITenantCatalog.AddMembershipAsync(Tenant tenant, Guid userId, Guid roleId, DateTimeOffset joinedAt, CancellationToken cancellationToken)
+    {
         controlPlane.Memberships.Add(new Membership(ActiveTenant, userId, roleId, joinedAt));
+        await FollowMembershipAsync(tenant, userId, 1, cancellationToken);
+    }
 
-    void ITenantCatalog.Remove(Membership membership) => controlPlane.Memberships.Remove(OfActiveTenant(membership, membership.TenantId));
+    async Task ITenantCatalog.RemoveMembershipAsync(Tenant tenant, Membership membership, CancellationToken cancellationToken)
+    {
+        controlPlane.Memberships.Remove(OfActiveTenant(membership, membership.TenantId));
+        await FollowMembershipAsync(tenant, membership.UserId, -1, cancellationToken);
+    }
 
     // An insert of a slug that another tenant creation has inserted but not yet committed waits for it, and is skipped if it commits.
     async Task<bool> ITenantCatalog.TryAddAsync(Tenant tenant, CancellationToken cancellationToken)
@@ -324,6 +324,17 @@ public sealed class TenantCatalog(ControlPlaneDbContext controlPlane) : ITenantC
     void ITenantCatalog.Add(User user) => controlPlane.Users.Add(user);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
+
+    // The rows are read after the change is saved, so the summary counts it, and the count is changed in the database after the save, so
+    // a user the transaction adds has its row.
+    private async Task FollowMembershipAsync(Tenant tenant, Guid userId, int change, CancellationToken cancellationToken)
+    {
+        OfActiveTenant(tenant, tenant.Id).Summarize(await ((ITenantCatalog)this).ReadRowsAsync(cancellationToken));
+        await controlPlane.SaveChangesAsync(cancellationToken);
+        await controlPlane.Database.ExecuteSqlAsync(
+            $"UPDATE control_plane.users SET membership_count = membership_count + {change} WHERE id = {userId}",
+            cancellationToken);
+    }
 
     // The tenants table belongs to no tenant, so row level security does not stop a tenant from adding another one.
     private T OfActiveTenant<T>(T row, Guid? tenantId) =>

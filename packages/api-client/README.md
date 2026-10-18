@@ -7,15 +7,15 @@ The typed client of the API, for every frontend: `apps/web`, and later `apps/adm
 The C# request and response types are the source. They sit at the end of each endpoint file (N7).
 
 1. The API build writes the OpenAPI document `apps/api/openapi/v1.json` from them. The file is committed.
-2. `pnpm api:generate` writes `src/schema.ts` from that file with `openapi-typescript`.
+2. `pnpm api:generate` writes `src/schema.gen.ts` from that file with `openapi-typescript`.
 3. `src/index.ts` exports the generated types and `createApiClient`.
 
-Never edit `src/schema.ts`. Change the C# type, build the API, and run `pnpm api:generate`. Commit both files. `apps/api/docs/local-run.md` shows the steps.
+Never edit `src/schema.gen.ts`. Change the C# type, build the API, and run `pnpm api:generate`. Commit both files. `apps/api/docs/local-run.md` shows the steps.
 
 CI fails in two cases:
 
 - The committed `openapi/v1.json` is not what the API build writes (`OpenApiDocumentFileTests`).
-- The committed `src/schema.ts` is not what `pnpm api:generate` writes from the committed document (job `node` in `.github/workflows/ci.yml`).
+- The committed `src/schema.gen.ts` is not what `pnpm api:generate` writes from the committed document (job `generated` in `.github/workflows/ci.yml`, which runs `pnpm generate`).
 
 ## Use
 
@@ -38,7 +38,7 @@ const { data, error } = await api.GET("/v1/tenants/{tenantId}/members", {
 
 | Package | Use | License |
 | --- | --- | --- |
-| `openapi-typescript` | Generates `src/schema.ts` (development only) | MIT |
+| `openapi-typescript` | Generates `src/schema.gen.ts` (development only) | MIT |
 | `openapi-fetch` | The typed `fetch` client | MIT |
 
 Their dependencies are under MIT, ISC or Apache-2.0. `.github/dependency-review-config.yml` holds the licenses a dependency may have.

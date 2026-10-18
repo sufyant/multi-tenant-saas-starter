@@ -44,13 +44,14 @@ public class UserTests
         user.SuspendedBy.ShouldBeNull();
     }
 
-    // A person who joins through an invitation is created at that moment, and is the member of the tenant they join.
+    // A person who joins through an invitation is created at that moment. The catalog adds and counts the membership of the tenant they
+    // join, as it does for a known user (B8), so a new user starts with none.
     [Fact]
-    public void JoinUser_NewPerson_IsCreatedAtTheMomentWithOneMembership()
+    public void JoinUser_NewPerson_IsCreatedAtTheMomentWithNoMembershipYet()
     {
         var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
 
-        (user.CreatedAt, user.MembershipCount).ShouldBe((Now, 1));
+        (user.CreatedAt, user.MembershipCount).ShouldBe((Now, 0));
     }
 
     [Fact]
@@ -233,5 +234,19 @@ public class UserTests
         user.Delete(Now);
 
         user.TimeZone.ShouldBeNull();
+    }
+
+    // B9: a deletion outranks a suspension, and a query reads the status by the same rule as the user does.
+    [Fact]
+    public void DeleteUser_Suspended_IsDeletedToTheUserAndToAQuery()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, AdminId);
+
+        user.Delete(Now);
+
+        user.Status.ShouldBe(UserStatus.Deleted);
+        User.InStatus(UserStatus.Deleted).Compile()(user).ShouldBeTrue();
+        User.InStatus(UserStatus.Suspended).Compile()(user).ShouldBeFalse();
     }
 }

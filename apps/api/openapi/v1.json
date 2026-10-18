@@ -259,14 +259,7 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "enum": [
-                "provisioning",
-                "active",
-                "suspended",
-                "cancelled",
-                "closed"
-              ],
-              "type": "string"
+              "$ref": "#/components/schemas/TenantResponseStatus"
             }
           }
         ],
@@ -1369,12 +1362,7 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "enum": [
-                "active",
-                "suspended",
-                "deleted"
-              ],
-              "type": "string"
+              "$ref": "#/components/schemas/UserResponseStatus"
             }
           }
         ],
@@ -2390,12 +2378,7 @@
             "name": "role",
             "in": "query",
             "schema": {
-              "enum": [
-                "owner",
-                "admin",
-                "member"
-              ],
-              "type": "string"
+              "$ref": "#/components/schemas/MemberRole"
             }
           },
           {
@@ -3026,12 +3009,7 @@
             "name": "role",
             "in": "query",
             "schema": {
-              "enum": [
-                "owner",
-                "admin",
-                "member"
-              ],
-              "type": "string"
+              "$ref": "#/components/schemas/MemberRole"
             }
           },
           {
@@ -4090,6 +4068,7 @@
           "user",
           "platform"
         ],
+        "type": "string",
         "description": "The kind of actor of an audit record."
       },
       "AuditEntryResponse": {
@@ -4193,6 +4172,7 @@
           "user",
           "invitation"
         ],
+        "type": "string",
         "description": "The kind of target of an audit record."
       },
       "ChangeMemberRoleRequest": {
@@ -4443,6 +4423,7 @@
           "accepted",
           "cancelled"
         ],
+        "type": "string",
         "description": "The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold."
       },
       "InviteMemberRequest": {
@@ -4535,6 +4516,7 @@
           "user",
           "platform"
         ],
+        "type": "string",
         "description": "Who invited: a user of the tenant, or the platform, for which a system admin acted."
       },
       "JsonElement": { },
@@ -4873,6 +4855,7 @@
           "suspended",
           "closed"
         ],
+        "type": "string",
         "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it."
       },
       "OwnerInvitationResponse": {
@@ -5319,6 +5302,7 @@
           "cancelled",
           "closed"
         ],
+        "type": "string",
         "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled."
       },
       "UserDetailResponse": {
@@ -5443,6 +5427,7 @@
           "suspended",
           "closed"
         ],
+        "type": "string",
         "description": "The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it."
       },
       "UserNameResponse": {
@@ -5529,6 +5514,7 @@
           "suspended",
           "deleted"
         ],
+        "type": "string",
         "description": "The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs."
       }
     },

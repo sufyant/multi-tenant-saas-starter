@@ -54,8 +54,7 @@ internal static partial class OpenApiContract
                     .AddOperationTransformer(DescribeListParameters)
                     .AddOperationTransformer(DescribeListLimits)
                     .AddOperationTransformer(DescribeIdempotency)
-                    .AddOperationTransformer(DescribeLocation)
-                    .AddOperationTransformer(DescribeRetryAfter)
+                    .AddOperationTransformer(DescribeResponseHeaders)
                     .AddSchemaTransformer(DescribeEnumValues)
                     .AddSchemaTransformer(DescribeRequestRules)
                     .AddDocumentTransformer(RequireBearerToken)
@@ -101,26 +100,31 @@ internal static partial class OpenApiContract
     }
 
     // K5: the sort and each filter of a list are enums, so a generated client knows their values. Their parameter types bind any text,
-    // which ListRequest and ListFilter check, so the document would call them strings; the values are the JSON names the check accepts.
+    // which ListRequest and ListFilter check, so the document would call them strings. A sort's values are the JSON names the check
+    // accepts. A filter takes the enum of its response (N7), so it refers to that enum's schema, and a client has one type for both (A19).
     private static Task DescribeListParameters(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         foreach (var description in context.Description.ParameterDescriptions)
         {
             var type = Nullable.GetUnderlyingType(description.Type) ?? description.Type;
-            var values = type.IsGenericType ? ListValuesOf(type.GetGenericTypeDefinition(), type.GetGenericArguments()[0]) : null;
-            if (values is not null && operation.Parameters?.SingleOrDefault(parameter => parameter.Name == description.Name) is OpenApiParameter parameter)
+            if (!type.IsGenericType || operation.Parameters?.SingleOrDefault(parameter => parameter.Name == description.Name) is not OpenApiParameter parameter)
             {
-                parameter.Schema = new OpenApiSchema { Type = JsonSchemaType.String, Enum = [.. values.Select(value => JsonValue.Create(value))] };
+                continue;
+            }
+
+            var values = type.GetGenericArguments()[0];
+            if (type.GetGenericTypeDefinition() == typeof(ListSort<>))
+            {
+                var names = (IReadOnlyList<string>)typeof(ListSort).GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null)!;
+                parameter.Schema = new OpenApiSchema { Type = JsonSchemaType.String, Enum = [.. names.Select(value => JsonValue.Create(value))] };
+            }
+            else if (type.GetGenericTypeDefinition() == typeof(ListFilter<>))
+            {
+                parameter.Schema = new OpenApiSchemaReference(values.Name, context.Document);
             }
         }
 
         return Task.CompletedTask;
-    }
-
-    private static IReadOnlyList<string>? ListValuesOf(Type parameter, Type values)
-    {
-        var describe = parameter == typeof(ListSort<>) ? typeof(ListSort) : parameter == typeof(ListFilter<>) ? typeof(ListFilter) : null;
-        return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
     }
 
     // K5: the limits of a list's query, from the constants that PageRequest, CursorRequest and ListRequest check. A parameter is found
@@ -157,7 +161,7 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // I1, I2 and I5: an idempotent operation requires its key, and each answer it can replay may carry Idempotent-Replayed: true.
+    // I1 and I2: an idempotent operation requires its key.
     private static Task DescribeIdempotency(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         if (!context.Description.ActionDescriptor.EndpointMetadata.OfType<IdempotencyKeyRequired>().Any())
@@ -171,8 +175,34 @@ internal static partial class OpenApiContract
             Name = IdempotencyMiddleware.Header,
             In = ParameterLocation.Header,
             Required = true,
-            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = IdempotencyMiddleware.MaxLength, Pattern = "^[!-~]+$" },
+            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = IdempotencyMiddleware.MaxLength, Pattern = IdempotencyMiddleware.Pattern },
         });
+        return Task.CompletedTask;
+    }
+
+    // How the document declares each header of ResponseHeaders. A header without a declaration here throws, so the build fails.
+    private static readonly Dictionary<string, Action<OpenApiOperation>> HeaderDescriptions = new(StringComparer.Ordinal)
+    {
+        [IdempotencyExecutor.ReplayedHeader] = DescribeReplayed,
+        [HeaderNames.Location] = DescribeLocation,
+        [HeaderNames.RetryAfter] = DescribeRetryAfter,
+    };
+
+    // The response headers an operation's metadata makes the host send, from the one map that the CORS policy reads too
+    // (ResponseHeaders). Each header is declared on the answers that carry it.
+    private static Task DescribeResponseHeaders(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        foreach (var header in ResponseHeaders.SentBy(context.Description.ActionDescriptor.EndpointMetadata))
+        {
+            HeaderDescriptions[header](operation);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // I5: each answer an idempotent operation can replay may carry Idempotent-Replayed: true.
+    private static void DescribeReplayed(OpenApiOperation operation)
+    {
         foreach (var (status, answer) in operation.Responses ?? [])
         {
             if (!NeverReplayed.Contains(status) && answer is OpenApiResponse response)
@@ -185,16 +215,13 @@ internal static partial class OpenApiContract
                 };
             }
         }
-
-        return Task.CompletedTask;
     }
 
     // RFC 9110, section 10.2.2: where a GET reads the resource an endpoint creates, its 201 names the resource in Location
     // (ResultEndpointFilter).
-    private static Task DescribeLocation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    private static void DescribeLocation(OpenApiOperation operation)
     {
-        if (context.Description.ActionDescriptor.EndpointMetadata.OfType<CreatedLocation>().Any()
-            && operation.Responses?.GetValueOrDefault(StatusCodes.Status201Created.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse created)
+        if (operation.Responses?.GetValueOrDefault(StatusCodes.Status201Created.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse created)
         {
             created.Headers ??= new Dictionary<string, IOpenApiHeader>();
             created.Headers[HeaderNames.Location] = new OpenApiHeader
@@ -204,17 +231,14 @@ internal static partial class OpenApiContract
                 Schema = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uri-reference" },
             };
         }
-
-        return Task.CompletedTask;
     }
 
     // RFC 9110, section 10.2.3: the rate limiter answers 429 with Retry-After, the seconds to wait (UserRateLimiting). Each operation
     // it covers declares the header on its 429. A 429 of a handler, such as the daily limit of invitations, sends none, so the header is
     // not required.
-    private static Task DescribeRetryAfter(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    private static void DescribeRetryAfter(OpenApiOperation operation)
     {
-        if (UserRateLimiting.Covers(context.Description.ActionDescriptor.EndpointMetadata)
-            && operation.Responses?.GetValueOrDefault(StatusCodes.Status429TooManyRequests.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse rejected)
+        if (operation.Responses?.GetValueOrDefault(StatusCodes.Status429TooManyRequests.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse rejected)
         {
             rejected.Headers ??= new Dictionary<string, IOpenApiHeader>();
             rejected.Headers[HeaderNames.RetryAfter] = new OpenApiHeader
@@ -223,8 +247,6 @@ internal static partial class OpenApiContract
                 Schema = new OpenApiSchema { Type = JsonSchemaType.Integer, Minimum = Number(0) },
             };
         }
-
-        return Task.CompletedTask;
     }
 
     // Decision 1 of audit fix 09: the validators are the one source of a request's limits. The command X of a request XRequest carries
@@ -286,12 +308,16 @@ internal static partial class OpenApiContract
     private static async Task DescribeEnumValues(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         var type = context.JsonTypeInfo.Type;
-        if (type.IsEnum && schema.Enum is null)
+        if (type.IsEnum)
         {
-            var values = (IReadOnlyList<string>)typeof(ListFilter).GetMethod(nameof(ListFilter.ValuesOf))!
-                .MakeGenericMethod(type).Invoke(null, null)!;
+            // Every enum is a string on the wire, so its schema says so (A19); the generator leaves the type out of an enum it lists.
             schema.Type = JsonSchemaType.String;
-            schema.Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))];
+            if (schema.Enum is null)
+            {
+                var values = (IReadOnlyList<string>)typeof(ListFilter).GetMethod(nameof(ListFilter.ValuesOf))!
+                    .MakeGenericMethod(type).Invoke(null, null)!;
+                schema.Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))];
+            }
         }
         else if (Nullable.GetUnderlyingType(type) is { IsEnum: true } underlying && schema is { Type: null, Enum: null, OneOf: null })
         {

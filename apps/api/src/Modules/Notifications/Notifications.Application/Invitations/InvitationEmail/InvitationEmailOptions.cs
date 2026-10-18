@@ -1,7 +1,9 @@
-namespace Notifications.Application;
+using SharedKernel;
 
-// Configuration of the Notifications module (section Notifications), validated at startup by its infrastructure.
-internal sealed class NotificationsOptions
+namespace Notifications.Application.Invitations.InvitationEmail;
+
+// Configuration of the invitation email (section Notifications), validated at startup by its infrastructure.
+internal sealed class InvitationEmailOptions
 {
     public const string Section = "Notifications";
 
@@ -14,6 +16,5 @@ internal sealed class NotificationsOptions
 
     public IReadOnlyList<TimeSpan> RetryDelays => InvitationEmailRetryDelays ?? DefaultInvitationEmailRetryDelays;
 
-    public bool IsValid =>
-        RetryDelays.Count > 0 && RetryDelays[0] > TimeSpan.Zero && RetryDelays.Zip(RetryDelays.Skip(1)).All(pair => pair.Second > pair.First);
+    public bool IsValid => GrowingRetries.AreValid(RetryDelays);
 }
