@@ -4078,19 +4078,10 @@
             "format": "date-time"
           },
           "state": {
-            "$ref": "#/components/schemas/InvitationPreviewResponseState"
+            "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation\ngives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request. Only a caller with\nthe invited address gets it."
-      },
-      "InvitationPreviewResponseState": {
-        "enum": [
-          "pending",
-          "expired",
-          "accepted",
-          "cancelled"
-        ],
-        "description": "The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant)."
+        "description": "What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation\ngives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request: `pending`,\n`expired`, `accepted` or `cancelled`. Only a caller with the invited address gets it."
       },
       "InvitationResponse": {
         "required": [
@@ -4100,7 +4091,8 @@
           "invitedBy",
           "invitedByName",
           "createdAt",
-          "expiresAt"
+          "expiresAt",
+          "state"
         ],
         "type": "object",
         "properties": {
@@ -4128,9 +4120,21 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "state": {
+            "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their\nnames as the catalog holds them now, and when it was created and expires. The screen shows an expired invitation from its expiry."
+        "description": "A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their\nnames as the catalog holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or\n`expired` once its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one."
+      },
+      "InvitationResponseState": {
+        "enum": [
+          "pending",
+          "expired",
+          "accepted",
+          "cancelled"
+        ],
+        "description": "The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold."
       },
       "InviteMemberRequest": {
         "required": [
@@ -4574,18 +4578,10 @@
             "format": "date-time"
           },
           "state": {
-            "$ref": "#/components/schemas/OwnerInvitationResponseState"
+            "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request."
-      },
-      "OwnerInvitationResponseState": {
-        "enum": [
-          "pending",
-          "expired",
-          "cancelled"
-        ],
-        "description": "The state of an Owner invitation: pending, expired once its expiry has passed, or cancelled."
+        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner."
       },
       "Permission": {
         "enum": [
