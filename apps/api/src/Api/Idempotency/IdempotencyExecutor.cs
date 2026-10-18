@@ -26,14 +26,23 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
     public async Task<Result<T>> ExecuteAsync<T>(object command, string? tenantId, CancellationToken cancellationToken)
     {
         var context = accessor.HttpContext ?? throw new InvalidOperationException("Idempotency runs inside an HTTP request.");
-        var request = context.Request;
         var subject = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new InvalidOperationException("An idempotent operation requires a signed-in caller.");
-        var key = request.Headers[IdempotencyMiddleware.Header].ToString();
+        var key = context.Request.Headers[IdempotencyMiddleware.Header].ToString();
+        var lease = Guid.NewGuid();
+
+        return await ClaimAsync<T>(context, subject, key, lease, cancellationToken)
+            ?? await RunAsync<T>(command, tenantId, context, subject, key, lease, cancellationToken);
+    }
+
+    // Claims the key for this request with the lease, or answers without running the command: the saved result of a finished request
+    // (I5), a key used for another request (422) or a request that still runs (409). Null when the claim is this request's.
+    private async Task<Result<T>?> ClaimAsync<T>(HttpContext context, string subject, string key, Guid lease, CancellationToken cancellationToken)
+    {
+        var request = context.Request;
         var fingerprint = await HashRequestAsync(request, cancellationToken);
         var route = ((RouteEndpoint)context.GetEndpoint()!).RoutePattern.RawText!;
         var now = time.GetUtcNow();
-        var lease = Guid.NewGuid();
         var until = now + ClaimLifetime;
 
         while (true)
@@ -46,7 +55,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
                 """, cancellationToken);
             if (inserted == 1)
             {
-                break;
+                return null;
             }
 
             var existing = await api.IdempotencyKeys.AsNoTracking().SingleOrDefaultAsync(row => row.Subject == subject && row.Key == key, cancellationToken);
@@ -80,12 +89,17 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
                 """, cancellationToken);
             if (renewed == 1)
             {
-                break;
+                return null;
             }
 
             return Error.Conflict(HostErrorCodes.IdempotencyKeyInProgress, "The first request with this idempotency key is still running.");
         }
+    }
 
+    // Runs the command under the claim, in the handler's own transaction (I4). A validation failure and an exception release the claim,
+    // so a retry runs again (I6).
+    private async Task<Result<T>> RunAsync<T>(object command, string? tenantId, HttpContext context, string subject, string key, Guid lease, CancellationToken cancellationToken)
+    {
         var traceId = TraceIds.Of(context);
         context.Items[IdempotencyMiddleware.TraceItem] = traceId;
         var delivery = new DeliveryOptions
