@@ -10,7 +10,13 @@ const problem = (overrides: Partial<ProblemDetails>): ProblemDetails => ({
 
 describe("isProblemDetails", () => {
   it("IsProblemDetails_BodyWithCodeAndTraceId_IsTrue", () => {
-    expect(isProblemDetails({ code: "tenant.not_found", traceId: "00-trace", status: 404 })).toBe(true);
+    expect(
+      isProblemDetails({
+        code: "tenant.not_found",
+        traceId: "00-trace",
+        status: 404,
+      }),
+    ).toBe(true);
   });
 
   it("IsProblemDetails_BodyWithoutCode_IsFalse", () => {
@@ -24,9 +30,15 @@ describe("isProblemDetails", () => {
 
 describe("fieldErrorsOf", () => {
   it("FieldErrorsOf_ValidationAnswer_KeysEachFieldByItsName", () => {
-    const answer = problem({ code: "request.validation_failed", errors: { name: ["too_long"], email: ["required"] } });
+    const answer = problem({
+      code: "request.validation_failed",
+      errors: { name: ["too_long"], email: ["required"] },
+    });
 
-    expect(fieldErrorsOf(answer)).toEqual({ name: ["too_long"], email: ["required"] });
+    expect(fieldErrorsOf(answer)).toEqual({
+      name: ["too_long"],
+      email: ["required"],
+    });
   });
 
   it("FieldErrorsOf_AnswerWithoutErrors_IsEmpty", () => {
@@ -36,17 +48,27 @@ describe("fieldErrorsOf", () => {
 
 describe("actionFor", () => {
   it("ActionFor_401_GoesToSignIn", () => {
-    expect(actionFor(401, problem({ code: "auth.unauthenticated" }))).toEqual({ kind: "sign-in" });
+    expect(actionFor(401, problem({ code: "auth.unauthenticated" }))).toEqual({
+      kind: "sign-in",
+    });
   });
 
   it("ActionFor_403UserSuspended_GoesToTheSuspendedScreen", () => {
-    expect(actionFor(403, problem({ code: "user.suspended" }))).toEqual({ kind: "suspended" });
+    expect(actionFor(403, problem({ code: "user.suspended" }))).toEqual({
+      kind: "suspended",
+    });
   });
 
   it("ActionFor_ValidationAnswer_GivesTheFieldErrorsToTheForm", () => {
-    const answer = problem({ code: "request.validation_failed", errors: { name: ["too_long"] } });
+    const answer = problem({
+      code: "request.validation_failed",
+      errors: { name: ["too_long"] },
+    });
 
-    expect(actionFor(400, answer)).toEqual({ kind: "field-errors", fields: { name: ["too_long"] } });
+    expect(actionFor(400, answer)).toEqual({
+      kind: "field-errors",
+      fields: { name: ["too_long"] },
+    });
   });
 
   it("ActionFor_AnswerWithACode_ShowsTheMessageOfTheCode", () => {
@@ -64,6 +86,9 @@ describe("actionFor", () => {
   });
 
   it("ActionFor_AnswerThatIsNoProblemDetails_ShowsTheMessageOfAServerError", () => {
-    expect(actionFor(502, null)).toEqual({ kind: "message", key: "errors.server.error" });
+    expect(actionFor(502, null)).toEqual({
+      kind: "message",
+      key: "errors.server.error",
+    });
   });
 });

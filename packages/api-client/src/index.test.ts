@@ -10,27 +10,43 @@ import {
 
 describe("schemas", () => {
   it("RenameTenantBody_NameOfTheLimit_IsAccepted", () => {
-    expect(schemas.RenameTenantBody.safeParse({ name: "a".repeat(100) }).success).toBe(true);
+    expect(
+      schemas.RenameTenantBody.safeParse({ name: "a".repeat(100) }).success,
+    ).toBe(true);
   });
 
   it("RenameTenantBody_NameOverTheLimit_IsRefused", () => {
-    expect(schemas.RenameTenantBody.safeParse({ name: "a".repeat(101) }).success).toBe(false);
+    expect(
+      schemas.RenameTenantBody.safeParse({ name: "a".repeat(101) }).success,
+    ).toBe(false);
   });
 
   it("InviteMemberBody_NullLanguage_IsAccepted", () => {
-    const invite = { email: "ayse@northwind.example", role: MemberRole.member, language: null };
+    const invite = {
+      email: "ayse@northwind.example",
+      role: MemberRole.member,
+      language: null,
+    };
 
     expect(schemas.InviteMemberBody.safeParse(invite).success).toBe(true);
   });
 
   it("InviteMemberBody_ListedLanguage_IsAccepted", () => {
-    const invite = { email: "ayse@northwind.example", role: MemberRole.member, language: "tr" };
+    const invite = {
+      email: "ayse@northwind.example",
+      role: MemberRole.member,
+      language: "tr",
+    };
 
     expect(schemas.InviteMemberBody.safeParse(invite).success).toBe(true);
   });
 
   it("InviteMemberBody_UnlistedLanguage_IsRefused", () => {
-    const invite = { email: "ayse@northwind.example", role: MemberRole.member, language: "de" };
+    const invite = {
+      email: "ayse@northwind.example",
+      role: MemberRole.member,
+      language: "de",
+    };
 
     expect(schemas.InviteMemberBody.safeParse(invite).success).toBe(false);
   });
@@ -42,8 +58,14 @@ const newRoleOf = (details: AuditDetailsResponse) =>
 
 describe("types", () => {
   it("AuditDetailsResponse_NarrowedByOperation_HasTheShapeOfThatOperation", () => {
-    type RoleChanged = Extract<AuditDetailsResponse, { operation: "member.role_changed" }>;
-    type Renamed = Extract<AuditDetailsResponse, { operation: "tenant.renamed" }>;
+    type RoleChanged = Extract<
+      AuditDetailsResponse,
+      { operation: "member.role_changed" }
+    >;
+    type Renamed = Extract<
+      AuditDetailsResponse,
+      { operation: "tenant.renamed" }
+    >;
 
     expectTypeOf<RoleChanged["newRole"]>().toEqualTypeOf<RoleResponse>();
     expectTypeOf<Renamed["newName"]>().toEqualTypeOf<string>();
@@ -64,11 +86,15 @@ describe("enums", () => {
 
 describe("declaredResponseHeaders", () => {
   it("DeclaredResponseHeaders_CreateTenant_HoldsLocationAndIdempotentReplayed", () => {
-    expect(declaredResponseHeaders("CreateTenant")).toEqual(expect.arrayContaining(["Location", "Idempotent-Replayed"]));
+    expect(declaredResponseHeaders("CreateTenant")).toEqual(
+      expect.arrayContaining(["Location", "Idempotent-Replayed"]),
+    );
   });
 
   it("DeclaredResponseHeaders_GetMe_HoldsNeither", () => {
     expect(declaredResponseHeaders("GetMe")).not.toContain("Location");
-    expect(declaredResponseHeaders("GetMe")).not.toContain("Idempotent-Replayed");
+    expect(declaredResponseHeaders("GetMe")).not.toContain(
+      "Idempotent-Replayed",
+    );
   });
 });

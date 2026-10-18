@@ -1,6 +1,14 @@
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+} from "vitest";
 import {
   acceptInvitation,
   configureApiClient,
@@ -22,7 +30,7 @@ const server = setupServer();
 const requests: Request[] = [];
 
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: "error" });
+  server.listen({ onUnhandledFrame: "error" });
   server.events.on("request:start", ({ request }) => {
     requests.push(request.clone());
   });
@@ -42,7 +50,9 @@ describe("apiFetch", () => {
     const answer = await listTenants({ page: 1, pageSize: 20 });
 
     expect(answer).toEqual(page);
-    expect(requests[0]?.url).toBe(`${baseUrl}/v1/platform/tenants?page=1&pageSize=20`);
+    expect(requests[0]?.url).toBe(
+      `${baseUrl}/v1/platform/tenants?page=1&pageSize=20`,
+    );
     expect(requests[0]?.headers.get("X-Request-Source")).toBe("test");
     expect(requests[0]?.headers.has("Authorization")).toBe(false);
   });
@@ -51,7 +61,12 @@ describe("apiFetch", () => {
     configureApiClient({ baseUrl });
     server.use(
       http.post("*/v1/me/invitations/accept", () =>
-        HttpResponse.json({ id: tenantId, name: "Northwind MRO", slug: "northwind", status: "active" }),
+        HttpResponse.json({
+          id: tenantId,
+          name: "Northwind MRO",
+          slug: "northwind",
+          status: "active",
+        }),
       ),
     );
 
@@ -81,16 +96,23 @@ describe("apiFetch", () => {
       http.post("*/v1/platform/tenants/:tenantId/suspend", () =>
         HttpResponse.json(
           { status: 404, code: "tenant.not_found", traceId: "00-trace" },
-          { status: 404, headers: { "Content-Type": "application/problem+json" } },
+          {
+            status: 404,
+            headers: { "Content-Type": "application/problem+json" },
+          },
         ),
       ),
     );
 
-    const error = await suspendTenant(tenantId, { reason: "Unpaid invoices" }).catch((e: unknown) => e);
+    const error = await suspendTenant(tenantId, {
+      reason: "Unpaid invoices",
+    }).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ProblemDetailsError);
     expect((error as ProblemDetailsError).status).toBe(404);
-    expect((error as ProblemDetailsError).problem?.code).toBe("tenant.not_found");
+    expect((error as ProblemDetailsError).problem?.code).toBe(
+      "tenant.not_found",
+    );
   });
 
   it("CreateTenant_WithIdempotencyKey_PassesTheKeyThrough", async () => {
@@ -112,7 +134,11 @@ describe("apiFetch", () => {
     );
 
     const tenant = await createTenant(
-      { name: "Atlas Technic", slug: "atlas", ownerEmail: "owner@atlas.example" },
+      {
+        name: "Atlas Technic",
+        slug: "atlas",
+        ownerEmail: "owner@atlas.example",
+      },
       { "Idempotency-Key": "key-1" },
     );
 
