@@ -265,7 +265,7 @@ jobs:
       # The server needs Clerk keys. These are fake and well formed: the publishable key names
       # clerk.example.invalid, which does not resolve. No real key is used at build or run time.
       - name: Run the image
-        run: scripts/ci/run-web-image.sh
+        run: scripts/ci/run-app-image.sh web
 
       - name: Print the container logs
         if: failure()
@@ -274,6 +274,54 @@ jobs:
       - name: Remove the container
         if: always()
         run: docker rm -f web || true
+
+  platform-image:
+    name: "Platform image: build, scan, run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GRYPE_IMAGE: ghcr.io/anchore/grype:v0.120.1@sha256:e4a44ef45d285b829ce6efe2642980329661bd2d18eab5fc539138d4adaebbbe
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the image
+        run: docker build -f apps/platform/Dockerfile --build-arg NODE_MAJOR="$(cat .nvmrc)" -t platform .
+
+      - name: Check that the image runs as a non-root user
+        run: |
+          user=$(docker image inspect platform --format '{{.Config.User}}')
+          echo "User: ${user:-<none>}"
+          # Kubernetes verifies runAsNonRoot only for a numeric user.
+          uid=${user%%:*}
+          if [[ ! "$uid" =~ ^[0-9]+$ ]] || (( 10#$uid == 0 )); then
+            echo "The image must run as a numeric user other than 0." >&2
+            exit 1
+          fi
+
+      - name: Scan the image
+        run: |
+          docker save platform -o "$RUNNER_TEMP/platform.tar"
+          grype() {
+            docker run --rm -e GRYPE_DB_CACHE_DIR=/grype-db -v grype-db:/grype-db \
+              -v "$RUNNER_TEMP/platform.tar:/image.tar:ro" "$GRYPE_IMAGE" docker-archive:/image.tar "$@"
+          }
+          grype
+          grype --only-fixed --fail-on high
+
+      # The server needs Clerk keys. These are fake and well formed: the publishable key names
+      # clerk.example.invalid, which does not resolve. No real key is used at build or run time.
+      - name: Run the image
+        run: scripts/ci/run-app-image.sh platform
+
+      - name: Print the container logs
+        if: failure()
+        run: docker logs platform || true
+
+      - name: Remove the container
+        if: always()
+        run: docker rm -f platform || true
 
   # GitHub's dependency review checks the dependencies that a pull request adds or changes, in
   # every ecosystem: their licenses and their known vulnerabilities. The settings are in
@@ -300,7 +348,7 @@ jobs:
   # in the diff, not in the repository settings.
   ci:
     name: CI
-    needs: [node, api, generated, api-image, web-image, dependency-review]
+    needs: [node, api, generated, api-image, web-image, platform-image, dependency-review]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 1

@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "title": "Starter Platform",
+    "description": "Sağlayıcının uygulaması."
+  },
+  "locale": {
+    "format": "tr-TR"
+  },
+  "shell": {
+    "navigation": "Ana menü",
+    "menu": "Menüyü aç",
+    "search": "Ara",
+    "searchShortcut": "⌘K",
+    "breadcrumb": "Konum",
+    "commandTitle": "Git",
+    "commandPlaceholder": "Sayfa ara",
+    "commandEmpty": "Sayfa bulunamadı",
+    "home": "Ana sayfa",
+    "overview": "Genel bakış",
+    "settings": "Ayarlar",
+    "preferences": "Tercihler",
+    "you": "Siz",
+    "language": "Dil",
+    "platform": "Platform"
+  },
+  "overview": {
+    "title": "Genel bakış",
+    "emptyTitle": "Platform",
+    "emptyText": "Kuruluşlar, Kullanıcılar ve Etkinlik sonraki adımlarda buraya gelir."
+  },
+  "preferences": {
+    "title": "Tercihler",
+    "readOnly": "Dilinizi ve saat diliminizi sonraki bir sürümde değiştirebilirsiniz.",
+    "name": "Ad",
+    "email": "E-posta",
+    "language": "Dil",
+    "timeZone": "Saat dilimi",
+    "browserTimeZone": "Ayarlanmadı: bu cihazın saat dilimi",
+    "now": "Şu an",
+    "theme": "Tema",
+    "themeHint": "Bu cihazda saklanır."
+  },
+  "access": {
+    "noAccessText": "Bu uygulama sağlayıcının sistem yöneticileri içindir. Hesabınız bunlardan biri değil."
+  }
+}

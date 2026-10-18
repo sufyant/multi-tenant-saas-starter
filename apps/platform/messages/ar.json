@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "title": "Starter Platform",
+    "description": "تطبيق مزوّد الخدمة."
+  },
+  "locale": {
+    "format": "ar-SA"
+  },
+  "shell": {
+    "navigation": "القائمة الرئيسية",
+    "menu": "فتح القائمة",
+    "search": "بحث",
+    "searchShortcut": "⌘K",
+    "breadcrumb": "المسار",
+    "commandTitle": "انتقال إلى",
+    "commandPlaceholder": "ابحث عن صفحة",
+    "commandEmpty": "لم يتم العثور على صفحة",
+    "home": "الرئيسية",
+    "overview": "نظرة عامة",
+    "settings": "الإعدادات",
+    "preferences": "التفضيلات",
+    "you": "أنت",
+    "language": "اللغة",
+    "platform": "Platform"
+  },
+  "overview": {
+    "title": "نظرة عامة",
+    "emptyTitle": "Platform",
+    "emptyText": "تأتي المؤسسات والمستخدمون والنشاط هنا في الخطوات التالية."
+  },
+  "preferences": {
+    "title": "التفضيلات",
+    "readOnly": "يمكنك تغيير لغتك ومنطقتك الزمنية في إصدار لاحق.",
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "language": "اللغة",
+    "timeZone": "المنطقة الزمنية",
+    "browserTimeZone": "غير محددة: المنطقة الزمنية لهذا الجهاز",
+    "now": "الآن",
+    "theme": "المظهر",
+    "themeHint": "يُحفظ على هذا الجهاز."
+  },
+  "access": {
+    "noAccessText": "هذا التطبيق لمسؤولي النظام لدى مزوّد الخدمة. حسابك ليس واحدًا منهم."
+  }
+}
