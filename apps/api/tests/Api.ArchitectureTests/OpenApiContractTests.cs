@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Audit.Domain;
 using ControlPlane.Api;
 using ControlPlane.Api.Tenant;
 using ControlPlane.Contracts;
@@ -25,6 +26,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string ProblemDetailsSchema = "#/components/schemas/ProblemDetails";
     private const string LanguageSchema = "#/components/schemas/Language";
     private const string PermissionSchema = "#/components/schemas/Permission";
+    private const string AuditOperationSchema = "#/components/schemas/AuditOperation";
     private const string InvitationStateSchema = "#/components/schemas/InvitationResponseState";
     private const string RoleSchema = "#/components/schemas/RoleResponse";
     private const string MemberRoleSchema = "#/components/schemas/MemberRole";
@@ -169,6 +171,41 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         ReferencesIn(role.GetProperty("properties").GetProperty("builtIn")).ShouldBe([MemberRoleSchema]);
         IsNullable(role.GetProperty("properties").GetProperty("builtIn")).ShouldBeTrue();
         EnumOf(SchemaAt(MemberRoleSchema)).ShouldBe(JsonValuesOf(typeof(MemberRole)));
+    }
+
+    // N11 and K3: the operations of the audit records are one enum in the document, so a client knows each one and hears of a new one.
+    [Fact]
+    public void BuildOpenApiDocument_AuditOperation_ListsEveryOperationOfAuditOperations()
+    {
+        var declared = typeof(AuditOperations).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal);
+
+        var documented = EnumOf(Schemas().Single(schema => schema.Name == "AuditOperation").Value);
+
+        declared.ShouldNotBeEmpty();
+        documented.ShouldBe(string.Join(", ", declared));
+    }
+
+    // N11 and K3: the operation of an entry of either audit log is the one schema AuditOperation. A field is found by its name, as the
+    // response types keep the operation as a string (AuditEntryResponse).
+    [Fact]
+    public void BuildOpenApiDocument_EveryResponseFieldNamedOperation_IsAnAuditOperation()
+    {
+        var expected = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
+            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Operation") is not null)
+            .Select(type => $"{type.Name}.operation");
+
+        var documented = Schemas()
+            .Where(schema => schema.Value.TryGetProperty("properties", out _))
+            .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
+                .Where(property => ReferencesIn(property.Value).Contains(AuditOperationSchema))
+                .Select(property => $"{schema.Name}.{property.Name}"));
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
     }
 
     // The maintainer's decision in audit fix 08: one enum of an invitation's state, InvitationResponseState. The preview, the Owner
