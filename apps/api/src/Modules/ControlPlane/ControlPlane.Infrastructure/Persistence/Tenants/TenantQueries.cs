@@ -34,9 +34,9 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
         if (list.Search is { } search)
         {
-            var pattern = ListQueries.ContainsPattern(search);
+            var pattern = ListQueryExtensions.ContainsPattern(search);
             tenants = tenants.Where(tenant =>
-                EF.Functions.ILike(tenant.Name, pattern, ListQueries.Escape) || EF.Functions.ILike(tenant.Slug, pattern, ListQueries.Escape));
+                EF.Functions.ILike(tenant.Name, pattern, ListQueryExtensions.Escape) || EF.Functions.ILike(tenant.Slug, pattern, ListQueryExtensions.Escape));
         }
 
         var total = await tenants.CountAsync(cancellationToken);
@@ -93,9 +93,9 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             select new { Tenant = tenant, Role = role };
         if (list.Search is { } search)
         {
-            var pattern = ListQueries.ContainsPattern(search);
+            var pattern = ListQueryExtensions.ContainsPattern(search);
             tenants = tenants.Where(row =>
-                EF.Functions.ILike(row.Tenant.Name, pattern, ListQueries.Escape) || EF.Functions.ILike(row.Tenant.Slug, pattern, ListQueries.Escape));
+                EF.Functions.ILike(row.Tenant.Name, pattern, ListQueryExtensions.Escape) || EF.Functions.ILike(row.Tenant.Slug, pattern, ListQueryExtensions.Escape));
         }
 
         // The list has one sort field, the name.

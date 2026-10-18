@@ -26,14 +26,14 @@ public static class RemoveMemberHandler
             return (start.Error, null);
         }
 
-        var (tenant, actorUser, actor) = start.Value;
+        var (tenant, actor, actorMembership) = start.Value;
 
         if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
             return (Errors.MemberNotFound, null);
         }
 
-        var allowed = Tenant.CheckRemoval(actor, target, await tenants.CountOwnersAsync(cancellationToken));
+        var allowed = Tenant.CheckRemoval(actorMembership, target, await tenants.CountOwnersAsync(cancellationToken));
         if (!allowed.IsSuccess)
         {
             return (allowed, null);
@@ -43,6 +43,6 @@ public static class RemoveMemberHandler
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
-        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actorUser.Id, role.Name));
+        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name));
     }
 }

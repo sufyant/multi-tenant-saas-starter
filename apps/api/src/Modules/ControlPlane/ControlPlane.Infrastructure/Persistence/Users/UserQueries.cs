@@ -61,11 +61,11 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
 
         if (list.Search is { } search)
         {
-            var pattern = ListQueries.ContainsPattern(search);
+            var pattern = ListQueryExtensions.ContainsPattern(search);
             users = users.Where(user =>
-                EF.Functions.ILike(user.Email!, pattern, ListQueries.Escape)
-                || EF.Functions.ILike(user.FirstName!, pattern, ListQueries.Escape)
-                || EF.Functions.ILike(user.LastName!, pattern, ListQueries.Escape));
+                EF.Functions.ILike(user.Email!, pattern, ListQueryExtensions.Escape)
+                || EF.Functions.ILike(user.FirstName!, pattern, ListQueryExtensions.Escape)
+                || EF.Functions.ILike(user.LastName!, pattern, ListQueryExtensions.Escape));
         }
 
         var total = await users.CountAsync(cancellationToken);

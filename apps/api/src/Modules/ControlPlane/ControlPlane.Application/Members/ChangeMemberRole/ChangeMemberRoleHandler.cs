@@ -26,7 +26,7 @@ public static class ChangeMemberRoleHandler
             return (start.Error, null);
         }
 
-        var (tenant, actorUser, actor) = start.Value;
+        var (tenant, actor, actorMembership) = start.Value;
 
         if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
@@ -35,7 +35,7 @@ public static class ChangeMemberRoleHandler
 
         var oldRole = RoleOf(target);
         var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
-        var changed = Tenant.ChangeMemberRole(actor, target, role, await tenants.CountOwnersAsync(cancellationToken));
+        var changed = Tenant.ChangeMemberRole(actorMembership, target, role, await tenants.CountOwnersAsync(cancellationToken));
         if (!changed.IsSuccess)
         {
             return (changed.Error, null);
@@ -53,7 +53,7 @@ public static class ChangeMemberRoleHandler
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (member, new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actorUser.Id, oldRole.Name, role.Name));
+        return (member, new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, oldRole.Name, role.Name));
     }
 
     private static Role RoleOf(Membership membership) => BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId);

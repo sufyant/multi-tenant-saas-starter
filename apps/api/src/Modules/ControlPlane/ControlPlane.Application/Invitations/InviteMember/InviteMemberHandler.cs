@@ -33,11 +33,11 @@ public static class InviteMemberHandler
             return (start.Error, null, null, null);
         }
 
-        var (tenant, inviter, membership) = start.Value;
+        var (tenant, actor, actorMembership) = start.Value;
 
         var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
 
-        var allowed = Invitation.CheckInviter(BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId), role);
+        var allowed = Invitation.CheckInviter(BuiltInRoles.All.Single(builtIn => builtIn.Id == actorMembership.RoleId), role);
         if (!allowed.IsSuccess)
         {
             return (allowed.Error, null, null, null);
@@ -65,20 +65,20 @@ public static class InviteMemberHandler
         }
 
         var secret = InvitationSecret.Generate();
-        var language = command.Language ?? inviter.Language;
-        var invitation = Invitation.Create(Guid.CreateVersion7(now), tenant.Id, email, role, inviter.Id, now, invitations.Lifetime, secret, language);
+        var language = command.Language ?? actor.Language;
+        var invitation = Invitation.Create(Guid.CreateVersion7(now), tenant.Id, email, role, actor.Id, now, invitations.Lifetime, secret, language);
         tenants.Add(invitation);
         tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationView.Of(invitation, inviter, now),
+            InvitationView.Of(invitation, actor, now),
             new MemberInvitedEvent(
                 Guid.CreateVersion7(now),
                 now,
                 tenant.Id,
                 invitation.Id,
-                inviter.Id,
+                actor.Id,
                 role.Name,
                 replaced?.Id),
             new OpenMemberSignUpCommand(

@@ -37,11 +37,11 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
 
         if (list.Search is { } search)
         {
-            var pattern = ListQueries.ContainsPattern(search);
+            var pattern = ListQueryExtensions.ContainsPattern(search);
             members = members.Where(member =>
-                EF.Functions.ILike(member.Email!, pattern, ListQueries.Escape)
-                || EF.Functions.ILike(member.FirstName!, pattern, ListQueries.Escape)
-                || EF.Functions.ILike(member.LastName!, pattern, ListQueries.Escape));
+                EF.Functions.ILike(member.Email!, pattern, ListQueryExtensions.Escape)
+                || EF.Functions.ILike(member.FirstName!, pattern, ListQueryExtensions.Escape)
+                || EF.Functions.ILike(member.LastName!, pattern, ListQueryExtensions.Escape));
         }
 
         // A member without an email address or a last name, such as a deleted user, comes last in both directions.

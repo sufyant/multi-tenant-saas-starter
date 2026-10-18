@@ -25,7 +25,7 @@ public static class RevokeInvitationHandler
             return (start.Error, null, null);
         }
 
-        var (tenant, revoker, _) = start.Value;
+        var (tenant, actor, _) = start.Value;
 
         if (await tenants.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)
         {
@@ -44,7 +44,7 @@ public static class RevokeInvitationHandler
         var now = time.GetUtcNow();
         return (
             Result.Success(),
-            new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, revoker.Id),
+            new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, actor.Id),
             invitation.SignUpInvitationId is { } signUp ? new WithdrawSignUpCommand(signUp) : null);
     }
 }

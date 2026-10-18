@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 namespace ControlPlane.Infrastructure.Persistence.Lists;
 
 // The parts of a list query that every list of the catalog shares (K5): the search pattern and the direction of a sort key.
-internal static class ListQueries
+internal static class ListQueryExtensions
 {
     // The escape character of every search pattern.
     public const string Escape = "\\";
