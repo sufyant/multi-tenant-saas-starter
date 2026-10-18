@@ -150,6 +150,42 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await _testData.CountedMembershipsOfAsync(known)).ShouldBe(2);
     }
 
+    // K6f, R13: a person who is not a user yet accepts invitations of two tenants at once. Neither finds a user row to lock, so the first
+    // to read the identity provider id makes the second wait, which then finds the first one's user and joins as a known user. A holder
+    // adds a user with the same id and keeps it uncommitted until both acceptances wait behind it, and then rolls it back. Without the
+    // wait, both read no user, both add one, and the unique index on the id refuses the second.
+    [Fact]
+    public async Task AcceptInvitation_APersonWhoIsNotAUserYetIntoTwoTenantsAtOnce_JoinsBothAndCountsTwo()
+    {
+        var invitee = $"user_{Guid.NewGuid():N}";
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var (firstSecret, secondSecret) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
+        _api.Identity.AddAccount(invitee, email);
+        var first = await _testData.AddTenantAsync();
+        var second = await _testData.AddTenantAsync();
+        await _testData.AddInvitationAsync(first.Id, email, secret: firstSecret);
+        await _testData.AddInvitationAsync(second.Id, email, secret: secondSecret);
+        await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
+        await holder.OpenAsync(Cancellation);
+        await using var holding = await holder.BeginTransactionAsync(Cancellation);
+        await using var hold = new NpgsqlCommand(
+            $"INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', '{invitee}', 'en')", holder, holding);
+        await hold.ExecuteNonQueryAsync(Cancellation);
+
+        var accepting = Task.WhenAll(
+            AcceptAsync(invitee, TestData.InvitationCodeOf(first.Id, firstSecret)),
+            AcceptAsync(invitee, TestData.InvitationCodeOf(second.Id, secondSecret)));
+        await Waiting.UntilAsync(async () => accepting.IsCompleted || await WaitingBehindAsync(holder.ProcessID) == 2);
+        await holding.RollbackAsync(Cancellation);
+        var accepted = await accepting;
+
+        accepted.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
+        (await Task.WhenAll(accepted.Select(TenantIdOfAsync))).ShouldBe([first.Id, second.Id]);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(1);
+        (await _testData.StoredMembershipCountOfAsync(invitee)).ShouldBe(2);
+        (await _testData.CountedMembershipsOfAsync(invitee)).ShouldBe(2);
+    }
+
     // A7: a new user gets the invited address, which the identity provider verified, and the names the person typed, without the
     // spaces around them. The identity provider keeps no name.
     [Fact]
@@ -581,6 +617,9 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private static async Task<Guid> TenantIdOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
     private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
 
