@@ -17,7 +17,7 @@ public static class ReopenTenantHandler
     public static async Task<(Result<TenantDetails>, TenantReopened?)> HandleAsync(
         ReopenTenant command,
         ITenantCatalog catalog,
-        TenantSettings settings,
+        TenantOptions settings,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

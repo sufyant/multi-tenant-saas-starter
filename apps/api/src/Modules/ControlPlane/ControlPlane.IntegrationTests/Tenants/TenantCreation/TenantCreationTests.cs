@@ -316,8 +316,8 @@ public sealed class TenantCreationTests(Database database)
         (await CreateTenantHandler.HandleAsync(
             new CreateTenant(adminId, "Acme Ltd", slug, Unique.Email(), null),
             scope.ServiceProvider.GetRequiredService<ITenantCatalog>(),
-            scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationSettings>(),
-            scope.ServiceProvider.GetRequiredService<TenantCreationSettings>(),
+            scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
+            scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),
             TimeProvider.System,
             Cancellation)).Item1;
 

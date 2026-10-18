@@ -58,8 +58,8 @@ public static class CreateTenantHandler
     public static async Task<(Result<TenantDetails>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenant>?, ActivationTimedOut?)> HandleAsync(
         CreateTenant command,
         ITenantCatalog catalog,
-        InvitationSettings invitations,
-        TenantCreationSettings tenantCreation,
+        InvitationOptions invitations,
+        TenantCreationOptions tenantCreation,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

@@ -9,7 +9,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 internal sealed class SystemAdminDirectory(
     ControlPlaneDbContext controlPlane,
     IIdentityProvider identity,
-    IOptions<SystemAdminSettings> settings,
+    IOptions<SystemAdminOptions> settings,
     TimeProvider time) : ISystemAdminDirectory
 {
     // The system admin list is read before the person's own grant: of two first visits at once, the one that finds the list empty and

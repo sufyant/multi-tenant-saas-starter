@@ -19,10 +19,10 @@ internal static class UserRateLimiting
     {
         services.AddOptions<RateLimitingOptions>()
             .BindConfiguration(RateLimitingOptions.Section)
-            .Validate(options => options.PermitLimit > 0, "RateLimiting:PermitLimit must be positive.")
-            .Validate(options => options.Window > TimeSpan.Zero, "RateLimiting:Window must be positive.")
-            .Validate(options => options.InvitationAccept.PermitLimit > 0, "RateLimiting:InvitationAccept:PermitLimit must be positive.")
-            .Validate(options => options.InvitationAccept.Window > TimeSpan.Zero, "RateLimiting:InvitationAccept:Window must be positive.")
+            .Validate(options => options.PermitLimit > 0, $"{RateLimitingOptions.Section}:PermitLimit must be positive.")
+            .Validate(options => options.Window > TimeSpan.Zero, $"{RateLimitingOptions.Section}:Window must be positive.")
+            .Validate(options => options.InvitationAccept.PermitLimit > 0, $"{RateLimitingOptions.Section}:InvitationAccept:PermitLimit must be positive.")
+            .Validate(options => options.InvitationAccept.Window > TimeSpan.Zero, $"{RateLimitingOptions.Section}:InvitationAccept:Window must be positive.")
             .ValidateOnStart();
 
         return services.AddRateLimiter(limiter =>

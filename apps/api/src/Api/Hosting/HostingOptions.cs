@@ -12,7 +12,7 @@ internal enum HostRole
 }
 
 // The browser origins that may call the API (Host:Cors); none when the list is empty.
-internal sealed class CorsSettings
+internal sealed class HostingCorsOptions
 {
     public string[] AllowedOrigins { get; set; } = [];
 
@@ -24,7 +24,7 @@ internal sealed class CorsSettings
 }
 
 // The host's own settings (section Host), checked on start.
-internal sealed class HostSettings
+internal sealed class HostingOptions
 {
     public const string Section = "Host";
 
@@ -33,7 +33,7 @@ internal sealed class HostSettings
     // How long a stopping host may take to finish the work it has (Twelve-Factor IX).
     public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-    public CorsSettings Cors { get; set; } = new();
+    public HostingCorsOptions Cors { get; set; } = new();
 
     // The port of the health endpoints (section 8). Only the platform's health check and probes reach it.
     public int ManagementPort { get; set; } = 8081;
@@ -48,11 +48,11 @@ internal sealed class HostSettings
     };
 }
 
-internal static class HostSettingsExtensions
+internal static class HostingOptionsExtensions
 {
     // The settings are read while the host is composed, since the role decides what it is composed of, and checked on start like
     // every other setting: the migration step composes the host without them and never starts it.
-    public static HostSettings AddHostSettings(this WebApplicationBuilder builder)
+    public static HostingOptions AddHostingOptions(this WebApplicationBuilder builder)
     {
         var settings = builder.Configuration.Read();
 
@@ -65,15 +65,15 @@ internal static class HostSettingsExtensions
         builder.WebHost.UseSetting(WebHostDefaults.HttpPortsKey, "");
         builder.WebHost.UseSetting(WebHostDefaults.HttpsPortsKey, "");
 
-        builder.Services.AddOptions<HostSettings>()
-            .BindConfiguration(HostSettings.Section)
-            .Validate(settings => settings.RoleOrNull is not null, $"{HostSettings.Section}:Role must be web, worker or all.")
-            .Validate(settings => settings.ShutdownTimeout > TimeSpan.Zero, $"{HostSettings.Section}:ShutdownTimeout must be positive.")
-            .Validate(settings => settings.Cors.AreOrigins, $"{HostSettings.Section}:Cors:AllowedOrigins must list origins such as https://app.example.com, without a wildcard or a path.")
-            .Validate(settings => settings.ManagementPort is > 0 and <= ushort.MaxValue, $"{HostSettings.Section}:ManagementPort must be a port from 1 to 65535.")
+        builder.Services.AddOptions<HostingOptions>()
+            .BindConfiguration(HostingOptions.Section)
+            .Validate(settings => settings.RoleOrNull is not null, $"{HostingOptions.Section}:Role must be web, worker or all.")
+            .Validate(settings => settings.ShutdownTimeout > TimeSpan.Zero, $"{HostingOptions.Section}:ShutdownTimeout must be positive.")
+            .Validate(settings => settings.Cors.AreOrigins, $"{HostingOptions.Section}:Cors:AllowedOrigins must list origins such as https://app.example.com, without a wildcard or a path.")
+            .Validate(settings => settings.ManagementPort is > 0 and <= ushort.MaxValue, $"{HostingOptions.Section}:ManagementPort must be a port from 1 to 65535.")
             .Validate(
                 settings => !publicPorts.Contains(settings.ManagementPort),
-                $"{HostSettings.Section}:ManagementPort must differ from the public port, {string.Join(", ", publicPorts)}.")
+                $"{HostingOptions.Section}:ManagementPort must differ from the public port, {string.Join(", ", publicPorts)}.")
             .ValidateOnStart();
         builder.Services.Configure<HostOptions>(host => host.ShutdownTimeout = settings.ShutdownTimeout);
 
@@ -81,8 +81,8 @@ internal static class HostSettingsExtensions
     }
 
     // The settings as they are, before the start checks them.
-    public static HostSettings Read(this IConfiguration configuration) =>
-        configuration.GetSection(HostSettings.Section).Get<HostSettings>() ?? new HostSettings();
+    public static HostingOptions Read(this IConfiguration configuration) =>
+        configuration.GetSection(HostingOptions.Section).Get<HostingOptions>() ?? new HostingOptions();
 
     public static bool ServesTheApi(this HostRole? role) => role is not HostRole.Worker;
 

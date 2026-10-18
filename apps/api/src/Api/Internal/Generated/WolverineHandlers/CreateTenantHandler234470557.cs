@@ -14,18 +14,18 @@ namespace Internal.Generated.WolverineHandlers
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
     public sealed class CreateTenantHandler234470557 : Wolverine.Runtime.Handlers.MessageHandler
     {
-        private readonly ControlPlane.Application.Invitations.InvitationSettings _invitationSettings;
-        private readonly ControlPlane.Application.Tenants.TenantCreation.TenantCreationSettings _tenantCreationSettings;
+        private readonly ControlPlane.Application.Invitations.InvitationOptions _invitationOptions;
+        private readonly ControlPlane.Application.Tenants.TenantCreation.TenantCreationOptions _tenantCreationOptions;
         private readonly FluentValidation.IValidator<ControlPlane.Application.Tenants.TenantCreation.CreateTenant> _validatorOfCreateTenant;
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Tenants.TenantCreation.CreateTenant> _failureActionOfCreateTenant;
 
-        public CreateTenantHandler234470557(ControlPlane.Application.Invitations.InvitationSettings invitationSettings, ControlPlane.Application.Tenants.TenantCreation.TenantCreationSettings tenantCreationSettings, FluentValidation.IValidator<ControlPlane.Application.Tenants.TenantCreation.CreateTenant> validatorOfCreateTenant, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Tenants.TenantCreation.CreateTenant> failureActionOfCreateTenant)
+        public CreateTenantHandler234470557(ControlPlane.Application.Invitations.InvitationOptions invitationOptions, ControlPlane.Application.Tenants.TenantCreation.TenantCreationOptions tenantCreationOptions, FluentValidation.IValidator<ControlPlane.Application.Tenants.TenantCreation.CreateTenant> validatorOfCreateTenant, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Tenants.TenantCreation.CreateTenant> failureActionOfCreateTenant)
         {
-            _invitationSettings = invitationSettings;
-            _tenantCreationSettings = tenantCreationSettings;
+            _invitationOptions = invitationOptions;
+            _tenantCreationOptions = tenantCreationOptions;
             _validatorOfCreateTenant = validatorOfCreateTenant;
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -58,7 +58,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Tenants.TenantCreation.CreateTenant>(_validatorOfCreateTenant, _failureActionOfCreateTenant, createTenant).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3, var outgoing4) = await ControlPlane.Application.Tenants.TenantCreation.CreateTenantHandler.HandleAsync(createTenant, tenantCatalog, _invitationSettings, _tenantCreationSettings, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3, var outgoing4) = await ControlPlane.Application.Tenants.TenantCreation.CreateTenantHandler.HandleAsync(createTenant, tenantCatalog, _invitationOptions, _tenantCreationOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

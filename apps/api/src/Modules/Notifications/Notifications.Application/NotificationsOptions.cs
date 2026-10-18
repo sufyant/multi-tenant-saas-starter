@@ -1,7 +1,7 @@
 namespace Notifications.Application;
 
 // Configuration of the Notifications module (section Notifications), validated at startup by its infrastructure.
-internal sealed class NotificationsSettings
+internal sealed class NotificationsOptions
 {
     public const string Section = "Notifications";
 

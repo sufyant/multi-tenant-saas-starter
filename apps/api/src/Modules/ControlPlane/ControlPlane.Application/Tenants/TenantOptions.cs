@@ -4,7 +4,7 @@ namespace ControlPlane.Application.Tenants;
 /// Configuration of the tenant lifecycle (section <c>ControlPlane:Tenants</c>), checked on start; public because handlers take it as a
 /// parameter.
 /// </summary>
-public sealed class TenantSettings
+public sealed class TenantOptions
 {
     public const string Section = "ControlPlane:Tenants";
 

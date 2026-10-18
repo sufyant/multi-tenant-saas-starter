@@ -41,7 +41,7 @@ public static class InviteOwnerHandler
     public static async Task<(Result<InvitationSummary>, OwnerInvited?, OpenMemberSignUp?, OutgoingMessages)> HandleAsync(
         InviteOwner command,
         ITenantCatalog catalog,
-        InvitationSettings invitations,
+        InvitationOptions invitations,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

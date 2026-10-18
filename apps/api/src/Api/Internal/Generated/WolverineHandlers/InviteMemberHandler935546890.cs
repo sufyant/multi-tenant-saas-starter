@@ -13,16 +13,16 @@ namespace Internal.Generated.WolverineHandlers
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
     public sealed class InviteMemberHandler935546890 : Wolverine.Runtime.Handlers.MessageHandler
     {
-        private readonly ControlPlane.Application.Invitations.InvitationSettings _invitationSettings;
+        private readonly ControlPlane.Application.Invitations.InvitationOptions _invitationOptions;
         private readonly FluentValidation.IValidator<ControlPlane.Application.Invitations.InviteMember> _validatorOfInviteMember;
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Invitations.InviteMember> _failureActionOfInviteMember;
 
-        public InviteMemberHandler935546890(ControlPlane.Application.Invitations.InvitationSettings invitationSettings, FluentValidation.IValidator<ControlPlane.Application.Invitations.InviteMember> validatorOfInviteMember, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Invitations.InviteMember> failureActionOfInviteMember)
+        public InviteMemberHandler935546890(ControlPlane.Application.Invitations.InvitationOptions invitationOptions, FluentValidation.IValidator<ControlPlane.Application.Invitations.InviteMember> validatorOfInviteMember, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Invitations.InviteMember> failureActionOfInviteMember)
         {
-            _invitationSettings = invitationSettings;
+            _invitationOptions = invitationOptions;
             _validatorOfInviteMember = validatorOfInviteMember;
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -55,7 +55,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Invitations.InviteMember>(_validatorOfInviteMember, _failureActionOfInviteMember, inviteMember).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3, var outgoing4) = await ControlPlane.Application.Invitations.InviteMemberHandler.HandleAsync(inviteMember, tenantCatalog, _invitationSettings, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3, var outgoing4) = await ControlPlane.Application.Invitations.InviteMemberHandler.HandleAsync(inviteMember, tenantCatalog, _invitationOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

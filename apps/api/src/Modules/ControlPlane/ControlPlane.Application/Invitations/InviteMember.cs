@@ -41,7 +41,7 @@ public static class InviteMemberHandler
     public static async Task<(Result<InvitationSummary>, MemberInvited?, OpenMemberSignUp?, WithdrawSignUp?)> HandleAsync(
         InviteMember command,
         ITenantCatalog catalog,
-        InvitationSettings invitations,
+        InvitationOptions invitations,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

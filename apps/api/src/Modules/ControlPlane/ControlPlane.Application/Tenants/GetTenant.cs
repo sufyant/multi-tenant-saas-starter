@@ -23,7 +23,7 @@ public static class GetTenantHandler
     public static async Task<Result<TenantWithOwners>> HandleAsync(
         GetTenant query,
         ITenantCatalog catalog,
-        TenantSettings settings,
+        TenantOptions settings,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

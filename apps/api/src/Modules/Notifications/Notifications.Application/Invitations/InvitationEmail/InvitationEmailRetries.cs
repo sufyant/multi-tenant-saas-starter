@@ -14,7 +14,7 @@ namespace Notifications.Application.Invitations.InvitationEmail;
 // handler each, so a retry may be scheduled (W5). The handler holds no transaction while it waits. A pause of a minute or more is a
 // scheduled retry: the event goes back to its queue with the time of its next try, so it holds no worker meanwhile. A shorter pause
 // is waited out where the handler runs.
-internal sealed class InvitationEmailRetries(IOptions<NotificationsSettings> settings) : IWolverineExtension, IHandlerPolicy
+internal sealed class InvitationEmailRetries(IOptions<NotificationsOptions> settings) : IWolverineExtension, IHandlerPolicy
 {
     private static readonly TimeSpan LongestInlinePause = TimeSpan.FromMinutes(1);
 

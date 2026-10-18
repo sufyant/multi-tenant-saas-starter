@@ -16,14 +16,14 @@ namespace Notifications.Infrastructure;
 public static class NotificationsInfrastructure
 {
     /// <summary>The key of the pauses before each new try of an invitation email.</summary>
-    public const string InvitationEmailRetryDelaysKey = $"{NotificationsSettings.Section}:{nameof(NotificationsSettings.InvitationEmailRetryDelays)}";
+    public const string InvitationEmailRetryDelaysKey = $"{NotificationsOptions.Section}:{nameof(NotificationsOptions.InvitationEmailRetryDelays)}";
 
     /// <summary>
     /// The pauses before each new try of an invitation email, as configured or by default. The host checks the tenant creation's wait
     /// for the email against them (section 6, "Tenant creation process").
     /// </summary>
     public static IReadOnlyList<TimeSpan> InvitationEmailRetryDelays(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<NotificationsSettings>>().Value.RetryDelays;
+        services.GetRequiredService<IOptions<NotificationsOptions>>().Value.RetryDelays;
 
     public static IServiceCollection AddNotificationsInfrastructure(this IServiceCollection services)
     {
@@ -60,9 +60,9 @@ public static class NotificationsInfrastructure
         // from the message's scope. It reaches no DbContext.
         services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IEmailChannel>());
 
-        services.AddOptions<NotificationsSettings>()
-            .BindConfiguration(NotificationsSettings.Section)
-            .Validate(settings => settings.IsValid, $"{NotificationsSettings.Section}:InvitationEmailRetryDelays must be positive pauses that grow.")
+        services.AddOptions<NotificationsOptions>()
+            .BindConfiguration(NotificationsOptions.Section)
+            .Validate(settings => settings.IsValid, $"{NotificationsOptions.Section}:InvitationEmailRetryDelays must be positive pauses that grow.")
             .ValidateOnStart();
         services.AddSingleton<IWolverineExtension, InvitationEmailRetries>();
 

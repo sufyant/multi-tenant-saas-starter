@@ -34,7 +34,7 @@ public static class ListTenantsHandler
     public static async Task<Result<ListPage<TenantListItem>>> HandleAsync(
         ListTenants query,
         ITenantCatalog catalog,
-        TenantSettings settings,
+        TenantOptions settings,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
