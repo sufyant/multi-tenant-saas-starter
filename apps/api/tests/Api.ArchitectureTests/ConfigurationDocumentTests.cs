@@ -65,6 +65,28 @@ public partial class ConfigurationDocumentTests
         differences.ShouldBeEmpty();
     }
 
+    // B14: each deployed environment gets every key that the document marks as required, and only keys that it documents. The
+    // migration's own connection goes to the migrate command alone (R3).
+    [Fact]
+    public void RailwayConfiguration_ItsVariables_SetEveryRequiredKey()
+    {
+        var railway = File.ReadAllText(Path.Combine(Solution.Root, "..", "..", ".railway", "railway.ts"));
+        var set = RailwayVariable().Matches(railway).Select(match => KeyOf(match.Groups["name"].Value)).ToHashSet();
+        var required = DocumentedRows().Where(row => row.Required.StartsWith("Required", StringComparison.Ordinal) && !row.Required.Contains("`migrate`", StringComparison.Ordinal)).Select(row => row.Key);
+
+        required.Except(set).ShouldBeEmpty();
+        set.Except(DocumentedKeys()).ShouldBeEmpty();
+    }
+
+    // A variable such as Host__Cors__AllowedOrigins__0 is the key Host:Cors:AllowedOrigins.
+    private static string KeyOf(string variable) => ListIndex().Replace(variable, "").Replace("__", ":", StringComparison.Ordinal);
+
+    private static IEnumerable<(string Key, string Required)> DocumentedRows() =>
+        File.ReadLines(Path.Combine(Solution.Root, "docs", "configuration.md"))
+            .Select(line => TableRow().Match(line))
+            .Where(match => match.Success)
+            .Select(match => (match.Groups["key"].Value, match.Groups["required"].Value.Trim()));
+
     // The first cell of each table row, when it is a key in backticks.
     private static HashSet<string> DocumentedKeys() => [.. DocumentedDefaults().Keys];
 
@@ -161,8 +183,15 @@ public partial class ConfigurationDocumentTests
     private static bool IsValue(Type type) =>
         type.IsValueType || type == typeof(string) || type == typeof(Uri) || typeof(IEnumerable).IsAssignableFrom(type);
 
-    [GeneratedRegex(@"^\| `(?<key>[^`]+)` \| [^|]+ \| (?<default>[^|]+) \|")]
+    [GeneratedRegex(@"^\| `(?<key>[^`]+)` \| (?<required>[^|]+) \| (?<default>[^|]+) \|")]
     private static partial Regex TableRow();
+
+    // A name in the environment variable form, in quotes or as an object key: "ControlPlane__Clerk__SecretKey", Host__Role:.
+    [GeneratedRegex(@"(?<=[""\s])(?<name>[A-Za-z]+(?:__[A-Za-z0-9]+)+)(?=""|:)")]
+    private static partial Regex RailwayVariable();
+
+    [GeneratedRegex("__[0-9]+$")]
+    private static partial Regex ListIndex();
 
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex Placeholder();

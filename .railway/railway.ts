@@ -35,6 +35,9 @@ import { defineRailway, postgres, project, service } from "railway/iac";
 //
 // No API service references a variable of the `postgres` service. DATABASE_URL, PGUSER and
 // PGPASSWORD hold the superuser; the API connects as api_application only (R2, R7).
+//
+// ConfigurationDocumentTests in apps/api checks that this file sets every required key, and only
+// keys that configuration.md documents.
 const sharedVariables = [
   "ConnectionStrings__Database",
   "Authentication__Clerk__Issuer",
