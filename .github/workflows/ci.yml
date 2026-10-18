@@ -123,8 +123,8 @@ jobs:
           retention-days: 7
 
   # Every generated file is the output of its generator now (rule D1 in apps/api/docs/ARCHITECTURE.md, "Generated files"):
-  # the permission list, Wolverine's handler code, the OpenAPI document and the client types. pnpm generate runs every
-  # generator, so the job needs Node and .NET.
+  # the CSS variables of the design tokens, the permission list, Wolverine's handler code, the OpenAPI document and the API
+  # client (Orval's output and the operation list). pnpm generate runs every generator, so the job needs Node and .NET.
   generated:
     name: "Generated files: current"
     runs-on: ubuntu-latest

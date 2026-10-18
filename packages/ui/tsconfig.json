@@ -10,10 +10,18 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "scripts/**/*.ts",
+    "test/**/*.ts",
+    "scripts/**/*.mjs"
+  ],
   "exclude": ["node_modules"]
 }
