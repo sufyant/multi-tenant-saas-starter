@@ -5,10 +5,8 @@ using Notifications.Infrastructure;
 
 namespace Api.Hosting;
 
-// Section 6, "Tenant creation process": the saga waits for the invitation email longer than the identity provider's retries and the
-// email's retries together. A shorter wait gives up on a tenant while a retry is still due. ControlPlane owns the wait and the identity
-// provider's retries, Notifications owns the email's, and neither module reads the other's settings (section 7). Only the host sees
-// both, so it checks the rule on start, as each module checks its own settings. It has nothing to bind: the check is all it holds.
+// Section 7, configuration rule 5: the wait for the invitation email (section 6, "Tenant creation process") joins the settings of two
+// modules, and only the host sees both. It has nothing to bind: the check is all it holds.
 internal sealed class InvitationEmailWait
 {
     public sealed class Validation(IServiceProvider services) : IValidateOptions<InvitationEmailWait>

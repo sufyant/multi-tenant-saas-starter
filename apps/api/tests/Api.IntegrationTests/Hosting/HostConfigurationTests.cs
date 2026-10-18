@@ -119,8 +119,7 @@ public sealed class HostConfigurationTests(Database database)
         start.ShouldThrow<Exception>().Message.ShouldContain("Host:ManagementPort");
     }
 
-    // Section 6, "Tenant creation process": the saga waits for the invitation email longer than the identity provider's retries and
-    // the email's retries together. The host checks it on start. The factory's short retries are left out, so the defaults apply.
+    // Section 7, configuration rule 5. The factory's short retries are left out, so the defaults apply.
     [Fact]
     public async Task StartApplication_DefaultInvitationEmailTimeoutAndRetries_Starts()
     {
