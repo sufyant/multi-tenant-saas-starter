@@ -20,6 +20,9 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
     // I5: a replayed answer carries this response header. The OpenAPI document declares it.
     public const string ReplayedHeader = "Idempotent-Replayed";
 
+    // How long a claim holds its key unless its request finishes (section 3, "HTTP idempotency").
+    public static readonly TimeSpan ClaimLifetime = TimeSpan.FromMinutes(1);
+
     public async Task<Result<T>> ExecuteAsync<T>(object command, string? tenantId, CancellationToken cancellationToken)
     {
         var context = accessor.HttpContext ?? throw new InvalidOperationException("Idempotency runs inside an HTTP request.");
@@ -31,7 +34,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
         var route = ((RouteEndpoint)context.GetEndpoint()!).RoutePattern.RawText!;
         var now = time.GetUtcNow();
         var lease = Guid.NewGuid();
-        var until = now.AddMinutes(1);
+        var until = now + ClaimLifetime;
 
         while (true)
         {
