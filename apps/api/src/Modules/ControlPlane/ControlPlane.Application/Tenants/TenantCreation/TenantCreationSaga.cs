@@ -91,15 +91,15 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     // The email can be reported before the activation reaches the saga: both are published by the activation, so the report proves
     // that the activation committed.
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(SendInvitationEmailReply.TenantId))] SendInvitationEmailReply sent) =>
-        IsSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
+        IsActivatingOrSendingInvitation ? MoveTo(TenantCreationSagaState.Completed) : [];
 
     // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is cancelled. The identity provider
     // that did not let the owner sign up, and the email that did not go out, end the same way.
     public OutgoingMessages Handle(Fault<OpenOwnerSignUpCommand> fault) =>
-        IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
+        IsActivatingOrSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 
     public OutgoingMessages Handle(Fault<OwnerInvitationReadyEvent> fault) =>
-        IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
+        IsActivatingOrSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(InvitationEmailTimedOut.TenantId))] InvitationEmailTimedOut timeout) =>
         State == TenantCreationSagaState.SendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
@@ -116,7 +116,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
 
     public OutgoingMessages Handle(Fault<CancelInvitationCommand> fault) => IsFinal ? [] : NeedsAttention();
 
-    private bool IsSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
+    private bool IsActivatingOrSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
 
     private bool IsFinal => State is TenantCreationSagaState.Completed or TenantCreationSagaState.Cancelled or TenantCreationSagaState.NeedsAttention;
 
