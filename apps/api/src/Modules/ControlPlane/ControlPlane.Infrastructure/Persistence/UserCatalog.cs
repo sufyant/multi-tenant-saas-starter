@@ -88,20 +88,12 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
     Task<bool> IUserCatalog.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
-    // The status is derived as UserDetails derives it: a deletion outranks a suspension.
     async Task<ListPage<(User User, bool IsSystemAdmin)>> IUserCatalog.ListUsersAsync(
         ListRequest<ListUsersSort> list,
-        string? status,
+        UserStatus? status,
         CancellationToken cancellationToken)
     {
-        var users = status switch
-        {
-            "Deleted" => controlPlane.Users.Where(user => user.DeletedAt != null),
-            "Suspended" => controlPlane.Users.Where(user => user.DeletedAt == null && user.SuspendedAt != null),
-            "Active" => controlPlane.Users.Where(user => user.DeletedAt == null && user.SuspendedAt == null),
-            null => controlPlane.Users,
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "A user is active, suspended or deleted."),
-        };
+        var users = status is { } chosen ? controlPlane.Users.Where(User.InStatus(chosen)) : controlPlane.Users;
 
         if (list.Search is { } search)
         {

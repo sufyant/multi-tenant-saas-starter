@@ -234,4 +234,18 @@ public class UserTests
 
         user.TimeZone.ShouldBeNull();
     }
+
+    // B9: a deletion outranks a suspension, and a query reads the status by the same rule as the user does.
+    [Fact]
+    public void DeleteUser_Suspended_IsDeletedToTheUserAndToAQuery()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, AdminId);
+
+        user.Delete(Now);
+
+        user.Status.ShouldBe(UserStatus.Deleted);
+        User.InStatus(UserStatus.Deleted).Compile()(user).ShouldBeTrue();
+        User.InStatus(UserStatus.Suspended).Compile()(user).ShouldBeFalse();
+    }
 }

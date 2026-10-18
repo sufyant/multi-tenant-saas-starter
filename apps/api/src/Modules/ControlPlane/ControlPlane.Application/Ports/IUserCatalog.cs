@@ -47,7 +47,7 @@ public interface IUserCatalog
     /// A page of every user in the status or every status, whose email address or name contains the search, with whether each is a
     /// system admin: by the sort field, users without a value for it last, then by id.
     /// </summary>
-    internal Task<ListPage<(User User, bool IsSystemAdmin)>> ListUsersAsync(ListRequest<ListUsersSort> list, string? status, CancellationToken cancellationToken);
+    internal Task<ListPage<(User User, bool IsSystemAdmin)>> ListUsersAsync(ListRequest<ListUsersSort> list, UserStatus? status, CancellationToken cancellationToken);
 
     internal Task SaveChangesAsync(CancellationToken cancellationToken);
 }
