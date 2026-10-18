@@ -50,7 +50,7 @@ Not kept:
 - `clerk-orgs`: tenants, roles and permissions live in our tables, not in Clerk organizations (`apps/api/AGENTS.md`, closed decisions; rule T6).
 - `clerk-billing`: there is no billing (`apps/api/docs/ARCHITECTURE.md`, fixed rule 3).
 - `clerk-android`, `clerk-swift`: the planned mobile app is Expo, not native.
-- `clerk-astro-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-react-patterns`: no planned app uses these frameworks. The web, admin and marketing apps are Next.js, which `clerk-nextjs-patterns` covers. Their sample `package.json` files are manifests for dependency review. The one in `clerk-astro-patterns` failed it (`astro@^5.0.0`: one critical and two high advisories).
+- `clerk-astro-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-react-patterns`: no planned app uses these frameworks. The web, platform and marketing apps are Next.js, which `clerk-nextjs-patterns` covers. Their sample `package.json` files are manifests for dependency review. The one in `clerk-astro-patterns` failed it (`astro@^5.0.0`: one critical and two high advisories).
 - `clerk-quickstart`: `clerk-setup` covers the setup.
 - `react-email`: the API sends email from .NET, without React Email.
 - `agent-email-inbox`: the API receives no email.

@@ -9,7 +9,7 @@
 docs
 scripts
 apps/api
-apps/admin
+apps/platform
 apps/marketing
 apps/mobile
 apps/web/e2e

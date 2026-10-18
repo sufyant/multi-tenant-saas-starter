@@ -1,6 +1,6 @@
 # @repo/api-client
 
-The typed client of the API, for every frontend: `apps/web`, and later `apps/admin` and `apps/mobile`. No frontend writes an API type by hand. Rule N11 in `apps/api/docs/ARCHITECTURE.md` says why.
+The typed client of the API, for every frontend: `apps/web`, `apps/platform` and later `apps/mobile`. No frontend writes an API type by hand. Rule N11 in `apps/api/docs/ARCHITECTURE.md` says why.
 
 ## Where the types come from
 
