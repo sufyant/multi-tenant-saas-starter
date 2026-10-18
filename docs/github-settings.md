@@ -67,7 +67,7 @@ The script sets these values with `PATCH /repos/{owner}/{repo}`.
 | `allow_merge_commit` | `true` | `apps/api/AGENTS.md` asks for small commits in order: test, change, documents. A merge commit keeps that order in the history of `main`. | GitHub Docs: "About merge methods on GitHub" |
 | `allow_squash_merge` | `false` | A squash merge removes the order of the commits. | GitHub Docs: "About merge methods on GitHub" |
 | `allow_rebase_merge` | `false` | A rebase merge removes the merge commit that marks the pull request. | GitHub Docs: "About merge methods on GitHub" |
-| `allow_auto_merge` | `false` | The maintainer merges each pull request by hand. | GitHub Docs: "Managing auto-merge for pull requests in your repository" |
+| `allow_auto_merge` | `true` | The maintainer turns auto-merge on for each pull request he approves. GitHub merges it when the required checks pass and the branch is up to date. Agents never turn it on. | GitHub Docs: "Managing auto-merge for pull requests in your repository". GitHub Docs: "Automatically merging a pull request" |
 | `allow_update_branch` | `true` | The pull request page shows a button that updates the branch from `main`. | GitHub Docs: "Managing suggestions to update pull request branches" |
 | `delete_branch_on_merge` | `true` | Merged branches do not stay in the repository. | GitHub Docs: "Managing the automatic deletion of branches" |
 
@@ -113,6 +113,8 @@ The file `.github/rulesets/main.json` holds the ruleset. It uses the format that
 | Allowed merge methods | `merge` | This matches the general settings in section 3.1. | GitHub Docs: "Available rules for rulesets" |
 | Required status checks | `CI` from GitHub Actions (`integration_id` 15368) | `CI` is the last job of `.github/workflows/ci.yml`, which only verifies. It fails when a job in its `needs` list did not pass. A new job is added to `needs` in the workflow, not here. `delivery.yml` calls the same workflow on a push to `main`. | GitHub Docs: "Available rules for rulesets". Humble and Farley, *Continuous Delivery*, chapter 3 |
 | Require branches to be up to date (`strict_required_status_checks_policy`) | `true` | CI tests the code that will be on `main` after the merge, not an old base. | GitHub Docs: "Available rules for rulesets" |
+
+With `strict_required_status_checks_policy`, a branch that falls behind `main` waits. Auto-merge does not update it. Update the branch (button or rebase), and auto-merge continues after the checks pass again. Source: GitHub Docs: "Automatically merging a pull request".
 
 ### 3.5 Ruleset for release tags
 
