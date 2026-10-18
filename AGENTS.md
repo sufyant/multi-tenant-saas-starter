@@ -81,7 +81,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Workflows
 
-- `ci.yml` verifies. `delivery.yml` delivers. `deploy.yml` holds the only copy of the deploy steps.
+- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps.
 - A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
 
 ## Agent skills
