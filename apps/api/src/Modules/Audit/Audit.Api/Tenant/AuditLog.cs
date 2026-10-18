@@ -45,7 +45,7 @@ public sealed record AuditEntryResponse(
     string Operation,
     JsonElement? Details,
     AuditActorResponse Actor,
-    AuditTargetResponse? Target);
+    AuditTargetResponse Target);
 
 /// <summary>
 /// Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.
@@ -57,7 +57,7 @@ public sealed record AuditActorResponse(AuditActorResponseKind Kind, Guid? UserI
 
 /// <summary>
 /// What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
-/// has no name. <c>deleted</c> is set for a user only. A record written before the audit kept targets has none.
+/// has no name. <c>deleted</c> is set for a user only.
 /// </summary>
 public sealed record AuditTargetResponse(AuditTargetResponseKind Kind, Guid Id, string? Name, bool? Deleted);
 
@@ -98,7 +98,5 @@ internal static class AuditEntryResponses
         entry.Operation,
         entry.Details is { } details ? JsonElement.Parse(details) : null,
         new AuditActorResponse(Enum.Parse<AuditActorResponseKind>(entry.Actor.Kind), entry.Actor.UserId, entry.Actor.DisplayName, entry.Actor.Deleted),
-        entry.Target is { } target
-            ? new AuditTargetResponse(Enum.Parse<AuditTargetResponseKind>(target.Kind), target.Id, target.Name, target.Deleted)
-            : null));
+        new AuditTargetResponse(Enum.Parse<AuditTargetResponseKind>(entry.Target.Kind), entry.Target.Id, entry.Target.Name, entry.Target.Deleted)));
 }

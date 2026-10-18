@@ -4129,14 +4129,7 @@
             "$ref": "#/components/schemas/AuditActorResponse"
           },
           "target": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/AuditTargetResponse"
-              }
-            ]
+            "$ref": "#/components/schemas/AuditTargetResponse"
           }
         },
         "description": "One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record\nkeeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email\naddress."
@@ -4193,7 +4186,7 @@
             ]
           }
         },
-        "description": "What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which\nhas no name. `deleted` is set for a user only. A record written before the audit kept targets has none."
+        "description": "What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which\nhas no name. `deleted` is set for a user only."
       },
       "AuditTargetResponseKind": {
         "enum": [

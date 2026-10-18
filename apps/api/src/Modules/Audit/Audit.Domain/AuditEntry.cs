@@ -30,8 +30,8 @@ internal abstract class AuditRecord
 
     public DateTimeOffset OccurredAt { get; private init; }
 
-    /// <summary>Who acted. A record written before K3 has none: its actor is the system admin whose id is in <see cref="ActorId"/>.</summary>
-    public AuditActorKind? ActorKind { get; private init; }
+    /// <summary>Who acted.</summary>
+    public AuditActorKind ActorKind { get; private init; }
 
     /// <summary>The catalog user id of an actor that is a user; none for the platform or the identity provider.</summary>
     public Guid? ActorId { get; private init; }
@@ -40,9 +40,9 @@ internal abstract class AuditRecord
 
     public string Operation { get; private init; }
 
-    public AuditTargetKind? TargetKind { get; private init; }
+    public AuditTargetKind TargetKind { get; private init; }
 
-    public Guid? TargetId { get; private init; }
+    public Guid TargetId { get; private init; }
 
     /// <summary>The target's name at that moment, only when the target is not a person: a tenant's name.</summary>
     public string? TargetName { get; private init; }
