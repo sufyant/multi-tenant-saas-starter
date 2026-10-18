@@ -36,8 +36,9 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DeleteUser_MemberOfTwoTenants_LeavesBothErasesTheUserAndDeletesTheClerkUser()
     {
-        var first = await _testData.AddTenantAsync(tenantId: Guid.CreateVersion7());
-        var second = await _testData.AddTenantAsync(tenantId: Guid.CreateVersion7());
+        var (firstId, secondId) = TwoIdsInOrder();
+        var first = await _testData.AddTenantAsync(tenantId: firstId);
+        var second = await _testData.AddTenantAsync(tenantId: secondId);
         var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
         await _testData.AddMemberAsync(first.Id, user, role: "Member");
         await _testData.AddMemberAsync(second.Id, user, role: "Owner");
@@ -113,8 +114,9 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DeleteUser_BecomesTheLastOwnerWhileItRuns_StopsKeepsTheUserAndTheTenantsItLeftStayLeft()
     {
-        var left = await _testData.AddTenantAsync(tenantId: Guid.CreateVersion7());
-        var owned = await _testData.AddTenantAsync(tenantId: Guid.CreateVersion7());
+        var (leftId, ownedId) = TwoIdsInOrder();
+        var left = await _testData.AddTenantAsync(tenantId: leftId);
+        var owned = await _testData.AddTenantAsync(tenantId: ownedId);
         var user = await _testData.AddUserAsync(firstName: "Ada");
         await _testData.AddMemberAsync(left.Id, user, role: "Member");
         await _testData.AddMemberAsync(owned.Id, user, role: "Owner");
@@ -226,6 +228,14 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    // The deletion leaves the user's tenants in the order of their ids. Two version 7 ids of one millisecond differ only in random bits,
+    // so their order is random. These ids come from two moments a millisecond apart, so the first is always the lower.
+    private static (Guid First, Guid Second) TwoIdsInOrder()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return (Guid.CreateVersion7(now), Guid.CreateVersion7(now.AddMilliseconds(1)));
+    }
 
     private Task<HttpResponseMessage> DeleteAsync(string admin, Guid userId) =>
         _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/platform/users/{userId}", Cancellation);

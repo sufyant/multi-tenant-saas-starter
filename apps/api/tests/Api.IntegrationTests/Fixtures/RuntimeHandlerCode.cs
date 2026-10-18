@@ -9,8 +9,8 @@ namespace Api.IntegrationTests.Fixtures;
 
 // The application loads the handler code that `codegen write` committed (W10). A host that adds handlers or handler policies of a
 // test has chains that code does not hold, so it generates and compiles its handler code at runtime instead. Each such host keeps
-// its compiled code and the compiler's memory to the end of the run (section 9, rule 11). Its test class carries
-// [RuntimeHandlerCode], so CI runs it apart from the hosts on the committed code (scripts/ci/test-api.sh).
+// its compiled code to the end of the run, and each compile needs much native memory (section 9, rule 11; CollectingAssemblyGenerator).
+// Its test class carries [RuntimeHandlerCode], so CI runs it apart from the hosts on the committed code (scripts/ci/test-api.sh).
 public static class RuntimeHandlerCode
 {
     public static WolverineOptions GenerateHandlerCodeAtRuntime(this WolverineOptions options)
