@@ -138,19 +138,19 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         copies.ShouldBeEmpty();
     }
 
-    // N11 and K5: the permission catalogue is one enum in the document, so a generated client knows each name and a typo does not compile.
+    // N11 and K5: the permission list is one enum in the document, so a generated client knows each name and a typo does not compile.
     [Fact]
-    public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfTheCatalogue()
+    public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfThePermissionList()
     {
-        var catalogue = typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
+        var listed = typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)
             .Order(StringComparer.Ordinal);
 
         var documented = EnumOf(Schemas().Single(schema => schema.Name == "Permission").Value);
 
-        catalogue.ShouldNotBeEmpty();
-        documented.ShouldBe(string.Join(", ", catalogue));
+        listed.ShouldNotBeEmpty();
+        documented.ShouldBe(string.Join(", ", listed));
     }
 
     // N11 and K5: every response field that holds permission names is an array of the one schema Permission, so the web compares each

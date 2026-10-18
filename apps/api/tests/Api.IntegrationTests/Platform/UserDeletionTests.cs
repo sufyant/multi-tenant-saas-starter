@@ -224,7 +224,7 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
     private async Task<IReadOnlyDictionary<Guid, UserName>> NamesAsync(Guid userId)
     {
         await using var scope = _api.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<IUserNames>().FindAsync([userId], Cancellation);
+        return await scope.ServiceProvider.GetRequiredService<IUserDirectory>().FindNamesAsync([userId], Cancellation);
     }
 
     // The rows of every table in the schema whose text holds the marker, read as the superuser.

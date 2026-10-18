@@ -45,11 +45,10 @@ public static class ControlPlaneInfrastructure
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
-        services.AddScoped<IUserDirectory, UserDirectory>();
 
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
-        services.AddScoped<IUserNames, UserNames>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddOptions<SystemAdminOptions>().BindConfiguration(SystemAdminOptions.Section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<SystemAdminOptions>, SystemAdminOptions.Validation>();

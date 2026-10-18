@@ -37,8 +37,8 @@ public sealed class EndpointAccessTests : IAsyncLifetime
         "GET /scalar/favicon.svg",
     ];
 
-    // The permission catalogue: an endpoint asks for one of these by name.
-    private static readonly string[] PermissionCatalogue =
+    // The permission list: an endpoint asks for one of these by name.
+    private static readonly string[] PermissionList =
     [
         .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)
@@ -91,7 +91,7 @@ public sealed class EndpointAccessTests : IAsyncLifetime
     [
         .. endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null ? Array.Empty<string>() : [Public],
         .. endpoint.Metadata.GetMetadata<SignedInEndpoint>() is null ? Array.Empty<string>() : [SignedIn],
-        .. endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Any(data => PermissionCatalogue.Contains(data.Policy))
+        .. endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Any(data => PermissionList.Contains(data.Policy))
             ? [Permission]
             : Array.Empty<string>(),
     ];

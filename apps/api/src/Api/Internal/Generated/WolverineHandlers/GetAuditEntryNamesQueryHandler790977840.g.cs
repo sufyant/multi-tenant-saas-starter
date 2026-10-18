@@ -21,7 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var userNames = new ControlPlane.Infrastructure.Persistence.UserNames(controlPlaneDbContext);
+            var userDirectory = new ControlPlane.Infrastructure.Persistence.UserDirectory(controlPlaneDbContext);
             // The actual message body
             var getAuditEntryNamesQuery = (Audit.Application.AuditLogs.GetAuditEntryNamesQuery)context.Envelope.Message;
 
@@ -41,7 +41,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.AuditLogs.GetAuditEntryNamesHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Audit.Application.AuditLogs.GetAuditEntryNamesHandler.HandleAsync(getAuditEntryNamesQuery, userNames, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Audit.Application.AuditLogs.GetAuditEntryNamesHandler.HandleAsync(getAuditEntryNamesQuery, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

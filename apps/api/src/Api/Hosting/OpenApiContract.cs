@@ -492,7 +492,7 @@ internal static partial class OpenApiContract
     }
 
     // The web shows an action only when the member's permissions hold its name (section 6, "What the screens read"). The names are one
-    // enum in the document, every constant of the catalogue (Permissions), so a generated client has a type for them. A response keeps
+    // enum in the document, every constant of the permission list (Permissions), so a generated client has a type for them. A response keeps
     // the names as strings, so each field that holds them, a field named permissions, refers to the enum. OpenApiContractTests checks both.
     private static Task DescribePermissions(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
@@ -501,7 +501,7 @@ internal static partial class OpenApiContract
             return Task.CompletedTask;
         }
 
-        schemas[PermissionSchema] = EnumSchema(CataloguePermissions, "A permission of the catalogue. Every endpoint checks its own permission.");
+        schemas[PermissionSchema] = EnumSchema(ListedPermissions, "A name of the permission list. Every endpoint checks its own permission.");
         foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(PermissionsMember) == true))
         {
             schema.Properties![PermissionsMember] = new OpenApiSchema
@@ -514,7 +514,7 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    private static IReadOnlyList<string> CataloguePermissions { get; } =
+    private static IReadOnlyList<string> ListedPermissions { get; } =
     [
         .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)

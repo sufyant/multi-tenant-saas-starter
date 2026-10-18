@@ -22,7 +22,7 @@ public class PermissionPoolTests
         misnamed.ShouldBeEmpty();
     }
 
-    // B18: PermissionPools is the one source of the permission names. The catalogue in Contracts is generated from its constants, and CI
+    // B18: PermissionPools is the one source of the permission names. The permission list in Contracts is generated from its constants, and CI
     // fails when the generated file differs, so this test checks only that each constant is in a pool.
     [Fact]
     public void DeclarePermissions_EveryName_IsInExactlyTheDomainPools()

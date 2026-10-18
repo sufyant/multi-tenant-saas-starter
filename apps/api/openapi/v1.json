@@ -4905,7 +4905,7 @@
           "tenant.profile.read"
         ],
         "type": "string",
-        "description": "A permission of the catalogue. Every endpoint checks its own permission."
+        "description": "A name of the permission list. Every endpoint checks its own permission."
       },
       "PreferencesResponse": {
         "required": [

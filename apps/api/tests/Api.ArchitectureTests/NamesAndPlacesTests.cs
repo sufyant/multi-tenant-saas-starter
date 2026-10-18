@@ -31,8 +31,8 @@ public sealed partial class NamesAndPlacesTests
     [Fact]
     public void NamePermissions_EveryPermission_IsAudienceResourceAction()
     {
-        var permissions = PermissionCatalogues()
-            .SelectMany(catalogue => catalogue.GetFields(BindingFlags.Public | BindingFlags.Static))
+        var permissions = PermissionLists()
+            .SelectMany(list => list.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)
             .ToList();
@@ -99,7 +99,7 @@ public sealed partial class NamesAndPlacesTests
         misnamed.ShouldBeEmpty();
     }
 
-    private static IEnumerable<Type> PermissionCatalogues() =>
+    private static IEnumerable<Type> PermissionLists() =>
         Solution.LayerOfEveryModule("Contracts")
             .SelectMany(project => Solution.Load(project).GetTypes())
             .Where(type => type.Name == "Permissions");

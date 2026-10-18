@@ -5,7 +5,7 @@ namespace ControlPlane.UnitTests.Roles;
 
 public class RoleTests
 {
-    // Requests, responses, events and audit details name a built-in role in lower case, as every other enum of the API (catalog, K5).
+    // Requests, responses, events and audit details name a built-in role in lower case, as every other enum of the API (api-catalog, K5).
     [Fact]
     public void NameBuiltInRoles_EveryRole_IsItsLowerCaseName()
     {

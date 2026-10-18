@@ -41,14 +41,14 @@ internal static class AuditEntryViews
     /// <summary>The page with each user, actor or target, named by the catalog now.</summary>
     public static async Task<CursorPage<AuditEntryView>> NamedAsync(
         CursorPage<AuditEntryView> page,
-        IUserNames userNames,
+        IUserDirectory users,
         CancellationToken cancellationToken)
     {
         var people = page.Items
             .SelectMany(entry => new[] { entry.Actor.UserId, entry.Target is { Kind: nameof(AuditTargetKind.User) } target ? target.Id : null })
             .OfType<Guid>()
             .ToHashSet();
-        var names = await userNames.FindAsync(people, cancellationToken);
+        var names = await users.FindNamesAsync(people, cancellationToken);
 
         return page.Map(entry => entry with
         {

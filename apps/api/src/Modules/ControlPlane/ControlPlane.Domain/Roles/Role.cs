@@ -27,7 +27,7 @@ internal sealed class Role
 
     /// <summary>
     /// The name of a built-in role outside the domain: in requests, responses, events and audit details, in lower case, as every other
-    /// enum of the API (catalog, K5). It is the one place a built-in role becomes text.
+    /// enum of the API (api-catalog, K5). It is the one place a built-in role becomes text.
     /// </summary>
     public static string NameOf(BuiltInRole role) => role switch
     {

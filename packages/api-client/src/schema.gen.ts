@@ -690,7 +690,7 @@ export interface components {
             state: components["schemas"]["InvitationResponseState"];
         };
         /**
-         * @description A permission of the catalogue. Every endpoint checks its own permission.
+         * @description A name of the permission list. Every endpoint checks its own permission.
          * @enum {string}
          */
         Permission: "platform.audit.read" | "platform.tenants.close" | "platform.tenants.create" | "platform.tenants.invite_owner" | "platform.tenants.reactivate" | "platform.tenants.read" | "platform.tenants.reopen" | "platform.tenants.suspend" | "platform.tenants.update" | "platform.users.delete" | "platform.users.reactivate" | "platform.users.read" | "platform.users.suspend" | "platform.users.update" | "tenant.audit.read" | "tenant.invitations.create" | "tenant.invitations.delete" | "tenant.invitations.read" | "tenant.members.delete" | "tenant.members.read" | "tenant.members.update" | "tenant.profile.read";
