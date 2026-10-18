@@ -9,7 +9,7 @@ namespace ControlPlane.Application.Invitations;
 /// Row level security keeps them to the tenant. It never loads an invitation to change it; <see cref="Tenants.ITenantRepository"/> does,
 /// because an invitation belongs to the tenant aggregate (M1).
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code passes it to public handlers.</remarks>
+/// <remarks>Public (W9).</remarks>
 public interface IInvitationQueries
 {
     /// <summary>

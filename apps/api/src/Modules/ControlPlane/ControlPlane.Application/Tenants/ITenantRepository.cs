@@ -7,8 +7,7 @@ namespace ControlPlane.Application.Tenants;
 /// Row level security keeps one tenant's memberships and invitations from another. A method is here when a command needs it to decide.
 /// </summary>
 /// <remarks>
-/// Public only because Wolverine's generated code passes it to public handlers; its members speak domain types, so they
-/// are internal to the module.
+/// Public (W9); its members speak domain types, so they are internal to the module.
 /// </remarks>
 public interface ITenantRepository
 {

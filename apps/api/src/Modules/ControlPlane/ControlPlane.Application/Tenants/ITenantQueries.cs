@@ -11,7 +11,7 @@ namespace ControlPlane.Application.Tenants;
 /// The tenants for the queries: each method reads without tracking and answers a read model, built in the query (Q2). One tenant is read
 /// inside the active tenant; the lists run outside any tenant. It never loads a tenant to change it; <see cref="ITenantRepository"/> does.
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code passes it to public handlers.</remarks>
+/// <remarks>Public (W9).</remarks>
 public interface ITenantQueries
 {
     /// <summary>The active tenant; null when no tenant has the active tenant's id.</summary>

@@ -16,7 +16,7 @@ namespace ControlPlane.Infrastructure.Persistence.Users;
 /// The catalog users in control_plane.users, which belongs to no tenant (R6), for the queries, read without tracking. The message has no
 /// tenant, so the transaction declares none; it declares the user only to read the user's own memberships (R11).
 /// </summary>
-/// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
+/// <remarks>Public (W1, W9).</remarks>
 public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueries
 {
     async Task<MeView?> IUserQueries.FindMeAsync(string externalUserId, CancellationToken cancellationToken)

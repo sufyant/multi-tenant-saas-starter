@@ -12,9 +12,9 @@ using Wolverine.Persistence;
 namespace ControlPlane.Application.Tenants.CreateTenant;
 
 // Step 1 of the tenant creation saga, in one transaction: the tenant as provisioning, its first owner's invitation, the saga's record
-// (section 6). The host also saves the command result in this transaction (I4). The invitation's secret is born here; only its hash is stored,
-// and the accept link that carries it goes on in the activation's message. Every rejection returns before the handler changes
-// anything, because Wolverine commits a failed Result too (W7); a taken slug is found by the insert itself, which writes nothing then.
+// (section 6). The host also saves the command result in this transaction (I4). The invitation's secret is born here; only its hash is
+// stored, and the accept link that carries it goes on in the activation's message. Rejections come first (W7); a taken slug is found by
+// the insert itself, which writes nothing then.
 public static class CreateTenantHandler
 {
     public static async Task<(Result<TenantView>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenantCommand>?, ActivationTimedOut?)> HandleAsync(

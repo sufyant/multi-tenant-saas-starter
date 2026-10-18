@@ -8,8 +8,7 @@ namespace ControlPlane.Application.Users.RemoveUserMembership;
 
 // K6: a membership belongs to the tenant aggregate, so the tenant row is locked first; under the lock the Owners are counted again, as
 // every change to a membership counts them (K1). A user who became the tenant's last Owner since the check stays, and the deletion
-// stops before it erases anything (A8). A user who is no longer a member changes nothing. Every rejection returns before the handler
-// changes anything, because Wolverine commits a failed Result too (W7).
+// stops before it erases anything (A8). A user who is no longer a member changes nothing. Rejections come first (W7).
 public static class RemoveUserMembershipHandler
 {
     public static async Task<(Result, UserMembershipRemovedEvent?)> HandleAsync(

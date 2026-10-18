@@ -11,7 +11,7 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Invitations.AcceptInvitation;
 
-// Every rejection returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// Rejections come first (W7).
 public static class AcceptInvitationHandler
 {
     public static async Task<(Result<MyTenantView>, MemberJoinedEvent?)> HandleAsync(

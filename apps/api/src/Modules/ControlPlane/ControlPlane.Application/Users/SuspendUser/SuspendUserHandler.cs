@@ -4,8 +4,8 @@ using SharedKernel;
 namespace ControlPlane.Application.Users.SuspendUser;
 
 // The command sets a state (I1): a user already suspended answers as they are, keeps the first time, and nothing is announced again. A
-// system admin is never suspended, the system admin who calls included, so the system door stays open to system admins. Every rejection returns
-// before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// system admin is never suspended, the system admin who calls included, so the system door stays open to system admins. Rejections come
+// first (W7).
 public static class SuspendUserHandler
 {
     public static async Task<(Result<UserView>, UserSuspendedEvent?)> HandleAsync(

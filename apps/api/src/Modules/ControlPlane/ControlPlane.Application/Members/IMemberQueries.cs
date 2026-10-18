@@ -8,7 +8,7 @@ namespace ControlPlane.Application.Members;
 /// The active tenant's members for the queries: each method reads without tracking and answers a read model, built in the query (Q2).
 /// Row level security keeps them to the tenant. It never loads a membership to change it; <see cref="Tenants.ITenantRepository"/> does.
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code passes it to public handlers.</remarks>
+/// <remarks>Public (W9).</remarks>
 public interface IMemberQueries
 {
     /// <summary>

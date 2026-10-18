@@ -4,8 +4,7 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Tenants.ReactivateTenant;
 
-// The command sets a state (I1): an active tenant answers as it is, and nothing is announced. Every rejection returns before the
-// handler changes anything, because Wolverine commits a failed Result too (W7).
+// The command sets a state (I1): an active tenant answers as it is, and nothing is announced. Rejections come first (W7).
 public static class ReactivateTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantReactivatedEvent?)> HandleAsync(

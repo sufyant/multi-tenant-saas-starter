@@ -7,10 +7,10 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Members.ChangeMemberRole;
 
-// The command sets a state (I1): the role the member already has answers as it is, and nothing is announced. K6: the tenant row is locked
-// first; then the actor's and the target's memberships are read and the Owners counted under the lock, so two changes at once run one
-// after the other and never leave the tenant without an Owner. The rules are the tenant's (M1, Tenant.ChangeMemberRole). Every rejection
-// returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// The command sets a state (I1): the role the member already has answers as it is, and nothing is announced. K6: the tenant row is
+// locked first; then the actor's and the target's memberships are read and the Owners counted under the lock, so two changes at once
+// run one after the other and never leave the tenant without an Owner. The rules are the tenant's (M1, Tenant.ChangeMemberRole).
+// Rejections come first (W7).
 public static class ChangeMemberRoleHandler
 {
     public static async Task<(Result<MemberView>, MemberRoleChangedEvent?)> HandleAsync(
