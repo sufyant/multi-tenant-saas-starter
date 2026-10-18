@@ -72,7 +72,7 @@ public static class Users
                     membership.TenantName,
                     membership.TenantSlug,
                     ResponseStatus.OfUserMembership(membership.TenantStatus),
-                    membership.Role,
+                    Tenant.Members.ToResponse(membership.Role),
                     membership.JoinedAt,
                     membership.SoleOwner)),
             ]));
@@ -176,16 +176,15 @@ public sealed record UserDetailResponse(
     IReadOnlyList<UserMembershipResponse> Memberships);
 
 /// <summary>
-/// An organisation the user is a member of: its id, name, slug and status, the user's role there (<c>owner</c>, <c>admin</c> or
-/// <c>member</c>), when they joined, and whether they are its only Owner. The suspend dialog warns with <c>soleOwner</c>, and the delete
-/// refusal names those organisations.
+/// An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
+/// its only Owner. The suspend dialog warns with <c>soleOwner</c>, and the delete refusal names those organisations.
 /// </summary>
 public sealed record UserMembershipResponse(
     Guid TenantId,
     string TenantName,
     string TenantSlug,
     UserMembershipResponseTenantStatus TenantStatus,
-    string Role,
+    RoleResponse Role,
     DateTimeOffset JoinedAt,
     bool SoleOwner);
 

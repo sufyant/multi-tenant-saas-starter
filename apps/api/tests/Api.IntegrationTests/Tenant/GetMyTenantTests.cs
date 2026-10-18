@@ -42,7 +42,7 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Profile Ltd", tenant.Slug, "active"));
-        found.GetProperty("role").GetString().ShouldBe(name);
+        Roles.Of(found).ShouldBe(Roles.BuiltIn(name));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(createdAt);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt"], ignoreOrder: true);
     }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization;
 using Api.ErrorHandling;
 using Api.Idempotency;
@@ -35,16 +36,26 @@ internal static class OpenApiContract
             // A number is a JSON number, never a string: the web defaults read one from a string, and the document would then call each
             // number an integer or a string.
             .ConfigureHttpJsonOptions(options => options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict)
-            .AddOpenApi(options => options
-                .AddOperationTransformer(NameOperation)
-                .AddOperationTransformer(DeclarePathParameters)
-                .AddOperationTransformer(DescribeListParameters)
-                .AddOperationTransformer(DescribeIdempotency)
-                .AddOperationTransformer(DescribeLocation)
-                .AddSchemaTransformer(DescribeEnumValues)
-                .AddDocumentTransformer(RequireBearerToken)
-                .AddDocumentTransformer(DescribeProblemDetails)
-                .AddDocumentTransformer(DescribePermissions));
+            .AddOpenApi(options =>
+            {
+                options.CreateSchemaReferenceId = NameSchema;
+                options
+                    .AddOperationTransformer(NameOperation)
+                    .AddOperationTransformer(DeclarePathParameters)
+                    .AddOperationTransformer(DescribeListParameters)
+                    .AddOperationTransformer(DescribeIdempotency)
+                    .AddOperationTransformer(DescribeLocation)
+                    .AddSchemaTransformer(DescribeEnumValues)
+                    .AddDocumentTransformer(RequireBearerToken)
+                    .AddDocumentTransformer(DescribeProblemDetails)
+                    .AddDocumentTransformer(DescribePermissions);
+            });
+
+    // A nullable enum, such as MemberRole?, gets the schema name of its enum, MemberRole, so the two schemas would share one name, and the
+    // one written last would win: the enum would refer to itself. A nullable enum so has no schema of its own; DescribeEnumValues writes
+    // it in its field, as a reference to the enum's schema that may be null.
+    private static string? NameSchema(JsonTypeInfo type) =>
+        Nullable.GetUnderlyingType(type.Type) is { IsEnum: true } ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
 
     // N7: an endpoint is a method with the action's name, so the method's name is the operation id.
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)

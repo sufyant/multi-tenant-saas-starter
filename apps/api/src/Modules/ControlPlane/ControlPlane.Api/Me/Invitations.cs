@@ -91,7 +91,7 @@ public static class Invitations
                 found.Inviter.Name?.FirstName,
                 found.Inviter.Name?.LastName,
                 found.Inviter.Name?.Deleted),
-            found.Role,
+            Members.ToResponse(found.Role),
             found.ExpiresAt,
             ResponseStatus.OfInvitation(found.State)));
     }
@@ -108,13 +108,13 @@ public sealed record GetInvitationPreviewRequest(string Code);
 
 /// <summary>
 /// What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
-/// gives (<c>owner</c>, <c>admin</c> or <c>member</c>), when it expires, and its state at the moment of the request: <c>pending</c>,
-/// <c>expired</c>, <c>accepted</c> or <c>cancelled</c>. Only a caller with the invited address gets it.
+/// gives, when it expires, and its state at the moment of the request: <c>pending</c>, <c>expired</c>, <c>accepted</c> or
+/// <c>cancelled</c>. Only a caller with the invited address gets it.
 /// </summary>
 public sealed record InvitationPreviewResponse(
     string TenantName,
     InviterNameResponse InviterName,
-    string Role,
+    RoleResponse Role,
     DateTimeOffset ExpiresAt,
     InvitationResponseState State);
 

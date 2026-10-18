@@ -55,7 +55,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
-        invitation.GetProperty("role").GetString().ShouldBe("member");
+        Roles.Of(invitation).ShouldBe(Roles.BuiltIn("member"));
         invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _catalog.UserIdOfAsync(inviter));
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
@@ -140,7 +140,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("role").GetString().ShouldBe("owner");
+        Roles.Of(await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(Roles.BuiltIn("owner"));
     }
 
     [Theory]

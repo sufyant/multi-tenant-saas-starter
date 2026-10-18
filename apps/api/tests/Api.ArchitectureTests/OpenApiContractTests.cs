@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using ControlPlane.Api;
+using ControlPlane.Api.Tenant;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
@@ -25,6 +26,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string LanguageSchema = "#/components/schemas/Language";
     private const string PermissionSchema = "#/components/schemas/Permission";
     private const string InvitationStateSchema = "#/components/schemas/InvitationResponseState";
+    private const string RoleSchema = "#/components/schemas/RoleResponse";
+    private const string MemberRoleSchema = "#/components/schemas/MemberRole";
 
     private readonly ComposedApplication _application = new();
     private JsonElement _document;
@@ -141,6 +144,31 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // N7 and K5, the maintainer's decision in audit fix 04: every response field that holds a role is the one schema RoleResponse,
+    // { builtIn, name }. builtIn is the enum MemberRole, or null for a custom role later, so a client compares it with an enum value
+    // and never with a string it writes by hand. A field is found by its name, as the permissions are.
+    [Fact]
+    public void BuildOpenApiDocument_EveryResponseFieldNamedRole_RefersToTheOneRoleSchema()
+    {
+        var expected = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
+            .Where(type => type.Name.EndsWith("Response", StringComparison.Ordinal) && type.GetProperty("Role") is not null)
+            .Select(type => $"{type.Name}.role {RoleSchema}");
+
+        var documented = ResponseSchemas()
+            .SelectMany(schema => PropertiesOf(schema.Value)
+                .Where(property => property.Name == "role")
+                .Select(property => $"{schema.Name}.role {string.Join(", ", ReferencesIn(property.Value))}"));
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+        var role = SchemaAt(RoleSchema);
+        PropertiesOf(role).Select(property => property.Name).ShouldBe(["builtIn", "name"], ignoreOrder: true);
+        ReferencesIn(role.GetProperty("properties").GetProperty("builtIn")).ShouldBe([MemberRoleSchema]);
+        IsNullable(role.GetProperty("properties").GetProperty("builtIn")).ShouldBeTrue();
+        EnumOf(SchemaAt(MemberRoleSchema)).ShouldBe(JsonValuesOf(typeof(MemberRole)));
     }
 
     // The maintainer's decision in audit fix 08: one enum of an invitation's state, InvitationResponseState. The preview, the Owner

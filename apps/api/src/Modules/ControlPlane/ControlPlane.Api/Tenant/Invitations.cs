@@ -81,7 +81,7 @@ public static class Invitations
     internal static InvitationResponse ToResponse(InvitationSummary invitation) => new(
         invitation.Id,
         invitation.Email,
-        invitation.Role,
+        Members.ToResponse(invitation.Role),
         invitation.InvitedBy,
         ToResponse(invitation.InvitedByName),
         invitation.CreatedAt,
@@ -99,15 +99,15 @@ public static class Invitations
 public sealed record InviteMemberRequest(string Email, [property: JsonRequired] MemberRole Role, Language? Language = null);
 
 /// <summary>
-/// A pending invitation: the invited address, its role (<c>owner</c>, <c>admin</c> or <c>member</c>), the catalog user id of the member who invited and their
-/// names as the catalog holds them now, when it was created and expires, and its state at the moment of the request: <c>pending</c>, or
-/// <c>expired</c> once its expiry has passed. It is never <c>accepted</c> or <c>cancelled</c>, because the list holds pending invitations
+/// A pending invitation: the invited address, its role, the catalog user id of the member who invited and their names as the catalog
+/// holds them now, when it was created and expires, and its state at the moment of the request: <c>pending</c>, or <c>expired</c> once
+/// its expiry has passed. It is never <c>accepted</c> or <c>cancelled</c>, because the list holds pending invitations
 /// only, and inviting answers the new one.
 /// </summary>
 public sealed record InvitationResponse(
     Guid Id,
     string Email,
-    string Role,
+    RoleResponse Role,
     Guid InvitedBy,
     UserNameResponse InvitedByName,
     DateTimeOffset CreatedAt,

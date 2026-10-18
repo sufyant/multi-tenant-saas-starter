@@ -44,7 +44,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        Invitations(page).ShouldBe([(expired, "member"), (pending, "admin")]);
+        Invitations(page).ShouldBe([(expired, Roles.BuiltIn("member")), (pending, Roles.BuiltIn("admin"))]);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
@@ -195,7 +195,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/invitations?role={role}", Cancellation);
 
-        Invitations(page).Select(invitation => invitation.Role).ShouldBe([role]);
+        Invitations(page).Select(invitation => invitation.Role).ShouldBe([Roles.BuiltIn(role)]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
@@ -287,5 +287,5 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("email").GetString()!)];
 
     private static List<(Guid Id, string Role)> Invitations(JsonElement page) =>
-        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("role").GetString()!))];
+        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), Roles.Of(item)))];
 }

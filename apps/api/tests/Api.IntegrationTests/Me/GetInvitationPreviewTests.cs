@@ -44,7 +44,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         preview.EnumerateObject().Select(field => field.Name).ShouldBe(["tenantName", "inviterName", "role", "expiresAt", "state"], ignoreOrder: true);
         preview.GetProperty("tenantName").GetString().ShouldBe("Preview Ltd");
         preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"user","firstName":"Ada","lastName":"Lovelace","deleted":false}""");
-        preview.GetProperty("role").GetString().ShouldBe("admin");
+        Roles.Of(preview).ShouldBe(Roles.BuiltIn("admin"));
         preview.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(Later, TimeSpan.FromMilliseconds(1));
         preview.GetProperty("state").GetString().ShouldBe("pending");
     }
@@ -92,7 +92,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
 
         preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"platform","firstName":null,"lastName":null,"deleted":null}""");
-        preview.GetProperty("role").GetString().ShouldBe("owner");
+        Roles.Of(preview).ShouldBe(Roles.BuiltIn("owner"));
     }
 
     // A system admin's deletion erased the inviter's names (A8): the screen says "Deleted user", as for audit (K3).

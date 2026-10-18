@@ -1,3 +1,4 @@
+using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.UserDeletion;
@@ -72,7 +73,7 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
                 membership.Name,
                 membership.Slug,
                 membership.Status.ToString(),
-                Role.NameOf(membership.BuiltIn),
+                RoleSummary.Of(membership.BuiltIn),
                 membership.JoinedAt,
                 membership.BuiltIn == BuiltInRole.Owner && membership.OwnerCount == 1)),
         ];
