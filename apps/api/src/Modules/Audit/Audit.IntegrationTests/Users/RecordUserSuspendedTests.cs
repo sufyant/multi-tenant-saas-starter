@@ -1,5 +1,4 @@
 using Audit.Application.AuditLogs;
-using Audit.Application.Users.RecordUserDeleted;
 using Audit.Application.Users.RecordUserPreferencesChanged;
 using Audit.Application.Users.RecordUserReactivated;
 using Audit.Application.Users.RecordUserRenamed;

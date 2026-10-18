@@ -4,7 +4,6 @@ using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
 using Notifications.Contracts.Invitations;
 using SharedKernel;
-using Wolverine;
 
 namespace Notifications.UnitTests.Invitations.SendInvitationEmail;
 

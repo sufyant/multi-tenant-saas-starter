@@ -1,9 +1,7 @@
 using Audit.Application.AuditLogs;
-using Audit.Application.Users.RecordUserDeleted;
 using Audit.Application.Users.RecordUserPreferencesChanged;
 using Audit.Application.Users.RecordUserReactivated;
 using Audit.Application.Users.RecordUserRenamed;
-using Audit.Application.Users.RecordUserSuspended;
 using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 

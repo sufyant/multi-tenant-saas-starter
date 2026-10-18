@@ -1,20 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
 using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Contracts.Invitations;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Testing;
 using Notifications.Contracts.Invitations;
 using Npgsql;
 using SharedKernel;
 using Tenancy;
 using Wolverine;
-using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform;
 

@@ -1,7 +1,6 @@
 using ControlPlane.Contracts.Invitations;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendMemberInvitationEmail;
-using Notifications.Contracts.Invitations;
 using SharedKernel;
 using Wolverine;
 

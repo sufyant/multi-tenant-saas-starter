@@ -1,9 +1,6 @@
-using System.Text.Json;
 using Audit.Application.AuditLogs;
 using Audit.Application.Invitations.RecordInvitationRevoked;
-using Audit.Application.Members.RecordMemberInvited;
 using ControlPlane.Contracts.Invitations;
-using ControlPlane.Contracts.Members;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Invitations;

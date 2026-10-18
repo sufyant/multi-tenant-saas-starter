@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Audit.Application.AuditLogs;
 using Audit.Application.Members.RecordMemberRemoved;
-using Audit.Application.Members.RecordMemberRoleChanged;
 using Audit.Application.Users.RecordUserMembershipRemoved;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Users;

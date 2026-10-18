@@ -1,13 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.ExpireSignUp;
 using ControlPlane.Application.Invitations.OpenMemberSignUp;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
-using Wolverine;
 using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform.Tenants;

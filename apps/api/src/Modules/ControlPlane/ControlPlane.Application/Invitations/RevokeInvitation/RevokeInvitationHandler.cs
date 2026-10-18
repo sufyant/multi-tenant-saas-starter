@@ -2,7 +2,6 @@ using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Invitations;
-using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
 namespace ControlPlane.Application.Invitations.RevokeInvitation;
