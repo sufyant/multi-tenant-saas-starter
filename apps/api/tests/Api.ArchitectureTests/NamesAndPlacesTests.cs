@@ -11,6 +11,13 @@ public sealed partial class NamesAndPlacesTests
 
     private static readonly string[] BuildOutput = ["bin", "obj"];
 
+    private static readonly string[] ResourceLayers = ["Application", "Domain"];
+
+    private static readonly string[] Audiences = ["Platform", "Me", "Tenant"];
+
+    // Persistence holds Migrations, where EF Core's tool expects them, and Lists, the search and the sort that the catalogs share (N8).
+    private static readonly string[] PersistencePieces = ["Migrations", "Lists"];
+
     public static TheoryData<string> ModuleDbContextNames => [.. ModuleDbContexts.Types().Select(type => type.FullName!)];
 
     // N4: a module's schema is its name in snake case, so the schema says which module owns a table.
@@ -99,6 +106,111 @@ public sealed partial class NamesAndPlacesTests
         misnamed.ShouldBeEmpty();
     }
 
+    // N8, rule 1: one type in each file, and the file has the type's name (StyleCop SA1402, SA1649). A generated file adds .g. A
+    // type at the top of a file-scoped namespace starts its line; a nested type is indented.
+    [Fact]
+    public void NameFiles_EveryModuleSourceFile_DeclaresOneTypeOfItsName()
+    {
+        var files = ModuleSourceFiles().ToList();
+
+        var misnamed = files
+            .Select(file => (File: file, Types: TopLevelType().Matches(File.ReadAllText(file)).Select(match => match.Groups["name"].Value).ToList()))
+            .Where(file => file.Types is not [var type] || type != Path.GetFileNameWithoutExtension(file.File).Replace(".g", "", StringComparison.Ordinal))
+            .Select(file => $"{Path.GetRelativePath(Solution.Root, file.File)}: {string.Join(", ", file.Types)}");
+
+        files.ShouldNotBeEmpty();
+        misnamed.ShouldBeEmpty();
+    }
+
+    // N8, rule 2: a message names its role. An integration event in Contracts is {PastTense}Event, a saga's reply {Work}Reply (N3); in
+    // Application a command is {Action}Command, a query {Action}Query, and a saga's timeout {Wait}TimedOut (N3).
+    [Fact]
+    public void NameMessages_EveryHandledMessage_EndsWithItsRole()
+    {
+        var messages = Handlers().Select(handler => handler.Message).Where(message => !message.IsGenericType).Distinct().ToList();
+
+        var misnamed = messages.Where(message => !NamesItsRole(message)).Select(message => message.FullName);
+
+        messages.ShouldNotBeEmpty();
+        misnamed.ShouldBeEmpty();
+    }
+
+    // N8, rule 2: the handler of a command or a query is named after it: InviteMemberCommand has InviteMemberHandler.
+    [Fact]
+    public void NameHandlers_HandlerOfACommandOrQuery_IsNamedAfterIt()
+    {
+        var handlers = Handlers().Where(handler => EndsWithAny(handler.Message.Name, "Command", "Query")).ToList();
+
+        var misnamed = handlers
+            .Where(handler => handler.Type.Name != $"{ActionOf(handler.Message)}Handler")
+            .Select(handler => $"{handler.Type.FullName}: {handler.Message.Name}");
+
+        handlers.ShouldNotBeEmpty();
+        misnamed.ShouldBeEmpty();
+    }
+
+    // N8, rule 2: the validator of a command is named after it: InviteMemberCommand has InviteMemberValidator.
+    [Fact]
+    public void NameValidators_EveryValidator_IsNamedAfterItsCommand()
+    {
+        var validators = Validators().ToList();
+
+        var misnamed = validators
+            .Where(validator => validator.Name != $"{ActionOf(validator.BaseType!.GetGenericArguments()[0])}Validator")
+            .Select(validator => validator.FullName);
+
+        validators.ShouldNotBeEmpty();
+        misnamed.ShouldBeEmpty();
+    }
+
+    // N8, rule 3: a use case has a folder of its own in its resource folder, {Resource}/{Action}/, with its command or query, handler and
+    // validator. A handler of an event names its action: RecordMemberInvitedHandler sits in Members/RecordMemberInvited/.
+    [Fact]
+    public void PlaceUseCases_EveryCommandQueryHandlerAndValidator_SitsInItsUseCaseFolder()
+    {
+        var useCaseTypes = UseCaseTypes().ToList();
+
+        var misplaced = useCaseTypes
+            .Where(useCase => !SitsInItsUseCaseFolder(useCase.Type, useCase.Action))
+            .Select(useCase => useCase.Type.FullName);
+
+        useCaseTypes.ShouldNotBeEmpty();
+        misplaced.ShouldBeEmpty();
+    }
+
+    // N8, the exception of rule 3b: a project's root holds only what the whole module shares: the error lists, the permission list, the
+    // list of audit operations, the DbContext and the module's registration file. Every other file sits in the folder of its resource or of what it is.
+    [Fact]
+    public void PlaceFiles_ModuleProjectRoot_HoldsOnlyTheModuleCatalogues()
+    {
+        var rootFiles = Solution.ModuleProjects
+            .SelectMany(project => Directory.EnumerateFiles(Solution.FolderOf(project), "*.cs").Select(file => (Project: project, File: Path.GetFileName(file))))
+            .ToList();
+
+        var misplaced = rootFiles
+            .Where(file => !ModuleCatalogue().IsMatch(file.File))
+            .Select(file => $"{file.Project}: {file.File}");
+
+        rootFiles.ShouldNotBeEmpty();
+        misplaced.ShouldBeEmpty();
+    }
+
+    // N8, rule 5: every project of a module uses the resource folders of its Application and Domain, so the folder is the topic and the
+    // suffix the role: Contracts at its root, Api below each audience folder, Infrastructure below Persistence.
+    [Theory]
+    [MemberData(nameof(ModuleNames))]
+    public void PlaceFolders_ContractsApiAndInfrastructure_UseTheResourceFolders(string module)
+    {
+        var resources = ResourceFoldersOf(module);
+
+        var unknown = FoldersByResourceOf(module).Where(folder => !resources.Contains(folder)).Distinct();
+
+        resources.ShouldNotBeEmpty();
+        unknown.ShouldBeEmpty();
+    }
+
+    public static TheoryData<string> ModuleNames => [.. Solution.Modules];
+
     private static IEnumerable<Type> PermissionLists() =>
         Solution.LayerOfEveryModule("Contracts")
             .SelectMany(project => Solution.Load(project).GetTypes())
@@ -121,6 +233,82 @@ public sealed partial class NamesAndPlacesTests
             .Select(type => type.Name),
     ];
 
+    // The handlers that are no saga, each with its action, the commands and queries they handle in their own project, and the validators.
+    private static IEnumerable<(Type Type, string Action)> UseCaseTypes() =>
+        Handlers().Where(handler => !handler.Type.IsSubclassOf(typeof(Wolverine.Saga)))
+            .SelectMany(handler => UseCaseTypesOf(handler.Type, handler.Message))
+            .Concat(Validators().Select(validator => (Type: validator, Action: validator.Name[..^"Validator".Length])))
+            .Distinct();
+
+    private static IEnumerable<(Type Type, string Action)> UseCaseTypesOf(Type handler, Type message)
+    {
+        yield return (handler, handler.Name[..^"Handler".Length]);
+        if (EndsWithAny(message.Name, "Command", "Query") && message.Assembly == handler.Assembly)
+        {
+            yield return (message, ActionOf(message));
+        }
+    }
+
+    // {Project}.{Resource}.{Action}: the namespace follows the folder (IDE0130).
+    private static bool SitsInItsUseCaseFolder(Type type, string action) =>
+        type.Namespace is { } name
+        && name.Split('.') is [.., var resource, var folder]
+        && folder == action
+        && name == $"{type.Assembly.GetName().Name}.{resource}.{folder}";
+
+    // The resource folders of a module: the first folders of its Application and Domain projects.
+    private static HashSet<string> ResourceFoldersOf(string module) =>
+        [.. ResourceLayers.SelectMany(layer => FirstFoldersOf(Solution.FolderOf($"{module}.{layer}")))];
+
+    // The folders that name a resource in the other projects: Contracts at its root, Api below each audience folder, Infrastructure
+    // below Persistence, without the pieces Persistence holds for itself.
+    private static IEnumerable<string> FoldersByResourceOf(string module)
+    {
+        var api = Solution.FolderOf($"{module}.Api");
+        var persistence = Path.Combine(Solution.FolderOf($"{module}.Infrastructure"), "Persistence");
+        return FirstFoldersOf(Solution.FolderOf($"{module}.Contracts"))
+            .Concat(Audiences.SelectMany(audience => FirstFoldersOf(Path.Combine(api, audience))))
+            .Concat(FirstFoldersOf(persistence).Except(PersistencePieces));
+    }
+
+    // The C# files of every module project but its tests, without the migrations EF Core writes.
+    private static IEnumerable<string> ModuleSourceFiles() =>
+        Solution.ModuleProjects.SelectMany(Solution.SourceFilesOf)
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+    // Each handler of a module's Application and the message it handles: the first parameter of each Handle or HandleAsync method, as
+    // Wolverine finds them (W2). A saga handles its messages too.
+    private static IEnumerable<(Type Type, Type Message)> Handlers() =>
+        Solution.LayerOfEveryModule("Application")
+            .SelectMany(project => Solution.Load(project).GetExportedTypes())
+            .Where(type => type.Name.EndsWith("Handler", StringComparison.Ordinal) || type.IsSubclassOf(typeof(Wolverine.Saga)))
+            .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(method => method.Name is "Handle" or "HandleAsync" && method.GetParameters().Length > 0)
+                .Select(method => (Type: type, Message: method.GetParameters()[0].ParameterType)));
+
+    private static IEnumerable<Type> Validators() =>
+        Solution.LayerOfEveryModule("Application")
+            .SelectMany(project => Solution.Load(project).GetExportedTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(FluentValidation.AbstractValidator<>));
+
+    // The action of a command or a query: its name without the role.
+    private static string ActionOf(Type message) =>
+        message.Name.EndsWith("Command", StringComparison.Ordinal) ? message.Name[..^"Command".Length]
+        : message.Name.EndsWith("Query", StringComparison.Ordinal) ? message.Name[..^"Query".Length]
+        : message.Name;
+
+    private static bool NamesItsRole(Type message) =>
+        message.Assembly.GetName().Name!.EndsWith(".Contracts", StringComparison.Ordinal)
+            ? EndsWithAny(message.Name, "Event", "Reply")
+            : EndsWithAny(message.Name, "Command", "Query", "Reply", "TimedOut");
+
+    private static bool EndsWithAny(string name, params string[] suffixes) => suffixes.Any(suffix => name.EndsWith(suffix, StringComparison.Ordinal));
+
+    private static IEnumerable<string> FirstFoldersOf(string folder) =>
+        Directory.Exists(folder)
+            ? Directory.EnumerateDirectories(folder).Select(Path.GetFileName).OfType<string>().Where(name => !BuildOutput.Contains(name))
+            : [];
+
     private static bool IsProjectDotKindTests(string project)
     {
         var match = ProjectDotKindTests().Match(project);
@@ -139,4 +327,10 @@ public sealed partial class NamesAndPlacesTests
 
     [GeneratedRegex("(?<=[a-z0-9])([A-Z])")]
     private static partial Regex WordStart();
+
+    [GeneratedRegex(@"^(public|internal)( (sealed|static|abstract|partial))* (class|record|struct|interface|enum) (?<name>\w+)", RegexOptions.Multiline)]
+    private static partial Regex TopLevelType();
+
+    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|Permissions\.g|AuditOperations|\w+Module|\w+Infrastructure|\w+DbContext)\.cs$")]
+    private static partial Regex ModuleCatalogue();
 }
