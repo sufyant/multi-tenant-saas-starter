@@ -414,18 +414,18 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // The maintainer's decision 1 in audit fix 09: the validators are the one source of a request's limits, so a client checks a form
-    // with the numbers the API enforces. Every request field with a length rule has the rule's maxLength, and no other request field has
-    // one.
+    // with the numbers the API enforces. Every request field with a length rule has the rule's minLength and maxLength, and no other
+    // request field has either.
     [Fact]
-    public void BuildOpenApiDocument_RequestFieldWithALengthRule_HasTheMaxLengthOfTheRule()
+    public void BuildOpenApiDocument_RequestFieldWithALengthRule_HasTheLengthsOfTheRule()
     {
         var expected = RequestRules()
             .Where(rule => rule.Rule is ILengthValidator { Max: >= 0 })
-            .Select(rule => $"{rule.Field} {((ILengthValidator)rule.Rule).Max}");
+            .Select(rule => $"{rule.Field} {((ILengthValidator)rule.Rule).Min} {((ILengthValidator)rule.Rule).Max}");
 
         var documented = RequestFields()
-            .Where(field => field.Value.TryGetProperty("maxLength", out _))
-            .Select(field => $"{field.Name} {field.Value.GetProperty("maxLength").GetInt32()}");
+            .Where(field => field.Value.TryGetProperty("maxLength", out _) || field.Value.TryGetProperty("minLength", out _))
+            .Select(field => $"{field.Name} {LengthOf(field.Value, "minLength")} {LengthOf(field.Value, "maxLength")}");
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
@@ -443,25 +443,42 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
-    // Decision 1 of audit fix 09: a rule that needs a value, without a condition, makes its field required. The generator already marks
-    // each of these fields required, from the request's constructor, and the transformer keeps it so.
+    // The maintainer's decision 3 after audit fix 09: a regex rule is the field's pattern, where .NET and ECMAScript read the regex the
+    // same way. The time zone's regex ends with \z, which ECMAScript does not know, and the web picks a time zone from a list, so its
+    // field has no pattern.
     [Fact]
-    public void BuildOpenApiDocument_RequestFieldWithARequiredRule_IsRequired()
+    public void BuildOpenApiDocument_RequestFieldWithARegexRule_HasThePatternOfTheRule()
     {
-        var required = RequestRules()
-            .Where(rule => rule.Rule is INotNullValidator or INotEmptyValidator && !rule.Conditional)
-            .Select(rule => rule.Field)
-            .ToList();
+        string[] withoutPattern = ["ChangePreferencesRequest.timeZone"];
+        var expected = RequestRules()
+            .Where(rule => rule.Rule is IRegularExpressionValidator && !withoutPattern.Contains(rule.Field))
+            .Select(rule => $"{rule.Field} {((IRegularExpressionValidator)rule.Rule).Expression}");
 
-        var missing = required.Except(RequiredRequestFields());
+        var documented = RequestFields()
+            .Where(field => field.Value.TryGetProperty("pattern", out _))
+            .Select(field => $"{field.Name} {field.Value.GetProperty("pattern").GetString()}");
 
-        required.ShouldNotBeEmpty();
-        missing.ShouldBeEmpty();
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // The maintainer's decision after audit fix 09: every length limit of a request is a length rule, so the document reads its number.
+    // A limit that counts the trimmed value is a length rule too (TrimmedLength), never a predicate.
+    [Fact]
+    public void BuildOpenApiDocument_RuleWithTheTooLongCode_IsALengthRule()
+    {
+        var limits = RequestRules().Where(rule => rule.ErrorCode == "TooLong").ToList();
+
+        var predicates = limits.Where(rule => rule.Rule is not ILengthValidator).Select(rule => $"{rule.Field} {rule.Rule.Name}");
+
+        limits.ShouldNotBeEmpty();
+        predicates.ShouldBeEmpty();
     }
 
     // Decision 1 of audit fix 09: a rule that the document cannot read is reported, never copied as a number. Each one is listed here, so
     // a new kind of rule, such as a range, fails the test until someone decides how the document shows it. A predicate (Must) has no
-    // form to read; the document writes no pattern.
+    // form to read, and the time zone's regex has no pattern. A rule that needs a value is required in the document already: the
+    // generator marks the field required from the request's constructor.
     [Fact]
     public void BuildOpenApiDocument_RuleTheDocumentCannotRead_IsAKnownOne()
     {
@@ -477,6 +494,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         var unread = RequestRules()
             .Where(rule => rule.Rule is not (ILengthValidator or IEmailValidator or INotNullValidator or INotEmptyValidator))
+            .Where(rule => !(rule.Rule is IRegularExpressionValidator && PatternedRequestFields().Contains(rule.Field)))
             .Select(rule => $"{rule.Field} {rule.Rule.Name}")
             .Distinct();
 
@@ -539,7 +557,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     // The rules of every validator, by the request field each names. The command X of a request XRequest carries the request's fields
     // under the same names, and a validation answer names a field by its command property in camel case (K5).
-    private static IEnumerable<(string Field, IPropertyValidator Rule, bool Conditional)> RequestRules() =>
+    private static IEnumerable<(string Field, IPropertyValidator Rule, string ErrorCode)> RequestRules() =>
         Solution.Modules
             .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
             .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
@@ -547,12 +565,14 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .SelectMany(member => member.Select(rule =>
                     ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
                         rule.Validator,
-                        rule.Options.HasCondition || rule.Options.HasAsyncCondition))));
+                        rule.Options.ErrorCode))));
 
-    private IEnumerable<string> RequiredRequestFields() =>
-        Schemas()
-            .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
-            .SelectMany(schema => RequiredOf(schema.Value).Select(field => $"{schema.Name}.{field}"));
+    private List<string> PatternedRequestFields() =>
+        [.. RequestFields().Where(field => field.Value.TryGetProperty("pattern", out _)).Select(field => field.Name)];
+
+    // A length the schema leaves out is 0 for minLength, as JSON Schema reads it.
+    private static int LengthOf(JsonElement schema, string keyword) =>
+        schema.TryGetProperty(keyword, out var length) ? length.GetInt32() : 0;
 
     private static IEnumerable<JsonElement> QueryParametersOf(JsonElement operation) =>
         operation.TryGetProperty("parameters", out var parameters)
