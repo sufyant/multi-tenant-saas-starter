@@ -54,8 +54,7 @@ internal static partial class OpenApiContract
                     .AddOperationTransformer(DescribeListParameters)
                     .AddOperationTransformer(DescribeListLimits)
                     .AddOperationTransformer(DescribeIdempotency)
-                    .AddOperationTransformer(DescribeLocation)
-                    .AddOperationTransformer(DescribeRetryAfter)
+                    .AddOperationTransformer(DescribeResponseHeaders)
                     .AddSchemaTransformer(DescribeEnumValues)
                     .AddSchemaTransformer(DescribeRequestRules)
                     .AddDocumentTransformer(RequireBearerToken)
@@ -162,7 +161,7 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // I1, I2 and I5: an idempotent operation requires its key, and each answer it can replay may carry Idempotent-Replayed: true.
+    // I1 and I2: an idempotent operation requires its key.
     private static Task DescribeIdempotency(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         if (!context.Description.ActionDescriptor.EndpointMetadata.OfType<IdempotencyKeyRequired>().Any())
@@ -178,6 +177,32 @@ internal static partial class OpenApiContract
             Required = true,
             Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 1, MaxLength = IdempotencyMiddleware.MaxLength, Pattern = IdempotencyMiddleware.Pattern },
         });
+        return Task.CompletedTask;
+    }
+
+    // How the document declares each header of ResponseHeaders. A header without a declaration here throws, so the build fails.
+    private static readonly Dictionary<string, Action<OpenApiOperation>> HeaderDescriptions = new(StringComparer.Ordinal)
+    {
+        [IdempotencyExecutor.ReplayedHeader] = DescribeReplayed,
+        [HeaderNames.Location] = DescribeLocation,
+        [HeaderNames.RetryAfter] = DescribeRetryAfter,
+    };
+
+    // The response headers an operation's metadata makes the host send, from the one map that the CORS policy reads too
+    // (ResponseHeaders). Each header is declared on the answers that carry it.
+    private static Task DescribeResponseHeaders(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        foreach (var header in ResponseHeaders.SentBy(context.Description.ActionDescriptor.EndpointMetadata))
+        {
+            HeaderDescriptions[header](operation);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // I5: each answer an idempotent operation can replay may carry Idempotent-Replayed: true.
+    private static void DescribeReplayed(OpenApiOperation operation)
+    {
         foreach (var (status, answer) in operation.Responses ?? [])
         {
             if (!NeverReplayed.Contains(status) && answer is OpenApiResponse response)
@@ -190,16 +215,13 @@ internal static partial class OpenApiContract
                 };
             }
         }
-
-        return Task.CompletedTask;
     }
 
     // RFC 9110, section 10.2.2: where a GET reads the resource an endpoint creates, its 201 names the resource in Location
     // (ResultEndpointFilter).
-    private static Task DescribeLocation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    private static void DescribeLocation(OpenApiOperation operation)
     {
-        if (context.Description.ActionDescriptor.EndpointMetadata.OfType<CreatedLocation>().Any()
-            && operation.Responses?.GetValueOrDefault(StatusCodes.Status201Created.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse created)
+        if (operation.Responses?.GetValueOrDefault(StatusCodes.Status201Created.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse created)
         {
             created.Headers ??= new Dictionary<string, IOpenApiHeader>();
             created.Headers[HeaderNames.Location] = new OpenApiHeader
@@ -209,17 +231,14 @@ internal static partial class OpenApiContract
                 Schema = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uri-reference" },
             };
         }
-
-        return Task.CompletedTask;
     }
 
     // RFC 9110, section 10.2.3: the rate limiter answers 429 with Retry-After, the seconds to wait (UserRateLimiting). Each operation
     // it covers declares the header on its 429. A 429 of a handler, such as the daily limit of invitations, sends none, so the header is
     // not required.
-    private static Task DescribeRetryAfter(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    private static void DescribeRetryAfter(OpenApiOperation operation)
     {
-        if (UserRateLimiting.Covers(context.Description.ActionDescriptor.EndpointMetadata)
-            && operation.Responses?.GetValueOrDefault(StatusCodes.Status429TooManyRequests.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse rejected)
+        if (operation.Responses?.GetValueOrDefault(StatusCodes.Status429TooManyRequests.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse rejected)
         {
             rejected.Headers ??= new Dictionary<string, IOpenApiHeader>();
             rejected.Headers[HeaderNames.RetryAfter] = new OpenApiHeader
@@ -228,8 +247,6 @@ internal static partial class OpenApiContract
                 Schema = new OpenApiSchema { Type = JsonSchemaType.Integer, Minimum = Number(0) },
             };
         }
-
-        return Task.CompletedTask;
     }
 
     // Decision 1 of audit fix 09: the validators are the one source of a request's limits. The command X of a request XRequest carries
