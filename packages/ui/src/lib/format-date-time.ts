@@ -89,9 +89,12 @@ export function zoneLabel(at: Instant, options: DateTimeOptions): string {
   const [, sign = "+", hours = "0", minutes] =
     /^([+-])?(\d{2})?(?::(\d{2}))?$/.exec(offset) ?? [];
   const utc = `UTC${sign}${Number(hours)}${minutes && minutes !== "00" ? `:${minutes}` : ""}`;
-  const name = zonePart(at, options.locale, timeZone, "long");
+  const latin = `${options.locale}-u-nu-latn`;
+  const name = zonePart(at, latin, timeZone, "long");
+  // The browser has no name for the zone when its long name is only the offset.
+  const named = name !== zonePart(at, latin, timeZone, "longOffset");
   const city = (timeZone.split("/").pop() ?? timeZone).replaceAll("_", " ");
-  return `${/^GMT|^UTC/.test(name) ? city : name} (${utc})`;
+  return `${named ? name : city} (${utc})`;
 }
 
 const minute = 60_000;

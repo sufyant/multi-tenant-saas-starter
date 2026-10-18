@@ -6,6 +6,7 @@ import {
   type MyTenantDetailResponse,
   type MyTenantResponse,
   type Permission,
+  schemas,
 } from "@repo/api-client";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -50,7 +51,10 @@ export function TenantProvider({
 }) {
   const t = useTranslations("common");
   const matching = useQuery(
-    getListMyTenantsQueryOptions({ q: slug, pageSize: 100 }),
+    getListMyTenantsQueryOptions({
+      q: slug,
+      pageSize: schemas.listMyTenantsQueryPageSizeMax,
+    }),
   );
   const all = useQuery(getListMyTenantsQueryOptions({ pageSize: 1 }));
   const tenant = matching.data?.items.find((item) => item.slug === slug);

@@ -57,6 +57,16 @@ describe("format-date-time", () => {
     expect(zoneLabel(at, istanbul)).toBe("Istanbul (UTC+3)");
   });
 
+  it("ZoneLabel_ArabicZoneWithoutAName_UsesTheCityWithWesternDigits", () => {
+    expect(
+      zoneLabel(at, { locale: "ar-SA", timeZone: "Europe/Istanbul" }),
+    ).toBe("Istanbul (UTC+3)");
+  });
+
+  it("ZoneLabel_ArabicZoneWithAName_NamesItInArabic", () => {
+    expect(zoneLabel(at, riyadh)).toBe("التوقيت العربي الرسمي (UTC+3)");
+  });
+
   it("FormatTime_NullTimeZone_UsesTheBrowsersZone", () => {
     const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 

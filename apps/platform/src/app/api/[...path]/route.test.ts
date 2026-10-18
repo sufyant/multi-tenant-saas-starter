@@ -121,6 +121,21 @@ describe("BFF", () => {
     expect(await answer.json()).toEqual(conflict);
   });
 
+  it("GetMe_AcceptAndACookie_PassesAcceptButNeverTheCookie", async () => {
+    server.use(
+      http.get(`${api}/v1/me`, () => HttpResponse.json({ id: tenantId })),
+    );
+
+    await GET(
+      new Request(`${web}/api/v1/me`, {
+        headers: { Accept: "application/json", Cookie: "__session=secret" },
+      }),
+    );
+
+    expect(requests[0]?.headers.get("Accept")).toBe("application/json");
+    expect(requests[0]?.headers.has("Cookie")).toBe(false);
+  });
+
   it("GetMe_WithoutASession_Answers401AndCallsNothing", async () => {
     getToken.mockResolvedValue(null);
 
@@ -185,6 +200,8 @@ describe("BFF", () => {
     "/api/v2/x",
     "/api/v1/../me",
     "/api/v1/me%2F..%2Fplatform",
+    "/api/v1/me%5C..%5Cplatform",
+    "/api/v1/%2e%2e/me",
   ])("AnyPathOutsideV1_%s_Answers404AndCallsNothing", async (path) => {
     const answer = await GET(new Request(`${web}${path}`));
 

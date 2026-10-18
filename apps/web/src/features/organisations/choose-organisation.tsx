@@ -3,6 +3,7 @@
 import {
   getGetMeQueryOptions,
   getListMyTenantsQueryOptions,
+  schemas,
 } from "@repo/api-client";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +23,11 @@ export function ChooseOrganisation() {
   const t = useTranslations();
   const router = useRouter();
   const me = useQuery(getGetMeQueryOptions());
-  const tenants = useQuery(getListMyTenantsQueryOptions({ pageSize: 100 }));
+  const tenants = useQuery(
+    getListMyTenantsQueryOptions({
+      pageSize: schemas.listMyTenantsQueryPageSizeMax,
+    }),
+  );
   const only = tenants.data?.total === 1 ? tenants.data.items[0] : undefined;
 
   useEffect(() => {

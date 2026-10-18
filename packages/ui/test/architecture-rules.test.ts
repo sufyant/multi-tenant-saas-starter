@@ -168,6 +168,14 @@ describe("architecture rules", () => {
     ]);
   });
 
+  it("EnumLiterals_LiteralType_IsNoFinding", () => {
+    const root = folder({
+      "a.tsx": 'export const A = (props: React.ComponentProps<"tr">) => props;',
+    });
+
+    expect(enumLiterals(root, new Set(["tr"]))).toEqual([]);
+  });
+
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {
     const root = folder({
       "schemas.gen.ts": [

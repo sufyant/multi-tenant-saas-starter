@@ -13,7 +13,7 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 # The platform app
 
 - The system admins use this app. On screen it is "Platform"; in code, routes and the API it is `platform` (N5). "Admin" is only a role of the tenant web.
-- The routes have no tenant segment. A tenant is a record the platform lists, under its own sections: Organisations, Users and Activity, with Preferences under Settings.
+- The routes have no tenant segment. Today the app has `/` (the Overview) and `/settings/preferences`. Its sections Organisations, Users and Activity come in later steps; a tenant is then a record the platform lists.
 - An ink "Platform" label starts the top bar on every page and every screen size. There is no OrgMenu.
 - A signed-in user whose `GetMe.isSystemAdmin` is false sees "No access yet".
 - The platform runs on its own origin, so the API accepts its tokens through `Authentication__Clerk__AuthorizedParties__1` (`apps/api/docs/configuration.md`, `.railway/railway.ts`).
