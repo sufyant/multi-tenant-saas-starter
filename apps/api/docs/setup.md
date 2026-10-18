@@ -97,7 +97,7 @@ The first system admin: in Restricted mode nobody can sign up without an invitat
 
 ## Email and tenant creation timing
 
-- `ControlPlane:InvitationEmailTimeout` must be longer than the `ControlPlane:Clerk:RetryDelays` and the `Notifications:InvitationEmailRetryDelays` together: step 3 lets the owner sign up with Clerk, then sends the email. Otherwise the tenant creation gives up on a call that is still being tried, cancels the invitation and raises the alarm.
+- `ControlPlane:InvitationEmailTimeout` must be longer than the `ControlPlane:Clerk:RetryDelays` and the `Notifications:InvitationEmailRetryDelays` together: step 3 lets the owner sign up with Clerk, then sends the email. A shorter wait gives up on a call that is still being tried, cancels the invitation and raises the alarm. The host checks the rule on start (`Api/Hosting/InvitationEmailWait.cs`). If the rule fails, the host does not start, and the error names the three keys and their values.
 - Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
 
 ## Container platform

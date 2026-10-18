@@ -119,6 +119,63 @@ public sealed class HostConfigurationTests(Database database)
         start.ShouldThrow<Exception>().Message.ShouldContain("Host:ManagementPort");
     }
 
+    // Section 7, configuration rule 5. The factory's short retries are left out, so the defaults apply.
+    [Fact]
+    public async Task StartApplication_DefaultInvitationEmailTimeoutAndRetries_Starts()
+    {
+        await using var api = new ApiFactory(database.ApplicationConnectionString, settings: DefaultRetries);
+
+        var start = () => api.CreateClient();
+
+        start.ShouldNotThrow();
+    }
+
+    [Fact]
+    public async Task StartApplication_InvitationEmailTimeoutEqualsTheRetries_FailsNamingTheKeys()
+    {
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString,
+            settings: new Dictionary<string, string?>
+            {
+                ["ControlPlane:Clerk:RetryDelays:0"] = "00:01:00",
+                ["ControlPlane:Clerk:RetryDelays:1"] = "00:02:00",
+                ["ControlPlane:Clerk:RetryDelays:2"] = "00:03:00",
+                ["Notifications:InvitationEmailRetryDelays:0"] = "00:04:00",
+                ["Notifications:InvitationEmailRetryDelays:1"] = "00:05:00",
+                ["Notifications:InvitationEmailRetryDelays:2"] = "00:06:00",
+                ["ControlPlane:InvitationEmailTimeout"] = "00:21:00",
+            });
+
+        var start = () => api.CreateClient();
+
+        var message = start.ShouldThrow<Exception>().Message;
+        message.ShouldContain("ControlPlane:InvitationEmailTimeout (00:21:00)");
+        message.ShouldContain("ControlPlane:Clerk:RetryDelays (00:01:00, 00:02:00, 00:03:00)");
+        message.ShouldContain("Notifications:InvitationEmailRetryDelays (00:04:00, 00:05:00, 00:06:00)");
+    }
+
+    // The default timeout is two hours. A last email pause of 1:40 brings the retries to 2:07:20.
+    [Fact]
+    public async Task StartApplication_EmailRetryDelayRaisedPastTheInvitationEmailTimeout_FailsNamingTheKeys()
+    {
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString,
+            settings: new Dictionary<string, string?>(DefaultRetries)
+            {
+                ["Notifications:InvitationEmailRetryDelays:0"] = "00:00:10",
+                ["Notifications:InvitationEmailRetryDelays:1"] = "00:01:00",
+                ["Notifications:InvitationEmailRetryDelays:2"] = "00:05:00",
+                ["Notifications:InvitationEmailRetryDelays:3"] = "01:40:00",
+            });
+
+        var start = () => api.CreateClient();
+
+        var message = start.ShouldThrow<Exception>().Message;
+        message.ShouldContain("ControlPlane:InvitationEmailTimeout (02:00:00)");
+        message.ShouldContain("ControlPlane:Clerk:RetryDelays");
+        message.ShouldContain("Notifications:InvitationEmailRetryDelays (00:00:10, 00:01:00, 00:05:00, 01:40:00)");
+    }
+
     // Section 6: once the staff list has a system admin, the first system admin's setting has no effect.
     [Fact]
     public async Task StartApplication_WithoutTheFirstSystemAdminEmailOnceTheStaffListHasAnAdmin_Starts()
@@ -157,6 +214,10 @@ public sealed class HostConfigurationTests(Database database)
     // The complete settings without the given keys; a setting given as null is left out.
     private static Dictionary<string, string?> Without(string[] keys) =>
         Complete.Where(setting => !keys.Contains(setting.Key)).Concat(keys.Select(key => KeyValuePair.Create(key, (string?)null))).ToDictionary();
+
+    // The factory's short retries left out, so each module's default retries apply.
+    private static readonly Dictionary<string, string?> DefaultRetries =
+        ApiFactory.ShortRetries.ToDictionary(setting => setting.Key, _ => (string?)null);
 
     private static readonly Dictionary<string, string?> Complete = new()
     {
