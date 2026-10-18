@@ -7,6 +7,8 @@ using Audit.Domain;
 using ControlPlane.Api;
 using ControlPlane.Api.Tenant;
 using ControlPlane.Contracts;
+using FluentValidation;
+using FluentValidation.Validators;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
@@ -410,6 +412,185 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         inRoutes.ShouldNotBeEmpty();
         declared.ShouldBe(inRoutes, ignoreOrder: true);
     }
+
+    // The maintainer's decision 1 in audit fix 09: the validators are the one source of a request's limits, so a client checks a form
+    // with the numbers the API enforces. Every request field with a length rule has the rule's minLength and maxLength, and no other
+    // request field has either.
+    [Fact]
+    public void BuildOpenApiDocument_RequestFieldWithALengthRule_HasTheLengthsOfTheRule()
+    {
+        var expected = RequestRules()
+            .Where(rule => rule.Rule is ILengthValidator { Max: >= 0 })
+            .Select(rule => $"{rule.Field} {((ILengthValidator)rule.Rule).Min} {((ILengthValidator)rule.Rule).Max}");
+
+        var documented = RequestFields()
+            .Where(field => field.Value.TryGetProperty("maxLength", out _) || field.Value.TryGetProperty("minLength", out _))
+            .Select(field => $"{field.Name} {LengthOf(field.Value, "minLength")} {LengthOf(field.Value, "maxLength")}");
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // Decision 1 of audit fix 09: an email rule is format email, and no other request field has the format.
+    [Fact]
+    public void BuildOpenApiDocument_RequestFieldWithAnEmailRule_HasFormatEmail()
+    {
+        var expected = RequestRules().Where(rule => rule.Rule is IEmailValidator).Select(rule => rule.Field);
+
+        var documented = RequestFields().Where(field => FormatOf(field.Value) == "email").Select(field => field.Name);
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // The maintainer's decision 3 after audit fix 09: a regex rule is the field's pattern, where .NET and ECMAScript read the regex the
+    // same way. The time zone's regex ends with \z, which ECMAScript does not know, and the web picks a time zone from a list, so its
+    // field has no pattern.
+    [Fact]
+    public void BuildOpenApiDocument_RequestFieldWithARegexRule_HasThePatternOfTheRule()
+    {
+        string[] withoutPattern = ["ChangePreferencesRequest.timeZone"];
+        var expected = RequestRules()
+            .Where(rule => rule.Rule is IRegularExpressionValidator && !withoutPattern.Contains(rule.Field))
+            .Select(rule => $"{rule.Field} {((IRegularExpressionValidator)rule.Rule).Expression}");
+
+        var documented = RequestFields()
+            .Where(field => field.Value.TryGetProperty("pattern", out _))
+            .Select(field => $"{field.Name} {field.Value.GetProperty("pattern").GetString()}");
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // The maintainer's decision after audit fix 09: every length limit of a request is a length rule, so the document reads its number.
+    // A limit that counts the trimmed value is a length rule too (TrimmedLength), never a predicate.
+    [Fact]
+    public void BuildOpenApiDocument_RuleWithTheTooLongCode_IsALengthRule()
+    {
+        var limits = RequestRules().Where(rule => rule.ErrorCode == "TooLong").ToList();
+
+        var predicates = limits.Where(rule => rule.Rule is not ILengthValidator).Select(rule => $"{rule.Field} {rule.Rule.Name}");
+
+        limits.ShouldNotBeEmpty();
+        predicates.ShouldBeEmpty();
+    }
+
+    // Decision 1 of audit fix 09: a rule that the document cannot read is reported, never copied as a number. Each one is listed here, so
+    // a new kind of rule, such as a range, fails the test until someone decides how the document shows it. A predicate (Must) has no
+    // form to read, and the time zone's regex has no pattern. A rule that needs a value is required in the document already: the
+    // generator marks the field required from the request's constructor.
+    [Fact]
+    public void BuildOpenApiDocument_RuleTheDocumentCannotRead_IsAKnownOne()
+    {
+        string[] known =
+        [
+            "AcceptInvitationRequest.firstName PredicateValidator",
+            "AcceptInvitationRequest.lastName PredicateValidator",
+            "ChangePreferencesRequest.timeZone RegularExpressionValidator",
+            "RenameUserRequest.firstName PredicateValidator",
+            "RenameUserRequest.lastName PredicateValidator",
+            "SuspendTenantRequest.reason PredicateValidator",
+        ];
+
+        var unread = RequestRules()
+            .Where(rule => rule.Rule is not (ILengthValidator or IEmailValidator or INotNullValidator or INotEmptyValidator))
+            .Where(rule => !(rule.Rule is IRegularExpressionValidator && PatternedRequestFields().Contains(rule.Field)))
+            .Select(rule => $"{rule.Field} {rule.Rule.Name}")
+            .Distinct();
+
+        unread.ShouldBe(known, ignoreOrder: true);
+    }
+
+    // Decision 4 of audit fix 09: the limits of a list's query are the constants that the API checks, and the search says that the API
+    // trims it.
+    [Fact]
+    public void BuildOpenApiDocument_QueryParameterOfAList_HasTheLimitsTheApiChecks()
+    {
+        var expected = new Dictionary<string, string>
+        {
+            ["page"] = $"minimum {PageRequest.FirstPage}",
+            ["pageSize"] = $"minimum {PageRequest.MinPageSize}, maximum {PageRequest.MaxPageSize}",
+            ["limit"] = $"minimum {CursorRequest.MinLimit}, maximum {CursorRequest.MaxLimit}",
+            ["q"] = $"maxLength {ListRequest.SearchMaxLength}",
+        };
+        var parameters = Operations()
+            .SelectMany(operation => QueryParametersOf(operation.Value).Select(parameter => (Operation: OperationIdOf(operation.Value), Parameter: parameter)))
+            .Where(found => expected.ContainsKey(found.Parameter.GetProperty("name").GetString()!))
+            .ToList();
+
+        var wrong = parameters
+            .Where(found => LimitsOf(found.Parameter.GetProperty("schema")) != expected[found.Parameter.GetProperty("name").GetString()!])
+            .Select(found => $"{found.Operation} {found.Parameter.GetProperty("name").GetString()}: {LimitsOf(found.Parameter.GetProperty("schema"))}");
+        var untrimmed = parameters
+            .Where(found => found.Parameter.GetProperty("name").GetString() == "q" && !DescriptionOf(found.Parameter).Contains("trims", StringComparison.Ordinal))
+            .Select(found => found.Operation);
+
+        parameters.Select(found => found.Parameter.GetProperty("name").GetString()).Distinct().ShouldBe(expected.Keys, ignoreOrder: true);
+        wrong.ShouldBeEmpty();
+        untrimmed.ShouldBeEmpty();
+    }
+
+    // Decision 2 of audit fix 09: a description names the API's limit, never its number, so the number has one owner, the rule, and a
+    // changed rule never leaves an old number in the document. The numbers are each maximum length a Domain project declares and the
+    // limits of a list.
+    [Fact]
+    public void BuildOpenApiDocument_NoDescription_TypesTheNumberOfALimit()
+    {
+        int[] limits = [.. DomainMaxLengths(), PageRequest.MaxPageSize, ListRequest.SearchMaxLength, CursorRequest.MaxLimit];
+
+        var typed = ObjectsIn(_document, "#")
+            .Where(found => found.Value.TryGetProperty("description", out var description) && description.ValueKind == JsonValueKind.String)
+            .Where(found => limits.Any(limit => Regex.IsMatch(found.Value.GetProperty("description").GetString()!, $@"\b{limit}\b")))
+            .Select(found => found.Path);
+
+        DomainMaxLengths().ShouldNotBeEmpty();
+        typed.ShouldBeEmpty();
+    }
+
+    // A Domain type is internal to its module, so its constants are read by reflection.
+    private static IEnumerable<int> DomainMaxLengths() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Domain").GetTypes())
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
+            .Where(field => field.IsLiteral && field.FieldType == typeof(int) && field.Name.EndsWith("MaxLength", StringComparison.Ordinal))
+            .Select(field => (int)field.GetRawConstantValue()!);
+
+    // The rules of every validator, by the request field each names. The command X of a request XRequest carries the request's fields
+    // under the same names, and a validation answer names a field by its command property in camel case (K5).
+    private static IEnumerable<(string Field, IPropertyValidator Rule, string ErrorCode)> RequestRules() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+            .SelectMany(type => ((IValidator)Activator.CreateInstance(type)!).CreateDescriptor().GetMembersWithValidators()
+                .SelectMany(member => member.Select(rule =>
+                    ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
+                        rule.Validator,
+                        rule.Options.ErrorCode))));
+
+    private List<string> PatternedRequestFields() =>
+        [.. RequestFields().Where(field => field.Value.TryGetProperty("pattern", out _)).Select(field => field.Name)];
+
+    // A length the schema leaves out is 0 for minLength, as JSON Schema reads it.
+    private static int LengthOf(JsonElement schema, string keyword) =>
+        schema.TryGetProperty(keyword, out var length) ? length.GetInt32() : 0;
+
+    private static IEnumerable<JsonElement> QueryParametersOf(JsonElement operation) =>
+        operation.TryGetProperty("parameters", out var parameters)
+            ? parameters.EnumerateArray().Where(parameter => parameter.GetProperty("in").GetString() == "query")
+            : [];
+
+    private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
+
+    // The numeric and length limits of a schema, in one order.
+    private static string LimitsOf(JsonElement schema) =>
+        string.Join(", ", Limits
+            .Where(limit => schema.TryGetProperty(limit, out _))
+            .Select(limit => $"{limit} {schema.GetProperty(limit).GetInt32()}"));
+
+    private IEnumerable<(string Name, JsonElement Value)> RequestFields() =>
+        Schemas()
+            .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
+            .SelectMany(schema => PropertiesOf(schema.Value).Select(property => ($"{schema.Name}.{property.Name}", property.Value)));
 
     // The webhook group is left out of the document (N5), and so are the endpoints outside /v1, such as the document itself.
     private IEnumerable<RouteEndpoint> DocumentedEndpoints() =>

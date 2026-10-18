@@ -8,6 +8,10 @@ internal sealed class Tenant
 {
     public const int NameMaxLength = 100;
 
+    public const int SlugMinLength = 3;
+
+    public const int SlugMaxLength = 63;
+
     public const int CancellationReasonMaxLength = 50;
 
     public const int SuspensionReasonMaxLength = 500;
@@ -94,7 +98,7 @@ internal sealed class Tenant
             ? new Tenant(id, trimmed, slug, createdAt)
             : Error.Validation(
                 ControlPlaneErrorCodes.TenantSlugInvalid,
-                "A slug is 3 to 63 lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
+                $"A slug is {SlugMinLength} to {SlugMaxLength} lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
     }
 
     /// <summary>Ends the tenant's creation. Only a provisioning tenant becomes active.</summary>
@@ -357,7 +361,7 @@ internal sealed class Tenant
     private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
 
     private static bool IsUrlSafe(string slug) =>
-        slug.Length is >= 3 and <= 63
+        slug.Length is >= SlugMinLength and <= SlugMaxLength
         && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
         && slug[0] != '-'
         && slug[^1] != '-'

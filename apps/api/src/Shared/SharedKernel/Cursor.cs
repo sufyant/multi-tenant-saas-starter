@@ -13,6 +13,8 @@ public readonly record struct CursorPosition(DateTimeOffset At, Guid Id);
 /// <summary>What a client asks of a cursor list: how many items, and the place after which the page starts; null is the first page.</summary>
 public sealed record CursorRequest(int Limit, CursorPosition? After)
 {
+    public const int MinLimit = 1;
+
     public const int DefaultLimit = 50;
 
     public const int MaxLimit = 100;
@@ -23,9 +25,9 @@ public sealed record CursorRequest(int Limit, CursorPosition? After)
     /// </summary>
     public static Result<CursorRequest> Create(string? cursor, int? limit)
     {
-        if (limit is < 1 or > MaxLimit)
+        if (limit is < MinLimit or > MaxLimit)
         {
-            return Error.Validation(PagingErrorCodes.LimitInvalid, $"The limit is 1 to {MaxLimit}.");
+            return Error.Validation(PagingErrorCodes.LimitInvalid, $"The limit is {MinLimit} to {MaxLimit}.");
         }
 
         if (string.IsNullOrEmpty(cursor))

@@ -20,7 +20,7 @@ public sealed class SuspendTenantValidator : AbstractValidator<SuspendTenant>
         RuleFor(command => command.Reason)
             .Cascade(CascadeMode.Stop)
             .Must(reason => !string.IsNullOrWhiteSpace(reason)).WithErrorCode(nameof(FieldErrorCode.Required))
-            .Must(reason => reason.Trim().Length <= Tenant.SuspensionReasonMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
+            .MaximumTrimmedLength(Tenant.SuspensionReasonMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 }
 

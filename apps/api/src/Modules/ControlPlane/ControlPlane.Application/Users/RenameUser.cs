@@ -17,11 +17,11 @@ public sealed class RenameUserValidator : AbstractValidator<RenameUser>
         RuleFor(command => command.FirstName)
             .Cascade(CascadeMode.Stop)
             .Must(name => !string.IsNullOrWhiteSpace(name)).WithErrorCode(nameof(FieldErrorCode.Required))
-            .Must(name => name.Trim().Length <= User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
+            .MaximumTrimmedLength(User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
         RuleFor(command => command.LastName)
             .Cascade(CascadeMode.Stop)
             .Must(name => !string.IsNullOrWhiteSpace(name)).WithErrorCode(nameof(FieldErrorCode.Required))
-            .Must(name => name.Trim().Length <= User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
+            .MaximumTrimmedLength(User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 }
 

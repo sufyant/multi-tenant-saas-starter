@@ -202,7 +202,7 @@ public enum UserMembershipResponseTenantStatus
     Closed,
 }
 
-/// <summary>A user's new names: 1 to 100 characters each, trimmed.</summary>
+/// <summary>A user's new names, each within the API's limit. The API trims each name before it counts its length.</summary>
 public sealed record RenameUserRequest(string FirstName, string LastName);
 
 /// <summary>The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs.</summary>

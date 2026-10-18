@@ -379,8 +379,8 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description The invitation code from the invitation link, and the names of a person the catalog does not know yet: 1 to 100 characters each,
-         *     trimmed. A user the catalog knows sends none.
+         * @description The invitation code from the invitation link, and the names of a person the catalog does not know yet, each within the API's limit.
+         *     The API trims each name before it counts its length. A user the catalog knows sends none.
          */
         AcceptInvitationRequest: {
             code: string;
@@ -458,11 +458,12 @@ export interface components {
         };
         /**
          * @description A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's
-         *     invitation email: without one, the system admin's own.
+         *     invitation email: without one, the system admin's own. The API trims the name before it counts its length.
          */
         CreateTenantRequest: {
             name: string;
             slug: string;
+            /** Format: email */
             ownerEmail: string;
             language?: null | components["schemas"]["Language"];
         };
@@ -479,7 +480,7 @@ export interface components {
          * @description Why one field of a request failed validation.
          * @enum {string}
          */
-        FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid";
+        FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid" | "slug_invalid";
         /** @description The invitation code from the invitation link. */
         GetInvitationPreviewRequest: {
             code: string;
@@ -529,6 +530,7 @@ export interface components {
          *     inviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value.
          */
         InviteMemberRequest: {
+            /** Format: email */
             email: string;
             role: components["schemas"]["MemberRole"];
             language?: null | components["schemas"]["Language"];
@@ -538,6 +540,7 @@ export interface components {
          *     system admin's own.
          */
         InviteOwnerRequest: {
+            /** Format: email */
             email: string;
             language?: null | components["schemas"]["Language"];
         };
@@ -714,11 +717,11 @@ export interface components {
             /** @description The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of. */
             tenantIds?: null | string[];
         };
-        /** @description A tenant's new name. The slug never changes. */
+        /** @description A tenant's new name. The API trims it before it counts its length. The slug never changes. */
         RenameTenantRequest: {
             name: string;
         };
-        /** @description A user's new names: 1 to 100 characters each, trimmed. */
+        /** @description A user's new names, each within the API's limit. The API trims each name before it counts its length. */
         RenameUserRequest: {
             firstName: string;
             lastName: string;
@@ -731,7 +734,10 @@ export interface components {
             builtIn: null | components["schemas"]["MemberRole"];
             name: string;
         };
-        /** @description Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it. */
+        /**
+         * @description Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member
+         *     never sees it.
+         */
         SuspendTenantRequest: {
             reason: string;
         };
@@ -890,6 +896,7 @@ export interface operations {
                 page?: number;
                 pageSize?: number;
                 sort?: "name" | "-name" | "slug" | "-slug";
+                /** @description The search. The API trims it before it counts its length. */
                 q?: string;
                 status?: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
             };
@@ -965,6 +972,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1077,6 +1086,8 @@ export interface operations {
                 headers: {
                     /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
                     "Idempotent-Replayed"?: "true";
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1171,6 +1182,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1269,6 +1282,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1367,6 +1382,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1461,6 +1478,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1555,6 +1574,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1649,6 +1670,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1761,6 +1784,8 @@ export interface operations {
                 headers: {
                     /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
                     "Idempotent-Replayed"?: "true";
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1784,6 +1809,7 @@ export interface operations {
                 page?: number;
                 pageSize?: number;
                 sort?: "email" | "-email" | "lastName" | "-lastName";
+                /** @description The search. The API trims it before it counts its length. */
                 q?: string;
                 status?: "active" | "suspended" | "deleted";
             };
@@ -1859,6 +1885,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1953,6 +1981,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2045,6 +2075,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2143,6 +2175,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2237,6 +2271,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2331,6 +2367,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2427,6 +2465,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2521,6 +2561,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2544,6 +2586,7 @@ export interface operations {
                 page?: number;
                 pageSize?: number;
                 sort?: "role" | "-role" | "email" | "-email" | "lastName" | "-lastName";
+                /** @description The search. The API trims it before it counts its length. */
                 q?: string;
                 role?: "owner" | "admin" | "member";
             };
@@ -2621,6 +2664,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2714,6 +2759,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2813,6 +2860,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2836,6 +2885,7 @@ export interface operations {
                 page?: number;
                 pageSize?: number;
                 sort?: "expiresAt" | "-expiresAt" | "email" | "-email";
+                /** @description The search. The API trims it before it counts its length. */
                 q?: string;
                 role?: "owner" | "admin" | "member";
             };
@@ -2913,6 +2963,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3025,6 +3077,8 @@ export interface operations {
                 headers: {
                     /** @description true when the answer replays the saved answer of an earlier request with the same key; absent otherwise. */
                     "Idempotent-Replayed"?: "true";
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3118,6 +3172,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3215,6 +3271,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3307,6 +3365,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3403,6 +3463,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3426,6 +3488,7 @@ export interface operations {
                 page?: number;
                 pageSize?: number;
                 sort?: "name" | "-name";
+                /** @description The search. The API trims it before it counts its length. */
                 q?: string;
             };
             header?: never;
@@ -3500,6 +3563,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3596,6 +3661,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3692,6 +3759,8 @@ export interface operations {
             /** @description Too Many Requests */
             429: {
                 headers: {
+                    /** @description The seconds to wait before the next request, when the rate limiter refused this one. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {

@@ -73,7 +73,7 @@ public sealed class TenantRenameTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBeNull();
     }
 
-    public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
+    public static TheoryData<string> InvalidNames => ["", "   "];
 
     // The tenant checks the name as at its creation.
     [Theory]
@@ -86,6 +86,21 @@ public sealed class TenantRenameTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(response)).ShouldBe("tenant.name_invalid");
+        (await StoredNameAsync(tenant.Id)).ShouldBe("Acme Ltd");
+    }
+
+    // The maintainer's decision 2 after audit fix 09: the validator checks the name's trimmed length, so the document states it.
+    [Fact]
+    public async Task RenameTenant_NameTooLong_IsAValidationProblemAndChangesNothing()
+    {
+        var tenant = await _catalog.AddTenantAsync();
+
+        var response = await (await AdminAsync()).RenameTenantAsync(tenant.Id, $" {new string('n', 101)} ");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
+        problem.GetProperty("errors").GetProperty("name").EnumerateArray().Select(code => code.GetString()).ShouldBe(["too_long"]);
         (await StoredNameAsync(tenant.Id)).ShouldBe("Acme Ltd");
     }
 

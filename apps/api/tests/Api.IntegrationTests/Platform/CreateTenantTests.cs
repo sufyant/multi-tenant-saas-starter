@@ -152,7 +152,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         created.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
+    public static TheoryData<string> InvalidNames => ["", "   "];
 
     [Theory]
     [MemberData(nameof(InvalidNames))]
@@ -164,6 +164,35 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.name_invalid");
+    }
+
+    // The maintainer's decision 2 after audit fix 09: the validator checks the name's trimmed length, so the document states it. The
+    // tenant keeps its own check.
+    [Fact]
+    public async Task CreateTenant_NameTooLong_IsAValidationProblemForTheName()
+    {
+        var admin = await AdminAsync();
+
+        var created = await admin.CreateTenantAsync(new { name = $" {new string('n', 101)} ", slug = Slug(), ownerEmail = "ali@acme.com" });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await FieldCodesOfAsync(created, "name")).ShouldBe(("request.validation_failed", "too_long"));
+    }
+
+    public static TheoryData<string> InvalidSlugs =>
+        ["", "ab", new string('s', 64), "Acme", "acme corp", "acme_corp", "-acme", "acme-", "acme--corp", "acmé", "acme\n"];
+
+    // The maintainer's decision 3 after audit fix 09: the validator checks the slug's length and shape, so the document states both.
+    [Theory]
+    [MemberData(nameof(InvalidSlugs))]
+    public async Task CreateTenant_InvalidSlug_IsAValidationProblemForTheSlug(string slug)
+    {
+        var admin = await AdminAsync();
+
+        var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await FieldCodesOfAsync(created, "slug")).ShouldBe(("request.validation_failed", "slug_invalid"));
     }
 
     [Fact]
@@ -429,4 +458,10 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
 
     private Task<string?> StatusOfAsync(string slug) => database.ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE slug = '{slug}'");
+
+    private static async Task<(string?, string?)> FieldCodesOfAsync(HttpResponseMessage response, string field)
+    {
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        return (problem.GetProperty("code").GetString(), string.Join(", ", problem.GetProperty("errors").GetProperty(field).EnumerateArray().Select(code => code.GetString())));
+    }
 }

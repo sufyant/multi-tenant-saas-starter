@@ -76,6 +76,19 @@ public sealed class UserRenameTests(Database database) : IAsyncLifetime
         (await _catalog.UserOfAsync(user)).FirstName.ShouldBe("Ada");
     }
 
+    // The API trims a name before it counts its length, so spaces around a name of the longest length do not make it too long.
+    [Fact]
+    public async Task RenameUser_LongestNameWithSpacesAround_IsAccepted()
+    {
+        var longest = new string('a', 100);
+        var user = await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace");
+
+        var renamed = await RenameAsync(await _catalog.AddSystemAdminAsync(), await _catalog.UserIdOfAsync(user), $"  {longest}  ", "Lovelace");
+
+        renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await _catalog.UserOfAsync(user)).FirstName.ShouldBe(longest);
+    }
+
     // The deletion erased the names; a new one would bring personal data back.
     [Fact]
     public async Task RenameUser_DeletedUser_IsAConflictAndStaysErased()
