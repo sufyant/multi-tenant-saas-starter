@@ -48,6 +48,18 @@ public sealed class ListContractTests : IAsyncLifetime
         notEnums.ShouldBeEmpty();
     }
 
+    // A19 and N7: a filter takes the enum of its response, so it refers to that enum's schema, and a client has one type for both.
+    [Fact]
+    public void BuildOpenApiDocument_EveryEnumFilterOfAList_RefersToTheSchemaOfItsEnum()
+    {
+        var inline = Lists().SelectMany(list => QueryParametersOf(list.Operation)
+            .Where(parameter => parameter.Name != "sort" && IsEnum(parameter.Schema) && !parameter.Schema.TryGetProperty("$ref", out _))
+            .Select(parameter => $"{list.Id}: {parameter.Name}"));
+
+        Lists().ShouldNotBeEmpty();
+        inline.ShouldBeEmpty();
+    }
+
     [Fact]
     public void BuildOpenApiDocument_SortOfEveryList_IsAnEnum()
     {

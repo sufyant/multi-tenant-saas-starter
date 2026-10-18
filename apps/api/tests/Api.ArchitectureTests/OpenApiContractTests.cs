@@ -94,6 +94,18 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
+    // A19: an enum is a string on the wire, so each enum schema says so, and a generated client reads it as text.
+    [Fact]
+    public void BuildOpenApiDocument_EveryEnumSchema_HasTheTypeString()
+    {
+        var enums = Schemas().Where(schema => schema.Value.TryGetProperty("enum", out _));
+
+        var untyped = enums.Where(schema => !schema.Value.TryGetProperty("type", out var type) || type.GetString() != "string").Select(schema => schema.Name);
+
+        enums.ShouldNotBeEmpty();
+        untyped.ShouldBeEmpty();
+    }
+
     // Step 20k: a built-in role is one lower-case word, as every other enum of the document.
     [Fact]
     public void BuildOpenApiDocument_MemberRole_ListsTheLowerCaseRoles()

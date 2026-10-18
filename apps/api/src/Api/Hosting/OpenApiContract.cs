@@ -101,26 +101,31 @@ internal static partial class OpenApiContract
     }
 
     // K5: the sort and each filter of a list are enums, so a generated client knows their values. Their parameter types bind any text,
-    // which ListRequest and ListFilter check, so the document would call them strings; the values are the JSON names the check accepts.
+    // which ListRequest and ListFilter check, so the document would call them strings. A sort's values are the JSON names the check
+    // accepts. A filter takes the enum of its response (N7), so it refers to that enum's schema, and a client has one type for both (A19).
     private static Task DescribeListParameters(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         foreach (var description in context.Description.ParameterDescriptions)
         {
             var type = Nullable.GetUnderlyingType(description.Type) ?? description.Type;
-            var values = type.IsGenericType ? ListValuesOf(type.GetGenericTypeDefinition(), type.GetGenericArguments()[0]) : null;
-            if (values is not null && operation.Parameters?.SingleOrDefault(parameter => parameter.Name == description.Name) is OpenApiParameter parameter)
+            if (!type.IsGenericType || operation.Parameters?.SingleOrDefault(parameter => parameter.Name == description.Name) is not OpenApiParameter parameter)
             {
-                parameter.Schema = new OpenApiSchema { Type = JsonSchemaType.String, Enum = [.. values.Select(value => JsonValue.Create(value))] };
+                continue;
+            }
+
+            var values = type.GetGenericArguments()[0];
+            if (type.GetGenericTypeDefinition() == typeof(ListSort<>))
+            {
+                var names = (IReadOnlyList<string>)typeof(ListSort).GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null)!;
+                parameter.Schema = new OpenApiSchema { Type = JsonSchemaType.String, Enum = [.. names.Select(value => JsonValue.Create(value))] };
+            }
+            else if (type.GetGenericTypeDefinition() == typeof(ListFilter<>))
+            {
+                parameter.Schema = new OpenApiSchemaReference(values.Name, context.Document);
             }
         }
 
         return Task.CompletedTask;
-    }
-
-    private static IReadOnlyList<string>? ListValuesOf(Type parameter, Type values)
-    {
-        var describe = parameter == typeof(ListSort<>) ? typeof(ListSort) : parameter == typeof(ListFilter<>) ? typeof(ListFilter) : null;
-        return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
     }
 
     // K5: the limits of a list's query, from the constants that PageRequest, CursorRequest and ListRequest check. A parameter is found
@@ -286,12 +291,16 @@ internal static partial class OpenApiContract
     private static async Task DescribeEnumValues(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         var type = context.JsonTypeInfo.Type;
-        if (type.IsEnum && schema.Enum is null)
+        if (type.IsEnum)
         {
-            var values = (IReadOnlyList<string>)typeof(ListFilter).GetMethod(nameof(ListFilter.ValuesOf))!
-                .MakeGenericMethod(type).Invoke(null, null)!;
+            // Every enum is a string on the wire, so its schema says so (A19); the generator leaves the type out of an enum it lists.
             schema.Type = JsonSchemaType.String;
-            schema.Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))];
+            if (schema.Enum is null)
+            {
+                var values = (IReadOnlyList<string>)typeof(ListFilter).GetMethod(nameof(ListFilter.ValuesOf))!
+                    .MakeGenericMethod(type).Invoke(null, null)!;
+                schema.Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))];
+            }
         }
         else if (Nullable.GetUnderlyingType(type) is { IsEnum: true } underlying && schema is { Type: null, Enum: null, OneOf: null })
         {

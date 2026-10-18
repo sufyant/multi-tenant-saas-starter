@@ -401,7 +401,7 @@ export interface components {
         };
         /**
          * @description The kind of actor of an audit record.
-         * @enum {unknown}
+         * @enum {string}
          */
         AuditActorResponseKind: "user" | "platform";
         /**
@@ -437,7 +437,7 @@ export interface components {
         };
         /**
          * @description The kind of target of an audit record.
-         * @enum {unknown}
+         * @enum {string}
          */
         AuditTargetResponseKind: "tenant" | "user" | "invitation";
         /**
@@ -521,7 +521,7 @@ export interface components {
          * @description The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
          *     (revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says
          *     which of its values it can hold.
-         * @enum {unknown}
+         * @enum {string}
          */
         InvitationResponseState: "pending" | "expired" | "accepted" | "cancelled";
         /**
@@ -555,7 +555,7 @@ export interface components {
         };
         /**
          * @description Who invited: a user of the tenant, or the platform, for which a system admin acted.
-         * @enum {unknown}
+         * @enum {string}
          */
         InviterNameResponseKind: "user" | "platform";
         JsonElement: unknown;
@@ -675,7 +675,7 @@ export interface components {
         };
         /**
          * @description The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.
-         * @enum {unknown}
+         * @enum {string}
          */
         MyTenantResponseStatus: "active" | "suspended" | "closed";
         /**
@@ -805,7 +805,7 @@ export interface components {
         };
         /**
          * @description The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.
-         * @enum {unknown}
+         * @enum {string}
          */
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
@@ -846,7 +846,7 @@ export interface components {
         };
         /**
          * @description The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.
-         * @enum {unknown}
+         * @enum {string}
          */
         UserMembershipResponseTenantStatus: "active" | "suspended" | "closed";
         /**
@@ -877,7 +877,7 @@ export interface components {
         };
         /**
          * @description The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs.
-         * @enum {unknown}
+         * @enum {string}
          */
         UserResponseStatus: "active" | "suspended" | "deleted";
     };
@@ -897,7 +897,7 @@ export interface operations {
                 sort?: "name" | "-name" | "slug" | "-slug";
                 /** @description The search. The API trims it before it counts its length. */
                 q?: string;
-                status?: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
+                status?: components["schemas"]["TenantResponseStatus"];
             };
             header?: never;
             path?: never;
@@ -1810,7 +1810,7 @@ export interface operations {
                 sort?: "email" | "-email" | "lastName" | "-lastName";
                 /** @description The search. The API trims it before it counts its length. */
                 q?: string;
-                status?: "active" | "suspended" | "deleted";
+                status?: components["schemas"]["UserResponseStatus"];
             };
             header?: never;
             path?: never;
@@ -2587,7 +2587,7 @@ export interface operations {
                 sort?: "role" | "-role" | "email" | "-email" | "lastName" | "-lastName";
                 /** @description The search. The API trims it before it counts its length. */
                 q?: string;
-                role?: "owner" | "admin" | "member";
+                role?: components["schemas"]["MemberRole"];
             };
             header?: never;
             path: {
@@ -2886,7 +2886,7 @@ export interface operations {
                 sort?: "expiresAt" | "-expiresAt" | "email" | "-email";
                 /** @description The search. The API trims it before it counts its length. */
                 q?: string;
-                role?: "owner" | "admin" | "member";
+                role?: components["schemas"]["MemberRole"];
             };
             header?: never;
             path: {
