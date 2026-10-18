@@ -56,7 +56,7 @@ internal static class UserRateLimiting
     private static string PartitionKey(HttpContext context) =>
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId ? $"user:{userId}" : $"ip:{context.Connection.RemoteIpAddress}";
 
-    private sealed class UserRateLimit;
+    internal sealed class UserRateLimit;
 
     private static async ValueTask WriteProblemAsync(OnRejectedContext rejected, CancellationToken cancellationToken)
     {

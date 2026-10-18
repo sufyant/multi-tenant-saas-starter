@@ -7,6 +7,8 @@ using Audit.Domain;
 using ControlPlane.Api;
 using ControlPlane.Api.Tenant;
 using ControlPlane.Contracts;
+using FluentValidation;
+using FluentValidation.Validators;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
@@ -410,6 +412,76 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         inRoutes.ShouldNotBeEmpty();
         declared.ShouldBe(inRoutes, ignoreOrder: true);
     }
+
+    // The maintainer's decision 1 in audit fix 09: the validators are the one source of a request's limits, so a client checks a form
+    // with the numbers the API enforces. Every request field with a length rule has the rule's maxLength, and no other request field has
+    // one.
+    [Fact]
+    public void BuildOpenApiDocument_RequestFieldWithALengthRule_HasTheMaxLengthOfTheRule()
+    {
+        var expected = RequestRules()
+            .Where(rule => rule.Rule is ILengthValidator { Max: >= 0 })
+            .Select(rule => $"{rule.Field} {((ILengthValidator)rule.Rule).Max}");
+
+        var documented = RequestFields()
+            .Where(field => field.Value.TryGetProperty("maxLength", out _))
+            .Select(field => $"{field.Name} {field.Value.GetProperty("maxLength").GetInt32()}");
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // Decision 1 of audit fix 09: an email rule is format email, and no other request field has the format.
+    [Fact]
+    public void BuildOpenApiDocument_RequestFieldWithAnEmailRule_HasFormatEmail()
+    {
+        var expected = RequestRules().Where(rule => rule.Rule is IEmailValidator).Select(rule => rule.Field);
+
+        var documented = RequestFields().Where(field => FormatOf(field.Value) == "email").Select(field => field.Name);
+
+        expected.ShouldNotBeEmpty();
+        documented.ShouldBe(expected, ignoreOrder: true);
+    }
+
+    // Decision 2 of audit fix 09: a description names the API's limit, never its number, so the number has one owner, the rule, and a
+    // changed rule never leaves an old number in the document. The numbers are each maximum length a Domain project declares and the
+    // limits of a list.
+    [Fact]
+    public void BuildOpenApiDocument_NoDescription_TypesTheNumberOfALimit()
+    {
+        int[] limits = [.. DomainMaxLengths(), PageRequest.MaxPageSize, ListRequest.SearchMaxLength, CursorRequest.MaxLimit];
+
+        var typed = ObjectsIn(_document, "#")
+            .Where(found => found.Value.TryGetProperty("description", out var description) && description.ValueKind == JsonValueKind.String)
+            .Where(found => limits.Any(limit => Regex.IsMatch(found.Value.GetProperty("description").GetString()!, $@"\b{limit}\b")))
+            .Select(found => found.Path);
+
+        DomainMaxLengths().ShouldNotBeEmpty();
+        typed.ShouldBeEmpty();
+    }
+
+    // A Domain type is internal to its module, so its constants are read by reflection.
+    private static IEnumerable<int> DomainMaxLengths() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Domain").GetTypes())
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
+            .Where(field => field.IsLiteral && field.FieldType == typeof(int) && field.Name.EndsWith("MaxLength", StringComparison.Ordinal))
+            .Select(field => (int)field.GetRawConstantValue()!);
+
+    // The rules of every validator, by the request field each names. The command X of a request XRequest carries the request's fields
+    // under the same names, and a validation answer names a field by its command property in camel case (K5).
+    private static IEnumerable<(string Field, IPropertyValidator Rule)> RequestRules() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+            .SelectMany(type => ((IValidator)Activator.CreateInstance(type)!).CreateDescriptor().GetMembersWithValidators()
+                .SelectMany(member => member.Select(rule =>
+                    ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}", rule.Validator))));
+
+    private IEnumerable<(string Name, JsonElement Value)> RequestFields() =>
+        Schemas()
+            .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
+            .SelectMany(schema => PropertiesOf(schema.Value).Select(property => ($"{schema.Name}.{property.Name}", property.Value)));
 
     // The webhook group is left out of the document (N5), and so are the endpoints outside /v1, such as the document itself.
     private IEnumerable<RouteEndpoint> DocumentedEndpoints() =>
