@@ -198,7 +198,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false, "ar", "Asia/Dubai"));
     }
 
-    // A person who has not signed up yet gives both names; a missing one is a field that failed validation (K5). The invitation stays
+    // A person who is not a user yet gives both names; a missing one is a field that failed validation (K5). The invitation stays
     // pending, and no user is written.
     [Fact]
     public async Task AcceptInvitation_NewUserWithoutNames_IsABadRequestThatNamesEachMissingField()

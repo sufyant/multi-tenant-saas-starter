@@ -73,7 +73,7 @@ internal sealed class User(Guid id, string externalId)
         Expression.Lambda<Func<User, bool>>(Expression.Equal(StatusOf.Body, Expression.Constant(status)), StatusOf.Parameters);
 
     /// <summary>
-    /// A person who has not signed up yet joins through an invitation, at this moment: the invited address, which the identity provider
+    /// A person who is not a user yet joins through an invitation, at this moment: the invited address, which the identity provider
     /// verified, and the names they typed, without the spaces around them. They have no membership yet: ControlPlane adds the membership of
     /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>

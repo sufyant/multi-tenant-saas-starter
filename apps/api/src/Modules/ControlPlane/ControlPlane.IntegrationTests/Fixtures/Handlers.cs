@@ -109,7 +109,7 @@ internal static class Handlers
     }
 
     // Accepting starts outside any tenant: the invitation code names the tenant, the identity provider is asked for the user's
-    // verified email addresses, and then the invitation is found by its secret in that tenant. A person who has not signed up yet
+    // verified email addresses, and then the invitation is found by its secret in that tenant. A person who is not a user yet
     // gives their names.
     public static async Task<Result<MyTenantView>> AcceptAsync(
         IServiceProvider services,

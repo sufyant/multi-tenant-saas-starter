@@ -379,7 +379,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description The invitation code from the invitation link, and the names of a person who has not signed up yet, each within the API's limit.
+         * @description The invitation code from the invitation link, and the names of a person who is not a user yet, each within the API's limit.
          *     The API trims each name before it counts its length. A known user sends none.
          */
         AcceptInvitationRequest: {
