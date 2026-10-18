@@ -240,7 +240,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ## Later
 
-- Drop `control_plane.users.profile_updated_at`. Step 20i stopped using it and kept it, so the version that serves during the deploy can still read users (`docs/deployment.md` at the repository root, section 8).
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.
 
