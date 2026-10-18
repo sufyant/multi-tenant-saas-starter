@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Api.Idempotency;
+using Api.Observability;
 using SharedKernel;
 
 namespace Api.ErrorHandling;
@@ -48,7 +48,7 @@ internal static class Problems
         var problem = context.ProblemDetails;
         problem.Extensions.TryAdd(CodeMember, CodeOf(problem.Status ?? context.HttpContext.Response.StatusCode).Value);
         problem.Extensions[TraceIdMember] =
-            context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+            context.HttpContext.Items[IdempotencyMiddleware.TraceItem] ?? TraceIds.Of(context.HttpContext);
     }
 
     public static string NameOf<TEnum>(TEnum value)

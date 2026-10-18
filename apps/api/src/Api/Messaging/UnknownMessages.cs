@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using System.Globalization;
+using Api.Observability;
 using Microsoft.Extensions.Options;
 using Wolverine;
 using Wolverine.Postgresql.Transport;
@@ -45,7 +45,7 @@ internal sealed partial class UnknownMessages(
         var envelope = context.Envelope!;
         var scheme = envelope.Destination?.Scheme;
         var tries = envelope.Headers.TryGetValue(TriesHeader, out var value) ? int.Parse(value!, CultureInfo.InvariantCulture) : 0;
-        var traceId = Activity.Current?.TraceId.ToString();
+        var traceId = TraceIds.OfCurrentTrace();
 
         if (scheme == PostgresqlTransport.ProtocolName && tries < settings.Value.Tries)
         {

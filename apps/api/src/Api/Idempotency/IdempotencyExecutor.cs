@@ -1,8 +1,8 @@
-using System.Diagnostics;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Api.ErrorHandling;
+using Api.Observability;
 using Api.Persistence;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -86,7 +86,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
             return Error.Conflict(HostErrorCodes.IdempotencyKeyInProgress, "The first request with this idempotency key is still running.");
         }
 
-        var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
+        var traceId = TraceIds.Of(context);
         context.Items[IdempotencyMiddleware.TraceItem] = traceId;
         var delivery = new DeliveryOptions
         {
