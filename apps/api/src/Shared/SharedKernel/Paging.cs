@@ -3,10 +3,15 @@ using System.Diagnostics.CodeAnalysis;
 namespace SharedKernel;
 
 /// <summary>
-/// The page a client asks of a list (OWASP API4). Pages count from 1; a page holds 50 items unless the client asks for 1 to 100.
+/// The page a client asks of a list (OWASP API4). Pages count from <see cref="FirstPage"/>; a page holds <see cref="DefaultPageSize"/>
+/// items unless the client asks for <see cref="MinPageSize"/> to <see cref="MaxPageSize"/>.
 /// </summary>
 public sealed record PageRequest(int Page, int PageSize)
 {
+    public const int FirstPage = 1;
+
+    public const int MinPageSize = 1;
+
     public const int DefaultPageSize = 50;
 
     public const int MaxPageSize = 100;
@@ -17,17 +22,17 @@ public sealed record PageRequest(int Page, int PageSize)
     /// <summary>The page the client asked for, from what it sent; a value it left out takes the default.</summary>
     public static Result<PageRequest> Create(int? page, int? pageSize)
     {
-        if (page is < 1)
+        if (page is < FirstPage)
         {
-            return Error.Validation(PagingErrorCodes.PageInvalid, "The page starts at 1.");
+            return Error.Validation(PagingErrorCodes.PageInvalid, $"The page starts at {FirstPage}.");
         }
 
-        if (pageSize is < 1 or > MaxPageSize)
+        if (pageSize is < MinPageSize or > MaxPageSize)
         {
-            return Error.Validation(PagingErrorCodes.PageSizeInvalid, $"The page size is 1 to {MaxPageSize}.");
+            return Error.Validation(PagingErrorCodes.PageSizeInvalid, $"The page size is {MinPageSize} to {MaxPageSize}.");
         }
 
-        return new PageRequest(page ?? 1, pageSize ?? DefaultPageSize);
+        return new PageRequest(page ?? FirstPage, pageSize ?? DefaultPageSize);
     }
 }
 

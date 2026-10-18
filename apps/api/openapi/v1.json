@@ -179,6 +179,13 @@
                   ],
                   "type": "string"
                 }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
               }
             },
             "content": {
@@ -211,6 +218,7 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -219,6 +227,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -239,7 +249,9 @@
           {
             "name": "q",
             "in": "query",
+            "description": "The search. The API trims it before it counts its length.",
             "schema": {
+              "maxLength": 100,
               "type": "string"
             }
           },
@@ -331,6 +343,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -442,6 +463,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -561,6 +591,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -682,6 +721,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -793,6 +841,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -904,6 +961,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1015,6 +1081,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1212,6 +1287,13 @@
                   ],
                   "type": "string"
                 }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
               }
             },
             "content": {
@@ -1246,6 +1328,7 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -1254,6 +1337,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -1274,7 +1359,9 @@
           {
             "name": "q",
             "in": "query",
+            "description": "The search. The API trims it before it counts its length.",
             "schema": {
+              "maxLength": 100,
               "type": "string"
             }
           },
@@ -1364,6 +1451,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1475,6 +1571,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1594,6 +1699,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1696,6 +1810,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1807,6 +1930,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1918,6 +2050,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1957,6 +2098,8 @@
             "name": "limit",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -2043,6 +2186,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2154,6 +2306,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2186,6 +2347,7 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -2194,6 +2356,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -2216,7 +2380,9 @@
           {
             "name": "q",
             "in": "query",
+            "description": "The search. The API trims it before it counts its length.",
             "schema": {
+              "maxLength": 100,
               "type": "string"
             }
           },
@@ -2315,6 +2481,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2445,6 +2620,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2556,6 +2740,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2753,6 +2946,13 @@
                   ],
                   "type": "string"
                 }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
               }
             },
             "content": {
@@ -2785,6 +2985,7 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -2793,6 +2994,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -2813,7 +3016,9 @@
           {
             "name": "q",
             "in": "query",
+            "description": "The search. The API trims it before it counts its length.",
             "schema": {
+              "maxLength": 100,
               "type": "string"
             }
           },
@@ -2912,6 +3117,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3025,6 +3239,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3064,6 +3287,8 @@
             "name": "limit",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -3151,6 +3376,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3251,6 +3485,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3361,6 +3604,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3393,6 +3645,7 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -3401,6 +3654,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32"
             }
@@ -3419,7 +3674,9 @@
           {
             "name": "q",
             "in": "query",
+            "description": "The search. The API trims it before it counts its length.",
             "schema": {
+              "maxLength": 100,
               "type": "string"
             }
           }
@@ -3497,6 +3754,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3607,6 +3873,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3717,6 +3992,15 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3763,7 +4047,7 @@
             ]
           }
         },
-        "description": "The invitation code from the invitation link, and the names of a person the catalog does not know yet: 1 to 100 characters each,\ntrimmed. A user the catalog knows sends none."
+        "description": "The invitation code from the invitation link, and the names of a person the catalog does not know yet, each within the API's limit.\nThe API trims each name before it counts its length. A user the catalog knows sends none."
       },
       "AuditActorResponse": {
         "required": [
@@ -3940,6 +4224,7 @@
             "$ref": "#/components/schemas/Language"
           },
           "timeZone": {
+            "maxLength": 64,
             "type": [
               "null",
               "string"
@@ -3963,7 +4248,9 @@
             "type": "string"
           },
           "ownerEmail": {
-            "type": "string"
+            "maxLength": 320,
+            "type": "string",
+            "format": "email"
           },
           "language": {
             "oneOf": [
@@ -3976,7 +4263,7 @@
             ]
           }
         },
-        "description": "A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's\ninvitation email: without one, the system admin's own."
+        "description": "A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's\ninvitation email: without one, the system admin's own. The API trims the name before it counts its length."
       },
       "CursorPageOfAuditEntryResponse": {
         "required": [
@@ -4167,7 +4454,9 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string"
+            "maxLength": 320,
+            "type": "string",
+            "format": "email"
           },
           "role": {
             "$ref": "#/components/schemas/MemberRole"
@@ -4192,7 +4481,9 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string"
+            "maxLength": 320,
+            "type": "string",
+            "format": "email"
           },
           "language": {
             "oneOf": [
@@ -4734,7 +5025,7 @@
             "type": "string"
           }
         },
-        "description": "A tenant's new name. The slug never changes."
+        "description": "A tenant's new name. The API trims it before it counts its length. The slug never changes."
       },
       "RenameUserRequest": {
         "required": [
@@ -4750,7 +5041,7 @@
             "type": "string"
           }
         },
-        "description": "A user's new names: 1 to 100 characters each, trimmed."
+        "description": "A user's new names, each within the API's limit. The API trims each name before it counts its length."
       },
       "RoleResponse": {
         "required": [
@@ -4785,7 +5076,7 @@
             "type": "string"
           }
         },
-        "description": "Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it."
+        "description": "Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member\nnever sees it."
       },
       "TenantDetailResponse": {
         "required": [

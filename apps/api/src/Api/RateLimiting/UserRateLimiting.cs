@@ -43,6 +43,13 @@ internal static class UserRateLimiting
         where TBuilder : IEndpointConventionBuilder =>
         endpoints.WithMetadata(new UserRateLimit());
 
+    /// <summary>
+    /// Whether the rate limiter covers an endpoint with the metadata given: the general limit, or a policy of the endpoint's own. The
+    /// OpenAPI document declares Retry-After on the 429 of each such endpoint, and CORS exposes it (N11, section 8).
+    /// </summary>
+    public static bool Covers(IEnumerable<object> metadata) =>
+        metadata.Any(item => item is UserRateLimit or EnableRateLimitingAttribute);
+
     private static RateLimitingOptions Options(HttpContext context) => context.RequestServices.GetRequiredService<IOptions<RateLimitingOptions>>().Value;
 
     private static RateLimitPartition<string> PerUser(HttpContext context, int permitLimit, TimeSpan window) =>

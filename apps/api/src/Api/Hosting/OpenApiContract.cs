@@ -1,11 +1,15 @@
 using System.Globalization;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization;
 using Api.ErrorHandling;
 using Api.Idempotency;
+using Api.RateLimiting;
 using ControlPlane.Contracts;
+using FluentValidation;
+using FluentValidation.Validators;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
@@ -18,9 +22,9 @@ namespace Api.Hosting;
 
 // N11: the OpenAPI document is the contract every client is generated from. These transformers add what a generated client needs and
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
-// sort and filters, the values of an enum with a converter of its own, the idempotency key and the headers of an answer, the bearer
-// scheme, the members of the one error schema with the enums of the error codes, the enum of the permissions, and the enum of the audit
-// operations. They change the document only. The one rule here that the wire follows is how JSON reads a number, because the document
+// sort and filters, the limits of a request and of a list, the values of an enum with a converter of its own, the idempotency key and
+// the headers of an answer, the bearer scheme, the members of the one error schema with the enums of the error codes, the enum of the
+// permissions, and the enum of the audit operations. They change the document only. The one rule here that the wire follows is how JSON reads a number, because the document
 // describes the numbers from it.
 internal static class OpenApiContract
 {
@@ -47,9 +51,12 @@ internal static class OpenApiContract
                     .AddOperationTransformer(NameOperation)
                     .AddOperationTransformer(DeclarePathParameters)
                     .AddOperationTransformer(DescribeListParameters)
+                    .AddOperationTransformer(DescribeListLimits)
                     .AddOperationTransformer(DescribeIdempotency)
                     .AddOperationTransformer(DescribeLocation)
+                    .AddOperationTransformer(DescribeRetryAfter)
                     .AddSchemaTransformer(DescribeEnumValues)
+                    .AddSchemaTransformer(DescribeRequestRules)
                     .AddDocumentTransformer(RequireBearerToken)
                     .AddDocumentTransformer(DescribeProblemDetails)
                     .AddDocumentTransformer(DescribePermissions)
@@ -115,6 +122,40 @@ internal static class OpenApiContract
         return (IReadOnlyList<string>?)describe?.GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null);
     }
 
+    // K5: the limits of a list's query, from the constants that PageRequest, CursorRequest and ListRequest check. A parameter is found
+    // by its name, as the list contract names it. The search is trimmed before its length is counted.
+    private static Task DescribeListLimits(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        foreach (var parameter in (operation.Parameters ?? []).Where(parameter => parameter.In == ParameterLocation.Query).OfType<OpenApiParameter>())
+        {
+            if (parameter.Schema is not OpenApiSchema schema)
+            {
+                continue;
+            }
+
+            switch (parameter.Name)
+            {
+                case "page":
+                    schema.Minimum = Number(PageRequest.FirstPage);
+                    break;
+                case "pageSize":
+                    schema.Minimum = Number(PageRequest.MinPageSize);
+                    schema.Maximum = Number(PageRequest.MaxPageSize);
+                    break;
+                case "limit":
+                    schema.Minimum = Number(CursorRequest.MinLimit);
+                    schema.Maximum = Number(CursorRequest.MaxLimit);
+                    break;
+                case "q":
+                    schema.MaxLength = ListRequest.SearchMaxLength;
+                    parameter.Description = "The search. The API trims it before it counts its length.";
+                    break;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     // I1, I2 and I5: an idempotent operation requires its key, and each answer it can replay may carry Idempotent-Replayed: true.
     private static Task DescribeIdempotency(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
@@ -165,6 +206,74 @@ internal static class OpenApiContract
 
         return Task.CompletedTask;
     }
+
+    // RFC 9110, section 10.2.3: the rate limiter answers 429 with Retry-After, the seconds to wait (UserRateLimiting). Each operation
+    // it covers declares the header on its 429. A 429 of a handler, such as the daily limit of invitations, sends none, so the header is
+    // not required.
+    private static Task DescribeRetryAfter(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (UserRateLimiting.Covers(context.Description.ActionDescriptor.EndpointMetadata)
+            && operation.Responses?.GetValueOrDefault(StatusCodes.Status429TooManyRequests.ToString(CultureInfo.InvariantCulture)) is OpenApiResponse rejected)
+        {
+            rejected.Headers ??= new Dictionary<string, IOpenApiHeader>();
+            rejected.Headers[HeaderNames.RetryAfter] = new OpenApiHeader
+            {
+                Description = "The seconds to wait before the next request, when the rate limiter refused this one.",
+                Schema = new OpenApiSchema { Type = JsonSchemaType.Integer, Minimum = Number(0) },
+            };
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // Decision 1 of audit fix 09: the validators are the one source of a request's limits. The command X of a request XRequest carries
+    // the request's fields under the same names (K5), so the rules of X's validator describe XRequest. The validator's descriptor lists
+    // its rules: a length rule gives minLength and maxLength, an email rule format email, an inclusive range minimum and maximum, and a
+    // rule that needs a value, without a condition, required. A rule written as a predicate (Must) has no form to read, so the document
+    // leaves it out. OpenApiContractTests checks the lengths and the emails.
+    private static Task DescribeRequestRules(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (!RequestValidators.TryGetValue(context.JsonTypeInfo.Type.Name, out var validatorType))
+        {
+            return Task.CompletedTask;
+        }
+
+        var validator = (IValidator)ActivatorUtilities.CreateInstance(context.ApplicationServices, validatorType);
+        foreach (var member in validator.CreateDescriptor().GetMembersWithValidators())
+        {
+            var name = JsonNamingPolicy.CamelCase.ConvertName(member.Key);
+            if (schema.Properties?.TryGetValue(name, out var property) != true || property is not OpenApiSchema field)
+            {
+                continue;
+            }
+
+            foreach (var (rule, component) in member)
+            {
+                switch (rule)
+                {
+                    case ILengthValidator length:
+                        field.MinLength = length.Min > 0 ? length.Min : field.MinLength;
+                        field.MaxLength = length.Max >= 0 ? length.Max : field.MaxLength;
+                        break;
+                    case IEmailValidator:
+                        field.Format = "email";
+                        break;
+                    case IBetweenValidator { Name: "InclusiveBetweenValidator" } range:
+                        field.Minimum = Convert.ToString(range.From, CultureInfo.InvariantCulture);
+                        field.Maximum = Convert.ToString(range.To, CultureInfo.InvariantCulture);
+                        break;
+                    case INotNullValidator or INotEmptyValidator when !component.HasCondition && !component.HasAsyncCondition:
+                        schema.Required ??= new HashSet<string>();
+                        schema.Required.Add(name);
+                        break;
+                }
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 
     // The generator knows the values of the default enum converter only. An enum with a converter of its own, such as Language and
     // MemberRole, which read an exact name only (ExactNameEnumConverter), would so have a schema without values, and a nullable field of
@@ -266,7 +375,7 @@ internal static class OpenApiContract
     }
 
     // The host's assembly and each assembly it references, directly or not, that references SharedKernel: only such an assembly can
-    // declare an error code or the audit operations, and each module's Domain project is one. The search starts at the host and follows
+    // declare an error code, the audit operations or a command's validator, and each module's Domain and Application project is one. The search starts at the host and follows
     // only those references.
     private static IReadOnlyList<Assembly> AssembliesThatReachSharedKernel { get; } = FindAssembliesThatReachSharedKernel();
 
@@ -295,6 +404,13 @@ internal static class OpenApiContract
 
         return found;
     }
+
+    // The validator of each command, by the name of the request that carries the command: X's validator describes XRequest. A command's
+    // validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project does.
+    private static Dictionary<string, Type> RequestValidators { get; } = AssembliesThatReachSharedKernel
+        .SelectMany(assembly => assembly.GetTypes())
+        .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+        .ToDictionary(type => $"{type.BaseType!.GetGenericArguments()[0].Name}Request", StringComparer.Ordinal);
 
     // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
     // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.

@@ -181,7 +181,7 @@ public static class Tenants
 
 /// <summary>
 /// A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's
-/// invitation email: without one, the system admin's own.
+/// invitation email: without one, the system admin's own. The API trims the name before it counts its length.
 /// </summary>
 public sealed record CreateTenantRequest(string Name, string Slug, string OwnerEmail, Language? Language = null);
 
@@ -191,10 +191,13 @@ public sealed record CreateTenantRequest(string Name, string Slug, string OwnerE
 /// </summary>
 public sealed record InviteOwnerRequest(string Email, Language? Language = null);
 
-/// <summary>A tenant's new name. The slug never changes.</summary>
+/// <summary>A tenant's new name. The API trims it before it counts its length. The slug never changes.</summary>
 public sealed record RenameTenantRequest(string Name);
 
-/// <summary>Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it.</summary>
+/// <summary>
+/// Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member
+/// never sees it.
+/// </summary>
 public sealed record SuspendTenantRequest(string Reason);
 
 /// <summary>
