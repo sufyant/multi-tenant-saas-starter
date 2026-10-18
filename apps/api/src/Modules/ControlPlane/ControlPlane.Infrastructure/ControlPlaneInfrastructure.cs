@@ -20,6 +20,23 @@ namespace ControlPlane.Infrastructure;
 /// </summary>
 public static class ControlPlaneInfrastructure
 {
+    /// <summary>The key of the wait for the invitation email after the tenant's activation.</summary>
+    public const string InvitationEmailTimeoutKey = $"{TenantCreationSettings.Section}:{nameof(TenantCreationSettings.InvitationEmailTimeout)}";
+
+    /// <summary>The key of the pauses before each new try of a call to the identity provider.</summary>
+    public const string IdentityProviderRetryDelaysKey = $"{IdentityProviderSettings.Section}:{nameof(IdentityProviderSettings.RetryDelays)}";
+
+    /// <summary>
+    /// The wait for the invitation email, as configured. The host checks it against the retries of both calls before the email
+    /// (section 6, "Tenant creation process").
+    /// </summary>
+    public static TimeSpan InvitationEmailTimeout(IServiceProvider services) =>
+        services.GetRequiredService<IOptions<TenantCreationSettings>>().Value.InvitationEmailTimeout;
+
+    /// <summary>The pauses before each new try of a call to the identity provider, as configured or by default.</summary>
+    public static IReadOnlyList<TimeSpan> IdentityProviderRetryDelays(IServiceProvider services) =>
+        services.GetRequiredService<IOptions<IdentityProviderSettings>>().Value.Delays;
+
     public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
         services.AddDbContextWithWolverineIntegration<ControlPlaneDbContext>(

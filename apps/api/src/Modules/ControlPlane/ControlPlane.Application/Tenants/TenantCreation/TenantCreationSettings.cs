@@ -12,9 +12,9 @@ public sealed class TenantCreationSettings
     public TimeSpan ActivationTimeout { get; set; } = TimeSpan.FromMinutes(10);
 
     /// <summary>
-    /// From the tenant's activation until the invitation email is sent; then the tenant creation needs attention. Longer than the email
-    /// retries Notifications is configured with, so it only fires when a message is lost. If it is not, the invitation is cancelled
-    /// and the alarm is raised. The setup notes say this.
+    /// From the tenant's activation until the invitation email is sent; then the tenant creation needs attention. Longer than the
+    /// identity provider's retries and the email retries Notifications is configured with, together, so it only fires when a message
+    /// is lost. The host checks this on start.
     /// </summary>
     public TimeSpan InvitationEmailTimeout { get; set; } = TimeSpan.FromHours(2);
 

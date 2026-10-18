@@ -32,6 +32,7 @@ try
     builder.Services.AddControlPlaneInfrastructure();
     builder.Services.AddNotificationsInfrastructure();
     builder.Services.AddAuditInfrastructure();
+    builder.Services.AddInvitationEmailWait();
 
     app = builder.Build();
 
