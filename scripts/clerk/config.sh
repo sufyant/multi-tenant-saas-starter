@@ -3,6 +3,12 @@
 # The one file holds the settings of both instances.
 # It uses only the `clerk` CLI and the user's own `clerk auth login` session
 # (or CLERK_PLATFORM_API_KEY).
+#
+# Inputs: plan or apply, and an instance (development or production; plan without one handles both);
+# CLERK_APP_ID (optional), and for apply to production CLERK_GOOGLE_CLIENT_ID, CLERK_GOOGLE_CLIENT_SECRET,
+# CLERK_MICROSOFT_CLIENT_ID and CLERK_MICROSOFT_CLIENT_SECRET. Exit codes: 0 when the plan or the apply
+# ends, an apply the user declines included; 1 when the repository is not linked, a variable is missing
+# or the CLI fails; 2 for a wrong argument.
 set -euo pipefail
 
 usage() {
