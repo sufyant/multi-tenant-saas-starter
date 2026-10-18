@@ -481,8 +481,8 @@ export interface components {
         };
         /**
          * @description What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
-         *     gives, when it expires, and its state at the moment of the request: `pending`,
-         *     `expired`, `accepted` or `cancelled`. Only a caller with the invited address gets it.
+         *     gives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
+         *     `cancelled`. Only a caller with the invited address gets it.
          */
         InvitationPreviewResponse: {
             tenantName: string;
@@ -493,9 +493,9 @@ export interface components {
             state: components["schemas"]["InvitationResponseState"];
         };
         /**
-         * @description A pending invitation: the invited address, its role, the catalog user id of the member who invited and their
-         *     names as the catalog holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or
-         *     `expired` once its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
+         * @description A pending invitation: the invited address, its role, the catalog user id of the member who invited and their names as the catalog
+         *     holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once
+         *     its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
          *     only, and inviting answers the new one.
          */
         InvitationResponse: {
@@ -603,8 +603,8 @@ export interface components {
             total: number;
         };
         /**
-         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, whether the
-         *     identity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
+         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted
+         *     the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
          *     the screen shows "Deleted user", as the audit logs say `deleted` (K3).
          */
         MemberResponse: {
@@ -820,8 +820,8 @@ export interface components {
             memberships: components["schemas"]["UserMembershipResponse"][];
         };
         /**
-         * @description An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are its only Owner. The suspend dialog warns with `soleOwner`, and the delete
-         *     refusal names those organisations.
+         * @description An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
+         *     its only Owner. The suspend dialog warns with `soleOwner`, and the delete refusal names those organisations.
          */
         UserMembershipResponse: {
             /** Format: uuid */
