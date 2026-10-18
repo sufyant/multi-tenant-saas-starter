@@ -5,7 +5,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>The member who sends a tenant command, with the tenant the command locked and the member's membership in it.</summary>
-internal sealed record TenantActor(Tenant Tenant, Actor Actor, Membership Membership)
+internal sealed record TenantActor(Tenant Tenant, UserProfile User, Membership Membership)
 {
     /// <summary>
     /// The start of every tenant command that a member sends. It locks the active tenant first (K6g), then finds the actor and their
@@ -21,7 +21,7 @@ internal sealed record TenantActor(Tenant Tenant, Actor Actor, Membership Member
     {
         var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var actor = await users.FindActorAsync(actorId, cancellationToken)
+        var actor = await users.FindProfileAsync(actorId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a user.");
         if (await tenants.FindMembershipAsync(actor.Id, cancellationToken) is not { } membership)
         {

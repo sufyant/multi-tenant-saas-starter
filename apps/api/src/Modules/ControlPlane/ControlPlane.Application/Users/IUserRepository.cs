@@ -13,8 +13,8 @@ public interface IUserRepository
     /// <summary>The id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
     internal Task<Guid?> FindUserIdAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>The user with this identity provider id as the command that they send reads them, without a lock.</summary>
-    internal Task<Actor?> FindActorAsync(string externalUserId, CancellationToken cancellationToken);
+    /// <summary>The profile of the user with this identity provider id, without a lock: the actor of a command.</summary>
+    internal Task<UserProfile?> FindProfileAsync(string externalUserId, CancellationToken cancellationToken);
 
     /// <summary>The profile of the user with this id, without a lock: the member whose view a command answers.</summary>
     internal Task<UserProfile?> FindProfileAsync(Guid userId, CancellationToken cancellationToken);

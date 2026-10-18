@@ -9,4 +9,6 @@ namespace ControlPlane.Application.Users;
 public sealed record UserNameView(string? FirstName, string? LastName, bool Deleted)
 {
     internal static UserNameView Of(User user) => new(user.FirstName, user.LastName, user.DeletedAt is not null);
+
+    internal static UserNameView Of(UserProfile profile) => new(profile.FirstName, profile.LastName, profile.Deleted);
 }

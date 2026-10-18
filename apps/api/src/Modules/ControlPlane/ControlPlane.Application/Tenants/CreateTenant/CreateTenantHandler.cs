@@ -26,7 +26,7 @@ public static class CreateTenantHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var actor = await users.FindActorAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindProfileAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var now = time.GetUtcNow();

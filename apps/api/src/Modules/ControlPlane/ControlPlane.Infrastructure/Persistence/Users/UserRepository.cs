@@ -16,16 +16,16 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
     async Task<Guid?> IUserRepository.FindUserIdAsync(string externalUserId, CancellationToken cancellationToken) =>
         await controlPlane.Users.Where(user => user.ExternalId == externalUserId).Select(user => (Guid?)user.Id).SingleOrDefaultAsync(cancellationToken);
 
-    Task<Actor?> IUserRepository.FindActorAsync(string externalUserId, CancellationToken cancellationToken) =>
+    Task<UserProfile?> IUserRepository.FindProfileAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.Users
             .Where(user => user.ExternalId == externalUserId)
-            .Select(user => new Actor(user.Id, user.Language, new UserNameView(user.FirstName, user.LastName, user.DeletedAt != null)))
+            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
             .SingleOrDefaultAsync(cancellationToken);
 
     Task<UserProfile?> IUserRepository.FindProfileAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.Users
             .Where(user => user.Id == userId)
-            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.DeletedAt != null))
+            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
             .SingleOrDefaultAsync(cancellationToken);
 
     Task<bool> IUserRepository.UserExistsAsync(Guid userId, CancellationToken cancellationToken) =>
