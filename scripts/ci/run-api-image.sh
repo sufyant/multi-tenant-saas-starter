@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Runs the API image `api` against PostgreSQL in Docker: bootstrap.sql as a provider role (twice,
 # then once more with a changed role, which must fail), the migration with the owner role only, and
-# the web and the worker with every required setting. Both must answer /health/ready on their
-# management port, 8081 in the container. The web's public port, 8080, must answer 404 for it.
+# the web and the worker with every required setting. Both must answer the health path on their
+# management port, as .railway/api.json names them. The web's public port, 8080, must answer 404
+# for it.
 # No process may try to load the Kerberos library (libgssapi), which the image does not have.
 # The passwords are made for this run and printed nowhere. They protect nothing outside it.
 #
@@ -20,6 +21,8 @@ set -euo pipefail
 
 : "${POSTGRES_IMAGE:?}" "${RUNNER_TEMP:?}"
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+management_port=$(jq -r '.managementPort' .railway/api.json)
+health_path=$(jq -r '.healthPath' .railway/api.json)
 
 superuser_password=$(openssl rand -hex 24)
 provider_password=$(openssl rand -hex 24)
@@ -94,9 +97,9 @@ docker run --rm --network api-image \
 
 # On this machine: the web's public port on 8080 and its management port on 8081; the worker opens
 # only its management port, here on 8082.
-docker run -d --name api-web --network api-image -p 8080:8080 -p 8081:8081 \
+docker run -d --name api-web --network api-image -p 8080:8080 -p "8081:$management_port" \
   --env-file "$RUNNER_TEMP/api.env" -e Host__Role=web api
-docker run -d --name api-worker --network api-image -p 8082:8081 \
+docker run -d --name api-worker --network api-image -p "8082:$management_port" \
   --env-file "$RUNNER_TEMP/api.env" -e Host__Role=worker api
 
 # The health endpoints answer on the management port of each process (apps/api/docs/ARCHITECTURE.md
@@ -104,16 +107,16 @@ docker run -d --name api-worker --network api-image -p 8082:8081 \
 for port in 8081 8082; do
   curl --silent --show-error --fail --max-time 5 \
     --retry 60 --retry-delay 1 --retry-all-errors --retry-max-time 60 \
-    "http://localhost:$port/health/ready"
+    "http://localhost:$port$health_path"
   echo " on management port $port"
 done
 
 # The public port does not answer them.
 status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 5 \
-  "http://localhost:8080/health/ready")
-echo "GET /health/ready on public port 8080: $status"
+  "http://localhost:8080$health_path")
+echo "GET $health_path on public port 8080: $status"
 if [[ "$status" != "404" ]]; then
-  echo "The public port answered $status for /health/ready, not 404." >&2
+  echo "The public port answered $status for $health_path, not 404." >&2
   exit 1
 fi
 

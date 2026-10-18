@@ -1,0 +1,8 @@
+{
+  "services": {
+    "web": "api-web",
+    "worker": "api-worker"
+  },
+  "managementPort": 8081,
+  "healthPath": "/health/ready"
+}

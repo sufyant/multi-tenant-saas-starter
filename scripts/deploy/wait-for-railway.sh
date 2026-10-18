@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Waits until the new deployment of api-web and api-worker is SUCCESS. A new deployment is one whose
+# Waits until the new deployment of both API services is SUCCESS. Their names come from
+# .railway/api.json. A new deployment is one whose
 # ID was not in $RUNNER_TEMP/deployments-before-<service>.json. Railway keeps the old deployment
 # serving when the new one fails its health check, so the script does not roll back. It prints
 # deployment IDs and statuses only, never a variable. A failed list call counts as "no new
@@ -19,7 +20,8 @@ poll_seconds="${WAIT_POLL_SECONDS:-15}"
 railway() { docker run --rm -e RAILWAY_TOKEN -e CI "$RAILWAY_CLI_IMAGE" railway "$@"; }
 
 declare -A state
-pending=(api-web api-worker)
+service_names=$(jq -r '.services[]' "$(dirname "${BASH_SOURCE[0]}")/../../.railway/api.json")
+mapfile -t pending <<<"$service_names"
 deadline=$((SECONDS + timeout_seconds))
 while (( ${#pending[@]} > 0 )); do
   waiting=()

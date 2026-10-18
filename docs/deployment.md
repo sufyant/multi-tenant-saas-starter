@@ -84,7 +84,7 @@ The table holds names only. A value never goes into the repository.
 | Setting | Place | `staging` | `production` |
 | --- | --- | --- | --- |
 | The workflows, the image name, the Syft and Railway CLI image digests | Repository: `.github/workflows/` | same | same |
-| The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts` | same | same |
+| The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts`. The service names, the management port and the health path are in `.railway/api.json`, which the deploy scripts read too | same | same |
 | The PostgreSQL service `postgres`: Railway's template, its image `postgres-ssl:18` and its region | Repository: `.railway/railway.ts` | same | same |
 | Public access (TCP proxy) of `postgres` | Railway service settings, by hand (section 4, step 7) | own proxy | own proxy |
 | Backups and point-in-time recovery of `postgres` | Railway, by hand with the Railway CLI (section 4, step 11) | off | on |
