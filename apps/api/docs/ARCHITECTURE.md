@@ -6,6 +6,49 @@ This document is the single source of truth for the API in `apps/api/`. If the c
 
 Each rule has an id (for example `R4`, `W2`). Use the id when you refer to a rule in a review, a commit message or a comment.
 
+## Codemap
+
+This map helps a first reader find their way in the code. It names rules and patterns, not files, so it stays true when files change. Source: Aleksey Kladov, "ARCHITECTURE.md".
+
+The host in `src/Api` connects three modules: ControlPlane, Notifications and Audit. Each module is five projects (section 2). A module sees another module only through that module's `Contracts` project. A module tells others what happened with an event, through the outbox. A module reads another module's data through a directory, an interface in `Contracts`.
+
+```mermaid
+flowchart TB
+  subgraph module["Each module: five projects (section 2)"]
+    direction LR
+    api["X.Api<br/>endpoints (N7a)"] --> app["X.Application<br/>use cases, sagas (N8)"]
+    app --> domain["X.Domain<br/>business rules"]
+    infra["X.Infrastructure<br/>EF Core, adapters (Q4)"] --> app
+    app --> contracts["X.Contracts<br/>events, directories"]
+  end
+  subgraph modules["How the modules talk (section 3)"]
+    direction LR
+    host["Host: src/Api<br/>routes, tenant door, pipeline"]
+    cp["ControlPlane"]
+    cpc["ControlPlane.Contracts<br/>events and directories"]
+    audit["Audit"]
+    notify["Notifications"]
+    cp -- "publishes events (outbox, O1)" --> cpc
+    cpc -- "events" --> audit
+    cpc -- "events" --> notify
+    audit -- "reads names (IUserDirectory)" --> cpc
+    host -- "asks on each request (ITenantDirectory, IUserDirectory, ISystemAdminDirectory)" --> cpc
+  end
+```
+
+| I look for | I find it in | Rule |
+| --- | --- | --- |
+| An endpoint | The module's `Api` project, in the folder of its audience and then of its resource, in the class `{Resource}Endpoints`. The method has the action's name | N5, N7a, N7e |
+| A route prefix and its audience | The host's route groups | N5 |
+| A use case | The module's `Application` project, in the folder `{Resource}/{Action}/`: the command or query, its handler and its validator | N8 |
+| A business rule | The module's `Domain` project, in the folder of the aggregate. The root has the folder's singular name | N8, M1 |
+| Persistence | The module's `Infrastructure` project, under `Persistence/`: the DbContext, a folder for each resource with its repository and its query class, and `Migrations/` | Q1 to Q4, N8 |
+| Who handles an event | The event is in the publisher's `Contracts` project, in the folder of its resource. Its handlers are in each listening module's `Application` project, in the use case folder of the handler. The message tables of section 6 name each one | N8, section 6 |
+| An error code | The owner's static `...ErrorCodes` class | Section 2, N11w |
+| A test | Next to the module it tests, or in `tests/` for the whole system. A class is named by its use case or by the class it tests | N9 |
+| A generated file | A file that ends in `.g.cs` or `.gen.ts`, and `openapi/v1.json`. The table in section 2 names each generator | D1, "Generated files" in section 2 |
+| A rule | This document, by its id | |
+
 ## Purpose and scope
 
 The purpose is a multi-tenant SaaS starter template. Every future product is built on it. The scope is the API only. Correctness, clear boundaries and tenant isolation are more important than speed.
