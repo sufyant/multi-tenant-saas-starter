@@ -9,7 +9,7 @@ namespace Api.ArchitectureTests;
 
 // K3: AuditOperations declares the operation of every audit entry once. Each Audit handler names its operation from it, and the
 // catalog's Audit column, the specification, lists exactly its operations. OpenApiContractTests checks the enum in the document.
-public partial class AuditOperationTests
+public sealed partial class AuditOperationTests
 {
     private const string Audit = "Audit.Application";
 

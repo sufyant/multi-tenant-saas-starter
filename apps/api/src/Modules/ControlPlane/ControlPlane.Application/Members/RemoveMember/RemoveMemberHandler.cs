@@ -1,4 +1,5 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -14,45 +15,34 @@ public static class RemoveMemberHandler
 {
     public static async Task<(Result, MemberRemovedEvent?)> HandleAsync(
         RemoveMemberCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
-            ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
-        var actorUser = await catalog.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A member is always a catalog user.");
-
-        // The door let the actor in, but a change that held the lock before may have removed them: to a non-member the tenant does not
-        // exist (T3).
-        if (await catalog.FindMembershipAsync(actorUser.Id, cancellationToken) is not { } actor)
+        var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
+        if (!start.IsSuccess)
         {
-            return (Errors.TenantNotFound, null);
+            return (start.Error, null);
         }
 
-        // The door let the actor into an active tenant, but a system admin may have suspended or closed it while this request waited for
-        // the lock: under the lock, a tenant that is no longer active is refused (K6).
-        var access = Tenant.CheckMemberAccess(tenant.Status);
-        if (!access.IsSuccess)
-        {
-            return (access, null);
-        }
+        var (tenant, actor, actorMembership) = start.Value;
 
-        if (await catalog.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
+        if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
             return (Errors.MemberNotFound, null);
         }
 
-        var allowed = Tenant.CheckRemoval(actor, target, await catalog.CountOwnersAsync(cancellationToken));
+        var allowed = Tenant.CheckRemoval(actorMembership, target, await tenants.CountOwnersAsync(cancellationToken));
         if (!allowed.IsSuccess)
         {
             return (allowed, null);
         }
 
-        await catalog.RemoveMembershipAsync(tenant, target, cancellationToken);
+        await tenants.RemoveMembershipAsync(tenant, target, cancellationToken);
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
-        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actorUser.Id, role.Name));
+        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name));
     }
 }

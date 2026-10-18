@@ -3,7 +3,7 @@ namespace Api.ArchitectureTests;
 // The reference table checked on the project files themselves. The type rules in ReferenceRuleTests see only references
 // that some type uses; an unused project reference still lets the next change use it without anyone noticing. Anything the
 // table does not list is forbidden.
-public class ProjectReferenceTests
+public sealed class ProjectReferenceTests
 {
     public static TheoryData<string, string> ModuleProjects =>
         [.. Solution.Modules.SelectMany(module => Solution.Layers.Select(layer => (module, layer)))];

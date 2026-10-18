@@ -36,6 +36,26 @@ internal sealed class DatabaseAccountCheck(IConfiguration configuration, IEnumer
         WHERE NOT EXISTS (SELECT FROM pg_namespace WHERE nspname = required.name)
         """;
 
+    // The readiness check asks the same while the application runs, since a role can change.
+    public static async Task<string[]> ProblemsAsync(NpgsqlDataSource dataSource, string connection, CancellationToken cancellationToken)
+    {
+        await using var command = dataSource.CreateCommand(RoleQuery);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        List<string> problems = [];
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var role = reader.GetBoolean(1) ? $"the {connection} connection's role" : $"the {connection} connection's role is a member of {reader.GetString(0)}, which";
+            problems.AddRange([
+                .. reader.GetBoolean(2) ? [$"{role} is a superuser"] : Array.Empty<string>(),
+                .. reader.GetBoolean(3) ? [$"{role} bypasses row level security"] : Array.Empty<string>(),
+                .. reader.GetBoolean(4) ? [$"{role} owns tables"] : Array.Empty<string>(),
+            ]);
+        }
+
+        return [.. problems];
+    }
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var database = configuration.GetConnectionString(PersistenceExtensions.DatabaseConnection)!;
@@ -56,24 +76,13 @@ internal sealed class DatabaseAccountCheck(IConfiguration configuration, IEnumer
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    // The readiness check asks the same while the application runs, since a role can change.
-    public static async Task<string[]> ProblemsAsync(NpgsqlDataSource dataSource, string connection, CancellationToken cancellationToken)
+    // A module's projects are named after it (section 2): the DbContext of ControlPlane is in ControlPlane.Infrastructure.
+    private static string ModuleOf(IModuleMigrator module) => module.DbContextType.Assembly.GetName().Name!.Split('.')[0];
+
+    private static async Task<string[]> ProblemsAsync(string key, string connectionString, CancellationToken cancellationToken)
     {
-        await using var command = dataSource.CreateCommand(RoleQuery);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        List<string> problems = [];
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            var role = reader.GetBoolean(1) ? $"the {connection} connection's role" : $"the {connection} connection's role is a member of {reader.GetString(0)}, which";
-            problems.AddRange([
-                .. reader.GetBoolean(2) ? [$"{role} is a superuser"] : Array.Empty<string>(),
-                .. reader.GetBoolean(3) ? [$"{role} bypasses row level security"] : Array.Empty<string>(),
-                .. reader.GetBoolean(4) ? [$"{role} owns tables"] : Array.Empty<string>(),
-            ]);
-        }
-
-        return [.. problems];
+        await using var dataSource = DatabaseConnection.CreateDataSource(connectionString);
+        return await ProblemsAsync(dataSource, key, cancellationToken);
     }
 
     private async Task<string[]> MigrationProblemsAsync(string connectionString, CancellationToken cancellationToken)
@@ -97,14 +106,5 @@ internal sealed class DatabaseAccountCheck(IConfiguration configuration, IEnumer
         return behind.Count == 0
             ? []
             : [$"the database is not migrated, {string.Join(", ", behind)}: run `dotnet Api.dll {MigrationStep.Command}` first"];
-    }
-
-    // A module's projects are named after it (section 2): the DbContext of ControlPlane is in ControlPlane.Infrastructure.
-    private static string ModuleOf(IModuleMigrator module) => module.DbContextType.Assembly.GetName().Name!.Split('.')[0];
-
-    private static async Task<string[]> ProblemsAsync(string key, string connectionString, CancellationToken cancellationToken)
-    {
-        await using var dataSource = DatabaseConnection.CreateDataSource(connectionString);
-        return await ProblemsAsync(dataSource, key, cancellationToken);
     }
 }

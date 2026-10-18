@@ -24,18 +24,28 @@ namespace Api.ArchitectureTests;
 public sealed partial class OpenApiContractTests : IAsyncLifetime
 {
     private const string DocumentFile = "openapi/v1.json";
+
     private const string ProblemDetailsSchema = "#/components/schemas/ProblemDetails";
+
     private const string LanguageSchema = "#/components/schemas/Language";
+
     private const string PermissionSchema = "#/components/schemas/Permission";
+
     private const string AuditOperationSchema = "#/components/schemas/AuditOperation";
+
     private const string InvitationStateSchema = "#/components/schemas/InvitationResponseState";
+
     private const string RoleSchema = "#/components/schemas/RoleResponse";
+
     private const string MemberRoleSchema = "#/components/schemas/MemberRole";
 
     // The enums the host adds to fields that are strings in C# (N11): the permissions and the audit operations.
     private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema];
 
+    private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
+
     private readonly ComposedApplication _application = new();
+
     private JsonElement _document;
 
     public ValueTask InitializeAsync()
@@ -635,9 +645,6 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     // N8: the command XCommand is carried by the request XRequest, as OpenApiContract maps them.
     private static string RequestOf(Type command) => $"{command.Name[..^"Command".Length]}Request";
 
-    private List<string> PatternedRequestFields() =>
-        [.. RequestFields().Where(field => field.Value.TryGetProperty("pattern", out _)).Select(field => field.Name)];
-
     // A length the schema leaves out is 0 for minLength, as JSON Schema reads it.
     private static int LengthOf(JsonElement schema, string keyword) =>
         schema.TryGetProperty(keyword, out var length) ? length.GetInt32() : 0;
@@ -647,25 +654,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             ? parameters.EnumerateArray().Where(parameter => parameter.GetProperty("in").GetString() == "query")
             : [];
 
-    private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
-
     // The numeric and length limits of a schema, in one order.
     private static string LimitsOf(JsonElement schema) =>
         string.Join(", ", Limits
             .Where(limit => schema.TryGetProperty(limit, out _))
             .Select(limit => $"{limit} {schema.GetProperty(limit).GetInt32()}"));
-
-    private IEnumerable<(string Name, JsonElement Value)> RequestFields() =>
-        Schemas()
-            .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
-            .SelectMany(schema => PropertiesOf(schema.Value).Select(property => ($"{schema.Name}.{property.Name}", property.Value)));
-
-    // The webhook group is left out of the document (N5), and so are the endpoints outside /v1, such as the document itself.
-    private IEnumerable<RouteEndpoint> DocumentedEndpoints() =>
-        _application.Services.GetRequiredService<EndpointDataSource>().Endpoints
-            .OfType<RouteEndpoint>()
-            .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/v1/", StringComparison.Ordinal))
-            .Where(endpoint => endpoint.Metadata.GetMetadata<IExcludeFromDescriptionMetadata>() is not { ExcludeFromDescription: true });
 
     private static string MethodOf(RouteEndpoint endpoint) =>
         endpoint.Metadata.GetMetadata<IHttpMethodMetadata>()!.HttpMethods.Single().ToLowerInvariant();
@@ -706,11 +699,6 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private static string DefaultSchemaOf(JsonElement operation) =>
         operation.GetProperty("responses").TryGetProperty("default", out var answer) ? ProblemSchemaOf(answer) : "<no default>";
 
-    private string SecuritySchemeOf(string name) =>
-        _document.GetProperty("components").TryGetProperty("securitySchemes", out var schemes) && schemes.TryGetProperty(name, out var scheme)
-            ? $"{scheme.GetProperty("type").GetString()} {scheme.GetProperty("scheme").GetString()}"
-            : "<no scheme>";
-
     private static string SecurityRequirementsOf(JsonElement element) =>
         element.TryGetProperty("security", out var requirements)
             ? string.Join(", ", requirements.EnumerateArray().SelectMany(requirement => requirement.EnumerateObject().Select(scheme => scheme.Name)))
@@ -746,28 +734,6 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         _ => [],
     };
 
-    // The schemas an answer refers to, and the schemas they refer to in turn.
-    private List<(string Name, JsonElement Value)> ResponseSchemas()
-    {
-        var pending = new Queue<string>(Operations().SelectMany(operation => ReferencesIn(operation.Value.GetProperty("responses"))));
-        var found = new SortedSet<string>(StringComparer.Ordinal);
-        while (pending.TryDequeue(out var reference))
-        {
-            if (found.Add(reference))
-            {
-                foreach (var next in ReferencesIn(SchemaAt(reference)))
-                {
-                    pending.Enqueue(next);
-                }
-            }
-        }
-
-        return [.. found.Select(reference => (reference.Split('/')[^1], SchemaAt(reference)))];
-    }
-
-    private JsonElement SchemaAt(string reference) =>
-        _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.Split('/')[^1]);
-
     private static string ProblemSchemaOf(JsonElement response) =>
         response.TryGetProperty("content", out var content) && content.TryGetProperty("application/problem+json", out var problem)
             ? problem.GetProperty("schema").GetProperty("$ref").GetString()!
@@ -798,20 +764,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "array"
         && schema.TryGetProperty("items", out var item) && item.TryGetProperty("$ref", out var reference) && reference.GetString() == items;
 
-    // A schema the document names, such as an enum, is a reference into components/schemas.
-    private JsonElement Resolve(JsonElement schema) =>
-        schema.TryGetProperty("$ref", out var reference)
-            ? _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.GetString()!.Split('/')[^1])
-            : schema;
-
     private static List<string> TagsOf(JsonElement operation) =>
         operation.TryGetProperty("tags", out var tags) ? [.. tags.EnumerateArray().Select(tag => tag.GetString()!)] : [];
-
-    private IEnumerable<(string Method, string Path, JsonElement Value)> Operations() =>
-        _document.GetProperty("paths").EnumerateObject()
-            .SelectMany(path => path.Value.EnumerateObject().Select(operation => (operation.Name, path.Name, operation.Value)));
-
-    private JsonElement.ObjectEnumerator Schemas() => _document.GetProperty("components").GetProperty("schemas").EnumerateObject();
 
     [GeneratedRegex("^[A-Z][A-Za-z]+$")]
     private static partial Regex PascalCaseName();
@@ -821,4 +775,58 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     [GeneratedRegex(@"\{(\w+):[^}]+\}")]
     private static partial Regex RouteConstraint();
+
+    private List<string> PatternedRequestFields() =>
+        [.. RequestFields().Where(field => field.Value.TryGetProperty("pattern", out _)).Select(field => field.Name)];
+
+    private IEnumerable<(string Name, JsonElement Value)> RequestFields() =>
+        Schemas()
+            .Where(schema => schema.Name.EndsWith("Request", StringComparison.Ordinal))
+            .SelectMany(schema => PropertiesOf(schema.Value).Select(property => ($"{schema.Name}.{property.Name}", property.Value)));
+
+    // The webhook group is left out of the document (N5), and so are the endpoints outside /v1, such as the document itself.
+    private IEnumerable<RouteEndpoint> DocumentedEndpoints() =>
+        _application.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/v1/", StringComparison.Ordinal))
+            .Where(endpoint => endpoint.Metadata.GetMetadata<IExcludeFromDescriptionMetadata>() is not { ExcludeFromDescription: true });
+
+    private string SecuritySchemeOf(string name) =>
+        _document.GetProperty("components").TryGetProperty("securitySchemes", out var schemes) && schemes.TryGetProperty(name, out var scheme)
+            ? $"{scheme.GetProperty("type").GetString()} {scheme.GetProperty("scheme").GetString()}"
+            : "<no scheme>";
+
+    // The schemas an answer refers to, and the schemas they refer to in turn.
+    private List<(string Name, JsonElement Value)> ResponseSchemas()
+    {
+        var pending = new Queue<string>(Operations().SelectMany(operation => ReferencesIn(operation.Value.GetProperty("responses"))));
+        var found = new SortedSet<string>(StringComparer.Ordinal);
+        while (pending.TryDequeue(out var reference))
+        {
+            if (found.Add(reference))
+            {
+                foreach (var next in ReferencesIn(SchemaAt(reference)))
+                {
+                    pending.Enqueue(next);
+                }
+            }
+        }
+
+        return [.. found.Select(reference => (reference.Split('/')[^1], SchemaAt(reference)))];
+    }
+
+    private JsonElement SchemaAt(string reference) =>
+        _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.Split('/')[^1]);
+
+    // A schema the document names, such as an enum, is a reference into components/schemas.
+    private JsonElement Resolve(JsonElement schema) =>
+        schema.TryGetProperty("$ref", out var reference)
+            ? _document.GetProperty("components").GetProperty("schemas").GetProperty(reference.GetString()!.Split('/')[^1])
+            : schema;
+
+    private IEnumerable<(string Method, string Path, JsonElement Value)> Operations() =>
+        _document.GetProperty("paths").EnumerateObject()
+            .SelectMany(path => path.Value.EnumerateObject().Select(operation => (operation.Name, path.Name, operation.Value)));
+
+    private JsonElement.ObjectEnumerator Schemas() => _document.GetProperty("components").GetProperty("schemas").EnumerateObject();
 }

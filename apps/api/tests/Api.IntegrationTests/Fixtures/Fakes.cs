@@ -10,10 +10,10 @@ namespace Api.IntegrationTests.Fixtures;
 internal sealed class FakeIdentityProvider : IIdentityProvider
 {
     private readonly ConcurrentDictionary<string, string[]> _accounts = new();
-    private int _failures;
-    private int _calls;
 
-    public void AddAccount(string externalUserId, params string[] verifiedEmails) => _accounts[externalUserId] = verifiedEmails;
+    private int _failures;
+
+    private int _calls;
 
     // Lets a test look at the database at the moment the application asks for a user's verified addresses.
     public Func<Task>? WhileReadingVerifiedEmails { get; set; }
@@ -31,6 +31,18 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
 
     // While down, every call fails.
     public bool IsDown { get; set; }
+
+    // Clerk's link of an invitation: the accept link it leads to rides in it, so a test can follow it.
+    public static Uri ClerkLink(string invitationId, Uri acceptLink) =>
+        new($"https://clerk.test/v1/tickets/accept?ticket={invitationId}&redirect_url={Uri.EscapeDataString(acceptLink.ToString())}");
+
+    // Where a link in an email leads: Clerk's link leads to the accept link it carries; any other link is the accept link.
+    public static Uri AcceptLinkOf(Uri link) =>
+        link.Host == "clerk.test"
+            ? new Uri(Uri.UnescapeDataString(link.Query.TrimStart('?').Split('&').Single(pair => pair.StartsWith("redirect_url=", StringComparison.Ordinal))["redirect_url=".Length..]))
+            : link;
+
+    public void AddAccount(string externalUserId, params string[] verifiedEmails) => _accounts[externalUserId] = verifiedEmails;
 
     // The next calls fail, then Clerk recovers.
     public void FailNext(int calls) => _failures = calls;
@@ -72,16 +84,6 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
         return Task.CompletedTask;
     }
 
-    // Clerk's link of an invitation: the accept link it leads to rides in it, so a test can follow it.
-    public static Uri ClerkLink(string invitationId, Uri acceptLink) =>
-        new($"https://clerk.test/v1/tickets/accept?ticket={invitationId}&redirect_url={Uri.EscapeDataString(acceptLink.ToString())}");
-
-    // Where a link in an email leads: Clerk's link leads to the accept link it carries; any other link is the accept link.
-    public static Uri AcceptLinkOf(Uri link) =>
-        link.Host == "clerk.test"
-            ? new Uri(Uri.UnescapeDataString(link.Query.TrimStart('?').Split('&').Single(pair => pair.StartsWith("redirect_url=", StringComparison.Ordinal))["redirect_url=".Length..]))
-            : link;
-
     private void Answer()
     {
         Interlocked.Increment(ref _calls);
@@ -96,6 +98,7 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
 internal sealed partial class FakeEmailChannel : IEmailChannel
 {
     private readonly ConcurrentDictionary<string, EmailMessage> _sent = new();
+
     private int _failures;
 
     // Every request the application made, sent or refused.
@@ -107,11 +110,11 @@ internal sealed partial class FakeEmailChannel : IEmailChannel
     // While down, every send fails.
     public bool IsDown { get; set; }
 
-    // The next sends fail, then the channel recovers.
-    public void FailNext(int sends) => _failures = sends;
-
     // Every send to this address fails, as when one recipient's mail server keeps refusing.
     public string? Refuses { get; set; }
+
+    // The next sends fail, then the channel recovers.
+    public void FailNext(int sends) => _failures = sends;
 
     public Task SendAsync(EmailMessage email, CancellationToken cancellationToken)
     {

@@ -3,11 +3,11 @@ using SharedKernel;
 
 namespace ControlPlane.UnitTests.Users;
 
-public class UserTests
+public sealed class UserTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
 
-    private static readonly Guid AdminId = new("0199a8f0-0000-7000-8000-000000000901");
+    private static readonly Guid ActorId = new("0199a8f0-0000-7000-8000-000000000901");
 
     private static readonly Guid OtherAdminId = new("0199a8f0-0000-7000-8000-000000000902");
 
@@ -17,27 +17,27 @@ public class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
-        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, AdminId));
+        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, ActorId));
     }
 
     [Fact]
     public void SuspendUser_TwiceByTwoSystemAdmins_KeepsTheFirst()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
         user.Suspend(Now.AddHours(1), OtherAdminId);
 
-        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, AdminId));
+        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, ActorId));
     }
 
     [Fact]
     public void ReactivateUser_Suspended_ForgetsWhoSuspendedThem()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
         user.Reactivate();
 
@@ -59,7 +59,7 @@ public class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
         user.SuspendedAt.ShouldBe(Now);
     }
@@ -69,9 +69,9 @@ public class UserTests
     public void SuspendUser_Twice_KeepsTheFirstTime()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
-        user.Suspend(Now.AddHours(1), AdminId);
+        user.Suspend(Now.AddHours(1), ActorId);
 
         user.SuspendedAt.ShouldBe(Now);
     }
@@ -80,7 +80,7 @@ public class UserTests
     public void ReactivateUser_Suspended_IsNoLongerSuspended()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
         user.Reactivate();
 
@@ -93,8 +93,8 @@ public class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        var first = user.Suspend(Now, AdminId);
-        var second = user.Suspend(Now.AddHours(1), AdminId);
+        var first = user.Suspend(Now, ActorId);
+        var second = user.Suspend(Now.AddHours(1), ActorId);
 
         (first, second).ShouldBe((StateChange.Changed, StateChange.Unchanged));
     }
@@ -103,7 +103,7 @@ public class UserTests
     public void ReactivateUser_NotSuspended_ChangesNothing()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
         var first = user.Reactivate();
         var second = user.Reactivate();
@@ -241,7 +241,7 @@ public class UserTests
     public void DeleteUser_Suspended_IsDeletedToTheUserAndToAQuery()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, AdminId);
+        user.Suspend(Now, ActorId);
 
         user.Delete(Now);
 

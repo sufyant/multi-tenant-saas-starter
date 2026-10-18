@@ -25,27 +25,6 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
     public Guid? MessageTenantId =>
         messaging?.TenantId is { Length: > 0 } tenantId && tenantId != StorageConstants.DefaultTenantId ? Guid.Parse(tenantId) : null;
 
-    protected sealed override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        BuildModel(modelBuilder);
-
-        var tenantEntities = modelBuilder.Model.GetEntityTypes()
-            .Where(entity => entity.BaseType is null && typeof(ITenantEntity).IsAssignableFrom(entity.ClrType))
-            .ToList();
-
-        foreach (var entity in tenantEntities)
-        {
-            var builder = modelBuilder.Entity(entity.ClrType);
-            builder.Property<Guid>(TenantColumn.Property).HasDefaultValueSql(TenantColumn.CurrentTenantSql);
-
-            // A key that leads with the tenant column indexes it already.
-            if (entity.FindPrimaryKey()?.Properties[0].Name != TenantColumn.Property)
-            {
-                builder.HasIndex(TenantColumn.Property);
-            }
-        }
-    }
-
     /// <summary>
     /// Declares the tenant for the rest of the current transaction (R4), for a read outside a handler. Outside a transaction the
     /// setting would end with the statement, so it is refused; so is a transaction that has declared a user.
@@ -68,6 +47,27 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
             CurrentTransaction("A user is declared inside a transaction, never on the connection."),
             userId,
             cancellationToken);
+
+    protected sealed override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        BuildModel(modelBuilder);
+
+        var tenantEntities = modelBuilder.Model.GetEntityTypes()
+            .Where(entity => entity.BaseType is null && typeof(ITenantEntity).IsAssignableFrom(entity.ClrType))
+            .ToList();
+
+        foreach (var entity in tenantEntities)
+        {
+            var builder = modelBuilder.Entity(entity.ClrType);
+            builder.Property<Guid>(TenantColumn.Property).HasDefaultValueSql(TenantColumn.CurrentTenantSql);
+
+            // A key that leads with the tenant column indexes it already.
+            if (entity.FindPrimaryKey()?.Properties[0].Name != TenantColumn.Property)
+            {
+                builder.HasIndex(TenantColumn.Property);
+            }
+        }
+    }
 
     protected abstract void BuildModel(ModelBuilder modelBuilder);
 

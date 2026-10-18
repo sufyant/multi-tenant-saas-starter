@@ -12,9 +12,9 @@ namespace Api.IntegrationTests.RateLimiting;
 // request to an operation the limiter covers answers 429, and one to any other operation answers 401.
 public sealed partial class RetryAfterDocumentTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {

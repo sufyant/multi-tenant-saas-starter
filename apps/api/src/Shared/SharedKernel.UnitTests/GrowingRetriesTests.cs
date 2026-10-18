@@ -1,6 +1,6 @@
 namespace SharedKernel.UnitTests;
 
-public class GrowingRetriesTests
+public sealed class GrowingRetriesTests
 {
     [Fact]
     public void SplitRetries_PausesBelowAndFromAMinute_AreInlineThenScheduled()

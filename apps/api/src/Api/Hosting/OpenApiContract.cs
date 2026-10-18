@@ -30,15 +30,74 @@ namespace Api.Hosting;
 internal static partial class OpenApiContract
 {
     private const string BearerScheme = "bearer";
+
     private const string PermissionSchema = "Permission";
+
     private const string PermissionsMember = "permissions";
+
     private const string AuditOperationSchema = "AuditOperation";
+
     private const string AuditOperationsClass = "AuditOperations";
+
     private const string OperationMember = "operation";
 
     // An idempotent operation replays a saved result: its success or a business rejection. A request that failed validation (400) or
     // authentication (401) saves none (I5, I6).
     private static readonly string[] NeverReplayed = ["400", "401"];
+
+    // How the document declares each header of ResponseHeaders. A header without a declaration here throws, so the build fails.
+    private static readonly Dictionary<string, Action<OpenApiOperation>> HeaderDescriptions = new(StringComparer.Ordinal)
+    {
+        [IdempotencyExecutor.ReplayedHeader] = DescribeReplayed,
+        [HeaderNames.Location] = DescribeLocation,
+        [HeaderNames.RetryAfter] = DescribeRetryAfter,
+    };
+
+    // The host's assembly and each assembly it references, directly or not, that references SharedKernel: only such an assembly can
+    // declare an error code, the audit operations or a command's validator, and each module's Domain and Application project is one.
+    // The search starts at the host and follows only those references.
+    private static IReadOnlyList<Assembly> AssembliesThatReachSharedKernel { get; } = FindAssembliesThatReachSharedKernel();
+
+    // The validator of each command, by the name of the request that carries the command: the validator of XCommand describes XRequest
+    // (N8). A command's validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project
+    // does.
+    private static Dictionary<string, Type> RequestValidators { get; } = AssembliesThatReachSharedKernel
+        .SelectMany(assembly => assembly.GetTypes())
+        .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+        .ToDictionary(type => RequestOf(type.BaseType!.GetGenericArguments()[0]), StringComparer.Ordinal);
+
+    // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
+    // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.
+    private static IReadOnlyList<string> DeclaredErrorCodes { get; } =
+    [
+        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: true, IsSealed: true } && type.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            .Where(field => field.FieldType == typeof(ErrorCode))
+            .Select(field => ((ErrorCode)field.GetValue(null)!).Value)
+            .Distinct()
+            .Order(StringComparer.Ordinal),
+    ];
+
+    // K3: Audit declares the operation of every audit entry once, in Audit.Domain's AuditOperations. The host does not reference a
+    // Domain project (section 2), so it finds the class by its name, as it finds the error codes. OpenApiContractTests checks the enum.
+    private static IReadOnlyList<string> DeclaredAuditOperations { get; } =
+    [
+        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: AuditOperationsClass })
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal),
+    ];
+
+    private static IReadOnlyList<string> ListedPermissions { get; } =
+    [
+        .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal),
+    ];
 
     public static IServiceCollection AddApiContract(this IServiceCollection services) =>
         services
@@ -222,14 +281,6 @@ internal static partial class OpenApiContract
         });
         return Task.CompletedTask;
     }
-
-    // How the document declares each header of ResponseHeaders. A header without a declaration here throws, so the build fails.
-    private static readonly Dictionary<string, Action<OpenApiOperation>> HeaderDescriptions = new(StringComparer.Ordinal)
-    {
-        [IdempotencyExecutor.ReplayedHeader] = DescribeReplayed,
-        [HeaderNames.Location] = DescribeLocation,
-        [HeaderNames.RetryAfter] = DescribeRetryAfter,
-    };
 
     // The response headers an operation's metadata makes the host send, from the one map that the CORS policy reads too
     // (ResponseHeaders). Each header is declared on the answers that carry it.
@@ -447,11 +498,6 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // The host's assembly and each assembly it references, directly or not, that references SharedKernel: only such an assembly can
-    // declare an error code, the audit operations or a command's validator, and each module's Domain and Application project is one.
-    // The search starts at the host and follows only those references.
-    private static IReadOnlyList<Assembly> AssembliesThatReachSharedKernel { get; } = FindAssembliesThatReachSharedKernel();
-
     private static List<Assembly> FindAssembliesThatReachSharedKernel()
     {
         var kernel = typeof(ErrorCode).Assembly.GetName().Name;
@@ -478,42 +524,9 @@ internal static partial class OpenApiContract
         return found;
     }
 
-    // The validator of each command, by the name of the request that carries the command: the validator of XCommand describes XRequest
-    // (N8). A command's validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project
-    // does.
-    private static Dictionary<string, Type> RequestValidators { get; } = AssembliesThatReachSharedKernel
-        .SelectMany(assembly => assembly.GetTypes())
-        .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
-        .ToDictionary(type => RequestOf(type.BaseType!.GetGenericArguments()[0]), StringComparer.Ordinal);
-
     // N8: a command is named {Action}Command, and the request that carries it {Action}Request.
     private static string RequestOf(Type command) =>
         $"{(command.Name.EndsWith("Command", StringComparison.Ordinal) ? command.Name[..^"Command".Length] : command.Name)}Request";
-
-    // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
-    // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.
-    private static IReadOnlyList<string> DeclaredErrorCodes { get; } =
-    [
-        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
-            .Where(type => type is { IsAbstract: true, IsSealed: true } && type.Name.EndsWith("ErrorCodes", StringComparison.Ordinal))
-            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-            .Where(field => field.FieldType == typeof(ErrorCode))
-            .Select(field => ((ErrorCode)field.GetValue(null)!).Value)
-            .Distinct()
-            .Order(StringComparer.Ordinal),
-    ];
-
-    // K3: Audit declares the operation of every audit entry once, in Audit.Domain's AuditOperations. The host does not reference a
-    // Domain project (section 2), so it finds the class by its name, as it finds the error codes. OpenApiContractTests checks the enum.
-    private static IReadOnlyList<string> DeclaredAuditOperations { get; } =
-    [
-        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
-            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: AuditOperationsClass })
-            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
-            .Where(field => field.IsLiteral)
-            .Select(field => (string)field.GetRawConstantValue()!)
-            .Order(StringComparer.Ordinal),
-    ];
 
     // The operations of both audit logs are one enum in the document, so a client has a type for them and hears of a new one. A
     // response keeps the operation as a string, so each field that holds one, a field named operation, refers to the enum
@@ -556,14 +569,6 @@ internal static partial class OpenApiContract
 
         return Task.CompletedTask;
     }
-
-    private static IReadOnlyList<string> ListedPermissions { get; } =
-    [
-        .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(field => field.IsLiteral)
-            .Select(field => (string)field.GetRawConstantValue()!)
-            .Order(StringComparer.Ordinal),
-    ];
 
     private static OpenApiSchema EnumSchema(IReadOnlyList<string> values, string description) =>
         new() { Type = JsonSchemaType.String, Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))], Description = description };

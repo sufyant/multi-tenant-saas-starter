@@ -21,7 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var userCatalog = new ControlPlane.Infrastructure.Persistence.UserCatalog(controlPlaneDbContext);
+            var userQueries = new ControlPlane.Infrastructure.Persistence.Users.UserQueries(controlPlaneDbContext);
             // The actual message body
             var getUserQuery = (ControlPlane.Application.Users.GetUser.GetUserQuery)context.Envelope.Message;
 
@@ -42,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.GetUser.UserDetailView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Users.GetUser.GetUserHandler.HandleAsync(getUserQuery, userCatalog, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Users.GetUser.GetUserHandler.HandleAsync(getUserQuery, userQueries, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

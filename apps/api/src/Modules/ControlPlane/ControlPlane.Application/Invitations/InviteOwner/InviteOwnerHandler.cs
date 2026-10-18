@@ -1,6 +1,7 @@
 using ControlPlane.Application.Invitations.OpenMemberSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -20,27 +21,28 @@ public static class InviteOwnerHandler
 {
     public static async Task<(Result<InvitationView>, OwnerInvitedEvent?, OpenMemberSignUpCommand?, OutgoingMessages)> HandleAsync(
         InviteOwnerCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         InvitationOptions invitations,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        if (await catalog.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
+        if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
         {
             return (Errors.TenantNotFound, null, null, []);
         }
 
-        var allowed = tenant.CheckOwnerInvitation(await catalog.CountOwnersAsync(cancellationToken));
+        var allowed = tenant.CheckOwnerInvitation(await tenants.CountOwnersAsync(cancellationToken));
         if (!allowed.IsSuccess)
         {
             return (allowed.Error, null, null, []);
         }
 
-        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a catalog user.");
 
         var withdrawals = new OutgoingMessages();
-        var replaced = await catalog.FindPendingInvitationsAsync(cancellationToken);
+        var replaced = await tenants.FindPendingInvitationsAsync(cancellationToken);
         foreach (var pending in replaced)
         {
             pending.Cancel();
@@ -50,7 +52,7 @@ public static class InviteOwnerHandler
             }
         }
 
-        await catalog.SaveChangesAsync(cancellationToken);
+        await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
         var secret = InvitationSecret.Generate();
@@ -64,9 +66,9 @@ public static class InviteOwnerHandler
             invitations.Lifetime,
             secret,
             command.Language ?? actor.Language);
-        catalog.Add(invitation);
-        tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
-        await catalog.SaveChangesAsync(cancellationToken);
+        tenants.Add(invitation);
+        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        await tenants.SaveChangesAsync(cancellationToken);
 
         return (
             InvitationView.Of(invitation, actor, now),

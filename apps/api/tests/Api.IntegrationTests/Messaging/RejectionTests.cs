@@ -18,10 +18,11 @@ namespace Api.IntegrationTests.Messaging;
 // handlers that return a Result rejects before it changes anything: a rejected command leaves no row and sends no message.
 public sealed class RejectionTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -134,6 +135,10 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         session.Sent.AllMessages().ShouldBeEmpty();
     }
 
+    private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
+
+    private static string Email() => $"{Guid.NewGuid():N}@example.com";
+
     private IMessageBus Bus() => _api.Services.GetRequiredService<IHost>().MessageBus();
 
     private async Task<(T Result, ITrackedSession Session)> InvokeForTenantAsync<T>(Guid tenantId, object command)
@@ -160,8 +165,4 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
     private Task<long> PendingInvitationsAsync(Guid tenantId) =>
         database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM control_plane.invitations WHERE status = 'Pending'");
-
-    private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
-
-    private static string Email() => $"{Guid.NewGuid():N}@example.com";
 }

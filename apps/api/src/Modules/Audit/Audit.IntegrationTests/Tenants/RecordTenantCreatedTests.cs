@@ -10,9 +10,9 @@ namespace Audit.IntegrationTests.Tenants;
 // platform's log by the system admin, and in the tenant's own log by the platform, with no person in it (K3).
 public sealed class RecordTenantCreatedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordTenantCreated_TenantActivated_WritesThePlatformEntryByTheAdmin()

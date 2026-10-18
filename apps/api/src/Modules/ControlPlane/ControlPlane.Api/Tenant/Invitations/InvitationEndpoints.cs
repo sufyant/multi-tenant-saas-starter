@@ -35,6 +35,20 @@ public static class InvitationEndpoints
         tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete);
     }
 
+    // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
+    internal static InvitationResponse ToResponse(InvitationView invitation) => new(
+        invitation.Id,
+        invitation.Email,
+        MemberEndpoints.ToResponse(invitation.Role),
+        invitation.InvitedBy,
+        ToResponse(invitation.InvitedByName),
+        invitation.CreatedAt,
+        invitation.ExpiresAt,
+        ResponseStatus.OfInvitation(invitation.State));
+
+    // The platform's user detail names the system admin who suspended a user in the same shape (N7).
+    internal static UserNameResponse ToResponse(UserNameView name) => new(name.FirstName, name.LastName, name.Deleted);
+
     // The invitation runs inside the tenant of the route, which the tenant door has proved, under the request's idempotency key (I1).
     // The server chooses the invitation's id. The endpoint declares 201, so the host answers a new invitation with 201, and a replayed
     // request maps its saved result the same way (I5).
@@ -80,18 +94,4 @@ public static class InvitationEndpoints
     // Revoking sets a state, so it takes no idempotency key (I1): a second request answers 204 too.
     private static async Task<Result> RevokeInvitation(Guid invitationId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         await bus.InvokeAsync<Result>(new RevokeInvitationCommand(user.Id(), invitationId), cancellationToken);
-
-    // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
-    internal static InvitationResponse ToResponse(InvitationView invitation) => new(
-        invitation.Id,
-        invitation.Email,
-        MemberEndpoints.ToResponse(invitation.Role),
-        invitation.InvitedBy,
-        ToResponse(invitation.InvitedByName),
-        invitation.CreatedAt,
-        invitation.ExpiresAt,
-        ResponseStatus.OfInvitation(invitation.State));
-
-    // The platform's user detail names the system admin who suspended a user in the same shape (N7).
-    internal static UserNameResponse ToResponse(UserNameView name) => new(name.FirstName, name.LastName, name.Deleted);
 }

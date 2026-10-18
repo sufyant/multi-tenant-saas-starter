@@ -6,9 +6,9 @@ namespace Api.IntegrationTests.Authorization;
 [RuntimeHandlerCode]
 public sealed class UnstatedAccessTests : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private PipelineHost _host = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
 

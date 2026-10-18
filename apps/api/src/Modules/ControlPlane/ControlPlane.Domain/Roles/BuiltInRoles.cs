@@ -8,14 +8,6 @@ namespace ControlPlane.Domain.Roles;
 /// </summary>
 internal static class BuiltInRoles
 {
-    public static Role Owner { get; } = Role.CreateBuiltIn(new("00000000-0000-7000-8000-000000000001"), BuiltInRole.Owner);
-
-    public static Role Admin { get; } = Role.CreateBuiltIn(new("00000000-0000-7000-8000-000000000002"), BuiltInRole.Admin);
-
-    public static Role Member { get; } = Role.CreateBuiltIn(new("00000000-0000-7000-8000-000000000003"), BuiltInRole.Member);
-
-    public static IReadOnlyList<Role> All { get; } = [Owner, Admin, Member];
-
     private static readonly FrozenSet<string> OwnerPermissions = PermissionPools.TenantPool.ToFrozenSet(StringComparer.Ordinal);
 
     // Admins hold what owners hold: the tenant pool has no permission that is the owners' alone.
@@ -26,6 +18,14 @@ internal static class BuiltInRoles
         StringComparer.Ordinal,
         PermissionPools.TenantMembersRead,
         PermissionPools.TenantProfileRead);
+
+    public static Role Owner { get; } = Role.CreateBuiltIn(new("00000000-0000-7000-8000-000000000001"), BuiltInRole.Owner);
+
+    public static Role Admin { get; } = Role.CreateBuiltIn(new("00000000-0000-7000-8000-000000000002"), BuiltInRole.Admin);
+
+    public static Role Member { get; } = Role.CreateBuiltIn(new("00000000-0000-7000-8000-000000000003"), BuiltInRole.Member);
+
+    public static IReadOnlyList<Role> All { get; } = [Owner, Admin, Member];
 
     public static IReadOnlySet<string> PermissionsOf(BuiltInRole role) => role switch
     {

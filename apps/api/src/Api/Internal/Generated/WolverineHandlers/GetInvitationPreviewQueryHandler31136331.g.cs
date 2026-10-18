@@ -24,7 +24,9 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
+            var userQueries = new ControlPlane.Infrastructure.Persistence.Users.UserQueries(controlPlaneDbContext);
+            var invitationQueries = new ControlPlane.Infrastructure.Persistence.Invitations.InvitationQueries(controlPlaneDbContext);
+            var tenantQueries = new ControlPlane.Infrastructure.Persistence.Tenants.TenantQueries(controlPlaneDbContext);
             // The actual message body
             var getInvitationPreviewQuery = (ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewQuery)context.Envelope.Message;
 
@@ -45,7 +47,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Invitations.GetInvitationPreview.InvitationPreviewView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewHandler.HandleAsync(getInvitationPreviewQuery, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewHandler.HandleAsync(getInvitationPreviewQuery, tenantQueries, invitationQueries, userQueries, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

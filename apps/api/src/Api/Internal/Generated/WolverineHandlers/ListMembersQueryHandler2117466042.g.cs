@@ -21,7 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
+            var memberQueries = new ControlPlane.Infrastructure.Persistence.Members.MemberQueries(controlPlaneDbContext);
             // The actual message body
             var listMembersQuery = (ControlPlane.Application.Members.ListMembers.ListMembersQuery)context.Envelope.Message;
 
@@ -42,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.ListPage<ControlPlane.Application.Members.MemberView>, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Members.ListMembers.ListMembersHandler.HandleAsync(listMembersQuery, tenantCatalog, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Members.ListMembers.ListMembersHandler.HandleAsync(listMembersQuery, memberQueries, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

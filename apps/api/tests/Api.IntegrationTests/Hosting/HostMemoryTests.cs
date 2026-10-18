@@ -25,6 +25,15 @@ public sealed class HostMemoryTests(Database database)
         perHost.ShouldBeLessThan(LimitPerHost, $"Each stopped host kept {perHost / 1024 / 1024} MB of resident memory.");
     }
 
+    private static long ResidentMemoryAfterACollection()
+    {
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        using var process = Process.GetCurrentProcess();
+        return process.WorkingSet64;
+    }
+
     // Each host handles a command and the event it announces, as most tests do, and stops.
     private async Task RunHostsAsync(int count)
     {
@@ -37,14 +46,5 @@ public sealed class HostMemoryTests(Database database)
 
             await api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id));
         }
-    }
-
-    private static long ResidentMemoryAfterACollection()
-    {
-        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-        GC.WaitForPendingFinalizers();
-        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-        using var process = Process.GetCurrentProcess();
-        return process.WorkingSet64;
     }
 }

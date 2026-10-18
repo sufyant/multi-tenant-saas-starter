@@ -12,167 +12,19 @@ using Wolverine.Util;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// One web host and two workers on one database of their own, as the roles run in a deployment (section 1, W5). Each host knows its
-// own name, and all three share the test's probes: the record of handler runs, the handlings table and the hold on a first caller.
-internal sealed class TwoWorkers : IAsyncDisposable
+public static class RecordHandlingHandler
 {
-    public const string First = "worker-1";
-    public const string Second = "worker-2";
+    public static Task Handle(RecordHandling message, Handlings handlings, HostName host, CancellationToken cancellationToken) =>
+        handlings.RecordAsync(message.Id, host.Name, cancellationToken);
+}
 
-    private readonly Database _database;
-    private readonly Dictionary<string, ApiFactory> _workers;
-
-    private TwoWorkers(Database database, string databaseName)
+public static class RecordHandlingThenHoldHandler
+{
+    public static async Task Handle(
+        RecordHandlingThenHold message, Handlings handlings, HoldFirstCaller hold, HostName host, CancellationToken cancellationToken)
     {
-        _database = database;
-        DatabaseName = databaseName;
-        Handlings = new Handlings(database.ConnectionStringFor(DatabaseRoles.Application, databaseName));
-        Web = Host("web", "web");
-        _workers = new() { [First] = Host(First, "worker"), [Second] = Host(Second, "worker") };
-    }
-
-    public string DatabaseName { get; }
-
-    public ApiFactory Web { get; }
-
-    public HandlerRuns Runs { get; } = new();
-
-    public Handlings Handlings { get; }
-
-    public HoldFirstCaller Hold { get; } = new();
-
-    public FakeEmailChannel Email { get; } = new();
-
-    public static async Task<TwoWorkers> StartAsync(Database database)
-    {
-        var name = await database.CreateMigratedDatabaseAsync();
-        await database.ScalarAsSuperuserAsync<object>(Handlings.CreateTable, name);
-        var workers = new TwoWorkers(database, name);
-
-        // The web host leads the cluster: the case in which the workers' durability agents are assigned by a node that runs none.
-        _ = workers.Web.Services;
-        await Waiting.UntilAsync(async () => await database.ScalarAsSuperuserAsync<long>(
-            "SELECT count(*) FROM wolverine.wolverine_node_assignments WHERE id = 'wolverine://leader/'", name) == 1);
-        foreach (var worker in workers._workers.Values)
-        {
-            _ = worker.Services;
-        }
-
-        return workers;
-    }
-
-    // The node a worker registered as in Wolverine's node table.
-    public Guid NodeOf(string worker) => _workers[worker].Services.GetRequiredService<IWolverineRuntime>().Options.UniqueNodeId;
-
-    // The node that runs the durability agent of the message store, once the leader has assigned it.
-    public async Task<Guid> DurabilityAgentNodeAsync()
-    {
-        await Waiting.UntilAsync(async () => await _database.ScalarAsSuperuserAsync<long>(
-            "SELECT count(*) FROM wolverine.wolverine_node_assignments WHERE id LIKE 'wolverinedb://%'", DatabaseName) == 1);
-        return (await _database.ScalarAsSuperuserAsync<Guid>(
-            "SELECT node_id FROM wolverine.wolverine_node_assignments WHERE id LIKE 'wolverinedb://%'", DatabaseName));
-    }
-
-    // The worker that is not the given one.
-    public string Survivor(string worker) => _workers.Keys.Single(name => name != worker);
-
-    public async Task SendFromWebAsync(IEnumerable<object> messages)
-    {
-        await using var scope = Web.Services.CreateAsyncScope();
-        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        foreach (var message in messages)
-        {
-            await bus.SendAsync(message);
-        }
-    }
-
-    // Kills the worker as closely as Wolverine allows inside one process: its quick stop mode skips draining, skips releasing the node's
-    // ownership of its messages and stops its heartbeat. Disposing the host then stops its listeners without waiting for the handler in
-    // flight, drops the receiver that would mark that handler's message as handled, and closes its connections, so its advisory locks
-    // go as a dead process's would. The handler in flight never returns.
-    public async Task CrashAsync(string worker)
-    {
-        ((WolverineRuntime)_workers[worker].Services.GetRequiredService<IWolverineRuntime>()).StopMode = StopMode.Quick;
-        await _workers[worker].DisposeAsync();
-    }
-
-    // Waits until the inbox shows the given number of messages of the type as handled, so no host will run any of them again.
-    public Task WaitForHandledAsync<TMessage>(int count) => Waiting.UntilAsync(async () => await _database.ScalarAsSuperuserAsync<long>(
-        $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).ToMessageTypeName()}'",
-        DatabaseName) == count);
-
-    public Task WaitForSagaStateAsync(Guid tenantId, string state) =>
-        Waiting.UntilAsync(async () => await SagaStateAsync(tenantId) == state);
-
-    public Task<string?> SagaStateAsync(Guid tenantId) =>
-        _database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", DatabaseName);
-
-    public Task<long> DeadLettersAsync() =>
-        _database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM wolverine.wolverine_dead_letters", DatabaseName);
-
-    public Task<string> AddSystemAdminAsync() => AddSystemAdminAsync(_database, DatabaseName);
-
-    // A system admin in the database's system admin list, by the user's external id.
-    public static async Task<string> AddSystemAdminAsync(Database database, string databaseName)
-    {
-        var externalId = $"user_{Guid.NewGuid():N}";
-        await database.ScalarAsSuperuserAsync<object>(
-            $"""
-            INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', '{externalId}', 'en');
-            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}';
-            """,
-            databaseName);
-
-        return externalId;
-    }
-
-    public static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
-        (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetGuid();
-
-    public async ValueTask DisposeAsync()
-    {
-        foreach (var worker in _workers.Values)
-        {
-            await worker.DisposeAsync();
-        }
-
-        await Web.DisposeAsync();
-    }
-
-    private ApiFactory Host(string name, string role) => new(
-        _database.ConnectionStringFor(DatabaseRoles.Application, DatabaseName),
-        settings: new Dictionary<string, string?> { ["Host:Role"] = role },
-        configureServices: services =>
-        {
-            HandlerRunsOfHost.Register(name, Runs)(services);
-            services.AddSingleton(new HostName(name));
-            services.AddSingleton(Handlings);
-            services.AddSingleton(Hold);
-            services.Replace(ServiceDescriptor.Singleton<IEmailChannel>(new EmailChannelOfHost(name, Hold, Email)));
-            services.ConfigureWolverine(options =>
-            {
-                options.Discovery.IncludeType(typeof(RecordHandlingHandler));
-                options.Discovery.IncludeType(typeof(RecordHandlingThenHoldHandler));
-                ShortenNodeTimings(options.Durability);
-            });
-        });
-
-    // Wolverine's defaults notice a dead node after a minute and look for messages without a live owner every five seconds. A test
-    // waits for both, so they are shortened here; the order of events stays the same.
-    private static void ShortenNodeTimings(DurabilitySettings durability)
-    {
-        // How often a node writes its heartbeat and looks for nodes whose heartbeat is too old (10 s), and when it first does (3 s).
-        durability.HealthCheckPollingTime = TimeSpan.FromSeconds(1);
-        durability.FirstHealthCheckExecution = TimeSpan.Zero;
-
-        // How old a heartbeat may be before its node counts as dead (1 min). Another node removes a dead node, and releases the
-        // messages it owned, after seeing it dead on two health checks in a row.
-        durability.StaleNodeTimeout = TimeSpan.FromSeconds(3);
-
-        // How often the durability agent takes over messages that no live node owns (5 s), and when it first does (0.5 to 5 s).
-        durability.ScheduledJobPollingTime = TimeSpan.FromSeconds(1);
-        durability.ScheduledJobFirstExecution = TimeSpan.Zero;
-        durability.OrphanedMessageSweepPollingTime = TimeSpan.FromSeconds(1);
+        await handlings.RecordOnceAsync(message.Id, host.Name, cancellationToken);
+        await hold.PassAsync(host.Name);
     }
 }
 
@@ -252,6 +104,178 @@ public sealed class HoldFirstCaller
     }
 }
 
+// Test messages for the workers. Wolverine discovers only public handlers and messages.
+public sealed record RecordHandling(Guid Id);
+
+// Records its handling, then its first run is held: the worker dies after the effect and before the message is marked as handled.
+public sealed record RecordHandlingThenHold(Guid Id);
+
+// One web host and two workers on one database of their own, as the roles run in a deployment (section 1, W5). Each host knows its
+// own name, and all three share the test's probes: the record of handler runs, the handlings table and the hold on a first caller.
+internal sealed class TwoWorkers : IAsyncDisposable
+{
+    public const string First = "worker-1";
+
+    public const string Second = "worker-2";
+
+    private readonly Database _database;
+
+    private readonly Dictionary<string, ApiFactory> _workers;
+
+    private TwoWorkers(Database database, string databaseName)
+    {
+        _database = database;
+        DatabaseName = databaseName;
+        Handlings = new Handlings(database.ConnectionStringFor(DatabaseRoles.Application, databaseName));
+        Web = Host("web", "web");
+        _workers = new() { [First] = Host(First, "worker"), [Second] = Host(Second, "worker") };
+    }
+
+    public string DatabaseName { get; }
+
+    public ApiFactory Web { get; }
+
+    public HandlerRuns Runs { get; } = new();
+
+    public Handlings Handlings { get; }
+
+    public HoldFirstCaller Hold { get; } = new();
+
+    public FakeEmailChannel Email { get; } = new();
+
+    public static async Task<TwoWorkers> StartAsync(Database database)
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await database.ScalarAsSuperuserAsync<object>(Handlings.CreateTable, name);
+        var workers = new TwoWorkers(database, name);
+
+        // The web host leads the cluster: the case in which the workers' durability agents are assigned by a node that runs none.
+        _ = workers.Web.Services;
+        await Waiting.UntilAsync(async () => await database.ScalarAsSuperuserAsync<long>(
+            "SELECT count(*) FROM wolverine.wolverine_node_assignments WHERE id = 'wolverine://leader/'", name) == 1);
+        foreach (var worker in workers._workers.Values)
+        {
+            _ = worker.Services;
+        }
+
+        return workers;
+    }
+
+    // A system admin in the database's system admin list, by the user's external id.
+    public static async Task<string> AddSystemAdminAsync(Database database, string databaseName)
+    {
+        var externalId = $"user_{Guid.NewGuid():N}";
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', '{externalId}', 'en');
+            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}';
+            """,
+            databaseName);
+
+        return externalId;
+    }
+
+    public static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
+        (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetGuid();
+
+    // The node a worker registered as in Wolverine's node table.
+    public Guid NodeOf(string worker) => _workers[worker].Services.GetRequiredService<IWolverineRuntime>().Options.UniqueNodeId;
+
+    // The node that runs the durability agent of the message store, once the leader has assigned it.
+    public async Task<Guid> DurabilityAgentNodeAsync()
+    {
+        await Waiting.UntilAsync(async () => await _database.ScalarAsSuperuserAsync<long>(
+            "SELECT count(*) FROM wolverine.wolverine_node_assignments WHERE id LIKE 'wolverinedb://%'", DatabaseName) == 1);
+        return (await _database.ScalarAsSuperuserAsync<Guid>(
+            "SELECT node_id FROM wolverine.wolverine_node_assignments WHERE id LIKE 'wolverinedb://%'", DatabaseName));
+    }
+
+    // The worker that is not the given one.
+    public string Survivor(string worker) => _workers.Keys.Single(name => name != worker);
+
+    public async Task SendFromWebAsync(IEnumerable<object> messages)
+    {
+        await using var scope = Web.Services.CreateAsyncScope();
+        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        foreach (var message in messages)
+        {
+            await bus.SendAsync(message);
+        }
+    }
+
+    // Kills the worker as closely as Wolverine allows inside one process: its quick stop mode skips draining, skips releasing the node's
+    // ownership of its messages and stops its heartbeat. Disposing the host then stops its listeners without waiting for the handler in
+    // flight, drops the receiver that would mark that handler's message as handled, and closes its connections, so its advisory locks
+    // go as a dead process's would. The handler in flight never returns.
+    public async Task CrashAsync(string worker)
+    {
+        ((WolverineRuntime)_workers[worker].Services.GetRequiredService<IWolverineRuntime>()).StopMode = StopMode.Quick;
+        await _workers[worker].DisposeAsync();
+    }
+
+    // Waits until the inbox shows the given number of messages of the type as handled, so no host will run any of them again.
+    public Task WaitForHandledAsync<TMessage>(int count) => Waiting.UntilAsync(async () => await _database.ScalarAsSuperuserAsync<long>(
+        $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).ToMessageTypeName()}'",
+        DatabaseName) == count);
+
+    public Task WaitForSagaStateAsync(Guid tenantId, string state) =>
+        Waiting.UntilAsync(async () => await SagaStateAsync(tenantId) == state);
+
+    public Task<string?> SagaStateAsync(Guid tenantId) =>
+        _database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", DatabaseName);
+
+    public Task<long> DeadLettersAsync() =>
+        _database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM wolverine.wolverine_dead_letters", DatabaseName);
+
+    public Task<string> AddSystemAdminAsync() => AddSystemAdminAsync(_database, DatabaseName);
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var worker in _workers.Values)
+        {
+            await worker.DisposeAsync();
+        }
+
+        await Web.DisposeAsync();
+    }
+
+    // Wolverine's defaults notice a dead node after a minute and look for messages without a live owner every five seconds. A test
+    // waits for both, so they are shortened here; the order of events stays the same.
+    private static void ShortenNodeTimings(DurabilitySettings durability)
+    {
+        // How often a node writes its heartbeat and looks for nodes whose heartbeat is too old (10 s), and when it first does (3 s).
+        durability.HealthCheckPollingTime = TimeSpan.FromSeconds(1);
+        durability.FirstHealthCheckExecution = TimeSpan.Zero;
+
+        // How old a heartbeat may be before its node counts as dead (1 min). Another node removes a dead node, and releases the
+        // messages it owned, after seeing it dead on two health checks in a row.
+        durability.StaleNodeTimeout = TimeSpan.FromSeconds(3);
+
+        // How often the durability agent takes over messages that no live node owns (5 s), and when it first does (0.5 to 5 s).
+        durability.ScheduledJobPollingTime = TimeSpan.FromSeconds(1);
+        durability.ScheduledJobFirstExecution = TimeSpan.Zero;
+        durability.OrphanedMessageSweepPollingTime = TimeSpan.FromSeconds(1);
+    }
+
+    private ApiFactory Host(string name, string role) => new(
+        _database.ConnectionStringFor(DatabaseRoles.Application, DatabaseName),
+        settings: new Dictionary<string, string?> { ["Host:Role"] = role },
+        configureServices: services =>
+        {
+            HandlerRunsOfHost.Register(name, Runs)(services);
+            services.AddSingleton(new HostName(name));
+            services.AddSingleton(Handlings);
+            services.AddSingleton(Hold);
+            services.Replace(ServiceDescriptor.Singleton<IEmailChannel>(new EmailChannelOfHost(name, Hold, Email)));
+            services.ConfigureWolverine(options =>
+            {
+                options.Discovery.IncludeType(typeof(RecordHandlingHandler));
+                options.Discovery.IncludeType(typeof(RecordHandlingThenHoldHandler));
+                ShortenNodeTimings(options.Durability);
+            });
+        });
+}
+
 // Each host's email channel: the first send is held, the others go to the email service all hosts share.
 internal sealed class EmailChannelOfHost(string host, HoldFirstCaller hold, FakeEmailChannel email) : IEmailChannel
 {
@@ -259,27 +283,5 @@ internal sealed class EmailChannelOfHost(string host, HoldFirstCaller hold, Fake
     {
         await hold.PassAsync(host);
         await email.SendAsync(message, cancellationToken);
-    }
-}
-
-// Test messages for the workers. Wolverine discovers only public handlers and messages.
-public sealed record RecordHandling(Guid Id);
-
-public static class RecordHandlingHandler
-{
-    public static Task Handle(RecordHandling message, Handlings handlings, HostName host, CancellationToken cancellationToken) =>
-        handlings.RecordAsync(message.Id, host.Name, cancellationToken);
-}
-
-// Records its handling, then its first run is held: the worker dies after the effect and before the message is marked as handled.
-public sealed record RecordHandlingThenHold(Guid Id);
-
-public static class RecordHandlingThenHoldHandler
-{
-    public static async Task Handle(
-        RecordHandlingThenHold message, Handlings handlings, HoldFirstCaller hold, HostName host, CancellationToken cancellationToken)
-    {
-        await handlings.RecordOnceAsync(message.Id, host.Name, cancellationToken);
-        await hold.PassAsync(host.Name);
     }
 }

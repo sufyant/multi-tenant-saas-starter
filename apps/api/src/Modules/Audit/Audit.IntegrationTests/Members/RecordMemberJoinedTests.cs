@@ -8,9 +8,9 @@ namespace Audit.IntegrationTests.Members;
 // The Audit module records a new member in the tenant's own log, under that tenant: the user who joined acted, and is the target.
 public sealed class RecordMemberJoinedTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 15, 9, 0, 0, TimeSpan.Zero);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task RecordMemberJoined_MemberJoined_WritesTheTenantEntryByTheNewMember()

@@ -4,7 +4,7 @@ namespace Api.ArchitectureTests;
 
 // Wolverine discovers only public handlers, and its FluentValidation middleware only public validators. A non-public one is
 // skipped without an error: a handler never receives its messages, and a validator's rules never run.
-public class WolverineVisibilityTests
+public sealed class WolverineVisibilityTests
 {
     public static TheoryData<string> Modules => [.. Solution.Modules];
 

@@ -5,7 +5,7 @@ namespace Api.ArchitectureTests;
 
 // Audit B15: railway.ts and the deploy scripts read the management port and the health path from .railway/api.json, and the
 // Dockerfile exposes the port. The host owns both values, so a copy that drifted would fail only at the deploy's health check.
-public class InfrastructureValueTests
+public sealed class InfrastructureValueTests
 {
     [Fact]
     public void RailwayInfrastructure_PortAndHealthPath_AreTheHostsOwn()

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
@@ -10,10 +9,11 @@ namespace Api.IntegrationTests.Tenant;
 // find it in their list of tenants, and a reopening lets them in again.
 public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -28,7 +28,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     {
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await (await AdminAsync()).CloseTenantAsync(tenant.Id);
+        await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -44,7 +44,7 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         var tenant = await _catalog.AddTenantAsync();
         await _catalog.AddMemberAsync(tenant.Id);
         var stranger = _api.CreateClient(await _catalog.AddUserAsync());
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
 
         var response = await stranger.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -56,28 +56,12 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         (await ProblemBodies.WithoutTraceIdAsync(response)).ShouldBe(handlers);
     }
 
-    // T4: a member still finds a closed tenant in their list, with its status, as a suspended one.
-    [Fact]
-    public async Task ListMyTenants_MemberOfAClosedTenant_ListsItAsClosed()
-    {
-        var tenant = await _catalog.AddTenantAsync(name: "Closed Ltd");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
-        await (await AdminAsync()).CloseTenantAsync(tenant.Id);
-
-        var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
-
-        var listed = page.GetProperty("items").EnumerateArray()
-            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("name").GetString(), item.GetProperty("status").GetString()));
-        listed.ShouldBe([(tenant.Id, "Closed Ltd", "closed")]);
-        page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
-    }
-
     [Fact]
     public async Task EnterTenant_MemberAfterReopening_GetsIn()
     {
         var tenant = await _catalog.AddTenantAsync();
         var member = await _catalog.AddMemberAsync(tenant.Id);
-        var admin = await AdminAsync();
+        var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
         (await admin.ReopenTenantAsync(tenant.Id)).EnsureSuccessStatusCode();
 
@@ -86,8 +70,8 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
-
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
 }

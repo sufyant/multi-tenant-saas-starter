@@ -22,57 +22,12 @@ namespace Api.IntegrationTests.Fixtures;
 // module's tenant entity.
 public sealed class Database : IAsyncLifetime
 {
-    private const string Password = "test-password";
     public const string MainDatabase = "api";
-
-    // The tests run the application in many hosts at once, each with its own pools for requests and messages. The limit covers
-    // their worst case within the connection budget (section 9, rule 7).
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder(File.ReadAllText("postgres-image").Trim())
-        .WithDatabase(MainDatabase)
-        .WithCommand("-c", "max_connections=1800")
-        .Build();
-
-    private readonly SemaphoreSlim _bootstrap = new(1, 1);
-
-    public string ApplicationConnectionString => ConnectionStringFor(DatabaseRoles.Application);
-
-    public string OwnerConnectionString => ConnectionStringFor(DatabaseRoles.Owner);
-
-    public async ValueTask InitializeAsync()
-    {
-        await _container.StartAsync();
-        await _container.CopyAsync(await File.ReadAllBytesAsync("bootstrap.sql"), "/tmp/bootstrap.sql");
-        await RunBootstrapScriptAsync(MainDatabase);
-
-        await MigrateAsync(MainDatabase);
-        await CreateProbesAsync(MainDatabase);
-        _watch = WatchConnectionsAsync(_stopWatching.Token);
-    }
-
-    // Section 9, rule 7: the run fails when it held more connections at once than the budget, and names their owners.
-    public async ValueTask DisposeAsync()
-    {
-        // A start that failed before the watch began has no watch, and the container goes in any case.
-        await _stopWatching.CancelAsync();
-        (long Budget, long Peak, string Owners) watched;
-        try
-        {
-            watched = _watch is null ? (long.MaxValue, 0, "none") : await _watch;
-        }
-        finally
-        {
-            await _container.DisposeAsync();
-        }
-
-        var (budget, peak, owners) = watched;
-        peak.ShouldBeLessThanOrEqualTo(
-            budget,
-            $"The run held {peak} PostgreSQL connections at once, over its budget of {budget} ({ConnectionBudget:P0} of max_connections). " +
-            $"Owners at the peak: {owners}.");
-    }
 
     // The share of max_connections a run may hold at once (section 9, rule 7).
     public const double ConnectionBudget = 0.7;
+
+    private const string Password = "test-password";
 
     private const string OwnersQuery =
         """
@@ -83,65 +38,25 @@ public sealed class Database : IAsyncLifetime
         ORDER BY 2 DESC
         """;
 
+    // The tests run the application in many hosts at once, each with its own pools for requests and messages. The limit covers
+    // their worst case within the connection budget (section 9, rule 7).
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder(File.ReadAllText("postgres-image").Trim())
+        .WithDatabase(MainDatabase)
+        .WithCommand("-c", "max_connections=1800")
+        .Build();
+
+    private readonly SemaphoreSlim _bootstrap = new(1, 1);
+
     private readonly CancellationTokenSource _stopWatching = new();
+
     private Task<(long Budget, long Peak, string Owners)>? _watch;
 
-    // Counts the server's client connections every 100 ms on a connection of its own, and keeps the highest count. It opens that
-    // connection before the first test and keeps it to the end. The bursts it must see last half a second or more.
-    private async Task<(long Budget, long Peak, string Owners)> WatchConnectionsAsync(CancellationToken stop)
-    {
-        await using var connection = new NpgsqlConnection(
-            new NpgsqlConnectionStringBuilder(SuperuserConnectionString) { ApplicationName = "connection-watch" }.ConnectionString);
-        await connection.OpenAsync(CancellationToken.None);
-        await using var maxConnections = new NpgsqlCommand("SELECT current_setting('max_connections')::int", connection);
-        var budget = (long)((int)(await maxConnections.ExecuteScalarAsync(CancellationToken.None))! * ConnectionBudget);
+    public string ApplicationConnectionString => ConnectionStringFor(DatabaseRoles.Application);
 
-        (long Total, string Owners) peak = (0, "none");
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
-        try
-        {
-            while (await timer.WaitForNextTickAsync(stop))
-            {
-                List<(string Owner, long Count)> owners = [];
-                await using var command = new NpgsqlCommand(OwnersQuery, connection);
-                await using var reader = await command.ExecuteReaderAsync(CancellationToken.None);
-                while (await reader.ReadAsync(CancellationToken.None))
-                {
-                    owners.Add((reader.GetString(0), reader.GetInt64(1)));
-                }
+    public string OwnerConnectionString => ConnectionStringFor(DatabaseRoles.Owner);
 
-                var total = owners.Sum(owner => owner.Count);
-                if (total > peak.Total)
-                {
-                    peak = (total, string.Join(", ", owners.Take(15).Select(owner => $"{owner.Owner} {owner.Count}")));
-                }
-            }
-        }
-        catch (OperationCanceledException) when (stop.IsCancellationRequested)
-        {
-        }
-
-        return (budget, peak.Total, peak.Owners);
-    }
-
-    public string ConnectionStringFor(string role, string database = MainDatabase) =>
-        Of(new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Username = role, Password = Password }, database);
-
-    // A pool keeps its idle connections for five minutes by default, after its test has ended. A test's own database is used by that
-    // test alone, so its pools close idle connections within seconds; else they add up to more than max_connections (53300).
-    // A direct call of the fixture, as any role, names itself "fixture" only: a pool is chosen by its connection string, so a name per test class would
-    // split the one pool these calls share into one per class.
-    private static string Of(NpgsqlConnectionStringBuilder connection, string database)
-    {
-        connection.Database = database;
-        connection.ApplicationName = "fixture";
-        if (database != MainDatabase)
-        {
-            (connection.ConnectionIdleLifetime, connection.ConnectionPruningInterval) = (2, 1);
-        }
-
-        return connection.ConnectionString;
-    }
+    public string SuperuserConnectionString =>
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = MainDatabase, ApplicationName = "fixture" }.ConnectionString;
 
     // A host's connection string: it names the owner of the host's connections in pg_stat_activity (the kind of host and the test
     // class that started it). A host's data sources are its own, so the name splits none of them. An empty setting stays empty, as a
@@ -186,6 +101,42 @@ public sealed class Database : IAsyncLifetime
             services.Remove(cleanup);
         }
     }
+
+    public async ValueTask InitializeAsync()
+    {
+        await _container.StartAsync();
+        await _container.CopyAsync(await File.ReadAllBytesAsync("bootstrap.sql"), "/tmp/bootstrap.sql");
+        await RunBootstrapScriptAsync(MainDatabase);
+
+        await MigrateAsync(MainDatabase);
+        await CreateProbesAsync(MainDatabase);
+        _watch = WatchConnectionsAsync(_stopWatching.Token);
+    }
+
+    // Section 9, rule 7: the run fails when it held more connections at once than the budget, and names their owners.
+    public async ValueTask DisposeAsync()
+    {
+        // A start that failed before the watch began has no watch, and the container goes in any case.
+        await _stopWatching.CancelAsync();
+        (long Budget, long Peak, string Owners) watched;
+        try
+        {
+            watched = _watch is null ? (long.MaxValue, 0, "none") : await _watch;
+        }
+        finally
+        {
+            await _container.DisposeAsync();
+        }
+
+        var (budget, peak, owners) = watched;
+        peak.ShouldBeLessThanOrEqualTo(
+            budget,
+            $"The run held {peak} PostgreSQL connections at once, over its budget of {budget} ({ConnectionBudget:P0} of max_connections). " +
+            $"Owners at the peak: {owners}.");
+    }
+
+    public string ConnectionStringFor(string role, string database = MainDatabase) =>
+        Of(new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Username = role, Password = Password }, database);
 
     // A database set up the way a deployment is, for a test that must not disturb the main one.
     public async Task<string> CreateMigratedDatabaseAsync()
@@ -260,9 +211,6 @@ public sealed class Database : IAsyncLifetime
         }
     }
 
-    public string SuperuserConnectionString =>
-        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = MainDatabase, ApplicationName = "fixture" }.ConnectionString;
-
     // A role the bootstrap script never creates, for proving that the application refuses to run as one. It holds the application
     // role's privileges, so only its attributes set it apart.
     public async Task<string> CreateLoginRoleAsync(string attributes)
@@ -299,6 +247,25 @@ public sealed class Database : IAsyncLifetime
         var value = await command.ExecuteScalarAsync();
 
         return value is null or DBNull ? default : (T)value;
+    }
+
+    // A database trigger that refuses the statement on matching rows, as a real failure of that statement would.
+    public async Task RefuseAsync(string table, string statement, string when)
+    {
+        var name = $"refuse_{Guid.NewGuid():N}";
+        await using var connection = new NpgsqlConnection(SuperuserConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        await using var command = new NpgsqlCommand(
+            $"""
+            CREATE FUNCTION control_plane.{name}() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                IF {when} THEN RAISE EXCEPTION 'refused'; END IF;
+                RETURN NEW;
+            END $$;
+            CREATE TRIGGER {name} BEFORE {statement} ON control_plane.{table} FOR EACH ROW EXECUTE FUNCTION control_plane.{name}();
+            """,
+            connection);
+        await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
     }
 
     // What is really in a table: the container's superuser is bound by no policy, so it sees the rows of every tenant.
@@ -366,6 +333,43 @@ public sealed class Database : IAsyncLifetime
         return value is null or DBNull ? default : (T)value;
     }
 
+    // The probe tables, created as the owner, as a module's migration would.
+    public async Task CreateProbesAsync(string database)
+    {
+        var owner = ConnectionStringFor(DatabaseRoles.Owner, database);
+        await using (var probes = new ProbeDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<ProbeDbContext>(ProbeDbContext.Schema, owner)))
+        {
+            await probes.GetService<IRelationalDatabaseCreator>().CreateTablesAsync();
+        }
+
+        await using var connection = new NpgsqlConnection(owner);
+        await connection.OpenAsync();
+        await using var grant = new NpgsqlCommand(
+            $"""
+            GRANT USAGE ON SCHEMA {ProbeDbContext.Schema} TO {DatabaseRoles.Application};
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {ProbeDbContext.Schema} TO {DatabaseRoles.Application};
+            """,
+            connection);
+        await grant.ExecuteNonQueryAsync();
+    }
+
+    // A pool keeps its idle connections for five minutes by default, after its test has ended. A test's own database is used by that
+    // test alone, so its pools close idle connections within seconds; else they add up to more than max_connections (53300).
+    // A direct call of the fixture, as any role, names itself "fixture" only: a pool is chosen by its connection string, so a name per test class would
+    // split the one pool these calls share into one per class.
+    private static string Of(NpgsqlConnectionStringBuilder connection, string database)
+    {
+        connection.Database = database;
+        connection.ApplicationName = "fixture";
+        if (database != MainDatabase)
+        {
+            (connection.ConnectionIdleLifetime, connection.ConnectionPruningInterval) = (2, 1);
+        }
+
+        return connection.ConnectionString;
+    }
+
     private static async Task DeclareUserAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, Guid userId)
     {
         await using var declare = new NpgsqlCommand("SELECT set_config('app.user_id', @user, true)", connection, transaction);
@@ -378,6 +382,44 @@ public sealed class Database : IAsyncLifetime
         await using var declare = new NpgsqlCommand("SELECT set_config('app.tenant_id', @tenant, true)", connection, transaction);
         declare.Parameters.AddWithValue("tenant", tenantId.ToString());
         await declare.ExecuteNonQueryAsync();
+    }
+
+    // Counts the server's client connections every 100 ms on a connection of its own, and keeps the highest count. It opens that
+    // connection before the first test and keeps it to the end. The bursts it must see last half a second or more.
+    private async Task<(long Budget, long Peak, string Owners)> WatchConnectionsAsync(CancellationToken stop)
+    {
+        await using var connection = new NpgsqlConnection(
+            new NpgsqlConnectionStringBuilder(SuperuserConnectionString) { ApplicationName = "connection-watch" }.ConnectionString);
+        await connection.OpenAsync(CancellationToken.None);
+        await using var maxConnections = new NpgsqlCommand("SELECT current_setting('max_connections')::int", connection);
+        var budget = (long)((int)(await maxConnections.ExecuteScalarAsync(CancellationToken.None))! * ConnectionBudget);
+
+        (long Total, string Owners) peak = (0, "none");
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stop))
+            {
+                List<(string Owner, long Count)> owners = [];
+                await using var command = new NpgsqlCommand(OwnersQuery, connection);
+                await using var reader = await command.ExecuteReaderAsync(CancellationToken.None);
+                while (await reader.ReadAsync(CancellationToken.None))
+                {
+                    owners.Add((reader.GetString(0), reader.GetInt64(1)));
+                }
+
+                var total = owners.Sum(owner => owner.Count);
+                if (total > peak.Total)
+                {
+                    peak = (total, string.Join(", ", owners.Take(15).Select(owner => $"{owner.Owner} {owner.Count}")));
+                }
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        {
+        }
+
+        return (budget, peak.Total, peak.Owners);
     }
 
     private async Task MigrateAsync(string database)
@@ -414,26 +456,5 @@ public sealed class Database : IAsyncLifetime
         {
             _bootstrap.Release();
         }
-    }
-
-    // The probe tables, created as the owner, as a module's migration would.
-    public async Task CreateProbesAsync(string database)
-    {
-        var owner = ConnectionStringFor(DatabaseRoles.Owner, database);
-        await using (var probes = new ProbeDbContext(
-            TenancyServiceCollectionExtensions.ModuleDbContextOptions<ProbeDbContext>(ProbeDbContext.Schema, owner)))
-        {
-            await probes.GetService<IRelationalDatabaseCreator>().CreateTablesAsync();
-        }
-
-        await using var connection = new NpgsqlConnection(owner);
-        await connection.OpenAsync();
-        await using var grant = new NpgsqlCommand(
-            $"""
-            GRANT USAGE ON SCHEMA {ProbeDbContext.Schema} TO {DatabaseRoles.Application};
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {ProbeDbContext.Schema} TO {DatabaseRoles.Application};
-            """,
-            connection);
-        await grant.ExecuteNonQueryAsync();
     }
 }

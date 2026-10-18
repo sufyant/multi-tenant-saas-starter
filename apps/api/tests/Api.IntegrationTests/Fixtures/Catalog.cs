@@ -9,6 +9,9 @@ namespace Api.IntegrationTests.Fixtures;
 // into the main database unless the test names a database of its own.
 internal sealed class Catalog(Database database, string databaseName = Database.MainDatabase)
 {
+    // The invitation code of a link: the tenant id, a dot and the secret (section 6).
+    public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
+
     public async Task<(Guid Id, string Slug)> AddTenantAsync(
         string status = "Active",
         string? slug = null,
@@ -153,9 +156,6 @@ internal sealed class Catalog(Database database, string databaseName = Database.
 
         return invitationId;
     }
-
-    // The invitation code of a link: the tenant id, a dot and the secret (section 6).
-    public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
     public Task<string?> InvitationStatusOfAsync(Guid invitationId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'", databaseName);

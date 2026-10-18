@@ -5,6 +5,9 @@ using Microsoft.Extensions.Options;
 
 namespace Api.Authorization;
 
+/// <summary>Marks an endpoint any signed-in user may call, without a permission (A5).</summary>
+public sealed class SignedInEndpoint;
+
 // Authorization asks for permissions, never roles. Every endpoint states its access (A5): public with AllowAnonymous, signed-in
 // only with RequireSignedIn, or the permission it needs as its policy. The route groups add who may reach them at all.
 internal static class AccessPolicies
@@ -111,6 +114,3 @@ internal sealed class AccessHandler : IAuthorizationHandler
         return Task.CompletedTask;
     }
 }
-
-/// <summary>Marks an endpoint any signed-in user may call, without a permission (A5).</summary>
-public sealed class SignedInEndpoint;

@@ -20,8 +20,7 @@ public static class MyProfileEndpoints
 
     // Read without a tenant. A signed-in person the catalog does not know is not found: the web shows "no access yet".
     private static async Task<Result<MeResponse>> GetMe(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<MeView>>(new GetMeQuery(user.Id()), cancellationToken))
-            .Map(me => new MeResponse(me.Id, me.Email, me.FirstName, me.LastName, me.IsSystemAdmin, me.Language, me.TimeZone));
+        (await bus.InvokeAsync<Result<MeView>>(new GetMeQuery(user.Id()), cancellationToken)).Map(ToResponse);
 
     // Changing the preferences sets a state, so it takes no idempotency key (I1): the values the user has answer 200 again.
     private static async Task<Result<PreferencesResponse>> ChangePreferences(
@@ -30,5 +29,9 @@ public static class MyProfileEndpoints
         IMessageBus bus,
         CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<PreferencesView>>(new ChangePreferencesCommand(user.Id(), request.Language, request.TimeZone), cancellationToken))
-            .Map(preferences => new PreferencesResponse(preferences.Language, preferences.TimeZone));
+            .Map(ToResponse);
+
+    private static MeResponse ToResponse(MeView me) => new(me.Id, me.Email, me.FirstName, me.LastName, me.IsSystemAdmin, me.Language, me.TimeZone);
+
+    private static PreferencesResponse ToResponse(PreferencesView preferences) => new(preferences.Language, preferences.TimeZone);
 }

@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Api.ArchitectureTests;
 
-public class InternalsVisibleToTests
+public sealed class InternalsVisibleToTests
 {
     public static TheoryData<string, string> ModuleProjects =>
         [.. Solution.Modules.SelectMany(module => Solution.ProjectsOf(module).Select(project => (module, project)))];

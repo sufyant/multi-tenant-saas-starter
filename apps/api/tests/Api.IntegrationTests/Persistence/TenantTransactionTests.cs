@@ -14,6 +14,7 @@ namespace Api.IntegrationTests.Persistence;
 public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
 {
     private readonly Catalog _catalog = new(database);
+
     private PipelineHost _host = null!;
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -215,14 +216,6 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         (await ReadProbesAsync(tenant)).ShouldBe(["kept"]);
     }
 
-    private IMessageBus Bus() => _host.Host.MessageBus();
-
-    private async Task<string[]> ReadProbesAsync(Guid tenant)
-    {
-        var probes = await Bus().InvokeForTenantAsync<Result<string[]>>(tenant.ToString(), new ReadProbes(), Cancellation);
-        return probes.Value;
-    }
-
     private static string? PostgresErrorOf(Exception? exception) =>
         exception switch
         {
@@ -230,4 +223,12 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
             PostgresException postgres => postgres.SqlState,
             _ => PostgresErrorOf(exception.InnerException),
         };
+
+    private IMessageBus Bus() => _host.Host.MessageBus();
+
+    private async Task<string[]> ReadProbesAsync(Guid tenant)
+    {
+        var probes = await Bus().InvokeForTenantAsync<Result<string[]>>(tenant.ToString(), new ReadProbes(), Cancellation);
+        return probes.Value;
+    }
 }

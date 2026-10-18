@@ -11,43 +11,6 @@ internal enum HostRole
     All,
 }
 
-// The browser origins that may call the API (Host:Cors); none when the list is empty.
-internal sealed class HostingCorsOptions
-{
-    public string[] AllowedOrigins { get; set; } = [];
-
-    // An origin is a scheme, a host and a port, exactly as a browser sends it: no wildcard, no path, no trailing slash.
-    public bool AreOrigins => AllowedOrigins.All(origin =>
-        Uri.TryCreate(origin, UriKind.Absolute, out var uri)
-        && uri.Scheme is "https" or "http"
-        && uri.GetLeftPart(UriPartial.Authority) == origin);
-}
-
-// The host's own settings (section Host), checked on start.
-internal sealed class HostingOptions
-{
-    public const string Section = "Host";
-
-    public string? Role { get; set; }
-
-    // How long a stopping host may take to finish the work it has (Twelve-Factor IX).
-    public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-    public HostingCorsOptions Cors { get; set; } = new();
-
-    // The port of the health endpoints (section 8). Only the platform's health check and probes reach it.
-    public int ManagementPort { get; set; } = 8081;
-
-    // The role, or null when the setting is missing or names no role; the start then fails on it.
-    public HostRole? RoleOrNull => Role switch
-    {
-        "web" => HostRole.Web,
-        "worker" => HostRole.Worker,
-        "all" => HostRole.All,
-        _ => null,
-    };
-}
-
 internal static class HostingOptionsExtensions
 {
     // The settings are read while the host is composed, since the role decides what it is composed of, and checked on start like
@@ -106,4 +69,41 @@ internal static class HostingOptionsExtensions
     }
 
     private static string[] Split(string? value) => value?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+}
+
+// The browser origins that may call the API (Host:Cors); none when the list is empty.
+internal sealed class HostingCorsOptions
+{
+    public string[] AllowedOrigins { get; set; } = [];
+
+    // An origin is a scheme, a host and a port, exactly as a browser sends it: no wildcard, no path, no trailing slash.
+    public bool AreOrigins => AllowedOrigins.All(origin =>
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && uri.Scheme is "https" or "http"
+        && uri.GetLeftPart(UriPartial.Authority) == origin);
+}
+
+// The host's own settings (section Host), checked on start.
+internal sealed class HostingOptions
+{
+    public const string Section = "Host";
+
+    public string? Role { get; set; }
+
+    // How long a stopping host may take to finish the work it has (Twelve-Factor IX).
+    public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    public HostingCorsOptions Cors { get; set; } = new();
+
+    // The port of the health endpoints (section 8). Only the platform's health check and probes reach it.
+    public int ManagementPort { get; set; } = 8081;
+
+    // The role, or null when the setting is missing or names no role; the start then fails on it.
+    public HostRole? RoleOrNull => Role switch
+    {
+        "web" => HostRole.Web,
+        "worker" => HostRole.Worker,
+        "all" => HostRole.All,
+        _ => null,
+    };
 }

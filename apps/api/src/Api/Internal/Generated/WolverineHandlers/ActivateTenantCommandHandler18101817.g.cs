@@ -24,7 +24,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
+            var tenantRepository = new ControlPlane.Infrastructure.Persistence.Tenants.TenantRepository(controlPlaneDbContext);
             // The actual message body
             var activateTenantCommand = (ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantCommand)context.Envelope.Message;
 
@@ -44,7 +44,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantHandler.HandleAsync(activateTenantCommand, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantHandler.HandleAsync(activateTenantCommand, tenantRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

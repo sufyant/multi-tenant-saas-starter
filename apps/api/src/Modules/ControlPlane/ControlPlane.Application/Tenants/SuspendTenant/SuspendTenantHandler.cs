@@ -1,4 +1,4 @@
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using SharedKernel;
 
@@ -10,11 +10,12 @@ public static class SuspendTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantSuspendedEvent?)> HandleAsync(
         SuspendTenantCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        if (await catalog.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
+        if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
         {
             return (Errors.TenantNotFound, null);
         }
@@ -25,9 +26,9 @@ public static class SuspendTenantHandler
             return (suspended.Map(_ => TenantView.Of(tenant)), null);
         }
 
-        var actor = await catalog.FindUserAsync(command.ActorId, cancellationToken)
+        var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a catalog user.");
-        await catalog.SaveChangesAsync(cancellationToken);
+        await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
         return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name, tenant.SuspensionReason));

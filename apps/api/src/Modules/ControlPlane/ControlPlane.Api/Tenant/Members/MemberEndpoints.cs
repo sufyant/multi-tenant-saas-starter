@@ -22,6 +22,10 @@ public static class MemberEndpoints
         tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete);
     }
 
+    // Every response that holds a role answers it in this one shape (N7). The built-in role keeps ControlPlane's name, as a request
+    // gives it (RoleNameTests).
+    internal static RoleResponse ToResponse(RoleView role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
+
     // The tenant comes from the route: the host has declared it, and row level security keeps the list to it.
     private static async Task<Result<ListPage<MemberResponse>>> ListMembers(
         int? page,
@@ -66,8 +70,4 @@ public static class MemberEndpoints
 
     private static MemberResponse ToResponse(MemberView member) =>
         new(member.UserId, member.Email, member.FirstName, member.LastName, ToResponse(member.Role), member.Deleted, member.JoinedAt);
-
-    // Every response that holds a role answers it in this one shape (N7). The built-in role keeps ControlPlane's name, as a request
-    // gives it (RoleNameTests).
-    internal static RoleResponse ToResponse(RoleView role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
 }

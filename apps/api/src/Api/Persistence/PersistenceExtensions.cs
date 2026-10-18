@@ -5,16 +5,18 @@ namespace Api.Persistence;
 
 internal static class PersistenceExtensions
 {
+    public const string DatabaseConnection = "Database";
+
+    public const string MessagingConnection = "Messaging";
+
+    public static string DatabaseKey => $"{ConnectionStringOptions.Section}:{DatabaseConnection}";
+
     public static IServiceCollection AddApiPersistence(this IServiceCollection services)
     {
         services.AddDbContextWithWolverineIntegration<ApiDbContext>(
             (provider, options) => options.UseModuleDatabase(provider, ApiDbContext.Schema), TenancyServiceCollectionExtensions.MessageSchema);
         return services.AddModuleMigrations<ApiDbContext>(ApiDbContext.Schema);
     }
-
-    public const string DatabaseConnection = "Database";
-
-    public const string MessagingConnection = "Messaging";
 
     public static WebApplicationBuilder AddPersistence(this WebApplicationBuilder builder)
     {
@@ -42,8 +44,6 @@ internal static class PersistenceExtensions
         configuration.GetConnectionString(MessagingConnection) is { Length: > 0 } messaging ? ($"{ConnectionStringOptions.Section}:{MessagingConnection}", messaging)
         : configuration.GetConnectionString(DatabaseConnection) is { Length: > 0 } database ? ($"{ConnectionStringOptions.Section}:{DatabaseConnection}", database)
         : null;
-
-    public static string DatabaseKey => $"{ConnectionStringOptions.Section}:{DatabaseConnection}";
 
     private sealed class ConnectionStringOptions
     {

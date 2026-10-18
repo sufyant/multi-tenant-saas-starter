@@ -106,19 +106,8 @@ public sealed class ListContractTests : IAsyncLifetime
         answers.ShouldBe(CursorListsOf().Select(list => $"{list.Id}: items, nextCursor"));
     }
 
-    // A list follows the page contract unless it takes a cursor.
-    private IEnumerable<(string Id, JsonElement Operation)> PageLists() => Lists().Where(list => !TakesACursor(list.Operation));
-
-    private IEnumerable<(string Id, JsonElement Operation)> CursorListsOf() => Lists().Where(list => TakesACursor(list.Operation));
-
     private static bool TakesACursor(JsonElement operation) =>
         QueryParametersOf(operation).Any(parameter => CursorParameters.Contains(parameter.Name));
-
-    private IEnumerable<(string Id, JsonElement Operation)> Lists() =>
-        _document.GetProperty("paths").EnumerateObject()
-            .SelectMany(path => path.Value.EnumerateObject().Select(operation => operation.Value))
-            .Where(operation => operation.TryGetProperty("operationId", out var id) && id.GetString()!.StartsWith("List", StringComparison.Ordinal))
-            .Select(operation => (operation.GetProperty("operationId").GetString()!, operation));
 
     private static IEnumerable<(string Name, JsonElement Schema)> QueryParametersOf(JsonElement operation) =>
         operation.TryGetProperty("parameters", out var parameters)
@@ -126,6 +115,17 @@ public sealed class ListContractTests : IAsyncLifetime
                 .Where(parameter => parameter.GetProperty("in").GetString() == "query")
                 .Select(parameter => (parameter.GetProperty("name").GetString()!, parameter.GetProperty("schema")))
             : [];
+
+    // A list follows the page contract unless it takes a cursor.
+    private IEnumerable<(string Id, JsonElement Operation)> PageLists() => Lists().Where(list => !TakesACursor(list.Operation));
+
+    private IEnumerable<(string Id, JsonElement Operation)> CursorListsOf() => Lists().Where(list => TakesACursor(list.Operation));
+
+    private IEnumerable<(string Id, JsonElement Operation)> Lists() =>
+        _document.GetProperty("paths").EnumerateObject()
+            .SelectMany(path => path.Value.EnumerateObject().Select(operation => operation.Value))
+            .Where(operation => operation.TryGetProperty("operationId", out var id) && id.GetString()!.StartsWith("List", StringComparison.Ordinal))
+            .Select(operation => (operation.GetProperty("operationId").GetString()!, operation));
 
     private bool IsEnum(JsonElement schema) => Resolve(schema).TryGetProperty("enum", out var values) && values.GetArrayLength() > 0;
 

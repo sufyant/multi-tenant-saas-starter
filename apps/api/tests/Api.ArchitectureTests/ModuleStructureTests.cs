@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Api.ArchitectureTests;
 
-public class ModuleStructureTests
+public sealed class ModuleStructureTests
 {
     public static TheoryData<string> Modules => [.. Solution.Modules];
 

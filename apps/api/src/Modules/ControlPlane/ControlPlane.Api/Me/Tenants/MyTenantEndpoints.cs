@@ -16,6 +16,11 @@ public static class MyTenantEndpoints
 {
     public static void Map(RouteGroupBuilder me) => me.MapGet("/tenants", ListMyTenants);
 
+    // Accepting an invitation answers the tenant it joined in the same shape (N7: a response that two audiences answer stays in the
+    // first one's file).
+    internal static MyTenantResponse ToResponse(MyTenantView tenant) =>
+        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), MemberEndpoints.ToResponse(tenant.Role));
+
     // T4: the user's own active and suspended tenants, read without a tenant.
     private static async Task<Result<ListPage<MyTenantResponse>>> ListMyTenants(
         int? page,
@@ -35,9 +40,4 @@ public static class MyTenantEndpoints
         var tenants = await bus.InvokeAsync<Result<ListPage<MyTenantView>>>(new ListMyTenantsQuery(user.Id(), list.Value), cancellationToken);
         return tenants.Map(found => found.Map(ToResponse));
     }
-
-    // Accepting an invitation answers the tenant it joined in the same shape (N7: a response that two audiences answer stays in the
-    // first one's file).
-    internal static MyTenantResponse ToResponse(MyTenantView tenant) =>
-        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), MemberEndpoints.ToResponse(tenant.Role));
 }

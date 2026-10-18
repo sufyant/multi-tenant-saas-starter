@@ -13,6 +13,7 @@ namespace Api.ArchitectureTests;
 public sealed class HandlerReachTests : IAsyncLifetime
 {
     private readonly ComposedApplication _worker = new("worker");
+
     private readonly ComposedApplication _web = new("web");
 
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
@@ -40,9 +41,6 @@ public sealed class HandlerReachTests : IAsyncLifetime
         unreached.ShouldBeEmpty();
     }
 
-    private IWolverineRuntime RuntimeOf(string role) =>
-        (role == "web" ? _web : _worker).Services.GetRequiredService<IWolverineRuntime>();
-
     // The handlers of the message type that no route takes to an endpoint a worker listens to, as "message -> handler".
     private static IEnumerable<string> Unreached(HandlerChain chain, HashSet<Uri> routes, HashSet<Uri> listened)
     {
@@ -59,4 +57,7 @@ public sealed class HandlerReachTests : IAsyncLifetime
             .Distinct()
             .Select(handler => $"{chain.MessageType.Name} -> {handler.Name}");
     }
+
+    private IWolverineRuntime RuntimeOf(string role) =>
+        (role == "web" ? _web : _worker).Services.GetRequiredService<IWolverineRuntime>();
 }

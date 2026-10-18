@@ -4,7 +4,7 @@ namespace Api.ArchitectureTests;
 
 // Section 7, configuration rule 1: each module has its own configuration section. A module names each section it binds in a
 // Section constant, so the constants of its projects are every section it reads.
-public class ConfigurationSectionTests
+public sealed class ConfigurationSectionTests
 {
     private const BindingFlags Declared = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
 

@@ -24,7 +24,8 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
+            var userRepository = new ControlPlane.Infrastructure.Persistence.Users.UserRepository(controlPlaneDbContext);
+            var tenantRepository = new ControlPlane.Infrastructure.Persistence.Tenants.TenantRepository(controlPlaneDbContext);
             // The actual message body
             var revokeInvitationCommand = (ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationCommand)context.Envelope.Message;
 
@@ -44,7 +45,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler.HandleAsync(revokeInvitationCommand, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler.HandleAsync(revokeInvitationCommand, tenantRepository, userRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

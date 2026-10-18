@@ -9,16 +9,6 @@ using Wolverine.Transports;
 
 namespace Api.Messaging;
 
-// How far apart, and how often, a node puts back a message it has no handler for (Messaging:UnknownMessages, W12).
-internal sealed class UnknownMessageOptions
-{
-    public const string Section = "Messaging:UnknownMessages";
-
-    public TimeSpan Delay { get; set; } = TimeSpan.FromSeconds(30);
-
-    public int Tries { get; set; } = 10;
-}
-
 internal static class UnknownMessageOptionsExtensions
 {
     public static IServiceCollection AddUnknownMessageOptions(this IServiceCollection services)
@@ -31,6 +21,16 @@ internal static class UnknownMessageOptionsExtensions
 
         return services;
     }
+}
+
+// How far apart, and how often, a node puts back a message it has no handler for (Messaging:UnknownMessages, W12).
+internal sealed class UnknownMessageOptions
+{
+    public const string Section = "Messaging:UnknownMessages";
+
+    public TimeSpan Delay { get; set; } = TimeSpan.FromSeconds(30);
+
+    public int Tries { get; set; } = 10;
 }
 
 // W12. Wolverine marks the message as handled after this runs, so only the PostgreSQL queue, whose put-back leaves the inbox, can put

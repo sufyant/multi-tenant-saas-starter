@@ -12,13 +12,13 @@ namespace Audit.IntegrationTests.Fixtures;
 // for an event about a catalog user.
 internal static class InTenant
 {
-    public static async Task RunAsync(IServiceProvider services, Guid? tenantId, Func<IServiceProvider, Task> work)
+    public static async Task RunAsync(IServiceProvider services, Guid? tenantId, Func<IServiceProvider, Task> handler)
     {
         await using var scope = services.CreateAsyncScope();
         var audit = Audit(scope, tenantId);
         await using var transaction = await audit.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
 
-        await work(scope.ServiceProvider);
+        await handler(scope.ServiceProvider);
 
         await audit.SaveChangesAsync(TestContext.Current.CancellationToken);
         await transaction.CommitAsync(TestContext.Current.CancellationToken);

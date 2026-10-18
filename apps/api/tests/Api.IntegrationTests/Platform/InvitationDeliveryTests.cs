@@ -17,12 +17,19 @@ namespace Api.IntegrationTests.Platform;
 // Resend. It is sent from the event ControlPlane publishes once the tenant is active.
 public sealed class InvitationDeliveryTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     // Milliseconds: the resolution of the timer Wolverine waits a retry's pause with.
     private const long TimerResolution = 1;
 
+    private static readonly Dictionary<string, string?> Resend = new()
+    {
+        ["Notifications:Resend:ApiKey"] = "re_test_key",
+        ["Notifications:Resend:From"] = "App <no-reply@app.test>",
+        ["Notifications:Resend:ApiUrl"] = "https://api.resend.test/",
+    };
+
     private readonly Catalog _catalog = new(database);
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task DeliverInvitation_InDevelopment_WritesTheLinkToTheLog()
@@ -169,6 +176,31 @@ public sealed class InvitationDeliveryTests(Database database)
     // every handler that still runs, so the retry is complete before the test reads it.
     private static Task StopAndDrainAsync(ApiFactory api) => api.Services.GetRequiredService<IHost>().StopAsync(Cancellation);
 
+    private static async Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email, Catalog catalog)
+    {
+        var admin = await catalog.AddSystemAdminAsync();
+        var slug = $"tenant-{Guid.NewGuid():N}"[..20];
+
+        return await api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email });
+    }
+
+    // The application's own email channel, with Resend replaced at the HTTP boundary when it is configured.
+    private ApiFactory Api(string environment, StubResend? resend = null, Dictionary<string, string?>? settings = null) => new(
+        database.ConnectionStringFor(DatabaseRoles.Application),
+        environment: environment,
+        fakeEmailChannel: false,
+        settings: settings,
+        configureServices: services =>
+        {
+            services.AddFakeLogging();
+            if (resend is not null)
+            {
+                services.ConfigureHttpClientDefaults(client => client.ConfigurePrimaryHttpMessageHandler(() => resend));
+            }
+        });
+
+    private Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email) => CreateTenantForOwnerAsync(api, email, _catalog);
+
     // Holds up Wolverine's log line about a rescheduled envelope, which it writes after it records the retry and before it sets the time.
     private sealed class SlowRescheduleLog : ILoggerProvider, ILogger
     {
@@ -209,38 +241,6 @@ public sealed class InvitationDeliveryTests(Database database)
         }
 
         public bool IsCompleted() => _sent && _rescheduled;
-    }
-
-    private static readonly Dictionary<string, string?> Resend = new()
-    {
-        ["Notifications:Resend:ApiKey"] = "re_test_key",
-        ["Notifications:Resend:From"] = "App <no-reply@app.test>",
-        ["Notifications:Resend:ApiUrl"] = "https://api.resend.test/",
-    };
-
-    // The application's own email channel, with Resend replaced at the HTTP boundary when it is configured.
-    private ApiFactory Api(string environment, StubResend? resend = null, Dictionary<string, string?>? settings = null) => new(
-        database.ConnectionStringFor(DatabaseRoles.Application),
-        environment: environment,
-        fakeEmailChannel: false,
-        settings: settings,
-        configureServices: services =>
-        {
-            services.AddFakeLogging();
-            if (resend is not null)
-            {
-                services.ConfigureHttpClientDefaults(client => client.ConfigurePrimaryHttpMessageHandler(() => resend));
-            }
-        });
-
-    private Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email) => CreateTenantForOwnerAsync(api, email, _catalog);
-
-    private static async Task<HttpResponseMessage> CreateTenantForOwnerAsync(ApiFactory api, string email, Catalog catalog)
-    {
-        var admin = await catalog.AddSystemAdminAsync();
-        var slug = $"tenant-{Guid.NewGuid():N}"[..20];
-
-        return await api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email });
     }
 
     private sealed class StubResend : HttpMessageHandler

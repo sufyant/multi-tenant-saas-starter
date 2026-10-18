@@ -1,5 +1,4 @@
 using ControlPlane.Application.Invitations.OpenOwnerSignUp;
-using ControlPlane.Application.Ports;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -17,21 +16,21 @@ public static class ActivateTenantHandler
     // identity provider lets the owner sign up, then Notifications sends the email.
     public static async Task<(ActivateTenantReply?, TenantActivatedEvent?, OpenOwnerSignUpCommand?)> HandleAsync(
         ActivateTenantCommand step,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("A tenant is activated after its creation added it.");
         if (tenant.Activate() == StateChange.Unchanged)
         {
             return (null, null, null);
         }
 
-        var invitation = await catalog.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken)
+        var invitation = await tenants.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken)
             ?? throw new InvalidOperationException("A tenant is activated with its first owner's invitation.");
         var now = time.GetUtcNow();
-        await catalog.SaveChangesAsync(cancellationToken);
+        await tenants.SaveChangesAsync(cancellationToken);
 
         return (
             new ActivateTenantReply(tenant.Id),

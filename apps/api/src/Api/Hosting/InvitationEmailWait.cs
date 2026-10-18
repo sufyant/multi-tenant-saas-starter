@@ -5,6 +5,18 @@ using Notifications.Infrastructure;
 
 namespace Api.Hosting;
 
+internal static class InvitationEmailWaitExtensions
+{
+    // Called after the modules are added, since the check reads their settings.
+    public static IServiceCollection AddInvitationEmailWait(this IServiceCollection services)
+    {
+        services.AddOptions<InvitationEmailWait>().ValidateOnStart();
+        services.AddSingleton<IValidateOptions<InvitationEmailWait>, InvitationEmailWait.Validation>();
+
+        return services;
+    }
+}
+
 // Section 7, configuration rule 5: the wait for the invitation email (section 6, "Tenant creation process") joins the settings of two
 // modules, and only the host sees both. It has nothing to bind: the check is all it holds.
 internal sealed class InvitationEmailWait
@@ -30,17 +42,5 @@ internal sealed class InvitationEmailWait
         private static string Format(TimeSpan time) => time.ToString("c", CultureInfo.InvariantCulture);
 
         private static string Format(IEnumerable<TimeSpan> times) => string.Join(", ", times.Select(Format));
-    }
-}
-
-internal static class InvitationEmailWaitExtensions
-{
-    // Called after the modules are added, since the check reads their settings.
-    public static IServiceCollection AddInvitationEmailWait(this IServiceCollection services)
-    {
-        services.AddOptions<InvitationEmailWait>().ValidateOnStart();
-        services.AddSingleton<IValidateOptions<InvitationEmailWait>, InvitationEmailWait.Validation>();
-
-        return services;
     }
 }

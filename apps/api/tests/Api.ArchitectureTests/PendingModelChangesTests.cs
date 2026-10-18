@@ -5,7 +5,7 @@ namespace Api.ArchitectureTests;
 // A model change without a migration leaves the database behind the code, and most tests run on a database built from the
 // migrations, so they do not notice. HasPendingModelChanges compares the model with the last migration's snapshot; it never
 // connects. Every concrete DbContext of every module is checked, so a new module's DbContext is covered without a change here.
-public class PendingModelChangesTests
+public sealed class PendingModelChangesTests
 {
     public static TheoryData<string> ModuleDbContextNames => [.. ModuleDbContexts.Types().Select(type => type.FullName!)];
 

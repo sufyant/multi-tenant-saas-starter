@@ -30,18 +30,10 @@ internal sealed class ApiFactory(
     HostPorts? ports = null,
     Func<Task>? beforeStart = null) : WebApplicationFactory<Program>
 {
-    private bool _onKestrel;
-
-    private string? _databaseConnectionString;
-
     public const string AcceptUrl = "https://app.test/invitations/accept";
 
     // No account of the fake identity provider has this address, so nobody becomes the first system admin by accident.
     public const string FirstSystemAdminEmail = "first-admin@app.test";
-
-    public FakeIdentityProvider Identity { get; } = new();
-
-    public FakeEmailChannel Email { get; } = new();
 
     public static readonly IReadOnlyDictionary<string, string?> ShortRetries = new Dictionary<string, string?>
     {
@@ -53,24 +45,29 @@ internal sealed class ApiFactory(
         ["ControlPlane:Clerk:RetryDelays:2"] = "00:00:00.040",
     };
 
+    // How long a test waits for the messages it caused. Wolverine's default of 5 s is shorter than a retry policy's pauses under load.
+    public static readonly TimeSpan TrackingTimeout = TimeSpan.FromSeconds(30);
+
+    private bool _onKestrel;
+
+    private string? _databaseConnectionString;
+
+    // Program runs on a thread of its own and starts the application as soon as it has built it. The factory's host waits for that
+    // start, but it asks the application's services for the start only when it is started itself. A start that fails at once disposes
+    // the services first, and the factory then reports the disposed services instead of the start's error. So the application starts
+    // only once the factory waits for it, and every failed start reaches the test with its own error.
+    private readonly TaskCompletionSource _factoryWaits = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public FakeIdentityProvider Identity { get; } = new();
+
+    public FakeEmailChannel Email { get; } = new();
+
     public HostPorts Ports => ports ?? throw new InvalidOperationException("The factory was given no ports.");
 
     // Clients of the host's real ports. The test server has no port, so the host runs on Kestrel instead.
     public HttpClient PublicClient() => ClientOn(Ports.Public);
 
     public HttpClient ManagementClient() => ClientOn(Ports.Management);
-
-    private HttpClient ClientOn(int port)
-    {
-        if (!_onKestrel)
-        {
-            UseKestrel();
-            StartServer();
-            _onKestrel = true;
-        }
-
-        return new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}") };
-    }
 
     public HttpClient CreateClient(string userId, bool secondFactor = false)
     {
@@ -106,11 +103,11 @@ internal sealed class ApiFactory(
         Task RunAsync(IMessageContext _) => action();
     }
 
-    // Program runs on a thread of its own and starts the application as soon as it has built it. The factory's host waits for that
-    // start, but it asks the application's services for the start only when it is started itself. A start that fails at once disposes
-    // the services first, and the factory then reports the disposed services instead of the start's error. So the application starts
-    // only once the factory waits for it, and every failed start reaches the test with its own error.
-    private readonly TaskCompletionSource _factoryWaits = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        Database.ClearStartCheckPool(_databaseConnectionString);
+    }
 
     // The factory never asks for a Kestrel port of its own, so the base's port setting has nothing to do.
     protected override IHost CreateHost(IHostBuilder builder)
@@ -123,29 +120,6 @@ internal sealed class ApiFactory(
         RuntimeHandlerCode.AssertTheCommittedCodeHoldsEveryFrame(host.Services);
         return host;
     }
-
-    // IHostLifetime.WaitForStartAsync is the host's own way to delay its start until an outside event.
-    private sealed class StartsWhenTheFactoryWaits(IHostLifetime lifetime, Task factoryWaits) : IHostLifetime
-    {
-        public async Task WaitForStartAsync(CancellationToken cancellationToken)
-        {
-            await factoryWaits.WaitAsync(cancellationToken);
-            await lifetime.WaitForStartAsync(cancellationToken);
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken) => lifetime.StopAsync(cancellationToken);
-    }
-
-    public override async ValueTask DisposeAsync()
-    {
-        await base.DisposeAsync();
-        Database.ClearStartCheckPool(_databaseConnectionString);
-    }
-
-    // How long a test waits for the messages it caused. Wolverine's default of 5 s is shorter than a retry policy's pauses under load.
-    public static readonly TimeSpan TrackingTimeout = TimeSpan.FromSeconds(30);
-
-    private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TrackingTimeout);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -207,5 +181,31 @@ internal sealed class ApiFactory(
             configureServices?.Invoke(services);
             Database.RemoveIdempotencyCleanupOnTheMainDatabase(services, configuration["ConnectionStrings:Database"]);
         });
+    }
+
+    private HttpClient ClientOn(int port)
+    {
+        if (!_onKestrel)
+        {
+            UseKestrel();
+            StartServer();
+            _onKestrel = true;
+        }
+
+        return new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}") };
+    }
+
+    private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TrackingTimeout);
+
+    // IHostLifetime.WaitForStartAsync is the host's own way to delay its start until an outside event.
+    private sealed class StartsWhenTheFactoryWaits(IHostLifetime lifetime, Task factoryWaits) : IHostLifetime
+    {
+        public async Task WaitForStartAsync(CancellationToken cancellationToken)
+        {
+            await factoryWaits.WaitAsync(cancellationToken);
+            await lifetime.WaitForStartAsync(cancellationToken);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => lifetime.StopAsync(cancellationToken);
     }
 }

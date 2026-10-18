@@ -100,6 +100,70 @@ internal sealed class Tenant
                 $"A slug is {SlugMinLength} to {SlugMaxLength} lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
     }
 
+    /// <summary>
+    /// Whether a member may act in a tenant of this status: only in an active one. A member of a suspended or a closed tenant is told
+    /// why. The tenant door asks it on every request (T7), and every tenant command asks it again under the tenant's lock (K6), because
+    /// the status may change while a request waits for the lock. Only a member is asked: anyone else finds no tenant (T3).
+    /// </summary>
+    public static Result CheckMemberAccess(TenantStatus status) => status switch
+    {
+        TenantStatus.Active => Result.Success(),
+        TenantStatus.Suspended => Error.Forbidden(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."),
+        TenantStatus.Closed => Error.Forbidden(ControlPlaneErrorCodes.TenantClosed, "The tenant is closed."),
+        _ => NotActive,
+    };
+
+    /// <summary>
+    /// Gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the Owner
+    /// role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's lock
+    /// and counts the Owners under it (K6). Returns whether the role changed: the role the member already has changes nothing (I1).
+    /// Every rejection comes before the change.
+    /// </summary>
+    public static Result<StateChange> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
+    {
+        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
+        if (givesOrTakesOwner && !IsOwner(actor))
+        {
+            return OwnerRequiresOwner;
+        }
+
+        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && owners <= 1)
+        {
+            return LastOwner;
+        }
+
+        return target.Assign(role);
+    }
+
+    /// <summary>
+    /// Whether the actor may remove the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner,
+    /// and the last Owner stays. The caller holds the tenant's lock and counts the Owners under it (K6). It changes nothing, so the
+    /// caller removes the membership after it.
+    /// </summary>
+    public static Result CheckRemoval(Membership actor, Membership target, int owners)
+    {
+        if (actor.UserId == target.UserId)
+        {
+            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
+        }
+
+        if (IsOwner(target) && !IsOwner(actor))
+        {
+            return OwnerRequiresOwner;
+        }
+
+        return IsOwner(target) && owners <= 1 ? LastOwner : Result.Success();
+    }
+
+    /// <summary>
+    /// Whether a system admin's deletion of the user may take this membership away (K1): a tenant always has at least one Owner, so the
+    /// tenant's last Owner stays. It changes nothing, so a caller checks it before any change.
+    /// </summary>
+    public static Result CheckUserDeletion(Membership target, int owners) =>
+        IsOwner(target) && owners <= 1
+            ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
+            : Result.Success();
+
     /// <summary>Ends the tenant's creation. Only a provisioning tenant becomes active.</summary>
     public StateChange Activate() => Leave(TenantStatus.Active);
 
@@ -264,71 +328,16 @@ internal sealed class Tenant
             : Result.Success();
     }
 
-    /// <summary>
-    /// Whether a member may act in a tenant of this status: only in an active one. A member of a suspended or a closed tenant is told
-    /// why. The tenant door asks it on every request (T7), and every tenant command asks it again under the tenant's lock (K6), because
-    /// the status may change while a request waits for the lock. Only a member is asked: anyone else finds no tenant (T3).
-    /// </summary>
-    public static Result CheckMemberAccess(TenantStatus status) => status switch
-    {
-        TenantStatus.Active => Result.Success(),
-        TenantStatus.Suspended => Error.Forbidden(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."),
-        TenantStatus.Closed => Error.Forbidden(ControlPlaneErrorCodes.TenantClosed, "The tenant is closed."),
-        _ => NotActive,
-    };
-
-    /// <summary>
-    /// Gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the Owner
-    /// role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's lock
-    /// and counts the Owners under it (K6). Returns whether the role changed: the role the member already has changes nothing (I1).
-    /// Every rejection comes before the change.
-    /// </summary>
-    public static Result<StateChange> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
-    {
-        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
-        if (givesOrTakesOwner && !IsOwner(actor))
-        {
-            return OwnerRequiresOwner;
-        }
-
-        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && owners <= 1)
-        {
-            return LastOwner;
-        }
-
-        return target.Assign(role);
-    }
-
-    /// <summary>
-    /// Whether the actor may remove the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner,
-    /// and the last Owner stays. The caller holds the tenant's lock and counts the Owners under it (K6). It changes nothing, so the
-    /// caller removes the membership after it.
-    /// </summary>
-    public static Result CheckRemoval(Membership actor, Membership target, int owners)
-    {
-        if (actor.UserId == target.UserId)
-        {
-            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
-        }
-
-        if (IsOwner(target) && !IsOwner(actor))
-        {
-            return OwnerRequiresOwner;
-        }
-
-        return IsOwner(target) && owners <= 1 ? LastOwner : Result.Success();
-    }
-
-    /// <summary>
-    /// Whether a system admin's deletion of the user may take this membership away (K1): a tenant always has at least one Owner, so the
-    /// tenant's last Owner stays. It changes nothing, so a caller checks it before any change.
-    /// </summary>
-    public static Result CheckUserDeletion(Membership target, int owners) =>
-        IsOwner(target) && owners <= 1
-            ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
-            : Result.Success();
-
     private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
+
+    private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
+
+    private static bool IsUrlSafe(string slug) =>
+        slug.Length is >= SlugMinLength and <= SlugMaxLength
+        && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
+        && slug[0] != '-'
+        && slug[^1] != '-'
+        && !slug.Contains("--", StringComparison.Ordinal);
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {
@@ -356,13 +365,4 @@ internal sealed class Tenant
         Status = status;
         return StateChange.Changed;
     }
-
-    private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
-
-    private static bool IsUrlSafe(string slug) =>
-        slug.Length is >= SlugMinLength and <= SlugMaxLength
-        && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
-        && slug[0] != '-'
-        && slug[^1] != '-'
-        && !slug.Contains("--", StringComparison.Ordinal);
 }

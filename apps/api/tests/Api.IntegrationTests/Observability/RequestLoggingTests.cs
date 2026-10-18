@@ -10,6 +10,7 @@ public sealed class RequestLoggingTests(Database database) : IAsyncLifetime
     private const string RequestLogCategory = "Serilog.AspNetCore.RequestLoggingMiddleware";
 
     private PipelineHost _host = null!;
+
     private HttpClient _client = null!;
 
     public async ValueTask InitializeAsync()
@@ -63,8 +64,8 @@ public sealed class RequestLoggingTests(Database database) : IAsyncLifetime
         RequestLogsOf(api.Services).ShouldBeEmpty();
     }
 
-    private List<FakeLogRecord> RequestLogs() => RequestLogsOf(_host.Services);
-
     private static List<FakeLogRecord> RequestLogsOf(IServiceProvider services) =>
         [.. services.GetFakeLogCollector().GetSnapshot().Where(record => record.Category == RequestLogCategory)];
+
+    private List<FakeLogRecord> RequestLogs() => RequestLogsOf(_host.Services);
 }

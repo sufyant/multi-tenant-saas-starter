@@ -10,12 +10,15 @@ namespace Api.EndToEndTests.TenantCreation;
 // code that link leads to and their names, and sees the tenant; another user does not find it.
 public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly FakeIdentityProvider _identity = new();
+
     private readonly FakeEmailChannel _email = new();
+
     private EndToEndApp _web = null!;
+
     private EndToEndApp _worker = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {

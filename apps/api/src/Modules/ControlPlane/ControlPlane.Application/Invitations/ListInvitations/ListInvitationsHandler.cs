@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
 
@@ -8,12 +7,12 @@ public static class ListInvitationsHandler
 {
     public static async Task<Result<ListPage<InvitationView>>> HandleAsync(
         ListInvitationsQuery query,
-        ITenantCatalog catalog,
+        IInvitationQueries invitations,
         TimeProvider time,
-        CancellationToken cancellationToken)
-    {
-        var now = time.GetUtcNow();
-        return (await catalog.ListPendingInvitationsAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken))
-            .Map(found => InvitationView.Of(found.Invitation, found.Inviter, now));
-    }
+        CancellationToken cancellationToken) =>
+        await invitations.ListPendingInvitationsAsync(
+            query.List,
+            query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null,
+            time.GetUtcNow(),
+            cancellationToken);
 }

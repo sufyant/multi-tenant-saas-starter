@@ -10,11 +10,11 @@ public class Result
 
     public Error Error => _error ?? throw new InvalidOperationException("A successful result has no error.");
 
+    public static implicit operator Result(Error error) => Failure(error);
+
     public static Result Success() => new(null);
 
     public static Result Failure(Error error) => new(error);
-
-    public static implicit operator Result(Error error) => Failure(error);
 }
 
 public sealed class Result<TValue> : Result
@@ -29,9 +29,9 @@ public sealed class Result<TValue> : Result
 
     public TValue Value => IsSuccess ? _value : throw new InvalidOperationException("A failed result has no value.");
 
-    public Result<TOut> Map<TOut>(Func<TValue, TOut> map) => IsSuccess ? map(_value) : Error;
-
     public static implicit operator Result<TValue>(TValue value) => new(value);
 
     public static implicit operator Result<TValue>(Error error) => new(error);
+
+    public Result<TOut> Map<TOut>(Func<TValue, TOut> map) => IsSuccess ? map(_value) : Error;
 }

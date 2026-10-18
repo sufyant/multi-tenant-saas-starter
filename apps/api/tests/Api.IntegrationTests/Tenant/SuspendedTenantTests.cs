@@ -9,12 +9,13 @@ namespace Api.IntegrationTests.Tenant;
 // reactivation lets the members in again.
 public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private const string Reason = "Suspected fraud";
 
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public ValueTask InitializeAsync()
     {
@@ -91,9 +92,9 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
         (await activity.Content.ReadAsStringAsync(Cancellation)).ShouldNotContain(Reason);
     }
 
-    private async Task SuspendAsync(Guid tenantId) =>
-        (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true).SuspendTenantAsync(tenantId)).EnsureSuccessStatusCode();
-
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private async Task SuspendAsync(Guid tenantId) =>
+        (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true).SuspendTenantAsync(tenantId)).EnsureSuccessStatusCode();
 }

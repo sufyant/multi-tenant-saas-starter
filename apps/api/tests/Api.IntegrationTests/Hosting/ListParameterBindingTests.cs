@@ -10,10 +10,10 @@ namespace Api.IntegrationTests.Hosting;
 // of the page contract; a list with a cursor (the audit logs) has no sort and no filter.
 public sealed class ListParameterBindingTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
+
     private ApiFactory _api = null!;
+
     private JsonElement _document;
 
     public static TheoryData<string, string> Lists => new()
@@ -24,6 +24,8 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
         { "ListMembers", "member" },
         { "ListInvitations", "member" },
     };
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public async ValueTask InitializeAsync()
     {
@@ -68,6 +70,12 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
         return calls;
     }
 
+    private static IEnumerable<(string Id, (string Path, JsonElement Operation) Value)> ListsOf(JsonElement document) =>
+        document.GetProperty("paths").EnumerateObject()
+            .SelectMany(path => path.Value.EnumerateObject().Select(operation => (Id: operation.Value.GetProperty("operationId").GetString()!, Value: (path.Name, operation.Value))))
+            .Where(list => list.Id.StartsWith("List", StringComparison.Ordinal))
+            .Where(list => !list.Value.Value.GetProperty("parameters").EnumerateArray().Any(parameter => parameter.GetProperty("name").GetString() == "cursor"));
+
     // A caller who may read the list: a system admin, a user, or a member of a new tenant.
     private async Task<(HttpClient Client, string Url)> CallerAsync(string caller, string path) => caller switch
     {
@@ -82,12 +90,6 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
         var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         return (_api.CreateClient(member), path.Replace("{tenantId}", tenant.Id.ToString(), StringComparison.Ordinal));
     }
-
-    private static IEnumerable<(string Id, (string Path, JsonElement Operation) Value)> ListsOf(JsonElement document) =>
-        document.GetProperty("paths").EnumerateObject()
-            .SelectMany(path => path.Value.EnumerateObject().Select(operation => (Id: operation.Value.GetProperty("operationId").GetString()!, Value: (path.Name, operation.Value))))
-            .Where(list => list.Id.StartsWith("List", StringComparison.Ordinal))
-            .Where(list => !list.Value.Value.GetProperty("parameters").EnumerateArray().Any(parameter => parameter.GetProperty("name").GetString() == "cursor"));
 
     // Each value of each enum query parameter, as a query string.
     private IEnumerable<string> EnumParametersOf(JsonElement operation) =>

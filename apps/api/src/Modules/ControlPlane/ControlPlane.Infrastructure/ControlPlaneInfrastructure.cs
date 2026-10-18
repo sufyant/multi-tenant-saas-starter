@@ -1,13 +1,16 @@
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
+using ControlPlane.Infrastructure.Persistence.Invitations;
+using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using ControlPlane.Infrastructure.Persistence.Users;
@@ -59,9 +62,12 @@ public static class ControlPlaneInfrastructure
 
         // Registered by type, so Wolverine builds them in its generated code on the handler's own DbContext, and sees that the
         // handler needs its transaction (W1).
-        services.AddScoped<ITenantCatalog, TenantCatalog>();
-        services.AddScoped<IUserTenants, UserTenants>();
-        services.AddScoped<IUserCatalog, UserCatalog>();
+        services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ITenantQueries, TenantQueries>();
+        services.AddScoped<IMemberQueries, MemberQueries>();
+        services.AddScoped<IInvitationQueries, InvitationQueries>();
+        services.AddScoped<IUserQueries, UserQueries>();
 
         services.AddOptions<InvitationOptions>()
             .BindConfiguration(InvitationOptions.Section)

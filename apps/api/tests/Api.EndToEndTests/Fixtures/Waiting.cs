@@ -5,13 +5,15 @@ internal static class Waiting
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
 
-    public static async Task UntilAsync(Func<bool> condition)
+    public static async Task UntilAsync(Func<Task<bool>> condition)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         timeout.CancelAfter(Patience);
-        while (!condition())
+        while (!await condition())
         {
             await Task.Delay(TimeSpan.FromMilliseconds(100), timeout.Token);
         }
     }
+
+    public static Task UntilAsync(Func<bool> condition) => UntilAsync(() => Task.FromResult(condition()));
 }

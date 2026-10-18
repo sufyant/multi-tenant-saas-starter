@@ -10,6 +10,12 @@ internal sealed class PlatformTenants(Database database, ApiFactory api)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
+    // The id of the invitation a request answered.
+    public static async Task<Guid> InvitationIdOfAsync(HttpResponseMessage invited) =>
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
+    public static string Email() => $"{Guid.NewGuid():N}@example.com";
+
     // A new active tenant, after every step of its creation, whose first Owner is invited at the address.
     public async Task<Guid> CreateAsync(HttpClient admin, string ownerEmail, string name = "Acme Ltd")
     {
@@ -18,10 +24,6 @@ internal sealed class PlatformTenants(Database database, ApiFactory api)
         created.EnsureSuccessStatusCode();
         return (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
     }
-
-    // The id of the invitation a request answered.
-    public static async Task<Guid> InvitationIdOfAsync(HttpResponseMessage invited) =>
-        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
     // The tenant's latest invitation: for a tenant that has one invitation, or whose invitations a fake clock does not create at one
     // moment.
@@ -40,6 +42,4 @@ internal sealed class PlatformTenants(Database database, ApiFactory api)
 
     public Task<HttpResponseMessage> AcceptAsync(string userId, string code, string firstName = "Ada", string lastName = "Lovelace") =>
         api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName, lastName }, Cancellation);
-
-    public static string Email() => $"{Guid.NewGuid():N}@example.com";
 }

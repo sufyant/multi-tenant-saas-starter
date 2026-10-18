@@ -20,13 +20,14 @@ public static class TenantProfileEndpoints
     // The member's shape of a tenant (K5), with when it was created and the member's role and permissions. The tenant door has declared
     // the tenant of the route.
     private static async Task<Result<MyTenantDetailResponse>> GetMyTenant(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<MyTenantDetailView>>(new GetMyTenantQuery(user.Id()), cancellationToken))
-            .Map(found => new MyTenantDetailResponse(
-                found.Tenant.Id,
-                found.Tenant.Name,
-                found.Tenant.Slug,
-                ResponseStatus.OfMyTenant(found.Tenant.Status),
-                MemberEndpoints.ToResponse(found.Tenant.Role),
-                found.Permissions,
-                found.CreatedAt));
+        (await bus.InvokeAsync<Result<MyTenantDetailView>>(new GetMyTenantQuery(user.Id()), cancellationToken)).Map(ToResponse);
+
+    private static MyTenantDetailResponse ToResponse(MyTenantDetailView tenant) => new(
+        tenant.Tenant.Id,
+        tenant.Tenant.Name,
+        tenant.Tenant.Slug,
+        ResponseStatus.OfMyTenant(tenant.Tenant.Status),
+        MemberEndpoints.ToResponse(tenant.Tenant.Role),
+        tenant.Permissions,
+        tenant.CreatedAt);
 }

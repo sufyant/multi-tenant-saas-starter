@@ -24,7 +24,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var userCatalog = new ControlPlane.Infrastructure.Persistence.UserCatalog(controlPlaneDbContext);
+            var userRepository = new ControlPlane.Infrastructure.Persistence.Users.UserRepository(controlPlaneDbContext);
             // The actual message body
             var deleteUserCommand = (ControlPlane.Application.Users.DeleteUser.DeleteUserCommand)context.Envelope.Message;
 
@@ -44,7 +44,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteUser.DeleteUserHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Users.DeleteUser.DeleteUserHandler.HandleAsync(deleteUserCommand, userCatalog, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Users.DeleteUser.DeleteUserHandler.HandleAsync(deleteUserCommand, userRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

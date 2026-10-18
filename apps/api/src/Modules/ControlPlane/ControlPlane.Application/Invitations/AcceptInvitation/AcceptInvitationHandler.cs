@@ -1,5 +1,5 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
@@ -16,15 +16,16 @@ public static class AcceptInvitationHandler
 {
     public static async Task<(Result<MyTenantView>, MemberJoinedEvent?)> HandleAsync(
         AcceptInvitationCommand command,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
         // K6: a membership and an invitation belong to the tenant aggregate, so the tenant row is locked first, before the invitation.
         // A suspension then runs before or after the acceptance, never between its check and its change. A code that names no tenant
         // answers like an invitation that does not exist, and so does a cancelled invitation.
-        if (await catalog.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
-            || await catalog.FindInvitationForUpdateAsync(InvitationSecret.Hash(command.Secret), cancellationToken) is not { } invitation
+        if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
+            || await tenants.FindInvitationForUpdateAsync(InvitationSecret.Hash(command.Secret), cancellationToken) is not { } invitation
             || invitation.Status == InvitationStatus.Cancelled)
         {
             return (Errors.InvitationNotFound, null);
@@ -37,19 +38,19 @@ public static class AcceptInvitationHandler
         // unless the deletion committed after it let them in. The acceptance counts the membership on the user row (R13), so it takes the
         // row's update lock at once: two acceptances of one user in two tenants then run one after the other, where two share locks
         // that both wait to update would deadlock.
-        var existing = await catalog.FindUserForUpdateAsync(command.ActorId, cancellationToken);
+        var existing = await users.FindUserForNoKeyUpdateAsync(command.ActorId, cancellationToken);
         if (existing?.DeletedAt is not null)
         {
             return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), null);
         }
 
         // T5: system admins enter through the system door, never as tenant members.
-        if (existing is not null && await catalog.IsSystemAdminAsync(existing.Id, cancellationToken))
+        if (existing is not null && await users.IsSystemAdminAsync(existing.Id, cancellationToken))
         {
             return (Error.Unprocessable(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin, "A system admin cannot join a tenant."), null);
         }
 
-        if (existing is not null && await catalog.FindMembershipAsync(existing.Id, cancellationToken) is not null)
+        if (existing is not null && await tenants.FindMembershipAsync(existing.Id, cancellationToken) is not null)
         {
             return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "You are already a member of this tenant."), null);
         }
@@ -83,10 +84,10 @@ public static class AcceptInvitationHandler
 
         if (existing is null)
         {
-            catalog.Add(user);
+            users.Add(user);
         }
 
-        await catalog.AddMembershipAsync(tenant, user.Id, invitation.RoleId, now, cancellationToken);
+        await tenants.AddMembershipAsync(tenant, user.Id, invitation.RoleId, now, cancellationToken);
         return (
             MyTenantView.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
             new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id));

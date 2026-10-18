@@ -34,6 +34,8 @@ public sealed class Database : IAsyncLifetime
 
     public FakeIdentityProvider Identity { get; } = new();
 
+    private string MainDatabase => new NpgsqlConnectionStringBuilder(_container.GetConnectionString()).Database!;
+
     public string ConnectionStringFor(string role, string? database = null) =>
         new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
         {
@@ -41,8 +43,6 @@ public sealed class Database : IAsyncLifetime
             Password = Password,
             Database = database ?? MainDatabase,
         }.ConnectionString;
-
-    private string MainDatabase => new NpgsqlConnectionStringBuilder(_container.GetConnectionString()).Database!;
 
     public async ValueTask InitializeAsync()
     {

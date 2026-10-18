@@ -1,4 +1,3 @@
-using ControlPlane.Application.Ports;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain;
@@ -14,7 +13,7 @@ public static class DeleteUserHandler
 {
     public static async Task<(Result, UserDeletedEvent?, DeleteIdentityAccountCommand?)> HandleAsync(
         DeleteUserCommand command,
-        IUserCatalog users,
+        IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {

@@ -1,6 +1,6 @@
 using ControlPlane.Application.Invitations.ExpireSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
-using ControlPlane.Application.Ports;
+using ControlPlane.Application.Tenants;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Domain.Tenants;
 using Wolverine;
@@ -15,13 +15,13 @@ public static class RecordSignUpHandler
 {
     public static async Task<OutgoingMessages> HandleAsync(
         RecordSignUpCommand opened,
-        ITenantCatalog catalog,
+        ITenantRepository tenants,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        _ = await catalog.FindTenantForUpdateAsync(cancellationToken)
+        _ = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation's sign-up runs in the tenant of the invitation.");
-        var invitation = await catalog.FindInvitationForUpdateAsync(opened.InvitationId, cancellationToken)
+        var invitation = await tenants.FindInvitationForUpdateAsync(opened.InvitationId, cancellationToken)
             ?? throw new InvalidOperationException("An invitation's sign-up follows the invitation.");
 
         var decision = invitation.RecordSignUp(opened.SignUpInvitationId);
@@ -35,7 +35,7 @@ public static class RecordSignUpHandler
             return [];
         }
 
-        await catalog.SaveChangesAsync(cancellationToken);
+        await tenants.SaveChangesAsync(cancellationToken);
 
         // The email speaks the invitation's language and says how long its link works.
         var now = time.GetUtcNow();

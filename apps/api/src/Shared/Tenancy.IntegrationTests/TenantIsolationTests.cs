@@ -306,6 +306,9 @@ public sealed class TenantIsolationTests(Database database) : IAsyncDisposable
         rolesWithoutBypass.ShouldBe(2);
     }
 
+    private static Task<string?> UserSettingAsync(NotesDbContext notes) =>
+        notes.Database.SqlQueryRaw<string?>("SELECT current_setting('app.user_id', true) AS \"Value\"").SingleAsync(Cancellation);
+
     private async Task<Note> WriteNoteAsync(Guid tenant, string text)
     {
         var note = new Note { Text = text };
@@ -320,7 +323,4 @@ public sealed class TenantIsolationTests(Database database) : IAsyncDisposable
 
     private Task<string> ReadTextAsync(Guid tenant, Guid id) =>
         _notes.InTenantAsync(tenant, notes => notes.Notes.Where(note => note.Id == id).Select(note => note.Text).SingleAsync(Cancellation));
-
-    private static Task<string?> UserSettingAsync(NotesDbContext notes) =>
-        notes.Database.SqlQueryRaw<string?>("SELECT current_setting('app.user_id', true) AS \"Value\"").SingleAsync(Cancellation);
 }

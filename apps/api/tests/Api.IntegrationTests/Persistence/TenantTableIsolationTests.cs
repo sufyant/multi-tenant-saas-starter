@@ -95,9 +95,9 @@ public sealed class TenantTableIsolationTests(Database database)
         seen.ShouldBe(0);
     }
 
+    private static string CountRowsOf(string table, Guid tenantId) => $"SELECT count(*) FROM {table} WHERE tenant_id = '{tenantId}'";
+
     // The catalog rows refer to their tenant, so both tenants exist.
     private async Task<(Guid Tenant, Guid Other)> TwoTenantsAsync() =>
         ((await _catalog.AddTenantAsync()).Id, (await _catalog.AddTenantAsync()).Id);
-
-    private static string CountRowsOf(string table, Guid tenantId) => $"SELECT count(*) FROM {table} WHERE tenant_id = '{tenantId}'";
 }
