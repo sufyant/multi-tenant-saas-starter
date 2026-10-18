@@ -120,6 +120,17 @@ public sealed class UserSuspensionTests(Database database) : IAsyncLifetime
         (await SuspendedAtAsync(systemAdmin)).ShouldBeNull();
     }
 
+    // One error code has one text (C7): suspension answers the text that deletion answers.
+    [Fact]
+    public async Task SuspendUser_ASystemAdmin_AnswersTheTextOfTheCode()
+    {
+        var systemAdmin = await _catalog.AddSystemAdminAsync();
+
+        var response = await (await AdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(systemAdmin)}/suspend", null, Cancellation);
+
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Detail.ShouldBe("A system admin cannot be suspended or deleted.");
+    }
+
     [Fact]
     public async Task SuspendUser_Oneself_IsAConflict()
     {
