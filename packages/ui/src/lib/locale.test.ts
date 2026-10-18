@@ -1,5 +1,6 @@
+import { Language } from "@repo/api-client";
 import { describe, expect, it } from "vitest";
-import { chooseLocale, directionOf } from "./locale";
+import { chooseLocale, directionOf, directions } from "./locale";
 
 const supported = ["en", "tr", "ar"] as const;
 
@@ -21,6 +22,12 @@ describe("locale", () => {
 
   it("ChooseLocale_NothingKnown_IsTheFallback", () => {
     expect(chooseLocale("xx", "de-DE", supported, "en")).toBe("en");
+  });
+
+  it("Directions_EveryLanguageOfTheContract_HasAnEntry", () => {
+    expect(Object.keys(directions).sort()).toEqual(
+      Object.values(Language).sort(),
+    );
   });
 
   it("DirectionOf_Arabic_IsRightToLeft", () => {

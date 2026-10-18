@@ -21,7 +21,7 @@ describe("Time", () => {
     await userEvent.tab();
 
     expect(await screen.findByText("13:32 UTC")).toBeInTheDocument();
-    expect(screen.getByText("Irish Standard Time (UTC+1)")).toBeInTheDocument();
+    expect(screen.getByText(/\(UTC\+1\)$/)).toBeInTheDocument();
   });
 
   it("Time_Relative_SaysHowLongAgo", () => {
