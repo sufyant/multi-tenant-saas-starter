@@ -39,6 +39,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler");
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler");
+                await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Audit.Application.AuditLogs.AuditEntryView>, Audit.Infrastructure.Persistence.AuditDbContext>.BeforeAsync(context.Envelope, auditDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
                 var outgoing1 = await Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler.HandleAsync(listAuditEntriesQuery, auditLog, cancellation).ConfigureAwait(false);
@@ -47,6 +48,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
 
+                await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Audit.Application.AuditLogs.AuditEntryView>, Audit.Infrastructure.Persistence.AuditDbContext>.AfterAsync(outgoing1, context.Envelope, auditDbContext, cancellation).ConfigureAwait(false);
                 
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await auditDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);

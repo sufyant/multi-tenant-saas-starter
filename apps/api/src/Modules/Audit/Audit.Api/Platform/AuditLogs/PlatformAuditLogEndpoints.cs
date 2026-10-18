@@ -32,8 +32,13 @@ public static class PlatformAuditLogEndpoints
             return page.Error;
         }
 
-        var entries = await bus.InvokeAsync<CursorPage<AuditEntryView>>(new ListPlatformAuditEntriesQuery(page.Value, tenantId), cancellationToken);
-        var named = await bus.InvokeAsync<CursorPage<AuditEntryView>>(new GetAuditEntryNamesQuery(entries), cancellationToken);
-        return AuditEntryResponses.Of(named);
+        var entries = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new ListPlatformAuditEntriesQuery(page.Value, tenantId), cancellationToken);
+        if (!entries.IsSuccess)
+        {
+            return entries.Error;
+        }
+
+        var named = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new GetAuditEntryNamesQuery(entries.Value), cancellationToken);
+        return named.Map(AuditEntryResponses.Of);
     }
 }

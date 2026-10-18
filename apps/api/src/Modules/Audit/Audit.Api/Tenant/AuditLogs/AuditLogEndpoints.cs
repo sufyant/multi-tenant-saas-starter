@@ -28,8 +28,13 @@ public static class AuditLogEndpoints
             return page.Error;
         }
 
-        var entries = await bus.InvokeAsync<CursorPage<AuditEntryView>>(new ListAuditEntriesQuery(page.Value), cancellationToken);
-        var named = await bus.InvokeAsync<CursorPage<AuditEntryView>>(new GetAuditEntryNamesQuery(entries), cancellationToken);
-        return AuditEntryResponses.Of(named);
+        var entries = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new ListAuditEntriesQuery(page.Value), cancellationToken);
+        if (!entries.IsSuccess)
+        {
+            return entries.Error;
+        }
+
+        var named = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new GetAuditEntryNamesQuery(entries.Value), cancellationToken);
+        return named.Map(AuditEntryResponses.Of);
     }
 }
