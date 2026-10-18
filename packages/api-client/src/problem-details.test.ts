@@ -55,7 +55,7 @@ describe("actionFor", () => {
 
   it("ActionFor_403UserSuspended_GoesToTheSuspendedScreen", () => {
     expect(actionFor(403, problem({ code: "user.suspended" }))).toEqual({
-      kind: "suspended",
+      kind: "account-suspended",
     });
   });
 

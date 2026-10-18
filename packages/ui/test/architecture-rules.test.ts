@@ -38,6 +38,15 @@ describe("architecture rules", () => {
     ]);
   });
 
+  it("PhysicalDirectionClasses_WordInAComment_IsNoFinding", () => {
+    const root = folder({
+      "a.tsx":
+        "/** It mirrors in right-to-left. */\nexport const A = 1; // left-aligned",
+    });
+
+    expect(physicalDirectionClasses(root)).toEqual([]);
+  });
+
   it("PhysicalDirectionClasses_LogicalClassesOnly_AreNoFinding", () => {
     const root = folder({
       "a.tsx":
@@ -157,6 +166,14 @@ describe("architecture rules", () => {
     expect(enumLiterals(root, new Set(["tenant.not_found"]))).toEqual([
       'a.ts:1: enum value "tenant.not_found" as a literal',
     ]);
+  });
+
+  it("EnumLiterals_LiteralType_IsNoFinding", () => {
+    const root = folder({
+      "a.tsx": 'export const A = (props: React.ComponentProps<"tr">) => props;',
+    });
+
+    expect(enumLiterals(root, new Set(["tr"]))).toEqual([]);
   });
 
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {

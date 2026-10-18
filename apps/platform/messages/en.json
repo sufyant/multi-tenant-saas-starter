@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "title": "Starter Platform",
+    "description": "The provider's app."
+  },
+  "locale": {
+    "format": "en-IE"
+  },
+  "shell": {
+    "navigation": "Main",
+    "menu": "Open menu",
+    "search": "Search",
+    "searchShortcut": "⌘K",
+    "breadcrumb": "Breadcrumb",
+    "commandTitle": "Go to",
+    "commandPlaceholder": "Search pages",
+    "commandEmpty": "No page found",
+    "home": "Home",
+    "overview": "Overview",
+    "settings": "Settings",
+    "preferences": "Preferences",
+    "you": "You",
+    "language": "Language",
+    "platform": "Platform"
+  },
+  "overview": {
+    "title": "Overview",
+    "emptyTitle": "Platform",
+    "emptyText": "Organisations, Users and Activity come here in the next steps."
+  },
+  "preferences": {
+    "title": "Preferences",
+    "readOnly": "You can change your language and time zone in a later version.",
+    "name": "Name",
+    "email": "Email",
+    "language": "Language",
+    "timeZone": "Time zone",
+    "browserTimeZone": "Not set: this device's time zone",
+    "now": "Now",
+    "theme": "Theme",
+    "themeHint": "Saved on this device."
+  },
+  "access": {
+    "noAccessText": "This app is for the system admins of the provider. Your account is not one."
+  }
+}

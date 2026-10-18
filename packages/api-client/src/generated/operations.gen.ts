@@ -7,6 +7,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/me/invitations/accept",
     "tag": "Me/Invitations",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -16,6 +17,7 @@ export const operations = [
     "method": "PATCH",
     "path": "/v1/tenants/{tenantId}/members/{userId}",
     "tag": "Tenant/Members",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -25,6 +27,7 @@ export const operations = [
     "method": "PATCH",
     "path": "/v1/me/preferences",
     "tag": "Me/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -34,6 +37,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/close",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -43,6 +47,9 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants",
     "tag": "Platform/Tenants",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
     "responseHeaders": [
       "Idempotent-Replayed",
       "Location",
@@ -54,6 +61,7 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/platform/users/{userId}",
     "tag": "Platform/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -63,6 +71,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/me/invitations/preview",
     "tag": "Me/Invitations",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -72,6 +81,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/me",
     "tag": "Me/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -81,6 +91,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/tenants/{tenantId}",
     "tag": "Tenant/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -90,6 +101,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/tenants/{tenantId}",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -99,6 +111,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/users/{userId}",
     "tag": "Platform/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -108,6 +121,9 @@ export const operations = [
     "method": "POST",
     "path": "/v1/tenants/{tenantId}/invitations",
     "tag": "Tenant/Invitations",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
@@ -118,6 +134,9 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/invitations",
     "tag": "Platform/Invitations",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
@@ -128,6 +147,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/tenants/{tenantId}/audit-log",
     "tag": "Tenant/AuditLogs",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -137,6 +157,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/tenants/{tenantId}/invitations",
     "tag": "Tenant/Invitations",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -146,6 +167,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/tenants/{tenantId}/members",
     "tag": "Tenant/Members",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -155,6 +177,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/me/tenants",
     "tag": "Me/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -164,6 +187,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/audit-log",
     "tag": "Platform/AuditLogs",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -173,6 +197,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/tenants",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -182,6 +207,7 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/users",
     "tag": "Platform/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -191,6 +217,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/reactivate",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -200,6 +227,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/reactivate",
     "tag": "Platform/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -209,6 +237,7 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/tenants/{tenantId}/members/{userId}",
     "tag": "Tenant/Members",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -218,6 +247,7 @@ export const operations = [
     "method": "PATCH",
     "path": "/v1/platform/tenants/{tenantId}",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -227,6 +257,7 @@ export const operations = [
     "method": "PATCH",
     "path": "/v1/platform/users/{userId}",
     "tag": "Platform/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -236,6 +267,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/reopen",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -245,6 +277,7 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/tenants/{tenantId}/invitations/{invitationId}",
     "tag": "Tenant/Invitations",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -254,6 +287,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/suspend",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
@@ -263,6 +297,7 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/suspend",
     "tag": "Platform/Users",
+    "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]

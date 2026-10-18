@@ -1,4 +1,48 @@
 {
+  "common": {
+    "tryAgain": "حاول مرة أخرى",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "notifications": "الإشعارات",
+    "signOut": "تسجيل الخروج",
+    "account": "الحساب",
+    "loading": "جارٍ التحميل",
+    "previous": "السابق",
+    "next": "التالي",
+    "page": "الصفحة {page} من {count}",
+    "goHome": "الذهاب إلى الرئيسية"
+  },
+  "theme": {
+    "label": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  },
+  "languages": {
+    "en": "English",
+    "tr": "Türkçe",
+    "ar": "العربية"
+  },
+  "validation": {
+    "required": "املأ هذا الحقل.",
+    "too_long": "هذا طويل جدًا. اختصره.",
+    "too_big": "هذا الرقم كبير جدًا.",
+    "too_small": "هذا قصير جدًا.",
+    "email_invalid": "أدخل عنوان بريد إلكتروني مثل name@company.com.",
+    "format_invalid": "هذا التنسيق غير صالح.",
+    "choose_value": "اختر أحد الخيارات.",
+    "invalid": "هذه القيمة غير صالحة."
+  },
+  "problems": {
+    "noAccessTitle": "لا يوجد وصول بعد",
+    "noAccessText": "لست عضوًا في أي مؤسسة بعد. عندما يدعوك أحد، تصلك الدعوة بالبريد الإلكتروني.",
+    "suspendedTitle": "حسابك معلّق",
+    "suspendedText": "لا يمكنك استخدام التطبيق ما دام حسابك معلّقًا. تواصل مع الشخص الذي يدير مؤسستك.",
+    "errorTitle": "حدث خطأ",
+    "errorText": "تعذّر تحميل الصفحة. بياناتك آمنة. حاول مرة أخرى.",
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundText": "هذه الصفحة غير موجودة."
+  },
   "errors": {
     "auth": {
       "forbidden": "ليس لديك إذن للقيام بهذا.",

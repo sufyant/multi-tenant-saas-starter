@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Starter",
+    "description": "Kuruluşunuzun çalışma alanı."
+  },
+  "locale": {
+    "format": "tr-TR"
+  },
+  "shell": {
+    "navigation": "Ana menü",
+    "menu": "Menüyü aç",
+    "search": "Ara",
+    "searchShortcut": "⌘K",
+    "breadcrumb": "Konum",
+    "commandTitle": "Git",
+    "commandPlaceholder": "Sayfa ara",
+    "commandEmpty": "Sayfa bulunamadı",
+    "home": "Ana sayfa",
+    "overview": "Genel bakış",
+    "settings": "Ayarlar",
+    "preferences": "Tercihler",
+    "you": "Siz",
+    "switchOrganisation": "Kuruluş değiştir",
+    "language": "Dil",
+    "roles": {
+      "owner": "Sahip",
+      "admin": "Yönetici",
+      "member": "Üye"
+    }
+  },
+  "organisations": {
+    "chooseTitle": "Bir kuruluş seçin",
+    "chooseText": "Birden fazla kuruluşun üyesisiniz. Şimdi çalışacağınız kuruluşu seçin."
+  },
+  "overview": {
+    "title": "Genel bakış",
+    "emptyTitle": "Burada henüz bir şey yok",
+    "emptyText": "Kuruluşunuzun işleri burada görünür."
+  },
+  "preferences": {
+    "title": "Tercihler",
+    "readOnly": "Dilinizi ve saat diliminizi sonraki bir sürümde değiştirebilirsiniz.",
+    "name": "Ad",
+    "email": "E-posta",
+    "language": "Dil",
+    "timeZone": "Saat dilimi",
+    "browserTimeZone": "Ayarlanmadı: bu cihazın saat dilimi",
+    "now": "Şu an",
+    "theme": "Tema",
+    "themeHint": "Bu cihazda saklanır."
+  }
+}

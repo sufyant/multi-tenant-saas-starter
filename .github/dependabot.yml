@@ -57,7 +57,7 @@ updates:
   # base image must arrive at once. A cooldown protects against a new package release that is
   # later found to be harmful. A base image is pinned by digest and scanned on every update.
   - package-ecosystem: docker
-    directories: [/apps/api, /apps/web]
+    directories: [/apps/api, /apps/web, /apps/platform]
     schedule:
       interval: daily
     # A Node major version changes .nvmrc, the build image and the distroless runtime image

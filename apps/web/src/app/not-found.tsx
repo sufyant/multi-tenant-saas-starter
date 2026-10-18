@@ -1,16 +1,23 @@
-import { Button } from "@repo/ui/components/ui/button";
+import { EmptyState } from "@repo/ui/components/empty-state";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getTranslations();
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-center">
-      <h1 className="text-2xl font-semibold">Page not found</h1>
-      <p className="text-muted-foreground">
-        The page you&apos;re looking for doesn&apos;t exist.
-      </p>
-      <Button asChild className="mt-4">
-        <Link href="/">Go home</Link>
-      </Button>
-    </div>
+    <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
+      <EmptyState
+        title={t("problems.notFoundTitle")}
+        description={t("problems.notFoundText")}
+        action={
+          <Link
+            href="/"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            {t("common.goHome")}
+          </Link>
+        }
+      />
+    </main>
   );
 }

@@ -1,5 +1,13 @@
 import type { Instrumentation } from "next";
 
+/** Runs once when the server starts: a missing or wrong environment variable stops the start here (F7). */
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { env } = await import("./env");
+    env();
+  }
+}
+
 export const onRequestError: Instrumentation.onRequestError = async (
   err,
   request,

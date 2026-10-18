@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Starter",
+    "description": "Your organisation's workspace."
+  },
+  "locale": {
+    "format": "en-IE"
+  },
+  "shell": {
+    "navigation": "Main",
+    "menu": "Open menu",
+    "search": "Search",
+    "searchShortcut": "⌘K",
+    "breadcrumb": "Breadcrumb",
+    "commandTitle": "Go to",
+    "commandPlaceholder": "Search pages",
+    "commandEmpty": "No page found",
+    "home": "Home",
+    "overview": "Overview",
+    "settings": "Settings",
+    "preferences": "Preferences",
+    "you": "You",
+    "switchOrganisation": "Switch organisation",
+    "language": "Language",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    }
+  },
+  "organisations": {
+    "chooseTitle": "Choose an organisation",
+    "chooseText": "You are a member of more than one organisation. Choose the one you work in now."
+  },
+  "overview": {
+    "title": "Overview",
+    "emptyTitle": "Nothing here yet",
+    "emptyText": "The work of your organisation appears here."
+  },
+  "preferences": {
+    "title": "Preferences",
+    "readOnly": "You can change your language and time zone in a later version.",
+    "name": "Name",
+    "email": "Email",
+    "language": "Language",
+    "timeZone": "Time zone",
+    "browserTimeZone": "Not set: this device's time zone",
+    "now": "Now",
+    "theme": "Theme",
+    "themeHint": "Saved on this device."
+  }
+}

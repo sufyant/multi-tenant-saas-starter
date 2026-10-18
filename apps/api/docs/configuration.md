@@ -21,7 +21,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ConnectionStrings:Messaging` | Optional | `ConnectionStrings:Database` | The application role's direct or session-mode connection for Wolverine's message store. Needed when `ConnectionStrings:Database` goes through a pooler in transaction mode |
 | `ConnectionStrings:Migrations` | Required by `migrate` only | none | The owner role's direct connection. Given only to the `migrate` command, never to a running process (R3) |
 | `Authentication:Clerk:Issuer` | Required | none | The identity provider's issuer URL: the tokens' issuer and the source of their signing keys |
-| `Authentication:Clerk:AuthorizedParties` | Required outside Development. **Development:** may be empty | none | The origins of the clients allowed to use the API (the tokens' `azp`). With none, a token issued to any origin is accepted |
+| `Authentication:Clerk:AuthorizedParties` | Required outside Development. **Development:** may be empty | none | The origins of the clients allowed to use the API (the tokens' `azp`): item 0 is the web app's origin, item 1 the platform app's, which runs on an origin of its own. With none, a token issued to any origin is accepted |
 | `ForwardedHeaders:KnownProxies` | Optional | none | IP addresses of trusted reverse proxies. With no proxy and no network, forwarded headers are not read |
 | `ForwardedHeaders:KnownNetworks` | Optional | none | Trusted proxy networks in CIDR notation |
 | `RateLimiting:PermitLimit` | Optional | `1000` (`appsettings.json`) | Requests each user may make in a window, in each process |

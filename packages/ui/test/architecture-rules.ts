@@ -71,6 +71,13 @@ function ignored(root: string, path: string, options: Options): boolean {
   );
 }
 
+/** The text of a file with its comments blanked out, so a word in a comment ("right-to-left") is no finding. Lines keep their numbers. */
+function withoutComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\/|(?<![:"'`])\/\/[^\n]*/g, (comment) =>
+    comment.replace(/[^\n]/g, " "),
+  );
+}
+
 function linesMatching(
   root: string,
   path: string,
@@ -78,7 +85,7 @@ function linesMatching(
   what: (match: string) => string,
 ): Finding[] {
   const findings: Finding[] = [];
-  readFileSync(path, "utf8")
+  withoutComments(readFileSync(path, "utf8"))
     .split("\n")
     .forEach((text, index) => {
       for (const match of text.matchAll(pattern)) {
@@ -405,7 +412,8 @@ export function dateFormattingOutsideFormatter(
 
 /**
  * Rule F3: no value of a contract enum as a string literal. A screen reads `Object.values(Language)` or
- * `MemberRole.owner`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed.
+ * `MemberRole.owner`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed, and so
+ * is a literal type, such as the element name of `ComponentProps<"tr">`.
  */
 export function enumLiterals(
   root: string,
@@ -428,6 +436,7 @@ export function enumLiterals(
         (ts.isStringLiteral(node) ||
           ts.isNoSubstitutionTemplateLiteral(node)) &&
         !modules.has(node as ts.StringLiteral) &&
+        !ts.isLiteralTypeNode(node.parent) &&
         values.has(node.text)
       ) {
         findings.push(

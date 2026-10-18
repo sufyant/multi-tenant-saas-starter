@@ -7,7 +7,7 @@ import {
 /** What a screen does with an error answer (F4 in docs/frontend/ARCHITECTURE.md). */
 export type ProblemAction =
   | { kind: "sign-in" }
-  | { kind: "suspended" }
+  | { kind: "account-suspended" }
   | { kind: "field-errors"; fields: Record<string, FieldErrorCode[]> }
   | { kind: "message"; key: `errors.${ErrorCode}` };
 
@@ -41,7 +41,7 @@ export function actionFor(
   if (!problem)
     return { kind: "message", key: `errors.${ErrorCode.servererror}` };
   if (status === 403 && problem.code === ErrorCode.usersuspended)
-    return { kind: "suspended" };
+    return { kind: "account-suspended" };
   const fields = fieldErrorsOf(problem);
   if (Object.keys(fields).length > 0) return { kind: "field-errors", fields };
   return { kind: "message", key: `errors.${problem.code}` };
