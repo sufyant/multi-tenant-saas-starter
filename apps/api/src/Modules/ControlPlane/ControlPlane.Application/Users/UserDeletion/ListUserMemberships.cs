@@ -13,8 +13,8 @@ public sealed record ListUserMemberships(Guid UserId);
 /// <summary>A tenant the user is a member of. <see cref="OwnsATenantPastCreation"/>: the user is its Owner, and it is active, suspended or closed.</summary>
 public sealed record UserMembership(Guid TenantId, bool OwnsATenantPastCreation);
 
-// A system admin is never deleted, as they are never suspended: the system door stays open to staff, and the first system admin is
-// written only while the staff list is empty.
+// A system admin is never deleted, as they are never suspended: the system door stays open to system admins, and the first system admin is
+// written only while the system admin list is empty.
 public static class ListUserMembershipsHandler
 {
     public static async Task<Result<UserMembership[]>> HandleAsync(

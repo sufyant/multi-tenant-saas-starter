@@ -18,7 +18,7 @@ public class TenantTests
 
     private const string Reason = "Unpaid invoices";
 
-    // Settings › General shows when the organisation was created.
+    // Settings › General shows when the tenant was created.
     [Fact]
     public void CreateTenant_Valid_KeepsWhenItWasCreated()
     {

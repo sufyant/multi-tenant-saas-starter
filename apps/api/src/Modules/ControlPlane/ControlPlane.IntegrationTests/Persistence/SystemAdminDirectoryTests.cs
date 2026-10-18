@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ControlPlane.IntegrationTests.Persistence;
 
-// Section 6: the first system admin comes from configuration. While the staff list is empty, the person who reaches the system door
+// Section 6: the first system admin comes from configuration. While the system admin list is empty, the person who reaches the system door
 // with a second factor and a verified email address equal to ControlPlane:FirstSystemAdminEmail becomes a system admin. Each test
-// has a database of its own, so its staff list starts empty.
+// has a database of its own, so its system admin list starts empty.
 public sealed class SystemAdminDirectoryTests(Database database)
 {
     private const string FirstAdminEmail = "First.Admin@Example.com";
@@ -16,79 +16,79 @@ public sealed class SystemAdminDirectoryTests(Database database)
     [Fact]
     public async Task VisitTheSystemDoor_TheConfiguredPersonOnTheirFirstVisit_BecomesTheFirstSystemAdmin()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
         var person = Person("first.admin@example.com");
 
         var permissions = await VisitAsync(services, person);
 
         permissions.ShouldNotBeNull().ShouldBe(PermissionPools.SystemPool, ignoreOrder: true);
-        (await StaffAsync(services)).ShouldBe(1);
+        (await SystemAdminCountAsync(services)).ShouldBe(1);
     }
 
     [Fact]
     public async Task VisitTheSystemDoor_APersonWithAnotherEmail_DoesNotBecomeASystemAdmin()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
 
         var permissions = await VisitAsync(services, Person("someone.else@example.com"));
 
         permissions.ShouldBeNull();
-        (await StaffAsync(services)).ShouldBe(0);
+        (await SystemAdminCountAsync(services)).ShouldBe(0);
     }
 
     [Fact]
     public async Task VisitTheSystemDoor_TheConfiguredPersonWithoutASecondFactor_DoesNotBecomeASystemAdmin()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
 
         var permissions = await VisitAsync(services, Person("first.admin@example.com"), secondFactorVerified: false);
 
         permissions.ShouldBeNull();
-        (await StaffAsync(services)).ShouldBe(0);
+        (await SystemAdminCountAsync(services)).ShouldBe(0);
     }
 
     // Only the provider's verified addresses count: one the person typed, or one waiting for verification, proves nothing.
     [Fact]
     public async Task VisitTheSystemDoor_TheConfiguredEmailIsNotVerified_DoesNotBecomeASystemAdmin()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
 
         var permissions = await VisitAsync(services, Person());
 
         permissions.ShouldBeNull();
-        (await StaffAsync(services)).ShouldBe(0);
+        (await SystemAdminCountAsync(services)).ShouldBe(0);
     }
 
     [Fact]
     public async Task VisitTheSystemDoor_AfterTheFirstSystemAdminExists_TheSettingMakesNobodyElseOne()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
         await VisitAsync(services, Person("first.admin@example.com"));
         var second = Person("first.admin@example.com");
 
         var permissions = await VisitAsync(services, second);
 
         permissions.ShouldBeNull();
-        (await StaffAsync(services)).ShouldBe(1);
+        (await SystemAdminCountAsync(services)).ShouldBe(1);
     }
 
-    // Two pods may let the same person in at the same moment; the staff list is checked in the statement that writes it.
+    // Two pods may let the same person in at the same moment; the system admin list is checked in the statement that writes it.
     [Fact]
     public async Task VisitTheSystemDoor_TwoFirstVisitsAtOnce_CreateOneSystemAdmin()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
         var person = Person("first.admin@example.com");
 
         var visits = await Task.WhenAll(VisitAsync(services, person), VisitAsync(services, person));
 
         visits.ShouldAllBe(permissions => permissions != null);
-        (await StaffAsync(services)).ShouldBe(1);
+        (await SystemAdminCountAsync(services)).ShouldBe(1);
     }
 
     [Fact]
     public async Task VisitTheSystemDoor_AUserTheCatalogKnows_BecomesTheFirstSystemAdminWithTheSameId()
     {
-        await using var services = await StaffWithoutAdminsAsync();
+        await using var services = await WithoutSystemAdminsAsync();
         var user = await Catalog.AddUserAsync(services);
         database.Identity.AddAccount(user.ExternalId, "first.admin@example.com");
 
@@ -99,7 +99,7 @@ public sealed class SystemAdminDirectoryTests(Database database)
 
     private string _database = null!;
 
-    private async Task<ServiceProvider> StaffWithoutAdminsAsync()
+    private async Task<ServiceProvider> WithoutSystemAdminsAsync()
     {
         _database = await database.CreateMigratedDatabaseAsync();
         return database.BuildServices(database: _database, settings: new() { ["ControlPlane:FirstSystemAdminEmail"] = FirstAdminEmail });
@@ -121,6 +121,6 @@ public sealed class SystemAdminDirectoryTests(Database database)
             .FindSystemPermissionsAsync(externalId, secondFactorVerified, Cancellation);
     }
 
-    private Task<long> StaffAsync(IServiceProvider services) =>
+    private Task<long> SystemAdminCountAsync(IServiceProvider services) =>
         database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.system_admins", _database);
 }

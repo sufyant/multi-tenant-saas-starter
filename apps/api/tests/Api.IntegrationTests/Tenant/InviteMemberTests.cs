@@ -321,7 +321,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"grace.{local}@navy.MIL");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await CodeOfAsync(invited)).ShouldBe("membership.exists");
+        (await CodeOfAsync(invited)).ShouldBe("member.exists");
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
 

@@ -179,17 +179,17 @@ public sealed class UserDeletionTests(Database database) : IAsyncLifetime
         _api.Identity.Deleted.ShouldBe([user, user]);
     }
 
-    // A system admin is never deleted, as never suspended: the system door stays open to staff.
+    // A system admin is never deleted, as never suspended: the system door stays open to system admins.
     [Fact]
     public async Task DeleteUser_ASystemAdmin_IsAConflictAndChangesNothing()
     {
-        var staff = await _catalog.AddSystemAdminAsync(email: $"{Guid.NewGuid():N}@example.com");
+        var systemAdmin = await _catalog.AddSystemAdminAsync(email: $"{Guid.NewGuid():N}@example.com");
 
-        var deleted = await DeleteAsync(await _catalog.AddSystemAdminAsync(), await _catalog.UserIdOfAsync(staff));
+        var deleted = await DeleteAsync(await _catalog.AddSystemAdminAsync(), await _catalog.UserIdOfAsync(systemAdmin));
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(deleted)).ShouldBe("user.is_system_admin");
-        (await _catalog.UserOfAsync(staff)).Deleted.ShouldBeFalse();
+        (await _catalog.UserOfAsync(systemAdmin)).Deleted.ShouldBeFalse();
     }
 
     [Fact]

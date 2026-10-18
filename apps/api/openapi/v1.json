@@ -4013,12 +4013,12 @@
           "invitation.not_found",
           "invitation.not_pending",
           "invitation.owner_requires_owner",
-          "invitation.staff_cannot_join",
-          "membership.cannot_remove_self",
-          "membership.exists",
-          "membership.last_owner",
-          "membership.not_found",
-          "membership.owner_requires_owner",
+          "invitation.system_admin_cannot_join",
+          "member.cannot_remove_self",
+          "member.exists",
+          "member.last_owner",
+          "member.not_found",
+          "member.owner_requires_owner",
           "paging.cursor_invalid",
           "paging.filter_invalid",
           "paging.limit_invalid",
@@ -4104,7 +4104,7 @@
             "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation\ngives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or\n`cancelled`. Only a caller with the invited address gets it."
+        "description": "What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation\ngives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or\n`cancelled`. Only a caller with the invited address gets it."
       },
       "InvitationResponse": {
         "required": [
@@ -5103,7 +5103,7 @@
             }
           }
         },
-        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended, or was suspended before step 20l), and every membership by the organisation's name."
+        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name."
       },
       "UserMembershipResponse": {
         "required": [
@@ -5113,7 +5113,7 @@
           "tenantStatus",
           "role",
           "joinedAt",
-          "soleOwner"
+          "lastOwner"
         ],
         "type": "object",
         "properties": {
@@ -5137,11 +5137,11 @@
             "type": "string",
             "format": "date-time"
           },
-          "soleOwner": {
+          "lastOwner": {
             "type": "boolean"
           }
         },
-        "description": "An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are\nits only Owner. The suspend dialog warns with `soleOwner`, and the delete refusal names those organisations."
+        "description": "A tenant the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are\nits last Owner. The suspend dialog warns with `lastOwner`, and the delete refusal names those tenants."
       },
       "UserMembershipResponseTenantStatus": {
         "enum": [
@@ -5149,7 +5149,7 @@
           "suspended",
           "closed"
         ],
-        "description": "The status of an organisation a user is a member of: active, or suspended or closed when its members cannot enter it."
+        "description": "The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it."
       },
       "UserNameResponse": {
         "required": [
@@ -5227,7 +5227,7 @@
             "format": "date-time"
           }
         },
-        "description": "A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many organisations they are a member of, and when they joined the catalog."
+        "description": "A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many tenants they are a member of, and when they joined the catalog."
       },
       "UserResponseStatus": {
         "enum": [

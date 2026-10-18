@@ -7,7 +7,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Me;
 
-// POST /v1/me/invitations/preview: the accept screen names the organisation, the inviter and the role before the person accepts, and
+// POST /v1/me/invitations/preview: the accept screen names the tenant, the inviter and the role before the person accepts, and
 // says when the link is expired, used or cancelled. The code is the invitation's secret, so it travels in the body, as for accepting.
 // The preview finds the invitation as accepting does: the code's tenant is declared, then the invitation is found by the hash of the
 // secret. Only the invited person learns more than the email told them: a caller without the invited address is refused before the

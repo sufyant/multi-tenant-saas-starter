@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: GetSoleOwnershipHandler2043045220
+    // START: GetLastOwnershipHandler1395705525
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class GetSoleOwnershipHandler2043045220 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class GetLastOwnershipHandler1395705525 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public GetSoleOwnershipHandler2043045220(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public GetLastOwnershipHandler1395705525(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var tenantCatalog = new ControlPlane.Infrastructure.Persistence.TenantCatalog(controlPlaneDbContext);
             // The actual message body
-            var getSoleOwnership = (ControlPlane.Application.Users.UserDeletion.GetSoleOwnership)context.Envelope.Message;
+            var getLastOwnership = (ControlPlane.Application.Users.UserDeletion.GetLastOwnership)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -37,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.UserDeletion.GetSoleOwnershipHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.UserDeletion.GetSoleOwnershipHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.UserDeletion.GetLastOwnershipHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.UserDeletion.GetLastOwnershipHandler");
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Users.UserDeletion.GetSoleOwnershipHandler.HandleAsync(getSoleOwnership, tenantCatalog, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Users.UserDeletion.GetLastOwnershipHandler.HandleAsync(getLastOwnership, tenantCatalog, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -64,7 +64,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: GetSoleOwnershipHandler2043045220
+    // END: GetLastOwnershipHandler1395705525
     
     
 }

@@ -62,6 +62,17 @@ public sealed class ErrorCodeTests
         twice.ShouldBeEmpty();
     }
 
+    // Section 10: one concept has one name. A member's error is in the area member, and a system admin is never "staff".
+    [Fact]
+    public void DeclareErrorCode_EveryCode_HasNoMembershipAreaAndNoStaff()
+    {
+        var otherNames = ErrorCodeDeclarations.All
+            .Where(declared => declared.Value.StartsWith("membership.", StringComparison.Ordinal) || declared.Value.Contains("staff", StringComparison.Ordinal))
+            .Select(declared => $"{declared.Value}: {declared.Owner}");
+
+        otherNames.ShouldBeEmpty();
+    }
+
     // A validation answer lists a field code for each failed rule, so every rule of every validator states one.
     [Fact]
     public void ValidateCommand_EveryRuleOfEveryValidator_StatesAFieldErrorCode()

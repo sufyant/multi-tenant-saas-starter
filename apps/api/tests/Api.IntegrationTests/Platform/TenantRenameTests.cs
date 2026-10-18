@@ -126,7 +126,7 @@ public sealed class TenantRenameTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(response)).ShouldBe("tenant.not_found");
     }
 
-    // The maintainer's decision: the organisation's name is locked in the tenant app, so the tenant path has no PATCH, not even for an
+    // The maintainer's decision: the tenant's name is locked in the tenant app, so the tenant path has no PATCH, not even for an
     // Owner.
     [Fact]
     public async Task RenameTenant_ThroughTheTenantDoor_IsNoEndpoint()

@@ -53,7 +53,7 @@ public sealed class UserCatalog(ControlPlaneDbContext controlPlane) : IUserCatal
     }
 
     // The tenants table is not under row level security (R6), so the one query joins each membership's tenant and role. The tenant's
-    // summary counts its Owners (R12): a user who holds the Owner role in a tenant with one Owner is its only Owner.
+    // summary counts its Owners (R12): a user who holds the Owner role in a tenant with one Owner is its last Owner.
     async Task<IReadOnlyList<UserMembershipDetails>> IUserCatalog.ListMembershipDetailsAsync(Guid userId, CancellationToken cancellationToken)
     {
         await controlPlane.DeclareUserAsync(userId, cancellationToken);

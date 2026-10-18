@@ -30,7 +30,7 @@ public class SystemDoorTests
         permissions.ShouldBeNull();
     }
 
-    // Section 6: while the staff list is empty, the person with the configured email address verified and a second factor becomes
+    // Section 6: while the system admin list is empty, the person with the configured email address verified and a second factor becomes
     // the first system admin.
     [Fact]
     public void BecomeFirstSystemAdmin_TheConfiguredEmailIsVerifiedWithASecondFactor_Qualifies()

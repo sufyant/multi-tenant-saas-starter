@@ -205,7 +205,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
-    // The users list shows how many organisations each user is in, and when they joined the catalog.
+    // The users list shows how many tenants each user is in, and when they joined the catalog.
     [Fact]
     public async Task ListUsers_EachUser_ReturnsTheirMembershipCountAndWhenTheyWereCreated()
     {

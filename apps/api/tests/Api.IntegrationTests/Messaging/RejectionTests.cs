@@ -97,7 +97,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
             tenantId, new AcceptInvitation(secret, member, [email], "Ada", "Lovelace"));
 
-        result.Error.Code.Value.ShouldBe("membership.exists");
+        result.Error.Code.Value.ShouldBe("member.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
         (await database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
         session.Sent.AllMessages().ShouldBeEmpty();

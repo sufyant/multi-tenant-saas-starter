@@ -30,7 +30,7 @@ public interface IUserCatalog
     /// <summary>
     /// The user's memberships in every tenant, by the tenant's name, then id, in one query. It declares the user in the transaction (R11),
     /// so the own_memberships policy decides what is seen; the transaction then declares no tenant (R4). Whether the user is a tenant's
-    /// only Owner comes from the tenant's summary (R12), because the policy shows the user's own memberships only.
+    /// last Owner comes from the tenant's summary (R12), because the policy shows the user's own memberships only.
     /// </summary>
     internal Task<IReadOnlyList<UserMembershipDetails>> ListMembershipDetailsAsync(Guid userId, CancellationToken cancellationToken);
 
@@ -40,7 +40,7 @@ public interface IUserCatalog
     /// <summary>The catalog id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
     internal Task<Guid?> FindUserIdAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>Whether the user is on the staff list.</summary>
+    /// <summary>Whether the user is on the system admin list.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>

@@ -74,7 +74,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var removed = await _api.CreateClient(actor).RemoveMemberAsync(tenant.Id, actorId);
 
         removed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await CodeOfAsync(removed)).ShouldBe("membership.cannot_remove_self");
+        (await CodeOfAsync(removed)).ShouldBe("member.cannot_remove_self");
         (await IsMemberAsync(tenant.Id, actorId)).ShouldBe(1);
     }
 
@@ -90,7 +90,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var removed = await _api.CreateClient(admin).RemoveMemberAsync(tenant.Id, owner);
 
         removed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await CodeOfAsync(removed)).ShouldBe("membership.owner_requires_owner");
+        (await CodeOfAsync(removed)).ShouldBe("member.owner_requires_owner");
         (await IsMemberAsync(tenant.Id, owner)).ShouldBe(1);
     }
 
@@ -121,7 +121,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, Guid.NewGuid());
 
         removed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await CodeOfAsync(removed)).ShouldBe("membership.not_found");
+        (await CodeOfAsync(removed)).ShouldBe("member.not_found");
     }
 
     // Row level security hides another tenant's member, so their id answers as an unknown one.
@@ -136,7 +136,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, stranger);
 
         removed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await CodeOfAsync(removed)).ShouldBe("membership.not_found");
+        (await CodeOfAsync(removed)).ShouldBe("member.not_found");
         (await IsMemberAsync(other.Id, stranger)).ShouldBe(1);
     }
 

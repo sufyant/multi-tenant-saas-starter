@@ -76,7 +76,7 @@ public static class InviteMemberHandler
         var email = command.Email.Trim();
         if (await catalog.IsMemberEmailAsync(email, cancellationToken))
         {
-            return (Error.Conflict(ControlPlaneErrorCodes.MembershipExists, "Someone with this email address is already a member of this tenant."), null, null, null);
+            return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant."), null, null, null);
         }
 
         var now = time.GetUtcNow();

@@ -74,7 +74,7 @@ public static class Users
                     ResponseStatus.OfUserMembership(membership.TenantStatus),
                     Tenant.Members.ToResponse(membership.Role),
                     membership.JoinedAt,
-                    membership.SoleOwner)),
+                    membership.LastOwner)),
             ]));
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
@@ -110,7 +110,7 @@ public static class Users
         var lastOwner = new List<Guid>();
         foreach (var owned in memberships.Value.Where(membership => membership.OwnsATenantPastCreation))
         {
-            if (await bus.InvokeForTenantAsync<bool>(owned.TenantId.ToString(), new GetSoleOwnership(userId), cancellationToken))
+            if (await bus.InvokeForTenantAsync<bool>(owned.TenantId.ToString(), new GetLastOwnership(userId), cancellationToken))
             {
                 lastOwner.Add(owned.TenantId);
             }
@@ -146,7 +146,7 @@ public static class Users
 
 /// <summary>
 /// A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or
-/// deleted), whether they are a system admin, how many organisations they are a member of, and when they joined the catalog.
+/// deleted), whether they are a system admin, how many tenants they are a member of, and when they joined the catalog.
 /// </summary>
 public sealed record UserResponse(
     Guid Id,
@@ -160,7 +160,7 @@ public sealed record UserResponse(
 
 /// <summary>
 /// One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
-/// (null when the user is not suspended, or was suspended before step 20l), and every membership by the organisation's name.
+/// (null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name.
 /// </summary>
 public sealed record UserDetailResponse(
     Guid Id,
@@ -176,8 +176,8 @@ public sealed record UserDetailResponse(
     IReadOnlyList<UserMembershipResponse> Memberships);
 
 /// <summary>
-/// An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
-/// its only Owner. The suspend dialog warns with <c>soleOwner</c>, and the delete refusal names those organisations.
+/// A tenant the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
+/// its last Owner. The suspend dialog warns with <c>lastOwner</c>, and the delete refusal names those tenants.
 /// </summary>
 public sealed record UserMembershipResponse(
     Guid TenantId,
@@ -186,9 +186,9 @@ public sealed record UserMembershipResponse(
     UserMembershipResponseTenantStatus TenantStatus,
     RoleResponse Role,
     DateTimeOffset JoinedAt,
-    bool SoleOwner);
+    bool LastOwner);
 
-/// <summary>The status of an organisation a user is a member of: active, or suspended or closed when its members cannot enter it.</summary>
+/// <summary>The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<UserMembershipResponseTenantStatus>))]
 public enum UserMembershipResponseTenantStatus
 {

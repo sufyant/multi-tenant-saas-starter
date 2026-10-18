@@ -8,7 +8,7 @@ using Testcontainers.PostgreSql;
 namespace Api.EndToEndTests.Fixtures;
 
 // One PostgreSQL 18 server, set up the way a deployment is: the bootstrap script creates the roles, and the migration step
-// runs as `dotnet Api.dll migrate`. The staff list starts empty.
+// runs as `dotnet Api.dll migrate`. The system admin list starts empty.
 public sealed class Database : IAsyncLifetime
 {
     public const string SystemAdmin = "user_e2e_system_admin";

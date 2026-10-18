@@ -46,7 +46,7 @@ public static class ChangeMemberRoleHandler
 
         if (await catalog.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
         {
-            return (Errors.MembershipNotFound, null);
+            return (Errors.MemberNotFound, null);
         }
 
         var oldRole = RoleOf(target);

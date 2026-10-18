@@ -22,7 +22,7 @@ public sealed record UserWithMemberships(
 
 /// <summary>
 /// A tenant the user is a member of: its name, slug and status (<c>Active</c>, <c>Suspended</c>, <c>Closed</c>), the role the user
-/// holds there, when they joined, and whether they are its only Owner. The suspend dialog warns
+/// holds there, when they joined, and whether they are its last Owner. The suspend dialog warns
 /// with it, and the delete refusal names those tenants.
 /// </summary>
 public sealed record UserMembershipDetails(
@@ -32,7 +32,7 @@ public sealed record UserMembershipDetails(
     string TenantStatus,
     RoleSummary Role,
     DateTimeOffset JoinedAt,
-    bool SoleOwner);
+    bool LastOwner);
 
 // A version before step 20l reactivates a user by clearing the moment only, so who suspended a user is read only while they are suspended.
 public static class GetUserHandler

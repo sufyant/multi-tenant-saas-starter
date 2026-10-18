@@ -8,8 +8,8 @@ namespace Api.IntegrationTests.Hosting;
 
 // Section 7, configuration rule 2: every setting is checked while the application starts. A required setting that is missing, or
 // a value that is wrong, stops the start, and the error names the setting's full key. Each case without a required setting runs on a
-// database of its own whose staff list is empty, so the first system admin's setting is required there too. A case on the shared
-// database gives the first system admin's setting, so the check reads no staff list there.
+// database of its own whose system admin list is empty, so the first system admin's setting is required there too. A case on the shared
+// database gives the first system admin's setting, so the check reads no system admin list there.
 public sealed class HostConfigurationTests(Database database)
 {
     // The first key of each row is the one the error names; the others are missing too.
@@ -25,7 +25,7 @@ public sealed class HostConfigurationTests(Database database)
         { Environments.Production, ["Notifications:Resend:ApiKey"] },
         { Environments.Production, ["Notifications:Resend:From"] },
 
-        // S1: without a connection, the first system admin's check cannot read the staff list; the start names the connection.
+        // S1: without a connection, the first system admin's check cannot read the system admin list; the start names the connection.
         { Environments.Development, ["ConnectionStrings:Database", "ControlPlane:FirstSystemAdminEmail"] },
     };
 
@@ -176,15 +176,15 @@ public sealed class HostConfigurationTests(Database database)
         message.ShouldContain("Notifications:InvitationEmailRetryDelays (00:00:10, 00:01:00, 00:05:00, 01:40:00)");
     }
 
-    // Section 6: once the staff list has a system admin, the first system admin's setting has no effect.
+    // Section 6: once the system admin list has a system admin, the first system admin's setting has no effect.
     [Fact]
-    public async Task StartApplication_WithoutTheFirstSystemAdminEmailOnceTheStaffListHasAnAdmin_Starts()
+    public async Task StartApplication_WithoutTheFirstSystemAdminEmailOnceTheSystemAdminListHasAnAdmin_Starts()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', 'user_staff');
-            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = 'user_staff';
+            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', 'user_system_admin');
+            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = 'user_system_admin';
             """,
             database: name);
         await using var api = new ApiFactory(

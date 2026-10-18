@@ -112,7 +112,7 @@ internal sealed class TwoWorkers : IAsyncDisposable
 
     public Task<string> AddSystemAdminAsync() => AddSystemAdminAsync(_database, DatabaseName);
 
-    // A system admin in the database's staff list, by the user's external id.
+    // A system admin in the database's system admin list, by the user's external id.
     public static async Task<string> AddSystemAdminAsync(Database database, string databaseName)
     {
         var externalId = $"user_{Guid.NewGuid():N}";
