@@ -1,4 +1,4 @@
-using ControlPlane.Api.Tenant.Members;
+using ControlPlane.Contracts.Members;
 
 namespace ControlPlane.Api.Tenant.Invitations;
 

@@ -61,13 +61,15 @@ internal sealed class AuditEntries(Database database)
         string targetKind,
         Guid targetId,
         string operation = "user.suspended",
-        string? targetName = null)
+        string? targetName = null,
+        string? details = null)
     {
         var id = Guid.CreateVersion7();
         await database.ScalarAsSuperuserAsync<object>(
             $"""
-            INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name)
-            VALUES ('{id}', '{occurredAt:O}', '{actorKind}', {Text(actorId)}, 'Command', '{operation}', '{targetKind}', '{targetId}', {Text(targetName)})
+            INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name, details)
+            VALUES ('{id}', '{occurredAt:O}', '{actorKind}', {Text(actorId)}, 'Command', '{operation}', '{targetKind}', '{targetId}', {Text(targetName)},
+                {Text(details)})
             """);
         return id;
     }

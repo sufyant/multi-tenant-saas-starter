@@ -20,8 +20,6 @@ public static class RecordMemberInvitedHandler
                 AuditActor.User(invited.InvitedBy),
                 AuditOperations.MemberInvited,
                 AuditTarget.Invitation(invited.InvitationId),
-                JsonSerializer.Serialize(new Details(invited.Role, invited.ReplacedInvitationId), JsonSerializerOptions.Web)),
+                JsonSerializer.Serialize(new MemberInvitedDetails(invited.Role, invited.ReplacedInvitationId), JsonSerializerOptions.Web)),
             cancellationToken);
-
-    private sealed record Details(string Role, Guid? ReplacedInvitationId);
 }

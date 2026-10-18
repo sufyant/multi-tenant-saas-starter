@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Audit.Application.AuditLogs;
+using Audit.Application.Members;
 using Audit.Domain;
 using Audit.Domain.AuditEntries;
 using ControlPlane.Contracts.Users;
@@ -20,8 +21,6 @@ public static class RecordUserMembershipRemovedHandler
                 AuditActor.Platform,
                 AuditOperations.MemberRemoved,
                 AuditTarget.User(removed.UserId),
-                JsonSerializer.Serialize(new Details(removed.Role), JsonSerializerOptions.Web)),
+                JsonSerializer.Serialize(new MemberRemovedDetails(removed.Role), JsonSerializerOptions.Web)),
             cancellationToken);
-
-    private sealed record Details(string Role);
 }

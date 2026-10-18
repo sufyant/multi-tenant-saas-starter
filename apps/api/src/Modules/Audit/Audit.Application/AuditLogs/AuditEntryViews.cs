@@ -12,7 +12,13 @@ internal static class AuditEntryViews
     /// <summary>The page of the entries found, with no user named yet.</summary>
     public static CursorPage<AuditEntryView> PageOf(IReadOnlyList<AuditEntry> found, CursorRequest request) =>
         CursorPage.Of(found, request, entry => new CursorPosition(entry.OccurredAt, entry.Id))
-            .Map(entry => new AuditEntryView(entry.Id, entry.OccurredAt, entry.Operation, entry.Details, ActorOf(entry), TargetOf(entry)));
+            .Map(entry => new AuditEntryView(
+                entry.Id,
+                entry.OccurredAt,
+                entry.Operation,
+                AuditDetailsTypes.Read(entry.Operation, entry.Details),
+                ActorOf(entry),
+                TargetOf(entry)));
 
     /// <summary>The page with each user, actor or target, named by ControlPlane now.</summary>
     public static async Task<CursorPage<AuditEntryView>> NamedAsync(

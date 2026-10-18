@@ -1,5 +1,5 @@
 using ControlPlane.Api.Me.Tenants;
-using ControlPlane.Api.Tenant.Members;
+using ControlPlane.Contracts.Members;
 
 namespace ControlPlane.Api.Tenant.Tenants;
 

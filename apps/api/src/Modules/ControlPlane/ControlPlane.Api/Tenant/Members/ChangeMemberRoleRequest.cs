@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ControlPlane.Contracts.Members;
 
 namespace ControlPlane.Api.Tenant.Members;
 

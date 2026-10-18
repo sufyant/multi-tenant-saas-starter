@@ -5,6 +5,7 @@ using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Contracts;
+using ControlPlane.Contracts.Members;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
