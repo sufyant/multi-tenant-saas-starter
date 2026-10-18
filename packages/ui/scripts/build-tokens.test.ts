@@ -27,26 +27,38 @@ describe("buildTokensCss", () => {
   });
 
   it("BuildTokensCss_ColorWithoutADarkValue_Fails", () => {
-    const build = () => buildTokensCss(tokens([{ name: "primary", value: { light: "#2747d8" } }]));
+    const build = () =>
+      buildTokensCss(
+        tokens([{ name: "primary", value: { light: "#2747d8" } }]),
+      );
 
     expect(build).toThrow("primary has no dark value");
   });
 
   it("BuildTokensCss_ReferenceToAnUnknownToken_Fails", () => {
-    const build = () => buildTokensCss(tokens([{ name: "ring", value: { light: "{nothing}", dark: "{nothing}" } }]));
+    const build = () =>
+      buildTokensCss(
+        tokens([
+          { name: "ring", value: { light: "{nothing}", dark: "{nothing}" } },
+        ]),
+      );
 
     expect(build).toThrow("ring names an unknown token {nothing}");
   });
 
   it("BuildTokensCss_RunTwice_WritesTheSameText", () => {
-    const source = tokens([{ name: "primary", value: { light: "#2747d8", dark: "#7088ff" } }]);
+    const source = tokens([
+      { name: "primary", value: { light: "#2747d8", dark: "#7088ff" } },
+    ]);
 
     expect(buildTokensCss(source)).toBe(buildTokensCss(source));
   });
 
   it("BuildTokensCss_RealTokens_WritesEveryKindOfToken", async () => {
     const { readFile } = await import("node:fs/promises");
-    const source = JSON.parse(await readFile(new URL("../tokens/tokens.json", import.meta.url), "utf8"));
+    const source = JSON.parse(
+      await readFile(new URL("../tokens/tokens.json", import.meta.url), "utf8"),
+    );
 
     const css = buildTokensCss(source);
 
