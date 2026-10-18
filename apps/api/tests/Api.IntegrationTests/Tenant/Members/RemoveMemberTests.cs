@@ -103,10 +103,12 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
         var member = await _catalog.AddMemberAsync(tenant.Id);
         var client = _api.CreateClient(member);
-        (await client.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var before = await client.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
-        (await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, await _catalog.UserIdOfAsync(member))).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, await _catalog.UserIdOfAsync(member));
 
+        before.StatusCode.ShouldBe(HttpStatusCode.OK);
+        removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await client.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         var tenants = await client.GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
         tenants.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldNotContain(tenant.Id);
