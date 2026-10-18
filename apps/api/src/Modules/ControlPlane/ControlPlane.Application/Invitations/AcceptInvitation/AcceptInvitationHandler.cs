@@ -37,7 +37,8 @@ public static class AcceptInvitationHandler
         // deletion that runs, and a deleted user is refused, so a deleted user never becomes a member. The door refused them already,
         // unless the deletion committed after it let them in. The acceptance counts the membership on the user row (R13), so it takes the
         // row's update lock at once: two acceptances of one user in two tenants then run one after the other, where two share locks
-        // that both wait to update would deadlock.
+        // that both wait to update would deadlock. Two acceptances of a person who is not a user yet run one after the other too
+        // (K6f), so the second finds the first one's user and goes on as for a known user.
         var existing = await users.FindUserForNoKeyUpdateAsync(command.ActorId, cancellationToken);
         if (existing?.DeletedAt is not null)
         {

@@ -41,9 +41,14 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
     }
 
     // FOR NO KEY UPDATE: the lock an update of the row takes. It waits for a deletion's FOR UPDATE, and it lets a membership that
-    // references the user be inserted, which takes FOR KEY SHARE.
+    // references the user be inserted, which takes FOR KEY SHARE. A person who is not a user yet has no row to lock, so a transaction
+    // advisory lock on the identity provider id comes first: the key's first half names the users table, so no other lock shares the
+    // key, and the second is the id's hash. A second transaction waits for the first to end, and its next statement then sees the user
+    // the first one added. Two ids with the same hash only wait for each other.
     async Task<User?> IUserRepository.FindUserForNoKeyUpdateAsync(string externalUserId, CancellationToken cancellationToken)
     {
+        await controlPlane.Database.ExecuteSqlAsync(
+            $"SELECT pg_advisory_xact_lock('control_plane.users'::regclass::oid::int, hashtext({externalUserId}))", cancellationToken);
         var found = await controlPlane.Users
             .FromSql($"SELECT * FROM control_plane.users WHERE external_id = {externalUserId} FOR NO KEY UPDATE")
             .ToListAsync(cancellationToken);
