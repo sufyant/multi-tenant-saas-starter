@@ -22,6 +22,7 @@ WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
 COPY packages/ui/package.json packages/ui/
+COPY packages/api-client/package.json packages/api-client/
 RUN pnpm install --frozen-lockfile --filter "@repo/web..."
 
 FROM deps AS build
