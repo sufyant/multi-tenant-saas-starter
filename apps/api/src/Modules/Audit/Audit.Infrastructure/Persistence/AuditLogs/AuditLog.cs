@@ -6,7 +6,7 @@ using SharedKernel;
 namespace Audit.Infrastructure.Persistence.AuditLogs;
 
 /// <summary>The audit logs on the module's DbContext, in the transaction Wolverine began for the handler.</summary>
-/// <remarks>Public (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class AuditLog(AuditDbContext audit) : IAuditLog
 {
     async Task IAuditLog.RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken)

@@ -7,7 +7,7 @@ namespace ControlPlane.Application.Users;
 /// actor here, and a user command declares no tenant; it declares the user only to read the user's own memberships (R11). A method is
 /// here when a command needs it to decide.
 /// </summary>
-/// <remarks>Public (W9).</remarks>
+/// <remarks>Public because a public handler takes it (W9).</remarks>
 public interface IUserRepository
 {
     internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);

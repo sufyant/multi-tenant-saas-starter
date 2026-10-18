@@ -1,7 +1,7 @@
 namespace ControlPlane.Application.Tenants.TenantCreation;
 
 /// <summary>
-/// Configuration of tenant creation (section <c>ControlPlane</c>), validated at startup; public (W9).
+/// Configuration of tenant creation (section <c>ControlPlane</c>), validated at startup; public because a handler takes it (W9).
 /// </summary>
 public sealed class TenantCreationOptions
 {

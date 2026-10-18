@@ -17,7 +17,7 @@ namespace ControlPlane.Infrastructure.Persistence.Tenants;
 /// tenant: the platform's list sees every tenant, and a user's list declares the user (R11), so the own_memberships policy decides what
 /// is seen. The message of a user's list has no tenant, so the transaction declares none (R4).
 /// </summary>
-/// <remarks>Public (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQueries
 {
     async Task<TenantView?> ITenantQueries.FindTenantAsync(CancellationToken cancellationToken) =>

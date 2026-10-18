@@ -93,7 +93,7 @@ The rules are in section 9 of `ARCHITECTURE.md`. In short:
 - Every document in `apps/api/docs/` and `docs/` has one shape:
   - A level 1 title names the document.
   - The purpose comes next: a short paragraph under the title, or section 1.
-  - Level 2 sections are numbered from 1 (`## 1. Name`), because other files cite a section by its number. A document of one table has none. A section that only opens the document, such as a codemap, may come before section 1 without a number.
+  - Level 2 sections are numbered from 1 (`## 1. Name`), because other files cite a section by its number. A document of one table has none. Sections that introduce the document, such as its codemap or its purpose and scope, may come before section 1 without a number.
   - A document has no date of its last change: git keeps it (Hunt and Thomas, *The Pragmatic Programmer*, Topic 9, DRY).
 - No secrets in the repository. Configuration comes from the environment.
 

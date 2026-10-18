@@ -12,7 +12,7 @@ namespace ControlPlane.Infrastructure.Persistence.Invitations;
 /// The active tenant's invitations for the queries, read without tracking. Row level security keeps them to the tenant; the queries add
 /// no filter of their own.
 /// </summary>
-/// <remarks>Public (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInvitationQueries
 {
     // Row level security keeps the list to the active tenant; the query names no tenant. Two pending invitations never share an address,

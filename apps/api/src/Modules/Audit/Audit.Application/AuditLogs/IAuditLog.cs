@@ -7,7 +7,7 @@ namespace Audit.Application.AuditLogs;
 /// The audit logs: the active tenant's log and the platform's log, written in the handler's one transaction, and read a page at a time.
 /// </summary>
 /// <remarks>
-/// Public (W9); its members speak domain types, so they are internal to the module.
+/// Public because a public handler takes it (W9); its members speak domain types, so they are internal to the module.
 /// </remarks>
 public interface IAuditLog
 {

@@ -11,7 +11,7 @@ namespace ControlPlane.Infrastructure.Persistence.Members;
 /// The active tenant's members for the queries, read without tracking. Row level security keeps them to the tenant; the queries add no
 /// filter of their own.
 /// </summary>
-/// <remarks>Public (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQueries
 {
     // Row level security keeps the list to the active tenant; the query names no tenant. The users table is not under row level security

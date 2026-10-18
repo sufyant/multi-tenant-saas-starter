@@ -11,7 +11,7 @@ namespace ControlPlane.Application.Users;
 /// The users for the queries, outside any tenant (R6): each method reads without tracking and answers a read model, built in the
 /// query (Q2). It never loads a user to change it; <see cref="IUserRepository"/> does.
 /// </summary>
-/// <remarks>Public (W9).</remarks>
+/// <remarks>Public because a public handler takes it (W9).</remarks>
 public interface IUserQueries
 {
     /// <summary>The signed-in person with this identity provider id, as they see themselves; null when they are not a user.</summary>

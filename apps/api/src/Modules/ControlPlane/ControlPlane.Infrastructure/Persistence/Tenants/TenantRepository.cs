@@ -9,7 +9,7 @@ namespace ControlPlane.Infrastructure.Persistence.Tenants;
 /// The tenant aggregate for the commands, inside the active tenant, which is the tenant of the message the handler serves (W2). Row
 /// level security keeps one tenant's memberships and invitations from another; this repository adds no filter of its own.
 /// </summary>
-/// <remarks>Public (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITenantRepository
 {
     Guid ITenantRepository.TenantId => controlPlane.ActiveTenant;
