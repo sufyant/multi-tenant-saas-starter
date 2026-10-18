@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Audit.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AuditDbContext))]
-    [Migration("20261016201929_ActorIdUuidAndCursorIndexes")]
-    partial class ActorIdUuidAndCursorIndexes
+    [Migration("20261018101843_InitialAudit")]
+    partial class InitialAudit
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,6 +37,7 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnName("actor_id");
 
                     b.Property<string>("ActorKind")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("actor_kind");
@@ -61,11 +62,12 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("operation");
 
-                    b.Property<Guid?>("TargetId")
+                    b.Property<Guid>("TargetId")
                         .HasColumnType("uuid")
                         .HasColumnName("target_id");
 
                     b.Property<string>("TargetKind")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("target_kind");
@@ -149,6 +151,9 @@ namespace Audit.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OccurredAt", "Id")
                         .HasDatabaseName("ix_platform_entries_occurred_at_id");
+
+                    b.HasIndex("TargetKind", "TargetId", "OccurredAt", "Id")
+                        .HasDatabaseName("ix_platform_entries_target_kind_target_id_occurred_at_id");
 
                     b.ToTable("platform_entries", "audit");
                 });

@@ -45,8 +45,8 @@ cd out/api
 ConnectionStrings__Migrations="Host=localhost;Port=5432;Database=app;Username=api_owner;Password=<owner password>" \
   dotnet Api.dll migrate
 # ... Migrated the api schema: 1 migrations applied
-# ... Migrated the control_plane schema: 3 migrations applied
-# ... Migrated the audit schema: 3 migrations applied
+# ... Migrated the control_plane schema: 1 migrations applied
+# ... Migrated the audit schema: 1 migrations applied
 # ... Migration finished: the schemas api, control_plane, audit and the message storage in wolverine are up to date
 ```
 
@@ -56,17 +56,7 @@ The application does not start on a database that was not migrated. It stops at 
 The application does not start: the database is not migrated, it has no schema api, audit, control_plane, wolverine: run `dotnet Api.dll migrate` first.
 ```
 
-The Notifications module stores no data and has no schema of its own. A database migrated by an earlier version still has an empty `notifications` schema, which nothing uses. The owner role can drop it by hand:
-
-```sh
-psql "postgresql://api_owner:<owner password>@localhost:5432/app" -c "DROP SCHEMA notifications CASCADE"
-```
-
-ControlPlane's schema was `catalog` before it became `control_plane`. A database migrated by an earlier version still has the `catalog` schema. The migration creates `control_plane` empty and copies no rows, so the tenants, users and system admins of `catalog` are not seen any more. The first system admin comes from configuration again (section 6). Nothing uses `catalog`; the owner role can drop it by hand:
-
-```sh
-psql "postgresql://api_owner:<owner password>@localhost:5432/app" -c "DROP SCHEMA catalog CASCADE"
-```
+The Notifications module stores no data and has no schema of its own.
 
 ## 5. Configure
 

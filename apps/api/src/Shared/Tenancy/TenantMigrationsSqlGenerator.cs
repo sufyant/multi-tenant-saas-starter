@@ -5,9 +5,9 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Migrations;
 
 namespace Tenancy;
 
-// The one place that puts a tenant table under row level security (R1): wherever a table gets the tenant column, and for an
-// existing table a migration names with IsolateTenantTable. Only TenantDbContext gives a column the tenant default, so that
-// default identifies the tenant column without relying on annotations, which migration operations do not carry.
+// The one place that puts a tenant table under row level security (R1): wherever a table gets the tenant column. Only
+// TenantDbContext gives a column the tenant default, so that default identifies the tenant column without relying on annotations,
+// which migration operations do not carry.
 #pragma warning disable EF1001 // The Npgsql generator's only constructor takes its internal options; this class only passes them on.
 internal sealed class TenantMigrationsSqlGenerator(
     MigrationsSqlGeneratorDependencies dependencies,
@@ -16,17 +16,6 @@ internal sealed class TenantMigrationsSqlGenerator(
 #pragma warning restore EF1001
 {
     private const string Policy = "tenant_isolation";
-
-    protected override void Generate(MigrationOperation operation, IModel? model, MigrationCommandListBuilder builder)
-    {
-        if (operation is IsolateTenantTableOperation isolate)
-        {
-            IsolateTenants(isolate.Schema, isolate.Table, builder);
-            return;
-        }
-
-        base.Generate(operation, model, builder);
-    }
 
     protected override void Generate(CreateTableOperation operation, IModel? model, MigrationCommandListBuilder builder, bool terminate = true)
     {

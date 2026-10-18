@@ -239,10 +239,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("user_id");
 
                     b.Property<DateTimeOffset>("JoinedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("joined_at")
-                        .HasDefaultValueSql("now()");
+                        .HasColumnName("joined_at");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid")
@@ -276,10 +274,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("closed_at");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
+                        .HasColumnName("created_at");
 
                     b.Property<Guid?>("FirstOwnerId")
                         .HasColumnType("uuid")

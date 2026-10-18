@@ -23,8 +23,8 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         slug ??= $"tenant-{Guid.NewGuid():N}"[..20];
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at{Column("created_at", createdAt)})
-            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}{Value(createdAt)})
+            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at)
+            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)})
             """,
             database: databaseName);
 
@@ -32,24 +32,18 @@ internal sealed class Catalog(Database database, string databaseName = Database.
     }
 
     // Without a moment, the member joins at the insert. The user's membership count follows, as the commands keep it, so a command that
-    // removes the membership later counts down from a true value; a schema before step 20l has no count, for a test of a migration.
+    // removes the membership later counts down from a true value.
     public async Task<string> AddMemberAsync(Guid tenantId, string? externalId = null, string role = "Member", DateTimeOffset? joinedAt = null)
     {
         externalId ??= await AddUserAsync();
         await database.ExecuteInTenantAsync(
             tenantId,
             $"""
-            INSERT INTO control_plane.memberships (tenant_id, user_id, role_id{Column("joined_at", joinedAt)})
-            SELECT '{tenantId}', users.id, roles.id{Value(joinedAt)}
+            INSERT INTO control_plane.memberships (tenant_id, user_id, role_id, joined_at)
+            SELECT '{tenantId}', users.id, roles.id, {Moment(joinedAt)}
             FROM control_plane.users, control_plane.roles
             WHERE users.external_id = '{externalId}' AND roles.built_in = '{role}';
-            DO $count$ BEGIN
-                IF EXISTS (
-                    SELECT FROM information_schema.columns
-                    WHERE table_schema = 'control_plane' AND table_name = 'users' AND column_name = 'membership_count') THEN
-                    UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE external_id = '{externalId}';
-                END IF;
-            END $count$;
+            UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE external_id = '{externalId}';
             """,
             database: databaseName);
 
@@ -72,7 +66,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
             """,
             databaseName);
 
-    // A user with an email address and names, each of which may be missing. Without a language the column's default applies: English.
+    // A user with an email address and names, each of which may be missing. Without a language, English.
     public async Task<string> AddUserAsync(
         Guid? id = null,
         string? email = null,
@@ -85,8 +79,8 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         var externalId = $"user_{Guid.NewGuid():N}";
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.users (id, external_id, email, first_name, last_name{Column("created_at", createdAt)})
-            VALUES ('{id ?? Guid.NewGuid()}', '{externalId}', {Text(email)}, {Text(firstName)}, {Text(lastName)}{Value(createdAt)})
+            INSERT INTO control_plane.users (id, external_id, email, first_name, last_name, language{Column("created_at", createdAt)})
+            VALUES ('{id ?? Guid.NewGuid()}', '{externalId}', {Text(email)}, {Text(firstName)}, {Text(lastName)}, 'en'{Value(createdAt)})
             """,
             database: databaseName);
         if (language is not null || timeZone is not null)
@@ -150,9 +144,9 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         await database.ExecuteInTenantAsync(
             tenantId,
             $"""
-            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, token_hash, status)
+            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, token_hash, status, language)
             SELECT '{invitationId}', '{tenantId}', '{email ?? $"{Guid.NewGuid():N}@example.com"}', roles.id, '{inviter}', now(),
-                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}'
+                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', 'en'
             FROM control_plane.roles WHERE roles.built_in = '{role}'
             """,
             database: databaseName);
@@ -199,10 +193,13 @@ internal sealed class Catalog(Database database, string databaseName = Database.
 
     private static string Text(string? value) => value is null ? "NULL" : $"'{value}'";
 
-    // A column the test gives a moment for, and its value; without one the column's default applies, also on a schema that lacks it.
+    // A column the test gives a moment for, and its value; without one the column's default applies.
     private static string Column(string name, DateTimeOffset? moment) => moment is null ? string.Empty : $", {name}";
 
     private static string Value(DateTimeOffset? moment) => moment is { } given ? $", '{given:O}'" : string.Empty;
+
+    // The moment the test gives, else the moment of the insert.
+    private static string Moment(DateTimeOffset? moment) => moment is { } given ? $"'{given:O}'" : "now()";
 }
 
 internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted, string Language = "en", string? TimeZone = null);

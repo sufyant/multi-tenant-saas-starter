@@ -116,21 +116,6 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         found.GetProperty("suspendedBy").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
-    // A version before step 20l reactivates a user by clearing suspended_at only, during a deploy: who suspended them is no longer true.
-    [Fact]
-    public async Task GetUser_ReactivatedByAVersionThatKeptTheSuspendingAdmin_HasNoSuspension()
-    {
-        var admin = await _catalog.AddSystemAdminAsync();
-        var user = await _catalog.AddUserAsync();
-        await database.ScalarAsync<object>(
-            $"UPDATE control_plane.users SET suspended_by = (SELECT id FROM control_plane.users WHERE external_id = '{admin}') WHERE external_id = '{user}'");
-
-        var found = await (await AdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}", Cancellation);
-
-        found.GetProperty("suspendedAt").ValueKind.ShouldBe(JsonValueKind.Null);
-        found.GetProperty("suspendedBy").ValueKind.ShouldBe(JsonValueKind.Null);
-    }
-
     // A8: the deletion took the user out of every tenant and erased the email address and the names.
     [Fact]
     public async Task GetUser_ADeletedUser_HasNoEmailNoNamesAndNoMemberships()

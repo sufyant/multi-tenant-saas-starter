@@ -67,16 +67,13 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             tenant.Property(t => t.SuspensionReason).HasMaxLength(Tenant.SuspensionReasonMaxLength);
 
             // R12: the summary the platform's tenant list reads across tenants, where row level security hides the memberships and the
-            // invitations. Tenant.Summarize writes it under the tenant's lock; a version that does not know it inserts tenants with no
+            // invitations. Tenant.Summarize writes it under the tenant's lock. TenantCatalog inserts a new tenant with SQL, without the
             // summary, which the defaults make empty.
             tenant.Property(t => t.MemberCount).HasDefaultValue(0);
             tenant.Property(t => t.OwnerCount).HasDefaultValue(0);
             tenant.HasOne<User>().WithMany().HasForeignKey(t => t.FirstOwnerId).OnDelete(DeleteBehavior.Restrict);
             tenant.Property(t => t.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
             tenant.Property(t => t.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
-
-            // A version that does not know the column inserts a tenant at the moment of its insert.
-            tenant.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<User>(user =>
@@ -93,7 +90,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             user.Property(u => u.TimeZone).HasMaxLength(User.TimeZoneMaxLength);
             user.HasOne<User>().WithMany().HasForeignKey(u => u.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
 
-            // A version that does not know the columns inserts a user at the moment of its insert, with no count (R13).
+            // SystemAdminDirectory inserts the first system admin with SQL, without these columns: at the moment of the insert, with no
+            // membership (R13).
             user.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
             user.Property(u => u.MembershipCount).HasDefaultValue(0);
         });
@@ -115,9 +113,6 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             membership.HasOne<Tenant>().WithMany().HasForeignKey(m => m.TenantId);
             membership.HasOne<User>().WithMany().HasForeignKey(m => m.UserId);
             membership.HasOne<Role>().WithMany().HasForeignKey(m => m.RoleId).OnDelete(DeleteBehavior.Restrict);
-
-            // A version that does not know the column adds a membership at the moment of its insert.
-            membership.Property(m => m.JoinedAt).HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<Invitation>(invitation =>

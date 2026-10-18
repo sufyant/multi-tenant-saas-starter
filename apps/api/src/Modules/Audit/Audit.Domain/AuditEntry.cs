@@ -30,19 +30,19 @@ internal abstract class AuditRecord
 
     public DateTimeOffset OccurredAt { get; private init; }
 
-    /// <summary>Who acted. A record written before K3 has none: its actor is the system admin whose id is in <see cref="ActorId"/>.</summary>
-    public AuditActorKind? ActorKind { get; private init; }
+    /// <summary>Who acted.</summary>
+    public AuditActorKind ActorKind { get; private init; }
 
-    /// <summary>The catalog user id of an actor that is a user; none for the platform or the identity provider.</summary>
+    /// <summary>The catalog user id of an actor that is a user; none for the platform.</summary>
     public Guid? ActorId { get; private init; }
 
     public AuditEntryKind Kind { get; private init; } = AuditEntryKind.Command;
 
     public string Operation { get; private init; }
 
-    public AuditTargetKind? TargetKind { get; private init; }
+    public AuditTargetKind TargetKind { get; private init; }
 
-    public Guid? TargetId { get; private init; }
+    public Guid TargetId { get; private init; }
 
     /// <summary>The target's name at that moment, only when the target is not a person: a tenant's name.</summary>
     public string? TargetName { get; private init; }
@@ -63,7 +63,7 @@ internal sealed class AuditEntry : AuditRecord, ITenantEntity
     }
 }
 
-/// <summary>A record of the platform's log: what system admins did, above tenants, and what the identity provider did before step 20i.</summary>
+/// <summary>A record of the platform's log: what system admins did, above tenants.</summary>
 internal sealed class PlatformAuditEntry : AuditRecord
 {
     private PlatformAuditEntry()
@@ -76,7 +76,7 @@ internal sealed class PlatformAuditEntry : AuditRecord
     }
 }
 
-/// <summary>Who acted. A user is named by their catalog user id; the platform and the identity provider are named by their kind.</summary>
+/// <summary>Who acted. A user is named by their catalog user id; the platform is named by its kind.</summary>
 internal sealed record AuditActor(AuditActorKind Kind, Guid? UserId)
 {
     public static readonly AuditActor Platform = new(AuditActorKind.Platform, null);
@@ -100,9 +100,6 @@ internal enum AuditActorKind
 {
     User,
     Platform,
-
-    // A record the identity provider's webhook wrote before step 20i. Nothing writes it now; a record is never changed once written (K3).
-    IdentityProvider,
 }
 
 internal enum AuditTargetKind

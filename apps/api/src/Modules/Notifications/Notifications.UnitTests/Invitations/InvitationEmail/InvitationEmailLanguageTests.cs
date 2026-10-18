@@ -102,50 +102,6 @@ public sealed class InvitationEmailLanguageTests
         _channel.Sent.ShouldHaveSingleItem().Text.Split("\n\n")[^1].ShouldBe("The link works for 7 days.");
     }
 
-    // A message written before step 20j is in the outbox during the deploy. It has no language and no lifetime: Wolverine's serializer
-    // reads it, and its email goes out in English, without the lifetime.
-    [Fact]
-    public async Task SendMemberInvitationEmail_AMessageWrittenBeforeLanguages_SendsEnglishWithoutTheLifetime()
-    {
-        var old = ReadAsWolverineDoes<MemberInvitationReady>(new
-        {
-            EventId = Guid.CreateVersion7(),
-            OccurredAt = DateTimeOffset.UnixEpoch,
-            TenantId = Guid.CreateVersion7(),
-            InvitationId,
-            Email = "grace@navy.test",
-            TenantName = "Acme Ltd",
-            Link,
-        });
-
-        await SendMemberAsync(old);
-
-        var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Subject, email.Text).ShouldBe(
-            ("You are invited to Acme Ltd", $"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}"));
-    }
-
-    [Fact]
-    public async Task SendInvitationEmail_AMessageWrittenBeforeLanguages_SendsEnglishWithoutTheLifetime()
-    {
-        var old = ReadAsWolverineDoes<OwnerInvitationReady>(new
-        {
-            EventId = Guid.CreateVersion7(),
-            OccurredAt = DateTimeOffset.UnixEpoch,
-            TenantId = Guid.CreateVersion7(),
-            InvitationId,
-            Email = "owner@acme.test",
-            TenantName = "Acme Ltd",
-            Link,
-        });
-
-        await SendOwnerAsync(old);
-
-        var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Subject, email.Text).ShouldBe(
-            ("You are invited to Acme Ltd", $"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}"));
-    }
-
     // The language travels as its tag, as in the API: a message holds "tr", not a number that a new member of the enum could move.
     [Fact]
     public void WriteMemberInvitationReady_InTurkish_HoldsTheLanguagesTag()
@@ -153,13 +109,6 @@ public sealed class InvitationEmailLanguageTests
         var json = System.Text.Encoding.UTF8.GetString(new WolverineOptions().DefaultSerializer.WriteMessage(MemberReady(Language.Tr, SevenDays)));
 
         json.ShouldContain("\"tr\"");
-    }
-
-    // The default serializer of a Wolverine host, which the API does not change.
-    private static T ReadAsWolverineDoes<T>(object message)
-    {
-        var serializer = new WolverineOptions().DefaultSerializer;
-        return (T)serializer.ReadFromData(typeof(T), new Envelope { Data = serializer.WriteMessage(message) });
     }
 
     private Task SendMemberAsync(MemberInvitationReady ready) => SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);

@@ -4083,13 +4083,12 @@
             ]
           }
         },
-        "description": "Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.\n`displayName` is a user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know,\nand for the platform and the identity provider, which the screen names from `kind` in its own language. `deleted` is set\nfor a user only."
+        "description": "Who acted: a user, by catalog user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a\nuser's real name, or null: for a user without a name, a deleted user, a user the catalog does not know, and for the platform, which\nthe screen names from `kind` in its own language. `deleted` is set for a user only."
       },
       "AuditActorResponseKind": {
         "enum": [
           "user",
-          "platform",
-          "identityProvider"
+          "platform"
         ],
         "description": "The kind of actor of an audit record."
       },
@@ -4129,14 +4128,7 @@
             "$ref": "#/components/schemas/AuditActorResponse"
           },
           "target": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/AuditTargetResponse"
-              }
-            ]
+            "$ref": "#/components/schemas/AuditTargetResponse"
           }
         },
         "description": "One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record\nkeeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email\naddress."
@@ -4193,7 +4185,7 @@
             ]
           }
         },
-        "description": "What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which\nhas no name. `deleted` is set for a user only. A record written before the audit kept targets has none."
+        "description": "What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which\nhas no name. `deleted` is set for a user only."
       },
       "AuditTargetResponseKind": {
         "enum": [
@@ -5405,7 +5397,7 @@
             }
           }
         },
-        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name."
+        "description": "One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names\n(null when the user is not suspended), and every membership by the tenant's name."
       },
       "UserMembershipResponse": {
         "required": [

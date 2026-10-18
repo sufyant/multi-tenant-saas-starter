@@ -183,7 +183,7 @@ public sealed class HostConfigurationTests(Database database)
         var name = await database.CreateMigratedDatabaseAsync();
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', 'user_system_admin');
+            INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', 'user_system_admin', 'en');
             INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = 'user_system_admin';
             """,
             database: name);

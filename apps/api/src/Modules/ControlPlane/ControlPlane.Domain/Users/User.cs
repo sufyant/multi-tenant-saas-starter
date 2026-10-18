@@ -38,15 +38,11 @@ internal sealed class User(Guid id, string externalId)
     /// <summary>When a system admin suspended the user. A suspended user is refused on every me and tenant endpoint (A9).</summary>
     public DateTimeOffset? SuspendedAt { get; private set; }
 
-    /// <summary>
-    /// The catalog user id of the system admin who suspended the user, while the user is suspended. A suspension from before step 20l
-    /// has none.
-    /// </summary>
+    /// <summary>The catalog user id of the system admin who suspended the user, while the user is suspended.</summary>
     public Guid? SuspendedBy { get; private set; }
 
     /// <summary>
-    /// When the user joined the catalog: when they accepted their first invitation, or when the first system admin was written. A user
-    /// from before step 20l has the moment of that step's migration.
+    /// When the user joined the catalog: when they accepted their first invitation, or when the first system admin was written.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
 

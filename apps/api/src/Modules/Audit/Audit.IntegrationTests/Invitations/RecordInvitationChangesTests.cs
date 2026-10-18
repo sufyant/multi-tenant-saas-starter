@@ -70,20 +70,6 @@ public sealed class RecordInvitationChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, revoked.EventId)).ShouldBe(0);
     }
 
-    // A message written before step 20k names the role as the domain does. It may still wait in the outbox during the deploy, and its
-    // record names the role as every other record does.
-    [Fact]
-    public async Task RecordMemberInvited_AMessageWithTheOldRoleName_RecordsTheRoleInLowerCase()
-    {
-        var invited = Invited(null, "Owner");
-
-        await InTenant.RunAsync(database.Services, invited.TenantId, scope =>
-            RecordMemberInvitedHandler.HandleAsync(invited, scope.GetRequiredService<IAuditLog>(), Cancellation));
-
-        var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, invited.TenantId, invited.EventId))!).RootElement;
-        details.GetProperty("role").GetString().ShouldBe("owner");
-    }
-
-    private static MemberInvited Invited(Guid? replaced, string role = "admin") =>
-        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), role, replaced);
+    private static MemberInvited Invited(Guid? replaced) =>
+        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin", replaced);
 }

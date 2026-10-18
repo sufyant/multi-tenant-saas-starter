@@ -114,12 +114,11 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - An audit entry stores no personal name or email address. It stores the actor's catalog user id, the target's kind and id, and the target's name only when the target is not a person. A tenant's name stays in the entry.
 - A `member.invited` entry stores the invitation id, not the email address.
 - The Audit column of the endpoint tables lists every operation. It is the specification. `AuditOperations` in `Audit.Domain` declares each operation once, and every Audit handler names its operation from it. The OpenAPI document publishes them as the schema `AuditOperation`, the type of `operation` in both logs. `AuditOperationTests` fails when the column and the class differ. A stored operation never changes.
-- After the first production release, an operation name stays in `AuditOperations` while stored records may carry it, and a name is never reused for another meaning. Before that release, an unused name is deleted.
-- A role in the details of an entry is `owner`, `admin` or `member`, as the API names it (K5). ControlPlane names it once, in `Role.NameOf`, for its events; a message written before step 20k names it as the domain does (`Owner`), and Audit's `RoleNames` gives its entry the same lower-case name.
+- A role in the details of an entry is `owner`, `admin` or `member`, as the API names it (K5). ControlPlane names it once, in `Role.NameOf`, for its events, and Audit records that name.
 - The read side resolves names in one batch through an interface in `ControlPlane.Contracts` (API composition). Audit never reads `control_plane` tables directly.
 - When a system admin deletes a user, `DeleteUser` erases the catalog's email address and names, so the read side gives the user no name and marks them deleted, and the screen shows "Deleted user". No audit entry changes, and the entry stays (GDPR Article 17).
 - Every action of a system admin goes to the platform log. When it changes a tenant, it also goes to that tenant's log, with "Platform" in place of the person. In the tenant log, a system admin's action has the actor kind "platform" and no actor id.
-- Nothing comes from Clerk: the API has no webhook. A record that Clerk's webhook wrote before step 20i keeps "Clerk" as its actor: the actor kind `identityProvider` is historical. No code writes it, and the read side still reads it, because a record is never changed (the maintainer's decision in step 20k).
+- Nothing comes from Clerk: the API has no webhook.
 - The platform log is a table of its own. The row level security of the tenant table does not change.
 - The code, the table and the endpoint say `audit`. The screen label is "Activity".
 - Sources: GDPR Articles 4(5) and 25 (pseudonymisation). Richardson, *Microservices Patterns*, "API composition".
@@ -199,7 +198,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. The first system admin starts with `en`.
 - A user's `timeZone` is an IANA name, or null for "not set". The API never interprets it: the image has no time zone data (ARCHITECTURE.md, section 7). It checks the shape only, keeps the name and gives it back. The web offers the list. The API formats no date or time.
 - `InviteMember`, `CreateTenant` and `InviteOwner` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant` and `InviteOwner`, the system admin's. The invitation keeps it.
-- The invitation emails say how long the link works ("7 days"), from the invitation's lifetime, and show no date or time, so they need no time zone. A message to Notifications written before step 20j has no language: its email is English, without the lifetime.
+- The invitation emails say how long the link works ("7 days"), from the invitation's lifetime, and show no date or time, so they need no time zone.
 - `ChangePreferences` writes the platform entry `user.preferences_changed`, by the user and about the user, with no details: the entry holds no value (K3).
 - A system admin's deletion erases the time zone with the names (A8). The language stays.
 - Sources: W3C, "Language tags in HTML and XML" and "Working with time zones". IANA Time Zone Database, "Theory and pragmatics of the tz code and data". Microsoft Learn, "Globalization invariant mode". Unicode CLDR, "Language Plural Rules".
@@ -219,7 +218,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - One place writes it: `Tenant.Summarize`, from the tenant's own rows. Every command that changes a membership or an invitation calls it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembership`, `CloseTenant`, `InviteOwner`, and the saga's compensations `CancelTenant` and `CancelInvitation`. A test compares the summary with the rows after each of them, the race tests included (`TenantSummaries`).
 - The Owner invitation's email is personal data. The row keeps it only while the tenant has no Owner, and clears it when an Owner joins. The state `expired` comes from the expiry at the moment of a read, never from a stored value.
 - A membership keeps when its user joined (`joined_at`). The first Owner is the Owner with the earliest one, then the lowest user id.
-- The migration gave the tenants that existed their summary, declaring each tenant in turn.
 
 ### K11. The user's membership count
 
@@ -227,7 +225,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - It changes by one, in the command's own transaction, under the tenant's lock (K6): `AcceptInvitation` adds one, `RemoveMember` and `RemoveUserMembership` take one away. The database adds the change to the stored value, so two tenants' commands for one user never lose one. A test compares the count with the rows after each of them.
 - `AcceptInvitation` locks a known user's row for an update, not a share lock, so two acceptances of one user in two tenants run one after the other.
 - A deleted user has no membership, so their count is 0.
-- The migration gave the users that existed their count, declaring each user in turn.
 
 ### K12. The invitation preview
 
@@ -240,9 +237,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ## Later
 
-- Run the tenant summary's backfill again, in a migration of the next release, once no version before step 20k runs: a command of that version during the deploy does not write the summary (K10; ARCHITECTURE.md, section 6, "Tenant summary").
-- Run the users' membership count backfill again, in a migration of the next release, once no version before step 20l runs: a command of that version during the deploy adds or removes a membership without changing the count (K11; ARCHITECTURE.md, R13).
-- Drop `control_plane.users.profile_updated_at`. Step 20i stopped using it and kept it, so the version that serves during the deploy can still read users (`docs/deployment.md` at the repository root, section 8).
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.
 

@@ -388,10 +388,9 @@ export interface components {
             lastName?: null | string;
         };
         /**
-         * @description Who acted: a user, by catalog user id; the platform, that is a system admin seen from a tenant's log; or the identity provider.
-         *     `displayName` is a user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know,
-         *     and for the platform and the identity provider, which the screen names from `kind` in its own language. `deleted` is set
-         *     for a user only.
+         * @description Who acted: a user, by catalog user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a
+         *     user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know, and for the platform, which
+         *     the screen names from `kind` in its own language. `deleted` is set for a user only.
          */
         AuditActorResponse: {
             kind: components["schemas"]["AuditActorResponseKind"];
@@ -404,7 +403,7 @@ export interface components {
          * @description The kind of actor of an audit record.
          * @enum {unknown}
          */
-        AuditActorResponseKind: "user" | "platform" | "identityProvider";
+        AuditActorResponseKind: "user" | "platform";
         /**
          * @description One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record
          *     keeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email
@@ -418,7 +417,7 @@ export interface components {
             operation: components["schemas"]["AuditOperation"];
             details: null | components["schemas"]["JsonElement"];
             actor: components["schemas"]["AuditActorResponse"];
-            target: null | components["schemas"]["AuditTargetResponse"];
+            target: components["schemas"]["AuditTargetResponse"];
         };
         /**
          * @description The operation of an audit record, area.action.
@@ -427,7 +426,7 @@ export interface components {
         AuditOperation: "invitation.revoked" | "member.invited" | "member.joined" | "member.removed" | "member.role_changed" | "tenant.closed" | "tenant.created" | "tenant.owner_invited" | "tenant.reactivated" | "tenant.renamed" | "tenant.reopened" | "tenant.suspended" | "user.deleted" | "user.preferences_changed" | "user.reactivated" | "user.renamed" | "user.suspended";
         /**
          * @description What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
-         *     has no name. `deleted` is set for a user only. A record written before the audit kept targets has none.
+         *     has no name. `deleted` is set for a user only.
          */
         AuditTargetResponse: {
             kind: components["schemas"]["AuditTargetResponseKind"];
@@ -811,7 +810,7 @@ export interface components {
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
          * @description One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
-         *     (null when the user is not suspended, or was suspended before step 20l), and every membership by the tenant's name.
+         *     (null when the user is not suspended), and every membership by the tenant's name.
          */
         UserDetailResponse: {
             /** Format: uuid */

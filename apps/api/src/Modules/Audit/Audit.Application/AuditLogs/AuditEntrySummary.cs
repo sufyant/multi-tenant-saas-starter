@@ -14,11 +14,11 @@ public sealed record AuditEntrySummary(
     string Operation,
     string? Details,
     AuditActorSummary Actor,
-    AuditTargetSummary? Target);
+    AuditTargetSummary Target);
 
 /// <summary>
-/// Who acted: a user carries their catalog user id, their real name or null, and whether they were deleted. The platform and the
-/// identity provider carry only their kind.
+/// Who acted: a user carries their catalog user id, their real name or null, and whether they were deleted. The platform carries only
+/// its kind.
 /// </summary>
 public sealed record AuditActorSummary(string Kind, Guid? UserId, string? DisplayName, bool? Deleted);
 
@@ -59,21 +59,16 @@ internal static class AuditEntrySummaries
         });
     }
 
-    // The platform and the identity provider have no name here: a screen names them from their kind, in its own language. A record
-    // written before K3 has no actor kind: a system admin acted on the tenant, and the read side shows it as the platform's, as a
-    // system admin's action in the tenant's log always is.
+    // The platform has no name here: a screen names it from its kind, in its own language.
     private static AuditActorSummary ActorOf(AuditRecord record) => record.ActorKind switch
     {
         AuditActorKind.User => new(nameof(AuditActorKind.User), record.ActorId, null, false),
-        AuditActorKind.IdentityProvider => new(nameof(AuditActorKind.IdentityProvider), null, null, null),
         _ => new(nameof(AuditActorKind.Platform), null, null, null),
     };
 
-    // A record written before K3 has no target. A tenant keeps its stored name; a user is named later; an invitation has no name.
-    private static AuditTargetSummary? TargetOf(AuditRecord record) =>
-        record is { TargetKind: { } kind, TargetId: { } id }
-            ? new AuditTargetSummary(kind.ToString(), id, record.TargetName, kind == AuditTargetKind.User ? false : null)
-            : null;
+    // A tenant keeps its stored name; a user is named later; an invitation has no name.
+    private static AuditTargetSummary TargetOf(AuditRecord record) =>
+        new(record.TargetKind.ToString(), record.TargetId, record.TargetName, record.TargetKind == AuditTargetKind.User ? false : null);
 
     // An id the catalog does not know has no name, and is not known to be deleted.
     private static string? NameOf(Guid userId, IReadOnlyDictionary<Guid, UserName> names) =>

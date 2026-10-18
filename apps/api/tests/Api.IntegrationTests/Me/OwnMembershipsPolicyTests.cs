@@ -33,7 +33,7 @@ public sealed class OwnMembershipsPolicyTests(Database database)
 
         var insert = () => database.ExecuteAsUserAsync(
             userId,
-            $"INSERT INTO control_plane.memberships (tenant_id, user_id, role_id) SELECT '{tenant.Id}', '{userId}', id FROM control_plane.roles WHERE built_in = 'Owner'");
+            $"INSERT INTO control_plane.memberships (tenant_id, user_id, role_id, joined_at) SELECT '{tenant.Id}', '{userId}', id, now() FROM control_plane.roles WHERE built_in = 'Owner'");
 
         (await insert.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'")).ShouldBe(0);

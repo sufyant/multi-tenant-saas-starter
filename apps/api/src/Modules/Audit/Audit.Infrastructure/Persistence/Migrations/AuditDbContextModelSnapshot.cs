@@ -34,6 +34,7 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnName("actor_id");
 
                     b.Property<string>("ActorKind")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("actor_kind");
@@ -58,11 +59,12 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("operation");
 
-                    b.Property<Guid?>("TargetId")
+                    b.Property<Guid>("TargetId")
                         .HasColumnType("uuid")
                         .HasColumnName("target_id");
 
                     b.Property<string>("TargetKind")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("target_kind");

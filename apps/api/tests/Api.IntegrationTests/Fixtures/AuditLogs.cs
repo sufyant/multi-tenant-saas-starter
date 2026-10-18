@@ -29,14 +29,14 @@ internal sealed class AuditLogs(Database database)
             $"SELECT count(*) FROM audit.entries AS entry WHERE entry.tenant_id = '{tenantId}' AND entry::text ILIKE '%{text}%'");
 
     // Adds a record to a tenant's log as the superuser, whom row level security does not bind, so the tenant column is written by hand.
-    // A null actor kind is a record written before K3.
+    // Without a target, the record is about the tenant.
     public async Task<Guid> AddTenantEntryAsync(
         Guid tenantId,
         DateTimeOffset occurredAt,
-        string? actorKind = "Platform",
+        string actorKind = "Platform",
         Guid? actorId = null,
         string operation = "tenant.suspended",
-        string? targetKind = null,
+        string targetKind = "Tenant",
         Guid? targetId = null,
         string? targetName = null,
         string? details = null)
@@ -45,8 +45,8 @@ internal sealed class AuditLogs(Database database)
         await database.ScalarAsSuperuserAsync<object>(
             $"""
             INSERT INTO audit.entries (id, tenant_id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name, details)
-            VALUES ('{id}', '{tenantId}', '{occurredAt:O}', {Text(actorKind)}, {Text(actorId)}, 'Command', '{operation}', {Text(targetKind)},
-                {Text(targetId)}, {Text(targetName)}, {Text(details)})
+            VALUES ('{id}', '{tenantId}', '{occurredAt:O}', '{actorKind}', {Text(actorId)}, 'Command', '{operation}', '{targetKind}',
+                '{targetId ?? tenantId}', {Text(targetName)}, {Text(details)})
             """);
         return id;
     }

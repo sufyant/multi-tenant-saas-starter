@@ -7,7 +7,7 @@ namespace ControlPlane.Contracts;
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the member whose role changed.</param>
 /// <param name="ChangedBy">The catalog user id of the member who changed it, who acted.</param>
-/// <param name="OldRole">The built-in role the member had: <c>owner</c>, <c>admin</c> or <c>member</c>. A message written before step 20k names both roles as the domain does: <c>Owner</c>.</param>
+/// <param name="OldRole">The built-in role the member had: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
 /// <param name="NewRole">The built-in role the member has now.</param>
 public sealed record MemberRoleChanged(
     Guid EventId,

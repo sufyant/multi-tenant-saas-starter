@@ -79,8 +79,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"].ShouldNotBeNull().ToString().ShouldBe("paging.cursor_invalid");
     }
 
-    // K3: in the platform's log a system admin is a user, by name; a change from the identity provider has that actor, with no name: the
-    // screen names it from its kind. A deleted user has no name and is marked deleted; a tenant keeps its name of that moment.
+    // K3: in the platform's log a system admin is a user, by name. A deleted user has no name and is marked deleted; a tenant keeps its
+    // name of that moment.
     [Fact]
     public async Task ListPlatformAuditEntries_ActorsAndTargets_AreNamedOnRead()
     {
@@ -90,7 +90,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         await _catalog.DeleteUserAsync(deletedUser);
         var deleted = await _catalog.UserIdOfAsync(deletedUser);
         var tenant = Guid.CreateVersion7();
-        await _audit.AddPlatformEntryAsync(_start, "IdentityProvider", null, "User", deleted, "user.deleted");
+        await _audit.AddPlatformEntryAsync(_start, "User", grace, "User", deleted, "user.deleted");
         await _audit.AddPlatformEntryAsync(_start.AddTicks(10), "User", grace, "Tenant", tenant, "tenant.suspended", "Globex");
 
         var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/audit-log?limit=2", Cancellation);
@@ -98,7 +98,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         ListAuditEntriesTests.Described(page).ShouldBe(
         [
             $"tenant.suspended|user|{grace}|Grace Hopper|false|tenant|{tenant}|Globex|-",
-            $"user.deleted|identityProvider|-|-|-|user|{deleted}|-|true",
+            $"user.deleted|user|{grace}|Grace Hopper|false|user|{deleted}|-|true",
         ]);
     }
 

@@ -330,6 +330,8 @@ Never roll the database back. The earlier image finds no migration to apply, bec
 
 A roll back works only to a version that the current schema supports. After a contract release (section 8), the version before the expand release no longer works.
 
+Each module's migrations start with one initial migration. A version from before those initial migrations knows other migrations, so the current schema does not support it: its `migrate` step fails, and the deploy stops before Railway gets its image. A rollback to such a version, or a revert of the initial migrations on `main`, does not work.
+
 Railway keeps the old deployment serving when a new one fails its health check. So a failed deploy needs no roll back. `deploy.yml` then fails and prints the deployment ID and its status.
 
 ## 7. Railway settings
