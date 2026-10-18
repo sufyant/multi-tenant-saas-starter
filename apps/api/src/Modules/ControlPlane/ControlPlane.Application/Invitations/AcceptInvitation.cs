@@ -30,12 +30,12 @@ public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitati
         RuleFor(command => command.FirstName!)
             .Cascade(CascadeMode.Stop)
             .Must(name => !string.IsNullOrWhiteSpace(name)).WithErrorCode(nameof(FieldErrorCode.Required))
-            .Must(name => name.Trim().Length <= User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong))
+            .MaximumTrimmedLength(User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong))
             .When(command => command.FirstName is not null);
         RuleFor(command => command.LastName!)
             .Cascade(CascadeMode.Stop)
             .Must(name => !string.IsNullOrWhiteSpace(name)).WithErrorCode(nameof(FieldErrorCode.Required))
-            .Must(name => name.Trim().Length <= User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong))
+            .MaximumTrimmedLength(User.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong))
             .When(command => command.LastName is not null);
     }
 }

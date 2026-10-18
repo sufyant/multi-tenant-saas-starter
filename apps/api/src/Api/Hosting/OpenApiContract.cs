@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Api.ErrorHandling;
 using Api.Idempotency;
 using Api.RateLimiting;
@@ -26,7 +27,7 @@ namespace Api.Hosting;
 // the headers of an answer, the bearer scheme, the members of the one error schema with the enums of the error codes, the enum of the
 // permissions, and the enum of the audit operations. They change the document only. The one rule here that the wire follows is how
 // JSON reads a number, because the document describes the numbers from it.
-internal static class OpenApiContract
+internal static partial class OpenApiContract
 {
     private const string BearerScheme = "bearer";
     private const string PermissionSchema = "Permission";
@@ -228,9 +229,10 @@ internal static class OpenApiContract
 
     // Decision 1 of audit fix 09: the validators are the one source of a request's limits. The command X of a request XRequest carries
     // the request's fields under the same names (K5), so the rules of X's validator describe XRequest. The validator's descriptor lists
-    // its rules: a length rule gives minLength and maxLength, an email rule format email, and a rule that needs a value, without a
-    // condition, required. No request body takes a number, so no rule is a range. Any other rule, such as a predicate (Must), stays out
-    // of the document, and OpenApiContractTests lists each one, so a new kind fails until someone decides how the document shows it.
+    // its rules: a length rule gives minLength and maxLength, an email rule format email, and a regex rule the pattern, where ECMAScript
+    // reads the regex as .NET does. The generator marks a field required from the request's constructor, and no request body takes a
+    // number, so no rule is a range. Any other rule, such as a predicate (Must) or the time zone's regex, stays out of the document, and
+    // OpenApiContractTests lists each one, so a new kind fails until someone decides how the document shows it.
     private static Task DescribeRequestRules(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (!RequestValidators.TryGetValue(context.JsonTypeInfo.Type.Name, out var validatorType))
@@ -247,7 +249,7 @@ internal static class OpenApiContract
                 continue;
             }
 
-            foreach (var (rule, component) in member)
+            foreach (var (rule, _) in member)
             {
                 switch (rule)
                 {
@@ -258,9 +260,8 @@ internal static class OpenApiContract
                     case IEmailValidator:
                         field.Format = "email";
                         break;
-                    case INotNullValidator or INotEmptyValidator when !component.HasCondition && !component.HasAsyncCondition:
-                        schema.Required ??= new HashSet<string>();
-                        schema.Required.Add(name);
+                    case IRegularExpressionValidator regex when !NotEcmaScript().IsMatch(regex.Expression):
+                        field.Pattern = regex.Expression;
                         break;
                 }
             }
@@ -270,6 +271,11 @@ internal static class OpenApiContract
     }
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    // A pattern of the document is an ECMAScript regex (OpenAPI 3.1, JSON Schema Validation, section 6.3.3). These .NET anchors and
+    // lookbehinds have no ECMAScript form, or another meaning there, so a regex with one is no pattern: \A, \Z, \z, (?<= and (?<!.
+    [GeneratedRegex(@"\\[AZz]|\(\?<[=!]")]
+    private static partial Regex NotEcmaScript();
 
     // The generator knows the values of the default enum converter only. An enum with a converter of its own, such as Language and
     // MemberRole, which read an exact name only (ExactNameEnumConverter), would so have a schema without values, and a nullable field of

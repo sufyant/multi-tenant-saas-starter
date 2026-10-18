@@ -1,5 +1,6 @@
 using ControlPlane.Application.Ports;
 using ControlPlane.Contracts;
+using ControlPlane.Domain.Tenants;
 using FluentValidation;
 using SharedKernel;
 
@@ -15,8 +16,12 @@ public sealed class RenameTenantValidator : AbstractValidator<RenameTenant>
 {
     public RenameTenantValidator()
     {
-        // The tenant checks the name itself, as at its creation; a request without one never reaches it.
-        RuleFor(command => command.Name).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
+        // The rule states the name's longest length, so the OpenAPI document holds it; the tenant still checks the name itself, as at
+        // its creation (Evans, Chapter 6). The tenant keeps the name without the spaces around it, so its length is counted without them.
+        RuleFor(command => command.Name)
+            .Cascade(CascadeMode.Stop)
+            .NotNull().WithErrorCode(nameof(FieldErrorCode.Required))
+            .MaximumTrimmedLength(Tenant.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 }
 

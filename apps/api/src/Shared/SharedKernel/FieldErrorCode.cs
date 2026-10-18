@@ -21,4 +21,7 @@ public enum FieldErrorCode
 
     [JsonStringEnumMemberName("time_zone_invalid")]
     TimeZoneInvalid,
+
+    [JsonStringEnumMemberName("slug_invalid")]
+    SlugInvalid,
 }

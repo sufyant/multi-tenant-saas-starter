@@ -4035,12 +4035,14 @@
             "type": "string"
           },
           "firstName": {
+            "maxLength": 100,
             "type": [
               "null",
               "string"
             ]
           },
           "lastName": {
+            "maxLength": 100,
             "type": [
               "null",
               "string"
@@ -4242,9 +4244,13 @@
         "type": "object",
         "properties": {
           "name": {
+            "maxLength": 100,
             "type": "string"
           },
           "slug": {
+            "maxLength": 63,
+            "minLength": 3,
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
             "type": "string"
           },
           "ownerEmail": {
@@ -4347,7 +4353,8 @@
           "required",
           "email_invalid",
           "too_long",
-          "time_zone_invalid"
+          "time_zone_invalid",
+          "slug_invalid"
         ],
         "type": "string",
         "description": "Why one field of a request failed validation."
@@ -5022,6 +5029,7 @@
         "type": "object",
         "properties": {
           "name": {
+            "maxLength": 100,
             "type": "string"
           }
         },
@@ -5035,9 +5043,11 @@
         "type": "object",
         "properties": {
           "firstName": {
+            "maxLength": 100,
             "type": "string"
           },
           "lastName": {
+            "maxLength": 100,
             "type": "string"
           }
         },
@@ -5073,6 +5083,7 @@
         "type": "object",
         "properties": {
           "reason": {
+            "maxLength": 500,
             "type": "string"
           }
         },

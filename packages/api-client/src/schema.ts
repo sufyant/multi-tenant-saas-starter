@@ -480,7 +480,7 @@ export interface components {
          * @description Why one field of a request failed validation.
          * @enum {string}
          */
-        FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid";
+        FieldErrorCode: "required" | "email_invalid" | "too_long" | "time_zone_invalid" | "slug_invalid";
         /** @description The invitation code from the invitation link. */
         GetInvitationPreviewRequest: {
             code: string;

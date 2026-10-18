@@ -4,6 +4,7 @@ using ControlPlane.Domain;
 using ControlPlane.Domain.Invitations;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using System.Text.RegularExpressions;
 using FluentValidation;
 using SharedKernel;
 using Wolverine;
@@ -19,18 +20,33 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// </summary>
 public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail, Language? Language);
 
-public sealed class CreateTenantValidator : AbstractValidator<CreateTenant>
+public sealed partial class CreateTenantValidator : AbstractValidator<CreateTenant>
 {
     public CreateTenantValidator()
     {
-        // The tenant checks the name and the slug itself; a request without one never reaches it.
-        RuleFor(command => command.Name).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
-        RuleFor(command => command.Slug).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
+        // The rules state the name's longest length and the slug's lengths and shape, so the OpenAPI document holds them; the tenant
+        // still checks both itself (Evans, Chapter 6). The tenant keeps the name without the spaces around it, so its length is counted
+        // without them.
+        RuleFor(command => command.Name)
+            .Cascade(CascadeMode.Stop)
+            .NotNull().WithErrorCode(nameof(FieldErrorCode.Required))
+            .MaximumTrimmedLength(Tenant.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
+        RuleFor(command => command.Slug)
+            .Cascade(CascadeMode.Stop)
+            .NotNull().WithErrorCode(nameof(FieldErrorCode.Required))
+            .Length(Tenant.SlugMinLength, Tenant.SlugMaxLength).WithErrorCode(nameof(FieldErrorCode.SlugInvalid))
+            .Matches(Slug()).WithErrorCode(nameof(FieldErrorCode.SlugInvalid));
         RuleFor(command => command.OwnerEmail)
             .NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required))
             .EmailAddress().WithErrorCode(nameof(FieldErrorCode.EmailInvalid))
             .MaximumLength(Invitation.EmailMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
+
+    // Parts of lowercase ASCII letters and digits, joined by single hyphens. The OpenAPI document writes it as the slug's pattern, so
+    // .NET and ECMAScript must read it the same way: no \z and no lookbehind. In .NET, $ also matches before a last line break; the
+    // tenant's own check refuses such a slug.
+    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    private static partial Regex Slug();
 }
 
 // Step 1 of the tenant creation saga, in one transaction: the tenant as provisioning, its first owner's invitation, the saga's record
