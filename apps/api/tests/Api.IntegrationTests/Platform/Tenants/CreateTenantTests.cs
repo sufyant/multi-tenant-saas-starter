@@ -507,7 +507,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddSystemAdminAsync();
         var slug = Slug();
         var owner = Email();
-        await RefuseAsync("tenant_creation_sagas", "INSERT", $"NEW.tenant_id IN (SELECT id FROM control_plane.tenants WHERE slug = '{slug}')");
+        await database.RefuseAsync("tenant_creation_sagas", "INSERT", $"NEW.tenant_id IN (SELECT id FROM control_plane.tenants WHERE slug = '{slug}')");
 
         var created = await _api.TrackMessagesAsync(() => CreateTenantAsync(admin, slug, owner));
 
@@ -523,7 +523,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var admin = await _catalog.AddSystemAdminAsync();
         var slug = Slug();
         var owner = Email();
-        await RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
+        await database.RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
 
         HttpResponseMessage created = null!;
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, owner));
@@ -648,25 +648,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     private Task<string?> SagaStateAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'");
-
-    // A database trigger that refuses the statement on matching rows, as a real failure of that statement would.
-    private async Task RefuseAsync(string table, string statement, string when)
-    {
-        var name = $"refuse_{Guid.NewGuid():N}";
-        await using var connection = new NpgsqlConnection(database.SuperuserConnectionString);
-        await connection.OpenAsync(Cancellation);
-        await using var command = new NpgsqlCommand(
-            $"""
-            CREATE FUNCTION control_plane.{name}() RETURNS trigger LANGUAGE plpgsql AS $$
-            BEGIN
-                IF {when} THEN RAISE EXCEPTION 'refused'; END IF;
-                RETURN NEW;
-            END $$;
-            CREATE TRIGGER {name} BEFORE {statement} ON control_plane.{table} FOR EACH ROW EXECUTE FUNCTION control_plane.{name}();
-            """,
-            connection);
-        await command.ExecuteNonQueryAsync(Cancellation);
-    }
 
     private static string Email() => $"{Guid.NewGuid():N}@example.com";
 

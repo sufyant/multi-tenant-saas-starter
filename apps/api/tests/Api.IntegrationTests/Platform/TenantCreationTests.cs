@@ -45,7 +45,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
     {
         var admin = await _catalog.AddSystemAdminAsync();
         var slug = Slug();
-        await RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
+        await database.RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
 
         HttpResponseMessage created = null!;
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, Email()));
@@ -132,25 +132,6 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 
     private Task<string?> SagaStateAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'");
-
-    // A database trigger that refuses the statement on matching rows, as a real failure of that statement would.
-    private async Task RefuseAsync(string table, string statement, string when)
-    {
-        var name = $"refuse_{Guid.NewGuid():N}";
-        await using var connection = new NpgsqlConnection(database.SuperuserConnectionString);
-        await connection.OpenAsync(Cancellation);
-        await using var command = new NpgsqlCommand(
-            $"""
-            CREATE FUNCTION control_plane.{name}() RETURNS trigger LANGUAGE plpgsql AS $$
-            BEGIN
-                IF {when} THEN RAISE EXCEPTION 'refused'; END IF;
-                RETURN NEW;
-            END $$;
-            CREATE TRIGGER {name} BEFORE {statement} ON control_plane.{table} FOR EACH ROW EXECUTE FUNCTION control_plane.{name}();
-            """,
-            connection);
-        await command.ExecuteNonQueryAsync(Cancellation);
-    }
 
     // Locks the saga's record in a transaction of its own, so the handlers that read it all wait at their write.
     private async Task<SagaHold> HoldSagaAsync(Guid tenantId)

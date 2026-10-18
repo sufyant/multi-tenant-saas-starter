@@ -31,6 +31,8 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
+
     [Theory]
     [InlineData("Owner")]
     [InlineData("Admin")]
@@ -152,8 +154,8 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RevokeInvitation_WithAClerkInvitation_WithdrawsItOnce()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
-        var (invitationId, signUp) = await InviteAsync(tenantId, owner);
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
+        var (invitationId, signUp) = await SignUps.InviteAsync(tenantId, owner);
 
         await _api.WaitingForMessagesAsync(() => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitationId}", Cancellation));
         await _api.WaitingForMessagesAsync(() => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitationId}", Cancellation));
@@ -166,24 +168,4 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
-
-    private async Task<(Guid TenantId, HttpClient Owner)> TenantWithOwnerAsync()
-    {
-        var tenant = await _catalog.AddTenantAsync();
-        return (tenant.Id, _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner")));
-    }
-
-    // An invitation to a person without an account, with its email sent: its id and the id of Clerk's invitation.
-    private async Task<(Guid InvitationId, string SignUp)> InviteAsync(Guid tenantId, HttpClient owner, string? email = null)
-    {
-        email ??= NewEmail();
-        var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, email));
-        var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        return (invitationId, (await SignUpInvitationIdAsync(invitationId))!);
-    }
-
-    private Task<string?> SignUpInvitationIdAsync(Guid invitationId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT sign_up_invitation_id FROM control_plane.invitations WHERE id = '{invitationId}'");
-
-    private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
 }

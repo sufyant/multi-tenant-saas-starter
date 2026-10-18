@@ -42,6 +42,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
+
     [Theory]
     [InlineData("Owner")]
     [InlineData("Admin")]
@@ -499,7 +501,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_PersonWithoutAnAccount_CreatesOneClerkInvitationAndEmailsItsLink()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, email));
@@ -510,7 +512,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         signUp.AcceptLink.GetLeftPart(UriPartial.Path).ShouldBe(ApiFactory.AcceptUrl);
         signUp.ExpiresAt.ShouldBe(invitation.GetProperty("expiresAt").GetDateTimeOffset());
         _api.Email.LinkSentTo(email).ShouldBe(FakeIdentityProvider.ClerkLink(signUp.InvitationId, signUp.AcceptLink));
-        (await SignUpInvitationIdAsync(invitation.GetProperty("id").GetGuid())).ShouldBe(signUp.InvitationId);
+        (await SignUps.SignUpIdOfAsync(invitation.GetProperty("id").GetGuid())).ShouldBe(signUp.InvitationId);
     }
 
     // A person with an account signs in and accepts: Clerk would refuse an invitation for their address, so the email carries the accept
@@ -518,7 +520,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_PersonWithAnAccount_CreatesNoClerkInvitationAndEmailsTheAcceptLink()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
         var email = NewEmail();
         _api.Identity.AddAccount($"user_{Guid.NewGuid():N}", email);
 
@@ -527,7 +529,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
         _api.Identity.SignUps.ShouldNotContain(signUp => signUp.Email == email);
         _api.Email.LinkSentTo(email).GetLeftPart(UriPartial.Path).ShouldBe(ApiFactory.AcceptUrl);
-        (await SignUpInvitationIdAsync(invitationId)).ShouldBeNull();
+        (await SignUps.SignUpIdOfAsync(invitationId)).ShouldBeNull();
     }
 
     // K2: a new invitation to the same address replaces the pending one; the replaced one's Clerk invitation is withdrawn, and the new one
@@ -535,9 +537,9 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_ReplacingAPendingInvitation_WithdrawsTheReplacedClerkInvitationOnce()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
         var email = NewEmail();
-        var (_, replaced) = await InviteAsync(tenantId, owner, email);
+        var (_, replaced) = await SignUps.InviteAsync(tenantId, owner, email);
 
         await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, email));
 
@@ -550,7 +552,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_ClerkFailsTwice_IsTriedAgainAndEmailsOnce()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
         var email = NewEmail();
         _api.Identity.FailNext(2);
 
@@ -567,7 +569,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task InviteMember_ClerkKeepsFailing_SendsNoEmailAndKeepsTheInvitationPending()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
         var email = NewEmail();
         _api.Identity.IsDown = true;
 
@@ -640,22 +642,4 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
-
-    private async Task<(Guid TenantId, HttpClient Owner)> TenantWithOwnerAsync()
-    {
-        var tenant = await _catalog.AddTenantAsync();
-        return (tenant.Id, _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner")));
-    }
-
-    // An invitation to a person without an account, with its email sent: its id and the id of Clerk's invitation.
-    private async Task<(Guid InvitationId, string SignUp)> InviteAsync(Guid tenantId, HttpClient owner, string? email = null)
-    {
-        email ??= NewEmail();
-        var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, email));
-        var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        return (invitationId, (await SignUpInvitationIdAsync(invitationId))!);
-    }
-
-    private Task<string?> SignUpInvitationIdAsync(Guid invitationId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT sign_up_invitation_id FROM control_plane.invitations WHERE id = '{invitationId}'");
 }

@@ -301,6 +301,25 @@ public sealed class Database : IAsyncLifetime
         return value is null or DBNull ? default : (T)value;
     }
 
+    // A database trigger that refuses the statement on matching rows, as a real failure of that statement would.
+    public async Task RefuseAsync(string table, string statement, string when)
+    {
+        var name = $"refuse_{Guid.NewGuid():N}";
+        await using var connection = new NpgsqlConnection(SuperuserConnectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        await using var command = new NpgsqlCommand(
+            $"""
+            CREATE FUNCTION control_plane.{name}() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                IF {when} THEN RAISE EXCEPTION 'refused'; END IF;
+                RETURN NEW;
+            END $$;
+            CREATE TRIGGER {name} BEFORE {statement} ON control_plane.{table} FOR EACH ROW EXECUTE FUNCTION control_plane.{name}();
+            """,
+            connection);
+        await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+    }
+
     // What is really in a table: the container's superuser is bound by no policy, so it sees the rows of every tenant.
     public async Task<T?> ScalarAsSuperuserAsync<T>(string sql, string database = MainDatabase)
     {

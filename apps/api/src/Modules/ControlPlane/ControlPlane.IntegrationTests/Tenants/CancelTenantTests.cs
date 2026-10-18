@@ -26,12 +26,10 @@ namespace ControlPlane.IntegrationTests.Tenants;
 // creation saga: it writes the catalog in the new tenant's transaction, and it may run twice (S7).
 public sealed class CancelTenantTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     [Fact]
     public async Task CancelTenant_Provisioning_CancelsTheTenantWithItsReasonAndTheInvitation()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
 
         var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
@@ -44,7 +42,7 @@ public sealed class CancelTenantTests(Database database)
     [Fact]
     public async Task CancelTenant_Repeated_KeepsTheFirstReason()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
         var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "another_reason"));
@@ -58,7 +56,7 @@ public sealed class CancelTenantTests(Database database)
     [Fact]
     public async Task CancelTenant_Active_ChangesNothingAndReportsNoCancellation()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
 
         var cancelled = await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
@@ -73,7 +71,7 @@ public sealed class CancelTenantTests(Database database)
     [Fact]
     public async Task CancelTenant_Suspended_ChangesNothingAndReportsNoCancellation()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
         await ScalarAsync<object>($"UPDATE control_plane.tenants SET status = 'Suspended' WHERE id = '{tenantId}'");
 
@@ -84,26 +82,7 @@ public sealed class CancelTenantTests(Database database)
         (await ScalarAsync<string>($"SELECT status FROM control_plane.invitations WHERE id = '{invitationId}'")).ShouldBe("Pending");
     }
 
-    private async Task<(Guid TenantId, Guid InvitationId)> StartAsync()
-    {
-        var admin = await Catalog.AddUserAsync(database.Services);
-        var tenantId = Guid.CreateVersion7();
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
-
-        return (tenantId, started.Activate.ShouldNotBeNull().Message.InvitationId);
-    }
-
     private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
-
-    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
-        (await CreateTenantHandler.HandleAsync(
-            new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
-            scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
-            scope.ServiceProvider.GetRequiredService<IUserRepository>(),
-            scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
-            scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),
-            TimeProvider.System,
-            Cancellation)).Item1;
 
     private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
 

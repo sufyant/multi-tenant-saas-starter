@@ -32,13 +32,13 @@ internal static class Handlers
     public static Task<CreatedTenant> CreateTenantAsync(
         IServiceProvider services,
         Guid tenantId,
-        string adminId,
+        string actorId,
         string slug,
         string ownerEmail) =>
         InTenant.RunAsync(services, tenantId, async scope =>
         {
             var (result, saga, activate, timeout) = await CreateTenantHandler.HandleAsync(
-                new CreateTenantCommand(adminId, "Acme Ltd", slug, ownerEmail, null),
+                new CreateTenantCommand(actorId, "Acme Ltd", slug, ownerEmail, null),
                 scope.GetRequiredService<ITenantRepository>(),
                 scope.GetRequiredService<IUserRepository>(),
                 scope.GetRequiredService<InvitationOptions>(),
@@ -84,6 +84,16 @@ internal static class Handlers
             scope.GetRequiredService<ITenantRepository>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
+
+    // A tenant whose creation has started, by a new catalog user: its id and the id of the Owner's invitation that the activation names.
+    public static async Task<(Guid TenantId, Guid InvitationId)> StartTenantCreationAsync(IServiceProvider services)
+    {
+        var actor = await Catalog.AddUserAsync(services);
+        var tenantId = Guid.CreateVersion7();
+        var started = await CreateTenantAsync(services, tenantId, actor.ExternalId, Unique.Slug(), Unique.Email());
+
+        return (tenantId, started.Activate.ShouldNotBeNull().Message.InvitationId);
+    }
 
     // A tenant created up to its pivot, the way the saga drives it: started and activated. Returns what the owner's sign-up is opened
     // from.

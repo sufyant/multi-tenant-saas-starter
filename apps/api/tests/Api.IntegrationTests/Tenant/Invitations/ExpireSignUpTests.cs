@@ -16,8 +16,6 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 // ClerkIdentityProviderTests.
 public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     private readonly Catalog _catalog = new(database);
     private readonly FakeTimeProvider _time = new(DateTimeOffset.UtcNow);
     private ApiFactory _api = null!;
@@ -30,15 +28,17 @@ public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    private SignUpInvitations SignUps => new(_api, _catalog, database);
+
     // The withdrawal at the end of the invitation's life is scheduled when the link goes out; here it arrives, once the lifetime is over.
     [Fact]
     public async Task ExpireSignUp_LifetimeOver_WithdrawsTheClerkInvitationOnce()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
-        var (invitationId, signUp) = await InviteAsync(tenantId, owner);
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
+        var (invitationId, signUp) = await SignUps.InviteAsync(tenantId, owner);
         _time.Advance(TimeSpan.FromDays(7));
 
-        await ExpireAsync(tenantId, invitationId);
+        await SignUps.ExpireAsync(tenantId, invitationId);
 
         _api.Identity.Withdrawn.Where(withdrawn => withdrawn == signUp).ShouldHaveSingleItem();
     }
@@ -47,39 +47,11 @@ public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ExpireSignUp_BeforeTheLifetimeIsOver_WithdrawsNothing()
     {
-        var (tenantId, owner) = await TenantWithOwnerAsync();
-        var (invitationId, signUp) = await InviteAsync(tenantId, owner);
+        var (tenantId, owner) = await SignUps.TenantWithOwnerAsync();
+        var (invitationId, signUp) = await SignUps.InviteAsync(tenantId, owner);
 
-        await ExpireAsync(tenantId, invitationId);
+        await SignUps.ExpireAsync(tenantId, invitationId);
 
         _api.Identity.Withdrawn.ShouldNotContain(signUp);
     }
-
-    private async Task<(Guid TenantId, HttpClient Owner)> TenantWithOwnerAsync()
-    {
-        var tenant = await _catalog.AddTenantAsync();
-        return (tenant.Id, _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner")));
-    }
-
-    // An invitation to a person without an account, with its email sent: its id and the id of Clerk's invitation.
-    private async Task<(Guid InvitationId, string SignUp)> InviteAsync(Guid tenantId, HttpClient owner, string? email = null)
-    {
-        email ??= NewEmail();
-        var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, email));
-        var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        return (invitationId, (await SignUpInvitationIdAsync(invitationId))!);
-    }
-
-    private Task<bool> ExpireAsync(Guid tenantId, Guid invitationId) =>
-        _api.WaitingForMessagesAsync(async () =>
-        {
-            using var scope = _api.Services.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), new ExpireSignUpCommand(tenantId, invitationId), Cancellation);
-            return true;
-        });
-
-    private Task<string?> SignUpInvitationIdAsync(Guid invitationId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT sign_up_invitation_id FROM control_plane.invitations WHERE id = '{invitationId}'");
-
-    private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
 }

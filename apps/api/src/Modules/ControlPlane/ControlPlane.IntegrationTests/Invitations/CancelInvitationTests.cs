@@ -31,7 +31,7 @@ public sealed class CancelInvitationTests(Database database)
     [Fact]
     public async Task CancelInvitation_Pending_CancelsItAndATenantStaysActive()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
 
         await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
@@ -46,7 +46,7 @@ public sealed class CancelInvitationTests(Database database)
     [Fact]
     public async Task CancelInvitation_WhileAnotherTransactionHoldsTheTenant_WaitsForIt()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         await using var other = new NpgsqlConnection(database.ConnectionStringFor(DatabaseRoles.Application));
         await other.OpenAsync(Cancellation);
         await using var holding = await other.BeginTransactionAsync(Cancellation);
@@ -97,26 +97,7 @@ public sealed class CancelInvitationTests(Database database)
         return false;
     }
 
-    private async Task<(Guid TenantId, Guid InvitationId)> StartAsync()
-    {
-        var admin = await Catalog.AddUserAsync(database.Services);
-        var tenantId = Guid.CreateVersion7();
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
-
-        return (tenantId, started.Activate.ShouldNotBeNull().Message.InvitationId);
-    }
-
     private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
-
-    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
-        (await CreateTenantHandler.HandleAsync(
-            new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
-            scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
-            scope.ServiceProvider.GetRequiredService<IUserRepository>(),
-            scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
-            scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),
-            TimeProvider.System,
-            Cancellation)).Item1;
 
     private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
 

@@ -26,8 +26,6 @@ namespace ControlPlane.IntegrationTests.Tenants;
 // transaction, and it may run twice (S7).
 public sealed class ActivateTenantTests(Database database)
 {
-    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
-
     // Step 3 starts with the activation: the identity provider lets the owner sign up, until the invitation expires.
     [Fact]
     public async Task ActivateTenant_Provisioning_ActivatesItAnnouncesTheTenantAndOpensTheOwnersSignUp()
@@ -60,7 +58,7 @@ public sealed class ActivateTenantTests(Database database)
     [Fact]
     public async Task ActivateTenant_Repeated_AnnouncesNothingAgain()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         var activate = new ActivateTenantCommand(tenantId, invitationId, AcceptLink());
         await Handlers.ActivateAsync(database.Services, tenantId, activate);
 
@@ -74,7 +72,7 @@ public sealed class ActivateTenantTests(Database database)
     [Fact]
     public async Task ActivateTenant_Cancelled_AnnouncesNothing()
     {
-        var (tenantId, invitationId) = await StartAsync();
+        var (tenantId, invitationId) = await Handlers.StartTenantCreationAsync(database.Services);
         await Handlers.CancelTenantAsync(database.Services, tenantId, new CancelTenantCommand(tenantId, invitationId, "activation_failed"));
 
         var (completed, activated, ready) = await Handlers.ActivateAsync(database.Services, tenantId, new ActivateTenantCommand(tenantId, invitationId, AcceptLink()));
@@ -85,26 +83,7 @@ public sealed class ActivateTenantTests(Database database)
         (await StatusOfAsync(tenantId)).ShouldBe("Cancelled");
     }
 
-    private async Task<(Guid TenantId, Guid InvitationId)> StartAsync()
-    {
-        var admin = await Catalog.AddUserAsync(database.Services);
-        var tenantId = Guid.CreateVersion7();
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
-
-        return (tenantId, started.Activate.ShouldNotBeNull().Message.InvitationId);
-    }
-
     private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
-
-    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
-        (await CreateTenantHandler.HandleAsync(
-            new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
-            scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
-            scope.ServiceProvider.GetRequiredService<IUserRepository>(),
-            scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
-            scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),
-            TimeProvider.System,
-            Cancellation)).Item1;
 
     private Task<string> StatusOfAsync(Guid tenantId) => ScalarAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenantId}'");
 

@@ -117,15 +117,6 @@ public sealed class CreateTenantTests(Database database)
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 
-    private async Task<(Guid TenantId, Guid InvitationId)> StartAsync()
-    {
-        var admin = await Catalog.AddUserAsync(database.Services);
-        var tenantId = Guid.CreateVersion7();
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
-
-        return (tenantId, started.Activate.ShouldNotBeNull().Message.InvitationId);
-    }
-
     private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
 
     // The transaction Wolverine would begin for the tenant creation, and the database session it runs in.
@@ -136,9 +127,9 @@ public sealed class CreateTenantTests(Database database)
         return (transaction, ((NpgsqlConnection)catalog.Database.GetDbConnection()).ProcessID);
     }
 
-    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
+    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string actorId, string slug) =>
         (await CreateTenantHandler.HandleAsync(
-            new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
+            new CreateTenantCommand(actorId, "Acme Ltd", slug, Unique.Email(), null),
             scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
             scope.ServiceProvider.GetRequiredService<IUserRepository>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
