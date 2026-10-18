@@ -608,7 +608,7 @@ An Owner or an Admin reads the tenant's log, "Activity" on the screen (`tenant.a
 - An actor is a user, the platform or, in a record written before step 20i, the identity provider (`kind`). A record written before K3 has no actor kind and reads as the platform's (K3).
 - `displayName` and a user target's `name` hold only a person's real name, else null. The API writes no label: the web speaks English, Turkish and Arabic, and a client could not tell a label from a real name. A client names the platform and the identity provider from `kind`, and a user without a name from `deleted`, as it does for `ListMembers`.
 - A user actor and a user target carry `deleted`: true for a user a system admin deleted (A8). Any other actor or target has `deleted` null. An id the catalog does not know has no name and `deleted` false. The answer holds no email address.
-- The permission catalogue is in `ControlPlane.Contracts`, which `Audit.Api` does not reference (section 2). The endpoints state the names again; `EndpointAccessTests` fails for an endpoint whose permission the catalogue does not hold.
+- The endpoints read the two names from the permission catalogue (`ControlPlane.Contracts/Permissions.cs`). `Audit.Api` does not reference `ControlPlane.Contracts` (section 2), so `Audit.Application`, which does, gives the names to it (`AuditLogs/AuditLogPermissions.cs`). `EndpointAccessTests` fails for an endpoint whose permission the catalogue does not hold.
 - Tests: `ListAuditEntriesTests`, `ListPlatformAuditEntriesTests`, `AuditActorIdMigrationTests`, `CursorRequestTests`, `ListContractTests`.
 
 Source: Richardson, *Microservices Patterns*, "API composition". Kleppmann, Chapter 3 (index order). PostgreSQL documentation, "Row Constructor Comparison".
