@@ -49,7 +49,7 @@ public static class ChangeMemberRoleHandler
             return (member, null);
         }
 
-        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

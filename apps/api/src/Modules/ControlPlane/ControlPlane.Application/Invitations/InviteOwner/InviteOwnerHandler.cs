@@ -67,7 +67,7 @@ public static class InviteOwnerHandler
             secret,
             command.Language ?? actor.Language);
         tenants.Add(invitation);
-        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (

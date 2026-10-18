@@ -290,13 +290,13 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// Takes the summary from the tenant's own rows, after a change to a membership or an invitation, under the tenant's lock (K6). It is
+    /// Keeps the summary of the tenant's memberships and invitations, after a change to one of them, under the tenant's lock (K6). It is
     /// the one place that writes the summary. The latest Owner invitation stays only while the tenant has no Owner.
     /// </summary>
-    public void Summarize(TenantRows rows)
+    public void Summarize(TenantSummary summary)
     {
-        (MemberCount, OwnerCount, FirstOwnerId) = (rows.Members, rows.Owners, rows.FirstOwnerId);
-        var invitation = rows.Owners == 0 ? rows.LatestOwnerInvitation : null;
+        (MemberCount, OwnerCount, FirstOwnerId) = (summary.Members, summary.Owners, summary.FirstOwnerId);
+        var invitation = summary.Owners == 0 ? summary.LatestOwnerInvitation : null;
         (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus) = (invitation?.Email, invitation?.ExpiresAt, invitation?.Status);
     }
 
