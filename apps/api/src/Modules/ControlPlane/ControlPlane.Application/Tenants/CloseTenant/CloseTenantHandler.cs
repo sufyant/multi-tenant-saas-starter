@@ -7,7 +7,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.Tenants.CloseTenant;
 
-// The command sets a state (I1): a closed tenant answers as it is, and nothing is announced again. K6: every change to an invitation
+// The command sets a state (I1): a closed tenant answers as it is, and nothing is announced again. K6h: every change to an invitation
 // locks the tenant row first, so under this lock no invitation can be added or accepted: the closure cancels every pending invitation
 // in the same transaction, and a cancelled one answers as a revoked one (K2); the identity provider's invitations behind them are
 // withdrawn after the commit. Rejections come first (W7).

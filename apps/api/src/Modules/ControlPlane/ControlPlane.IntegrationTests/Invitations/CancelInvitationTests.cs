@@ -19,7 +19,7 @@ using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 namespace ControlPlane.IntegrationTests.Invitations;
 
 // CancelInvitationCommand, the saga's compensation of the Owner's invitation, run the way Wolverine runs a step of the tenant creation
-// saga: it writes ControlPlane's tables in the new tenant's transaction, and it may run twice (S7). It locks the tenant row first (K6).
+// saga: it writes ControlPlane's tables in the new tenant's transaction, and it may run twice (S7). It locks the tenant row first (K6m).
 public sealed class CancelInvitationTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -37,7 +37,7 @@ public sealed class CancelInvitationTests(Database database)
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
     }
 
-    // K6: the invitation belongs to the tenant aggregate, so the compensation locks the tenant row first, then the invitation. While
+    // K6m: the invitation belongs to the tenant aggregate, so the compensation locks the tenant row first, then the invitation. While
     // another transaction holds the tenant row, the compensation waits.
     [Fact]
     public async Task CancelInvitation_WhileAnotherTransactionHoldsTheTenant_WaitsForIt()

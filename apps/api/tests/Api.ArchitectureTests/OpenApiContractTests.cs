@@ -18,7 +18,7 @@ using SharedKernel;
 namespace Api.ArchitectureTests;
 
 // N11: the committed OpenAPI document is the contract every client is generated from. Each operation has its endpoint's name as its
-// id, each enum in a response lists exactly the values of its own enum (N7), each path parameter is declared, and each error
+// id, each enum in a response lists exactly the values of its own enum (N7n), each path parameter is declared, and each error
 // answer is the one Problem Details schema, whose code is the one enum of error codes (K5). OpenApiDocumentFileTests checks that the committed file is the one the
 // build writes.
 public sealed partial class OpenApiContractTests : IAsyncLifetime
@@ -39,7 +39,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     private const string MemberRoleSchema = "#/components/schemas/MemberRole";
 
-    // The enums the host adds to fields that are strings in C# (N11): the permissions and the audit operations.
+    // The enums the host adds to fields that are strings in C# (N11i, N11j): the permissions and the audit operations.
     private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema];
 
     private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
@@ -68,7 +68,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         operations.ShouldBe(endpoints, ignoreOrder: true);
     }
 
-    // N7: an endpoint is a named method. A lambda's method has a compiler-generated name, such as <Map>b__0_0, which is no name.
+    // N7e: an endpoint is a named method. A lambda's method has a compiler-generated name, such as <Map>b__0_0, which is no name.
     [Fact]
     public void BuildOpenApiDocument_EveryOperationId_IsAPascalCaseName()
     {
@@ -78,7 +78,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         ids.Where(id => !PascalCaseName().IsMatch(id)).ShouldBeEmpty();
     }
 
-    // N7: every enum of a response lists exactly the values of its C# enum: a status, a state, a kind, a role or a language (A18). The
+    // N7n: every enum of a response lists exactly the values of its C# enum: a status, a state, a kind, a role or a language (A18). The
     // host adds two enums to fields that stay strings in C#, so the C# types cannot show them: their own tests read them.
     [Fact]
     public void BuildOpenApiDocument_EveryEnumOfAResponse_ListsExactlyTheValuesOfItsEnum()
@@ -147,7 +147,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         copies.ShouldBeEmpty();
     }
 
-    // N11 and K5: the permission list is one enum in the document, so a generated client knows each name and a typo does not compile.
+    // N11i and K5: the permission list is one enum in the document, so a generated client knows each name and a typo does not compile.
     [Fact]
     public void BuildOpenApiDocument_Permission_ListsEveryPermissionOfThePermissionList()
     {
@@ -162,7 +162,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(string.Join(", ", listed));
     }
 
-    // N11 and K5: every response field that holds permission names is an array of the one schema Permission, so the web compares each
+    // N11i and K5: every response field that holds permission names is an array of the one schema Permission, so the web compares each
     // name with the enum. A field is found by its name, as the response types keep the names as strings (MyTenantDetailResponse).
     [Fact]
     public void BuildOpenApiDocument_EveryResponseFieldNamedPermissions_IsAnArrayOfPermission()
@@ -182,7 +182,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
-    // N7 and K5, the maintainer's decision in audit fix 04: every response field that holds a role is the one schema RoleResponse,
+    // N7k and K5, the maintainer's decision in audit fix 04: every response field that holds a role is the one schema RoleResponse,
     // { builtIn, name }. builtIn is the enum MemberRole, or null for a custom role later, so a client compares it with an enum value
     // and never with a string it writes by hand. A field is found by its name, as the permissions are.
     [Fact]
@@ -207,7 +207,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         EnumOf(SchemaAt(MemberRoleSchema)).ShouldBe(JsonValuesOf(typeof(MemberRole)));
     }
 
-    // N11 and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.
+    // N11j and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.
     [Fact]
     public void BuildOpenApiDocument_AuditOperation_ListsEveryOperationOfAuditOperations()
     {
@@ -222,7 +222,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(string.Join(", ", declared));
     }
 
-    // N11 and K3: the operation of an entry of either audit log is the one schema AuditOperation. A field is found by its name, as the
+    // N11j and K3: the operation of an entry of either audit log is the one schema AuditOperation. A field is found by its name, as the
     // response types keep the operation as a string (AuditEntryResponse).
     [Fact]
     public void BuildOpenApiDocument_EveryResponseFieldNamedOperation_IsAnAuditOperation()
@@ -507,7 +507,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         predicates.ShouldBeEmpty();
     }
 
-    // N7, N8: an operation has one tag, the folder of its endpoints below the module's Api project, {Audience}/{Resource}, so the API
+    // N7d, N8: an operation has one tag, the folder of its endpoints below the module's Api project, {Audience}/{Resource}, so the API
     // reference and a generated client group the operations as the folders do. The document lists each tag it uses.
     [Fact]
     public void BuildOpenApiDocument_EveryOperation_HasOneTagThatIsAnAudienceAndResourceFolder()

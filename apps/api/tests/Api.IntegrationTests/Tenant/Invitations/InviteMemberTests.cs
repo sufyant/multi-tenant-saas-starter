@@ -259,7 +259,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await _testData.InvitationStatusOfAsync(second)).ShouldBe("Pending");
     }
 
-    // K2, K6: a unique index keeps one pending invitation for each tenant and address, in any case. The lock is the first guard; the
+    // K2, K6i: a unique index keeps one pending invitation for each tenant and address, in any case. The lock is the first guard; the
     // index is the second.
     [Fact]
     public async Task StoreInvitation_ASecondPendingOneToTheSameEmailInAnotherCase_IsRefusedByTheIndex()
@@ -355,7 +355,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         aDayAfterTheFirst.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
-    // K6: the second request waits for the first's lock on the tenant row, then replaces the invitation the first created.
+    // K6i: the second request waits for the first's lock on the tenant row, then replaces the invitation the first created.
     [Fact]
     public async Task InviteMember_TwoAtOnceToTheSameEmail_EndWithOnePendingInvitation()
     {
@@ -371,7 +371,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
-    // K6: the limit is checked under the tenant's lock, so two requests at once cannot both take the last place.
+    // K6i: the limit is checked under the tenant's lock, so two requests at once cannot both take the last place.
     [Fact]
     public async Task InviteMember_TwoAtOnceWithOnePlaceLeft_NeverPassTheLimit()
     {
@@ -387,7 +387,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(DailyLimit);
     }
 
-    // K6, T3: an Owner removes an Admin while the Admin's invitation waits for the tenant's lock. The invitation then runs for a user who
+    // K6g, T3: an Owner removes an Admin while the Admin's invitation waits for the tenant's lock. The invitation then runs for a user who
     // is no longer a member, to whom the tenant does not exist, and creates nothing.
     [Fact]
     public async Task InviteMember_ByAnAdminRemovedWhileItWaited_IsNotFoundAndCreatesNothing()

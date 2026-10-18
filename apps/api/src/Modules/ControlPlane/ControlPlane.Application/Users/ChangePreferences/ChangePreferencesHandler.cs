@@ -4,7 +4,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Users.ChangePreferences;
 
 // The command sets a state (I1): the values the user has answer as they are, and nothing is written or announced. It locks the user
-// row, so two changes of the user run one at a time (K6), and a deletion that commits while it waits is refused (A9). Rejections come
+// row, so two changes of the user run one at a time (K6l), and a deletion that commits while it waits is refused (A9). Rejections come
 // first (W7).
 public static class ChangePreferencesHandler
 {

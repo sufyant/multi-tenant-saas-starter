@@ -60,7 +60,7 @@ public sealed partial class NamesAndPlacesTests
         misnamed.ShouldBeEmpty();
     }
 
-    // N7: the OpenAPI document builds its schema names from the type names, so two requests or responses of one name would clash.
+    // N7t: the OpenAPI document builds its schema names from the type names, so two requests or responses of one name would clash.
     [Fact]
     public void NameApiTypes_RequestsAndResponses_AreUniqueAcrossTheApi()
     {
@@ -422,7 +422,7 @@ public sealed partial class NamesAndPlacesTests
     // The folder of a type below its project, as its namespace says (IDE0130): "" at the root, ".Tenants" in Tenants/.
     private static string FolderOf(Type type) => type.Namespace![type.Assembly.GetName().Name!.Length..];
 
-    // Each operation of the OpenAPI document, and the audience and resource folder of the endpoints class that declares it (N7, N11).
+    // Each operation of the OpenAPI document, and the audience and resource folder of the endpoints class that declares it (N7d, N11c).
     private static Dictionary<string, string> EndpointFolders()
     {
         var operations = JsonDocument.Parse(File.ReadAllText(Path.Combine(Solution.Root, "openapi/v1.json"))).RootElement

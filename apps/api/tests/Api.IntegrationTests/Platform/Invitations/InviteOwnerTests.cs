@@ -13,7 +13,7 @@ namespace Api.IntegrationTests.Platform.Invitations;
 
 // POST /v1/platform/tenants/{tenantId}/invitations: a tenant has no Owner only while its first Owner has not accepted. The platform
 // then invites an Owner. At most one platform Owner invitation is pending: a new one replaces the pending one, also to another address,
-// and the old link answers as a cancelled one. A tenant with an Owner is refused, under the tenant's lock (K6).
+// and the old link answers as a cancelled one. A tenant with an Owner is refused, under the tenant's lock (K6j).
 public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -234,7 +234,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
 
-    // K6: the acceptance and the new invitation both lock the tenant row first. The acceptance waits first and wins: the tenant has its
+    // K6j: the acceptance and the new invitation both lock the tenant row first. The acceptance waits first and wins: the tenant has its
     // Owner, and the new invitation is refused.
     [Fact]
     public async Task AcceptAndInviteOwner_AtOnceWithTheAcceptanceFirst_KeepTheOwnerAndInviteNobody()

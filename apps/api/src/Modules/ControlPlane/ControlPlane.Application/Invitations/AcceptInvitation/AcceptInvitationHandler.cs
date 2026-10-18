@@ -21,7 +21,7 @@ public static class AcceptInvitationHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        // K6: a membership and an invitation belong to the tenant aggregate, so the tenant row is locked first, before the invitation.
+        // K6a: a membership and an invitation belong to the tenant aggregate, so the tenant row is locked first, before the invitation.
         // A suspension then runs before or after the acceptance, never between its check and its change. A code that names no tenant
         // answers like an invitation that does not exist, and so does a cancelled invitation.
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant

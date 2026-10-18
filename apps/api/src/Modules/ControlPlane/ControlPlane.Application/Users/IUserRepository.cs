@@ -25,7 +25,7 @@ public interface IUserRepository
 
     /// <summary>
     /// The user with this identity provider id, locked for the rest of the transaction with the lock of an update that keeps the key: a
-    /// deletion, which locks the user row for update, runs before or after, never between a check of the user and the change (K6, A8).
+    /// deletion, which locks the user row for update, runs before or after, never between a check of the user and the change (K6f, A8).
     /// The lock does not block a read, nor an insert of a row that references the user.
     /// </summary>
     internal Task<User?> FindUserForNoKeyUpdateAsync(string externalUserId, CancellationToken cancellationToken);

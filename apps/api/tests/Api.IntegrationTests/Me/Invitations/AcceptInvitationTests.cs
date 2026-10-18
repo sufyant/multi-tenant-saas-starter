@@ -70,7 +70,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await _audit.PlatformLogAsync(userId)).ShouldBeNull();
     }
 
-    // K6: accepting changes the tenant aggregate, a membership and an invitation, so it locks the tenant row first. A suspension that
+    // K6h: accepting changes the tenant aggregate, a membership and an invitation, so it locks the tenant row first. A suspension that
     // holds the row makes the acceptance wait, and the acceptance then finds the tenant suspended.
     [Fact]
     public async Task AcceptInvitation_WhileASuspensionHoldsTheTenant_WaitsAndIsThenAConflict()
@@ -92,7 +92,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await MembersAsync(slug)).ShouldBe(0);
     }
 
-    // A8, K6: a system admin's deletion holds the user's row while the user accepts an invitation, which passed the door before the
+    // A8, K6f: a system admin's deletion holds the user's row while the user accepts an invitation, which passed the door before the
     // deletion. The acceptance waits for the row, finds the user deleted, and adds no membership: a deleted user is never a member.
     [Fact]
     public async Task AcceptInvitation_WhileADeletionHoldsTheUser_WaitsAndIsRefused()
@@ -118,7 +118,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await MembersAsync(slug)).ShouldBe(0);
     }
 
-    // K6, R13: one known user accepts invitations of two tenants at once. Each acceptance counts the membership on the user's row, so each
+    // K6f, R13: one known user accepts invitations of two tenants at once. Each acceptance counts the membership on the user's row, so each
     // takes the row's update lock first, and they run one after the other. With a share lock, both would hold the row and then both wait
     // to update it: a deadlock, and one acceptance would fail. A holder keeps the row until both acceptances wait behind it.
     [Fact]

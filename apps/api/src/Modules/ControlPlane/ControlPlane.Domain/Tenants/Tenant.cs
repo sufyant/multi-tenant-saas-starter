@@ -102,7 +102,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// Whether a member may act in a tenant of this status: only in an active one. A member of a suspended or a closed tenant is told
-    /// why. The tenant door asks it on every request (T7), and every tenant command asks it again under the tenant's lock (K6), because
+    /// why. The tenant door asks it on every request (T7), and every tenant command asks it again under the tenant's lock (K6g), because
     /// the status may change while a request waits for the lock. Only a member is asked: anyone else finds no tenant (T3).
     /// </summary>
     public static Result CheckMemberAccess(TenantStatus status) => status switch
@@ -116,7 +116,7 @@ internal sealed class Tenant
     /// <summary>
     /// Gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the Owner
     /// role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's lock
-    /// and counts the Owners under it (K6). Returns whether the role changed: the role the member already has changes nothing (I1).
+    /// and counts the Owners under it (K6j). Returns whether the role changed: the role the member already has changes nothing (I1).
     /// Every rejection comes before the change.
     /// </summary>
     public static Result<StateChange> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
@@ -137,7 +137,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// Whether the actor may remove the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner,
-    /// and the last Owner stays. The caller holds the tenant's lock and counts the Owners under it (K6). It changes nothing, so the
+    /// and the last Owner stays. The caller holds the tenant's lock and counts the Owners under it (K6j). It changes nothing, so the
     /// caller removes the membership after it.
     /// </summary>
     public static Result CheckRemoval(Membership actor, Membership target, int owners)
@@ -290,7 +290,7 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// Keeps the summary of the tenant's memberships and invitations, after a change to one of them, under the tenant's lock (K6). It is
+    /// Keeps the summary of the tenant's memberships and invitations, after a change to one of them, under the tenant's lock (K6k). It is
     /// the one place that writes the summary. The latest Owner invitation stays only while the tenant has no Owner.
     /// </summary>
     public void Summarize(TenantSummary summary)
@@ -314,7 +314,7 @@ internal sealed class Tenant
     /// <summary>
     /// Whether the platform may invite an Owner now: only into an active tenant that has no Owner. A tenant has no Owner only while its
     /// first Owner has not accepted, because the last Owner always stays (K1). The caller holds the tenant's lock and counts the Owners
-    /// under it (K6), so an acceptance runs before or after. It changes nothing.
+    /// under it (K6j), so an acceptance runs before or after. It changes nothing.
     /// </summary>
     public Result CheckOwnerInvitation(int owners)
     {

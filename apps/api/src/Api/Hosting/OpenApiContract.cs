@@ -130,14 +130,14 @@ internal static partial class OpenApiContract
     private static string? NameSchema(JsonTypeInfo type) =>
         Nullable.GetUnderlyingType(type.Type) is { IsEnum: true } ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(type);
 
-    // N7: an endpoint is a method with the action's name, so the method's name is the operation id.
+    // N7e: an endpoint is a method with the action's name, so the method's name is the operation id.
     private static Task NameOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         operation.OperationId ??= context.Description.ActionDescriptor.EndpointMetadata.OfType<MethodInfo>().FirstOrDefault()?.Name;
         return Task.CompletedTask;
     }
 
-    // N7, N8: an operation's one tag is the folder of its endpoints below the module's Api project, its audience and its resource
+    // N7d, N8: an operation's one tag is the folder of its endpoints below the module's Api project, its audience and its resource
     // (Platform/Tenants), so the API reference and a generated client group the operations as the folders do, never by a class name.
     private static Task TagOperation(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
@@ -203,7 +203,7 @@ internal static partial class OpenApiContract
 
     // K5: the sort and each filter of a list are enums, so a generated client knows their values. Their parameter types bind any text,
     // which ListRequest and ListFilter check, so the document would call them strings. A sort's values are the JSON names the check
-    // accepts. A filter takes the enum of its response (N7), so it refers to that enum's schema, and a client has one type for both (A19).
+    // accepts. A filter takes the enum of its response (N7h), so it refers to that enum's schema, and a client has one type for both (A19).
     private static Task DescribeListParameters(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         foreach (var description in context.Description.ParameterDescriptions)

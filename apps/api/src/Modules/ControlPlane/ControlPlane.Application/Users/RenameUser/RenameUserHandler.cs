@@ -4,7 +4,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Users.RenameUser;
 
 // The command sets a state (I1): the names the user has answer as they are, and nothing is announced. It locks the user row, so two
-// changes of the user run one at a time (K6). Rejections come first (W7).
+// changes of the user run one at a time (K6l). Rejections come first (W7).
 public static class RenameUserHandler
 {
     public static async Task<(Result<UserView>, UserRenamedEvent?)> HandleAsync(

@@ -36,7 +36,7 @@ internal static class ResultResponses
                     : new ProducesResponseTypeMetadata(StatusCodes.Status204NoContent, typeof(void)));
             }
 
-            // Every failure is the one Problem Details schema, a 400 with the fields of a request that failed validation too (N11).
+            // Every failure is the one Problem Details schema, a 400 with the fields of a request that failed validation too (N11u).
             foreach (var status in FailureStatuses)
             {
                 endpoint.Metadata.Add(new ProducesResponseTypeMetadata(status, typeof(ProblemDetails), ["application/problem+json"]));

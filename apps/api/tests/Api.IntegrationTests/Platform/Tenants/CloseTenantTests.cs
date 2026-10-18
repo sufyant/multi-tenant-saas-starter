@@ -10,7 +10,7 @@ using Wolverine.Tracking;
 namespace Api.IntegrationTests.Platform.Tenants;
 
 // POST /v1/platform/tenants/{tenantId}/close: a system admin closes a tenant through the system door (K4). Closing cancels the tenant's
-// pending invitations and withdraws their Clerk invitations, in the same transaction and under the tenant's lock (K6). A change of
+// pending invitations and withdraws their Clerk invitations, in the same transaction and under the tenant's lock (K6h). A change of
 // status is announced, and Audit records it under the tenant; a request that changes nothing announces nothing. ClosedTenantTests
 // follows what a closed tenant means to its members.
 public sealed class CloseTenantTests(Database database) : IAsyncLifetime
@@ -101,7 +101,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
-    // K6: an invitation passed the tenant door while the tenant was active, then waited for the tenant's lock while
+    // K6h: an invitation passed the tenant door while the tenant was active, then waited for the tenant's lock while
     // a system admin closed the tenant. Under the lock it finds the tenant closed, refuses, and leaves no pending invitation on it.
     [Fact]
     public async Task CloseTenantAndInviteMember_AtOnceWithTheClosureFirst_LeaveNoPendingInvitation()
@@ -138,7 +138,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
-    // K6: every tenant command that locks the tenant row asks again, under the lock, whether the tenant is active. A command that
+    // K6g: every tenant command that locks the tenant row asks again, under the lock, whether the tenant is active. A command that
     // waited for the lock while the tenant was closed is refused and changes nothing.
     [Theory]
     [InlineData("InviteMember")]
@@ -164,7 +164,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         (await PendingInvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
 
-    // K6: the same under a suspension, which a member is told as tenant.suspended.
+    // K6g: the same under a suspension, which a member is told as tenant.suspended.
     [Theory]
     [InlineData("InviteMember")]
     [InlineData("RevokeInvitation")]

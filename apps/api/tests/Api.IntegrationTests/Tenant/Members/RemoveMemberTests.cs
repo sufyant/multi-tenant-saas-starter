@@ -158,7 +158,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, other)).ShouldBe(1);
     }
 
-    // K6: the only two Owners remove each other at the same moment. The tenant row lock runs the two removals one after the other. The
+    // K6j: the only two Owners remove each other at the same moment. The tenant row lock runs the two removals one after the other. The
     // second runs for a user who is no longer a member, to whom the tenant does not exist (T3), so one Owner remains.
     [Fact]
     public async Task RemoveMember_TheOnlyTwoOwnersRemoveEachOtherAtOnce_LeaveOneOwner()

@@ -16,7 +16,7 @@ public static class MyTenantEndpoints
 {
     public static void Map(RouteGroupBuilder me) => me.MapGet("/tenants", ListMyTenants);
 
-    // Accepting an invitation answers the tenant it joined in the same shape (N7: a response that two audiences answer stays in the
+    // Accepting an invitation answers the tenant it joined in the same shape (N7g: a response that two audiences answer stays in the
     // first one's file).
     internal static MyTenantResponse ToResponse(MyTenantView tenant) =>
         new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), MemberEndpoints.ToResponse(tenant.Role));

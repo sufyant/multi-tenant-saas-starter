@@ -20,7 +20,7 @@ internal static class ResponseHeaders
             yield return IdempotencyExecutor.ReplayedHeader;
         }
 
-        // N11: a 201 names the resource where a GET reads it.
+        // N11v: a 201 names the resource where a GET reads it.
         if (items.OfType<CreatedLocation>().Any())
         {
             yield return HeaderNames.Location;

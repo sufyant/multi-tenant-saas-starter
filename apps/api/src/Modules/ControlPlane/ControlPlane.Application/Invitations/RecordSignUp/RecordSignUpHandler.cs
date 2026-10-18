@@ -9,7 +9,7 @@ namespace ControlPlane.Application.Invitations.RecordSignUp;
 
 // Records the identity provider's answer on our invitation, and only then hands the link to Notifications, so no email carries a link
 // to an invitation that was revoked, replaced or closed meanwhile. The invitation belongs to the tenant aggregate, so the tenant row is
-// locked first (K6): a revocation or a closure runs before or after, never between the check and the change. The withdrawal at the end
+// locked first (K6m): a revocation or a closure runs before or after, never between the check and the change. The withdrawal at the end
 // of the invitation's life is scheduled in the same transaction.
 public static class RecordSignUpHandler
 {

@@ -27,7 +27,7 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    // CreateTenant sends Location on its 201 and Idempotent-Replayed on a replay (I5, N11).
+    // CreateTenant sends Location on its 201 and Idempotent-Replayed on a replay (I5, N11v).
     [Fact]
     public async Task CreateTenant_FromAnAllowedOrigin_ExposesLocationAndIdempotentReplayed()
     {

@@ -247,7 +247,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, other)).ShouldBe("Member");
     }
 
-    // K6: the only two Owners demote each other at the same moment. The tenant row lock runs the two changes one after the other. The
+    // K6j: the only two Owners demote each other at the same moment. The tenant row lock runs the two changes one after the other. The
     // second runs as an Admin, who may not touch an Owner (section 6, "Member management", check 4), so one Owner remains.
     [Fact]
     public async Task ChangeMemberRole_TheOnlyTwoOwnersDemoteEachOtherAtOnce_LeaveOneOwner()
