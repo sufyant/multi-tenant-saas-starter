@@ -6,7 +6,7 @@ using ControlPlane.Api.Platform.Users;
 
 namespace Api.ArchitectureTests;
 
-// A14 and B9: a Domain status crosses to a module's Api as its name, and the Api maps the name to the enum of a response (N7r). A new
+// N7r: a Domain status crosses to a module's Api as its name, and the Api maps the name to the enum of a response. A new
 // Domain value compiles and then answers 500, so this test feeds every name of each Domain enum through each map. The Domain enums and
 // the ResponseStatus of each module's Api are internal to their modules, so this system-wide test reads them by reflection, as RoleNameTests does.
 public sealed class DomainNameMapTests

@@ -203,7 +203,7 @@ internal static partial class OpenApiContract
 
     // K5: the sort and each filter of a list are enums, so a generated client knows their values. Their parameter types bind any text,
     // which ListRequest and ListFilter check, so the document would call them strings. A sort's values are the JSON names the check
-    // accepts. A filter takes the enum of its response (N7h), so it refers to that enum's schema, and a client has one type for both (A19).
+    // accepts. A filter takes the enum of its response (N7h), so it refers to that enum's schema, and a client has one type for both (N11e).
     private static Task DescribeListParameters(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         foreach (var description in context.Description.ParameterDescriptions)
@@ -404,7 +404,7 @@ internal static partial class OpenApiContract
         var type = context.JsonTypeInfo.Type;
         if (type.IsEnum)
         {
-            // Every enum is a string on the wire, so its schema says so (A19); the generator leaves the type out of an enum it lists.
+            // Every enum is a string on the wire, so its schema says so (N11f); the generator leaves the type out of an enum it lists.
             schema.Type = JsonSchemaType.String;
             if (schema.Enum is null)
             {

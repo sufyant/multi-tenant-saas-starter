@@ -78,7 +78,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         ids.Where(id => !PascalCaseName().IsMatch(id)).ShouldBeEmpty();
     }
 
-    // N7n: every enum of a response lists exactly the values of its C# enum: a status, a state, a kind, a role or a language (A18). The
+    // N7n: every enum of a response lists exactly the values of its C# enum: a status, a state, a kind, a role or a language. The
     // host adds two enums to fields that stay strings in C#, so the C# types cannot show them: their own tests read them.
     [Fact]
     public void BuildOpenApiDocument_EveryEnumOfAResponse_ListsExactlyTheValuesOfItsEnum()
@@ -103,7 +103,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
-    // A19: an enum is a string on the wire, so each enum schema says so, and a generated client reads it as text.
+    // N11f: an enum is a string on the wire, so each enum schema says so, and a generated client reads it as text.
     [Fact]
     public void BuildOpenApiDocument_EveryEnumSchema_HasTheTypeString()
     {
