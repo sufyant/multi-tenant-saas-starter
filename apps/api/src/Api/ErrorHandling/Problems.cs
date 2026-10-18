@@ -55,7 +55,8 @@ internal static class Problems
         where TEnum : struct, Enum =>
         typeof(TEnum).GetField(value.ToString())!.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()!.Name;
 
-    private static int StatusCodeFor(ErrorType type) => type switch
+    /// <summary>The status of the answer to an error of the type.</summary>
+    public static int StatusCodeFor(ErrorType type) => type switch
     {
         ErrorType.Validation => StatusCodes.Status400BadRequest,
         ErrorType.NotFound => StatusCodes.Status404NotFound,

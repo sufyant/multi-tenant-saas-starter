@@ -10,17 +10,9 @@ namespace Api.ErrorHandling;
 internal static class ResultResponses
 {
     // K5: every /v1 route can answer 401 (authentication) and 429 (the rate limiter, and ErrorType.TooManyRequests), so every
-    // operation declares both.
+    // operation declares both. The other statuses are those of the error types (A16).
     private static readonly int[] FailureStatuses =
-    [
-        StatusCodes.Status400BadRequest,
-        StatusCodes.Status401Unauthorized,
-        StatusCodes.Status403Forbidden,
-        StatusCodes.Status404NotFound,
-        StatusCodes.Status409Conflict,
-        StatusCodes.Status422UnprocessableEntity,
-        StatusCodes.Status429TooManyRequests,
-    ];
+        [.. Enum.GetValues<ErrorType>().Select(Problems.StatusCodeFor).Append(StatusCodes.Status401Unauthorized).Distinct().Order()];
 
     public static TBuilder DescribeResults<TBuilder>(this TBuilder builder)
         where TBuilder : IEndpointConventionBuilder
