@@ -1,5 +1,4 @@
 using System.Reflection;
-using ControlPlane.Contracts;
 using ControlPlane.Domain;
 
 namespace ControlPlane.UnitTests;
@@ -23,14 +22,15 @@ public class PermissionPoolTests
         misnamed.ShouldBeEmpty();
     }
 
-    // Endpoints name permissions from the catalogue in Contracts; roles and system admins hold them from the pools in Domain.
+    // B18: PermissionPools is the one source of the permission names. The catalogue in Contracts is generated from its constants, and CI
+    // fails when the generated file differs, so this test checks only that each constant is in a pool.
     [Fact]
-    public void PublishCatalogue_EveryPermission_IsInExactlyTheDomainPools()
+    public void DeclarePermissions_EveryName_IsInExactlyTheDomainPools()
     {
-        var catalogue = typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
+        var names = typeof(PermissionPools).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!);
 
-        catalogue.ShouldBe(PermissionPools.TenantPool.Concat(PermissionPools.SystemPool), ignoreOrder: true);
+        names.ShouldBe(PermissionPools.TenantPool.Concat(PermissionPools.SystemPool), ignoreOrder: true);
     }
 }
