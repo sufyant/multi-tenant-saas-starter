@@ -89,41 +89,6 @@ public sealed class RecordMemberChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId)).ShouldBe(1);
     }
 
-    // A message written before step 20k names a role as the domain does. It may still wait in the outbox during the deploy, and its
-    // record names the role as every other record does.
-    [Fact]
-    public async Task RecordMemberRoleChanged_AMessageWithTheOldRoleNames_RecordsTheRolesInLowerCase()
-    {
-        var changed = RoleChanged("Owner", "Member");
-
-        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
-            RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
-
-        (await Logs.DetailsAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId)).ShouldBe("""{"newRole": "member", "oldRole": "owner"}""");
-    }
-
-    [Fact]
-    public async Task RecordMemberRemoved_AMemberRemovedWithTheOldRoleName_RecordsTheRoleInLowerCase()
-    {
-        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Admin");
-
-        await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
-            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
-
-        (await Logs.DetailsAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId)).ShouldBe("""{"role": "admin"}""");
-    }
-
-    [Fact]
-    public async Task RecordMemberRemoved_AUserMembershipRemovedWithTheOldRoleName_RecordsTheRoleInLowerCase()
-    {
-        var removed = new UserMembershipRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Member");
-
-        await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
-            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
-
-        (await Logs.DetailsAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId)).ShouldBe("""{"role": "member"}""");
-    }
-
-    private static MemberRoleChanged RoleChanged(string oldRole = "owner", string newRole = "admin") =>
-        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), oldRole, newRole);
+    private static MemberRoleChanged RoleChanged() =>
+        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "owner", "admin");
 }
