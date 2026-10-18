@@ -1,4 +1,5 @@
 using ControlPlane.Application;
+using ControlPlane.Application.IdentityProvider;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Tenants;

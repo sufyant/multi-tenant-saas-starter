@@ -1,4 +1,4 @@
-using ControlPlane.Application;
+using ControlPlane.Application.IdentityProvider;
 
 namespace ControlPlane.Infrastructure.Clerk;
 
@@ -6,7 +6,7 @@ namespace ControlPlane.Infrastructure.Clerk;
 // committed file.
 internal sealed class ClerkOptions
 {
-    public const string Section = IdentityProviderSettings.Section;
+    public const string Section = IdentityProviderOptions.Section;
 
     public string? SecretKey { get; set; }
 
