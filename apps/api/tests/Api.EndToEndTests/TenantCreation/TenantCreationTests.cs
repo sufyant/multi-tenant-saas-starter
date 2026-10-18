@@ -58,7 +58,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         myTenants.GetProperty("items").EnumerateArray()
             .Select(tenant => (tenant.GetProperty("id").GetGuid(), tenant.GetProperty("name").GetString(), tenant.GetProperty("slug").GetString()))
             .ShouldBe([(tenantId, "Acme Ltd", slug)]);
-        members.GetProperty("items").EnumerateArray().Select(member => member.GetProperty("role").GetString()).ShouldBe(["owner"]);
+        members.GetProperty("items").EnumerateArray().Select(member => member.GetProperty("role").GetRawText()).ShouldBe(["""{"builtIn":"owner","name":"owner"}"""]);
         strangerMembers.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 

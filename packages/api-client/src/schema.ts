@@ -481,28 +481,28 @@ export interface components {
         };
         /**
          * @description What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation
-         *     gives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request: `pending`,
-         *     `expired`, `accepted` or `cancelled`. Only a caller with the invited address gets it.
+         *     gives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
+         *     `cancelled`. Only a caller with the invited address gets it.
          */
         InvitationPreviewResponse: {
             tenantName: string;
             inviterName: components["schemas"]["InviterNameResponse"];
-            role: string;
+            role: components["schemas"]["RoleResponse"];
             /** Format: date-time */
             expiresAt: string;
             state: components["schemas"]["InvitationResponseState"];
         };
         /**
-         * @description A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their
-         *     names as the catalog holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or
-         *     `expired` once its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
+         * @description A pending invitation: the invited address, its role, the catalog user id of the member who invited and their names as the catalog
+         *     holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once
+         *     its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
          *     only, and inviting answers the new one.
          */
         InvitationResponse: {
             /** Format: uuid */
             id: string;
             email: string;
-            role: string;
+            role: components["schemas"]["RoleResponse"];
             /** Format: uuid */
             invitedBy: string;
             invitedByName: components["schemas"]["UserNameResponse"];
@@ -603,8 +603,8 @@ export interface components {
             total: number;
         };
         /**
-         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, whether the
-         *     identity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
+         * @description A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted
+         *     the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
          *     the screen shows "Deleted user", as the audit logs say `deleted` (K3).
          */
         MemberResponse: {
@@ -613,14 +613,14 @@ export interface components {
             email: null | string;
             firstName: null | string;
             lastName: null | string;
-            role: string;
+            role: components["schemas"]["RoleResponse"];
             deleted: boolean;
             /** Format: date-time */
             joinedAt: string;
         };
         /**
-         * @description A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,
-         *     the role an invitation gives, and the role a member is given.
+         * @description A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an
+         *     invitation gives, and the role a member is given.
          * @enum {string}
          */
         MemberRole: "owner" | "admin" | "member";
@@ -649,15 +649,14 @@ export interface components {
             name: string;
             slug: string;
             status: components["schemas"]["MyTenantResponseStatus"];
-            role: string;
+            role: components["schemas"]["RoleResponse"];
             permissions: components["schemas"]["Permission"][];
             /** Format: date-time */
             createdAt: string;
         };
         /**
          * @description A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
-         *     active, or suspended or closed when its members cannot enter it. The role is the user's there: `owner`, `admin` or
-         *     `member`.
+         *     active, or suspended or closed when its members cannot enter it. The role is the user's there.
          */
         MyTenantResponse: {
             /** Format: uuid */
@@ -665,7 +664,7 @@ export interface components {
             name: string;
             slug: string;
             status: components["schemas"]["MyTenantResponseStatus"];
-            role: string;
+            role: components["schemas"]["RoleResponse"];
         };
         /**
          * @description The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.
@@ -718,6 +717,14 @@ export interface components {
         RenameUserRequest: {
             firstName: string;
             lastName: string;
+        };
+        /**
+         * @description A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers
+         *     `{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.
+         */
+        RoleResponse: {
+            builtIn: null | components["schemas"]["MemberRole"];
+            name: string;
         };
         /** @description Why the system admin suspends the tenant: 1 to 500 characters, not counting the spaces around it. A member never sees it. */
         SuspendTenantRequest: {
@@ -813,9 +820,8 @@ export interface components {
             memberships: components["schemas"]["UserMembershipResponse"][];
         };
         /**
-         * @description An organisation the user is a member of: its id, name, slug and status, the user's role there (`owner`, `admin` or
-         *     `member`), when they joined, and whether they are its only Owner. The suspend dialog warns with `soleOwner`, and the delete
-         *     refusal names those organisations.
+         * @description An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are
+         *     its only Owner. The suspend dialog warns with `soleOwner`, and the delete refusal names those organisations.
          */
         UserMembershipResponse: {
             /** Format: uuid */
@@ -823,7 +829,7 @@ export interface components {
             tenantName: string;
             tenantSlug: string;
             tenantStatus: components["schemas"]["UserMembershipResponseTenantStatus"];
-            role: string;
+            role: components["schemas"]["RoleResponse"];
             /** Format: date-time */
             joinedAt: string;
             soleOwner: boolean;

@@ -1,3 +1,4 @@
+using ControlPlane.Application.Members;
 using ControlPlane.Application.Ports;
 using ControlPlane.Application.Users;
 using ControlPlane.Domain.Invitations;
@@ -20,10 +21,10 @@ public sealed record GetInvitationPreview(string Secret, IReadOnlyList<string> V
 public sealed record InviterDetails(string Kind, PersonName? Name);
 
 /// <summary>
-/// The tenant's name, the inviter, the name of the built-in role the invitation gives (<c>admin</c>), its expiry, and its state at the
+/// The tenant's name, the inviter, the role the invitation gives, its expiry, and its state at the
 /// moment of the request (<c>Pending</c>, <c>Expired</c>, <c>Accepted</c>, <c>Cancelled</c>).
 /// </summary>
-public sealed record InvitationPreview(string TenantName, InviterDetails Inviter, string Role, DateTimeOffset ExpiresAt, string State);
+public sealed record InvitationPreview(string TenantName, InviterDetails Inviter, RoleSummary Role, DateTimeOffset ExpiresAt, string State);
 
 // An unknown code answers as accepting does, so a code cannot be probed. A caller without the invited address gets the acceptance's own
 // refusal before anything else is read, also for an invitation that is cancelled, used or expired: a forwarded link tells its holder only
@@ -56,7 +57,7 @@ public static class GetInvitationPreviewHandler
         return new InvitationPreview(
             tenant.Name,
             invitedBy,
-            BuiltInRoles.All.Single(role => role.Id == invitation.RoleId).Name,
+            RoleSummary.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
             invitation.ExpiresAt,
             invitation.StateAt(time.GetUtcNow()).ToString());
     }

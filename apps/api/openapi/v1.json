@@ -4071,7 +4071,7 @@
             "$ref": "#/components/schemas/InviterNameResponse"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoleResponse"
           },
           "expiresAt": {
             "type": "string",
@@ -4081,7 +4081,7 @@
             "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation\ngives (`owner`, `admin` or `member`), when it expires, and its state at the moment of the request: `pending`,\n`expired`, `accepted` or `cancelled`. Only a caller with the invited address gets it."
+        "description": "What the accept screen shows the invited person before they accept: the organisation's name, who invited, the role the invitation\ngives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or\n`cancelled`. Only a caller with the invited address gets it."
       },
       "InvitationResponse": {
         "required": [
@@ -4104,7 +4104,7 @@
             "type": "string"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoleResponse"
           },
           "invitedBy": {
             "type": "string",
@@ -4125,7 +4125,7 @@
             "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "A pending invitation: the invited address, its role (`owner`, `admin` or `member`), the catalog user id of the member who invited and their\nnames as the catalog holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or\n`expired` once its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one."
+        "description": "A pending invitation: the invited address, its role, the catalog user id of the member who invited and their names as the catalog\nholds them now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one."
       },
       "InvitationResponseState": {
         "enum": [
@@ -4414,7 +4414,7 @@
             ]
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoleResponse"
           },
           "deleted": {
             "type": "boolean"
@@ -4424,7 +4424,7 @@
             "format": "date-time"
           }
         },
-        "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, `owner`, `admin` or `member`, whether the\nidentity provider deleted the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows \"Deleted user\", as the audit logs say `deleted` (K3)."
+        "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows \"Deleted user\", as the audit logs say `deleted` (K3)."
       },
       "MemberRole": {
         "enum": [
@@ -4433,7 +4433,7 @@
           "member"
         ],
         "type": "string",
-        "description": "A built-in role: the values of the role of a member and of an invitation, the role filter of the member and the invitation lists,\nthe role an invitation gives, and the role a member is given."
+        "description": "A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given."
       },
       "MeResponse": {
         "required": [
@@ -4510,7 +4510,7 @@
             "$ref": "#/components/schemas/MyTenantResponseStatus"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoleResponse"
           },
           "permissions": {
             "type": "array",
@@ -4549,10 +4549,10 @@
             "$ref": "#/components/schemas/MyTenantResponseStatus"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoleResponse"
           }
         },
-        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user's there: `owner`, `admin` or\n`member`."
+        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user's there."
       },
       "MyTenantResponseStatus": {
         "enum": [
@@ -4728,6 +4728,29 @@
           }
         },
         "description": "A user's new names: 1 to 100 characters each, trimmed."
+      },
+      "RoleResponse": {
+        "required": [
+          "builtIn",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "builtIn": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MemberRole"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "description": "A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers\n`{ \"builtIn\": \"owner\", \"name\": \"owner\" }`. A client compares `builtIn` with MemberRole, never the name."
       },
       "SuspendTenantRequest": {
         "required": [
@@ -5085,7 +5108,7 @@
             "$ref": "#/components/schemas/UserMembershipResponseTenantStatus"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/RoleResponse"
           },
           "joinedAt": {
             "type": "string",
@@ -5095,7 +5118,7 @@
             "type": "boolean"
           }
         },
-        "description": "An organisation the user is a member of: its id, name, slug and status, the user's role there (`owner`, `admin` or\n`member`), when they joined, and whether they are its only Owner. The suspend dialog warns with `soleOwner`, and the delete\nrefusal names those organisations."
+        "description": "An organisation the user is a member of: its id, name, slug and status, the user's role there, when they joined, and whether they are\nits only Owner. The suspend dialog warns with `soleOwner`, and the delete refusal names those organisations."
       },
       "UserMembershipResponseTenantStatus": {
         "enum": [

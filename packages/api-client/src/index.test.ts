@@ -83,7 +83,7 @@ describe("createApiClient", () => {
 
   it("calls a tenant operation with the tenant in the path", async () => {
     const fetch = answer({
-      items: [{ userId: tenantId, role: "owner" }],
+      items: [{ userId: tenantId, role: { builtIn: "owner", name: "owner" } }],
       page: 1,
       pageSize: 20,
       total: 1,
@@ -97,7 +97,7 @@ describe("createApiClient", () => {
       params: { path: { tenantId } },
     });
 
-    expect(data?.items?.[0]?.role).toBe("owner");
+    expect(data?.items?.[0]?.role.builtIn).toBe("owner");
     expect(sentRequest(fetch).url).toBe(
       `${baseUrl}/v1/tenants/${tenantId}/members`,
     );
