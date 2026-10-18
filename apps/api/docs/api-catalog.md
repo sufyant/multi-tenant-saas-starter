@@ -7,7 +7,7 @@ With step 20l the API part of the designed screens is complete: the tenant web a
 Status: **has** (exists, unchanged), **changes** (exists, changes), **new**.
 Audit: **T** = the tenant's audit log, **P** = the platform audit log.
 
-## Me: `/v1/me`
+## 1. Me: `/v1/me`
 
 The signed-in user, acting for themselves. No permission; the user reaches only their own data (N6).
 
@@ -23,7 +23,7 @@ The signed-in user, acting for themselves. No permission; the user reaches only 
 | changes | POST | `/v1/me/invitations/accept` | `AcceptInvitation` (body `{ "code", "firstName", "lastName" }`; the names are required for a person who has not signed up yet, 1 to 100 characters each, trimmed, else 400 `request.validation_failed` with `required` or `too_long`; a known user sends none; the new user's email address is the invited one, and their language the invitation's; a known user keeps theirs; a deleted user 403 `user.deleted`, also when a deletion commits while the request waits for the user's row; answers the tenant it joined, `MyTenantResponse` with the role; counts the membership on the user (K11); writes an audit entry) | signed in; the email must match | T `member.joined` | none | Clerk: verified emails | 20b, 20i, 20j, 20l |
 | new | POST | `/v1/me/invitations/preview` | `GetInvitationPreview` (body `{ "code" }`; POST, so the secret is never in a URL; a missing or blank code 400 `invitation.code_required`; a body it cannot read 400 `request.invalid`; an unknown or malformed code 404 `invitation.not_found`, the body `AcceptInvitation` gives; a caller without the invited address 403 `invitation.email_mismatch`, the body `AcceptInvitation` gives, for every state; else 200 `InvitationPreviewResponse`: `tenantName`, `inviterName` `{ kind, firstName, lastName, deleted }` (`kind` `user` or `platform`), `role`, `expiresAt`, `state` (`pending`, `expired`, `accepted`, `cancelled`); accepting's rate limit; reads only; K12) | signed in; the email must match | none | none | Clerk: verified emails | 20l |
 
-## Tenant: `/v1/tenants/{tenantId}`
+## 2. Tenant: `/v1/tenants/{tenantId}`
 
 A member of the tenant. Each endpoint names a permission. To a non-member the tenant does not exist (T3).
 
@@ -44,7 +44,7 @@ A member of the tenant. Each endpoint names a permission. To a non-member the te
 | new | DELETE | `/v1/tenants/{tenantId}/invitations/{invitationId}` | `RevokeInvitation` (204; locks the tenant row; a revoker who is no longer a member answers 404 `tenant.not_found`; a tenant that is no longer active, 403 `tenant.suspended` or `tenant.closed`; the link stops working at once; a cancelled invitation answers 204 again and writes nothing; an accepted one answers 409 `invitation.not_pending`; an id the tenant has not, 404 `invitation.not_found`; Clerk's invitation is withdrawn after the commit) | `tenant.invitations.delete`; Owner, Admin | T `invitation.revoked` | none | Clerk: withdrawal | 20d, 20i |
 | new | GET | `/v1/tenants/{tenantId}/audit-log` | `ListAuditEntries` (cursor contract of K5; newest first; real names resolved on read, else null, and `deleted` for a user; no label and no email address; the screen calls it "Activity") | `tenant.audit.read`; Owner, Admin | none | none | none | 20f |
 
-## Platform: `/v1/platform`
+## 3. Platform: `/v1/platform`
 
 A system admin with a second factor (A6). Every action writes to the platform audit log. The provider's app is "Platform" on screen, because "Admin" is a role in the tenant web (the maintainer's decision in step 20k). The person keeps the name "system admin".
 
@@ -70,7 +70,7 @@ A system admin with a second factor (A6). Every action writes to the platform au
 | new | DELETE | `/v1/platform/users/{userId}` | `DeleteUser` (204; each tenant the user leaves counts the membership down on the user, to 0 (K11); no Idempotency-Key, it sets a state; a system admin 409 `user.is_system_admin`; the last Owner of an active, suspended or closed tenant 409 `user.last_owner`, with `tenantIds`, and nothing changes; then the user leaves each tenant under its lock, which checks again and stops with the same 409; then, with no membership left, erases the email address and the names (A8); a membership that appeared meanwhile 409 `user.has_memberships`; a deleted user answers 204 again and writes nothing; an id no user has 404 `user.not_found`; ARCHITECTURE.md, section 6, "User deletion") | `platform.users.delete` | P `user.deleted`; T `member.removed` in each tenant the user left, by the platform | none | Clerk: deletes the user, after the commit | 20i, 20l |
 | changes | GET | `/v1/platform/audit-log` | `ListPlatformAuditEntries` (cursor contract of K5; newest first; real names resolved on read, else null, and `deleted` for a user; no label and no email address; filter `tenantId`: the platform's entries about that tenant, whose target is the tenant, for the Activity tab of the tenant; a value that is no id 400 `request.invalid`; it never reads the tenant's own log, which would be support access) | `platform.audit.read` | none | none | none | 20f, 20k |
 
-## How audit and notifications connect
+## 4. How audit and notifications connect
 
 ControlPlane changes its data and writes an event to the outbox in the same transaction. Audit and Notifications take the event from their own queues. An endpoint never writes an email or an audit entry itself. When one event gives an entry in both logs, Audit writes both in one transaction.
 
@@ -78,7 +78,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - `InviteMember` → ControlPlane (invitation, event and command) → `MemberInvitedEvent` → Audit: tenant log. `OpenMemberSignUpCommand` → ControlPlane → Clerk: an invitation for an address without an account → `RecordSignUpCommand` → ControlPlane records Clerk's invitation → `MemberInvitationReadyEvent` → Notifications → Resend: the invitation email with Clerk's link. Each message after the event has one handler, so its retries may be scheduled (W5).
 - `InviteOwner` → ControlPlane (the replaced invitation cancelled, the new one, the event and the commands) → `OwnerInvitedEvent` → Audit: both logs. Then the member invitation's path: `OpenMemberSignUpCommand` → Clerk → `RecordSignUpCommand` → `MemberInvitationReadyEvent` → Notifications → Resend; `WithdrawSignUpCommand` → Clerk withdraws the replaced invitation's. The owner's messages of the tenant creation (`OpenOwnerSignUpCommand`, `OwnerInvitationReadyEvent`) answer the saga, which has ended, so they are not used (S13). The two emails have the same text.
 
-## Decided rules
+## 5. Decided rules
 
 ### K1. Roles
 
@@ -235,12 +235,12 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The platform's invitation names the platform (`kind` `platform`), never the system admin.
 - It reads only: it changes nothing and writes no audit entry (K3).
 
-## Later
+## 6. Later
 
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.
 
-## Steps
+## 7. Steps
 
 Each step is one prompt and one pull request. They run in order, because each touches the permission list, N6 and `openapi/v1.json`.
 

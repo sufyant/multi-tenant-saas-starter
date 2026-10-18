@@ -1,7 +1,5 @@
 # Architecture: multi-tenant SaaS starter template (API)
 
-Last updated: 2026-10-18
-
 This document is the single source of truth for the API in `apps/api/`. If the code does not agree with this document, the code changes. No other file overrides it.
 
 Each rule has an id (for example `R4`, `W2`). Use the id when you refer to a rule in a review, a commit message or a comment.
@@ -944,7 +942,7 @@ The ControlPlane module after these rules:
 | `ControlPlane.Domain` | One folder for each aggregate: `Tenants/` (the tenant, its memberships and its invitations, M1), `Users/`, `Roles/`, `SystemAdmins/`. `PermissionPools.cs` and `ControlPlaneErrorCodes.cs`, which several aggregates use, sit at the root |
 | `ControlPlane.Infrastructure` | `Persistence/` (the DbContext and its design-time factory at its root, `Migrations/`, `Lists/` (the search pattern and sort direction of the lists), `Tenants/TenantDirectory`, `Users/UserDirectory`, `SystemAdmins/` (`SystemAdminDirectory`, `SystemAdminOptions`), and the repositories and query classes in their resource folders: `Tenants/` (`TenantRepository`, `TenantQueries`), `Members/MemberQueries`, `Invitations/InvitationQueries`, `Users/` (`UserRepository`, `UserQueries`), Q4; and one EF Core mapping for each entity, `{Entity}Configuration`, in the folder of its resource: `Tenants/` (`TenantConfiguration`, `TenantCreationSagaConfiguration`), `Users/UserConfiguration`, `Roles/RoleConfiguration`, `Members/MembershipConfiguration`, `Invitations/InvitationConfiguration`, `SystemAdmins/SystemAdminConfiguration`), `Clerk/` (the Backend API), `ControlPlaneInfrastructure.cs` |
 
-## Deviations from the books
+## 11. Deviations from the books
 
 These deviations were discussed openly and approved.
 
@@ -963,7 +961,7 @@ These deviations were discussed openly and approved.
 | The API image has no `HEALTHCHECK` | CIS Docker Benchmark 4.6: add a `HEALTHCHECK` instruction to the image | The chiseled image has no shell and no `curl` to run a check. The platform checks `/health/live` and `/health/ready` over HTTP on the management port: its own HTTP health check or Kubernetes probes (`setup.md`). Docker ignores `HEALTHCHECK` under Kubernetes |
 | An endpoint method returns a `Task` and has no `Async` suffix (`CreateTenant`) | Microsoft Learn, "Task-based Asynchronous Pattern": the name of an asynchronous method ends with `Async` | N7 makes the endpoint's method name the action's name, and N11 makes it the operation id that every client reads. A suffix would put `Async` into every operation id. The handlers keep `HandleAsync` |
 
-## Deferred
+## 12. Deferred
 
 These parts are not in the first template. Each one comes in when its written condition is true.
 
@@ -979,6 +977,6 @@ These parts are not in the first template. Each one comes in when its written co
 | Features | Custom roles, tenant deletion, support access, in-app notifications, a second system admin |
 | The tenant creation state ("needs attention") in the platform's tenant list | The platform app needs it. The saga record belongs to the tenant (RLS), and the list reads across tenants, so the state needs a copy outside RLS or a read that declares each tenant in turn |
 
-## Open items
+## 13. Open items
 
 None.
