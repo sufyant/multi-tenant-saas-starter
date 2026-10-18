@@ -6,4 +6,4 @@ namespace ControlPlane.Contracts;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the new member, who acted.</param>
-public sealed record MemberJoined(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId);
+public sealed record MemberJoinedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId);

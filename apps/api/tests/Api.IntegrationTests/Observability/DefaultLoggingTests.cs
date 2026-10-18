@@ -20,7 +20,7 @@ public sealed class DefaultLoggingTests(Database database)
             client.CreateTenantAsync(new { name = "Acme Ltd", slug = $"tenant-{Guid.NewGuid():N}"[..20], ownerEmail = "owner@acme.test" }));
 
         var logs = api.Services.GetFakeLogCollector().GetSnapshot();
-        logs.ShouldContain(record => record.Level == LogLevel.Information && record.Message.Contains(typeof(ActivateTenant).FullName!));
+        logs.ShouldContain(record => record.Level == LogLevel.Information && record.Message.Contains(typeof(ActivateTenantCommand).FullName!));
         logs.ShouldNotContain(record => record.Category == "Microsoft.EntityFrameworkCore.Database.Command" && record.Level < LogLevel.Warning);
     }
 }

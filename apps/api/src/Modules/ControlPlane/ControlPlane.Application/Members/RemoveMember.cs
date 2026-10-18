@@ -7,7 +7,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Members;
 
 /// <summary>An Owner or an Admin removes a member from the active tenant; the member loses access at once (K1).</summary>
-public sealed record RemoveMember(string ActorId, Guid UserId);
+public sealed record RemoveMemberCommand(string ActorId, Guid UserId);
 
 // K6: the tenant row is locked first; then the actor's and the target's memberships are read and the Owners counted under the lock, so
 // two removals at once run one after the other and never leave the tenant without an Owner. The rules are the tenant's (M1,
@@ -15,8 +15,8 @@ public sealed record RemoveMember(string ActorId, Guid UserId);
 // The tenant door reads the membership on every request (T7), so the removed member's next request is not let in.
 public static class RemoveMemberHandler
 {
-    public static async Task<(Result, MemberRemoved?)> HandleAsync(
-        RemoveMember command,
+    public static async Task<(Result, MemberRemovedEvent?)> HandleAsync(
+        RemoveMemberCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -56,6 +56,6 @@ public static class RemoveMemberHandler
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
-        return (Result.Success(), new MemberRemoved(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actorUser.Id, role.Name));
+        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actorUser.Id, role.Name));
     }
 }

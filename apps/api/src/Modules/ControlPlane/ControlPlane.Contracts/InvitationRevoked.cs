@@ -6,4 +6,4 @@ namespace ControlPlane.Contracts;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="RevokedBy">The catalog user id of the member who revoked it, who acted.</param>
-public sealed record InvitationRevoked(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid InvitationId, Guid RevokedBy);
+public sealed record InvitationRevokedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid InvitationId, Guid RevokedBy);

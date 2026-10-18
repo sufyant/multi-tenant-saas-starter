@@ -10,9 +10,9 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin suspends a tenant, for a reason they write. It runs inside that tenant, which the platform route names, with the tenant
 /// locked, so a suspension and a reactivation run one at a time.
 /// </summary>
-public sealed record SuspendTenant(string AdminId, string Reason);
+public sealed record SuspendTenantCommand(string AdminId, string Reason);
 
-public sealed class SuspendTenantValidator : AbstractValidator<SuspendTenant>
+public sealed class SuspendTenantValidator : AbstractValidator<SuspendTenantCommand>
 {
     public SuspendTenantValidator()
     {
@@ -28,8 +28,8 @@ public sealed class SuspendTenantValidator : AbstractValidator<SuspendTenant>
 // before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class SuspendTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantSuspended?)> HandleAsync(
-        SuspendTenant command,
+    public static async Task<(Result<TenantDetails>, TenantSuspendedEvent?)> HandleAsync(
+        SuspendTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -50,6 +50,6 @@ public static class SuspendTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantSuspended(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name, tenant.SuspensionReason));
+        return (TenantDetails.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name, tenant.SuspensionReason));
     }
 }

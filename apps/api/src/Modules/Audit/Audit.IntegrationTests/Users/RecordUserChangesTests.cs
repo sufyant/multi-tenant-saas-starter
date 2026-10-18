@@ -17,10 +17,10 @@ public sealed class RecordUserChangesTests(Database database)
     [Fact]
     public async Task RecordUserSuspended_UserSuspended_WritesThePlatformEntryByTheAdmin()
     {
-        var suspended = new UserSuspended(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var suspended = new UserSuspendedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserSuspendedHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, suspended.EventId))
             .ShouldBe($"user.suspended|User|{suspended.SuspendedBy}|User|{suspended.UserId}|-");
@@ -29,10 +29,10 @@ public sealed class RecordUserChangesTests(Database database)
     [Fact]
     public async Task RecordUserReactivated_UserReactivated_WritesThePlatformEntryByTheAdmin()
     {
-        var reactivated = new UserReactivated(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var reactivated = new UserReactivatedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(reactivated, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserReactivatedHandler.HandleAsync(reactivated, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, reactivated.EventId))
             .ShouldBe($"user.reactivated|User|{reactivated.ReactivatedBy}|User|{reactivated.UserId}|-");
@@ -41,10 +41,10 @@ public sealed class RecordUserChangesTests(Database database)
     [Fact]
     public async Task RecordUserRenamed_UserRenamed_WritesThePlatformEntryByTheAdmin()
     {
-        var renamed = new UserRenamed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var renamed = new UserRenamedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(renamed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserRenamedHandler.HandleAsync(renamed, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, renamed.EventId))
             .ShouldBe($"user.renamed|User|{renamed.RenamedBy}|User|{renamed.UserId}|-");
@@ -54,10 +54,10 @@ public sealed class RecordUserChangesTests(Database database)
     [Fact]
     public async Task RecordUserPreferencesChanged_PreferencesChanged_WritesThePlatformEntryByTheUserWithoutValues()
     {
-        var changed = new UserPreferencesChanged(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7());
+        var changed = new UserPreferencesChangedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserPreferencesChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, changed.EventId))
             .ShouldBe($"user.preferences_changed|User|{changed.UserId}|User|{changed.UserId}|-");
@@ -67,10 +67,10 @@ public sealed class RecordUserChangesTests(Database database)
     [Fact]
     public async Task RecordUserDeleted_UserDeleted_WritesThePlatformEntryByTheAdmin()
     {
-        var deleted = new UserDeleted(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var deleted = new UserDeletedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(deleted, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserDeletedHandler.HandleAsync(deleted, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, deleted.EventId))
             .ShouldBe($"user.deleted|User|{deleted.DeletedBy}|User|{deleted.UserId}|-");
@@ -80,12 +80,12 @@ public sealed class RecordUserChangesTests(Database database)
     [Fact]
     public async Task RecordUserSuspended_EventArrivesTwice_WritesOneEntry()
     {
-        var suspended = new UserSuspended(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var suspended = new UserSuspendedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserSuspendedHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
         await InTenant.RunAsync(database.Services, null, scope =>
-            RecordUserChangesHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserSuspendedHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.CountAsync(database.Services, Logs.Platform, null, suspended.EventId)).ShouldBe(1);
     }

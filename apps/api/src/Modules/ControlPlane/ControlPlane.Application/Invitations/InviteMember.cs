@@ -15,9 +15,9 @@ namespace ControlPlane.Application.Invitations;
 /// in a language for the invitation's email: without one, the inviter's own. The host's idempotency layer protects the HTTP request (I1);
 /// the command carries no request key, and the server chooses the invitation's id.
 /// </summary>
-public sealed record InviteMember(string InviterId, string Email, string Role, Language? Language);
+public sealed record InviteMemberCommand(string InviterId, string Email, string Role, Language? Language);
 
-public sealed class InviteMemberValidator : AbstractValidator<InviteMember>
+public sealed class InviteMemberValidator : AbstractValidator<InviteMemberCommand>
 {
     public InviteMemberValidator()
     {
@@ -38,8 +38,8 @@ public static class InviteMemberHandler
 {
     private static readonly TimeSpan LimitWindow = TimeSpan.FromHours(24);
 
-    public static async Task<(Result<InvitationSummary>, MemberInvited?, OpenMemberSignUp?, WithdrawSignUp?)> HandleAsync(
-        InviteMember command,
+    public static async Task<(Result<InvitationSummary>, MemberInvitedEvent?, OpenMemberSignUpCommand?, WithdrawSignUpCommand?)> HandleAsync(
+        InviteMemberCommand command,
         ITenantCatalog catalog,
         InvitationOptions invitations,
         TimeProvider time,
@@ -103,7 +103,7 @@ public static class InviteMemberHandler
 
         return (
             InvitationSummary.Of(invitation, inviter, now),
-            new MemberInvited(
+            new MemberInvitedEvent(
                 Guid.CreateVersion7(now),
                 now,
                 tenant.Id,
@@ -111,13 +111,13 @@ public static class InviteMemberHandler
                 inviter.Id,
                 role.Name,
                 replaced?.Id),
-            new OpenMemberSignUp(
+            new OpenMemberSignUpCommand(
                 tenant.Id,
                 invitation.Id,
                 invitation.Email,
                 tenant.Name,
                 invitations.AcceptLink(new InvitationCode(tenant.Id, secret)),
                 invitation.ExpiresAt),
-            replaced?.SignUpInvitationId is { } withdrawn ? new WithdrawSignUp(withdrawn) : null);
+            replaced?.SignUpInvitationId is { } withdrawn ? new WithdrawSignUpCommand(withdrawn) : null);
     }
 }

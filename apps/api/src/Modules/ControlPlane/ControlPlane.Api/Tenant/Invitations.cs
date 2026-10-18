@@ -42,7 +42,7 @@ public static class Invitations
         CancellationToken cancellationToken)
     {
         var invited = await idempotency.ExecuteAsync<InvitationSummary>(
-            new InviteMember(user.Id(), request.Email, request.Role.ToString(), request.Language), tenantId.ToString(), cancellationToken);
+            new InviteMemberCommand(user.Id(), request.Email, request.Role.ToString(), request.Language), tenantId.ToString(), cancellationToken);
         return invited.Map(ToResponse);
     }
 
@@ -69,13 +69,13 @@ public static class Invitations
         }
 
         var invitations = await bus.InvokeAsync<Result<ListPage<InvitationSummary>>>(
-            new ListInvitations(list.Value, filter.Value?.ToString()), cancellationToken);
+            new ListInvitationsQuery(list.Value, filter.Value?.ToString()), cancellationToken);
         return invitations.Map(found => found.Map(ToResponse));
     }
 
     // Revoking sets a state, so it takes no idempotency key (I1): a second request answers 204 too.
     private static async Task<Result> RevokeInvitation(Guid invitationId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        await bus.InvokeAsync<Result>(new RevokeInvitation(user.Id(), invitationId), cancellationToken);
+        await bus.InvokeAsync<Result>(new RevokeInvitationCommand(user.Id(), invitationId), cancellationToken);
 
     // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
     internal static InvitationResponse ToResponse(InvitationSummary invitation) => new(

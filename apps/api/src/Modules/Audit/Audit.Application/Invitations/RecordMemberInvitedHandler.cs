@@ -10,7 +10,7 @@ namespace Audit.Application.Invitations;
 // the record stores none (K3).
 public static class RecordMemberInvitedHandler
 {
-    public static Task HandleAsync(MemberInvited invited, IAuditLog log, CancellationToken cancellationToken) =>
+    public static Task HandleAsync(MemberInvitedEvent invited, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
             new AuditEntry(

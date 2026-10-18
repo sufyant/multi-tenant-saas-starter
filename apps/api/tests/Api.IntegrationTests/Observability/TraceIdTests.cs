@@ -18,13 +18,13 @@ public sealed class TraceIdTests(Database database)
     // Every handler of the tenant creation, as section 6 lists them, by the message it handles.
     private static readonly string[] TenantCreationHandlers =
     [
-        typeof(CreateTenant).FullName!,
-        typeof(ActivateTenant).FullName!,
+        typeof(CreateTenantCommand).FullName!,
+        typeof(ActivateTenantCommand).FullName!,
         typeof(ActivateTenantReply).FullName!,
-        typeof(TenantActivated).FullName!,
-        typeof(OpenOwnerSignUp).FullName!,
-        typeof(SignUpOpened).FullName!,
-        typeof(OwnerInvitationReady).FullName!,
+        typeof(TenantActivatedEvent).FullName!,
+        typeof(OpenOwnerSignUpCommand).FullName!,
+        typeof(RecordSignUpCommand).FullName!,
+        typeof(OwnerInvitationReadyEvent).FullName!,
         typeof(SendInvitationEmailReply).FullName!,
     ];
 

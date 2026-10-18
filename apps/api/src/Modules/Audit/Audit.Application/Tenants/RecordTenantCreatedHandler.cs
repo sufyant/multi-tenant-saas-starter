@@ -9,7 +9,7 @@ namespace Audit.Application.Tenants;
 // records are written in one transaction.
 public static class RecordTenantCreatedHandler
 {
-    public static Task HandleAsync(TenantActivated activated, IAuditLog log, CancellationToken cancellationToken)
+    public static Task HandleAsync(TenantActivatedEvent activated, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(activated.TenantId, activated.Name);
         return log.RecordAsync(

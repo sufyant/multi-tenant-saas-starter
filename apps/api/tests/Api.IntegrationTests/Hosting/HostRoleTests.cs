@@ -33,16 +33,16 @@ public sealed class HostRoleTests(Database database)
     // The handlers of every tenant creation message after the first, as section 6 lists them.
     private static readonly HandlerRun[] HandlersAfterTheFirstStep =
     [
-        new(typeof(ActivateTenant), typeof(ActivateTenantHandler)),
+        new(typeof(ActivateTenantCommand), typeof(ActivateTenantHandler)),
         new(typeof(ActivateTenantReply), typeof(TenantCreationSaga)),
-        new(typeof(TenantActivated), typeof(RecordTenantCreatedHandler)),
-        new(typeof(OpenOwnerSignUp), typeof(OpenSignUpHandler)),
-        new(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
-        new(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)),
+        new(typeof(TenantActivatedEvent), typeof(RecordTenantCreatedHandler)),
+        new(typeof(OpenOwnerSignUpCommand), typeof(OpenOwnerSignUpHandler)),
+        new(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
+        new(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)),
         new(typeof(SendInvitationEmailReply), typeof(TenantCreationSaga)),
     ];
 
-    private static readonly HandlerRun FirstStep = new(typeof(CreateTenant), typeof(CreateTenantHandler));
+    private static readonly HandlerRun FirstStep = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
 
     [Fact]
     public async Task CreateTenant_OnAWebAndAWorkerHost_RunsEveryStepAfterTheFirstInTheWorker()
@@ -80,7 +80,7 @@ public sealed class HostRoleTests(Database database)
             SELECT count(*) FROM (
                 SELECT message_type FROM wolverine.wolverine_queue_messages
                 UNION ALL SELECT message_type FROM wolverine.wolverine_outgoing_envelopes) AS waiting
-            WHERE message_type LIKE '%ActivateTenant'
+            WHERE message_type LIKE '%ActivateTenantCommand'
             """,
             database: name);
 
@@ -128,8 +128,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.suspended") > 0);
 
         suspended.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendTenant), typeof(SuspendTenantHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantSuspended), typeof(RecordTenantSuspendedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendTenantCommand), typeof(SuspendTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantSuspendedEvent), typeof(RecordTenantSuspendedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
     }
@@ -150,8 +150,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.closed") > 0);
 
         closed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenant), typeof(CloseTenantHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantClosed), typeof(RecordTenantClosedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
     }
@@ -172,8 +172,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.renamed") > 0);
 
         renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(RenameTenant), typeof(RenameTenantHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantRenamed), typeof(RecordTenantRenamedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RenameTenantCommand), typeof(RenameTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantRenamedEvent), typeof(RecordTenantRenamedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.renamed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.renamed")).ShouldBe(1L);
     }
@@ -194,8 +194,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.reopened") > 0);
 
         reopened.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(ReopenTenant), typeof(ReopenTenantHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantReopened), typeof(RecordTenantReopenedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ReopenTenantCommand), typeof(ReopenTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantReopenedEvent), typeof(RecordTenantReopenedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
     }
@@ -218,8 +218,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.suspended") > 0);
 
         suspended.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendUser), typeof(SuspendUserHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(UserSuspended), typeof(RecordUserChangesHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendUserCommand), typeof(SuspendUserHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(UserSuspendedEvent), typeof(RecordUserSuspendedHandler))]);
         (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
     }
 
@@ -247,18 +247,18 @@ public sealed class HostRoleTests(Database database)
         (renamed.StatusCode, deleted.StatusCode).ShouldBe((HttpStatusCode.OK, HttpStatusCode.NoContent));
         runs.In("web").ShouldBe(
             [
-                new HandlerRun(typeof(RenameUser), typeof(RenameUserHandler)),
-                new HandlerRun(typeof(ListUserMemberships), typeof(ListUserMembershipsHandler)),
-                new HandlerRun(typeof(RemoveUserMembership), typeof(RemoveUserMembershipHandler)),
-                new HandlerRun(typeof(DeleteUser), typeof(DeleteUserHandler)),
+                new HandlerRun(typeof(RenameUserCommand), typeof(RenameUserHandler)),
+                new HandlerRun(typeof(ListUserMembershipsQuery), typeof(ListUserMembershipsHandler)),
+                new HandlerRun(typeof(RemoveUserMembershipCommand), typeof(RemoveUserMembershipHandler)),
+                new HandlerRun(typeof(DeleteUserCommand), typeof(DeleteUserHandler)),
             ],
             ignoreOrder: true);
         runs.In("worker").ShouldBe(
             [
-                new HandlerRun(typeof(UserRenamed), typeof(RecordUserChangesHandler)),
-                new HandlerRun(typeof(UserMembershipRemoved), typeof(RecordMemberRemovedHandler)),
-                new HandlerRun(typeof(UserDeleted), typeof(RecordUserChangesHandler)),
-                new HandlerRun(typeof(DeleteIdentityAccount), typeof(DeleteIdentityAccountHandler)),
+                new HandlerRun(typeof(UserRenamedEvent), typeof(RecordUserRenamedHandler)),
+                new HandlerRun(typeof(UserMembershipRemovedEvent), typeof(RecordUserMembershipRemovedHandler)),
+                new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+                new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
             ],
             ignoreOrder: true);
         worker.Identity.Deleted.ShouldBe([user]);
@@ -284,8 +284,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.preferences_changed") > 0);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangePreferences), typeof(ChangePreferencesHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(UserPreferencesChanged), typeof(RecordUserChangesHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangePreferencesCommand), typeof(ChangePreferencesHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(UserPreferencesChangedEvent), typeof(RecordUserPreferencesChangedHandler))]);
         (await PlatformEntriesAsync(name, userId, "user.preferences_changed")).ShouldBe(1L);
     }
 
@@ -308,13 +308,13 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteMember), typeof(InviteMemberHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteMemberCommand), typeof(InviteMemberHandler))]);
         runs.In("worker").ShouldBe(
             [
-                new HandlerRun(typeof(MemberInvited), typeof(RecordMemberInvitedHandler)),
-                new HandlerRun(typeof(OpenMemberSignUp), typeof(OpenSignUpHandler)),
-                new HandlerRun(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
-                new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(MemberInvitedEvent), typeof(RecordMemberInvitedHandler)),
+                new HandlerRun(typeof(OpenMemberSignUpCommand), typeof(OpenMemberSignUpHandler)),
+                new HandlerRun(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
+                new HandlerRun(typeof(MemberInvitationReadyEvent), typeof(SendMemberInvitationEmailHandler)),
             ],
             ignoreOrder: true);
         var email = worker.Email.Sent.ShouldHaveSingleItem();
@@ -345,13 +345,13 @@ public sealed class HostRoleTests(Database database)
             && await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_invited") > 0);
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteOwner), typeof(InviteOwnerHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(InviteOwnerCommand), typeof(InviteOwnerHandler))]);
         runs.In("worker").ShouldBe(
             [
-                new HandlerRun(typeof(OwnerInvited), typeof(RecordOwnerInvitedHandler)),
-                new HandlerRun(typeof(OpenMemberSignUp), typeof(OpenSignUpHandler)),
-                new HandlerRun(typeof(SignUpOpened), typeof(RecordSignUpHandler)),
-                new HandlerRun(typeof(MemberInvitationReady), typeof(SendMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(OwnerInvitedEvent), typeof(RecordOwnerInvitedHandler)),
+                new HandlerRun(typeof(OpenMemberSignUpCommand), typeof(OpenMemberSignUpHandler)),
+                new HandlerRun(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
+                new HandlerRun(typeof(MemberInvitationReadyEvent), typeof(SendMemberInvitationEmailHandler)),
             ],
             ignoreOrder: true);
         worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
@@ -377,8 +377,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "invitation.revoked") > 0);
 
         revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(RevokeInvitation), typeof(RevokeInvitationHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(InvitationRevoked), typeof(RecordInvitationRevokedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RevokeInvitationCommand), typeof(RevokeInvitationHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(InvitationRevokedEvent), typeof(RecordInvitationRevokedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "invitation.revoked")).ShouldBe(1L);
     }
 
@@ -400,8 +400,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRole), typeof(ChangeMemberRoleHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChanged), typeof(RecordMemberRoleChangedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRoleCommand), typeof(ChangeMemberRoleHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChangedEvent), typeof(RecordMemberRoleChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
     }
 
@@ -423,8 +423,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
 
         removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(RemoveMember), typeof(RemoveMemberHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRemoved), typeof(RecordMemberRemovedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RemoveMemberCommand), typeof(RemoveMemberHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRemovedEvent), typeof(RecordMemberRemovedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
     }
 
@@ -444,8 +444,8 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated") > 0);
 
         reactivated.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(ReactivateTenant), typeof(ReactivateTenantHandler))]);
-        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantReactivated), typeof(RecordTenantReactivatedHandler))]);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ReactivateTenantCommand), typeof(ReactivateTenantHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantReactivatedEvent), typeof(RecordTenantReactivatedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated")).ShouldBe(1L);
     }
 

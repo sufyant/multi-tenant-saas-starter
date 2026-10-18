@@ -74,9 +74,9 @@ A system admin with a second factor (A6). Every action writes to the platform au
 
 ControlPlane changes its data and writes an event to the outbox in the same transaction. Audit and Notifications take the event from their own queues. An endpoint never writes an email or an audit entry itself. When one event gives an entry in both logs, Audit writes both in one transaction.
 
-- `SuspendTenant` → ControlPlane (state and event) → `TenantSuspended` → Audit: platform log "Sufyan suspended Acme", with the reason, and Acme's log "The platform suspended this tenant", without it.
-- `InviteMember` → ControlPlane (invitation, event and command) → `MemberInvited` → Audit: tenant log. `OpenMemberSignUp` → ControlPlane → Clerk: an invitation for an address without an account → `SignUpOpened` → ControlPlane records Clerk's invitation → `MemberInvitationReady` → Notifications → Resend: the invitation email with Clerk's link. Each message after the event has one handler, so its retries may be scheduled (W5).
-- `InviteOwner` → ControlPlane (the replaced invitation cancelled, the new one, the event and the commands) → `OwnerInvited` → Audit: both logs. Then the member invitation's path: `OpenMemberSignUp` → Clerk → `SignUpOpened` → `MemberInvitationReady` → Notifications → Resend; `WithdrawSignUp` → Clerk withdraws the replaced invitation's. The owner's messages of the tenant creation (`OpenOwnerSignUp`, `OwnerInvitationReady`) answer the saga, which has ended, so they are not used (S13). The two emails have the same text.
+- `SuspendTenant` → ControlPlane (state and event) → `TenantSuspendedEvent` → Audit: platform log "Sufyan suspended Acme", with the reason, and Acme's log "The platform suspended this tenant", without it.
+- `InviteMember` → ControlPlane (invitation, event and command) → `MemberInvitedEvent` → Audit: tenant log. `OpenMemberSignUpCommand` → ControlPlane → Clerk: an invitation for an address without an account → `RecordSignUpCommand` → ControlPlane records Clerk's invitation → `MemberInvitationReadyEvent` → Notifications → Resend: the invitation email with Clerk's link. Each message after the event has one handler, so its retries may be scheduled (W5).
+- `InviteOwner` → ControlPlane (the replaced invitation cancelled, the new one, the event and the commands) → `OwnerInvitedEvent` → Audit: both logs. Then the member invitation's path: `OpenMemberSignUpCommand` → Clerk → `RecordSignUpCommand` → `MemberInvitationReadyEvent` → Notifications → Resend; `WithdrawSignUpCommand` → Clerk withdraws the replaced invitation's. The owner's messages of the tenant creation (`OpenOwnerSignUpCommand`, `OwnerInvitationReadyEvent`) answer the saga, which has ended, so they are not used (S13). The two emails have the same text.
 
 ## Decided rules
 
@@ -215,14 +215,14 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 ### K10. The tenant's summary
 
 - The platform's list reads across tenants, where row level security hides the memberships and the invitations (R1, R5). So the tenant row keeps a summary: how many members and Owners it has, the Owner who joined first, and its latest Owner invitation (R12; the maintainer's decision in step 20k).
-- One place writes it: `Tenant.Summarize`, from the tenant's own rows. Every command that changes a membership or an invitation calls it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembership`, `CloseTenant`, `InviteOwner`, and the saga's compensations `CancelTenant` and `CancelInvitation`. A test compares the summary with the rows after each of them, the race tests included (`TenantSummaries`).
+- One place writes it: `Tenant.Summarize`, from the tenant's own rows. Every command that changes a membership or an invitation calls it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembershipCommand`, `CloseTenant`, `InviteOwner`, and the saga's compensations `CancelTenantCommand` and `CancelInvitationCommand`. A test compares the summary with the rows after each of them, the race tests included (`TenantSummaries`).
 - The Owner invitation's email is personal data. The row keeps it only while the tenant has no Owner, and clears it when an Owner joins. The state `expired` comes from the expiry at the moment of a read, never from a stored value.
 - A membership keeps when its user joined (`joined_at`). The first Owner is the Owner with the earliest one, then the lowest user id.
 
 ### K11. The user's membership count
 
 - The platform's user list shows how many tenants each user is in. It reads across tenants, where row level security hides the memberships (R1, R5), and a tenant's transaction cannot declare the user too (R4). So the user row keeps the count: `membershipCount` (ARCHITECTURE.md, R13).
-- It changes by one, in the command's own transaction, under the tenant's lock (K6): `AcceptInvitation` adds one, `RemoveMember` and `RemoveUserMembership` take one away. The database adds the change to the stored value, so two tenants' commands for one user never lose one. A test compares the count with the rows after each of them.
+- It changes by one, in the command's own transaction, under the tenant's lock (K6): `AcceptInvitation` adds one, `RemoveMember` and `RemoveUserMembershipCommand` take one away. The database adds the change to the stored value, so two tenants' commands for one user never lose one. A test compares the count with the rows after each of them.
 - `AcceptInvitation` locks a known user's row for an update, not a share lock, so two acceptances of one user in two tenants run one after the other.
 - A deleted user has no membership, so their count is 0.
 

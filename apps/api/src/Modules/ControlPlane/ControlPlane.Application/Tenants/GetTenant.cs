@@ -4,7 +4,7 @@ using SharedKernel;
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>The tenant the platform route names, in any status, for a system admin. It runs inside that tenant (W3).</summary>
-public sealed record GetTenant;
+public sealed record GetTenantQuery;
 
 /// <summary>
 /// One tenant for the platform: as in the list, with every Owner in the order they joined in place of the first. The counts and the
@@ -21,7 +21,7 @@ public sealed record TenantWithOwners(
 public static class GetTenantHandler
 {
     public static async Task<Result<TenantWithOwners>> HandleAsync(
-        GetTenant query,
+        GetTenantQuery query,
         ITenantCatalog catalog,
         TenantOptions settings,
         TimeProvider time,

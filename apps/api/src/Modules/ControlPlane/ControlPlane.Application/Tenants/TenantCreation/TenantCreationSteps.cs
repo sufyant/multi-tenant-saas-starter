@@ -19,8 +19,8 @@ public static class ActivateTenantHandler
     // The pivot. The tenant is locked, so a repeated activation finds it active and announces nothing again. The tenant was created
     // by the system admin who invited its first owner. The saga hears of it through a reply of its own (S13). Step 3 starts here: the
     // identity provider lets the owner sign up, then Notifications sends the email.
-    public static async Task<(ActivateTenantReply?, TenantActivated?, OpenOwnerSignUp?)> HandleAsync(
-        ActivateTenant step,
+    public static async Task<(ActivateTenantReply?, TenantActivatedEvent?, OpenOwnerSignUpCommand?)> HandleAsync(
+        ActivateTenantCommand step,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -39,8 +39,8 @@ public static class ActivateTenantHandler
 
         return (
             new ActivateTenantReply(tenant.Id),
-            new TenantActivated(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.InvitedBy),
-            new OpenOwnerSignUp(tenant.Id, invitation.Id, invitation.Email, tenant.Name, step.AcceptLink, invitation.ExpiresAt));
+            new TenantActivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.InvitedBy),
+            new OpenOwnerSignUpCommand(tenant.Id, invitation.Id, invitation.Email, tenant.Name, step.AcceptLink, invitation.ExpiresAt));
     }
 }
 
@@ -51,7 +51,7 @@ public static partial class CancelTenantHandler
     // An active or suspended tenant is past the pivot and is never cancelled: the compensation changes nothing and reports nothing, and
     // the saga's cancellation timeout leaves the tenant creation to a person. A cancelled tenant keeps its first reason.
     public static async Task<CancelTenantReply?> HandleAsync(
-        CancelTenant step,
+        CancelTenantCommand step,
         ITenantCatalog catalog,
         ILogger<TenantCreationSaga> logger,
         CancellationToken cancellationToken)
@@ -84,7 +84,7 @@ public static class CancelInvitationHandler
 
     // An invitation already cancelled or accepted stays as it is: an owner who accepted before the cancel arrived keeps the tenant. The
     // invitation belongs to the tenant aggregate, so the tenant row is locked first (K6). A cancelled invitation's sign-up is withdrawn.
-    public static async Task<WithdrawSignUp?> HandleAsync(CancelInvitation step, ITenantCatalog catalog, CancellationToken cancellationToken)
+    public static async Task<WithdrawSignUpCommand?> HandleAsync(CancelInvitationCommand step, ITenantCatalog catalog, CancellationToken cancellationToken)
     {
         var tenant = await catalog.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation is cancelled in the tenant its creation added.");
@@ -92,11 +92,11 @@ public static class CancelInvitationHandler
         var cancelled = invitation?.Cancel() == true;
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
-        return cancelled && invitation!.SignUpInvitationId is { } signUp ? new WithdrawSignUp(signUp) : null;
+        return cancelled && invitation!.SignUpInvitationId is { } signUp ? new WithdrawSignUpCommand(signUp) : null;
     }
 }
 
-public static class TenantCreationAlarmHandler
+public static class RaiseTenantCreationAlarmHandler
 {
-    public static void Handle(RaiseTenantCreationAlarm alarm, TenantCreationAlarm tenantCreationAlarm) => tenantCreationAlarm.Raise(alarm.TenantId);
+    public static void Handle(RaiseTenantCreationAlarmCommand alarm, TenantCreationAlarm tenantCreationAlarm) => tenantCreationAlarm.Raise(alarm.TenantId);
 }

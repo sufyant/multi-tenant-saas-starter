@@ -48,10 +48,10 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
                 .Where(service => !DbContextReach.IsDbContext(service) && !container.ServiceDependenciesFor(service).Any(DbContextReach.IsDbContext))
                 .Select(service => $"{Describe(chain)}: {service.FullName}"));
 
-        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(AcceptInvitation));
-        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(RenameUser));
-        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(DeleteUser));
-        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(SignUpOpened));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(AcceptInvitationCommand));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(RenameUserCommand));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(DeleteUserCommand));
+        reaching.Select(chain => chain.MessageType).ShouldContain(typeof(RecordSignUpCommand));
         withoutTransaction.ShouldBeEmpty();
         serviceLocated.ShouldBeEmpty();
     }

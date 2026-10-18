@@ -8,7 +8,7 @@ namespace Audit.Application.Tenants;
 // the tenant acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3).
 public static class RecordTenantReopenedHandler
 {
-    public static Task HandleAsync(TenantReopened reopened, IAuditLog log, CancellationToken cancellationToken)
+    public static Task HandleAsync(TenantReopenedEvent reopened, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(reopened.TenantId, reopened.TenantName);
         return log.RecordAsync(

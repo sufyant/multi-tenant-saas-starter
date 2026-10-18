@@ -9,7 +9,7 @@ namespace Audit.Application.Members;
 // whose role changed is the target, by id (K3). The details hold the old and the new role.
 public static class RecordMemberRoleChangedHandler
 {
-    public static Task HandleAsync(MemberRoleChanged changed, IAuditLog log, CancellationToken cancellationToken) =>
+    public static Task HandleAsync(MemberRoleChangedEvent changed, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
             new AuditEntry(

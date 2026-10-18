@@ -16,12 +16,12 @@ public enum ListUsersSort
 /// email address, the first name or the last name. The status is one of <see cref="UserDetails.Status"/> (<c>Active</c>,
 /// <c>Suspended</c>, <c>Deleted</c>), or null for every status. It runs without a tenant.
 /// </summary>
-public sealed record ListUsers(ListRequest<ListUsersSort> List, string? Status);
+public sealed record ListUsersQuery(ListRequest<ListUsersSort> List, string? Status);
 
 public static class ListUsersHandler
 {
     public static async Task<Result<ListPage<UserDetails>>> HandleAsync(
-        ListUsers query,
+        ListUsersQuery query,
         IUserCatalog users,
         CancellationToken cancellationToken) =>
         (await users.ListUsersAsync(query.List, query.Status is { } status ? Enum.Parse<UserStatus>(status) : null, cancellationToken)).Map(found => UserDetails.Of(found.User, found.IsSystemAdmin));

@@ -20,7 +20,7 @@ public static class MyProfile
 
     // Read without a tenant. A signed-in person the catalog does not know is not found: the web shows "no access yet".
     private static async Task<Result<MeResponse>> GetMe(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<MeDetails>>(new GetMe(user.Id()), cancellationToken))
+        (await bus.InvokeAsync<Result<MeDetails>>(new GetMeQuery(user.Id()), cancellationToken))
             .Map(me => new MeResponse(me.Id, me.Email, me.FirstName, me.LastName, me.IsSystemAdmin, me.Language, me.TimeZone));
 
     // Changing the preferences sets a state, so it takes no idempotency key (I1): the values the user has answer 200 again.
@@ -29,7 +29,7 @@ public static class MyProfile
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<PreferencesDetails>>(new ChangePreferences(user.Id(), request.Language, request.TimeZone), cancellationToken))
+        (await bus.InvokeAsync<Result<PreferencesDetails>>(new ChangePreferencesCommand(user.Id(), request.Language, request.TimeZone), cancellationToken))
             .Map(preferences => new PreferencesResponse(preferences.Language, preferences.TimeZone));
 }
 

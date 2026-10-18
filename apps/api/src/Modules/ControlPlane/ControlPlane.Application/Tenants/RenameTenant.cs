@@ -10,9 +10,9 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin gives a tenant a new name; the slug never changes (K4). Only the platform renames a tenant: a member cannot. It runs
 /// inside that tenant, which the platform route names, with the tenant locked.
 /// </summary>
-public sealed record RenameTenant(string AdminId, string Name);
+public sealed record RenameTenantCommand(string AdminId, string Name);
 
-public sealed class RenameTenantValidator : AbstractValidator<RenameTenant>
+public sealed class RenameTenantValidator : AbstractValidator<RenameTenantCommand>
 {
     public RenameTenantValidator()
     {
@@ -29,8 +29,8 @@ public sealed class RenameTenantValidator : AbstractValidator<RenameTenant>
 // handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class RenameTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantRenamed?)> HandleAsync(
-        RenameTenant command,
+    public static async Task<(Result<TenantDetails>, TenantRenamedEvent?)> HandleAsync(
+        RenameTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -52,6 +52,6 @@ public static class RenameTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantRenamed(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, oldName, tenant.Name));
+        return (TenantDetails.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, oldName, tenant.Name));
     }
 }

@@ -7,4 +7,4 @@ namespace ControlPlane.Contracts;
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="ReopenedBy">The catalog user id of the system admin who reopened the tenant.</param>
 /// <param name="TenantName">The tenant's name at that moment, for its audit record.</param>
-public sealed record TenantReopened(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReopenedBy, string TenantName);
+public sealed record TenantReopenedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReopenedBy, string TenantName);

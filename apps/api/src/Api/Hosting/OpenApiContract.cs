@@ -435,12 +435,17 @@ internal static partial class OpenApiContract
         return found;
     }
 
-    // The validator of each command, by the name of the request that carries the command: X's validator describes XRequest. A command's
-    // validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project does.
+    // The validator of each command, by the name of the request that carries the command: the validator of XCommand describes XRequest
+    // (N8). A command's validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project
+    // does.
     private static Dictionary<string, Type> RequestValidators { get; } = AssembliesThatReachSharedKernel
         .SelectMany(assembly => assembly.GetTypes())
         .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
-        .ToDictionary(type => $"{type.BaseType!.GetGenericArguments()[0].Name}Request", StringComparer.Ordinal);
+        .ToDictionary(type => RequestOf(type.BaseType!.GetGenericArguments()[0]), StringComparer.Ordinal);
+
+    // N8: a command is named {Action}Command, and the request that carries it {Action}Request.
+    private static string RequestOf(Type command) =>
+        $"{(command.Name.EndsWith("Command", StringComparison.Ordinal) ? command.Name[..^"Command".Length] : command.Name)}Request";
 
     // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
     // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.

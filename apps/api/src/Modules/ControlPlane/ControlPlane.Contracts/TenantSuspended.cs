@@ -13,4 +13,4 @@ namespace ControlPlane.Contracts;
 /// The system admin's reason, for the platform's audit record only: a member never sees it. Null only in an event published before the
 /// reason was added.
 /// </param>
-public sealed record TenantSuspended(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid SuspendedBy, string? TenantName, string? Reason);
+public sealed record TenantSuspendedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid SuspendedBy, string? TenantName, string? Reason);

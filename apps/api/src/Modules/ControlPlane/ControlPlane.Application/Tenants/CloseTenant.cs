@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin closes an active or a suspended tenant: its members cannot enter, its data stays, and it can be reopened within the
 /// reopen period (K4). It runs inside that tenant, which the platform route names, with the tenant locked.
 /// </summary>
-public sealed record CloseTenant(string AdminId);
+public sealed record CloseTenantCommand(string AdminId);
 
 // The command sets a state (I1): a closed tenant answers as it is, and nothing is announced again. K6: every change to an invitation
 // locks the tenant row first, so under this lock no invitation can be added or accepted: the closure cancels every pending invitation
@@ -19,8 +19,8 @@ public sealed record CloseTenant(string AdminId);
 // anything, because Wolverine commits a failed Result too (W7).
 public static class CloseTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantClosed?, OutgoingMessages)> HandleAsync(
-        CloseTenant command,
+    public static async Task<(Result<TenantDetails>, TenantClosedEvent?, OutgoingMessages)> HandleAsync(
+        CloseTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public static class CloseTenantHandler
             invitation.Cancel();
             if (invitation.SignUpInvitationId is { } signUp)
             {
-                withdrawals.Add(new WithdrawSignUp(signUp));
+                withdrawals.Add(new WithdrawSignUpCommand(signUp));
             }
         }
 
@@ -52,6 +52,6 @@ public static class CloseTenantHandler
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
-        return (TenantDetails.Of(tenant), new TenantClosed(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);
+        return (TenantDetails.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);
     }
 }

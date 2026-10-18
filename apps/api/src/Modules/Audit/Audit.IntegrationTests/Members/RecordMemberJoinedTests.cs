@@ -15,7 +15,7 @@ public sealed class RecordMemberJoinedTests(Database database)
     [Fact]
     public async Task RecordMemberJoined_MemberJoined_WritesTheTenantEntryByTheNewMember()
     {
-        var joined = new MemberJoined(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var joined = new MemberJoinedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, joined.TenantId, scope =>
             RecordMemberJoinedHandler.HandleAsync(joined, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -29,7 +29,7 @@ public sealed class RecordMemberJoinedTests(Database database)
     [Fact]
     public async Task RecordMemberJoined_EventArrivesTwice_WritesOneEntry()
     {
-        var joined = new MemberJoined(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
+        var joined = new MemberJoinedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, joined.TenantId, scope =>
             RecordMemberJoinedHandler.HandleAsync(joined, scope.GetRequiredService<IAuditLog>(), Cancellation));

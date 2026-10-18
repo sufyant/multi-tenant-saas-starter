@@ -11,12 +11,12 @@ namespace ControlPlane.Application.Users;
 /// The signed-in user sets their own language and time zone, which follow them to every tenant and device. It runs without a tenant.
 /// The time zone is an IANA name, such as <c>Europe/Dublin</c>, or null for "not set".
 /// </summary>
-public sealed record ChangePreferences(string UserId, Language Language, string? TimeZone);
+public sealed record ChangePreferencesCommand(string UserId, Language Language, string? TimeZone);
 
 /// <summary>The user's preferences, as the user keeps them.</summary>
 public sealed record PreferencesDetails(Language Language, string? TimeZone);
 
-public sealed partial class ChangePreferencesValidator : AbstractValidator<ChangePreferences>
+public sealed partial class ChangePreferencesValidator : AbstractValidator<ChangePreferencesCommand>
 {
     public ChangePreferencesValidator()
     {
@@ -41,8 +41,8 @@ public sealed partial class ChangePreferencesValidator : AbstractValidator<Chang
 // returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class ChangePreferencesHandler
 {
-    public static async Task<(Result<PreferencesDetails>, UserPreferencesChanged?)> HandleAsync(
-        ChangePreferences command,
+    public static async Task<(Result<PreferencesDetails>, UserPreferencesChangedEvent?)> HandleAsync(
+        ChangePreferencesCommand command,
         IUserCatalog users,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -61,6 +61,6 @@ public static class ChangePreferencesHandler
 
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (new PreferencesDetails(user.Language, user.TimeZone), new UserPreferencesChanged(Guid.CreateVersion7(now), now, user.Id));
+        return (new PreferencesDetails(user.Language, user.TimeZone), new UserPreferencesChangedEvent(Guid.CreateVersion7(now), now, user.Id));
     }
 }

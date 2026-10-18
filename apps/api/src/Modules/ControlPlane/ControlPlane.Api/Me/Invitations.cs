@@ -53,7 +53,7 @@ public static class Invitations
         var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
         var accepted = await bus.InvokeForTenantAsync<Result<TenantSummary>>(
             code.TenantId.ToString(),
-            new AcceptInvitation(code.Secret, user.Id(), verifiedEmails, request.FirstName, request.LastName),
+            new AcceptInvitationCommand(code.Secret, user.Id(), verifiedEmails, request.FirstName, request.LastName),
             cancellationToken);
         return accepted.Map(MyTenants.ToResponse);
     }
@@ -82,7 +82,7 @@ public static class Invitations
         var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
         var preview = await bus.InvokeForTenantAsync<Result<InvitationPreview>>(
             code.TenantId.ToString(),
-            new GetInvitationPreview(code.Secret, verifiedEmails),
+            new GetInvitationPreviewQuery(code.Secret, verifiedEmails),
             cancellationToken);
         return preview.Map(found => new InvitationPreviewResponse(
             found.TenantName,

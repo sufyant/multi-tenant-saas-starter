@@ -54,7 +54,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
     public TimeSpan CancellationTimeout { get; private set; }
 
     /// <summary>Step 1 starts the tenant creation: the tenant is activated with the link the owner is invited by, within the activation timeout.</summary>
-    public static (TenantCreationSaga Saga, ActivateTenant Activate, ActivationTimedOut Timeout) Begin(
+    public static (TenantCreationSaga Saga, ActivateTenantCommand Activate, ActivationTimedOut Timeout) Begin(
         Guid tenantId,
         Guid invitationId,
         Uri acceptLink,
@@ -68,7 +68,7 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
                 InvitationEmailTimeout = timeouts.InvitationEmail,
                 CancellationTimeout = timeouts.Cancellation,
             },
-            new ActivateTenant(tenantId, invitationId, acceptLink),
+            new ActivateTenantCommand(tenantId, invitationId, acceptLink),
             new ActivationTimedOut(tenantId, timeouts.Activation));
 
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(ActivateTenantReply.TenantId))] ActivateTenantReply activated) =>
@@ -76,11 +76,11 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
             ? MoveTo(TenantCreationSagaState.SendingInvitation, new InvitationEmailTimedOut(Id, InvitationEmailTimeout))
             : [];
 
-    public OutgoingMessages Handle(Fault<ActivateTenant> fault) =>
+    public OutgoingMessages Handle(Fault<ActivateTenantCommand> fault) =>
         State == TenantCreationSagaState.Activating
             ? MoveTo(
                 TenantCreationSagaState.Cancelling,
-                new CancelTenant(Id, InvitationId, ActivationFailed),
+                new CancelTenantCommand(Id, InvitationId, ActivationFailed),
                 new CancellationTimedOut(Id, CancellationTimeout))
             : [];
 
@@ -95,10 +95,10 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
 
     // After the pivot nothing is undone: the tenant stays active, and the invitation nobody received is withdrawn. The identity provider
     // that did not let the owner sign up, and the email that did not go out, end the same way.
-    public OutgoingMessages Handle(Fault<OpenOwnerSignUp> fault) =>
+    public OutgoingMessages Handle(Fault<OpenOwnerSignUpCommand> fault) =>
         IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 
-    public OutgoingMessages Handle(Fault<OwnerInvitationReady> fault) =>
+    public OutgoingMessages Handle(Fault<OwnerInvitationReadyEvent> fault) =>
         IsSendingInvitation ? NeedsAttentionWithTheInvitationCancelled() : [];
 
     public OutgoingMessages Handle([SagaIdentityFrom(nameof(InvitationEmailTimedOut.TenantId))] InvitationEmailTimedOut timeout) =>
@@ -112,18 +112,18 @@ public sealed class TenantCreationSaga : Saga, ITenantEntity
         State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
 
     // A compensation that fails for good leaves the process to a person (S9).
-    public OutgoingMessages Handle(Fault<CancelTenant> fault) => State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
+    public OutgoingMessages Handle(Fault<CancelTenantCommand> fault) => State == TenantCreationSagaState.Cancelling ? NeedsAttention() : [];
 
-    public OutgoingMessages Handle(Fault<CancelInvitation> fault) => IsFinal ? [] : NeedsAttention();
+    public OutgoingMessages Handle(Fault<CancelInvitationCommand> fault) => IsFinal ? [] : NeedsAttention();
 
     private bool IsSendingInvitation => State is TenantCreationSagaState.Activating or TenantCreationSagaState.SendingInvitation;
 
     private bool IsFinal => State is TenantCreationSagaState.Completed or TenantCreationSagaState.Cancelled or TenantCreationSagaState.NeedsAttention;
 
     private OutgoingMessages NeedsAttentionWithTheInvitationCancelled() =>
-        MoveTo(TenantCreationSagaState.NeedsAttention, new CancelInvitation(Id, InvitationId), new RaiseTenantCreationAlarm(Id));
+        MoveTo(TenantCreationSagaState.NeedsAttention, new CancelInvitationCommand(Id, InvitationId), new RaiseTenantCreationAlarmCommand(Id));
 
-    private OutgoingMessages NeedsAttention() => MoveTo(TenantCreationSagaState.NeedsAttention, new RaiseTenantCreationAlarm(Id));
+    private OutgoingMessages NeedsAttention() => MoveTo(TenantCreationSagaState.NeedsAttention, new RaiseTenantCreationAlarmCommand(Id));
 
     private OutgoingMessages MoveTo(TenantCreationSagaState state, params object[] messages)
     {

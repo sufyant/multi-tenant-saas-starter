@@ -12,7 +12,7 @@ namespace ControlPlane.Application.Invitations;
 /// finds it (section 6). The signed-in user's verified email addresses are read from the identity provider before the transaction
 /// begins. It reads only: it changes nothing and publishes nothing, so no audit record is written (K3).
 /// </summary>
-public sealed record GetInvitationPreview(string Secret, IReadOnlyList<string> VerifiedEmails);
+public sealed record GetInvitationPreviewQuery(string Secret, IReadOnlyList<string> VerifiedEmails);
 
 /// <summary>
 /// Who invited, as the accept screen names them: a user, by their names as the catalog holds them now, or the platform, when a system
@@ -32,7 +32,7 @@ public sealed record InvitationPreview(string TenantName, InviterDetails Inviter
 public static class GetInvitationPreviewHandler
 {
     public static async Task<Result<InvitationPreview>> HandleAsync(
-        GetInvitationPreview query,
+        GetInvitationPreviewQuery query,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)

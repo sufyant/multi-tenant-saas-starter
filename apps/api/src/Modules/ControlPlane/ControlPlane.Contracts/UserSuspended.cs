@@ -4,4 +4,4 @@ namespace ControlPlane.Contracts;
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the suspended user.</param>
 /// <param name="SuspendedBy">The catalog user id of the system admin who suspended the user.</param>
-public sealed record UserSuspended(Guid EventId, DateTimeOffset OccurredAt, Guid UserId, Guid SuspendedBy);
+public sealed record UserSuspendedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid UserId, Guid SuspendedBy);

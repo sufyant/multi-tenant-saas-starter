@@ -12,7 +12,7 @@ namespace ControlPlane.Application.Invitations.SignUp;
 public static class RecordSignUpHandler
 {
     public static async Task<OutgoingMessages> HandleAsync(
-        SignUpOpened opened,
+        RecordSignUpCommand opened,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public static class RecordSignUpHandler
         var decision = invitation.RecordSignUp(opened.SignUpInvitationId);
         if (decision == SignUpDecision.Withdraw)
         {
-            return [new WithdrawSignUp(opened.SignUpInvitationId!)];
+            return [new WithdrawSignUpCommand(opened.SignUpInvitationId!)];
         }
 
         if (decision == SignUpDecision.Ignore)
@@ -41,14 +41,14 @@ public static class RecordSignUpHandler
         OutgoingMessages messages =
         [
             opened.ForFirstOwner
-                ? new OwnerInvitationReady(
+                ? new OwnerInvitationReadyEvent(
                     Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime)
-                : new MemberInvitationReady(
+                : new MemberInvitationReadyEvent(
                     Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime),
         ];
         if (opened.SignUpInvitationId is not null)
         {
-            messages.Add(new ExpireSignUp(opened.TenantId, opened.InvitationId).ScheduledAt(opened.ExpiresAt));
+            messages.Add(new ExpireSignUpCommand(opened.TenantId, opened.InvitationId).ScheduledAt(opened.ExpiresAt));
         }
 
         return messages;
@@ -60,8 +60,8 @@ public static class RecordSignUpHandler
 // messaging tool's clock; the module's clock decides whether the lifetime is over, so a message that arrives early withdraws nothing.
 public static class ExpireSignUpHandler
 {
-    public static async Task<WithdrawSignUp?> HandleAsync(
-        ExpireSignUp expire,
+    public static async Task<WithdrawSignUpCommand?> HandleAsync(
+        ExpireSignUpCommand expire,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ public static class ExpireSignUpHandler
             ?? throw new InvalidOperationException("An invitation's sign-up runs in the tenant of the invitation.");
         var invitation = await catalog.FindInvitationForUpdateAsync(expire.InvitationId, cancellationToken);
         return invitation is { Status: InvitationStatus.Pending, SignUpInvitationId: { } signUp } && time.GetUtcNow() >= invitation.ExpiresAt
-            ? new WithdrawSignUp(signUp)
+            ? new WithdrawSignUpCommand(signUp)
             : null;
     }
 }

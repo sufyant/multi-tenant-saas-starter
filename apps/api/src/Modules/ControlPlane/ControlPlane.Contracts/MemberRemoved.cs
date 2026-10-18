@@ -8,4 +8,4 @@ namespace ControlPlane.Contracts;
 /// <param name="UserId">The catalog user id of the member who was removed.</param>
 /// <param name="RemovedBy">The catalog user id of the member who removed them, who acted.</param>
 /// <param name="Role">The built-in role the member had: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
-public sealed record MemberRemoved(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, Guid RemovedBy, string Role);
+public sealed record MemberRemovedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, Guid RemovedBy, string Role);

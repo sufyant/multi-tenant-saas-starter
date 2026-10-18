@@ -8,7 +8,7 @@ namespace ControlPlane.Application.Users.UserDeletion;
 /// The first step of a user's deletion: the tenants the user is a member of, and whether they are an Owner there. It runs without a
 /// tenant, with the user declared (R11), so it sees the user's own memberships in every tenant.
 /// </summary>
-public sealed record ListUserMemberships(Guid UserId);
+public sealed record ListUserMembershipsQuery(Guid UserId);
 
 /// <summary>A tenant the user is a member of. <see cref="OwnsATenantPastCreation"/>: the user is its Owner, and it is active, suspended or closed.</summary>
 public sealed record UserMembership(Guid TenantId, bool OwnsATenantPastCreation);
@@ -18,7 +18,7 @@ public sealed record UserMembership(Guid TenantId, bool OwnsATenantPastCreation)
 public static class ListUserMembershipsHandler
 {
     public static async Task<Result<UserMembership[]>> HandleAsync(
-        ListUserMemberships query,
+        ListUserMembershipsQuery query,
         IUserCatalog users,
         CancellationToken cancellationToken)
     {

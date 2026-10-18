@@ -48,14 +48,14 @@ public static class Users
         }
 
         var users = await bus.InvokeAsync<Result<ListPage<UserDetails>>>(
-            new ListUsers(list.Value, filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null),
+            new ListUsersQuery(list.Value, filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null),
             cancellationToken);
         return users.Map(found => found.Map(ToResponse));
     }
 
     // The user's memberships are under row level security; the query declares the user (R11), as a user's deletion does.
     private static async Task<Result<UserDetailResponse>> GetUser(Guid userId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserWithMemberships>>(new GetUser(userId), cancellationToken)).Map(found => new UserDetailResponse(
+        (await bus.InvokeAsync<Result<UserWithMemberships>>(new GetUserQuery(userId), cancellationToken)).Map(found => new UserDetailResponse(
             found.User.Id,
             found.User.Email,
             found.User.FirstName,
@@ -79,10 +79,10 @@ public static class Users
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
     private static async Task<Result<UserResponse>> SuspendUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserDetails>>(new SuspendUser(userId, user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserDetails>>(new SuspendUserCommand(userId, user.Id()), cancellationToken)).Map(ToResponse);
 
     private static async Task<Result<UserResponse>> ReactivateUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserDetails>>(new ReactivateUser(userId, user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserDetails>>(new ReactivateUserCommand(userId, user.Id()), cancellationToken)).Map(ToResponse);
 
     // Renaming sets a state, so it takes no idempotency key (I1).
     private static async Task<Result<UserResponse>> RenameUser(
@@ -91,7 +91,7 @@ public static class Users
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserDetails>>(new RenameUser(userId, user.Id(), request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserDetails>>(new RenameUserCommand(userId, user.Id(), request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
 
     // A user's memberships are under row level security, and a transaction declares one tenant (R4), so the deletion runs in steps, each
     // in a transaction of its own. First the check: a tenant always has at least one Owner (K1), so the user's tenants where they are the
@@ -101,7 +101,7 @@ public static class Users
     // deletion sets a state, so it takes no idempotency key (I1); a second one answers 204 again.
     private static async Task<Result> DeleteUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken)
     {
-        var memberships = await bus.InvokeAsync<Result<UserMembership[]>>(new ListUserMemberships(userId), cancellationToken);
+        var memberships = await bus.InvokeAsync<Result<UserMembership[]>>(new ListUserMembershipsQuery(userId), cancellationToken);
         if (!memberships.IsSuccess)
         {
             return memberships.Error;
@@ -110,7 +110,7 @@ public static class Users
         var lastOwner = new List<Guid>();
         foreach (var owned in memberships.Value.Where(membership => membership.OwnsATenantPastCreation))
         {
-            if (await bus.InvokeForTenantAsync<bool>(owned.TenantId.ToString(), new GetLastOwnership(userId), cancellationToken))
+            if (await bus.InvokeForTenantAsync<bool>(owned.TenantId.ToString(), new GetLastOwnershipQuery(userId), cancellationToken))
             {
                 lastOwner.Add(owned.TenantId);
             }
@@ -123,14 +123,14 @@ public static class Users
 
         foreach (var membership in memberships.Value)
         {
-            var removed = await bus.InvokeForTenantAsync<Result>(membership.TenantId.ToString(), new RemoveUserMembership(userId), cancellationToken);
+            var removed = await bus.InvokeForTenantAsync<Result>(membership.TenantId.ToString(), new RemoveUserMembershipCommand(userId), cancellationToken);
             if (!removed.IsSuccess)
             {
                 return removed;
             }
         }
 
-        return await bus.InvokeAsync<Result>(new DeleteUser(userId, user.Id()), cancellationToken);
+        return await bus.InvokeAsync<Result>(new DeleteUserCommand(userId, user.Id()), cancellationToken);
     }
 
     private static UserResponse ToResponse(UserDetails user) => new(

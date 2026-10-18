@@ -8,14 +8,14 @@ namespace ControlPlane.Application.Tenants;
 /// A system admin gives a suspended tenant back to its members. It runs inside that tenant, which the platform route names, with the
 /// tenant locked, so a suspension and a reactivation run one at a time.
 /// </summary>
-public sealed record ReactivateTenant(string AdminId);
+public sealed record ReactivateTenantCommand(string AdminId);
 
 // The command sets a state (I1): an active tenant answers as it is, and nothing is announced. Every rejection returns before the
 // handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class ReactivateTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantReactivated?)> HandleAsync(
-        ReactivateTenant command,
+    public static async Task<(Result<TenantDetails>, TenantReactivatedEvent?)> HandleAsync(
+        ReactivateTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -36,6 +36,6 @@ public static class ReactivateTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantReactivated(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
+        return (TenantDetails.Of(tenant), new TenantReactivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
     }
 }

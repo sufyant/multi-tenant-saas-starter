@@ -18,7 +18,7 @@ public sealed class RecordTenantSuspensionTests(Database database)
     [Fact]
     public async Task RecordTenantSuspended_TenantSuspended_WritesThePlatformEntryByTheAdminAndTheTenantEntryByThePlatform()
     {
-        var suspended = new TenantSuspended(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Unpaid invoices");
+        var suspended = new TenantSuspendedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Unpaid invoices");
 
         await InTenant.RunAsync(database.Services, suspended.TenantId, scope =>
             RecordTenantSuspendedHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -33,7 +33,7 @@ public sealed class RecordTenantSuspensionTests(Database database)
     [Fact]
     public async Task RecordTenantSuspended_TenantSuspended_KeepsTheReasonInThePlatformEntryOnly()
     {
-        var suspended = new TenantSuspended(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Unpaid invoices");
+        var suspended = new TenantSuspendedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Unpaid invoices");
 
         await InTenant.RunAsync(database.Services, suspended.TenantId, scope =>
             RecordTenantSuspendedHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -46,7 +46,7 @@ public sealed class RecordTenantSuspensionTests(Database database)
     [Fact]
     public async Task RecordTenantReactivated_TenantReactivated_WritesThePlatformEntryByTheAdminAndTheTenantEntryByThePlatform()
     {
-        var reactivated = new TenantReactivated(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var reactivated = new TenantReactivatedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, reactivated.TenantId, scope =>
             RecordTenantReactivatedHandler.HandleAsync(reactivated, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -61,7 +61,7 @@ public sealed class RecordTenantSuspensionTests(Database database)
     [Fact]
     public async Task RecordTenantSuspended_EventArrivesTwice_WritesOneEntryInEachLog()
     {
-        var suspended = new TenantSuspended(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Unpaid invoices");
+        var suspended = new TenantSuspendedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Unpaid invoices");
 
         await InTenant.RunAsync(database.Services, suspended.TenantId, scope =>
             RecordTenantSuspendedHandler.HandleAsync(suspended, scope.GetRequiredService<IAuditLog>(), Cancellation));

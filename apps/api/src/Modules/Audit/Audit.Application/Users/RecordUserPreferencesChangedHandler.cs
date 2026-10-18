@@ -1,0 +1,17 @@
+using Audit.Application.Ports;
+using Audit.Domain;
+using ControlPlane.Contracts;
+
+namespace Audit.Application.Users;
+
+// The audit record of a catalog user's new preferences, in the platform's log: a user belongs to no tenant. The user acted for
+// themselves (K3). The record holds no value: it says that the preferences changed, not to what. The event is handled in a transaction
+// that declares nothing, so the record goes only to the platform's log.
+public static class RecordUserPreferencesChangedHandler
+{
+    public static Task HandleAsync(UserPreferencesChangedEvent changed, IAuditLog log, CancellationToken cancellationToken) =>
+        log.RecordAsync(
+            new PlatformAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.User(changed.UserId), AuditOperations.UserPreferencesChanged, AuditTarget.User(changed.UserId)),
+            null,
+            cancellationToken);
+}

@@ -453,7 +453,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
-        var invited = new MemberInvitationReady(
+        var invited = new MemberInvitationReadyEvent(
             Guid.CreateVersion7(),
             _time.GetUtcNow(),
             Guid.NewGuid(),

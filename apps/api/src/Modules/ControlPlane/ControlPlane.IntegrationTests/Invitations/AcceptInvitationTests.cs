@@ -98,7 +98,7 @@ public sealed class AcceptInvitationTests(Database database)
     {
         var (tenantId, email, code) = await InviteOwnerAsync();
         var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
-        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitation(tenantId, invitationId));
+        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
         var invitee = Unique.ExternalId();
         database.Identity.AddAccount(invitee, email);
 

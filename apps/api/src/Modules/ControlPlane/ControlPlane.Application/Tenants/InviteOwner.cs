@@ -15,9 +15,9 @@ namespace ControlPlane.Application.Tenants;
 /// in a language for the invitation's email: without one, the system admin's own (K8). The host's idempotency layer protects the HTTP
 /// request (I1); the command carries no request key, and the server chooses the invitation's id.
 /// </summary>
-public sealed record InviteOwner(string AdminId, string Email, Language? Language);
+public sealed record InviteOwnerCommand(string AdminId, string Email, Language? Language);
 
-public sealed class InviteOwnerValidator : AbstractValidator<InviteOwner>
+public sealed class InviteOwnerValidator : AbstractValidator<InviteOwnerCommand>
 {
     public InviteOwnerValidator()
     {
@@ -35,11 +35,11 @@ public sealed class InviteOwnerValidator : AbstractValidator<InviteOwner>
 // platform's, and the new one replaces it, also to another address (the maintainer's decision in step 20k). The replaced one is saved as
 // cancelled first, so the partial unique index never sees two pending invitations. Every rejection returns before the handler changes
 // anything, because Wolverine commits a failed Result too (W7). The invitation then takes the path of a member's: the identity provider's
-// sign-up, then the email (OpenMemberSignUp). The owner's messages of the tenant creation answer its saga, which has ended (S13).
+// sign-up, then the email (OpenMemberSignUpCommand). The owner's messages of the tenant creation answer its saga, which has ended (S13).
 public static class InviteOwnerHandler
 {
-    public static async Task<(Result<InvitationSummary>, OwnerInvited?, OpenMemberSignUp?, OutgoingMessages)> HandleAsync(
-        InviteOwner command,
+    public static async Task<(Result<InvitationSummary>, OwnerInvitedEvent?, OpenMemberSignUpCommand?, OutgoingMessages)> HandleAsync(
+        InviteOwnerCommand command,
         ITenantCatalog catalog,
         InvitationOptions invitations,
         TimeProvider time,
@@ -66,7 +66,7 @@ public static class InviteOwnerHandler
             pending.Cancel();
             if (pending.SignUpInvitationId is { } signUp)
             {
-                withdrawals.Add(new WithdrawSignUp(signUp));
+                withdrawals.Add(new WithdrawSignUpCommand(signUp));
             }
         }
 
@@ -90,8 +90,8 @@ public static class InviteOwnerHandler
 
         return (
             InvitationSummary.Of(invitation, admin, now),
-            new OwnerInvited(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, admin.Id, replaced.SingleOrDefault()?.Id),
-            new OpenMemberSignUp(
+            new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, admin.Id, replaced.SingleOrDefault()?.Id),
+            new OpenMemberSignUpCommand(
                 tenant.Id,
                 invitation.Id,
                 invitation.Email,

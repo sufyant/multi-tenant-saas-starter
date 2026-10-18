@@ -498,6 +498,28 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         predicates.ShouldBeEmpty();
     }
 
+    // Decision 1 of audit fix 09 and N8: the document finds a command's validator by the request that carries the command, XRequest for
+    // XCommand. A validator whose request does not exist describes nothing in the document.
+    [Fact]
+    public void MapRequestToValidator_EveryCommandValidator_FindsItsRequest()
+    {
+        var requests = Solution.LayerOfEveryModule("Api")
+            .SelectMany(project => Solution.Load(project).GetExportedTypes())
+            .Select(type => type.Name)
+            .Where(name => name.EndsWith("Request", StringComparison.Ordinal))
+            .ToHashSet();
+        var commands = Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+            .Select(type => type.BaseType!.GetGenericArguments()[0])
+            .ToList();
+
+        var withoutRequest = commands.Select(RequestOf).Where(request => !requests.Contains(request));
+
+        commands.ShouldNotBeEmpty();
+        withoutRequest.ShouldBeEmpty();
+    }
+
     // Decision 1 of audit fix 09: a rule that the document cannot read is reported, never copied as a number. Each one is listed here, so
     // a new kind of rule, such as a range, fails the test until someone decides how the document shows it. A predicate (Must) has no
     // form to read, and the time zone's regex has no pattern. A rule that needs a value is required in the document already: the
@@ -586,9 +608,12 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
             .SelectMany(type => ((IValidator)Activator.CreateInstance(type)!).CreateDescriptor().GetMembersWithValidators()
                 .SelectMany(member => member.Select(rule =>
-                    ($"{type.BaseType!.GetGenericArguments()[0].Name}Request.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
+                    ($"{RequestOf(type.BaseType!.GetGenericArguments()[0])}.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
                         rule.Validator,
                         rule.Options.ErrorCode))));
+
+    // N8: the command XCommand is carried by the request XRequest, as OpenApiContract maps them.
+    private static string RequestOf(Type command) => $"{command.Name[..^"Command".Length]}Request";
 
     private List<string> PatternedRequestFields() =>
         [.. RequestFields().Where(field => field.Value.TryGetProperty("pattern", out _)).Select(field => field.Name)];

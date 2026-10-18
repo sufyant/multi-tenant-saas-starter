@@ -8,7 +8,7 @@ namespace ControlPlane.Application.Users;
 /// One catalog user, for a system admin: the user detail screen. It runs without a tenant, and declares the user to read their
 /// memberships in every tenant (R11), as a user's deletion does.
 /// </summary>
-public sealed record GetUser(Guid UserId);
+public sealed record GetUserQuery(Guid UserId);
 
 /// <summary>
 /// A user as in the list, with when a system admin suspended them and that system admin's names, and every membership by the tenant's
@@ -36,7 +36,7 @@ public sealed record UserMembershipDetails(
 
 public static class GetUserHandler
 {
-    public static async Task<Result<UserWithMemberships>> HandleAsync(GetUser query, IUserCatalog users, CancellationToken cancellationToken)
+    public static async Task<Result<UserWithMemberships>> HandleAsync(GetUserQuery query, IUserCatalog users, CancellationToken cancellationToken)
     {
         if (await users.FindUserAsync(query.UserId, cancellationToken) is not { } user)
         {

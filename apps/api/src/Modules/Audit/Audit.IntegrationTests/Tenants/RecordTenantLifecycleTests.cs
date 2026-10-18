@@ -19,7 +19,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantRenamed_TenantRenamed_WritesBothEntriesWithTheOldAndTheNewName()
     {
-        var renamed = new TenantRenamed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Globex");
+        var renamed = new TenantRenamedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme", "Globex");
 
         await InTenant.RunAsync(database.Services, renamed.TenantId, scope =>
             RecordTenantRenamedHandler.HandleAsync(renamed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -36,7 +36,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordOwnerInvited_OwnerInvited_WritesBothEntriesWithTheInvitationAndTheOneItReplaced()
     {
-        var invited = new OwnerInvited(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+        var invited = new OwnerInvitedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, invited.TenantId, scope =>
             RecordOwnerInvitedHandler.HandleAsync(invited, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -53,7 +53,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantClosed_TenantClosed_WritesThePlatformEntryByTheAdminAndTheTenantEntryByThePlatform()
     {
-        var closed = new TenantClosed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var closed = new TenantClosedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, closed.TenantId, scope =>
             RecordTenantClosedHandler.HandleAsync(closed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -67,7 +67,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantReopened_TenantReopened_WritesThePlatformEntryByTheAdminAndTheTenantEntryByThePlatform()
     {
-        var reopened = new TenantReopened(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var reopened = new TenantReopenedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, reopened.TenantId, scope =>
             RecordTenantReopenedHandler.HandleAsync(reopened, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -82,7 +82,7 @@ public sealed class RecordTenantLifecycleTests(Database database)
     [Fact]
     public async Task RecordTenantClosed_EventArrivesTwice_WritesOneEntryInEachLog()
     {
-        var closed = new TenantClosed(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
+        var closed = new TenantClosedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Acme");
 
         await InTenant.RunAsync(database.Services, closed.TenantId, scope =>
             RecordTenantClosedHandler.HandleAsync(closed, scope.GetRequiredService<IAuditLog>(), Cancellation));

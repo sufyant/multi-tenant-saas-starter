@@ -36,7 +36,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var tenantId = Guid.NewGuid();
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantDetails>>(
-            tenantId, new CreateTenant(admin, " ", Slug(), Email(), null));
+            tenantId, new CreateTenantCommand(admin, " ", Slug(), Email(), null));
 
         result.Error.Code.Value.ShouldBe("tenant.name_invalid");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
@@ -51,7 +51,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var tenantId = Guid.NewGuid();
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantDetails>>(
-            tenantId, new CreateTenant(admin, "Acme Ltd", existing.Slug, Email(), null));
+            tenantId, new CreateTenantCommand(admin, "Acme Ltd", existing.Slug, Email(), null));
 
         result.Error.Code.Value.ShouldBe("tenant.slug_taken");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
@@ -65,7 +65,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
-            tenant.Id, new AcceptInvitation("no-such-secret", user, [Email()], "Ada", "Lovelace"));
+            tenant.Id, new AcceptInvitationCommand("no-such-secret", user, [Email()], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.not_found");
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
@@ -79,7 +79,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
-            tenantId, new AcceptInvitation(secret, user, [Email()], "Ada", "Lovelace"));
+            tenantId, new AcceptInvitationCommand(secret, user, [Email()], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
@@ -95,7 +95,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var member = await _catalog.AddMemberAsync(tenantId);
 
         var (result, session) = await InvokeForTenantAsync<Result<TenantSummary>>(
-            tenantId, new AcceptInvitation(secret, member, [email], "Ada", "Lovelace"));
+            tenantId, new AcceptInvitationCommand(secret, member, [email], "Ada", "Lovelace"));
 
         result.Error.Code.Value.ShouldBe("member.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
@@ -111,7 +111,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         await _catalog.AddMemberAsync(tenant.Id);
 
         var (result, session) = await InvokeForTenantAsync<Result<ListPage<MemberSummary>>>(
-            tenant.Id, new ListMembers(ListRequest.Create<ListMembersSort>(2, 50, null, null).Value, Role: null));
+            tenant.Id, new ListMembersQuery(ListRequest.Create<ListMembersSort>(2, 50, null, null).Value, Role: null));
 
         result.Value.Items.ShouldBeEmpty();
         (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
@@ -125,7 +125,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var result = default(Result<ListPage<TenantSummary>>)!;
 
         var session = await _api.TrackMessagesAsync(async () =>
-            result = await Bus().InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user, ListRequest.Create<ListMyTenantsSort>(null, null, null, null).Value), Cancellation));
+            result = await Bus().InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenantsQuery(user, ListRequest.Create<ListMyTenantsSort>(null, null, null, null).Value), Cancellation));
 
         result.Value.Items.ShouldBeEmpty();
         (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);

@@ -19,7 +19,7 @@ public class TenantCreationTests
     private static readonly TenantCreationTimeouts Timeouts = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(2), TimeSpan.FromMinutes(15));
     private const string OwnerEmail = "owner@acme.test";
 
-    // (start) | CreateTenant handled | Activating | ActivateTenant, ActivationTimedOut
+    // (start) | CreateTenantCommand handled | Activating | ActivateTenantCommand, ActivationTimedOut
     [Fact]
     public void CreateTenant_NewTenant_ActivatesTheTenantAndSchedulesTheActivationTimeout()
     {
@@ -27,7 +27,7 @@ public class TenantCreationTests
 
         saga.Id.ShouldBe(TenantId);
         saga.State.ShouldBe(TenantCreationSagaState.Activating);
-        activate.ShouldBe(new ActivateTenant(TenantId, InvitationId, AcceptLink));
+        activate.ShouldBe(new ActivateTenantCommand(TenantId, InvitationId, AcceptLink));
         timeout.ShouldBe(new ActivationTimedOut(TenantId, TimeSpan.FromMinutes(10)));
     }
 
@@ -43,19 +43,19 @@ public class TenantCreationTests
         sent.ShouldBe([new InvitationEmailTimedOut(TenantId, TimeSpan.FromHours(2))]);
     }
 
-    // Activating | Fault<ActivateTenant> | Cancelling | CancelTenant, CancellationTimedOut
+    // Activating | Fault<ActivateTenantCommand> | Cancelling | CancelTenantCommand, CancellationTimedOut
     [Fact]
     public void ActivateTenant_FailsForGood_CancelsTheTenantAndSchedulesTheCancellationTimeout()
     {
         var saga = Activating();
 
-        var sent = saga.Handle(FaultOf(new ActivateTenant(TenantId, InvitationId, AcceptLink)));
+        var sent = saga.Handle(FaultOf(new ActivateTenantCommand(TenantId, InvitationId, AcceptLink)));
 
         saga.State.ShouldBe(TenantCreationSagaState.Cancelling);
-        sent.ShouldBe([new CancelTenant(TenantId, InvitationId, "activation_failed"), new CancellationTimedOut(TenantId, TimeSpan.FromMinutes(15))]);
+        sent.ShouldBe([new CancelTenantCommand(TenantId, InvitationId, "activation_failed"), new CancellationTimedOut(TenantId, TimeSpan.FromMinutes(15))]);
     }
 
-    // Activating | ActivationTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    // Activating | ActivationTimedOut | NeedsAttention | CancelInvitationCommand, RaiseTenantCreationAlarmCommand
     [Fact]
     public void ActivateTenant_TimesOut_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -64,7 +64,7 @@ public class TenantCreationTests
         var sent = saga.Handle(new ActivationTimedOut(TenantId, Timeouts.Activation));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new CancelInvitationCommand(TenantId, InvitationId), new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
     // Activating | SendInvitationEmailReply | Completed | none. The tenant's activation and the invitation email are published together,
@@ -92,7 +92,7 @@ public class TenantCreationTests
         sent.ShouldBeEmpty();
     }
 
-    // Activating | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    // Activating | Fault<OwnerInvitationReadyEvent> | NeedsAttention | CancelInvitationCommand, RaiseTenantCreationAlarmCommand
     [Fact]
     public void SendInvitation_FailsForGoodBeforeTheActivationArrives_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -101,10 +101,10 @@ public class TenantCreationTests
         var sent = saga.Handle(FaultOf(InvitationReady()));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new CancelInvitationCommand(TenantId, InvitationId), new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // SendingInvitation | Fault<OwnerInvitationReady> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    // SendingInvitation | Fault<OwnerInvitationReadyEvent> | NeedsAttention | CancelInvitationCommand, RaiseTenantCreationAlarmCommand
     [Fact]
     public void SendInvitation_FailsForGood_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -113,10 +113,10 @@ public class TenantCreationTests
         var sent = saga.Handle(FaultOf(InvitationReady()));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new CancelInvitationCommand(TenantId, InvitationId), new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // SendingInvitation | Fault<OpenOwnerSignUp> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    // SendingInvitation | Fault<OpenOwnerSignUpCommand> | NeedsAttention | CancelInvitationCommand, RaiseTenantCreationAlarmCommand
     [Fact]
     public void OpenOwnerSignUp_FailsForGood_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -125,10 +125,10 @@ public class TenantCreationTests
         var sent = saga.Handle(FaultOf(OwnerSignUp()));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new CancelInvitationCommand(TenantId, InvitationId), new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // Activating | Fault<OpenOwnerSignUp> | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm: the activation committed, as it
+    // Activating | Fault<OpenOwnerSignUpCommand> | NeedsAttention | CancelInvitationCommand, RaiseTenantCreationAlarmCommand: the activation committed, as it
     // sent the sign-up, but its reply has not reached the saga yet.
     [Fact]
     public void OpenOwnerSignUp_FailsForGoodBeforeTheActivationArrives_NeedsAttentionAndCancelsTheInvitation()
@@ -138,10 +138,10 @@ public class TenantCreationTests
         var sent = saga.Handle(FaultOf(OwnerSignUp()));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new CancelInvitationCommand(TenantId, InvitationId), new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // Completed | Fault<OpenOwnerSignUp> | unchanged | none
+    // Completed | Fault<OpenOwnerSignUpCommand> | unchanged | none
     [Fact]
     public void OpenOwnerSignUp_FaultAfterCompletion_IsIgnored()
     {
@@ -153,7 +153,7 @@ public class TenantCreationTests
         sent.ShouldBeEmpty();
     }
 
-    // SendingInvitation | InvitationEmailTimedOut | NeedsAttention | CancelInvitation, RaiseTenantCreationAlarm
+    // SendingInvitation | InvitationEmailTimedOut | NeedsAttention | CancelInvitationCommand, RaiseTenantCreationAlarmCommand
     [Fact]
     public void SendInvitation_TimesOut_NeedsAttentionAndCancelsTheInvitation()
     {
@@ -162,7 +162,7 @@ public class TenantCreationTests
         var sent = saga.Handle(new InvitationEmailTimedOut(TenantId, Timeouts.InvitationEmail));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new CancelInvitation(TenantId, InvitationId), new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new CancelInvitationCommand(TenantId, InvitationId), new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
     // Cancelling | CancelTenantReply | Cancelled | none
@@ -177,7 +177,7 @@ public class TenantCreationTests
         sent.ShouldBeEmpty();
     }
 
-    // Cancelling | CancellationTimedOut | NeedsAttention | RaiseTenantCreationAlarm
+    // Cancelling | CancellationTimedOut | NeedsAttention | RaiseTenantCreationAlarmCommand
     [Fact]
     public void CancelTenant_TimesOut_NeedsAttention()
     {
@@ -186,32 +186,32 @@ public class TenantCreationTests
         var sent = saga.Handle(new CancellationTimedOut(TenantId, Timeouts.Cancellation));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // Cancelling | Fault<CancelTenant> | NeedsAttention | RaiseTenantCreationAlarm. S9: a compensation that fails for good leaves the
+    // Cancelling | Fault<CancelTenantCommand> | NeedsAttention | RaiseTenantCreationAlarmCommand. S9: a compensation that fails for good leaves the
     // process to a person.
     [Fact]
     public void CancelTenant_FailsForGood_NeedsAttention()
     {
         var saga = Cancelling();
 
-        var sent = saga.Handle(FaultOf(new CancelTenant(TenantId, InvitationId, "activation_failed")));
+        var sent = saga.Handle(FaultOf(new CancelTenantCommand(TenantId, InvitationId, "activation_failed")));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // Any state except NeedsAttention | Fault<CancelInvitation> | NeedsAttention | RaiseTenantCreationAlarm
+    // Any state except NeedsAttention | Fault<CancelInvitationCommand> | NeedsAttention | RaiseTenantCreationAlarmCommand
     [Fact]
     public void CancelInvitation_FailsForGoodWhileCancelling_NeedsAttention()
     {
         var saga = Cancelling();
 
-        var sent = saga.Handle(FaultOf(new CancelInvitation(TenantId, InvitationId)));
+        var sent = saga.Handle(FaultOf(new CancelInvitationCommand(TenantId, InvitationId)));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
-        sent.ShouldBe([new RaiseTenantCreationAlarm(TenantId)]);
+        sent.ShouldBe([new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
     // NeedsAttention | any message | unchanged | none. M11: the alarm is raised once for each tenant creation.
@@ -221,7 +221,7 @@ public class TenantCreationTests
         var saga = SendingInvitation();
         saga.Handle(FaultOf(InvitationReady()));
 
-        var sent = saga.Handle(FaultOf(new CancelInvitation(TenantId, InvitationId)));
+        var sent = saga.Handle(FaultOf(new CancelInvitationCommand(TenantId, InvitationId)));
 
         saga.State.ShouldBe(TenantCreationSagaState.NeedsAttention);
         sent.ShouldBeEmpty();
@@ -344,16 +344,16 @@ public class TenantCreationTests
     private static TenantCreationSaga Cancelling()
     {
         var saga = Activating();
-        saga.Handle(FaultOf(new ActivateTenant(TenantId, InvitationId, AcceptLink)));
+        saga.Handle(FaultOf(new ActivateTenantCommand(TenantId, InvitationId, AcceptLink)));
         return saga;
     }
 
     private static ActivateTenantReply Activated() => new(TenantId);
 
-    private static OwnerInvitationReady InvitationReady() =>
+    private static OwnerInvitationReadyEvent InvitationReady() =>
         new(EventId, Now, TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink, Language.En, TimeSpan.FromDays(7));
 
-    private static OpenOwnerSignUp OwnerSignUp() => new(TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink, Now.AddDays(7));
+    private static OpenOwnerSignUpCommand OwnerSignUp() => new(TenantId, InvitationId, OwnerEmail, "Acme Ltd", AcceptLink, Now.AddDays(7));
 
     private static SendInvitationEmailReply EmailSent() => new(EventId, Now, TenantId, InvitationId);
 

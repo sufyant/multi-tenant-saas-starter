@@ -30,8 +30,8 @@ public static class AuditLog
             return page.Error;
         }
 
-        var entries = await bus.InvokeAsync<CursorPage<AuditEntrySummary>>(new ListPlatformAuditEntries(page.Value, tenantId), cancellationToken);
-        var named = await bus.InvokeAsync<CursorPage<AuditEntrySummary>>(new GetAuditEntryNames(entries), cancellationToken);
+        var entries = await bus.InvokeAsync<CursorPage<AuditEntrySummary>>(new ListPlatformAuditEntriesQuery(page.Value, tenantId), cancellationToken);
+        var named = await bus.InvokeAsync<CursorPage<AuditEntrySummary>>(new GetAuditEntryNamesQuery(entries), cancellationToken);
         return AuditEntryResponses.Of(named);
     }
 }

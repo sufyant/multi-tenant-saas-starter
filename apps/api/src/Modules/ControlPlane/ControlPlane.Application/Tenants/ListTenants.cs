@@ -15,7 +15,7 @@ public enum ListTenantsSort
 /// Every tenant, a page at a time, sorted by one field, then by id. The search matches the name or the slug. The status is
 /// ControlPlane's name of a status (<c>Active</c>), or null for every status. It runs without a tenant.
 /// </summary>
-public sealed record ListTenants(ListRequest<ListTenantsSort> List, string? Status);
+public sealed record ListTenantsQuery(ListRequest<ListTenantsSort> List, string? Status);
 
 /// <summary>
 /// A tenant in the platform's list: the tenant, until when it can be reopened while it is closed, its members and Owners counted, the Owner
@@ -32,7 +32,7 @@ public sealed record TenantListItem(
 public static class ListTenantsHandler
 {
     public static async Task<Result<ListPage<TenantListItem>>> HandleAsync(
-        ListTenants query,
+        ListTenantsQuery query,
         ITenantCatalog catalog,
         TenantOptions settings,
         TimeProvider time,

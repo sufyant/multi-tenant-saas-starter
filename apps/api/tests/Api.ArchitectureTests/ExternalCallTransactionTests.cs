@@ -37,8 +37,8 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
 
         calling.Select(chain => chain.MessageType).ShouldBe(
             [
-                typeof(OpenOwnerSignUp), typeof(OpenMemberSignUp), typeof(WithdrawSignUp), typeof(DeleteIdentityAccount),
-                typeof(OwnerInvitationReady), typeof(MemberInvitationReady),
+                typeof(OpenOwnerSignUpCommand), typeof(OpenMemberSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand),
+                typeof(OwnerInvitationReadyEvent), typeof(MemberInvitationReadyEvent),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

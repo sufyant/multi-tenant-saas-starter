@@ -111,15 +111,15 @@ public sealed class InvitationEmailLanguageTests
         json.ShouldContain("\"tr\"");
     }
 
-    private Task SendMemberAsync(MemberInvitationReady ready) => SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
+    private Task SendMemberAsync(MemberInvitationReadyEvent ready) => SendMemberInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
 
-    private Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReady ready) =>
+    private Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReadyEvent ready) =>
         SendInvitationEmailHandler.HandleAsync(ready, _channel, new FakeTimeProvider(DateTimeOffset.UnixEpoch), Cancellation);
 
-    private static MemberInvitationReady MemberReady(Language language, TimeSpan lifetime) =>
+    private static MemberInvitationReadyEvent MemberReady(Language language, TimeSpan lifetime) =>
         new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, language, lifetime);
 
-    private static OwnerInvitationReady OwnerReady(Language language, TimeSpan lifetime) =>
+    private static OwnerInvitationReadyEvent OwnerReady(Language language, TimeSpan lifetime) =>
         new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "owner@acme.test", "Acme Ltd", Link, language, lifetime);
 
     private sealed class RecordingEmailChannel : IEmailChannel

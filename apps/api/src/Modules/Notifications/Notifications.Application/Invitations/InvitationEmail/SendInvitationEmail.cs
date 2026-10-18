@@ -10,7 +10,7 @@ namespace Notifications.Application.Invitations.InvitationEmail;
 public static class SendInvitationEmailHandler
 {
     public static async Task<SendInvitationEmailReply> HandleAsync(
-        OwnerInvitationReady ready,
+        OwnerInvitationReadyEvent ready,
         IEmailChannel channel,
         TimeProvider time,
         CancellationToken cancellationToken)

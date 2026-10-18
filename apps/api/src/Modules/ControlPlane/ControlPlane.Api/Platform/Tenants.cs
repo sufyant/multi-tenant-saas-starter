@@ -49,7 +49,7 @@ public static class Tenants
         CancellationToken cancellationToken)
     {
         var created = await idempotency.ExecuteAsync<TenantDetails>(
-            new CreateTenant(user.Id(), request.Name, request.Slug, request.OwnerEmail, request.Language),
+            new CreateTenantCommand(user.Id(), request.Name, request.Slug, request.OwnerEmail, request.Language),
             Guid.CreateVersion7(time.GetUtcNow()).ToString(),
             cancellationToken);
         return created.Map(ToResponse);
@@ -79,14 +79,14 @@ public static class Tenants
         }
 
         var tenants = await bus.InvokeAsync<Result<ListPage<TenantListItem>>>(
-            new ListTenants(list.Value, filter.Value is { } chosen ? ResponseStatus.OfTenant(chosen) : null),
+            new ListTenantsQuery(list.Value, filter.Value is { } chosen ? ResponseStatus.OfTenant(chosen) : null),
             cancellationToken);
         return tenants.Map(found => found.Map(ToResponse));
     }
 
     // One tenant is read inside the tenant the route names, as suspension does (W3); an id no tenant has is not found.
     private static async Task<Result<TenantDetailResponse>> GetTenant(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantWithOwners>>(tenantId.ToString(), new GetTenant(), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeForTenantAsync<Result<TenantWithOwners>>(tenantId.ToString(), new GetTenantQuery(), cancellationToken)).Map(ToResponse);
 
     // The platform invites an Owner into a tenant without one. It runs inside the tenant the route names, which the idempotency executor
     // declares (W3), under the request's idempotency key (I1). The server chooses the invitation's id. The endpoint declares 201, so the
@@ -99,7 +99,7 @@ public static class Tenants
         CancellationToken cancellationToken)
     {
         var invited = await idempotency.ExecuteAsync<InvitationSummary>(
-            new InviteOwner(user.Id(), request.Email, request.Language), tenantId.ToString(), cancellationToken);
+            new InviteOwnerCommand(user.Id(), request.Email, request.Language), tenantId.ToString(), cancellationToken);
         return invited.Map(Invitations.ToResponse);
     }
 
@@ -111,7 +111,7 @@ public static class Tenants
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new RenameTenant(user.Id(), request.Name), cancellationToken))
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new RenameTenantCommand(user.Id(), request.Name), cancellationToken))
             .Map(ToResponse);
 
     private static async Task<Result<TenantResponse>> SuspendTenant(
@@ -120,7 +120,7 @@ public static class Tenants
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new SuspendTenant(user.Id(), request.Reason), cancellationToken))
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new SuspendTenantCommand(user.Id(), request.Reason), cancellationToken))
             .Map(ToResponse);
 
     private static async Task<Result<TenantResponse>> ReactivateTenant(
@@ -128,21 +128,21 @@ public static class Tenants
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReactivateTenant(user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReactivateTenantCommand(user.Id()), cancellationToken)).Map(ToResponse);
 
     private static async Task<Result<TenantResponse>> CloseTenant(
         Guid tenantId,
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new CloseTenant(user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new CloseTenantCommand(user.Id()), cancellationToken)).Map(ToResponse);
 
     private static async Task<Result<TenantResponse>> ReopenTenant(
         Guid tenantId,
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReopenTenant(user.Id()), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeForTenantAsync<Result<TenantDetails>>(tenantId.ToString(), new ReopenTenantCommand(user.Id()), cancellationToken)).Map(ToResponse);
 
     private static TenantResponse ToResponse(TenantDetails tenant) =>
         new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status), tenant.SuspensionReason, tenant.ClosedAt);

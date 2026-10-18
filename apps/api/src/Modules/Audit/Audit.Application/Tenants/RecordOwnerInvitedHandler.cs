@@ -11,7 +11,7 @@ namespace Audit.Application.Tenants;
 // the invitation's id and the one it replaced, never the address.
 public static class RecordOwnerInvitedHandler
 {
-    public static Task HandleAsync(OwnerInvited invited, IAuditLog log, CancellationToken cancellationToken)
+    public static Task HandleAsync(OwnerInvitedEvent invited, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(invited.TenantId, invited.TenantName);
         var details = JsonSerializer.Serialize(new Details(invited.InvitationId, invited.ReplacedInvitationId), JsonSerializerOptions.Web);

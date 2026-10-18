@@ -16,7 +16,7 @@ namespace ControlPlane.Application.IdentityProvider;
 // or more is a scheduled retry, so the message holds no worker meanwhile, and a shorter pause is waited out where the handler runs.
 internal sealed class IdentityProviderRetries(IOptions<IdentityProviderOptions> settings) : IWolverineExtension, IHandlerPolicy
 {
-    private static readonly Type[] Calls = [typeof(OpenOwnerSignUp), typeof(OpenMemberSignUp), typeof(WithdrawSignUp), typeof(DeleteIdentityAccount)];
+    private static readonly Type[] Calls = [typeof(OpenOwnerSignUpCommand), typeof(OpenMemberSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand)];
 
     public void Configure(WolverineOptions options) => options.Policies.Add(this);
 

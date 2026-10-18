@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Audit.Application.Members;
 using Audit.Application.Ports;
+using Audit.Application.Users;
 using ControlPlane.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,7 +34,7 @@ public sealed class RecordMemberChangesTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_MemberRemoved_WritesTheTenantEntryWithTheRoleTheMemberHad()
     {
-        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin");
+        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin");
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -50,10 +51,10 @@ public sealed class RecordMemberChangesTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_UserMembershipRemoved_WritesTheTenantEntryByThePlatform()
     {
-        var removed = new UserMembershipRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "owner");
+        var removed = new UserMembershipRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "owner");
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
-            RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+            RecordUserMembershipRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId))
             .ShouldBe($"member.removed|Platform|-|User|{removed.UserId}|-");
@@ -79,7 +80,7 @@ public sealed class RecordMemberChangesTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_EventArrivesTwice_WritesOneEntry()
     {
-        var removed = new MemberRemoved(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member");
+        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member");
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -89,6 +90,6 @@ public sealed class RecordMemberChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Tenant, removed.TenantId, removed.EventId)).ShouldBe(1);
     }
 
-    private static MemberRoleChanged RoleChanged() =>
+    private static MemberRoleChangedEvent RoleChanged() =>
         new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "owner", "admin");
 }

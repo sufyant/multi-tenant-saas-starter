@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Users.UserDeletion;
 /// and names and marks the user deleted (A8). The row stays, because audit entries point to it. The identity provider deletes its user
 /// after the commit. It runs without a tenant, with the user declared (R11).
 /// </summary>
-public sealed record DeleteUser(Guid UserId, string AdminId);
+public sealed record DeleteUserCommand(Guid UserId, string AdminId);
 
 // The command locks the user row. A membership that appeared after the user left their tenants, such as an invitation accepted at the
 // same moment, stops it: a deleted user is never a member (A8). A user already deleted answers as they are, and is not announced again;
@@ -18,8 +18,8 @@ public sealed record DeleteUser(Guid UserId, string AdminId);
 // returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class DeleteUserHandler
 {
-    public static async Task<(Result, UserDeleted?, DeleteIdentityAccount?)> HandleAsync(
-        DeleteUser command,
+    public static async Task<(Result, UserDeletedEvent?, DeleteIdentityAccountCommand?)> HandleAsync(
+        DeleteUserCommand command,
         IUserCatalog users,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ public static class DeleteUserHandler
 
         return (
             Result.Success(),
-            first ? new UserDeleted(Guid.CreateVersion7(now), now, user.Id, admin) : null,
-            new DeleteIdentityAccount(user.ExternalId));
+            first ? new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, admin) : null,
+            new DeleteIdentityAccountCommand(user.ExternalId));
     }
 }

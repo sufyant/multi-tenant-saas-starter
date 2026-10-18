@@ -9,7 +9,7 @@ namespace ControlPlane.Contracts;
 /// <param name="ChangedBy">The catalog user id of the member who changed it, who acted.</param>
 /// <param name="OldRole">The built-in role the member had: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
 /// <param name="NewRole">The built-in role the member has now.</param>
-public sealed record MemberRoleChanged(
+public sealed record MemberRoleChangedEvent(
     Guid EventId,
     DateTimeOffset OccurredAt,
     Guid TenantId,

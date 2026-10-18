@@ -60,7 +60,7 @@ public sealed class RecordInvitationChangesTests(Database database)
     [Fact]
     public async Task RecordInvitationRevoked_InvitationRevoked_WritesTheTenantEntryByTheRevoker()
     {
-        var revoked = new InvitationRevoked(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+        var revoked = new InvitationRevokedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         await InTenant.RunAsync(database.Services, revoked.TenantId, scope =>
             RecordInvitationRevokedHandler.HandleAsync(revoked, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -70,6 +70,6 @@ public sealed class RecordInvitationChangesTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, revoked.EventId)).ShouldBe(0);
     }
 
-    private static MemberInvited Invited(Guid? replaced) =>
+    private static MemberInvitedEvent Invited(Guid? replaced) =>
         new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin", replaced);
 }

@@ -15,12 +15,12 @@ public enum ListInvitationsSort
 /// The pending invitations of the active tenant, expired ones included, a page at a time, sorted by one field, then by id. The search
 /// matches the email address. The role is the name of a built-in role (<c>Owner</c>), or null for every role.
 /// </summary>
-public sealed record ListInvitations(ListRequest<ListInvitationsSort> List, string? Role);
+public sealed record ListInvitationsQuery(ListRequest<ListInvitationsSort> List, string? Role);
 
 public static class ListInvitationsHandler
 {
     public static async Task<Result<ListPage<InvitationSummary>>> HandleAsync(
-        ListInvitations query,
+        ListInvitationsQuery query,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)

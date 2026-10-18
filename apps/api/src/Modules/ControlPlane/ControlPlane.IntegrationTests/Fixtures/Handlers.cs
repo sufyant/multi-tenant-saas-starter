@@ -29,7 +29,7 @@ internal static class Handlers
         InTenant.RunAsync(services, tenantId, async scope =>
         {
             var (result, saga, activate, timeout) = await CreateTenantHandler.HandleAsync(
-                new CreateTenant(adminId, "Acme Ltd", slug, ownerEmail, null),
+                new CreateTenantCommand(adminId, "Acme Ltd", slug, ownerEmail, null),
                 scope.GetRequiredService<ITenantCatalog>(),
                 scope.GetRequiredService<InvitationOptions>(),
                 scope.GetRequiredService<TenantCreationOptions>(),
@@ -43,32 +43,32 @@ internal static class Handlers
             return new CreatedTenant(result, saga, activate, timeout);
         });
 
-    public static Task<(ActivateTenantReply? Completed, TenantActivated? Activated, OpenOwnerSignUp? SignUp)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenant step) =>
+    public static Task<(ActivateTenantReply? Completed, TenantActivatedEvent? Activated, OpenOwnerSignUpCommand? SignUp)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenantCommand step) =>
         InTenant.RunAsync(services, tenantId, scope => ActivateTenantHandler.HandleAsync(
             step,
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
 
-    public static Task<CancelTenantReply?> CancelTenantAsync(IServiceProvider services, Guid tenantId, CancelTenant step) =>
+    public static Task<CancelTenantReply?> CancelTenantAsync(IServiceProvider services, Guid tenantId, CancelTenantCommand step) =>
         InTenant.RunAsync(services, tenantId, scope => CancelTenantHandler.HandleAsync(
             step,
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<ILogger<TenantCreationSaga>>(),
             Cancellation));
 
-    public static Task<WithdrawSignUp?> CancelInvitationAsync(IServiceProvider services, Guid tenantId, CancelInvitation step) =>
+    public static Task<WithdrawSignUpCommand?> CancelInvitationAsync(IServiceProvider services, Guid tenantId, CancelInvitationCommand step) =>
         InTenant.RunAsync(services, tenantId, scope => CancelInvitationHandler.HandleAsync(step, scope.GetRequiredService<ITenantCatalog>(), Cancellation));
 
     // The identity provider's answer for an invitation's sign-up, recorded in the invitation's tenant.
-    public static Task<OutgoingMessages> RecordSignUpAsync(IServiceProvider services, Guid tenantId, SignUpOpened opened) =>
+    public static Task<OutgoingMessages> RecordSignUpAsync(IServiceProvider services, Guid tenantId, RecordSignUpCommand opened) =>
         InTenant.RunAsync(services, tenantId, scope => RecordSignUpHandler.HandleAsync(
             opened,
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
 
-    public static Task<WithdrawSignUp?> ExpireSignUpAsync(IServiceProvider services, Guid tenantId, ExpireSignUp expire) =>
+    public static Task<WithdrawSignUpCommand?> ExpireSignUpAsync(IServiceProvider services, Guid tenantId, ExpireSignUpCommand expire) =>
         InTenant.RunAsync(services, tenantId, scope => ExpireSignUpHandler.HandleAsync(
             expire,
             scope.GetRequiredService<ITenantCatalog>(),
@@ -77,7 +77,7 @@ internal static class Handlers
 
     // A tenant created up to its pivot, the way the saga drives it: started and activated. Returns what the owner's sign-up is opened
     // from.
-    public static async Task<(Guid TenantId, string Slug, OpenOwnerSignUp SignUp)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
+    public static async Task<(Guid TenantId, string Slug, OpenOwnerSignUpCommand SignUp)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
     {
         var admin = await Catalog.AddUserAsync(services);
         var tenantId = Guid.CreateVersion7();
@@ -105,7 +105,7 @@ internal static class Handlers
         }
 
         var (accepted, _) = await InTenant.RunAsync(services, TenantIdOf(code), scope => AcceptInvitationHandler.HandleAsync(
-            new AcceptInvitation(SecretOf(code), userId, verifiedEmails, firstName, lastName),
+            new AcceptInvitationCommand(SecretOf(code), userId, verifiedEmails, firstName, lastName),
             scope.GetRequiredService<ITenantCatalog>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
@@ -123,6 +123,6 @@ internal static class Handlers
     public sealed record CreatedTenant(
         Result<TenantDetails> Result,
         Insert<TenantCreationSaga>? Saga,
-        DeliveryMessage<ActivateTenant>? Activate,
+        DeliveryMessage<ActivateTenantCommand>? Activate,
         ActivationTimedOut? Timeout);
 }

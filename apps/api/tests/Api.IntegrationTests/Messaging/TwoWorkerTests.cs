@@ -69,7 +69,7 @@ public sealed class TwoWorkerTests(Database database)
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await workers.SagaStateAsync(tenantId)).ShouldBe("Completed");
         workers.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
-        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)));
-        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(OwnerInvitationReady), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)));
     }
 }

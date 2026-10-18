@@ -31,7 +31,7 @@ public static class MyTenants
             return list.Error;
         }
 
-        var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenants(user.Id(), list.Value), cancellationToken);
+        var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenantsQuery(user.Id(), list.Value), cancellationToken);
         return tenants.Map(found => found.Map(ToResponse));
     }
 

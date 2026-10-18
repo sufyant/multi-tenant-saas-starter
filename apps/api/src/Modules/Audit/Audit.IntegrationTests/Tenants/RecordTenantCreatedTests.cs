@@ -78,8 +78,8 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await change.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
     }
 
-    private static TenantActivated Activated() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", Guid.CreateVersion7());
+    private static TenantActivatedEvent Activated() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", Guid.CreateVersion7());
 
-    private static Task RecordAsync(IServiceProvider scope, TenantActivated activated) =>
+    private static Task RecordAsync(IServiceProvider scope, TenantActivatedEvent activated) =>
         RecordTenantCreatedHandler.HandleAsync(activated, scope.GetRequiredService<IAuditLog>(), Cancellation);
 }

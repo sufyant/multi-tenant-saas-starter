@@ -7,15 +7,15 @@ namespace Api.IntegrationTests.Messaging;
 public sealed class ExistingRetryPolicyTests(Database database)
 {
     [Theory]
-    [InlineData("ActivateTenant", "Retry inline with no delay")]
-    [InlineData("CancelTenant", "Retry inline with no delay")]
-    [InlineData("CancelInvitation", "Retry inline with no delay")]
-    [InlineData("OwnerInvitationReady", "Retry inline with a delay of 00:00:00.01")]
-    [InlineData("MemberInvitationReady", "Retry inline with a delay of 00:00:00.01")]
-    [InlineData("OpenOwnerSignUp", "Retry inline with a delay of 00:00:00.01")]
-    [InlineData("OpenMemberSignUp", "Retry inline with a delay of 00:00:00.01")]
-    [InlineData("WithdrawSignUp", "Retry inline with a delay of 00:00:00.01")]
-    [InlineData("DeleteIdentityAccount", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("ActivateTenantCommand", "Retry inline with no delay")]
+    [InlineData("CancelTenantCommand", "Retry inline with no delay")]
+    [InlineData("CancelInvitationCommand", "Retry inline with no delay")]
+    [InlineData("OwnerInvitationReadyEvent", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("MemberInvitationReadyEvent", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("OpenOwnerSignUpCommand", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("OpenMemberSignUpCommand", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("WithdrawSignUpCommand", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("DeleteIdentityAccountCommand", "Retry inline with a delay of 00:00:00.01")]
     public async Task ReadRetryRules_TenantStepsAndInvitation_KeepTheirMessageSpecificRules(string message, string firstAction)
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);

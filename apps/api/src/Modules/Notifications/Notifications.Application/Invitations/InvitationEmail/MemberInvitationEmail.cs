@@ -11,7 +11,7 @@ namespace Notifications.Application.Invitations.InvitationEmail;
 // again, which replaces it (K2). It sends no reply, as no saga waits for it.
 public static class SendMemberInvitationEmailHandler
 {
-    public static Task HandleAsync(MemberInvitationReady ready, IEmailChannel channel, CancellationToken cancellationToken) =>
+    public static Task HandleAsync(MemberInvitationReadyEvent ready, IEmailChannel channel, CancellationToken cancellationToken) =>
         channel.SendAsync(
             InvitationEmailTexts.Write(ready.Email, ready.TenantName, ready.Link, ready.Language, ready.Lifetime, ready.InvitationId),
             cancellationToken);

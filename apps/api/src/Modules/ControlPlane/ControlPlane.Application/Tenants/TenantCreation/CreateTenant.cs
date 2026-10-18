@@ -18,9 +18,9 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// the HTTP request (section 3). The command carries no request key. The owner's invitation email is in the language given, else in
 /// the system admin's own.
 /// </summary>
-public sealed record CreateTenant(string AdminId, string Name, string Slug, string OwnerEmail, Language? Language);
+public sealed record CreateTenantCommand(string AdminId, string Name, string Slug, string OwnerEmail, Language? Language);
 
-public sealed partial class CreateTenantValidator : AbstractValidator<CreateTenant>
+public sealed partial class CreateTenantValidator : AbstractValidator<CreateTenantCommand>
 {
     public CreateTenantValidator()
     {
@@ -55,8 +55,8 @@ public sealed partial class CreateTenantValidator : AbstractValidator<CreateTena
 // anything, because Wolverine commits a failed Result too (W7); a taken slug is found by the insert itself, which writes nothing then.
 public static class CreateTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenant>?, ActivationTimedOut?)> HandleAsync(
-        CreateTenant command,
+    public static async Task<(Result<TenantDetails>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenantCommand>?, ActivationTimedOut?)> HandleAsync(
+        CreateTenantCommand command,
         ITenantCatalog catalog,
         InvitationOptions invitations,
         TenantCreationOptions tenantCreation,

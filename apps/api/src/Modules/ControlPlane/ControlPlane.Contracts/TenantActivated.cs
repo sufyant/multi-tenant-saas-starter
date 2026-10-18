@@ -6,4 +6,4 @@ namespace ControlPlane.Contracts;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="CreatedBy">The catalog user id of the system admin who created the tenant.</param>
-public sealed record TenantActivated(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string Name, Guid CreatedBy);
+public sealed record TenantActivatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string Name, Guid CreatedBy);

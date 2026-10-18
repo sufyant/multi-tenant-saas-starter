@@ -19,9 +19,9 @@ namespace ControlPlane.Application.Invitations;
 /// process while the invitation is locked. A new catalog user gets the invited address, the names the person typed (A7) and the
 /// invitation's language; a user the catalog knows needs no names and keeps their language.
 /// </summary>
-public sealed record AcceptInvitation(string Secret, string UserId, IReadOnlyList<string> VerifiedEmails, string? FirstName, string? LastName);
+public sealed record AcceptInvitationCommand(string Secret, string UserId, IReadOnlyList<string> VerifiedEmails, string? FirstName, string? LastName);
 
-public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitation>
+public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitationCommand>
 {
     public AcceptInvitationValidator()
     {
@@ -43,8 +43,8 @@ public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitati
 // Every rejection returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class AcceptInvitationHandler
 {
-    public static async Task<(Result<TenantSummary>, MemberJoined?)> HandleAsync(
-        AcceptInvitation command,
+    public static async Task<(Result<TenantSummary>, MemberJoinedEvent?)> HandleAsync(
+        AcceptInvitationCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -118,10 +118,10 @@ public static class AcceptInvitationHandler
         await catalog.AddMembershipAsync(tenant, user.Id, invitation.RoleId, now, cancellationToken);
         return (
             TenantSummary.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
-            new MemberJoined(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
+            new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
     }
 
-    private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitation command) =>
+    private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>
         new (string Field, string? Value)[] { (nameof(command.FirstName), command.FirstName), (nameof(command.LastName), command.LastName) }
             .Where(field => field.Value is null)
             .Select(field => new ValidationFailure(field.Field, $"{field.Field} is required for a person the catalog does not know.")

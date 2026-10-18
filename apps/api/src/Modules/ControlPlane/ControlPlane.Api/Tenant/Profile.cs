@@ -19,7 +19,7 @@ public static class Profile
     // The member's shape of a tenant (K5), with when it was created and the member's role and permissions. The tenant door has declared
     // the tenant of the route.
     private static async Task<Result<MyTenantDetailResponse>> GetMyTenant(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<MyTenantDetails>>(new GetMyTenant(user.Id()), cancellationToken))
+        (await bus.InvokeAsync<Result<MyTenantDetails>>(new GetMyTenantQuery(user.Id()), cancellationToken))
             .Map(found => new MyTenantDetailResponse(
                 found.Tenant.Id,
                 found.Tenant.Name,

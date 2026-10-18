@@ -6,4 +6,4 @@ namespace ControlPlane.Contracts;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The catalog user id of the user, who acted for themselves.</param>
-public sealed record UserPreferencesChanged(Guid EventId, DateTimeOffset OccurredAt, Guid UserId);
+public sealed record UserPreferencesChangedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid UserId);

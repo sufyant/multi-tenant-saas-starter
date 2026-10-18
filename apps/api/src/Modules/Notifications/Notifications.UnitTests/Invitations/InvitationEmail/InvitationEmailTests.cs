@@ -65,10 +65,10 @@ public sealed class InvitationEmailTests
         await send.ShouldThrowAsync<HttpRequestException>();
     }
 
-    private static OwnerInvitationReady Ready() =>
+    private static OwnerInvitationReadyEvent Ready() =>
         new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
 
-    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReady ready) =>
+    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReadyEvent ready) =>
         SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);
 
     // The email channel, as a system we do not own, at our port.

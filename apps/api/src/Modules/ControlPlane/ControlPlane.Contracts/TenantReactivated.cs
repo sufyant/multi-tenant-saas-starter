@@ -9,4 +9,4 @@ namespace ControlPlane.Contracts;
 /// <param name="TenantName">
 /// The tenant's name at that moment, for its audit record. Null only in an event published before the name was added.
 /// </param>
-public sealed record TenantReactivated(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReactivatedBy, string? TenantName);
+public sealed record TenantReactivatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReactivatedBy, string? TenantName);

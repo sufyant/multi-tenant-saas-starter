@@ -10,7 +10,7 @@ namespace ControlPlane.Application.Invitations;
 /// An Owner or an Admin revokes a pending invitation of the active tenant; its link stops working at once (K2), and the identity provider's
 /// invitation behind it is withdrawn after the commit.
 /// </summary>
-public sealed record RevokeInvitation(string RevokerId, Guid InvitationId);
+public sealed record RevokeInvitationCommand(string RevokerId, Guid InvitationId);
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row is
 // locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
@@ -18,8 +18,8 @@ public sealed record RevokeInvitation(string RevokerId, Guid InvitationId);
 // the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class RevokeInvitationHandler
 {
-    public static async Task<(Result, InvitationRevoked?, WithdrawSignUp?)> HandleAsync(
-        RevokeInvitation command,
+    public static async Task<(Result, InvitationRevokedEvent?, WithdrawSignUpCommand?)> HandleAsync(
+        RevokeInvitationCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -61,7 +61,7 @@ public static class RevokeInvitationHandler
         var now = time.GetUtcNow();
         return (
             Result.Success(),
-            new InvitationRevoked(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, revoker.Id),
-            invitation.SignUpInvitationId is { } signUp ? new WithdrawSignUp(signUp) : null);
+            new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, revoker.Id),
+            invitation.SignUpInvitationId is { } signUp ? new WithdrawSignUpCommand(signUp) : null);
     }
 }

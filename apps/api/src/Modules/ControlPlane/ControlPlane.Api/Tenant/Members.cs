@@ -42,7 +42,7 @@ public static class Members
             return filter.Error;
         }
 
-        var members = await bus.InvokeAsync<Result<ListPage<MemberSummary>>>(new ListMembers(list.Value, filter.Value?.ToString()), cancellationToken);
+        var members = await bus.InvokeAsync<Result<ListPage<MemberSummary>>>(new ListMembersQuery(list.Value, filter.Value?.ToString()), cancellationToken);
         return members.Map(found => found.Map(ToResponse));
     }
 
@@ -54,13 +54,13 @@ public static class Members
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var changed = await bus.InvokeAsync<Result<MemberSummary>>(new ChangeMemberRole(user.Id(), userId, request.Role.ToString()), cancellationToken);
+        var changed = await bus.InvokeAsync<Result<MemberSummary>>(new ChangeMemberRoleCommand(user.Id(), userId, request.Role.ToString()), cancellationToken);
         return changed.Map(ToResponse);
     }
 
     // Removing sets a state, so it takes no idempotency key (I1).
     private static async Task<Result> RemoveMember(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        await bus.InvokeAsync<Result>(new RemoveMember(user.Id(), userId), cancellationToken);
+        await bus.InvokeAsync<Result>(new RemoveMemberCommand(user.Id(), userId), cancellationToken);
 
     private static MemberResponse ToResponse(MemberSummary member) =>
         new(member.UserId, member.Email, member.FirstName, member.LastName, ToResponse(member.Role), member.Deleted, member.JoinedAt);

@@ -14,7 +14,7 @@ namespace ControlPlane.Contracts;
 /// </param>
 /// <param name="Language">The language of the email, which the invitation keeps.</param>
 /// <param name="Lifetime">How long the invitation can be accepted, from its creation, so the email says how long the link works.</param>
-public sealed record OwnerInvitationReady(
+public sealed record OwnerInvitationReadyEvent(
     Guid EventId,
     DateTimeOffset OccurredAt,
     Guid TenantId,
