@@ -46,7 +46,7 @@ internal sealed class Tenant
 
     public TenantStatus Status { get; private set; }
 
-    /// <summary>When a system admin created the tenant. A tenant from before step 20l has the moment of that step's migration.</summary>
+    /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
     /// <summary>Why the tenant creation cancelled the tenant: a fixed code, never the text of an exception.</summary>

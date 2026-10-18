@@ -42,8 +42,7 @@ internal sealed class User(Guid id, string externalId)
     public Guid? SuspendedBy { get; private set; }
 
     /// <summary>
-    /// When the user joined the catalog: when they accepted their first invitation, or when the first system admin was written. A user
-    /// from before step 20l has the moment of that step's migration.
+    /// When the user joined the catalog: when they accepted their first invitation, or when the first system admin was written.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
