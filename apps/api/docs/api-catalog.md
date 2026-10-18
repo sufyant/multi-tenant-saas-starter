@@ -240,8 +240,6 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ## Later
 
-- Run the tenant summary's backfill again, in a migration of the next release, once no version before step 20k runs: a command of that version during the deploy does not write the summary (K10; ARCHITECTURE.md, section 6, "Tenant summary").
-- Run the users' membership count backfill again, in a migration of the next release, once no version before step 20l runs: a command of that version during the deploy adds or removes a membership without changing the count (K11; ARCHITECTURE.md, R13).
 - Drop `control_plane.users.profile_updated_at`. Step 20i stopped using it and kept it, so the version that serves during the deploy can still read users (`docs/deployment.md` at the repository root, section 8).
 - A lost update across two HTTP requests (two admins editing the same form): `ETag` and `If-Match` (RFC 9110).
 - Search and filters beyond `q` and the allowed filters. Data export and deletion. API keys for tenants. Outgoing webhooks. Billing.
