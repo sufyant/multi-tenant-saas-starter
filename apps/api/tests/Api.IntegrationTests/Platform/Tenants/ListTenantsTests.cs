@@ -15,7 +15,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
     private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
-    private Catalog _catalog = new(database);
+    private TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -34,12 +34,12 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     {
         await UseADatabaseOfItsOwnAsync();
         var random = Guid.NewGuid().ToString();
-        var delta = await _catalog.AddTenantAsync(name: "Delta Ltd");
-        var alpha = await _catalog.AddTenantAsync(status: "Provisioning", name: "Alpha Ltd");
-        var charlie = await _catalog.AddTenantAsync(status: "Suspended", name: "Charlie Ltd");
-        var bravo = await _catalog.AddTenantAsync(status: "Cancelled", name: "Bravo Ltd");
-        var echoLater = await _catalog.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
-        var echoEarlier = await _catalog.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
+        var delta = await _testData.AddTenantAsync(name: "Delta Ltd");
+        var alpha = await _testData.AddTenantAsync(status: "Provisioning", name: "Alpha Ltd");
+        var charlie = await _testData.AddTenantAsync(status: "Suspended", name: "Charlie Ltd");
+        var bravo = await _testData.AddTenantAsync(status: "Cancelled", name: "Bravo Ltd");
+        var echoLater = await _testData.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
+        var echoEarlier = await _testData.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
 
         var response = await (await SystemAdminAsync()).GetAsync("/v1/platform/tenants", Cancellation);
 
@@ -66,9 +66,9 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     public async Task ListTenants_ALaterPage_ReturnsTheRestAndTheTotal()
     {
         await UseADatabaseOfItsOwnAsync();
-        await _catalog.AddTenantAsync(name: "First Ltd");
-        await _catalog.AddTenantAsync(name: "Second Ltd");
-        var third = await _catalog.AddTenantAsync(name: "Third Ltd");
+        await _testData.AddTenantAsync(name: "First Ltd");
+        await _testData.AddTenantAsync(name: "Second Ltd");
+        var third = await _testData.AddTenantAsync(name: "Third Ltd");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants?page=2&pageSize=2", Cancellation);
 
@@ -96,8 +96,8 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("ORBIT-", "Bravo")]
     public async Task ListTenants_ASearch_FindsTheTenantsWhoseNameOrSlugContainsItInAnyCase(string q, string found)
     {
-        await _catalog.AddTenantAsync(name: $"Alpha Acme{_marker} Ltd", slug: $"alpha-{_marker}");
-        await _catalog.AddTenantAsync(name: $"Bravo {_marker} Ltd", slug: $"orbit-{_marker}");
+        await _testData.AddTenantAsync(name: $"Alpha Acme{_marker} Ltd", slug: $"alpha-{_marker}");
+        await _testData.AddTenantAsync(name: $"Bravo {_marker} Ltd", slug: $"orbit-{_marker}");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={Uri.EscapeDataString(q + _marker)}", Cancellation);
 
@@ -126,11 +126,11 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("closed", "Echo")]
     public async Task ListTenants_AStatusFilter_ReturnsTheTenantsInThatStatusOnly(string status, string found)
     {
-        await _catalog.AddTenantAsync(status: "Provisioning", name: $"{_marker} Alpha");
-        await _catalog.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
-        await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
-        await _catalog.AddTenantAsync(status: "Cancelled", name: $"{_marker} Delta");
-        await _catalog.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Provisioning", name: $"{_marker} Alpha");
+        await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+        await _testData.AddTenantAsync(status: "Cancelled", name: $"{_marker} Delta");
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
 
@@ -145,9 +145,9 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("-slug", "Alpha, Bravo, Charlie")]
     public async Task ListTenants_ASortField_OrdersByItInItsDirection(string sort, string names)
     {
-        await _catalog.AddTenantAsync(name: $"{_marker} Bravo", slug: $"yankee-{_marker}");
-        await _catalog.AddTenantAsync(name: $"{_marker} Alpha", slug: $"zulu-{_marker}");
-        await _catalog.AddTenantAsync(name: $"{_marker} Charlie", slug: $"xray-{_marker}");
+        await _testData.AddTenantAsync(name: $"{_marker} Bravo", slug: $"yankee-{_marker}");
+        await _testData.AddTenantAsync(name: $"{_marker} Alpha", slug: $"zulu-{_marker}");
+        await _testData.AddTenantAsync(name: $"{_marker} Charlie", slug: $"xray-{_marker}");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&sort={sort}", Cancellation);
 
@@ -158,8 +158,8 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListTenants_AnEmptyStatus_IsNoFilter()
     {
-        await _catalog.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
-        await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+        await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status=", Cancellation);
 
@@ -173,8 +173,8 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     public async Task ListTenants_TwoTenantsWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
     {
         var random = Guid.NewGuid().ToString();
-        var later = await _catalog.AddTenantAsync(name: $"{_marker} Same", tenantId: Guid.Parse($"f{random[1..]}"));
-        var earlier = await _catalog.AddTenantAsync(name: $"{_marker} Same", tenantId: Guid.Parse($"0{random[1..]}"));
+        var later = await _testData.AddTenantAsync(name: $"{_marker} Same", tenantId: Guid.Parse($"f{random[1..]}"));
+        var earlier = await _testData.AddTenantAsync(name: $"{_marker} Same", tenantId: Guid.Parse($"0{random[1..]}"));
         var admin = await SystemAdminAsync();
 
         var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);
@@ -202,8 +202,8 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListTenants_ASuspendedTenant_ShowsItsReason()
     {
-        await _catalog.AddTenantAsync(status: "Suspended", name: $"{_marker} Alpha", suspensionReason: "Unpaid invoices");
-        await _catalog.AddTenantAsync(name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Alpha", suspensionReason: "Unpaid invoices");
+        await _testData.AddTenantAsync(name: $"{_marker} Bravo");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
 
@@ -237,7 +237,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
         Owners(page).ShouldBe(
         [
-            $"{owned}|2|2|{await _catalog.UserIdOfAsync(first)}|Ada|Lovelace|{ada}|-|-",
+            $"{owned}|2|2|{await _testData.UserIdOfAsync(first)}|Ada|Lovelace|{ada}|-|-",
             $"{pendingTenant}|0|0|-|{pending}|{now.AddDays(7):O}|pending|-",
             $"{closedTenant}|0|0|-|{closed}|{now.AddDays(7):O}|cancelled|{now.AddDays(30):O}",
             $"{expiredTenant}|0|0|-|{expired}|{expiredAt:O}|expired|-",
@@ -274,13 +274,13 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
     private static List<string> Names(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("name").GetString()!)];
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     // A database where no other test adds a tenant, for a test that reads the whole list.
     private async Task UseADatabaseOfItsOwnAsync()
     {
         var name = await database.CreateMigratedDatabaseAsync();
-        _catalog = new Catalog(database, name);
+        _testData = new TestData(database, name);
         await _api.DisposeAsync();
         _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
     }
@@ -290,7 +290,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     {
         foreach (var name in names)
         {
-            await _catalog.AddTenantAsync(name: $"{_marker} {name}");
+            await _testData.AddTenantAsync(name: $"{_marker} {name}");
         }
     }
 }

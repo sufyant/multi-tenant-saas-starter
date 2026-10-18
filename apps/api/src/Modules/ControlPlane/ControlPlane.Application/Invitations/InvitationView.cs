@@ -7,8 +7,8 @@ using ControlPlane.Domain.Users;
 namespace ControlPlane.Application.Invitations;
 
 /// <summary>
-/// An invitation as a member sees it: the invited address, the built-in role it gives, the catalog user who invited and their names as
-/// the catalog holds them now, when it was created and expires, and its state at the moment it is read (<c>Pending</c>, <c>Expired</c>,
+/// An invitation as a member sees it: the invited address, the built-in role it gives, the user who invited and their names as
+/// they are stored now, when it was created and expires, and its state at the moment it is read (<c>Pending</c>, <c>Expired</c>,
 /// <c>Accepted</c>, <c>Cancelled</c>; <see cref="Invitation.StateAt"/>). Inviting and the invitation list answer it.
 /// </summary>
 public sealed record InvitationView(

@@ -224,7 +224,7 @@ public sealed class TenantCreationSagaTests
         sent.ShouldBe([new RaiseTenantCreationAlarmCommand(TenantId)]);
     }
 
-    // NeedsAttention | any message | unchanged | none. M11: the alarm is raised once for each tenant creation.
+    // NeedsAttention | any message | unchanged | none. The alarm is raised once for each tenant creation (section 6).
     [Fact]
     public void CancelInvitation_FailsForGoodAfterTheAlarm_RaisesNoSecondAlarm()
     {
@@ -262,7 +262,7 @@ public sealed class TenantCreationSagaTests
         sent.ShouldBeEmpty();
     }
 
-    // M2: the invitation was cancelled when the wait timed out, so the late fault has nothing left to do.
+    // The invitation was cancelled when the wait timed out (section 6), so the late fault has nothing left to do.
     [Fact]
     public void SendInvitation_FaultAfterTheTimeout_IsIgnored()
     {
@@ -288,7 +288,7 @@ public sealed class TenantCreationSagaTests
         sent.ShouldBeEmpty();
     }
 
-    // M11: a repeated alarm reaches the saga as a repeated timeout.
+    // A repeated alarm reaches the saga as a repeated timeout; the alarm is raised once (section 6).
     [Fact]
     public void ActivateTenant_TimeoutArrivesAgainAfterTheAlarm_RaisesNoSecondAlarm()
     {

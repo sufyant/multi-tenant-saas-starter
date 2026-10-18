@@ -5,6 +5,7 @@ using ControlPlane.Application.Users.GetMe;
 using ControlPlane.Application.Users.GetUser;
 using ControlPlane.Application.Users.ListUsers;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,10 @@ using SharedKernel;
 namespace ControlPlane.Infrastructure.Persistence.Users;
 
 /// <summary>
-/// The catalog users in control_plane.users, which belongs to no tenant (R6), for the queries, read without tracking. The message has no
+/// The users in control_plane.users, which belongs to no tenant (R6), for the queries, read without tracking. The message has no
 /// tenant, so the transaction declares none; it declares the user only to read the user's own memberships (R11).
 /// </summary>
-/// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueries
 {
     async Task<MeView?> IUserQueries.FindMeAsync(string externalUserId, CancellationToken cancellationToken)
@@ -55,7 +56,9 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
             return null;
         }
 
-        return await IsSystemAdminAsync(user.Id, cancellationToken) ? new InviterNameView("Platform", null) : new InviterNameView("User", UserNameView.Of(user));
+        return await IsSystemAdminAsync(user.Id, cancellationToken)
+            ? new InviterNameView(nameof(InviterKind.Platform), null)
+            : new InviterNameView(nameof(InviterKind.User), UserNameView.Of(user));
     }
 
     async Task<ListPage<UserView>> IUserQueries.ListUsersAsync(

@@ -2,7 +2,7 @@
 
 What the API needs from the providers it runs on, and how to set them up. The architecture does not depend on these providers (fixed rule 6 of `ARCHITECTURE.md`); the notes for each one are here. `configuration.md` lists the settings, and `local-run.md` runs the API on a local machine.
 
-## Database provider
+## 1. Database provider
 
 The API needs PostgreSQL 18 and the two roles of R2 and R7: an owner role for the migrations and an application role for running code. `db/bootstrap.sql` creates both.
 
@@ -30,7 +30,7 @@ Neon works too, because the API uses plain PostgreSQL. It is not the default, be
 - Give each environment its own Neon project or branch. A Neon branch starts as a copy of its parent, with the parent's data and role passwords. So do not branch staging from a production branch that holds data, and run `db/bootstrap.sql` on the new branch with new passwords.
 - Neon's pooled endpoint is a pooler in transaction mode. If `ConnectionStrings:Database` uses it, set `ConnectionStrings:Messaging` to the direct endpoint. `ConnectionStrings:Migrations` uses the direct endpoint too: its host name has no `-pooler`.
 
-## Identity provider
+## 2. Identity provider
 
 The API needs these from an identity provider:
 
@@ -49,8 +49,8 @@ On Clerk:
 - Let an address sign up: the API first asks `GET users?email_address=<address>`. An address with an account needs no invitation: Clerk would refuse one, and the person signs in. For any other address the API calls `POST invitations` with `notify` false, `ignore_existing` true, `redirect_url` our accept link with our invitation code, and `expires_in_days` our invitation's lifetime in whole days, rounded up (1 to 365). `ignore_existing` lets two tenants invite the same person, and lets a new invitation replace one whose withdrawal has not run yet. The answer's `url` is the link in our email, and its `id` is kept on our invitation.
 - When the person opens the link, Clerk sends them to our accept link and adds `__clerk_ticket`. The web signs them up with the ticket (`signUp.ticket()`), which verifies the invited address. Clerk's own sign-up form shows Google and Microsoft only when the ticket leaves a requirement open; with no password and no names, the ticket alone completes the sign-up. The person then signs in with an email code, Google or Microsoft.
 - Withdraw: `POST invitations/{id}/revoke`. An invitation that is no longer pending answers 400, and an unknown one 404; the API takes both as done. Our invitation ends Clerk's when it is revoked, replaced or cancelled, when its tenant closes, and when its lifetime is over; an accepted one needs nothing.
-- Read the verified addresses: `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It reads no name: Clerk keeps none, and the catalog owns the names (A7).
-- Delete a user: `DELETE users/{user id}`, after the catalog's deletion commits. A user already gone answers 404, which is done.
+- Read the verified addresses: `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It reads no name: Clerk keeps none, and ControlPlane owns the names (A7).
+- Delete a user: `DELETE users/{user id}`, after ControlPlane's deletion commits. A user already gone answers 404, which is done.
 - Each call has the time limit `ControlPlane:Clerk:Timeout` and the retries `ControlPlane:Clerk:RetryDelays`.
 
 ### Clerk settings as code
@@ -93,14 +93,14 @@ The instance config has no key for these. The maintainer does them by hand:
 - Webhooks: none. The API has no webhook endpoint. Remove any webhook endpoint in the Clerk dashboard, Configure, Webhooks.
 - `fva` in the session token: Clerk's session token version 2 carries it. Check it in the Clerk dashboard, Configure, Sessions, and do not remove it in "Customize session token".
 
-The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --instance <dev or prod> --email <address>` in the linked checkout. The account has no password: the admin signs in with an email code and then enrolls an authenticator app. Until that account exists, nobody passes the system door: every `/v1/platform/...` request answers 403, and the system admin list stays empty. The account's first request with a verified second factor writes the catalog user, with the configured address and no names, and the grant (section 6). A system admin then gives them their names (`PATCH /v1/platform/users/{userId}`).
+The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --instance <dev or prod> --email <address>` in the linked checkout. The account has no password: the admin signs in with an email code and then enrolls an authenticator app. Until that account exists, nobody passes the system door: every `/v1/platform/...` request answers 403, and the system admin list stays empty. The account's first request with a verified second factor writes the user, with the configured address and no names, and the grant (section 6). A system admin then gives them their names (`PATCH /v1/platform/users/{userId}`).
 
-## Email and tenant creation timing
+## 3. Email and tenant creation timing
 
 - `ControlPlane:InvitationEmailTimeout` must be longer than the `ControlPlane:Clerk:RetryDelays` and the `Notifications:InvitationEmailRetryDelays` together: step 3 lets the owner sign up with Clerk, then sends the email. A shorter wait gives up on a call that is still being tried, cancels the invitation and raises the alarm. The host checks the rule on start (`Api/Hosting/InvitationEmailWait.cs`). If the rule fails, the host does not start, and the error names the three keys and their values.
 - Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
 
-## Container platform
+## 4. Container platform
 
 - The process has two ports (section 8 of `ARCHITECTURE.md`). The public port, 8080, serves the API. The management port, 8081 (`Host:ManagementPort`), serves only `/health/live` and `/health/ready`. A worker opens only the management port. Route the platform's traffic to 8080 only.
 - Railway: `docs/deployment.md` at the repository root describes the deployment. `.railway/railway.ts` declares the PostgreSQL service and sets the health check and the variables. `PORT` is 8081, because Railway's health check uses `PORT`. The domain of `api-web` targets 8080.

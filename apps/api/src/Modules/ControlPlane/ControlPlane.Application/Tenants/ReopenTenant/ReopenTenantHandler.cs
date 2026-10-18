@@ -4,8 +4,7 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Tenants.ReopenTenant;
 
-// The command sets a state (I1): an active tenant answers as it is, and nothing is announced. Every rejection returns before the handler
-// changes anything, because Wolverine commits a failed Result too (W7).
+// The command sets a state (I1): an active tenant answers as it is, and nothing is announced. Rejections come first (W7).
 public static class ReopenTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantReopenedEvent?)> HandleAsync(
@@ -29,7 +28,7 @@ public static class ReopenTenantHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (TenantView.Of(tenant), new TenantReopenedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name));

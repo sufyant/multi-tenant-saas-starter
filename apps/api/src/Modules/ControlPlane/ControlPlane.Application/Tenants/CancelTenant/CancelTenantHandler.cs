@@ -32,7 +32,7 @@ public static partial class CancelTenantHandler
         }
 
         (await tenants.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
-        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
         return new CancelTenantReply(step.TenantId);
     }

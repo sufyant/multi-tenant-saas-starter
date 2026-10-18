@@ -7,8 +7,8 @@ namespace ControlPlane.Application.Users.DeleteUser;
 
 // The command locks the user row. A membership that appeared after the user left their tenants, such as an invitation accepted at the
 // same moment, stops it: a deleted user is never a member (A8). A user already deleted answers as they are, and is not announced again;
-// the identity provider is asked again to delete its user, so a deletion that failed there for good can be repeated. Every rejection
-// returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// the identity provider is asked again to delete its user, so a deletion that failed there for good can be repeated. Rejections come
+// first (W7).
 public static class DeleteUserHandler
 {
     public static async Task<(Result, UserDeletedEvent?, DeleteIdentityAccountCommand?)> HandleAsync(
@@ -35,7 +35,7 @@ public static class DeleteUserHandler
         var now = time.GetUtcNow();
         var deleted = user.Delete(now);
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
 
         return (

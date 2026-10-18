@@ -3,7 +3,7 @@ using SharedKernel;
 namespace ControlPlane.Contracts.Tenants;
 
 /// <summary>
-/// The catalog lookup tenant resolution needs before any tenant is known: the host asks it on every tenant route (T7).
+/// The lookup that tenant resolution needs before any tenant is known: the host asks it on every tenant route (T7).
 /// </summary>
 public interface ITenantDirectory
 {

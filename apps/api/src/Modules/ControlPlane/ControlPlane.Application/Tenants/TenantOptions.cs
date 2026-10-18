@@ -1,8 +1,7 @@
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>
-/// Configuration of the tenant lifecycle (section <c>ControlPlane:Tenants</c>), checked on start; public because handlers take it as a
-/// parameter.
+/// Configuration of the tenant lifecycle (section <c>ControlPlane:Tenants</c>), checked on start; public because a handler takes it (W9).
 /// </summary>
 public sealed class TenantOptions
 {

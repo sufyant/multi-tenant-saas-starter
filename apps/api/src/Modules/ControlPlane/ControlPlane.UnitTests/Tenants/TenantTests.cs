@@ -505,7 +505,7 @@ public sealed class TenantTests
         var tenant = Active();
         var invitation = OwnerInvitation();
 
-        tenant.Summarize(new TenantRows(0, 0, null, invitation));
+        tenant.Summarize(new TenantSummary(0, 0, null, invitation));
 
         (tenant.MemberCount, tenant.OwnerCount, tenant.FirstOwnerId).ShouldBe((0, 0, null));
         (tenant.OwnerInvitationEmail, tenant.OwnerInvitationExpiresAt, tenant.OwnerInvitationStatus)
@@ -516,10 +516,10 @@ public sealed class TenantTests
     public void SummarizeTenant_AnOwnerJoined_KeepsTheFirstOwnerAndClearsTheOwnerInvitation()
     {
         var tenant = Active();
-        tenant.Summarize(new TenantRows(0, 0, null, OwnerInvitation()));
+        tenant.Summarize(new TenantSummary(0, 0, null, OwnerInvitation()));
         var owner = Guid.CreateVersion7();
 
-        tenant.Summarize(new TenantRows(3, 2, owner, OwnerInvitation()));
+        tenant.Summarize(new TenantSummary(3, 2, owner, OwnerInvitation()));
 
         (tenant.MemberCount, tenant.OwnerCount, tenant.FirstOwnerId).ShouldBe((3, 2, owner));
         (tenant.OwnerInvitationEmail, tenant.OwnerInvitationExpiresAt, tenant.OwnerInvitationStatus).ShouldBe((null, null, null));
@@ -534,7 +534,7 @@ public sealed class TenantTests
     public void ReadOwnerInvitationState_APendingInvitation_IsExpiredFromItsExpiryOn(int days, string state)
     {
         var tenant = Active();
-        tenant.Summarize(new TenantRows(0, 0, null, OwnerInvitation()));
+        tenant.Summarize(new TenantSummary(0, 0, null, OwnerInvitation()));
 
         tenant.OwnerInvitationStateAt(Now.AddDays(days)).ShouldBe(Enum.Parse<OwnerInvitationState>(state));
     }
@@ -545,7 +545,7 @@ public sealed class TenantTests
         var tenant = Active();
         var invitation = OwnerInvitation();
         invitation.Cancel();
-        tenant.Summarize(new TenantRows(0, 0, null, invitation));
+        tenant.Summarize(new TenantSummary(0, 0, null, invitation));
 
         tenant.OwnerInvitationStateAt(Now).ShouldBe(OwnerInvitationState.Cancelled);
     }

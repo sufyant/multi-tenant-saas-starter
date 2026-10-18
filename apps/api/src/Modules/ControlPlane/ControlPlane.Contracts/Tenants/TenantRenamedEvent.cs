@@ -7,7 +7,7 @@ namespace ControlPlane.Contracts.Tenants;
 /// tenant's id travels in the message's envelope.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
-/// <param name="RenamedBy">The catalog user id of the system admin who renamed the tenant.</param>
+/// <param name="RenamedBy">The user id of the system admin who renamed the tenant.</param>
 /// <param name="OldName">The name the tenant had.</param>
 /// <param name="NewName">The name the tenant has now.</param>
 [MessageName("tenant-renamed")]

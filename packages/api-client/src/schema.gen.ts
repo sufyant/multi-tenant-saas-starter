@@ -379,8 +379,8 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description The invitation code from the invitation link, and the names of a person the catalog does not know yet, each within the API's limit.
-         *     The API trims each name before it counts its length. A user the catalog knows sends none.
+         * @description The invitation code from the invitation link, and the names of a person who is not a user yet, each within the API's limit.
+         *     The API trims each name before it counts its length. A known user sends none.
          */
         AcceptInvitationRequest: {
             code: string;
@@ -388,8 +388,8 @@ export interface components {
             lastName?: null | string;
         };
         /**
-         * @description Who acted: a user, by catalog user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a
-         *     user's real name, or null: for a user without a name, a deleted user, a user the catalog does not know, and for the platform, which
+         * @description Who acted: a user, by user id, or the platform, that is a system admin seen from a tenant's log. `displayName` is a
+         *     user's real name, or null: for a user without a name, a deleted user, an unknown user, and for the platform, which
          *     the screen names from `kind` in its own language. `deleted` is set for a user only.
          */
         AuditActorResponse: {
@@ -498,8 +498,8 @@ export interface components {
             state: components["schemas"]["InvitationResponseState"];
         };
         /**
-         * @description A pending invitation: the invited address, its role, the catalog user id of the member who invited and their names as the catalog
-         *     holds them now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once
+         * @description A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are
+         *     stored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once
          *     its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
          *     only, and inviting answers the new one.
          */
@@ -544,7 +544,7 @@ export interface components {
             language?: null | components["schemas"]["Language"];
         };
         /**
-         * @description Who invited: a user, with the names the catalog holds now and `deleted` for a user a system admin deleted, or the platform,
+         * @description Who invited: a user, with the names stored now and `deleted` for a user a system admin deleted, or the platform,
          *     with no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do.
          */
         InviterNameResponse: {
@@ -632,7 +632,7 @@ export interface components {
          */
         MemberRole: "owner" | "admin" | "member";
         /**
-         * @description The signed-in user: the catalog's id, not the identity provider's, the copy of their profile, whether they are a system admin, and
+         * @description The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and
          *     their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
          */
         MeResponse: {
@@ -781,7 +781,7 @@ export interface components {
             firstOwner: null | components["schemas"]["TenantOwnerResponse"];
             ownerInvitation: null | components["schemas"]["OwnerInvitationResponse"];
         };
-        /** @description An Owner of a tenant: the catalog user's id, names and address. */
+        /** @description An Owner of a tenant: the user's id, names and address. */
         TenantOwnerResponse: {
             /** Format: uuid */
             userId: string;
@@ -809,7 +809,7 @@ export interface components {
          */
         TenantResponseStatus: "provisioning" | "active" | "suspended" | "cancelled" | "closed";
         /**
-         * @description One catalog user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
+         * @description One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
          *     (null when the user is not suspended), and every membership by the tenant's name.
          */
         UserDetailResponse: {
@@ -850,7 +850,7 @@ export interface components {
          */
         UserMembershipResponseTenantStatus: "active" | "suspended" | "closed";
         /**
-         * @description A user's names as the catalog holds them now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
+         * @description A user's names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
          *     names and `deleted`, and the screen shows "Deleted user". It holds no email address.
          */
         UserNameResponse: {
@@ -859,8 +859,8 @@ export interface components {
             deleted: boolean;
         };
         /**
-         * @description A catalog user: the catalog's id, not the identity provider's, their email address and names, their status (active, suspended or
-         *     deleted), whether they are a system admin, how many tenants they are a member of, and when they joined the catalog.
+         * @description A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or
+         *     deleted), whether they are a system admin, how many tenants they are a member of, and when they became a user.
          */
         UserResponse: {
             /** Format: uuid */
@@ -876,7 +876,7 @@ export interface components {
             createdAt: string;
         };
         /**
-         * @description The status of a catalog user. A system admin deleted a deleted user, and the catalog keeps no email address or name of theirs.
+         * @description The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.
          * @enum {string}
          */
         UserResponseStatus: "active" | "suspended" | "deleted";

@@ -3,7 +3,7 @@ using Audit.Api.Tenant.AuditLogs;
 namespace Audit.Api.Statuses;
 
 /// <summary>
-/// Maps each of Audit's kinds to the kind enum of a response (N7). Both audit logs build their entries here. A kind a response cannot
+/// Maps each of Audit's kinds to the kind enum of a response (N7r). Both audit logs build their entries here. A kind a response cannot
 /// carry is a fault, not an answer.
 /// </summary>
 internal static class ResponseStatus

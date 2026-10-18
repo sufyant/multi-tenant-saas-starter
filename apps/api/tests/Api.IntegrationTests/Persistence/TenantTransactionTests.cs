@@ -13,7 +13,7 @@ namespace Api.IntegrationTests.Persistence;
 [RuntimeHandlerCode]
 public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private PipelineHost _host = null!;
 
@@ -26,8 +26,8 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RunCommand_FromATenantRequest_RunsUnderThatTenant()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = _host.CreateClient(await _catalog.AddMemberAsync(tenant.Id));
+        var tenant = await _testData.AddTenantAsync();
+        var member = _host.CreateClient(await _testData.AddMemberAsync(tenant.Id));
 
         await member.PostAsJsonAsync($"/v1/tenants/{tenant.Id}/probes", new { value = "mine" }, Cancellation);
 
@@ -38,12 +38,12 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReadProbes_InATenantRequest_SeesNoDataOfAnotherTenant()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var otherMember = _host.CreateClient(await _catalog.AddMemberAsync(other.Id));
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var otherMember = _host.CreateClient(await _testData.AddMemberAsync(other.Id));
         await otherMember.PostAsJsonAsync($"/v1/tenants/{other.Id}/probes", new { value = "theirs" }, Cancellation);
 
-        var probes = await _host.CreateClient(await _catalog.AddMemberAsync(tenant.Id))
+        var probes = await _host.CreateClient(await _testData.AddMemberAsync(tenant.Id))
             .GetFromJsonAsync<string[]>($"/v1/tenants/{tenant.Id}/probes", Cancellation);
 
         probes.ShouldBeEmpty();
@@ -53,9 +53,9 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task WriteProbe_BodyNamesAnotherTenant_IsWrittenInTheTenantOfThePath()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var member = _host.CreateClient(await _catalog.AddMemberAsync(tenant.Id));
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var member = _host.CreateClient(await _testData.AddMemberAsync(tenant.Id));
         var value = $"probe-{Guid.NewGuid():N}";
 
         await member.PostAsJsonAsync($"/v1/tenants/{tenant.Id}/probes", new { value, tenantId = other.Id }, Cancellation);
@@ -66,8 +66,8 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RunCommand_Fails_LeavesNothingWritten()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = _host.CreateClient(await _catalog.AddMemberAsync(tenant.Id));
+        var tenant = await _testData.AddTenantAsync();
+        var member = _host.CreateClient(await _testData.AddMemberAsync(tenant.Id));
 
         var response = await member.PostAsJsonAsync($"/v1/tenants/{tenant.Id}/failing-probes", new { value = "lost" }, Cancellation);
 

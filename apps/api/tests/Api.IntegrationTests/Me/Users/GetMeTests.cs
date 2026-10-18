@@ -6,11 +6,11 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Me.Users;
 
-// GET /v1/me: the signed-in user, as the catalog knows them. A person becomes a catalog user only through an invitation or as the
-// first system admin, so a signed-in person the catalog does not know is not found, and the web shows "no access yet".
+// GET /v1/me: the signed-in user, as ControlPlane knows them. A person becomes a user only through an invitation or as the
+// first system admin, so a signed-in person who is not a user yet is not found, and the web shows "no access yet".
 public sealed class GetMeTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -25,15 +25,15 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Fact]
-    public async Task GetMe_AUser_ReturnsTheirCatalogIdProfileAndThatTheyAreNoSystemAdmin()
+    public async Task GetMe_AUser_ReturnsTheirUserIdProfileAndThatTheyAreNoSystemAdmin()
     {
-        var user = await _catalog.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace");
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        Me(me).ShouldBe((await _catalog.UserIdOfAsync(user), "ada@example.com", "Ada", "Lovelace", false));
+        Me(me).ShouldBe((await _testData.UserIdOfAsync(user), "ada@example.com", "Ada", "Lovelace", false));
         me.EnumerateObject().Select(field => field.Name).ShouldBe(
             ["id", "email", "firstName", "lastName", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
     }
@@ -45,7 +45,7 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [InlineData("tr", null, "tr", null)]
     public async Task GetMe_AUser_AnswersTheirLanguageAndTimeZone(string? language, string? timeZone, string answeredLanguage, string? answeredTimeZone)
     {
-        var user = await _catalog.AddUserAsync(language: language, timeZone: timeZone);
+        var user = await _testData.AddUserAsync(language: language, timeZone: timeZone);
 
         var me = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
 
@@ -56,15 +56,15 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMe_ASystemAdmin_SaysTheyAreOne()
     {
-        var admin = await _catalog.AddSystemAdminAsync(email: "grace@example.com");
+        var admin = await _testData.AddSystemAdminAsync(email: "grace@example.com");
 
         var me = await _api.CreateClient(admin).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
 
-        Me(me).ShouldBe((await _catalog.UserIdOfAsync(admin), "grace@example.com", null, null, true));
+        Me(me).ShouldBe((await _testData.UserIdOfAsync(admin), "grace@example.com", null, null, true));
     }
 
     [Fact]
-    public async Task GetMe_ASignedInPersonTheCatalogDoesNotKnow_IsNotFound()
+    public async Task GetMe_ASignedInPersonWhoIsNotAUserYet_IsNotFound()
     {
         var response = await _api.CreateClient($"user_{Guid.NewGuid():N}").GetAsync("/v1/me", Cancellation);
 
@@ -75,8 +75,8 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMe_ASuspendedUser_IsForbiddenAndToldWhy()
     {
-        var user = await _catalog.AddUserAsync(email: "sus@example.com");
-        await _catalog.SuspendUserAsync(user);
+        var user = await _testData.AddUserAsync(email: "sus@example.com");
+        await _testData.SuspendUserAsync(user);
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me", Cancellation);
 

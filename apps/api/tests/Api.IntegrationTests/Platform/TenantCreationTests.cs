@@ -19,7 +19,7 @@ namespace Api.IntegrationTests.Platform;
 // service are fakes.
 public sealed class TenantCreationTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -42,7 +42,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task FailForGood_AStepOfTheTenantCreation_TheFaultCarriesItsTenantAndSagaId()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var slug = Slug();
         await database.RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
 
@@ -60,7 +60,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SendInvitation_TheEventArrivesTwice_SendsOneEmail()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var owner = Email();
         var created = await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), owner));
         var tenantId = await IdOfAsync(created);

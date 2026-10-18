@@ -13,7 +13,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
 {
     private const string Reason = "Unpaid invoices";
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -36,7 +36,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     [InlineData("Suspended", "reactivate", "Active", "active")]
     public async Task SuspendOrReactivateTenant_ActiveOrSuspended_AnswersTheTenantInItsNewStatus(string status, string action, string stored, string answered)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/{action}", new { reason = Reason }, Cancellation);
 
@@ -46,7 +46,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
         body.GetProperty("id").GetGuid().ShouldBe(tenant.Id);
         body.GetProperty("slug").GetString().ShouldBe(tenant.Slug);
         body.GetProperty("status").GetString().ShouldBe(answered);
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(stored);
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(stored);
     }
 
     // A tenant whose creation has not passed its pivot, or never will, is neither suspended nor reactivated, and a closed one comes back
@@ -60,13 +60,13 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     [InlineData("Closed", "reactivate")]
     public async Task SuspendOrReactivateTenant_ProvisioningCancelledOrClosed_IsAConflictAndChangesNothing(string status, string action)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/{action}", new { reason = Reason }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_active");
-        (await _catalog.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
     }
 
     [Theory]
@@ -84,14 +84,14 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendAndReactivateTenant_EachChange_IsRecordedOnceInBothLogs()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddSystemAdminAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var client = _api.CreateClient(admin, secondFactor: true);
 
         await _api.WaitingForMessagesAsync(() => client.SuspendTenantAsync(tenant.Id));
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation));
 
-        var adminId = await _catalog.UserIdOfAsync(admin);
+        var adminId = await _testData.UserIdOfAsync(admin);
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe(
             $"tenant.suspended|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd, tenant.reactivated|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe(
@@ -101,7 +101,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReactivateTenant_AlreadyActive_IsNotRecorded()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation));
 
@@ -112,7 +112,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReactivateTenant_Suspended_ForgetsTheReason()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var admin = await SystemAdminAsync();
         await admin.SuspendTenantAsync(tenant.Id);
 
@@ -128,7 +128,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(

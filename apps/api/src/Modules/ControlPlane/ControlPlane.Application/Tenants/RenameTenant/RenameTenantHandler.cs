@@ -4,8 +4,7 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Tenants.RenameTenant;
 
-// The command sets a state (I1): the name the tenant has answers as it is, and nothing is announced. Every rejection returns before the
-// handler changes anything, because Wolverine commits a failed Result too (W7).
+// The command sets a state (I1): the name the tenant has answers as it is, and nothing is announced. Rejections come first (W7).
 public static class RenameTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantRenamedEvent?)> HandleAsync(
@@ -28,7 +27,7 @@ public static class RenameTenantHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

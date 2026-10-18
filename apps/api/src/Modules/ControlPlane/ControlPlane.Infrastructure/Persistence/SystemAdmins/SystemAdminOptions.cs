@@ -15,8 +15,8 @@ internal sealed class SystemAdminOptions
 
     public bool NamesTheFirstSystemAdmin => !string.IsNullOrWhiteSpace(FirstSystemAdminEmail);
 
-    // Section 6: the setting is required while the system admin list is empty, so the check reads the catalog; once the first system admin
-    // exists the setting has no effect. A host without a database connection has no catalog to read: it does not start, and the
+    // Section 6: the setting is required while the system admin list is empty, so the check reads the database; once the first system admin
+    // exists the setting has no effect. A host without a database connection has no database to read: it does not start, and the
     // connection's own check names the missing setting (section 7).
     public sealed class Validation(IServiceScopeFactory scopes) : IValidateOptions<SystemAdminOptions>
     {

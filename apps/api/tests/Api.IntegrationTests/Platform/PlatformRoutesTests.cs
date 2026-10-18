@@ -6,7 +6,7 @@ namespace Api.IntegrationTests.Platform;
 [RuntimeHandlerCode]
 public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private PipelineHost _host = null!;
 
@@ -19,7 +19,7 @@ public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterSystemDoor_SystemAdminWithASecondFactor_IsLetIn()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
 
         var response = await _host.CreateClient(admin, secondFactor: true).GetAsync("/v1/platform/ping", Cancellation);
 
@@ -29,7 +29,7 @@ public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterSystemDoor_SystemAdminWithoutASecondFactor_IsForbidden()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
 
         var response = await _host.CreateClient(admin).GetAsync("/v1/platform/ping", Cancellation);
 
@@ -41,7 +41,7 @@ public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterSystemDoor_SecondFactorClaimedByTheTokenItself_IsForbidden()
     {
-        var admin = await _catalog.AddSystemAdminAsync();
+        var admin = await _testData.AddSystemAdminAsync();
         var token = TestTokens.For(admin, secondFactor: false, extraClaims: new Dictionary<string, object> { ["second_factor_verified"] = "true" });
 
         var response = await _host.CreateClientWith(token).GetAsync("/v1/platform/ping", Cancellation);
@@ -52,8 +52,8 @@ public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterSystemDoor_UserNotASystemAdmin_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var response = await _host.CreateClient(owner, secondFactor: true).GetAsync("/v1/platform/ping", Cancellation);
 

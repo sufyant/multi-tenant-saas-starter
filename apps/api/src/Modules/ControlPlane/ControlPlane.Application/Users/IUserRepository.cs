@@ -7,25 +7,25 @@ namespace ControlPlane.Application.Users;
 /// actor here, and a user command declares no tenant; it declares the user only to read the user's own memberships (R11). A method is
 /// here when a command needs it to decide.
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code passes it to public handlers.</remarks>
+/// <remarks>Public because a public handler takes it (W9).</remarks>
 public interface IUserRepository
 {
     internal Task<User?> FindUserAsync(string externalUserId, CancellationToken cancellationToken);
 
     internal Task<User?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 
-    /// <summary>The catalog id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
+    /// <summary>The id of the user with this identity provider id, without a lock: the system admin who acts.</summary>
     internal Task<Guid?> FindUserIdAsync(string externalUserId, CancellationToken cancellationToken);
 
     /// <summary>The user with this identity provider id, locked for the rest of the transaction, so two events change it one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>The user with this catalog id, locked for the rest of the transaction, so two changes of their state run one at a time.</summary>
+    /// <summary>The user with this id, locked for the rest of the transaction, so two changes of their state run one at a time.</summary>
     internal Task<User?> FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// The user with this identity provider id, locked for the rest of the transaction with the lock of an update that keeps the key: a
-    /// deletion, which locks the user row for update, runs before or after, never between a check of the user and the change (K6, A8).
+    /// deletion, which locks the user row for update, runs before or after, never between a check of the user and the change (K6f, A8).
     /// The lock does not block a read, nor an insert of a row that references the user.
     /// </summary>
     internal Task<User?> FindUserForNoKeyUpdateAsync(string externalUserId, CancellationToken cancellationToken);

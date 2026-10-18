@@ -14,7 +14,7 @@ namespace Api.IntegrationTests.Me.Invitations;
 // People join a tenant only through an invitation.
 public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -24,7 +24,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
+    private SignUpInvitations SignUps => new(_api, _testData, database);
 
     public ValueTask InitializeAsync()
     {
@@ -56,7 +56,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
             """)).ShouldBe(1);
     }
 
-    // K3: the new member acted, and the record names only their catalog user id.
+    // K3: the new member acted, and the record names only their user id.
     [Fact]
     public async Task AcceptInvitation_InvitedPerson_IsRecordedInTheTenantLogAsJoined()
     {
@@ -65,12 +65,12 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => AcceptAsync(invitee, code));
 
         var tenantId = await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'");
-        var userId = await _catalog.UserIdOfAsync(invitee);
+        var userId = await _testData.UserIdOfAsync(invitee);
         (await _audit.TenantLogAsync(userId)).ShouldBe($"{tenantId}:member.joined|User|{userId}|User|{userId}|-");
         (await _audit.PlatformLogAsync(userId)).ShouldBeNull();
     }
 
-    // K6: accepting changes the tenant aggregate, a membership and an invitation, so it locks the tenant row first. A suspension that
+    // K6h: accepting changes the tenant aggregate, a membership and an invitation, so it locks the tenant row first. A suspension that
     // holds the row makes the acceptance wait, and the acceptance then finds the tenant suspended.
     [Fact]
     public async Task AcceptInvitation_WhileASuspensionHoldsTheTenant_WaitsAndIsThenAConflict()
@@ -92,13 +92,13 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await MembersAsync(slug)).ShouldBe(0);
     }
 
-    // A8, K6: a system admin's deletion holds the user's row while the user accepts an invitation, which passed the door before the
+    // A8, K6f: a system admin's deletion holds the user's row while the user accepts an invitation, which passed the door before the
     // deletion. The acceptance waits for the row, finds the user deleted, and adds no membership: a deleted user is never a member.
     [Fact]
     public async Task AcceptInvitation_WhileADeletionHoldsTheUser_WaitsAndIsRefused()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace");
+        var known = await _testData.AddUserAsync(email: email, firstName: "Grace");
         _api.Identity.AddAccount(known, email);
         var slug = await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
         await using var deletion = new NpgsqlConnection(database.SuperuserConnectionString);
@@ -118,7 +118,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await MembersAsync(slug)).ShouldBe(0);
     }
 
-    // K6, R13: one known user accepts invitations of two tenants at once. Each acceptance counts the membership on the user's row, so each
+    // K6f, R13: one known user accepts invitations of two tenants at once. Each acceptance counts the membership on the user's row, so each
     // takes the row's update lock first, and they run one after the other. With a share lock, both would hold the row and then both wait
     // to update it: a deadlock, and one acceptance would fail. A holder keeps the row until both acceptances wait behind it.
     [Fact]
@@ -126,12 +126,12 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     {
         var email = $"{Guid.NewGuid():N}@example.com";
         var (firstSecret, secondSecret) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
-        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace");
+        var known = await _testData.AddUserAsync(email: email, firstName: "Grace");
         _api.Identity.AddAccount(known, email);
-        var first = await _catalog.AddTenantAsync();
-        var second = await _catalog.AddTenantAsync();
-        await _catalog.AddInvitationAsync(first.Id, email, secret: firstSecret);
-        await _catalog.AddInvitationAsync(second.Id, email, secret: secondSecret);
+        var first = await _testData.AddTenantAsync();
+        var second = await _testData.AddTenantAsync();
+        await _testData.AddInvitationAsync(first.Id, email, secret: firstSecret);
+        await _testData.AddInvitationAsync(second.Id, email, secret: secondSecret);
         await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
         await holder.OpenAsync(Cancellation);
         await using var holding = await holder.BeginTransactionAsync(Cancellation);
@@ -139,18 +139,18 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         await hold.ExecuteScalarAsync(Cancellation);
 
         var accepting = Task.WhenAll(
-            AcceptAsync(known, Catalog.InvitationCodeOf(first.Id, firstSecret)),
-            AcceptAsync(known, Catalog.InvitationCodeOf(second.Id, secondSecret)));
+            AcceptAsync(known, TestData.InvitationCodeOf(first.Id, firstSecret)),
+            AcceptAsync(known, TestData.InvitationCodeOf(second.Id, secondSecret)));
         await Waiting.UntilAsync(async () => accepting.IsCompleted || await WaitingBehindAsync(holder.ProcessID) == 2);
         await holding.CommitAsync(Cancellation);
         var accepted = await accepting;
 
         accepted.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
-        (await _catalog.StoredMembershipCountOfAsync(known)).ShouldBe(2);
-        (await _catalog.CountedMembershipsOfAsync(known)).ShouldBe(2);
+        (await _testData.StoredMembershipCountOfAsync(known)).ShouldBe(2);
+        (await _testData.CountedMembershipsOfAsync(known)).ShouldBe(2);
     }
 
-    // A7: a new catalog user gets the invited address, which the identity provider verified, and the names the person typed, without the
+    // A7: a new user gets the invited address, which the identity provider verified, and the names the person typed, without the
     // spaces around them. The identity provider keeps no name.
     [Fact]
     public async Task AcceptInvitation_NewUser_StoresTheInvitedAddressAndTheTypedNames()
@@ -164,7 +164,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
             "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = " Ada ", lastName = "Lovelace  " }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false));
+        (await _testData.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false));
     }
 
     // Decision 6 of step 20j: a new user starts with the language of the invitation they accept, and with no time zone.
@@ -180,25 +180,25 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
             "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false, "tr", null));
+        (await _testData.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false, "tr", null));
     }
 
-    // A user the catalog knows keeps the language and the time zone they chose.
+    // A known user keeps the language and the time zone they chose.
     [Fact]
     public async Task AcceptInvitation_KnownUser_KeepsTheirLanguageAndTimeZone()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper", language: "ar", timeZone: "Asia/Dubai");
+        var known = await _testData.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper", language: "ar", timeZone: "Asia/Dubai");
         _api.Identity.AddAccount(known, email);
         await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email, language: "tr"));
 
         var accepted = await _api.CreateClient(known).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false, "ar", "Asia/Dubai"));
+        (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false, "ar", "Asia/Dubai"));
     }
 
-    // A person the catalog does not know gives both names; a missing one is a field that failed validation (K5). The invitation stays
+    // A person who is not a user yet gives both names; a missing one is a field that failed validation (K5). The invitation stays
     // pending, and no user is written.
     [Fact]
     public async Task AcceptInvitation_NewUserWithoutNames_IsABadRequestThatNamesEachMissingField()
@@ -212,7 +212,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
         problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
         problem.GetProperty("errors").GetProperty("lastName").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
     }
 
     [Theory]
@@ -228,22 +228,22 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe([fieldCode]);
-        (await _catalog.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
+        (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
     }
 
-    // A user the catalog knows keeps their names: they need none to join another tenant.
+    // A known user keeps their names: they need none to join another tenant.
     [Fact]
     public async Task AcceptInvitation_KnownUserWithoutNames_JoinsAndKeepsTheirNames()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var known = await _catalog.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper");
+        var known = await _testData.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper");
         _api.Identity.AddAccount(known, email);
         await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
 
         var accepted = await _api.CreateClient(known).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false));
+        (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false));
     }
 
     // API4: accepting an invitation has a stricter limit of its own, ten in a minute by default, on top of the general one; the
@@ -276,7 +276,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         var refused = await AcceptAsync(invitee, code);
         var pendingAfterTheRefusal = await InvitationStatusAsync(slug);
         var membersAfterTheRefusal = await MembersAsync(slug);
-        (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true)
+        (await _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
             .PostAsync($"/v1/platform/tenants/{TenantIdOf(code)}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
         var accepted = await AcceptAsync(invitee, code);
 
@@ -336,7 +336,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_ASystemAdmin_IsRefusedAndJoinsNothing()
     {
-        var systemAdmin = await _catalog.AddSystemAdminAsync();
+        var systemAdmin = await _testData.AddSystemAdminAsync();
         var email = $"{Guid.NewGuid():N}@example.com";
         _api.Identity.AddAccount(systemAdmin, email);
         var slug = await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
@@ -413,7 +413,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_UnknownCode_IsNotFound()
     {
-        var (tenantId, _) = await _catalog.AddTenantAsync();
+        var (tenantId, _) = await _testData.AddTenantAsync();
 
         var accepted = await AcceptAsync($"user_{Guid.NewGuid():N}", $"{tenantId}.no-such-secret");
 
@@ -440,7 +440,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_TheSecretWithAnotherTenantsId_IsNotFound()
     {
         var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
-        var (otherTenantId, _) = await _catalog.AddTenantAsync();
+        var (otherTenantId, _) = await _testData.AddTenantAsync();
 
         var accepted = await AcceptAsync(invitee, $"{otherTenantId}.{SecretOf(code)}");
 
@@ -536,8 +536,8 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_AfterTheTenantClosed_IsNotFoundAndStaysSoAfterAReopening()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var admin = await SystemAdminAsync();
         var invitee = $"user_{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.com";
@@ -558,8 +558,8 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_AfterItWasRevoked_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var invitee = $"user_{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.com";
         _api.Identity.AddAccount(invitee, email);
@@ -602,7 +602,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     private async Task<string> CreateTenantWithOwnerAsync(string ownerEmail, string language = "en")
     {
         var slug = $"tenant-{Guid.NewGuid():N}"[..20];
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         (await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail, language })).EnsureSuccessStatusCode();
 
         return slug;
@@ -637,7 +637,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<HttpResponseMessage> RevokeAsync(string userId, Guid tenantId, Guid invitationId) =>
         _api.CreateClient(userId).DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitationId}", Cancellation);

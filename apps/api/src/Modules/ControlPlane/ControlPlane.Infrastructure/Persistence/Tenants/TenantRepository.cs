@@ -9,7 +9,7 @@ namespace ControlPlane.Infrastructure.Persistence.Tenants;
 /// The tenant aggregate for the commands, inside the active tenant, which is the tenant of the message the handler serves (W2). Row
 /// level security keeps one tenant's memberships and invitations from another; this repository adds no filter of its own.
 /// </summary>
-/// <remarks>Public only so that Wolverine's generated code can build it on the handler's own DbContext (W1, W9).</remarks>
+/// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITenantRepository
 {
     Guid ITenantRepository.TenantId => controlPlane.ActiveTenant;
@@ -27,13 +27,13 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
     // which is the only time the summary keeps it.
-    async Task<TenantRows> ITenantRepository.ReadRowsAsync(CancellationToken cancellationToken)
+    async Task<TenantSummary> ITenantRepository.ReadSummaryAsync(CancellationToken cancellationToken)
     {
         await controlPlane.SaveChangesAsync(cancellationToken);
         var owners = Memberships.Where(membership => membership.RoleId == BuiltInRoles.Owner.Id);
         var ownerCount = await owners.CountAsync(cancellationToken);
 
-        return new TenantRows(
+        return new TenantSummary(
             await Memberships.CountAsync(cancellationToken),
             ownerCount,
             await owners.OrderBy(owner => owner.JoinedAt).ThenBy(owner => owner.UserId).Select(owner => (Guid?)owner.UserId).FirstOrDefaultAsync(cancellationToken),
@@ -135,13 +135,13 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
-    // The rows are read after the change is saved, so the summary counts it, and the count is changed in the database after the save, so
+    // The summary is read after the change is saved, so it counts the change, and the count is changed in the database after the save, so
     // a user the transaction adds has its row. The database adds the change to the stored count, so the statement reads and writes the
     // row under its own lock: two transactions of two tenants that count for one user run one after the other, and neither loses the
     // other's change.
     private async Task FollowMembershipAsync(Tenant tenant, Guid userId, int change, CancellationToken cancellationToken)
     {
-        OfActiveTenant(tenant, tenant.Id).Summarize(await ((ITenantRepository)this).ReadRowsAsync(cancellationToken));
+        OfActiveTenant(tenant, tenant.Id).Summarize(await ((ITenantRepository)this).ReadSummaryAsync(cancellationToken));
         await controlPlane.SaveChangesAsync(cancellationToken);
         await controlPlane.Database.ExecuteSqlAsync(
             $"UPDATE control_plane.users SET membership_count = membership_count + {change} WHERE id = {userId}",

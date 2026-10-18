@@ -15,12 +15,12 @@ internal static class InTenant
     public static async Task<T> RunAsync<T>(IServiceProvider services, Guid? tenantId, Func<IServiceProvider, Task<T>> handler)
     {
         await using var scope = services.CreateAsyncScope();
-        var catalog = Catalog(scope, tenantId);
-        await using var transaction = await catalog.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+        var controlPlane = ControlPlane(scope, tenantId);
+        await using var transaction = await controlPlane.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
 
         var returned = await handler(scope.ServiceProvider);
 
-        await catalog.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
         await transaction.CommitAsync(TestContext.Current.CancellationToken);
         return returned;
     }
@@ -35,13 +35,13 @@ internal static class InTenant
     public static async Task<T> ReadAsync<T>(IServiceProvider services, Guid? tenantId, Func<IServiceProvider, Task<T>> read)
     {
         await using var scope = services.CreateAsyncScope();
-        await using var transaction = await Catalog(scope, tenantId).Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+        await using var transaction = await ControlPlane(scope, tenantId).Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
 
         return await read(scope.ServiceProvider);
     }
 
     // The scope's message carries the tenant, the way Wolverine hands the message context to the DbContext it creates.
-    public static ControlPlaneDbContext Catalog(AsyncServiceScope scope, Guid? tenantId)
+    public static ControlPlaneDbContext ControlPlane(AsyncServiceScope scope, Guid? tenantId)
     {
         scope.ServiceProvider.GetRequiredService<IMessageContext>().TenantId = tenantId?.ToString();
         return scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>();

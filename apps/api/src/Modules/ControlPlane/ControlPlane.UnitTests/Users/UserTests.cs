@@ -44,7 +44,7 @@ public sealed class UserTests
         user.SuspendedBy.ShouldBeNull();
     }
 
-    // A person who joins through an invitation is created at that moment. The catalog adds and counts the membership of the tenant they
+    // A person who joins through an invitation is created at that moment. ControlPlane adds and counts the membership of the tenant they
     // join, as it does for a known user (B8), so a new user starts with none.
     [Fact]
     public void JoinUser_NewPerson_IsCreatedAtTheMomentWithNoMembershipYet()

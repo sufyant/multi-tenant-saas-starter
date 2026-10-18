@@ -108,7 +108,7 @@ public sealed class Database : IAsyncLifetime
         return value is null or DBNull ? default : (T)value;
     }
 
-    // Runs the SQL as the application role in a transaction that declares a catalog user first (R11).
+    // Runs the SQL as the application role in a transaction that declares a user first (R11).
     public async Task<T?> ScalarAsUserAsync<T>(Guid userId, string sql)
     {
         await using var connection = new NpgsqlConnection(ApplicationConnectionString);

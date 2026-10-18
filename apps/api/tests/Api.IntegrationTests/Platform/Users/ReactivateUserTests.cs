@@ -6,11 +6,11 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Users;
 
-// POST /v1/platform/users/{userId}/reactivate: a system admin reactivates a suspended catalog user through the system door. The
+// POST /v1/platform/users/{userId}/reactivate: a system admin reactivates a suspended user through the system door. The
 // identity provider is not told. A test of both a suspension and a reactivation sits here, with the use case it checks last (N9).
 public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -23,9 +23,9 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendAndReactivateUser_EachChange_IsRecordedOnceInThePlatformLogByTheAdmin()
     {
-        var user = await _catalog.AddUserAsync();
-        var id = await _catalog.UserIdOfAsync(user);
-        var admin = await _catalog.AddSystemAdminAsync();
+        var user = await _testData.AddUserAsync();
+        var id = await _testData.UserIdOfAsync(user);
+        var admin = await _testData.AddSystemAdminAsync();
         var client = _api.CreateClient(admin, secondFactor: true);
 
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
@@ -33,7 +33,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
 
-        var adminId = await _catalog.UserIdOfAsync(admin);
+        var adminId = await _testData.UserIdOfAsync(admin);
         (await _audit.PlatformLogAsync(id)).ShouldBe($"user.suspended|User|{adminId}|User|{id}|-, user.reactivated|User|{adminId}|User|{id}|-");
         (await _audit.TenantLogAsync(id)).ShouldBeNull();
     }
@@ -42,10 +42,10 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     public async Task ReactivateUser_SuspendedUser_IsActiveAgain()
     {
         var created = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
-        var user = await _catalog.AddUserAsync(createdAt: created);
-        await _catalog.SuspendUserAsync(user);
+        var user = await _testData.AddUserAsync(createdAt: created);
+        await _testData.SuspendUserAsync(user);
 
-        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -57,9 +57,9 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReactivateUser_ActiveUser_AnswersTheUserUnchanged()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
-        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _catalog.UserIdOfAsync(user)}/reactivate", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(user)}/reactivate", null, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
@@ -88,7 +88,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<DateTime?> SuspendedAtAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<DateTime?>($"SELECT suspended_at FROM control_plane.users WHERE external_id = '{externalId}'");

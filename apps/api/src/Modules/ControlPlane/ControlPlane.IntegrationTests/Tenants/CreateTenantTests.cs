@@ -27,7 +27,7 @@ public sealed class CreateTenantTests(Database database)
     [Fact]
     public async Task CreateTenant_NewTenant_WritesTheTenantTheOwnersInvitationAndTheSaga()
     {
-        var admin = await Catalog.AddUserAsync(database.Services);
+        var admin = await TestData.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
         var slug = Unique.Slug();
         var owner = Unique.Email();
@@ -54,11 +54,11 @@ public sealed class CreateTenantTests(Database database)
             """)).ShouldBe(1);
     }
 
-    // The secret is born with the invitation and travels only in the accept link; the catalog keeps its SHA-256 hash.
+    // The secret is born with the invitation and travels only in the accept link; ControlPlane keeps its SHA-256 hash.
     [Fact]
     public async Task CreateTenant_NewTenant_StoresOnlyTheHashOfTheSecretTheAcceptLinkCarries()
     {
-        var admin = await Catalog.AddUserAsync(database.Services);
+        var admin = await TestData.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
 
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
@@ -71,7 +71,7 @@ public sealed class CreateTenantTests(Database database)
     [Fact]
     public async Task CreateTenant_NewTenant_SendsTheActivationWithTheSagaId()
     {
-        var admin = await Catalog.AddUserAsync(database.Services);
+        var admin = await TestData.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
 
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
@@ -82,8 +82,8 @@ public sealed class CreateTenantTests(Database database)
     [Fact]
     public async Task CreateTenant_SlugTaken_IsRefusedAndStartsNothing()
     {
-        var admin = await Catalog.AddUserAsync(database.Services);
-        var existing = await Catalog.AddTenantAsync(database.Services);
+        var admin = await TestData.AddUserAsync(database.Services);
+        var existing = await TestData.AddTenantAsync(database.Services);
 
         var started = await Handlers.CreateTenantAsync(database.Services, Guid.CreateVersion7(), admin.ExternalId, existing.Slug, Unique.Email());
 
@@ -97,7 +97,7 @@ public sealed class CreateTenantTests(Database database)
     [Fact]
     public async Task CreateTenant_TwoWithOneSlugAtOnce_CreatesOneTenantAndRefusesTheOther()
     {
-        var admin = await Catalog.AddUserAsync(database.Services);
+        var admin = await TestData.AddUserAsync(database.Services);
         var slug = Unique.Slug();
         await using var firstScope = database.Services.CreateAsyncScope();
         await using var secondScope = database.Services.CreateAsyncScope();
@@ -118,9 +118,9 @@ public sealed class CreateTenantTests(Database database)
     // The transaction Wolverine would begin for the tenant creation, and the database session it runs in.
     private static async Task<(IDbContextTransaction Transaction, int ProcessId)> BeginAsync(AsyncServiceScope scope, Guid tenantId)
     {
-        var catalog = InTenant.Catalog(scope, tenantId);
-        var transaction = await catalog.Database.BeginTransactionAsync(Cancellation);
-        return (transaction, ((NpgsqlConnection)catalog.Database.GetDbConnection()).ProcessID);
+        var controlPlane = InTenant.ControlPlane(scope, tenantId);
+        var transaction = await controlPlane.Database.BeginTransactionAsync(Cancellation);
+        return (transaction, ((NpgsqlConnection)controlPlane.Database.GetDbConnection()).ProcessID);
     }
 
     private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string actorId, string slug) =>

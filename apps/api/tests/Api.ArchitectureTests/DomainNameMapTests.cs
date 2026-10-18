@@ -6,7 +6,7 @@ using ControlPlane.Api.Platform.Users;
 
 namespace Api.ArchitectureTests;
 
-// A14 and B9: a Domain status crosses to a module's Api as its name, and the Api maps the name to the enum of a response (N7). A new
+// N7r: a Domain status crosses to a module's Api as its name, and the Api maps the name to the enum of a response. A new
 // Domain value compiles and then answers 500, so this test feeds every name of each Domain enum through each map. The Domain enums and
 // the ResponseStatus of each module's Api are internal to their modules, so this system-wide test reads them by reflection, as RoleNameTests does.
 public sealed class DomainNameMapTests
@@ -19,7 +19,7 @@ public sealed class DomainNameMapTests
 
     public static TheoryData<string> TenantStatuses => [.. TenantStatusNames];
 
-    // A pending invitation and an Owner invitation both answer the one invitation state (N7).
+    // A pending invitation and an Owner invitation both answer the one invitation state (N7o).
     public static TheoryData<string> InvitationStates =>
     [
         .. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.InvitationState"),
@@ -27,6 +27,8 @@ public sealed class DomainNameMapTests
     ];
 
     public static TheoryData<string> UserStatuses => [.. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Users.UserStatus")];
+
+    public static TheoryData<string> InviterKinds => [.. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.InviterKind")];
 
     public static TheoryData<TenantResponseStatus> TenantFilters => [.. Enum.GetValues<TenantResponseStatus>()];
 
@@ -72,6 +74,13 @@ public sealed class DomainNameMapTests
     public void MapAUserStatus_EveryDomainStatus_HasAResponseStatus(string status)
     {
         Map("OfUser", status).ShouldNotBeNull();
+    }
+
+    [Theory]
+    [MemberData(nameof(InviterKinds))]
+    public void MapAnInviter_EveryDomainKind_HasAResponseKind(string kind)
+    {
+        Map("OfInviter", kind).ShouldNotBeNull();
     }
 
     // A list filter names a response status; the query reads the Domain status of that name.

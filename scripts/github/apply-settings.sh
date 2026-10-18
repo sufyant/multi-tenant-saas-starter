@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Applies and checks the GitHub settings in docs/github-settings.md.
 # It uses only `gh api` and the user's own `gh auth login` session.
+#
+# Inputs: owner/repo (optional; else the repository of the current folder) and --check (optional).
+# Exit codes: 0 when every setting is applied and checked OK; 1 when a check is DIFF or FAIL; 2 for a
+# wrong argument or repository name; the exit code of gh when a call fails.
 set -euo pipefail
 
 usage() {

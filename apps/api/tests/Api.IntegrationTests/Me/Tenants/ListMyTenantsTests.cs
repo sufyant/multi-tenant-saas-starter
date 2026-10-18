@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Me.Tenants;
 // memberships.
 public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -27,12 +27,12 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMyTenants_MemberOfTwoTenants_ReturnsThoseTwoByName()
     {
-        var beta = await _catalog.AddTenantAsync(name: "Beta Ltd");
-        var alpha = await _catalog.AddTenantAsync(name: "Alpha Ltd");
-        var user = await _catalog.AddMemberAsync(beta.Id);
-        await _catalog.AddMemberAsync(alpha.Id, user, role: "Owner");
-        var notMine = await _catalog.AddTenantAsync(name: "Aardvark Ltd");
-        await _catalog.AddMemberAsync(notMine.Id);
+        var beta = await _testData.AddTenantAsync(name: "Beta Ltd");
+        var alpha = await _testData.AddTenantAsync(name: "Alpha Ltd");
+        var user = await _testData.AddMemberAsync(beta.Id);
+        await _testData.AddMemberAsync(alpha.Id, user, role: "Owner");
+        var notMine = await _testData.AddTenantAsync(name: "Aardvark Ltd");
+        await _testData.AddMemberAsync(notMine.Id);
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me/tenants", Cancellation);
 
@@ -49,12 +49,12 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMyTenants_MemberOfThreeTenantsInThreeRoles_ReturnsTheRoleInEach()
     {
-        var owned = await _catalog.AddTenantAsync(name: "Alpha Ltd");
-        var administered = await _catalog.AddTenantAsync(name: "Bravo Ltd");
-        var joined = await _catalog.AddTenantAsync(name: "Charlie Ltd");
-        var user = await _catalog.AddMemberAsync(owned.Id, role: "Owner");
-        await _catalog.AddMemberAsync(administered.Id, user, role: "Admin");
-        await _catalog.AddMemberAsync(joined.Id, user, role: "Member");
+        var owned = await _testData.AddTenantAsync(name: "Alpha Ltd");
+        var administered = await _testData.AddTenantAsync(name: "Bravo Ltd");
+        var joined = await _testData.AddTenantAsync(name: "Charlie Ltd");
+        var user = await _testData.AddMemberAsync(owned.Id, role: "Owner");
+        await _testData.AddMemberAsync(administered.Id, user, role: "Admin");
+        await _testData.AddMemberAsync(joined.Id, user, role: "Member");
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
@@ -69,9 +69,9 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     {
         using var commands = new SqlCommands();
         var user = await MemberOfAsync(
-            await _catalog.AddTenantAsync(name: "Alpha Ltd"),
-            await _catalog.AddTenantAsync(name: "Bravo Ltd"),
-            await _catalog.AddTenantAsync(name: "Charlie Ltd"));
+            await _testData.AddTenantAsync(name: "Alpha Ltd"),
+            await _testData.AddTenantAsync(name: "Bravo Ltd"),
+            await _testData.AddTenantAsync(name: "Charlie Ltd"));
 
         var one = await commands.CountAsync(() => _api.CreateClient(user), client => client.GetAsync("/v1/me/tenants?pageSize=1", Cancellation));
         var three = await commands.CountAsync(() => _api.CreateClient(user), client => client.GetAsync("/v1/me/tenants?pageSize=3", Cancellation));
@@ -84,10 +84,10 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     public async Task ListMyTenants_TwoTenantsOfTheSameName_AreOrderedById()
     {
         var random = Guid.NewGuid().ToString();
-        var later = await _catalog.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
-        var earlier = await _catalog.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
-        var user = await _catalog.AddMemberAsync(later.Id);
-        await _catalog.AddMemberAsync(earlier.Id, user);
+        var later = await _testData.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
+        var earlier = await _testData.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
+        var user = await _testData.AddMemberAsync(later.Id);
+        await _testData.AddMemberAsync(earlier.Id, user);
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
@@ -99,10 +99,10 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [InlineData("Cancelled")]
     public async Task ListMyTenants_ATenantProvisioningOrCancelled_IsNotListed(string status)
     {
-        var active = await _catalog.AddTenantAsync(name: "Active Ltd");
-        var hidden = await _catalog.AddTenantAsync(status: status, name: "Hidden Ltd");
-        var user = await _catalog.AddMemberAsync(active.Id);
-        await _catalog.AddMemberAsync(hidden.Id, user);
+        var active = await _testData.AddTenantAsync(name: "Active Ltd");
+        var hidden = await _testData.AddTenantAsync(status: status, name: "Hidden Ltd");
+        var user = await _testData.AddMemberAsync(active.Id);
+        await _testData.AddMemberAsync(hidden.Id, user);
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
@@ -114,10 +114,10 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMyTenants_ASuspendedTenant_IsListedWithItsStatus()
     {
-        var active = await _catalog.AddTenantAsync(name: "Active Ltd");
-        var suspended = await _catalog.AddTenantAsync(status: "Suspended", name: "Suspended Ltd");
-        var user = await _catalog.AddMemberAsync(active.Id);
-        await _catalog.AddMemberAsync(suspended.Id, user);
+        var active = await _testData.AddTenantAsync(name: "Active Ltd");
+        var suspended = await _testData.AddTenantAsync(status: "Suspended", name: "Suspended Ltd");
+        var user = await _testData.AddMemberAsync(active.Id);
+        await _testData.AddMemberAsync(suspended.Id, user);
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
@@ -127,9 +127,9 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(2);
     }
 
-    // Someone signed in with the identity provider who has never joined a tenant has no catalog user yet.
+    // Someone signed in with the identity provider who has never joined a tenant is not a user yet.
     [Fact]
-    public async Task ListMyTenants_WithoutACatalogUser_ReturnsAnEmptyList()
+    public async Task ListMyTenants_ASignedInPersonWhoIsNotAUserYet_ReturnsAnEmptyList()
     {
         var response = await _api.CreateClient($"user_{Guid.NewGuid():N}").GetAsync("/v1/me/tenants", Cancellation);
 
@@ -150,10 +150,10 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMyTenants_ALaterPage_ReturnsTheRestAndTheTotal()
     {
-        var first = await _catalog.AddTenantAsync(name: "First Ltd");
-        var second = await _catalog.AddTenantAsync(name: "Second Ltd");
-        var user = await _catalog.AddMemberAsync(first.Id);
-        await _catalog.AddMemberAsync(second.Id, user);
+        var first = await _testData.AddTenantAsync(name: "First Ltd");
+        var second = await _testData.AddTenantAsync(name: "Second Ltd");
+        var user = await _testData.AddMemberAsync(first.Id);
+        await _testData.AddMemberAsync(second.Id, user);
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants?page=2&pageSize=1", Cancellation);
 
@@ -166,7 +166,7 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [InlineData("page=0", "paging.page_invalid")]
     public async Task ListMyTenants_PagingOutsideItsRange_IsRejected(string query, string code)
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var response = await _api.CreateClient(user).GetAsync($"/v1/me/tenants?{query}", Cancellation);
 
@@ -183,9 +183,9 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     {
         var random = Guid.NewGuid().ToString("N")[..8];
         var user = await MemberOfAsync(
-            await _catalog.AddTenantAsync(name: "Acme Global", slug: $"alpha-{random}"),
-            await _catalog.AddTenantAsync(name: "Bravo Ltd", slug: $"orbit-{random}"),
-            await _catalog.AddTenantAsync(name: "Charlie Ltd", slug: $"charlie-{random}"));
+            await _testData.AddTenantAsync(name: "Acme Global", slug: $"alpha-{random}"),
+            await _testData.AddTenantAsync(name: "Bravo Ltd", slug: $"orbit-{random}"),
+            await _testData.AddTenantAsync(name: "Charlie Ltd", slug: $"charlie-{random}"));
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/tenants?q={Uri.EscapeDataString(q)}", Cancellation);
 
@@ -200,12 +200,12 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     public async Task ListMyTenants_ASearchWithAWildcard_MatchesTheCharacterItself(string q, string found)
     {
         var user = await MemberOfAsync(
-            await _catalog.AddTenantAsync(name: "100% Ltd"),
-            await _catalog.AddTenantAsync(name: "1000 Ltd"),
-            await _catalog.AddTenantAsync(name: "a_b Ltd"),
-            await _catalog.AddTenantAsync(name: "axb Ltd"),
-            await _catalog.AddTenantAsync(name: @"c\d Ltd"),
-            await _catalog.AddTenantAsync(name: "cd Ltd"));
+            await _testData.AddTenantAsync(name: "100% Ltd"),
+            await _testData.AddTenantAsync(name: "1000 Ltd"),
+            await _testData.AddTenantAsync(name: "a_b Ltd"),
+            await _testData.AddTenantAsync(name: "axb Ltd"),
+            await _testData.AddTenantAsync(name: @"c\d Ltd"),
+            await _testData.AddTenantAsync(name: "cd Ltd"));
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/tenants?q={Uri.EscapeDataString(q)}", Cancellation);
 
@@ -218,9 +218,9 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     public async Task ListMyTenants_ASortField_OrdersByItInItsDirection(string sort, string names)
     {
         var user = await MemberOfAsync(
-            await _catalog.AddTenantAsync(name: "Bravo Ltd"),
-            await _catalog.AddTenantAsync(name: "Alpha Ltd"),
-            await _catalog.AddTenantAsync(name: "Charlie Ltd"));
+            await _testData.AddTenantAsync(name: "Bravo Ltd"),
+            await _testData.AddTenantAsync(name: "Alpha Ltd"),
+            await _testData.AddTenantAsync(name: "Charlie Ltd"));
 
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/tenants?sort={sort}", Cancellation);
 
@@ -233,8 +233,8 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     public async Task ListMyTenants_TwoTenantsWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
     {
         var random = Guid.NewGuid().ToString();
-        var later = await _catalog.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
-        var earlier = await _catalog.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
+        var later = await _testData.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
+        var earlier = await _testData.AddTenantAsync(name: "Same Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
         var client = _api.CreateClient(await MemberOfAsync(later, earlier));
 
         var first = await client.GetFromJsonAsync<JsonElement>($"/v1/me/tenants?sort={sort}&pageSize=1&page=1", Cancellation);
@@ -250,7 +250,7 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListMyTenants_AnUnknownSortOrALongSearch_IsRejected(string query, string code)
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var response = await _api.CreateClient(user).GetAsync($"/v1/me/tenants?{query}", Cancellation);
 
@@ -262,8 +262,8 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMyTenants_MemberOfAClosedTenant_ListsItAsClosed()
     {
-        var tenant = await _catalog.AddTenantAsync(name: "Closed Ltd");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync(name: "Closed Ltd");
+        var member = await _testData.AddMemberAsync(tenant.Id);
         await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
@@ -283,14 +283,14 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
     // A new user who is a member of each tenant.
     private async Task<string> MemberOfAsync(params (Guid Id, string Slug)[] tenants)
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
         foreach (var tenant in tenants)
         {
-            await _catalog.AddMemberAsync(tenant.Id, user);
+            await _testData.AddMemberAsync(tenant.Id, user);
         }
 
         return user;
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 }

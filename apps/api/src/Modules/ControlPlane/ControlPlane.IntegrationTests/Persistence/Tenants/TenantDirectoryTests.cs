@@ -11,9 +11,9 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_MemberOfAnActiveTenant_FindsTheMembership()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
-        var user = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, tenant, user);
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var user = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, tenant, user);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
@@ -23,10 +23,10 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_UserNotAMember_IsRefusedAsATenantThatDoesNotExist()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
-        var other = await Catalog.AddTenantAsync(database.Services);
-        var user = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, other, user);
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var other = await TestData.AddTenantAsync(database.Services);
+        var user = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, other, user);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
@@ -36,7 +36,7 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_UnknownTenant_IsRefusedAsATenantThatDoesNotExist()
     {
-        var user = await Catalog.AddUserAsync(database.Services);
+        var user = await TestData.AddUserAsync(database.Services);
 
         var membership = await FindMembershipAsync(Guid.CreateVersion7(), user.ExternalId);
 
@@ -46,7 +46,7 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_UnknownUser_IsRefusedAsATenantThatDoesNotExist()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services);
 
         var membership = await FindMembershipAsync(tenant.Id, Unique.ExternalId());
 
@@ -56,9 +56,9 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_MemberOfAProvisioningTenant_IsRefusedAsATenantThatDoesNotExist()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Provisioning);
-        var user = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, tenant, user);
+        var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Provisioning);
+        var user = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, tenant, user);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
@@ -68,9 +68,9 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_MemberOfASuspendedTenant_IsRefusedBecauseTheTenantIsSuspended()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Suspended);
-        var user = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, tenant, user);
+        var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Suspended);
+        var user = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, tenant, user);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
@@ -81,8 +81,8 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_StrangerToASuspendedTenant_IsRefusedAsATenantThatDoesNotExist()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Suspended);
-        var user = await Catalog.AddUserAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Suspended);
+        var user = await TestData.AddUserAsync(database.Services);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
@@ -92,9 +92,9 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_MemberOfAClosedTenant_IsRefusedBecauseTheTenantIsClosed()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Closed);
-        var user = await Catalog.AddUserAsync(database.Services);
-        await Catalog.AddMemberAsync(database.Services, tenant, user);
+        var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Closed);
+        var user = await TestData.AddUserAsync(database.Services);
+        await TestData.AddMemberAsync(database.Services, tenant, user);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 
@@ -105,8 +105,8 @@ public sealed class TenantDirectoryTests(Database database)
     [Fact]
     public async Task ResolveTenant_StrangerToAClosedTenant_IsRefusedAsATenantThatDoesNotExist()
     {
-        var tenant = await Catalog.AddTenantAsync(database.Services, TenantStatus.Closed);
-        var user = await Catalog.AddUserAsync(database.Services);
+        var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Closed);
+        var user = await TestData.AddUserAsync(database.Services);
 
         var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
 

@@ -6,10 +6,9 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Invitations.RevokeInvitation;
 
-// The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row is
-// locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
-// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. Every rejection returns before
-// the handler changes anything, because Wolverine commits a failed Result too (W7).
+// The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row
+// is locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
+// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. Rejections come first (W7).
 public static class RevokeInvitationHandler
 {
     public static async Task<(Result, InvitationRevokedEvent?, WithdrawSignUpCommand?)> HandleAsync(
@@ -38,7 +37,7 @@ public static class RevokeInvitationHandler
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
         }
 
-        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

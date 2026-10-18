@@ -1,8 +1,7 @@
 namespace ControlPlane.Application.Invitations;
 
 /// <summary>
-/// Configuration of invitations (section <c>ControlPlane:Invitations</c>), checked on start; public because handlers take it as a
-/// parameter.
+/// Configuration of invitations (section <c>ControlPlane:Invitations</c>), checked on start; public because a handler takes it (W9).
 /// </summary>
 public sealed class InvitationOptions
 {

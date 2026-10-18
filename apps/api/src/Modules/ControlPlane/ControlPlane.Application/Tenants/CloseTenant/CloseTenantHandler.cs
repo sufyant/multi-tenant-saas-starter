@@ -7,11 +7,10 @@ using Wolverine;
 
 namespace ControlPlane.Application.Tenants.CloseTenant;
 
-// The command sets a state (I1): a closed tenant answers as it is, and nothing is announced again. K6: every change to an invitation
+// The command sets a state (I1): a closed tenant answers as it is, and nothing is announced again. K6h: every change to an invitation
 // locks the tenant row first, so under this lock no invitation can be added or accepted: the closure cancels every pending invitation
 // in the same transaction, and a cancelled one answers as a revoked one (K2); the identity provider's invitations behind them are
-// withdrawn after the commit. Every rejection returns before the handler changes
-// anything, because Wolverine commits a failed Result too (W7).
+// withdrawn after the commit. Rejections come first (W7).
 public static class CloseTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantClosedEvent?, OutgoingMessages)> HandleAsync(
@@ -44,8 +43,8 @@ public static class CloseTenantHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
-        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+            ?? throw new InvalidOperationException("A system actor is always a user.");
+        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (TenantView.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor.Id, tenant.Name), withdrawals);

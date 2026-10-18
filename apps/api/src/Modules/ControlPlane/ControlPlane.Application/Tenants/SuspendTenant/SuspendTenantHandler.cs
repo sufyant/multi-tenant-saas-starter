@@ -4,8 +4,8 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Tenants.SuspendTenant;
 
-// The command sets a state (I1): a tenant already suspended answers as it is, and nothing is announced again. Every rejection returns
-// before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// The command sets a state (I1): a tenant already suspended answers as it is, and nothing is announced again. Rejections come first
+// (W7).
 public static class SuspendTenantHandler
 {
     public static async Task<(Result<TenantView>, TenantSuspendedEvent?)> HandleAsync(
@@ -27,7 +27,7 @@ public static class SuspendTenantHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();

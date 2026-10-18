@@ -13,7 +13,7 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
 {
     private const string Path = "/v1/me/preferences";
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -32,14 +32,14 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ChangePreferences_NewValues_AnswersAndKeepsThem()
     {
-        var user = await _catalog.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: "ada@example.com");
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "tr", timeZone = "Europe/Istanbul" }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         var preferences = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         preferences.EnumerateObject().Select(field => (field.Name, field.Value.GetString())).ShouldBe([("language", "tr"), ("timeZone", "Europe/Istanbul")]);
-        (await _catalog.UserOfAsync(user)).ShouldBe(new StoredUser("ada@example.com", null, null, Deleted: false, "tr", "Europe/Istanbul"));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser("ada@example.com", null, null, Deleted: false, "tr", "Europe/Istanbul"));
     }
 
     // K3: a command that changes state writes one record. A user belongs to no tenant, so it goes to the platform's log, by the user
@@ -47,8 +47,8 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ChangePreferences_NewValues_RecordsTheChangeWithoutTheValues()
     {
-        var user = await _catalog.AddUserAsync();
-        var userId = await _catalog.UserIdOfAsync(user);
+        var user = await _testData.AddUserAsync();
+        var userId = await _testData.UserIdOfAsync(user);
 
         await _api.WaitingForMessagesAsync(
             () => _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "ar", timeZone = "Asia/Dubai" }, Cancellation));
@@ -62,29 +62,29 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ChangePreferences_TheValuesTheUserHas_AnswersThemAndWritesNothing()
     {
-        var user = await _catalog.AddUserAsync(language: "ar", timeZone: "Africa/Cairo");
-        var version = await _catalog.UserRowVersionOfAsync(user);
+        var user = await _testData.AddUserAsync(language: "ar", timeZone: "Africa/Cairo");
+        var version = await _testData.UserRowVersionOfAsync(user);
 
         var changed = await _api.WaitingForMessagesAsync(
             () => _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "ar", timeZone = "Africa/Cairo" }, Cancellation));
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("language").GetString().ShouldBe("ar");
-        (await _catalog.UserRowVersionOfAsync(user)).ShouldBe(version);
-        (await _audit.PlatformLogAsync(await _catalog.UserIdOfAsync(user))).ShouldBeNull();
+        (await _testData.UserRowVersionOfAsync(user)).ShouldBe(version);
+        (await _audit.PlatformLogAsync(await _testData.UserIdOfAsync(user))).ShouldBeNull();
     }
 
     // Null means "not set": the web uses the browser's time zone.
     [Fact]
     public async Task ChangePreferences_NoTimeZone_ClearsIt()
     {
-        var user = await _catalog.AddUserAsync(timeZone: "Europe/Dublin");
+        var user = await _testData.AddUserAsync(timeZone: "Europe/Dublin");
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "en", timeZone = (string?)null }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("timeZone").ValueKind.ShouldBe(JsonValueKind.Null);
-        (await _catalog.UserOfAsync(user)).TimeZone.ShouldBeNull();
+        (await _testData.UserOfAsync(user)).TimeZone.ShouldBeNull();
     }
 
     // Both fields are required, so a client that leaves the time zone out never clears it by mistake. The language is one of the list,
@@ -104,13 +104,13 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [InlineData("""{ "language": "", "timeZone": null }""")]
     public async Task ChangePreferences_WithoutALanguageOfTheList_IsABadRequestAndKeepsThePreferences(string body)
     {
-        var user = await _catalog.AddUserAsync(language: "ar", timeZone: "Asia/Dubai");
+        var user = await _testData.AddUserAsync(language: "ar", timeZone: "Asia/Dubai");
 
         var changed = await _api.CreateClient(user).PatchAsync(Path, new StringContent(body, Encoding.UTF8, "application/json"), Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(changed)).ShouldBe("request.invalid");
-        (await _catalog.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, null, Deleted: false, "ar", "Asia/Dubai"));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, null, Deleted: false, "ar", "Asia/Dubai"));
     }
 
     // The shape of an IANA name: parts of letters, digits, "_", "-" and "+", joined by "/" (IANA, "Theory and pragmatics of the tz code
@@ -128,13 +128,13 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [InlineData("+03:00")]
     public async Task ChangePreferences_ATimeZoneOfTheWrongShape_IsABadRequestForTheTimeZone(string timeZone)
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "en", timeZone }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await FieldCodesOfAsync(changed)).ShouldBe(("request.validation_failed", "timeZone", "time_zone_invalid"));
-        (await _catalog.UserOfAsync(user)).TimeZone.ShouldBeNull();
+        (await _testData.UserOfAsync(user)).TimeZone.ShouldBeNull();
     }
 
     // These are shapes the IANA database uses: one part, three parts, digits, "-" and "+".
@@ -147,18 +147,18 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [InlineData("America/North_Dakota/New_Salem")]
     public async Task ChangePreferences_ATimeZoneOfAnIanaShape_IsKept(string timeZone)
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "en", timeZone }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(user)).TimeZone.ShouldBe(timeZone);
+        (await _testData.UserOfAsync(user)).TimeZone.ShouldBe(timeZone);
     }
 
     [Fact]
     public async Task ChangePreferences_ATimeZoneOverItsLength_IsABadRequestForTheTimeZone()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "en", timeZone = $"Europe/{new string('a', 58)}" }, Cancellation);
 
@@ -169,46 +169,46 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ChangePreferences_ATimeZoneOfTheLongestLength_IsKept()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
         var timeZone = $"Europe/{new string('a', 57)}";
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "en", timeZone }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _catalog.UserOfAsync(user)).TimeZone.ShouldBe(timeZone);
+        (await _testData.UserOfAsync(user)).TimeZone.ShouldBe(timeZone);
     }
 
     // A9: a suspended user is refused on every me endpoint.
     [Fact]
     public async Task ChangePreferences_ASuspendedUser_IsForbiddenAndKeepsThePreferences()
     {
-        var user = await _catalog.AddUserAsync();
-        await _catalog.SuspendUserAsync(user);
+        var user = await _testData.AddUserAsync();
+        await _testData.SuspendUserAsync(user);
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "tr", timeZone = "Europe/Istanbul" }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(changed)).ShouldBe("user.suspended");
-        (await _catalog.UserOfAsync(user)).Language.ShouldBe("en");
+        (await _testData.UserOfAsync(user)).Language.ShouldBe("en");
     }
 
     // A8, A9: a deleted user is refused on every me endpoint until their session ends.
     [Fact]
     public async Task ChangePreferences_ADeletedUser_IsForbiddenAndKeepsNoTimeZone()
     {
-        var user = await _catalog.AddUserAsync(email: "ada@example.com");
-        await _catalog.DeleteUserAsync(user);
+        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        await _testData.DeleteUserAsync(user);
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "tr", timeZone = "Europe/Istanbul" }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(changed)).ShouldBe("user.deleted");
-        (await _catalog.UserOfAsync(user)).TimeZone.ShouldBeNull();
+        (await _testData.UserOfAsync(user)).TimeZone.ShouldBeNull();
     }
 
-    // A person becomes a catalog user only through an invitation or as the first system admin, as GetMe answers.
+    // A person becomes a user only through an invitation or as the first system admin, as GetMe answers.
     [Fact]
-    public async Task ChangePreferences_ASignedInPersonTheCatalogDoesNotKnow_IsNotFound()
+    public async Task ChangePreferences_ASignedInPersonWhoIsNotAUserYet_IsNotFound()
     {
         var changed = await _api.CreateClient($"user_{Guid.NewGuid():N}").PatchAsJsonAsync(Path, new { language = "tr", timeZone = (string?)null }, Cancellation);
 

@@ -33,7 +33,7 @@ public static class GetInvitationPreviewHandler
         }
 
         var invitedBy = await users.FindInviterNameAsync(invitation.InvitedBy, cancellationToken)
-            ?? throw new InvalidOperationException("An invitation's inviter is always a catalog user.");
+            ?? throw new InvalidOperationException("An invitation's inviter is always a user.");
         return new InvitationPreviewView(tenant.Name, invitedBy, invitation.Role, invitation.ExpiresAt, invitation.State);
     }
 }

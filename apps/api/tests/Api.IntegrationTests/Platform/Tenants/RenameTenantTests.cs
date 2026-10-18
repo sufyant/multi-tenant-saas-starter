@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // name is announced, and Audit records it under the tenant with the old and the new name; the name the tenant has announces nothing.
 public sealed class RenameTenantTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -33,7 +33,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [InlineData("Suspended", "suspended")]
     public async Task RenameTenant_ActiveOrSuspended_AnswersTheTenantWithTheNameTrimmedAndTheSameSlug(string status, string answered)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status);
+        var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, "  Globex Corp ");
 
@@ -49,12 +49,12 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameTenant_ANewName_IsRecordedOnceInBothLogsWithTheOldAndTheNewName()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddSystemAdminAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(admin, secondFactor: true).RenameTenantAsync(tenant.Id, "Globex Corp"));
 
-        var adminId = await _catalog.UserIdOfAsync(admin);
+        var adminId = await _testData.UserIdOfAsync(admin);
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.renamed|User|{adminId}|Tenant|{tenant.Id}|Globex Corp");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.renamed|Platform|-|Tenant|{tenant.Id}|Globex Corp");
         (await _audit.PlatformDetailsAsync(tenant.Id)).ShouldBe("""{"newName": "Globex Corp", "oldName": "Acme Ltd"}""");
@@ -67,7 +67,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [InlineData(" Acme Ltd  ")]
     public async Task RenameTenant_TheNameItHas_AnswersAsItIsAndRecordsNothing(string name)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, name));
 
@@ -82,7 +82,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [MemberData(nameof(InvalidNames))]
     public async Task RenameTenant_InvalidName_IsABadRequestAndChangesNothing(string name)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, name);
 
@@ -95,7 +95,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameTenant_NameTooLong_IsAValidationProblemAndChangesNothing()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, $" {new string('n', 101)} ");
 
@@ -109,7 +109,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameTenant_WithoutAName_IsABadRequest()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await (await SystemAdminAsync()).PatchAsJsonAsync($"/v1/platform/tenants/{tenant.Id}", new { }, Cancellation);
 
@@ -125,7 +125,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [InlineData("Closed")]
     public async Task RenameTenant_NeitherActiveNorSuspended_IsAConflictAndChangesNothing(string status)
     {
-        var tenant = await _catalog.AddTenantAsync(status: status, closedAt: DateTimeOffset.UtcNow);
+        var tenant = await _testData.AddTenantAsync(status: status, closedAt: DateTimeOffset.UtcNow);
 
         var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, "Globex Corp");
 
@@ -148,8 +148,8 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameTenant_ThroughTheTenantDoor_IsNoEndpoint()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
 
         var response = await owner.PatchAsJsonAsync($"/v1/tenants/{tenant.Id}", new { name = "Globex Corp" }, Cancellation);
 
@@ -160,7 +160,7 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     private Task<string?> StoredNameAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT name FROM control_plane.tenants WHERE id = '{tenantId}'");

@@ -1,7 +1,7 @@
 namespace ControlPlane.Application.Identity;
 
 /// <summary>
-/// The identity provider: it only signs people in. Who they are in a tenant, and their names, stay in our catalog. It sends no
+/// The identity provider: it only signs people in. Who they are in a tenant, and their names, stay in our tables. It sends no
 /// email and keeps no name; an invitation stays ours, and the provider's invitation only lets the invited person sign up.
 /// </summary>
 public interface IIdentityProvider

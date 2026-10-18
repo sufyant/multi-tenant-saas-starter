@@ -6,7 +6,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
 
 - `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`). It is authoritative. If this file and it disagree, it wins.
 - Read the section of `ARCHITECTURE.md` for the area before you change anything in it. Cite a rule by its id; do not copy rules into code comments.
-- Other documents: `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
+- Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
 
@@ -27,7 +27,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - The tenant creation saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6; rules S1 to S13 in section 3)
 - The tenant id is in the API path and is proven by membership. It never comes from the token, the body, the query or a header. (T1, T2, Deviations)
 - The identity provider only authenticates. Tenants, roles and permissions live in our tables. (T6, A1 to A6)
-- The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. The catalog owns the names; the provider keeps none, and no webhook flows back. (A7, A8; section 6, "Invitation sign-up"; the maintainer's decisions in step 20i)
+- The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. ControlPlane owns the names; the provider keeps none, and no webhook flows back. (A7, A8; section 6, "Invitation sign-up"; the maintainer's decisions in step 20i)
 - RLS is the only tenant filter. No EF Core query filters as a second layer. (R1 to R11)
 - Wolverine is used as it is: dispatcher, EF Core transactions, outbox, PostgreSQL transport, saga. No custom transaction wrapper, mediator, outbox or saga store. No Wolverine.Http. (Section 3, W1 to W10)
 - One build output, two process roles: web and worker. (Section 1, W5)
@@ -90,6 +90,11 @@ The rules are in section 9 of `ARCHITECTURE.md`. In short:
 
 - Code, comments, documents and commit messages are in English.
 - Documents follow ASD-STE100: short sentences, active voice, one idea per sentence. No em dashes.
+- Every document in `apps/api/docs/` and `docs/` has one shape:
+  - A level 1 title names the document.
+  - The purpose comes next: a short paragraph under the title, or section 1.
+  - Level 2 sections are numbered from 1 (`## 1. Name`), because other files cite a section by its number. A document of one table has none. Sections that introduce the document, such as its codemap or its purpose and scope, may come before section 1 without a number.
+  - A document has no date of its last change: git keeps it (Hunt and Thomas, *The Pragmatic Programmer*, Topic 9, DRY).
 - No secrets in the repository. Configuration comes from the environment.
 
 ## Definition of done

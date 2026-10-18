@@ -7,7 +7,7 @@ namespace Api.IntegrationTests.Persistence;
 // account, so nothing but row level security stands between the tenants; what is really in a table is read as the superuser.
 public sealed class TenantTableIsolationTests(Database database)
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     public static TheoryData<string> Tables => [.. TenantTables.Names];
 
@@ -97,7 +97,7 @@ public sealed class TenantTableIsolationTests(Database database)
 
     private static string CountRowsOf(string table, Guid tenantId) => $"SELECT count(*) FROM {table} WHERE tenant_id = '{tenantId}'";
 
-    // The catalog rows refer to their tenant, so both tenants exist.
+    // ControlPlane's rows refer to their tenant, so both tenants exist.
     private async Task<(Guid Tenant, Guid Other)> TwoTenantsAsync() =>
-        ((await _catalog.AddTenantAsync()).Id, (await _catalog.AddTenantAsync()).Id);
+        ((await _testData.AddTenantAsync()).Id, (await _testData.AddTenantAsync()).Id);
 }

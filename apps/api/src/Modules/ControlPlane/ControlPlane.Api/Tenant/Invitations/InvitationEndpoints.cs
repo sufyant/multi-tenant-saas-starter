@@ -35,7 +35,7 @@ public static class InvitationEndpoints
         tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete);
     }
 
-    // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
+    // The platform answers its Owner invitation in the same shape (N7g: a response that two audiences answer stays in the first one's file).
     internal static InvitationResponse ToResponse(InvitationView invitation) => new(
         invitation.Id,
         invitation.Email,
@@ -46,7 +46,7 @@ public static class InvitationEndpoints
         invitation.ExpiresAt,
         ResponseStatus.OfInvitation(invitation.State));
 
-    // The platform's user detail names the system admin who suspended a user in the same shape (N7).
+    // The platform's user detail names the system admin who suspended a user in the same shape (N7g).
     internal static UserNameResponse ToResponse(UserNameView name) => new(name.FirstName, name.LastName, name.Deleted);
 
     // The invitation runs inside the tenant of the route, which the tenant door has proved, under the request's idempotency key (I1).

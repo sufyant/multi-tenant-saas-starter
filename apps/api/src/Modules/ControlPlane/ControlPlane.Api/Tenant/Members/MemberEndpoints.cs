@@ -22,7 +22,7 @@ public static class MemberEndpoints
         tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete);
     }
 
-    // Every response that holds a role answers it in this one shape (N7). The built-in role keeps ControlPlane's name, as a request
+    // Every response that holds a role answers it in this one shape (N7k). The built-in role keeps ControlPlane's name, as a request
     // gives it (RoleNameTests).
     internal static RoleResponse ToResponse(RoleView role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
 

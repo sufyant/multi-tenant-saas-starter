@@ -11,7 +11,7 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 {
     private const string AllowedOrigin = "https://app.test";
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -27,7 +27,7 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    // CreateTenant sends Location on its 201 and Idempotent-Replayed on a replay (I5, N11).
+    // CreateTenant sends Location on its 201 and Idempotent-Replayed on a replay (I5, N11v).
     [Fact]
     public async Task CreateTenant_FromAnAllowedOrigin_ExposesLocationAndIdempotentReplayed()
     {
@@ -64,7 +64,7 @@ public sealed class CorsExposedHeadersTests(Database database) : IAsyncLifetime
 
     private async Task<HttpClient> CrossOriginAdminAsync()
     {
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         admin.DefaultRequestHeaders.Add("Origin", AllowedOrigin);
         return admin;
     }

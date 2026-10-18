@@ -12,7 +12,7 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // creation schedules come after the test.
 public sealed class GetTenantTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
@@ -39,7 +39,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [InlineData("Closed", "closed")]
     public async Task GetTenant_ATenantInAnyStatus_ReturnsItWithItsStatus(string stored, string answered)
     {
-        var tenant = await _catalog.AddTenantAsync(status: stored, name: "Admin View Ltd");
+        var tenant = await _testData.AddTenantAsync(status: stored, name: "Admin View Ltd");
 
         var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
@@ -57,7 +57,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     public async Task GetTenant_ClosedAfterASuspension_ShowsTheReasonAndTheMomentOfTheClosure()
     {
         var closedAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
-        var tenant = await _catalog.AddTenantAsync(status: "Closed", suspensionReason: "Unpaid invoices", closedAt: closedAt);
+        var tenant = await _testData.AddTenantAsync(status: "Closed", suspensionReason: "Unpaid invoices", closedAt: closedAt);
 
         var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
@@ -76,7 +76,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
 
         (found.GetProperty("memberCount").GetInt32(), found.GetProperty("ownerCount").GetInt32()).ShouldBe((1, 1));
-        Owners(found).ShouldBe([$"{await _catalog.UserIdOfAsync(owner)}|Ada|Lovelace|{email}"]);
+        Owners(found).ShouldBe([$"{await _testData.UserIdOfAsync(owner)}|Ada|Lovelace|{email}"]);
         found.GetProperty("ownerInvitation").ValueKind.ShouldBe(JsonValueKind.Null);
         found.GetProperty("reopenableUntil").ValueKind.ShouldBe(JsonValueKind.Null);
     }
@@ -100,7 +100,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
 
         (found.GetProperty("memberCount").GetInt32(), found.GetProperty("ownerCount").GetInt32()).ShouldBe((3, 2));
-        Owners(found).ShouldBe([$"{await _catalog.UserIdOfAsync(first)}|Ada|Lovelace|{ada}", $"{await _catalog.UserIdOfAsync(second)}|Grace|Hopper|{grace}"]);
+        Owners(found).ShouldBe([$"{await _testData.UserIdOfAsync(first)}|Ada|Lovelace|{ada}", $"{await _testData.UserIdOfAsync(second)}|Grace|Hopper|{grace}"]);
         found.GetProperty("ownerInvitation").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
@@ -171,5 +171,5 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         return $"{invitation.GetProperty("email").GetString()}|{invitation.GetProperty("expiresAt").GetDateTimeOffset():O}|{invitation.GetProperty("state").GetString()}";
     }
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 }

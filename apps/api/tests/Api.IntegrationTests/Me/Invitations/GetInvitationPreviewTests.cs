@@ -16,7 +16,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
 {
     private static readonly DateTimeOffset Later = DateTimeOffset.UtcNow.AddDays(3);
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
 
@@ -35,8 +35,8 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_APendingInvitationForTheCaller_NamesTheTenantTheInviterAndTheRole()
     {
-        var tenant = await _catalog.AddTenantAsync(name: "Preview Ltd");
-        var ada = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var tenant = await _testData.AddTenantAsync(name: "Preview Ltd");
+        var ada = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
         var invitation = await InvitationAsync(tenant.Id, role: "Admin", invitedBy: ada);
 
         var response = await PreviewAsync(invitation.Invitee, invitation.Code);
@@ -61,7 +61,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [InlineData("Cancelled", -1, "cancelled")]
     public async Task GetInvitationPreview_AnInvitationInEachState_SaysWhichState(string status, int days, string state)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var invitation = await InvitationAsync(tenant.Id, status: status, expiresAt: DateTimeOffset.UtcNow.AddDays(days));
 
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -73,7 +73,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_AnInvitationOfASuspendedTenant_IsPending()
     {
-        var tenant = await _catalog.AddTenantAsync(status: "Suspended");
+        var tenant = await _testData.AddTenantAsync(status: "Suspended");
         var invitation = await InvitationAsync(tenant.Id);
 
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
@@ -85,8 +85,8 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_AnInvitationThePlatformSent_NamesThePlatformAsTheInviter()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddUserAsync(firstName: "Sys", lastName: "Admin");
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddUserAsync(firstName: "Sys", lastName: "Admin");
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'");
         var invitation = await InvitationAsync(tenant.Id, role: "Owner", invitedBy: admin);
@@ -101,10 +101,10 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_AnInviterWhoWasDeleted_HasNoNameAndSaysDeleted()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var inviter = await _catalog.AddUserAsync(firstName: "Gone", lastName: "Away");
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
         var invitation = await InvitationAsync(tenant.Id, invitedBy: inviter);
-        await _catalog.DeleteUserAsync(inviter);
+        await _testData.DeleteUserAsync(inviter);
 
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
 
@@ -120,7 +120,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [InlineData("Accepted", 3)]
     public async Task GetInvitationPreview_ACallerWithoutTheInvitedEmail_IsForbiddenWithTheBodyAcceptingGives(string status, int days)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var invitation = await InvitationAsync(tenant.Id, status: status, expiresAt: DateTimeOffset.UtcNow.AddDays(days));
         var pending = await InvitationAsync(tenant.Id);
         var stranger = $"user_{Guid.NewGuid():N}";
@@ -147,7 +147,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [InlineData("{tenant}.")]
     public async Task GetInvitationPreview_AnUnknownCode_IsNotFoundWithTheBodyAcceptingGives(string code)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var invitation = await InvitationAsync(tenant.Id);
         var unknown = code.Replace("{tenant}", tenant.Id.ToString(), StringComparison.Ordinal).Replace("{other}", Guid.NewGuid().ToString(), StringComparison.Ordinal);
 
@@ -163,12 +163,12 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_TheSecretWithAnotherTenantsId_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
         var secret = Guid.NewGuid().ToString("N");
         var invitation = await InvitationAsync(tenant.Id, secret: secret);
 
-        var preview = await PreviewAsync(invitation.Invitee, Catalog.InvitationCodeOf(other.Id, secret));
+        var preview = await PreviewAsync(invitation.Invitee, TestData.InvitationCodeOf(other.Id, secret));
 
         preview.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(preview)).ShouldBe("invitation.not_found");
@@ -206,7 +206,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_APendingInvitation_ChangesNothingAndWritesNoAuditEntry()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var invitation = await InvitationAsync(tenant.Id);
         var version = await RowVersionOfAsync(invitation.Id);
 
@@ -214,7 +214,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
 
         preview.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RowVersionOfAsync(invitation.Id)).ShouldBe(version);
-        (await _catalog.InvitationStatusOfAsync(invitation.Id)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(invitation.Id)).ShouldBe("Pending");
         (await _audit.TenantLogAsync(invitation.Id)).ShouldBeNull();
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBeNull();
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBeNull();
@@ -224,10 +224,10 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     [Fact]
     public async Task GetInvitationPreview_ASuspendedUser_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var invitation = await InvitationAsync(tenant.Id);
-        var suspended = await _catalog.AddUserAsync();
-        await _catalog.SuspendUserAsync(suspended);
+        var suspended = await _testData.AddUserAsync();
+        await _testData.SuspendUserAsync(suspended);
         _api.Identity.AddAccount(suspended, invitation.Email);
 
         var preview = await PreviewAsync(suspended, invitation.Code);
@@ -275,11 +275,11 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     {
         secret ??= Guid.NewGuid().ToString("N");
         var email = $"{Guid.NewGuid():N}@example.com";
-        var id = await _catalog.AddInvitationAsync(tenantId, email, role, status, expiresAt ?? Later, invitedBy: invitedBy, secret: secret);
+        var id = await _testData.AddInvitationAsync(tenantId, email, role, status, expiresAt ?? Later, invitedBy: invitedBy, secret: secret);
         var invitee = $"user_{Guid.NewGuid():N}";
         _api.Identity.AddAccount(invitee, email);
 
-        return (id, Catalog.InvitationCodeOf(tenantId, secret), email, invitee);
+        return (id, TestData.InvitationCodeOf(tenantId, secret), email, invitee);
     }
 
     private Task<HttpResponseMessage> PreviewAsync(string userId, string code) =>

@@ -4,10 +4,10 @@ using System.Text.Json;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// Writes catalog rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
-// name, the way the catalog stores them. A membership belongs to a tenant, so it is written with its tenant declared. The rows go
+// Writes ControlPlane's rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
+// name, the way ControlPlane stores them. A membership belongs to a tenant, so it is written with its tenant declared. The rows go
 // into the main database unless the test names a database of its own.
-internal sealed class Catalog(Database database, string databaseName = Database.MainDatabase)
+internal sealed class TestData(Database database, string databaseName = Database.MainDatabase)
 {
     // The invitation code of a link: the tenant id, a dot and the secret (section 6).
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
@@ -96,7 +96,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
         return externalId;
     }
 
-    // The catalog's own id of a user, which the API answers with; the identity provider's id is what a token carries.
+    // Our own id of a user, which the API answers with; the identity provider's id is what a token carries.
     public Task<Guid> UserIdOfAsync(string externalId) =>
         database.ScalarAsync<Guid>($"SELECT id FROM control_plane.users WHERE external_id = '{externalId}'", database: databaseName);
 
@@ -176,7 +176,7 @@ internal sealed class Catalog(Database database, string databaseName = Database.
     public Task<string?> UserRowVersionOfAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT xmin::text FROM control_plane.users WHERE external_id = '{externalId}'", databaseName);
 
-    // The catalog's email address, names and preferences of a user, and whether the user is marked deleted.
+    // Our copy of a user's email address, names and preferences, and whether the user is marked deleted.
     public async Task<StoredUser> UserOfAsync(string externalId, string? databaseName = null)
     {
         var json = await database.ScalarAsSuperuserAsync<string>(

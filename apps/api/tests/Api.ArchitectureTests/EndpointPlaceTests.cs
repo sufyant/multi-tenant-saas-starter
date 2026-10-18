@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.ArchitectureTests;
 
-// N5, N7 and N8: an endpoint of a module sits in the folder of its audience, the same word as its route group: Platform for
+// N5, N7a and N8: an endpoint of a module sits in the folder of its audience, the same word as its route group: Platform for
 // /v1/platform, Me for /v1/me and Tenant for /v1/tenants/{tenantId}; below it, in the folder of its resource. Read from the endpoints of the composed application: the method that
 // handles each one, the type that declares it, and the file of that type in the module's Api project.
 public sealed class EndpointPlaceTests : IAsyncLifetime

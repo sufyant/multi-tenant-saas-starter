@@ -11,7 +11,7 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Invitations.AcceptInvitation;
 
-// Every rejection returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
+// Rejections come first (W7).
 public static class AcceptInvitationHandler
 {
     public static async Task<(Result<MyTenantView>, MemberJoinedEvent?)> HandleAsync(
@@ -21,7 +21,7 @@ public static class AcceptInvitationHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        // K6: a membership and an invitation belong to the tenant aggregate, so the tenant row is locked first, before the invitation.
+        // K6a: a membership and an invitation belong to the tenant aggregate, so the tenant row is locked first, before the invitation.
         // A suspension then runs before or after the acceptance, never between its check and its change. A code that names no tenant
         // answers like an invitation that does not exist, and so does a cancelled invitation.
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
@@ -68,7 +68,7 @@ public static class AcceptInvitationHandler
             return (Error.Conflict(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."), null);
         }
 
-        // A person the catalog does not know gives their names, as a validator would refuse them: a 400 that names each missing field. It
+        // A person who is not a user yet gives their names, as a validator would refuse them: a 400 that names each missing field. It
         // comes after the invitation's own checks, so a stranger with the link learns nothing more, and before any change (W7).
         if (existing is null && (command.FirstName is null || command.LastName is null))
         {
@@ -96,7 +96,7 @@ public static class AcceptInvitationHandler
     private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>
         new (string Field, string? Value)[] { (nameof(command.FirstName), command.FirstName), (nameof(command.LastName), command.LastName) }
             .Where(field => field.Value is null)
-            .Select(field => new ValidationFailure(field.Field, $"{field.Field} is required for a person the catalog does not know.")
+            .Select(field => new ValidationFailure(field.Field, $"{field.Field} is required for a person who is not a user yet.")
             {
                 ErrorCode = nameof(FieldErrorCode.Required),
             });

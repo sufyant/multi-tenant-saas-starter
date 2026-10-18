@@ -61,7 +61,7 @@ internal sealed class Invitation : ITenantEntity
 
     public InvitationStatus Status { get; private set; }
 
-    /// <summary>The language of the invitation's email. A person the catalog does not know starts with it when they accept.</summary>
+    /// <summary>The language of the invitation's email. A person who is not a user yet starts with it when they accept.</summary>
     public Language Language { get; private init; }
 
     public DateTimeOffset? AcceptedAt { get; private set; }

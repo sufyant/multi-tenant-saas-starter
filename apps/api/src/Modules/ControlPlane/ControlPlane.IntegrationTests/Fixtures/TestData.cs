@@ -7,8 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ControlPlane.IntegrationTests.Fixtures;
 
-// Writes catalog rows directly, the way the tenant creation flow will once it exists.
-internal static class Catalog
+// Writes ControlPlane's rows directly, the way the tenant creation flow will once it exists.
+internal static class TestData
 {
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
@@ -28,23 +28,23 @@ internal static class Catalog
             tenant.Close(DateTimeOffset.UtcNow);
         }
 
-        await SaveAsync(services, catalog => catalog.Tenants.Add(tenant));
+        await SaveAsync(services, controlPlane => controlPlane.Tenants.Add(tenant));
         return tenant;
     }
 
     public static async Task<User> AddUserAsync(IServiceProvider services, string? externalId = null)
     {
         var user = new User(Guid.CreateVersion7(), externalId ?? Unique.ExternalId());
-        await SaveAsync(services, catalog => catalog.Users.Add(user));
+        await SaveAsync(services, controlPlane => controlPlane.Users.Add(user));
         return user;
     }
 
     // The user's membership count follows, as the commands keep it.
     public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, Role? role = null) =>
-        SaveInTenantAsync(services, tenant.Id, catalog =>
+        SaveInTenantAsync(services, tenant.Id, controlPlane =>
         {
-            catalog.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow));
-            catalog.Database.ExecuteSql($"UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE id = {user.Id}");
+            controlPlane.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow));
+            controlPlane.Database.ExecuteSql($"UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE id = {user.Id}");
         });
 
     public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, Role role)
@@ -72,19 +72,19 @@ internal static class Catalog
     private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)
     {
         await using var scope = services.CreateAsyncScope();
-        var catalog = scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>();
-        change(catalog);
-        await catalog.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var controlPlane = scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>();
+        change(controlPlane);
+        await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     // A membership belongs to a tenant, so it is written in a transaction that declares its tenant.
     private static async Task SaveInTenantAsync(IServiceProvider services, Guid tenantId, Action<ControlPlaneDbContext> change)
     {
         await using var scope = services.CreateAsyncScope();
-        var catalog = InTenant.Catalog(scope, tenantId);
-        await using var transaction = await catalog.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
-        change(catalog);
-        await catalog.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var controlPlane = InTenant.ControlPlane(scope, tenantId);
+        await using var transaction = await controlPlane.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
+        change(controlPlane);
+        await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
         await transaction.CommitAsync(TestContext.Current.CancellationToken);
     }
 }

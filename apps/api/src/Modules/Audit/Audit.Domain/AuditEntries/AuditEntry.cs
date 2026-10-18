@@ -2,7 +2,7 @@ namespace Audit.Domain.AuditEntries;
 
 /// <summary>
 /// One entry of an audit log: who did what to what, and when. It holds no personal name and no email address (K3): the actor and a
-/// target person are catalog user ids, and the read side resolves their names through ControlPlane. A target that is not a person
+/// target person are user ids, and the read side resolves their names through ControlPlane. A target that is not a person
 /// keeps its name as it was at that moment. Entries are business data kept for years, and they are never changed once written.
 /// </summary>
 internal abstract class AuditEntry
@@ -31,7 +31,7 @@ internal abstract class AuditEntry
     /// <summary>Who acted.</summary>
     public AuditActorKind ActorKind { get; private init; }
 
-    /// <summary>The catalog user id of an actor that is a user; none for the platform.</summary>
+    /// <summary>The user id of an actor that is a user; none for the platform.</summary>
     public Guid? ActorId { get; private init; }
 
     public AuditEntryKind Kind { get; private init; } = AuditEntryKind.Command;

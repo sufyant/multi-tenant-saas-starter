@@ -3,7 +3,7 @@ using ControlPlane.Application.Users;
 namespace ControlPlane.Application.Invitations.GetInvitationPreview;
 
 /// <summary>
-/// Who invited, as the accept screen names them: a user, by their names as the catalog holds them now, or the platform, when a system
-/// admin invited (<c>User</c>, <c>Platform</c>). The screen never sees a system admin's name.
+/// Who invited, as the accept screen names them: a user, by their names as they are stored now, or the platform, when a system
+/// admin invited (the names of <c>InviterKind</c>, N7r). The screen never sees a system admin's name.
 /// </summary>
 public sealed record InviterNameView(string Kind, UserNameView? Name);

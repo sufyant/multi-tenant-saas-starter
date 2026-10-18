@@ -7,10 +7,9 @@ namespace ControlPlane.Infrastructure.Persistence.Users;
 
 // Reads the users in control_plane.users, which belongs to no tenant (R6). The state of a user is read on every me and tenant request
 // (A9), in the HTTP pipeline before any message is sent, and one read needs no transaction of its own. A deleted user is refused too:
-// the identity provider deletes its user only after the catalog's deletion commits, and a session token lives on until it expires (A8).
+// the identity provider deletes its user only after ControlPlane's deletion commits, and a session token lives on until it expires (A8).
 // The names of a page of users are read in one query. A deleted user's copy is erased (A8), so they have no name and are marked deleted
-// wherever an id points to them (K3). Public only so that Wolverine's generated code builds it for Audit's handler on this module's
-// DbContext, in that DbContext's transaction (W1, W9).
+// wherever an id points to them (K3). Public because Wolverine's generated code builds it (W1, W9).
 public sealed class UserDirectory(ControlPlaneDbContext controlPlane) : IUserDirectory
 {
     private static readonly Error Suspended = Error.Forbidden(ControlPlaneErrorCodes.UserSuspended, "Your account is suspended.");

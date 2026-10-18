@@ -11,12 +11,12 @@ using Wolverine;
 namespace ControlPlane.Application.Invitations.InviteOwner;
 
 // K6: an invitation belongs to the tenant aggregate, so the tenant row is locked first, and the Owners are counted under the lock. An
-// acceptance locks the same row first, so it runs before, and the tenant has its Owner, or after, and finds its invitation cancelled. At
-// most one platform Owner invitation is pending: in a tenant without an Owner nobody else invites, so every pending invitation is the
-// platform's, and the new one replaces it, also to another address (the maintainer's decision in step 20k). The replaced one is saved as
-// cancelled first, so the partial unique index never sees two pending invitations. Every rejection returns before the handler changes
-// anything, because Wolverine commits a failed Result too (W7). The invitation then takes the path of a member's: the identity provider's
-// sign-up, then the email (OpenMemberSignUpCommand). The owner's messages of the tenant creation answer its saga, which has ended (S13).
+// acceptance locks the same row first, so it runs before, and the tenant has its Owner, or after, and finds its invitation cancelled.
+// At most one platform Owner invitation is pending: in a tenant without an Owner nobody else invites, so every pending invitation is
+// the platform's, and the new one replaces it, also to another address (the maintainer's decision in step 20k). The replaced one is
+// saved as cancelled first, so the partial unique index never sees two pending invitations. Rejections come first (W7). The invitation
+// then takes the path of a member's: the identity provider's sign-up, then the email (OpenMemberSignUpCommand). The owner's messages of
+// the tenant creation answer its saga, which has ended (S13).
 public static class InviteOwnerHandler
 {
     public static async Task<(Result<InvitationView>, OwnerInvitedEvent?, OpenMemberSignUpCommand?, OutgoingMessages)> HandleAsync(
@@ -39,7 +39,7 @@ public static class InviteOwnerHandler
         }
 
         var actor = await users.FindUserAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a catalog user.");
+            ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var withdrawals = new OutgoingMessages();
         var replaced = await tenants.FindPendingInvitationsAsync(cancellationToken);
@@ -67,7 +67,7 @@ public static class InviteOwnerHandler
             secret,
             command.Language ?? actor.Language);
         tenants.Add(invitation);
-        tenant.Summarize(await tenants.ReadRowsAsync(cancellationToken));
+        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
         await tenants.SaveChangesAsync(cancellationToken);
 
         return (

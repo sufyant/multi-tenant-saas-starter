@@ -306,7 +306,7 @@ public sealed class Database : IAsyncLifetime
         return value is null or DBNull ? default : (T)value;
     }
 
-    // Runs the SQL as the role in a transaction that declares the catalog user first, as GET /v1/me/tenants does (R11); returns the
+    // Runs the SQL as the role in a transaction that declares the user first, as GET /v1/me/tenants does (R11); returns the
     // rows it changed.
     public async Task<int> ExecuteAsUserAsync(Guid userId, string sql)
     {

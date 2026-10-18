@@ -13,7 +13,7 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 // at once (K2).
 public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -23,7 +23,7 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
+    private SignUpInvitations SignUps => new(_api, _testData, database);
 
     public ValueTask InitializeAsync()
     {
@@ -38,16 +38,16 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     [InlineData("Admin")]
     public async Task RevokeInvitation_Pending_CancelsItAndRecordsTheRevoker(string revokerRole)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var revoker = await _catalog.AddMemberAsync(tenant.Id, role: revokerRole);
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var revoker = await _testData.AddMemberAsync(tenant.Id, role: revokerRole);
+        var invitation = await _testData.AddInvitationAsync(tenant.Id);
 
         var revoked = await _api.WaitingForMessagesAsync(() => RevokeAsync(revoker, tenant.Id, invitation));
 
         revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Cancelled");
         (await _audit.TenantLogAsync(invitation))
-            .ShouldBe($"{tenant.Id}:invitation.revoked|User|{await _catalog.UserIdOfAsync(revoker)}|Invitation|{invitation}|-");
+            .ShouldBe($"{tenant.Id}:invitation.revoked|User|{await _testData.UserIdOfAsync(revoker)}|Invitation|{invitation}|-");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -55,23 +55,23 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RevokeInvitation_PendingButExpired_CancelsIt()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id, expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var invitation = await _testData.AddInvitationAsync(tenant.Id, expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
 
         var revoked = await RevokeAsync(owner, tenant.Id, invitation);
 
         revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Cancelled");
+        (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Cancelled");
     }
 
     // I1: setting a state twice changes nothing, so the second request writes no second record.
     [Fact]
     public async Task RevokeInvitation_Twice_AnswersNoContentAndRecordsOnce()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var invitation = await _testData.AddInvitationAsync(tenant.Id);
         await _api.WaitingForMessagesAsync(() => RevokeAsync(owner, tenant.Id, invitation));
 
         var again = await _api.WaitingForMessagesAsync(() => RevokeAsync(owner, tenant.Id, invitation));
@@ -83,22 +83,22 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RevokeInvitation_Accepted_IsAConflict()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id, status: "Accepted");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var invitation = await _testData.AddInvitationAsync(tenant.Id, status: "Accepted");
 
         var revoked = await RevokeAsync(owner, tenant.Id, invitation);
 
         revoked.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(revoked)).ShouldBe("invitation.not_pending");
-        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Accepted");
+        (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Accepted");
     }
 
     [Fact]
     public async Task RevokeInvitation_UnknownId_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var revoked = await RevokeAsync(owner, tenant.Id, Guid.NewGuid());
 
@@ -110,36 +110,36 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RevokeInvitation_AnotherTenantsInvitation_IsNotFoundAndStaysPending()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var invitation = await _catalog.AddInvitationAsync(other.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var invitation = await _testData.AddInvitationAsync(other.Id);
 
         var revoked = await RevokeAsync(owner, tenant.Id, invitation);
 
         revoked.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
     }
 
     [Fact]
     public async Task RevokeInvitation_AsAMember_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Member");
-        var invitation = await _catalog.AddInvitationAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Member");
+        var invitation = await _testData.AddInvitationAsync(tenant.Id);
 
         var revoked = await RevokeAsync(member, tenant.Id, invitation);
 
         revoked.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await _catalog.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
+        (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
     }
 
     // K3: no record of either command holds an email address.
     [Fact]
     public async Task RevokeInvitation_AfterAnInvitation_LeavesTheEmailOutOfTheAuditLog()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var email = $"{Guid.NewGuid():N}@example.com";
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).InviteMemberAsync(tenant.Id, email));
         var invitation = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();

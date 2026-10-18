@@ -22,7 +22,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, users, roles, system admins), and the memberships,
 /// invitations and tenant creation sagas, which belong to a tenant and are under row level security.
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code creates it for the handlers (W9); its sets are internal to the module.</remarks>
+/// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
     : TenantDbContext(options, messaging)
 {
@@ -55,7 +55,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     /// fast without one.
     /// </summary>
     internal Guid ActiveTenant =>
-        MessageTenantId ?? throw new InvalidOperationException("Tenant-owned catalog rows are reached only inside a tenant.");
+        MessageTenantId ?? throw new InvalidOperationException("Tenant-owned rows are reached only inside a tenant.");
 
     /// <summary>The active tenant's memberships. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
     internal IQueryable<Membership> TenantMemberships

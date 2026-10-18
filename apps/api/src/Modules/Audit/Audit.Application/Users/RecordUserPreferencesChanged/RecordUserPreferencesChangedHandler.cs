@@ -5,7 +5,7 @@ using ControlPlane.Contracts.Users;
 
 namespace Audit.Application.Users.RecordUserPreferencesChanged;
 
-// The audit entry of a catalog user's new preferences, in the platform's log: a user belongs to no tenant. The user acted for
+// The audit entry of a user's new preferences, in the platform's log: a user belongs to no tenant. The user acted for
 // themselves (K3). The entry holds no value: it says that the preferences changed, not to what. The event is handled in a transaction
 // that declares nothing, so the entry goes only to the platform's log.
 public static class RecordUserPreferencesChangedHandler

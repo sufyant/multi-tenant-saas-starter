@@ -12,6 +12,5 @@ internal sealed class ClerkOptions
 
     public Uri BackendApiUrl { get; set; } = new("https://api.clerk.com/v1/");
 
-    // How long a call may take.
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 }

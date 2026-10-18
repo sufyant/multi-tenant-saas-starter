@@ -88,10 +88,10 @@ public sealed class SystemAdminDirectoryTests(Database database)
     }
 
     [Fact]
-    public async Task VisitTheSystemDoor_AUserTheCatalogKnows_BecomesTheFirstSystemAdminWithTheSameId()
+    public async Task VisitTheSystemDoor_AKnownUser_BecomesTheFirstSystemAdminWithTheSameId()
     {
         await using var services = await WithoutSystemAdminsAsync();
-        var user = await Catalog.AddUserAsync(services);
+        var user = await TestData.AddUserAsync(services);
         database.Identity.AddAccount(user.ExternalId, "first.admin@example.com");
 
         await VisitAsync(services, user.ExternalId);

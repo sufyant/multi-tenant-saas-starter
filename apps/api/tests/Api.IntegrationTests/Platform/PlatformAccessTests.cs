@@ -14,7 +14,7 @@ namespace Api.IntegrationTests.Platform;
 // an idempotency key, because each reads or sets a state (I1).
 public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -79,7 +79,7 @@ public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
     [MemberData(nameof(OldRoutes))]
     public async Task CallOldAdminRoute_AsASystemAdmin_IsNotFound(string method, string route)
     {
-        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
         var response = await client.SendAsync(await RequestAsync(method, route), Cancellation);
 
@@ -113,7 +113,7 @@ public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
     [MemberData(nameof(Routes))]
     public async Task CallPlatformEndpoint_WithoutAnIdempotencyKey_IsCarriedOut(string method, string route)
     {
-        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
         var response = await client.SendAsync(await RequestAsync(method, route), Cancellation);
 
@@ -124,8 +124,8 @@ public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
     [MemberData(nameof(Routes))]
     public async Task CallPlatformEndpoint_AsATenantMember_IsForbidden(string method, string route)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var client = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        var client = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), secondFactor: true);
 
         var response = await client.SendAsync(await RequestAsync(method, route), Cancellation);
 
@@ -136,7 +136,7 @@ public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
     [MemberData(nameof(Routes))]
     public async Task CallPlatformEndpoint_SystemAdminWithoutASecondFactor_IsForbidden(string method, string route)
     {
-        var client = _api.CreateClient(await _catalog.AddSystemAdminAsync());
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync());
 
         var response = await client.SendAsync(await RequestAsync(method, route), Cancellation);
 
@@ -152,8 +152,8 @@ public sealed class PlatformAccessTests(Database database) : IAsyncLifetime
     // and suspending read; the other endpoints read none.
     private async Task<HttpRequestMessage> RequestAsync(string method, string route)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var user = await _catalog.UserIdOfAsync(await _catalog.AddUserAsync());
+        var tenant = await _testData.AddTenantAsync();
+        var user = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
         var path = route.Replace("{tenantId:guid}", tenant.Id.ToString(), StringComparison.Ordinal)
             .Replace("{userId:guid}", user.ToString(), StringComparison.Ordinal);
 

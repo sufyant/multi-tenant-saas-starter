@@ -9,7 +9,7 @@ namespace Audit.IntegrationTests.Fixtures;
 
 // Runs work the way Wolverine runs a handler: the message carries the tenant, the module's DbContext begins the transaction, which
 // declares that tenant, and the work is saved and committed unless it throws. A message without a tenant (null) declares nothing, as
-// for an event about a catalog user.
+// for an event about a user.
 internal static class InTenant
 {
     public static async Task RunAsync(IServiceProvider services, Guid? tenantId, Func<IServiceProvider, Task> handler)

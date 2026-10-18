@@ -8,7 +8,7 @@ namespace ControlPlane.Contracts.Invitations;
 /// out later, once the identity provider has let the address sign up (<see cref="MemberInvitationReadyEvent"/>).
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
-/// <param name="InvitedBy">The catalog user id of the system admin who invited, who acted.</param>
+/// <param name="InvitedBy">The user id of the system admin who invited, who acted.</param>
 /// <param name="TenantName">The tenant's name at that moment, which the records keep.</param>
 /// <param name="ReplacedInvitationId">The pending Owner invitation that this one cancelled, if there was one.</param>
 [MessageName("owner-invited")]

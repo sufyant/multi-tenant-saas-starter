@@ -14,13 +14,13 @@ namespace Api.IntegrationTests.Tenant.Invitations;
 // ClerkIdentityProviderTests.
 public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly FakeTimeProvider _time = new(DateTimeOffset.UtcNow);
 
     private ApiFactory _api = null!;
 
-    private SignUpInvitations SignUps => new(_api, _catalog, database);
+    private SignUpInvitations SignUps => new(_api, _testData, database);
 
     public ValueTask InitializeAsync()
     {

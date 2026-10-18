@@ -18,7 +18,7 @@ public static class MyProfileEndpoints
         me.MapPatch("/preferences", ChangePreferences);
     }
 
-    // Read without a tenant. A signed-in person the catalog does not know is not found: the web shows "no access yet".
+    // Read without a tenant. A signed-in person who is not a user yet is not found: the web shows "no access yet".
     private static async Task<Result<MeResponse>> GetMe(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<MeView>>(new GetMeQuery(user.Id()), cancellationToken)).Map(ToResponse);
 

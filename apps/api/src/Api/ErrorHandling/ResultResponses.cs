@@ -10,7 +10,7 @@ namespace Api.ErrorHandling;
 internal static class ResultResponses
 {
     // K5: every /v1 route can answer 401 (authentication) and 429 (the rate limiter, and ErrorType.TooManyRequests), so every
-    // operation declares both. The other statuses are those of the error types (A16).
+    // operation declares both. The other statuses are those of the error types (N11u).
     private static readonly int[] FailureStatuses =
         [.. Enum.GetValues<ErrorType>().Select(Problems.StatusCodeFor).Append(StatusCodes.Status401Unauthorized).Distinct().Order()];
 
@@ -36,7 +36,7 @@ internal static class ResultResponses
                     : new ProducesResponseTypeMetadata(StatusCodes.Status204NoContent, typeof(void)));
             }
 
-            // Every failure is the one Problem Details schema, a 400 with the fields of a request that failed validation too (N11).
+            // Every failure is the one Problem Details schema, a 400 with the fields of a request that failed validation too (N11u).
             foreach (var status in FailureStatuses)
             {
                 endpoint.Metadata.Add(new ProducesResponseTypeMetadata(status, typeof(ProblemDetails), ["application/problem+json"]));

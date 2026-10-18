@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Tenant.Members;
 // themselves, and the last Owner stays (K1). The removed member loses access at once (T7).
 public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private readonly TenantSummaries _summaries = new(database);
 
@@ -35,16 +35,16 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [InlineData("Admin", "Admin", "admin")]
     public async Task RemoveMember_AMemberTheActorMayRemove_RemovesItAndRecordsTheRoleItHad(string actorRole, string memberRole, string recordedRole)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var actor = await _catalog.AddMemberAsync(tenant.Id, role: actorRole);
-        var member = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id, role: memberRole));
+        var tenant = await _testData.AddTenantAsync();
+        var actor = await _testData.AddMemberAsync(tenant.Id, role: actorRole);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: memberRole));
 
         var removed = await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor).RemoveMemberAsync(tenant.Id, member));
 
         removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await IsMemberAsync(tenant.Id, member)).ShouldBe(0);
         (await _audit.TenantLogAsync(member))
-            .ShouldBe($"{tenant.Id}:member.removed|User|{await _catalog.UserIdOfAsync(actor)}|User|{member}|-");
+            .ShouldBe($"{tenant.Id}:member.removed|User|{await _testData.UserIdOfAsync(actor)}|User|{member}|-");
         (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{recordedRole}}"}""");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
@@ -53,9 +53,9 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_AnOwnerRemovesAnotherOwner_RemovesIt()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var other = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var other = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
 
         var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, other);
 
@@ -69,10 +69,10 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [InlineData("Admin")]
     public async Task RemoveMember_Themselves_IsForbiddenAndStays(string role)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var actor = await _catalog.AddMemberAsync(tenant.Id, role: role);
-        var actorId = await _catalog.UserIdOfAsync(actor);
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var actor = await _testData.AddMemberAsync(tenant.Id, role: role);
+        var actorId = await _testData.UserIdOfAsync(actor);
 
         var removed = await _api.CreateClient(actor).RemoveMemberAsync(tenant.Id, actorId);
 
@@ -85,10 +85,10 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_AnAdminRemovesAnOwner_IsForbiddenAndTheOwnerStays()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
-        var owner = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var owner = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
 
         var removed = await _api.CreateClient(admin).RemoveMemberAsync(tenant.Id, owner);
 
@@ -102,13 +102,13 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_TheRemovedMembersNextRequest_IsNotFoundAndTheTenantLeavesTheirList()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _testData.AddMemberAsync(tenant.Id);
         var client = _api.CreateClient(member);
         var before = await client.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
-        var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, await _catalog.UserIdOfAsync(member));
+        var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, await _testData.UserIdOfAsync(member));
 
         before.StatusCode.ShouldBe(HttpStatusCode.OK);
         removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -120,8 +120,8 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_UnknownUser_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, Guid.NewGuid());
 
@@ -133,10 +133,10 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_AnotherTenantsMember_IsNotFoundAndStays()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var stranger = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(other.Id));
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var stranger = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(other.Id));
 
         var removed = await _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, stranger);
 
@@ -148,9 +148,9 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_AsAMember_IsForbidden()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
-        var other = await _catalog.UserIdOfAsync(await _catalog.AddMemberAsync(tenant.Id));
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        var other = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
 
         var removed = await _api.CreateClient(member).RemoveMemberAsync(tenant.Id, other);
 
@@ -158,16 +158,16 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, other)).ShouldBe(1);
     }
 
-    // K6: the only two Owners remove each other at the same moment. The tenant row lock runs the two removals one after the other. The
+    // K6j: the only two Owners remove each other at the same moment. The tenant row lock runs the two removals one after the other. The
     // second runs for a user who is no longer a member, to whom the tenant does not exist (T3), so one Owner remains.
     [Fact]
     public async Task RemoveMember_TheOnlyTwoOwnersRemoveEachOtherAtOnce_LeaveOneOwner()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var one = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var other = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var oneId = await _catalog.UserIdOfAsync(one);
-        var otherId = await _catalog.UserIdOfAsync(other);
+        var tenant = await _testData.AddTenantAsync();
+        var one = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var other = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var oneId = await _testData.UserIdOfAsync(one);
+        var otherId = await _testData.UserIdOfAsync(other);
 
         var responses = await database.AtOnceAsync(
             tenant.Id,
@@ -184,10 +184,10 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RemoveMember_AMemberWithAProfile_LeavesTheNameAndTheEmailOutOfTheAuditLog()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var member = await _catalog.UserIdOfAsync(
-            await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "grace@example.com", firstName: "Grace", lastName: "Hopper")));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _testData.UserIdOfAsync(
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "grace@example.com", firstName: "Grace", lastName: "Hopper")));
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, member));
 

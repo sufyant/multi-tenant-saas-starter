@@ -10,7 +10,7 @@ namespace Audit.Infrastructure.Persistence;
 /// The <c>audit</c> schema: each tenant's log, a table with a tenant column under row level security, and the platform's log, a table
 /// without one, which only a transaction that declares neither a tenant nor a user may read (K3, R6, R11).
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code creates it for the handlers (W9); its sets are internal to the module.</remarks>
+/// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMessageContext? messaging = null)
     : TenantDbContext(options, messaging)
 {

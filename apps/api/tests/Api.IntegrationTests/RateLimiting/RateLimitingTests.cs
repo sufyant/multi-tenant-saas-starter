@@ -7,7 +7,7 @@ namespace Api.IntegrationTests.RateLimiting;
 [RuntimeHandlerCode]
 public sealed class RateLimitingTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
     private PipelineHost _host = null!;
 
     public async ValueTask InitializeAsync() =>
@@ -19,8 +19,8 @@ public sealed class RateLimitingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CallTheApi_AUserOverTheirLimit_IsRejectedWithProblemDetailsAndARetryHint()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
         await GetAsync($"/v1/tenants/{tenant.Id}/ping", member);
 
         var rejected = await GetAsync($"/v1/tenants/{tenant.Id}/ping", member);
@@ -34,9 +34,9 @@ public sealed class RateLimitingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CallTheApi_TwoMembersOfOneTenant_HaveABucketEach()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var first = await _catalog.AddMemberAsync(tenant.Id);
-        var second = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var first = await _testData.AddMemberAsync(tenant.Id);
+        var second = await _testData.AddMemberAsync(tenant.Id);
         await GetAsync($"/v1/tenants/{tenant.Id}/ping", first);
 
         var limited = await GetAsync($"/v1/tenants/{tenant.Id}/ping", first);
@@ -51,10 +51,10 @@ public sealed class RateLimitingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CallTheApi_AUserOverTheirLimitInOneTenant_IsLimitedInTheirOtherTenant()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
-        await _catalog.AddMemberAsync(other.Id, member);
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        await _testData.AddMemberAsync(other.Id, member);
         await GetAsync($"/v1/tenants/{tenant.Id}/ping", member);
 
         var response = await GetAsync($"/v1/tenants/{other.Id}/ping", member);
@@ -65,8 +65,8 @@ public sealed class RateLimitingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task LimitRequests_UserNotAMember_IsLimitedAsAUser()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var outsider = await _catalog.AddUserAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var outsider = await _testData.AddUserAsync();
         await GetAsync($"/v1/tenants/{tenant.Id}/ping", outsider);
 
         var rejected = await GetAsync("/v1/ping", outsider);

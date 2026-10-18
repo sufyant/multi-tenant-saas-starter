@@ -11,7 +11,7 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
 {
     private const string Reason = "Suspected fraud";
 
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -28,8 +28,8 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_MemberOfASuspendedTenant_IsForbiddenAndToldWhy()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         await SuspendAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -42,9 +42,9 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_StrangerToASuspendedTenant_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        await _catalog.AddMemberAsync(tenant.Id);
-        var stranger = await _catalog.AddUserAsync();
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id);
+        var stranger = await _testData.AddUserAsync();
         await SuspendAsync(tenant.Id);
 
         var response = await _api.CreateClient(stranger).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -56,10 +56,10 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_MemberAfterReactivation_GetsIn()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
         await SuspendAsync(tenant.Id);
-        (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true)
+        (await _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
             .PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -72,9 +72,9 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ReadTenant_AsAMemberAfterASuspensionWithAReason_NeverShowsTheReason()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = _api.CreateClient(await _catalog.AddMemberAsync(tenant.Id, role: "Owner"));
-        var admin = _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id, Reason));
         var atTheDoor = await owner.GetAsync($"/v1/tenants/{tenant.Id}", Cancellation);
         var inTheList = await owner.GetAsync("/v1/me/tenants", Cancellation);
@@ -96,5 +96,5 @@ public sealed class SuspendedTenantTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
     private async Task SuspendAsync(Guid tenantId) =>
-        (await _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true).SuspendTenantAsync(tenantId)).EnsureSuccessStatusCode();
+        (await _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true).SuspendTenantAsync(tenantId)).EnsureSuccessStatusCode();
 }

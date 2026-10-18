@@ -9,7 +9,7 @@ namespace ControlPlane.Application.Tenants;
 internal sealed record TenantActor(Tenant Tenant, User User, Membership Membership)
 {
     /// <summary>
-    /// The start of every tenant command that a member sends. It locks the active tenant first (K6), then finds the actor and their
+    /// The start of every tenant command that a member sends. It locks the active tenant first (K6g), then finds the actor and their
     /// membership, and then checks under the lock that the tenant is still active. The door let the actor in, but a change that held the
     /// lock before may have removed them: to a non-member the tenant does not exist (T3). The door let the actor into an active tenant,
     /// but a system admin may have suspended or closed it while the request waited for the lock: the door's answer refuses it.
@@ -23,7 +23,7 @@ internal sealed record TenantActor(Tenant Tenant, User User, Membership Membersh
         var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant door lets a member into an existing tenant only.");
         var user = await users.FindUserAsync(actorId, cancellationToken)
-            ?? throw new InvalidOperationException("A member is always a catalog user.");
+            ?? throw new InvalidOperationException("A member is always a user.");
         if (await tenants.FindMembershipAsync(user.Id, cancellationToken) is not { } membership)
         {
             return Errors.TenantNotFound;

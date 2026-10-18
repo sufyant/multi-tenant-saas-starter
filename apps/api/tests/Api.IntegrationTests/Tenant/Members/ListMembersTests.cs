@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Tenant.Members;
 // permission check, through the composed application.
 public sealed class ListMembersTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -27,12 +27,12 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_AsAMember_ReturnsTheMembersOfThatTenantOnly()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Member");
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var admin = await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
-        await _catalog.AddMemberAsync(other.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Member");
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        await _testData.AddMemberAsync(other.Id, role: "Owner");
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -40,9 +40,9 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Members(page).ShouldBe(
         [
-            (await _catalog.UserIdOfAsync(owner), Roles.BuiltIn("owner")),
-            (await _catalog.UserIdOfAsync(admin), Roles.BuiltIn("admin")),
-            (await _catalog.UserIdOfAsync(member), Roles.BuiltIn("member")),
+            (await _testData.UserIdOfAsync(owner), Roles.BuiltIn("owner")),
+            (await _testData.UserIdOfAsync(admin), Roles.BuiltIn("admin")),
+            (await _testData.UserIdOfAsync(member), Roles.BuiltIn("member")),
         ]);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
@@ -52,11 +52,11 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_OfTheSameRole_AreOrderedByUserId()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var random = Guid.NewGuid().ToString();
         var (lower, higher) = (Guid.Parse($"0{random[1..]}"), Guid.Parse($"f{random[1..]}"));
-        var later = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(higher));
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(lower));
+        var later = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(higher));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(lower));
 
         var page = await _api.CreateClient(later).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -67,25 +67,25 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_AnotherTenantInTheQueryAndAHeader_ReturnsTheTenantOfThePath()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _catalog.AddMemberAsync(other.Id, caller, role: "Member");
-        await _catalog.AddMemberAsync(other.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(other.Id, caller, role: "Member");
+        await _testData.AddMemberAsync(other.Id, role: "Owner");
         var client = _api.CreateClient(caller);
         client.DefaultRequestHeaders.Add("X-Tenant-Id", other.Id.ToString());
 
         var page = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?tenantId={other.Id}", Cancellation);
 
-        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(caller), Roles.BuiltIn("owner"))]);
+        Members(page).ShouldBe([(await _testData.UserIdOfAsync(caller), Roles.BuiltIn("owner"))]);
     }
 
     // T3: a tenant the caller cannot enter looks the same as one that does not exist.
     [Fact]
     public async Task ListMembers_AsAUserWhoIsNotAMember_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var outsider = await _catalog.AddUserAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var outsider = await _testData.AddUserAsync();
 
         var response = await _api.CreateClient(outsider).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -95,7 +95,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_UnknownTenantId_IsNotFound()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var response = await _api.CreateClient(user).GetAsync($"/v1/tenants/{Guid.NewGuid()}/members", Cancellation);
 
@@ -105,7 +105,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_TenantIdThatIsNotAGuid_IsNotFound()
     {
-        var user = await _catalog.AddUserAsync();
+        var user = await _testData.AddUserAsync();
 
         var response = await _api.CreateClient(user).GetAsync("/v1/tenants/not-a-guid/members", Cancellation);
 
@@ -115,8 +115,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_TenantThatIsNotActive_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync(status: "Provisioning");
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync(status: "Provisioning");
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -127,8 +127,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_AsASystemAdminWhoIsNotAMember_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddSystemAdminAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
 
         var response = await _api.CreateClient(admin, secondFactor: true).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -139,8 +139,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_TheSlugInThePath_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Slug}/members", Cancellation);
 
@@ -150,7 +150,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_WithoutAToken_IsUnauthorized()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
 
         var response = await _api.CreateClient().GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
@@ -160,8 +160,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_TheMaximumPageSize_IsAccepted()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?pageSize=100", Cancellation);
 
@@ -171,14 +171,14 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_ALaterPage_ReturnsTheRestAndTheTotal()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Member");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Member");
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?page=2&pageSize=2", Cancellation);
 
-        Members(page).ShouldBe([(await _catalog.UserIdOfAsync(member), Roles.BuiltIn("member"))]);
+        Members(page).ShouldBe([(await _testData.UserIdOfAsync(member), Roles.BuiltIn("member"))]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
         page.GetProperty("pageSize").GetInt32().ShouldBe(2);
         page.GetProperty("total").GetInt32().ShouldBe(3);
@@ -190,8 +190,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("page=0", "paging.page_invalid")]
     public async Task ListMembers_PagingOutsideItsRange_IsRejected(string query, string code)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members?{query}", Cancellation);
 
@@ -199,21 +199,21 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe(code);
     }
 
-    // The email address and the names come from the catalog's copy of each user's profile (A7).
+    // The email address and the names come from our copy of each user's profile (A7).
     [Fact]
     public async Task ListMembers_AsAMember_ReturnsEachMemberWithTheirEmailAndNames()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "ada@math.org", firstName: "Ada", lastName: "Lovelace"), role: "Owner");
-        var member = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "grace@navy.mil", firstName: "Grace"));
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "ada@math.org", firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "grace@navy.mil", firstName: "Grace"));
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Profiles(page).ShouldBe(
         [
-            (await _catalog.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", Roles.BuiltIn("owner")),
-            (await _catalog.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, Roles.BuiltIn("member")),
+            (await _testData.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", Roles.BuiltIn("owner")),
+            (await _testData.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, Roles.BuiltIn("member")),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
             .ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted", "joinedAt"], ignoreOrder: true);
@@ -224,17 +224,17 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_EachMember_ReturnsWhenTheyJoined()
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var first = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
         var later = new DateTimeOffset(2026, 6, 7, 8, 9, 10, TimeSpan.Zero);
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner", joinedAt: first);
-        var member = await _catalog.AddMemberAsync(tenant.Id, joinedAt: later);
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner", joinedAt: first);
+        var member = await _testData.AddMemberAsync(tenant.Id, joinedAt: later);
 
         var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
         page.GetProperty("items").EnumerateArray()
             .Select(item => (item.GetProperty("userId").GetGuid(), item.GetProperty("joinedAt").GetDateTimeOffset()))
-            .ShouldBe([(await _catalog.UserIdOfAsync(owner), first), (await _catalog.UserIdOfAsync(member), later)]);
+            .ShouldBe([(await _testData.UserIdOfAsync(owner), first), (await _testData.UserIdOfAsync(member), later)]);
     }
 
     // The page is one query, with each member's user and role joined: a longer page sends no more commands (K5).
@@ -242,8 +242,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     public async Task ListMembers_ALongerPage_SendsNoMoreSqlCommands()
     {
         using var commands = new SqlCommands();
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         await AddMembersAsync(tenant.Id, "Ball", "Cole");
         var url = $"/v1/tenants/{tenant.Id}/members";
 
@@ -258,14 +258,14 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListMembers_AMemberWhoseUserWasDeleted_StaysWithoutEmailOrNamesAndSaysDeleted()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        var deleted = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "gone@example.com", firstName: "Gone", lastName: "Away"));
-        await _catalog.DeleteUserAsync(deleted);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var deleted = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "gone@example.com", firstName: "Gone", lastName: "Away"));
+        await _testData.DeleteUserAsync(deleted);
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=member", Cancellation);
 
-        Profiles(page).ShouldBe([(await _catalog.UserIdOfAsync(deleted), null, null, null, Roles.BuiltIn("member"))]);
+        Profiles(page).ShouldBe([(await _testData.UserIdOfAsync(deleted), null, null, null, Roles.BuiltIn("member"))]);
         Deleted(page).ShouldBe([true]);
     }
 
@@ -275,10 +275,10 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     public async Task ListMembers_ASearchThatMatchesOnlyAUserOfAnotherTenant_FindsNoOne()
     {
         var needle = $"needle-{Guid.NewGuid():N}@example.com";
-        var tenant = await _catalog.AddTenantAsync();
-        var other = await _catalog.AddTenantAsync();
-        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _catalog.AddMemberAsync(other.Id, await _catalog.AddUserAsync(email: needle), role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(other.Id, await _testData.AddUserAsync(email: needle), role: "Owner");
 
         var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(needle)}", Cancellation);
 
@@ -292,10 +292,10 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("LOVEL", "m1@math.org")]
     public async Task ListMembers_ASearch_FindsTheMembersWhoseEmailOrNameContainsItInAnyCase(string q, string found)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "m1@math.org", firstName: "Ada", lastName: "Lovelace"));
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "m2@navy.mil", firstName: "Grace", lastName: "Hopper"));
+        var tenant = await _testData.AddTenantAsync();
+        var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "m1@math.org", firstName: "Ada", lastName: "Lovelace"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "m2@navy.mil", firstName: "Grace", lastName: "Hopper"));
 
         var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(q)}", Cancellation);
 
@@ -309,8 +309,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData(@"k\s", @"Back\slash")]
     public async Task ListMembers_ASearchWithAWildcard_MatchesTheCharacterItself(string q, string found)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         await AddMembersAsync(tenant.Id, "Per%cent", "Perxcent", "Under_score", "Underxscore", @"Back\slash", "Backslash");
 
         var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(q)}", Cancellation);
@@ -324,10 +324,10 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("member")]
     public async Task ListMembers_ARoleFilter_ReturnsTheMembersOfThatRoleOnly(string role)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _catalog.AddMemberAsync(tenant.Id, role: "Admin");
-        await _catalog.AddMemberAsync(tenant.Id, role: "Member");
+        var tenant = await _testData.AddTenantAsync();
+        var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        await _testData.AddMemberAsync(tenant.Id, role: "Member");
 
         var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role={role}", Cancellation);
 
@@ -345,10 +345,10 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("-lastName", "b@t.org, c@t.org, a@t.org")]
     public async Task ListMembers_ASortField_OrdersByItInItsDirection(string sort, string emails)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "c@t.org", lastName: "Young"), role: "Owner");
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "a@t.org"), role: "Admin");
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(email: "b@t.org", lastName: "Zed"), role: "Member");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "c@t.org", lastName: "Young"), role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "a@t.org"), role: "Admin");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "b@t.org", lastName: "Zed"), role: "Member");
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?sort={sort}", Cancellation);
 
@@ -364,12 +364,12 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("-lastName")]
     public async Task ListMembers_TwoMembersWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
     {
-        var tenant = await _catalog.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync();
         var random = Guid.NewGuid().ToString();
         var (lower, higher) = (Guid.Parse($"0{random[1..]}"), Guid.Parse($"f{random[1..]}"));
-        var caller = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(higher, email: "same@t.org", lastName: "Same"));
-        await _catalog.AddMemberAsync(tenant.Id, await _catalog.AddUserAsync(lower, email: "same@t.org", lastName: "Same"));
+        var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(higher, email: "same@t.org", lastName: "Same"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(lower, email: "same@t.org", lastName: "Same"));
         var client = _api.CreateClient(caller);
 
         var first = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?role=member&sort={sort}&pageSize=1&page=1", Cancellation);
@@ -387,8 +387,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListMembers_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members?{query}", Cancellation);
 
@@ -416,7 +416,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     {
         foreach (var lastName in lastNames)
         {
-            await _catalog.AddMemberAsync(tenantId, await _catalog.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: lastName));
+            await _testData.AddMemberAsync(tenantId, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: lastName));
         }
     }
 }

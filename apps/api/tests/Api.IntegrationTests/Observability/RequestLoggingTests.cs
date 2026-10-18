@@ -32,9 +32,9 @@ public sealed class RequestLoggingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task LogRequest_TenantRequest_IsLoggedWithItsTenant()
     {
-        var catalog = new Catalog(database);
-        var tenant = await catalog.AddTenantAsync();
-        var member = await catalog.AddMemberAsync(tenant.Id);
+        var testData = new TestData(database);
+        var tenant = await testData.AddTenantAsync();
+        var member = await testData.AddMemberAsync(tenant.Id);
 
         await _host.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/ping", TestContext.Current.CancellationToken);
 

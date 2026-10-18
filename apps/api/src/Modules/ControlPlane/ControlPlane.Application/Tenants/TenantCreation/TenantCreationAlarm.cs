@@ -7,7 +7,7 @@ namespace ControlPlane.Application.Tenants.TenantCreation;
 /// Tells a person that a tenant's creation needs attention (S9): an error log entry with a fixed event name and the tenant's id,
 /// and one counter. It names no exception: what failed is in the dead letter queue.
 /// </summary>
-/// <remarks>Public only because Wolverine's generated code passes it to a public handler.</remarks>
+/// <remarks>Public because a public handler takes it (W9).</remarks>
 public sealed partial class TenantCreationAlarm(ILogger<TenantCreationAlarm> logger, IMeterFactory meters)
 {
     /// <summary>The module's meter; the host exports every meter named <c>Modules.*</c>.</summary>

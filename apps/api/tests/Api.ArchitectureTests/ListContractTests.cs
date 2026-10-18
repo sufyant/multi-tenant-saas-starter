@@ -48,7 +48,7 @@ public sealed class ListContractTests : IAsyncLifetime
         notEnums.ShouldBeEmpty();
     }
 
-    // A19 and N7: a filter takes the enum of its response, so it refers to that enum's schema, and a client has one type for both.
+    // N7h and N11e: a filter takes the enum of its response, so it refers to that enum's schema, and a client has one type for both.
     [Fact]
     public void BuildOpenApiDocument_EveryEnumFilterOfAList_RefersToTheSchemaOfItsEnum()
     {

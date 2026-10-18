@@ -7,10 +7,10 @@ using ControlPlane.Api.Tenant.Invitations;
 namespace ControlPlane.Api.Statuses;
 
 /// <summary>
-/// Maps each of ControlPlane's statuses to the status enum of a response (N7), and the status a list filter names back to ControlPlane's
+/// Maps each of ControlPlane's statuses to the status enum of a response (N7r), and the status a list filter names back to ControlPlane's
 /// (K5). Every response maps its status here when it is built, so a saved idempotent result, which holds ControlPlane's name, replays to
 /// the same answer. A status a response cannot carry is a fault, not an answer. An invitation's state maps to the one enum of every
-/// response (N7), whose description says which values it holds.
+/// response (N7o), whose description says which values it holds.
 /// </summary>
 internal static class ResponseStatus
 {

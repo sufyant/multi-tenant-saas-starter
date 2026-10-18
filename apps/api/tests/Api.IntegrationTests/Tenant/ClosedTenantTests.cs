@@ -9,7 +9,7 @@ namespace Api.IntegrationTests.Tenant;
 // find it in their list of tenants, and a reopening lets them in again.
 public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
 
@@ -26,8 +26,8 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_MemberOfAClosedTenant_IsForbiddenAndToldWhy()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
@@ -41,9 +41,9 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_StrangerToAClosedTenant_AnswersTheHandlersTenantNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        await _catalog.AddMemberAsync(tenant.Id);
-        var stranger = _api.CreateClient(await _catalog.AddUserAsync());
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id);
+        var stranger = _api.CreateClient(await _testData.AddUserAsync());
         var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
 
@@ -59,8 +59,8 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task EnterTenant_MemberAfterReopening_GetsIn()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var member = await _catalog.AddMemberAsync(tenant.Id);
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
         var admin = await SystemAdminAsync();
         await admin.CloseTenantAsync(tenant.Id);
         (await admin.ReopenTenantAsync(tenant.Id)).EnsureSuccessStatusCode();
@@ -73,5 +73,5 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _catalog.AddSystemAdminAsync(), secondFactor: true);
+    private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 }

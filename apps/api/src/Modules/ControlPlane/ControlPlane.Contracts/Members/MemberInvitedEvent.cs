@@ -8,7 +8,7 @@ namespace ControlPlane.Contracts.Members;
 /// address sign up (<see cref="MemberInvitationReadyEvent"/>).
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
-/// <param name="InvitedBy">The catalog user id of the member who invited, who acted.</param>
+/// <param name="InvitedBy">The user id of the member who invited, who acted.</param>
 /// <param name="Role">The built-in role the invitation gives: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
 /// <param name="ReplacedInvitationId">The pending invitation to the same address that this one cancelled, if there was one (K2).</param>
 [MessageName("member-invited")]

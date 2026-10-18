@@ -98,7 +98,7 @@ public sealed class Database : IAsyncLifetime
 
     public Task RunScriptAsync(string script, params string[] variables) => RunScriptInAsync(MainDatabase, script, variables);
 
-    // A database set up the way a deployment is, for a test that needs the catalog as it starts, without the rows other tests write.
+    // A database set up the way a deployment is, for a test that needs ControlPlane's tables as they start, without the rows other tests write.
     public async Task<string> CreateMigratedDatabaseAsync()
     {
         var name = await CreateEmptyDatabaseAsync();

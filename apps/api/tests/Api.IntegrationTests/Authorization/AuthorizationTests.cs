@@ -8,7 +8,7 @@ namespace Api.IntegrationTests.Authorization;
 [RuntimeHandlerCode]
 public sealed class AuthorizationTests(Database database) : IAsyncLifetime
 {
-    private readonly Catalog _catalog = new(database);
+    private readonly TestData _testData = new(database);
     private PipelineHost _host = null!;
 
     public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
@@ -18,8 +18,8 @@ public sealed class AuthorizationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CallGuardedEndpoint_RoleLacksThePermission_IsForbiddenWithProblemDetails()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var owner = await _catalog.AddMemberAsync(tenant.Id, role: "Owner");
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var response = await PostGuardedAsync(tenant.Id, owner);
 
@@ -32,8 +32,8 @@ public sealed class AuthorizationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CallGuardedEndpoint_UserNotAMember_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var outsider = await _catalog.AddUserAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var outsider = await _testData.AddUserAsync();
 
         var response = await PostGuardedAsync(tenant.Id, outsider);
 
@@ -45,8 +45,8 @@ public sealed class AuthorizationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task CallGuardedEndpoint_SystemAdminNotAMember_IsNotFound()
     {
-        var tenant = await _catalog.AddTenantAsync();
-        var admin = await _catalog.AddSystemAdminAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
 
         var response = await _host.CreateClient(admin, secondFactor: true)
             .PostAsync($"/v1/tenants/{tenant.Id}/guarded", null, TestContext.Current.CancellationToken);
