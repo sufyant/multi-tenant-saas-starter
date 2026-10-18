@@ -10,15 +10,13 @@ namespace Audit.Application.Tenants;
 // name of that moment, the new one; the details hold the old and the new name in both logs.
 public static class RecordTenantRenamedHandler
 {
-    private const string TenantRenamed = "tenant.renamed";
-
     public static Task HandleAsync(TenantRenamed renamed, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(renamed.TenantId, renamed.NewName);
         var details = JsonSerializer.Serialize(new Details(renamed.OldName, renamed.NewName), JsonSerializerOptions.Web);
         return log.RecordAsync(
-            new PlatformAuditEntry(renamed.EventId, renamed.OccurredAt, AuditActor.User(renamed.RenamedBy), TenantRenamed, tenant, details),
-            new AuditEntry(renamed.EventId, renamed.OccurredAt, AuditActor.Platform, TenantRenamed, tenant, details),
+            new PlatformAuditEntry(renamed.EventId, renamed.OccurredAt, AuditActor.User(renamed.RenamedBy), AuditOperations.TenantRenamed, tenant, details),
+            new AuditEntry(renamed.EventId, renamed.OccurredAt, AuditActor.Platform, AuditOperations.TenantRenamed, tenant, details),
             cancellationToken);
     }
 

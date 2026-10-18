@@ -10,8 +10,6 @@ namespace Audit.Application.Invitations;
 // the record stores none (K3).
 public static class RecordMemberInvitedHandler
 {
-    private const string MemberInvited = "member.invited";
-
     public static Task HandleAsync(MemberInvited invited, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
@@ -19,7 +17,7 @@ public static class RecordMemberInvitedHandler
                 invited.EventId,
                 invited.OccurredAt,
                 AuditActor.User(invited.InvitedBy),
-                MemberInvited,
+                AuditOperations.MemberInvited,
                 AuditTarget.Invitation(invited.InvitationId),
                 JsonSerializer.Serialize(new Details(RoleNames.Of(invited.Role), invited.ReplacedInvitationId), JsonSerializerOptions.Web)),
             cancellationToken);

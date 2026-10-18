@@ -3827,7 +3827,7 @@
             "format": "date-time"
           },
           "operation": {
-            "type": "string"
+            "$ref": "#/components/schemas/AuditOperation"
           },
           "details": {
             "oneOf": [
@@ -3854,6 +3854,29 @@
           }
         },
         "description": "One record of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the record\nkeeps (a JSON object, or null). Names are resolved when the log is read; a name is only a person's real name. It holds no email\naddress."
+      },
+      "AuditOperation": {
+        "enum": [
+          "invitation.revoked",
+          "member.invited",
+          "member.joined",
+          "member.removed",
+          "member.role_changed",
+          "tenant.closed",
+          "tenant.created",
+          "tenant.owner_invited",
+          "tenant.reactivated",
+          "tenant.renamed",
+          "tenant.reopened",
+          "tenant.suspended",
+          "user.deleted",
+          "user.preferences_changed",
+          "user.reactivated",
+          "user.renamed",
+          "user.suspended"
+        ],
+        "type": "string",
+        "description": "The operation of an audit record, area.action."
       },
       "AuditTargetResponse": {
         "required": [

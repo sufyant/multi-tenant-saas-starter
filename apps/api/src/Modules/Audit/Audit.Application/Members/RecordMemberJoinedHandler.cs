@@ -8,11 +8,9 @@ namespace Audit.Application.Members;
 // target too.
 public static class RecordMemberJoinedHandler
 {
-    private const string MemberJoined = "member.joined";
-
     public static Task HandleAsync(MemberJoined joined, IAuditLog log, CancellationToken cancellationToken) =>
         log.RecordAsync(
             null,
-            new AuditEntry(joined.EventId, joined.OccurredAt, AuditActor.User(joined.UserId), MemberJoined, AuditTarget.User(joined.UserId)),
+            new AuditEntry(joined.EventId, joined.OccurredAt, AuditActor.User(joined.UserId), AuditOperations.MemberJoined, AuditTarget.User(joined.UserId)),
             cancellationToken);
 }

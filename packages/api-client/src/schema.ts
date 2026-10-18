@@ -415,11 +415,16 @@ export interface components {
             id: string;
             /** Format: date-time */
             occurredAt: string;
-            operation: string;
+            operation: components["schemas"]["AuditOperation"];
             details: null | components["schemas"]["JsonElement"];
             actor: components["schemas"]["AuditActorResponse"];
             target: null | components["schemas"]["AuditTargetResponse"];
         };
+        /**
+         * @description The operation of an audit record, area.action.
+         * @enum {string}
+         */
+        AuditOperation: "invitation.revoked" | "member.invited" | "member.joined" | "member.removed" | "member.role_changed" | "tenant.closed" | "tenant.created" | "tenant.owner_invited" | "tenant.reactivated" | "tenant.renamed" | "tenant.reopened" | "tenant.suspended" | "user.deleted" | "user.preferences_changed" | "user.reactivated" | "user.renamed" | "user.suspended";
         /**
          * @description What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
          *     has no name. `deleted` is set for a user only. A record written before the audit kept targets has none.
