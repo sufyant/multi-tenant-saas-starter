@@ -15,7 +15,7 @@ public sealed record SuspendUserCommand(Guid UserId, string AdminId);
 // before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class SuspendUserHandler
 {
-    public static async Task<(Result<UserDetails>, UserSuspendedEvent?)> HandleAsync(
+    public static async Task<(Result<UserView>, UserSuspendedEvent?)> HandleAsync(
         SuspendUserCommand command,
         IUserCatalog users,
         TimeProvider time,
@@ -36,10 +36,10 @@ public static class SuspendUserHandler
         var now = time.GetUtcNow();
         if (!user.Suspend(now, admin))
         {
-            return (UserDetails.Of(user, isSystemAdmin: false), null);
+            return (UserView.Of(user, isSystemAdmin: false), null);
         }
 
         await users.SaveChangesAsync(cancellationToken);
-        return (UserDetails.Of(user, isSystemAdmin: false), new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, admin));
+        return (UserView.Of(user, isSystemAdmin: false), new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, admin));
     }
 }

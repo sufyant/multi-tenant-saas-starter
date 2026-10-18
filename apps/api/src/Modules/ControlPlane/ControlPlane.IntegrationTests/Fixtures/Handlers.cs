@@ -91,7 +91,7 @@ internal static class Handlers
     // Accepting starts outside any tenant: the invitation code names the tenant, the identity provider is asked for the user's
     // verified email addresses, and then the invitation is found by its secret in that tenant. A person the catalog does not know
     // gives their names.
-    public static async Task<Result<TenantSummary>> AcceptAsync(
+    public static async Task<Result<MyTenantView>> AcceptAsync(
         IServiceProvider services,
         string code,
         string userId,
@@ -121,7 +121,7 @@ internal static class Handlers
     public static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
 
     public sealed record CreatedTenant(
-        Result<TenantDetails> Result,
+        Result<TenantView> Result,
         Insert<TenantCreationSaga>? Saga,
         DeliveryMessage<ActivateTenantCommand>? Activate,
         ActivationTimedOut? Timeout);

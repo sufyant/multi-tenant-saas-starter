@@ -14,29 +14,29 @@ public sealed record GetUserQuery(Guid UserId);
 /// A user as in the list, with when a system admin suspended them and that system admin's names, and every membership by the tenant's
 /// name, then id.
 /// </summary>
-public sealed record UserWithMemberships(
-    UserDetails User,
+public sealed record UserDetailView(
+    UserView User,
     DateTimeOffset? SuspendedAt,
-    PersonName? SuspendedBy,
-    IReadOnlyList<UserMembershipDetails> Memberships);
+    UserNameView? SuspendedBy,
+    IReadOnlyList<UserMembershipView> Memberships);
 
 /// <summary>
 /// A tenant the user is a member of: its name, slug and status (<c>Active</c>, <c>Suspended</c>, <c>Closed</c>), the role the user
 /// holds there, when they joined, and whether they are its last Owner. The suspend dialog warns
 /// with it, and the delete refusal names those tenants.
 /// </summary>
-public sealed record UserMembershipDetails(
+public sealed record UserMembershipView(
     Guid TenantId,
     string TenantName,
     string TenantSlug,
     string TenantStatus,
-    RoleSummary Role,
+    RoleView Role,
     DateTimeOffset JoinedAt,
     bool LastOwner);
 
 public static class GetUserHandler
 {
-    public static async Task<Result<UserWithMemberships>> HandleAsync(GetUserQuery query, IUserCatalog users, CancellationToken cancellationToken)
+    public static async Task<Result<UserDetailView>> HandleAsync(GetUserQuery query, IUserCatalog users, CancellationToken cancellationToken)
     {
         if (await users.FindUserAsync(query.UserId, cancellationToken) is not { } user)
         {
@@ -45,10 +45,10 @@ public static class GetUserHandler
 
         var suspendedBy = user.SuspendedBy is { } adminId ? await users.FindUserAsync(adminId, cancellationToken) : null;
         var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
-        return new UserWithMemberships(
-            UserDetails.Of(user, isSystemAdmin),
+        return new UserDetailView(
+            UserView.Of(user, isSystemAdmin),
             user.SuspendedAt,
-            suspendedBy is null ? null : PersonName.Of(suspendedBy),
+            suspendedBy is null ? null : UserNameView.Of(suspendedBy),
             await users.ListMembershipDetailsAsync(user.Id, cancellationToken));
     }
 }

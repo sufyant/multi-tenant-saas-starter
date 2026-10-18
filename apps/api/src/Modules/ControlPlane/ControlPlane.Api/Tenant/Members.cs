@@ -42,7 +42,7 @@ public static class Members
             return filter.Error;
         }
 
-        var members = await bus.InvokeAsync<Result<ListPage<MemberSummary>>>(new ListMembersQuery(list.Value, filter.Value?.ToString()), cancellationToken);
+        var members = await bus.InvokeAsync<Result<ListPage<MemberView>>>(new ListMembersQuery(list.Value, filter.Value?.ToString()), cancellationToken);
         return members.Map(found => found.Map(ToResponse));
     }
 
@@ -54,7 +54,7 @@ public static class Members
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var changed = await bus.InvokeAsync<Result<MemberSummary>>(new ChangeMemberRoleCommand(user.Id(), userId, request.Role.ToString()), cancellationToken);
+        var changed = await bus.InvokeAsync<Result<MemberView>>(new ChangeMemberRoleCommand(user.Id(), userId, request.Role.ToString()), cancellationToken);
         return changed.Map(ToResponse);
     }
 
@@ -62,12 +62,12 @@ public static class Members
     private static async Task<Result> RemoveMember(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         await bus.InvokeAsync<Result>(new RemoveMemberCommand(user.Id(), userId), cancellationToken);
 
-    private static MemberResponse ToResponse(MemberSummary member) =>
+    private static MemberResponse ToResponse(MemberView member) =>
         new(member.UserId, member.Email, member.FirstName, member.LastName, ToResponse(member.Role), member.Deleted, member.JoinedAt);
 
     // Every response that holds a role answers it in this one shape (N7). The built-in role keeps ControlPlane's name, as a request
     // gives it (RoleNameTests).
-    internal static RoleResponse ToResponse(RoleSummary role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
+    internal static RoleResponse ToResponse(RoleView role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
 }
 
 /// <summary>

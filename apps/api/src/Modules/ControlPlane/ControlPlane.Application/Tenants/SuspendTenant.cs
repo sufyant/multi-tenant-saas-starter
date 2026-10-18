@@ -28,7 +28,7 @@ public sealed class SuspendTenantValidator : AbstractValidator<SuspendTenantComm
 // before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class SuspendTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantSuspendedEvent?)> HandleAsync(
+    public static async Task<(Result<TenantView>, TenantSuspendedEvent?)> HandleAsync(
         SuspendTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -42,7 +42,7 @@ public static class SuspendTenantHandler
         var suspended = tenant.Suspend(command.Reason);
         if (!suspended.IsSuccess || !suspended.Value)
         {
-            return (suspended.Map(_ => TenantDetails.Of(tenant)), null);
+            return (suspended.Map(_ => TenantView.Of(tenant)), null);
         }
 
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
@@ -50,6 +50,6 @@ public static class SuspendTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name, tenant.SuspensionReason));
+        return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name, tenant.SuspensionReason));
     }
 }

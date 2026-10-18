@@ -28,8 +28,8 @@ public static class AuditLog
             return page.Error;
         }
 
-        var entries = await bus.InvokeAsync<CursorPage<AuditEntrySummary>>(new ListAuditEntriesQuery(page.Value), cancellationToken);
-        var named = await bus.InvokeAsync<CursorPage<AuditEntrySummary>>(new GetAuditEntryNamesQuery(entries), cancellationToken);
+        var entries = await bus.InvokeAsync<CursorPage<AuditEntryView>>(new ListAuditEntriesQuery(page.Value), cancellationToken);
+        var named = await bus.InvokeAsync<CursorPage<AuditEntryView>>(new GetAuditEntryNamesQuery(entries), cancellationToken);
         return AuditEntryResponses.Of(named);
     }
 }
@@ -88,7 +88,7 @@ public enum AuditTargetResponseKind
 // The kinds keep the Domain's names (User, Tenant), so each maps to the response's enum by name.
 internal static class AuditEntryResponses
 {
-    public static CursorPage<AuditEntryResponse> Of(CursorPage<AuditEntrySummary> page) => page.Map(entry => new AuditEntryResponse(
+    public static CursorPage<AuditEntryResponse> Of(CursorPage<AuditEntryView> page) => page.Map(entry => new AuditEntryResponse(
         entry.Id,
         entry.OccurredAt,
         entry.Operation,

@@ -43,7 +43,7 @@ public sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitati
 // Every rejection returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class AcceptInvitationHandler
 {
-    public static async Task<(Result<TenantSummary>, MemberJoinedEvent?)> HandleAsync(
+    public static async Task<(Result<MyTenantView>, MemberJoinedEvent?)> HandleAsync(
         AcceptInvitationCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -117,7 +117,7 @@ public static class AcceptInvitationHandler
 
         await catalog.AddMembershipAsync(tenant, user.Id, invitation.RoleId, now, cancellationToken);
         return (
-            TenantSummary.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
+            MyTenantView.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
             new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
     }
 

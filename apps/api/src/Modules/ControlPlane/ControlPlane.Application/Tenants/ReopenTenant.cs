@@ -14,7 +14,7 @@ public sealed record ReopenTenantCommand(string AdminId);
 // changes anything, because Wolverine commits a failed Result too (W7).
 public static class ReopenTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantReopenedEvent?)> HandleAsync(
+    public static async Task<(Result<TenantView>, TenantReopenedEvent?)> HandleAsync(
         ReopenTenantCommand command,
         ITenantCatalog catalog,
         TenantOptions settings,
@@ -30,13 +30,13 @@ public static class ReopenTenantHandler
         var reopened = tenant.Reopen(now, settings.ReopenPeriod);
         if (!reopened.IsSuccess || !reopened.Value)
         {
-            return (reopened.Map(_ => TenantDetails.Of(tenant)), null);
+            return (reopened.Map(_ => TenantView.Of(tenant)), null);
         }
 
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
             ?? throw new InvalidOperationException("A system admin is always a catalog user.");
         await catalog.SaveChangesAsync(cancellationToken);
 
-        return (TenantDetails.Of(tenant), new TenantReopenedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
+        return (TenantView.Of(tenant), new TenantReopenedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
     }
 }

@@ -29,7 +29,7 @@ public sealed class RenameTenantValidator : AbstractValidator<RenameTenantComman
 // handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class RenameTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantRenamedEvent?)> HandleAsync(
+    public static async Task<(Result<TenantView>, TenantRenamedEvent?)> HandleAsync(
         RenameTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -44,7 +44,7 @@ public static class RenameTenantHandler
         var renamed = tenant.Rename(command.Name);
         if (!renamed.IsSuccess || !renamed.Value)
         {
-            return (renamed.Map(_ => TenantDetails.Of(tenant)), null);
+            return (renamed.Map(_ => TenantView.Of(tenant)), null);
         }
 
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
@@ -52,6 +52,6 @@ public static class RenameTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, oldName, tenant.Name));
+        return (TenantView.Of(tenant), new TenantRenamedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, oldName, tenant.Name));
     }
 }

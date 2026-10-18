@@ -31,13 +31,13 @@ public static class MyTenants
             return list.Error;
         }
 
-        var tenants = await bus.InvokeAsync<Result<ListPage<TenantSummary>>>(new ListMyTenantsQuery(user.Id(), list.Value), cancellationToken);
+        var tenants = await bus.InvokeAsync<Result<ListPage<MyTenantView>>>(new ListMyTenantsQuery(user.Id(), list.Value), cancellationToken);
         return tenants.Map(found => found.Map(ToResponse));
     }
 
     // Accepting an invitation answers the tenant it joined in the same shape (N7: a response that two audiences answer stays in the
     // first one's file).
-    internal static MyTenantResponse ToResponse(TenantSummary tenant) =>
+    internal static MyTenantResponse ToResponse(MyTenantView tenant) =>
         new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), Members.ToResponse(tenant.Role));
 }
 

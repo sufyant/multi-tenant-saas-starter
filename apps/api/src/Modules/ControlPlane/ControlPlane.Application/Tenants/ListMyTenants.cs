@@ -21,17 +21,17 @@ public sealed record ListMyTenantsQuery(string UserId, ListRequest<ListMyTenants
 /// <summary>
 /// A tenant as its members see it: active, or suspended or closed so that they cannot enter it, with the role the user holds there.
 /// </summary>
-public sealed record TenantSummary(Guid Id, string Name, string Slug, string Status, RoleSummary Role)
+public sealed record MyTenantView(Guid Id, string Name, string Slug, string Status, RoleView Role)
 {
-    internal static TenantSummary Of(Tenant tenant, Role role) => new(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString(), RoleSummary.Of(role));
+    internal static MyTenantView Of(Tenant tenant, Role role) => new(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString(), RoleView.Of(role));
 }
 
 public static class ListMyTenantsHandler
 {
-    public static async Task<Result<ListPage<TenantSummary>>> HandleAsync(
+    public static async Task<Result<ListPage<MyTenantView>>> HandleAsync(
         ListMyTenantsQuery query,
         IUserTenants tenants,
         CancellationToken cancellationToken) =>
         (await tenants.ListPastCreationAsync(query.UserId, query.List, cancellationToken))
-            .Map(found => TenantSummary.Of(found.Tenant, found.Role));
+            .Map(found => MyTenantView.Of(found.Tenant, found.Role));
 }

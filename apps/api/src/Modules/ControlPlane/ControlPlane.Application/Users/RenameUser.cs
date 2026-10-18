@@ -30,7 +30,7 @@ public sealed class RenameUserValidator : AbstractValidator<RenameUserCommand>
 // failed Result too (W7).
 public static class RenameUserHandler
 {
-    public static async Task<(Result<UserDetails>, UserRenamedEvent?)> HandleAsync(
+    public static async Task<(Result<UserView>, UserRenamedEvent?)> HandleAsync(
         RenameUserCommand command,
         IUserCatalog users,
         TimeProvider time,
@@ -45,13 +45,13 @@ public static class RenameUserHandler
         var renamed = user.Rename(command.FirstName, command.LastName);
         if (!renamed.IsSuccess || !renamed.Value)
         {
-            return (renamed.Map(_ => UserDetails.Of(user, isSystemAdmin)), null);
+            return (renamed.Map(_ => UserView.Of(user, isSystemAdmin)), null);
         }
 
         var admin = await users.FindUserIdAsync(command.AdminId, cancellationToken)
             ?? throw new InvalidOperationException("A system admin is always a catalog user.");
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (UserDetails.Of(user, isSystemAdmin), new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, admin));
+        return (UserView.Of(user, isSystemAdmin), new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, admin));
     }
 }

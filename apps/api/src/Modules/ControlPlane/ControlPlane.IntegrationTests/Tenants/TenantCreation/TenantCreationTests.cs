@@ -32,7 +32,7 @@ public sealed class TenantCreationTests(Database database)
 
         var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, slug, owner);
 
-        started.Result.Value.ShouldBe(new TenantDetails(tenantId, "Acme Ltd", slug, "Provisioning", null, null));
+        started.Result.Value.ShouldBe(new TenantView(tenantId, "Acme Ltd", slug, "Provisioning", null, null));
         var activate = started.Activate.ShouldNotBeNull().Message;
         var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
         activate.ShouldSatisfyAllConditions(
@@ -312,7 +312,7 @@ public sealed class TenantCreationTests(Database database)
         return (transaction, ((NpgsqlConnection)catalog.Database.GetDbConnection()).ProcessID);
     }
 
-    private static async Task<SharedKernel.Result<TenantDetails>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
+    private static async Task<SharedKernel.Result<TenantView>> StartAsync(AsyncServiceScope scope, string adminId, string slug) =>
         (await CreateTenantHandler.HandleAsync(
             new CreateTenantCommand(adminId, "Acme Ltd", slug, Unique.Email(), null),
             scope.ServiceProvider.GetRequiredService<ITenantCatalog>(),

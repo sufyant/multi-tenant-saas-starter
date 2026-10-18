@@ -41,7 +41,7 @@ public static class Invitations
         IIdempotencyExecutor idempotency,
         CancellationToken cancellationToken)
     {
-        var invited = await idempotency.ExecuteAsync<InvitationSummary>(
+        var invited = await idempotency.ExecuteAsync<InvitationView>(
             new InviteMemberCommand(user.Id(), request.Email, request.Role.ToString(), request.Language), tenantId.ToString(), cancellationToken);
         return invited.Map(ToResponse);
     }
@@ -68,7 +68,7 @@ public static class Invitations
             return filter.Error;
         }
 
-        var invitations = await bus.InvokeAsync<Result<ListPage<InvitationSummary>>>(
+        var invitations = await bus.InvokeAsync<Result<ListPage<InvitationView>>>(
             new ListInvitationsQuery(list.Value, filter.Value?.ToString()), cancellationToken);
         return invitations.Map(found => found.Map(ToResponse));
     }
@@ -78,7 +78,7 @@ public static class Invitations
         await bus.InvokeAsync<Result>(new RevokeInvitationCommand(user.Id(), invitationId), cancellationToken);
 
     // The platform answers its Owner invitation in the same shape (N7: a response that two audiences answer stays in the first one's file).
-    internal static InvitationResponse ToResponse(InvitationSummary invitation) => new(
+    internal static InvitationResponse ToResponse(InvitationView invitation) => new(
         invitation.Id,
         invitation.Email,
         Members.ToResponse(invitation.Role),
@@ -89,7 +89,7 @@ public static class Invitations
         ResponseStatus.OfInvitation(invitation.State));
 
     // The platform's user detail names the system admin who suspended a user in the same shape (N7).
-    internal static UserNameResponse ToResponse(PersonName name) => new(name.FirstName, name.LastName, name.Deleted);
+    internal static UserNameResponse ToResponse(UserNameView name) => new(name.FirstName, name.LastName, name.Deleted);
 }
 
 /// <summary>

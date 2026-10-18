@@ -55,7 +55,7 @@ public sealed partial class CreateTenantValidator : AbstractValidator<CreateTena
 // anything, because Wolverine commits a failed Result too (W7); a taken slug is found by the insert itself, which writes nothing then.
 public static class CreateTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenantCommand>?, ActivationTimedOut?)> HandleAsync(
+    public static async Task<(Result<TenantView>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenantCommand>?, ActivationTimedOut?)> HandleAsync(
         CreateTenantCommand command,
         ITenantCatalog catalog,
         InvitationOptions invitations,
@@ -105,7 +105,7 @@ public static class CreateTenantHandler
         // A saga that is only being started gives its messages no saga id of their own; this one needs it, so that its fault finds
         // the saga.
         return (
-            TenantDetails.Of(tenant.Value),
+            TenantView.Of(tenant.Value),
             Storage.Insert(saga),
             activate.WithDeliveryOptions(new DeliveryOptions { SagaId = saga.Id.ToString() }),
             timeout);

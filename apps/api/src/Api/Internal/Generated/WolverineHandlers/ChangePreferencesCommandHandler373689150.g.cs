@@ -48,7 +48,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.ChangePreferencesHandler");
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.ChangePreferencesHandler");
-                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.PreferencesDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.PreferencesView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Users.ChangePreferencesCommand>(_validatorOfChangePreferencesCommand, _failureActionOfChangePreferencesCommand, changePreferencesCommand).ConfigureAwait(false);
                 
                 // The actual message execution
@@ -62,7 +62,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
-                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.PreferencesDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.PreferencesView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await controlPlaneDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);

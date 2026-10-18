@@ -14,13 +14,13 @@ public sealed record GetMyTenantQuery(string UserId);
 /// The tenant as its member sees it, when it was created, and the member's role and the names of its permissions, in ordinal order.
 /// The web shows an action only when the list holds its permission; every endpoint still checks the permission itself (A1).
 /// </summary>
-public sealed record MyTenantDetails(TenantSummary Tenant, IReadOnlyList<string> Permissions, DateTimeOffset CreatedAt);
+public sealed record MyTenantDetailView(MyTenantView Tenant, IReadOnlyList<string> Permissions, DateTimeOffset CreatedAt);
 
 // The door read the membership before the handler's transaction began, and a removal may have committed since: to a non-member the
 // tenant does not exist (T3).
 public static class GetMyTenantHandler
 {
-    public static async Task<Result<MyTenantDetails>> HandleAsync(GetMyTenantQuery query, ITenantCatalog catalog, CancellationToken cancellationToken)
+    public static async Task<Result<MyTenantDetailView>> HandleAsync(GetMyTenantQuery query, ITenantCatalog catalog, CancellationToken cancellationToken)
     {
         if (await catalog.FindTenantAsync(cancellationToken) is not { } tenant
             || await catalog.FindUserAsync(query.UserId, cancellationToken) is not { } user
@@ -30,6 +30,6 @@ public static class GetMyTenantHandler
         }
 
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId);
-        return new MyTenantDetails(TenantSummary.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
+        return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
     }
 }

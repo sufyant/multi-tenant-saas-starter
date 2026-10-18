@@ -38,7 +38,7 @@ public static class InviteMemberHandler
 {
     private static readonly TimeSpan LimitWindow = TimeSpan.FromHours(24);
 
-    public static async Task<(Result<InvitationSummary>, MemberInvitedEvent?, OpenMemberSignUpCommand?, WithdrawSignUpCommand?)> HandleAsync(
+    public static async Task<(Result<InvitationView>, MemberInvitedEvent?, OpenMemberSignUpCommand?, WithdrawSignUpCommand?)> HandleAsync(
         InviteMemberCommand command,
         ITenantCatalog catalog,
         InvitationOptions invitations,
@@ -102,7 +102,7 @@ public static class InviteMemberHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationSummary.Of(invitation, inviter, now),
+            InvitationView.Of(invitation, inviter, now),
             new MemberInvitedEvent(
                 Guid.CreateVersion7(now),
                 now,

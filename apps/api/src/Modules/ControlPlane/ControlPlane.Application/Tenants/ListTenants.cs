@@ -21,17 +21,17 @@ public sealed record ListTenantsQuery(ListRequest<ListTenantsSort> List, string?
 /// A tenant in the platform's list: the tenant, until when it can be reopened while it is closed, its members and Owners counted, the Owner
 /// who joined first, and, while it has no Owner, its latest Owner invitation. The counts come from the tenant's summary (R12).
 /// </summary>
-public sealed record TenantListItem(
-    TenantDetails Tenant,
+public sealed record TenantListItemView(
+    TenantView Tenant,
     DateTimeOffset? ReopenableUntil,
     int MemberCount,
     int OwnerCount,
-    OwnerDetails? FirstOwner,
-    OwnerInvitationDetails? OwnerInvitation);
+    TenantOwnerView? FirstOwner,
+    OwnerInvitationView? OwnerInvitation);
 
 public static class ListTenantsHandler
 {
-    public static async Task<Result<ListPage<TenantListItem>>> HandleAsync(
+    public static async Task<Result<ListPage<TenantListItemView>>> HandleAsync(
         ListTenantsQuery query,
         ITenantCatalog catalog,
         TenantOptions settings,
@@ -40,12 +40,12 @@ public static class ListTenantsHandler
     {
         var now = time.GetUtcNow();
         return (await catalog.ListTenantsAsync(query.List, query.Status is { } status ? Enum.Parse<TenantStatus>(status) : null, cancellationToken))
-            .Map(found => new TenantListItem(
-                TenantDetails.Of(found.Tenant),
+            .Map(found => new TenantListItemView(
+                TenantView.Of(found.Tenant),
                 found.Tenant.ReopenableUntil(settings.ReopenPeriod),
                 found.Tenant.MemberCount,
                 found.Tenant.OwnerCount,
-                found.FirstOwner is { } owner ? OwnerDetails.Of(owner) : null,
-                OwnerInvitationDetails.Of(found.Tenant, now)));
+                found.FirstOwner is { } owner ? TenantOwnerView.Of(owner) : null,
+                OwnerInvitationView.Of(found.Tenant, now)));
     }
 }

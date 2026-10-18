@@ -18,7 +18,7 @@ public sealed record ChangeMemberRoleCommand(string ActorId, Guid UserId, string
 // returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class ChangeMemberRoleHandler
 {
-    public static async Task<(Result<MemberSummary>, MemberRoleChangedEvent?)> HandleAsync(
+    public static async Task<(Result<MemberView>, MemberRoleChangedEvent?)> HandleAsync(
         ChangeMemberRoleCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -59,7 +59,7 @@ public static class ChangeMemberRoleHandler
 
         var user = await catalog.FindUserAsync(target.UserId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a catalog user.");
-        var member = new MemberSummary(user.Id, user.Email, user.FirstName, user.LastName, RoleSummary.Of(role), user.DeletedAt is not null, target.JoinedAt);
+        var member = new MemberView(user.Id, user.Email, user.FirstName, user.LastName, RoleView.Of(role), user.DeletedAt is not null, target.JoinedAt);
         if (!changed.Value)
         {
             return (member, null);

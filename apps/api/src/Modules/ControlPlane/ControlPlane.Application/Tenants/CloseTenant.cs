@@ -19,7 +19,7 @@ public sealed record CloseTenantCommand(string AdminId);
 // anything, because Wolverine commits a failed Result too (W7).
 public static class CloseTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantClosedEvent?, OutgoingMessages)> HandleAsync(
+    public static async Task<(Result<TenantView>, TenantClosedEvent?, OutgoingMessages)> HandleAsync(
         CloseTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -34,7 +34,7 @@ public static class CloseTenantHandler
         var closed = tenant.Close(now);
         if (!closed.IsSuccess || !closed.Value)
         {
-            return (closed.Map(_ => TenantDetails.Of(tenant)), null, []);
+            return (closed.Map(_ => TenantView.Of(tenant)), null, []);
         }
 
         var withdrawals = new OutgoingMessages();
@@ -52,6 +52,6 @@ public static class CloseTenantHandler
         tenant.Summarize(await catalog.ReadRowsAsync(cancellationToken));
         await catalog.SaveChangesAsync(cancellationToken);
 
-        return (TenantDetails.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);
+        return (TenantView.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name), withdrawals);
     }
 }

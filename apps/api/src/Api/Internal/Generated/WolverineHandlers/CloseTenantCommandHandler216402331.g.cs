@@ -42,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.CloseTenantHandler");
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.CloseTenantHandler");
-                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
                 (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Tenants.CloseTenantHandler.HandleAsync(closeTenantCommand, tenantCatalog, _timeProvider, cancellation).ConfigureAwait(false);
@@ -59,7 +59,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
 
-                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await controlPlaneDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);

@@ -14,7 +14,7 @@ public sealed record ReactivateTenantCommand(string AdminId);
 // handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class ReactivateTenantHandler
 {
-    public static async Task<(Result<TenantDetails>, TenantReactivatedEvent?)> HandleAsync(
+    public static async Task<(Result<TenantView>, TenantReactivatedEvent?)> HandleAsync(
         ReactivateTenantCommand command,
         ITenantCatalog catalog,
         TimeProvider time,
@@ -28,7 +28,7 @@ public static class ReactivateTenantHandler
         var reactivated = tenant.Reactivate();
         if (!reactivated.IsSuccess || !reactivated.Value)
         {
-            return (reactivated.Map(_ => TenantDetails.Of(tenant)), null);
+            return (reactivated.Map(_ => TenantView.Of(tenant)), null);
         }
 
         var admin = await catalog.FindUserAsync(command.AdminId, cancellationToken)
@@ -36,6 +36,6 @@ public static class ReactivateTenantHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantDetails.Of(tenant), new TenantReactivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
+        return (TenantView.Of(tenant), new TenantReactivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, admin.Id, tenant.Name));
     }
 }

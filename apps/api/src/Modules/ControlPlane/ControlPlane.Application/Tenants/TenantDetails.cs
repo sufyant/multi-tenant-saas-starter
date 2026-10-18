@@ -6,8 +6,8 @@ namespace ControlPlane.Application.Tenants;
 /// A tenant as the system admin sees it: where its creation stands, or whether it is suspended or closed. The suspension's reason and
 /// the moment of the closure are the admin's only: a member never sees them.
 /// </summary>
-public sealed record TenantDetails(Guid Id, string Name, string Slug, string Status, string? SuspensionReason, DateTimeOffset? ClosedAt)
+public sealed record TenantView(Guid Id, string Name, string Slug, string Status, string? SuspensionReason, DateTimeOffset? ClosedAt)
 {
-    internal static TenantDetails Of(Tenant tenant) =>
+    internal static TenantView Of(Tenant tenant) =>
         new(tenant.Id, tenant.Name, tenant.Slug, tenant.Status.ToString(), tenant.SuspensionReason, tenant.ClosedAt);
 }

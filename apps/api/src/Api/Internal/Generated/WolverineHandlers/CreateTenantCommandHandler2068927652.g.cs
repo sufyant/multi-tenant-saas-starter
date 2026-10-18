@@ -54,7 +54,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.TenantCreation.CreateTenantHandler");
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.TenantCreation.CreateTenantHandler");
-                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Tenants.TenantCreation.CreateTenantCommand>(_validatorOfCreateTenantCommand, _failureActionOfCreateTenantCommand, createTenantCommand).ConfigureAwait(false);
                 
                 // The actual message execution
@@ -79,7 +79,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing4).ConfigureAwait(false);
 
-                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantDetails, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await controlPlaneDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);

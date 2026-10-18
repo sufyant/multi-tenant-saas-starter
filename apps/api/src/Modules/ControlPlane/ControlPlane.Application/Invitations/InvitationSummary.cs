@@ -11,22 +11,22 @@ namespace ControlPlane.Application.Invitations;
 /// the catalog holds them now, when it was created and expires, and its state at the moment it is read (<c>Pending</c>, <c>Expired</c>,
 /// <c>Accepted</c>, <c>Cancelled</c>; <see cref="Invitation.StateAt"/>). Inviting and the invitation list answer it.
 /// </summary>
-public sealed record InvitationSummary(
+public sealed record InvitationView(
     Guid Id,
     string Email,
-    RoleSummary Role,
+    RoleView Role,
     Guid InvitedBy,
-    PersonName InvitedByName,
+    UserNameView InvitedByName,
     DateTimeOffset CreatedAt,
     DateTimeOffset ExpiresAt,
     string State)
 {
-    internal static InvitationSummary Of(Invitation invitation, User inviter, DateTimeOffset now) => new(
+    internal static InvitationView Of(Invitation invitation, User inviter, DateTimeOffset now) => new(
         invitation.Id,
         invitation.Email,
-        RoleSummary.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
+        RoleView.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
         invitation.InvitedBy,
-        PersonName.Of(inviter),
+        UserNameView.Of(inviter),
         invitation.CreatedAt,
         invitation.ExpiresAt,
         invitation.StateAt(now).ToString());

@@ -38,7 +38,7 @@ public sealed class InviteOwnerValidator : AbstractValidator<InviteOwnerCommand>
 // sign-up, then the email (OpenMemberSignUpCommand). The owner's messages of the tenant creation answer its saga, which has ended (S13).
 public static class InviteOwnerHandler
 {
-    public static async Task<(Result<InvitationSummary>, OwnerInvitedEvent?, OpenMemberSignUpCommand?, OutgoingMessages)> HandleAsync(
+    public static async Task<(Result<InvitationView>, OwnerInvitedEvent?, OpenMemberSignUpCommand?, OutgoingMessages)> HandleAsync(
         InviteOwnerCommand command,
         ITenantCatalog catalog,
         InvitationOptions invitations,
@@ -89,7 +89,7 @@ public static class InviteOwnerHandler
         await catalog.SaveChangesAsync(cancellationToken);
 
         return (
-            InvitationSummary.Of(invitation, admin, now),
+            InvitationView.Of(invitation, admin, now),
             new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, admin.Id, replaced.SingleOrDefault()?.Id),
             new OpenMemberSignUpCommand(
                 tenant.Id,

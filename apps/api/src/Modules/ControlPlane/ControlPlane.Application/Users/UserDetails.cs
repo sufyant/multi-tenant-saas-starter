@@ -7,7 +7,7 @@ namespace ControlPlane.Application.Users;
 /// are a system admin, how many tenants they are a member of (R13) and when they joined the catalog. The id is the catalog's, not the
 /// identity provider's.
 /// </summary>
-public sealed record UserDetails(
+public sealed record UserView(
     Guid Id,
     string? Email,
     string? FirstName,
@@ -17,6 +17,6 @@ public sealed record UserDetails(
     int MembershipCount,
     DateTimeOffset CreatedAt)
 {
-    internal static UserDetails Of(User user, bool isSystemAdmin) =>
+    internal static UserView Of(User user, bool isSystemAdmin) =>
         new(user.Id, user.Email, user.FirstName, user.LastName, user.Status.ToString(), isSystemAdmin, user.MembershipCount, user.CreatedAt);
 }

@@ -14,7 +14,7 @@ namespace ControlPlane.Application.Users;
 public sealed record ChangePreferencesCommand(string UserId, Language Language, string? TimeZone);
 
 /// <summary>The user's preferences, as the user keeps them.</summary>
-public sealed record PreferencesDetails(Language Language, string? TimeZone);
+public sealed record PreferencesView(Language Language, string? TimeZone);
 
 public sealed partial class ChangePreferencesValidator : AbstractValidator<ChangePreferencesCommand>
 {
@@ -41,7 +41,7 @@ public sealed partial class ChangePreferencesValidator : AbstractValidator<Chang
 // returns before the handler changes anything, because Wolverine commits a failed Result too (W7).
 public static class ChangePreferencesHandler
 {
-    public static async Task<(Result<PreferencesDetails>, UserPreferencesChangedEvent?)> HandleAsync(
+    public static async Task<(Result<PreferencesView>, UserPreferencesChangedEvent?)> HandleAsync(
         ChangePreferencesCommand command,
         IUserCatalog users,
         TimeProvider time,
@@ -56,11 +56,11 @@ public static class ChangePreferencesHandler
         var changed = user.ChangePreferences(command.Language, command.TimeZone);
         if (!changed.IsSuccess || !changed.Value)
         {
-            return (changed.Map(_ => new PreferencesDetails(user.Language, user.TimeZone)), null);
+            return (changed.Map(_ => new PreferencesView(user.Language, user.TimeZone)), null);
         }
 
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (new PreferencesDetails(user.Language, user.TimeZone), new UserPreferencesChangedEvent(Guid.CreateVersion7(now), now, user.Id));
+        return (new PreferencesView(user.Language, user.TimeZone), new UserPreferencesChangedEvent(Guid.CreateVersion7(now), now, user.Id));
     }
 }
