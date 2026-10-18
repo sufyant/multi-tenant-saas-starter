@@ -9,7 +9,7 @@ These steps take an empty machine to a created tenant and an accepted invitation
 - An identity provider instance for development. It must serve OpenID Connect discovery (`/.well-known/openid-configuration` and its key set) over HTTPS with a certificate the machine trusts, and its Backend API. You need:
   - its issuer URL (`Authentication:Clerk:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
   - a way to get a session token for a user. The token carries `sub`, `sid`, `iss`, `exp` and `nbf`; a token without `sid`, such as a JWT template's token, is refused. A token for the system door also carries `fva` with a verified second factor (for example `[0,0]`).
-  - invite-only sign-up (Restricted), as `.clerk/development.json` sets it. The application lets an invited address without an account sign up through Clerk's invitation, and reads a user's verified email addresses when they accept an invitation (`docs/setup.md`).
+  - invite-only sign-up (Restricted), as `.clerk/config.json` sets it. The application lets an invited address without an account sign up through Clerk's invitation, and reads a user's verified email addresses when they accept an invitation (`docs/setup.md`).
   - a user whose verified email address is the one you put in `ControlPlane:FirstSystemAdminEmail`. In Restricted mode you create that account yourself (`docs/setup.md`, "The first system admin"). That user becomes the first system admin on their first request to `/v1/platform/...` (section 6).
 
 ## 2. Database
