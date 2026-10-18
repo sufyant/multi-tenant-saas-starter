@@ -69,7 +69,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     first_name = table.Column<string>(type: "text", nullable: true),
                     last_name = table.Column<string>(type: "text", nullable: true),
                     suspended_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    language = table.Column<string>(type: "character varying(35)", maxLength: 35, nullable: false, defaultValue: "en"),
+                    language = table.Column<string>(type: "character varying(35)", maxLength: 35, nullable: false),
                     time_zone = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
                     membership_count = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
@@ -125,7 +125,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     owner_invitation_email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
                     owner_invitation_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     owner_invitation_status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -156,7 +156,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     accepted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     accepted_by = table.Column<Guid>(type: "uuid", nullable: true),
                     sign_up_invitation_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    language = table.Column<string>(type: "character varying(35)", maxLength: 35, nullable: false, defaultValue: "en")
+                    language = table.Column<string>(type: "character varying(35)", maxLength: 35, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -199,7 +199,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NULLIF(current_setting('app.tenant_id', true), '')::uuid"),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     role_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    joined_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
+                    joined_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {

@@ -16,17 +16,19 @@ internal static class TenantTables
         ["control_plane.invitations"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""
-                WITH inviter AS (INSERT INTO control_plane.users (id, external_id) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid()) RETURNING id)
-                INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, status)
-                SELECT gen_random_uuid(), '{tenant}', 'invited@example.com', roles.id, inviter.id, now(), now() + interval '7 days', 'Pending'
+                WITH inviter AS (
+                    INSERT INTO control_plane.users (id, external_id, language) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid(), 'en') RETURNING id)
+                INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, status, language)
+                SELECT gen_random_uuid(), '{tenant}', 'invited@example.com', roles.id, inviter.id, now(), now() + interval '7 days', 'Pending', 'en'
                 FROM inviter, control_plane.roles WHERE roles.built_in = 'Member'
                 """),
         ["control_plane.memberships"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""
-                WITH member AS (INSERT INTO control_plane.users (id, external_id) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid()) RETURNING id)
-                INSERT INTO control_plane.memberships (tenant_id, user_id, role_id)
-                SELECT '{tenant}', member.id, roles.id FROM member, control_plane.roles WHERE roles.built_in = 'Member'
+                WITH member AS (
+                    INSERT INTO control_plane.users (id, external_id, language) VALUES (gen_random_uuid(), 'user_' || gen_random_uuid(), 'en') RETURNING id)
+                INSERT INTO control_plane.memberships (tenant_id, user_id, role_id, joined_at)
+                SELECT '{tenant}', member.id, roles.id, now() FROM member, control_plane.roles WHERE roles.built_in = 'Member'
                 """),
         ["control_plane.tenant_creation_sagas"] = new(
             ApplicationMayUpdate: true,

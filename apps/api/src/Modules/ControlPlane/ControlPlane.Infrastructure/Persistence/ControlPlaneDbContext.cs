@@ -74,7 +74,6 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             tenant.HasOne<User>().WithMany().HasForeignKey(t => t.FirstOwnerId).OnDelete(DeleteBehavior.Restrict);
             tenant.Property(t => t.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
             tenant.Property(t => t.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
-            tenant.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<User>(user =>
@@ -114,7 +113,6 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             membership.HasOne<Tenant>().WithMany().HasForeignKey(m => m.TenantId);
             membership.HasOne<User>().WithMany().HasForeignKey(m => m.UserId);
             membership.HasOne<Role>().WithMany().HasForeignKey(m => m.RoleId).OnDelete(DeleteBehavior.Restrict);
-            membership.Property(m => m.JoinedAt).HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<Invitation>(invitation =>

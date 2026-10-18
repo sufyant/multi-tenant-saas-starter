@@ -118,7 +118,7 @@ internal sealed class TwoWorkers : IAsyncDisposable
         var externalId = $"user_{Guid.NewGuid():N}";
         await database.ScalarAsSuperuserAsync<object>(
             $"""
-            INSERT INTO control_plane.users (id, external_id) VALUES ('{Guid.NewGuid()}', '{externalId}');
+            INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', '{externalId}', 'en');
             INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}';
             """,
             databaseName);
