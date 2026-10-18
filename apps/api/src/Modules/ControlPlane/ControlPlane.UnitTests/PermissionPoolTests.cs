@@ -15,7 +15,7 @@ public class PermissionPoolTests
     }
 
     [Fact]
-    public void NameSystemPermissions_EveryOne_StartsWithAdmin()
+    public void NamePlatformPermissions_EveryOne_StartsWithPlatform()
     {
         var misnamed = PermissionPools.PlatformPool.Where(permission => !permission.StartsWith("platform.", StringComparison.Ordinal));
 
