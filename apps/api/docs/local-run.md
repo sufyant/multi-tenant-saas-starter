@@ -183,4 +183,4 @@ The C# types are the source of every client's types (N11). A change reaches the 
    pnpm api:generate
    ```
 
-Commit `apps/api/openapi/v1.json` and `packages/api-client/src/schema.gen.ts` with the change. `pnpm generate` runs every generator, these two steps among them. `pnpm check-types` then shows each frontend call that the change breaks. CI fails when either file is not current (`packages/api-client/README.md`).
+Commit `apps/api/openapi/v1.json` and the files in `packages/api-client/src/generated/` with the change. `pnpm generate` runs every generator, these two steps among them. `pnpm check-types` then shows each frontend call that the change breaks. CI fails when one of them is not current (`packages/api-client/README.md`).
