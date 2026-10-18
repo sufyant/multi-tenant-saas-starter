@@ -1,6 +1,6 @@
 // Writes what Orval does not carry from the OpenAPI document (F1 and F6 in docs/frontend/ARCHITECTURE.md; D1):
-// - src/generated/operations.gen.ts: each operation's id, method, path and the response headers it declares. The BFF reads it to
-//   know which headers of an answer reach the browser.
+// - src/generated/operations.gen.ts: each operation's id, method, path, the request headers it takes and the response headers it
+//   declares. The BFF reads it to know which headers of a request reach the API and which headers of an answer reach the browser.
 // - src/generated/msw.gen.ts: one module that re-exports the MSW handlers of every tag. Orval writes one file per tag.
 //
 // Run it after Orval: `pnpm generate` in this package. It reads apps/api/openapi/v1.json and needs no dependency.
@@ -27,6 +27,10 @@ for (const [path, item] of Object.entries(document.paths)) {
       method: method.toUpperCase(),
       path,
       tag: operation.tags[0],
+      requestHeaders: (operation.parameters ?? [])
+        .filter((parameter) => parameter.in === "header")
+        .map((parameter) => parameter.name)
+        .sort(),
       responseHeaders: [...names].sort(),
     });
   }

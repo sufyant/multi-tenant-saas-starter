@@ -24,3 +24,12 @@ fail-on-severity: high
 
 # The job's token is read-only, so the summary goes to the job log and not to a comment.
 comment-summary-in-pr: never
+
+# Exceptions by package, for a license outside allow-licenses. Each one names its reason (the action's README,
+# "allow-dependencies-licenses").
+# - axe-core and @axe-core/playwright are MPL-2.0, a file-level copyleft license that is not commercial. They run only in the
+#   Playwright tests, for the WCAG 2.2 AA check of every page (F37 in docs/frontend/ARCHITECTURE.md), and no build ships them.
+#   The maintainer's decision in step 21a.
+allow-dependencies-licenses:
+  - pkg:npm/axe-core
+  - pkg:npm/%40axe-core/playwright
