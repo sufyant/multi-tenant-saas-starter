@@ -21,7 +21,7 @@ internal sealed class ValidationExceptionHandler(IProblemDetailsService problemD
             .GroupBy(failure => JsonNamingPolicy.CamelCase.ConvertName(failure.PropertyName))
             .ToDictionary(
                 group => group.Key,
-                group => group.Select(failure => Problems.NameOf(Enum.Parse<FieldErrorCode>(failure.ErrorCode))).Distinct().ToArray());
+                group => group.Select(failure => JsonEnum<FieldErrorCode>.NameOf(Enum.Parse<FieldErrorCode>(failure.ErrorCode))).Distinct().ToArray());
 
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
         return await problemDetails.TryWriteAsync(new ProblemDetailsContext

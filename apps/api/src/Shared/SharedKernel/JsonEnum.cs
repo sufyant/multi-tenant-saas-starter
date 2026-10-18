@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -19,9 +20,14 @@ public sealed class ExactNameEnumConverter<TEnum> : JsonConverter<TEnum>
     public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) => writer.WriteStringValue(JsonEnum<TEnum>.NameOf(value));
 }
 
-// The name of each member of an enum in JSON, as System.Text.Json writes it: the name the member declares, else its own name in camel
-// case. A sort field is so the name of its property in the response. The names are compared exactly.
-internal static class JsonEnum<T>
+/// <summary>
+/// The name of each member of an enum in JSON, as System.Text.Json writes it: the name the member declares, else its own name in camel
+/// case. A sort field is so the name of its property in the response. The names are compared exactly. It is the one place that names an
+/// enum member in JSON: the lists, the converter, the host's error answers and the tests read it (B10).
+/// </summary>
+[SuppressMessage("Naming", "CA1711", Justification = "The type names the JSON form of an enum; it is no enum.")]
+[SuppressMessage("Design", "CA1000", Justification = "A generic static class reads the members of each enum once and keeps them.")]
+public static class JsonEnum<T>
     where T : struct, Enum
 {
     private static readonly (string Name, T Value)[] Members =

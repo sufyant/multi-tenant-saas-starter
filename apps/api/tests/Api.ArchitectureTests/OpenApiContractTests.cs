@@ -615,13 +615,12 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private static string EnumOf(JsonElement schema) =>
         schema.TryGetProperty("enum", out var values) ? string.Join(", ", values.EnumerateArray().Select(value => value.GetString())) : "<no enum>";
 
-    // The values an enum has in JSON: the name its member declares, else the member's own name.
+    // The values an enum has in JSON, from SharedKernel's one source of them (B10).
     private static string JsonValuesOf(Type type) =>
         type.IsEnum ? string.Join(", ", JsonNamesOf(type)) : $"<{type.Name}, not an enum>";
 
-    private static IEnumerable<string> JsonNamesOf(Type type) =>
-        type.GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Select(member => member.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? member.Name);
+    private static IReadOnlyList<string> JsonNamesOf(Type type) =>
+        (IReadOnlyList<string>)typeof(JsonEnum<>).MakeGenericType(type).GetProperty(nameof(JsonEnum<>.Names))!.GetValue(null)!;
 
     private static IEnumerable<string> HeaderParametersOf(JsonElement operation) =>
         operation.TryGetProperty("parameters", out var parameters)
