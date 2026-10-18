@@ -211,7 +211,7 @@ check_all() {
     "allow_merge_commit|.allow_merge_commit|true" \
     "allow_squash_merge|.allow_squash_merge|false" \
     "allow_rebase_merge|.allow_rebase_merge|false" \
-    "allow_auto_merge|.allow_auto_merge|false" \
+    "allow_auto_merge|.allow_auto_merge|true" \
     "allow_update_branch|.allow_update_branch|true" \
     "delete_branch_on_merge|.delete_branch_on_merge|true"
 
@@ -327,7 +327,7 @@ apply_all() {
     \"allow_merge_commit\": true,
     \"allow_squash_merge\": false,
     \"allow_rebase_merge\": false,
-    \"allow_auto_merge\": false,
+    \"allow_auto_merge\": true,
     \"allow_update_branch\": true,
     \"delete_branch_on_merge\": true
   }"
