@@ -28,8 +28,9 @@
     <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.48.3" />
   </ItemGroup>
   <ItemGroup Label="Analyzers">
-    <!-- Every project. Only the member order rules are on: SA1201 to SA1204 (.editorconfig). The stable 1.1.118 crashes on this
-         code (AD0001), so the maintainer chose the 1.2.0 beta in audit-g4. -->
+    <!-- Every project. Only the member order rules are on: SA1201 to SA1204 (.editorconfig). The stable 1.1.118 supports C# up to
+         7.3; C# 8 and later need 1.2.0-beta (StyleCop.Analyzers README, "C# language versions"). The code is C# 14, so the
+         maintainer chose the 1.2.0 beta in audit-g4. -->
     <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
   </ItemGroup>
   <ItemGroup Label="Tests">
