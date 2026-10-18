@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Plans and applies the Clerk instance settings in .clerk/.
+# Plans and applies the Clerk instance settings in .clerk/config.json.
+# The one file holds the settings of both instances.
 # It uses only the `clerk` CLI and the user's own `clerk auth login` session
 # (or CLERK_PLATFORM_API_KEY).
 set -euo pipefail
@@ -10,8 +11,8 @@ Usage: scripts/clerk/config.sh plan [development|production]
        scripts/clerk/config.sh apply development|production
 
   plan   Change nothing. Print, for each instance, the difference between
-         its file in .clerk/ and the live instance. Without an instance,
-         plan handles every file in .clerk/.
+         .clerk/config.json and the live instance. Without an instance,
+         plan handles both instances.
   apply  Print the same difference for one instance, ask, then apply it.
 
 Requires: clerk, jq, and `clerk auth login` (or CLERK_PLATFORM_API_KEY).
@@ -50,7 +51,7 @@ if [[ -z "${CLERK_APP_ID:-}" ]] \
   exit 1
 fi
 
-config_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.clerk" && pwd)"
+file="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.clerk" && pwd)/config.json"
 body_file="$(mktemp)"
 chmod 600 "$body_file"
 trap 'rm -f "$body_file"' EXIT
@@ -107,7 +108,6 @@ for name in development production; do
     development) instance="dev" ;;
     production) instance="prod" ;;
   esac
-  file="$config_dir/$name.json"
   plan "$name" "$instance" "$file" || continue
   if [[ "$mode" == "apply" ]]; then apply "$name" "$instance" "$file"; fi
 done
