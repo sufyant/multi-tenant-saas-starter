@@ -2,11 +2,12 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { hasVerifiedSecondFactor } from "@/shared/second-factor";
 
-// Every page needs a session but sign-in and its SSO callback. The BFF under /api checks the session itself and answers 401
+// Every page needs a session but sign-in, its SSO callback and the health check (F46). The BFF under /api checks the session itself and answers 401
 // without one (F6), so a screen can send the user to sign-in (F4); Clerk's protect() would answer such a call with 404.
 const isOpen = createRouteMatcher([
   "/sign-in(.*)",
   "/sso-callback(.*)",
+  "/health",
   "/api/(.*)",
 ]);
 // The two-step gate (F42): a session without a verified second factor goes to /two-step before anything else. This is a
