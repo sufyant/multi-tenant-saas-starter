@@ -33,7 +33,7 @@ Orval names each function after its operation id in camel case, and keeps these 
 | The MSW handler and its response | `getListMembersMockHandler(answer)`, `getListMembersResponseMock()` |
 | A header the operation takes | the second parameter: `createTenant(body, { "Idempotency-Key": key })` |
 
-An enum is a const object whose member names drop the dot of the value: `ErrorCode.tenantnot_found` is `tenant.not_found`, and `MemberRole.owner` is `owner`.
+An enum is a const object. Its member names come from the `x-enumNames` of the document (N11z in `apps/api/docs/ARCHITECTURE.md`): `ErrorCode.TenantNotFound` is `tenant.not_found`, and `MemberRole.Owner` is `owner`.
 
 ## Use
 

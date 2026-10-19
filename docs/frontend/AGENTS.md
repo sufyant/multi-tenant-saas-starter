@@ -41,7 +41,7 @@ These were decided with the maintainer in step 21a, with their sources. Do not r
 
 - This Next.js is 16: `middleware.ts` is `proxy.ts`, and the guides in `node_modules/next/dist/docs/` win over what you remember. Read the guide before you write Next.js code.
 - Orval writes a hook beside each query's options. Biome refuses a `use...` import from `@repo/api-client`; call `useQuery(getXQueryOptions(...))`. (F2)
-- Orval names an enum member after its value without the dot: `ErrorCode.usersuspended` is `user.suspended`. Compare with the member, never with a string. (F3)
+- Orval names an enum member from the `x-enumNames` of the API's document: `ErrorCode.UserSuspended` is `user.suspended`. Compare with the member, never with a string. (F3, N11z)
 - The generated functions call `/v1/...`, and the mutator puts `configureApiClient`'s base address in front. In the apps the base is `/api`, the BFF. A test in Node needs an absolute base, such as `https://web.example.test/api`. (F1)
 - MSW 3 names the option `onUnhandledFrame`, not `onUnhandledRequest`.
 - A token whose name Tailwind also uses (`radius-md`, `shadow-md`, `font-sans`) keeps its name; `tokens.gen.css` is outside every cascade layer, so it wins. A shadow is named in `@theme inline` too, because Tailwind writes its default shadow into the utility. (F20)
