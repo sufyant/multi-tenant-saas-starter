@@ -163,6 +163,7 @@
       "locked": "Too many wrong codes. Wait a few minutes and try again, or use a backup code.",
       "invitationLinkInvalid": "This invitation link is no longer valid. Ask for a new invitation.",
       "invitationLinkExpired": "This invitation link has expired. Ask for a new invitation.",
+      "signInAgain": "For your safety, sign out and sign in again, then try once more.",
       "generic": "Sign-in did not work. Try again."
     }
   }

@@ -163,6 +163,7 @@
       "locked": "Çok fazla yanlış kod girildi. Birkaç dakika bekleyip yeniden deneyin veya yedek kod kullanın.",
       "invitationLinkInvalid": "Bu davet bağlantısı artık geçerli değil. Yeni bir davet isteyin.",
       "invitationLinkExpired": "Bu davet bağlantısının süresi doldu. Yeni bir davet isteyin.",
+      "signInAgain": "Güvenliğiniz için çıkış yapıp yeniden giriş yapın, sonra bir kez daha deneyin.",
       "generic": "Giriş yapılamadı. Yeniden deneyin."
     }
   }

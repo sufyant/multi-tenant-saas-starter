@@ -20,6 +20,7 @@ export type SignInErrorKey =
   | "locked"
   | "invitationLinkInvalid"
   | "invitationLinkExpired"
+  | "signInAgain"
   | "generic";
 
 // Clerk's codes, from its Frontend API errors page (https://clerk.com/docs/guides/development/errors/frontend-api). The screen
@@ -41,6 +42,7 @@ const everywhere: Record<string, SignInErrorKey> = {
   sign_up_restricted_waitlist: "cannotSignIn",
   external_account_not_found: "cannotSignIn",
   oauth_access_denied: "oauthDenied",
+  session_reverification_required: "signInAgain",
 };
 
 const byStep: Record<SignInStep, Record<string, SignInErrorKey>> = {

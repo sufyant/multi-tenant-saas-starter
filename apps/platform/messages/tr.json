@@ -41,9 +41,29 @@
     "themeHint": "Bu cihazda saklanır."
   },
   "access": {
-    "noAccessText": "Bu uygulama sağlayıcının sistem yöneticileri içindir. Hesabınız bunlardan biri değil."
+    "noAccessTitle": "Erişiminiz yok",
+    "noAccessText": "<email></email> olarak giriş yaptınız. Bu hesabın burada erişimi yok."
   },
   "signInPage": {
     "title": "Platforma giriş yapın"
+  },
+  "twoStep": {
+    "enrolTitle": "Doğrulama uygulamanızı kurun",
+    "enrolText": "Platform çalışanları ikinci bir adımla giriş yapar. Bu iki dakika sürer ve yalnızca bir kez yapılır.",
+    "scan": "Telefonunuzda bir doğrulama uygulaması açın ve bu kodu tarayın.",
+    "qrLabel": "Doğrulama uygulamanız için QR kodu",
+    "cannotScan": "Tarayamıyor musunuz? Bunun yerine bu anahtarı yazın:",
+    "copyKey": "Anahtarı kopyalayın",
+    "copied": "Kopyalandı",
+    "enterCode": "Uygulamanın gösterdiği 6 haneli kodu girin",
+    "turnOn": "İki adımlı girişi açın",
+    "backupTitle": "Yedek kodlarınızı kaydedin",
+    "backupText": "Telefonunuzu kaybederseniz her kod sizi bir kez içeri alır. Kodları güvenli ve çevrim dışı bir yerde saklayın. Kodlar yalnızca bu kez tam olarak gösterilir.",
+    "backupCodes": "Yedek kodlar",
+    "copyCodes": "Kodları kopyalayın",
+    "download": "Metin olarak indirin",
+    "fileName": "yedek-kodlar.txt",
+    "saved": "Bu kodları kaydettim. Kodları bir daha göremeyeceğimi, yalnızca yenilerini oluşturabileceğimi anlıyorum.",
+    "continue": "Platforma devam edin"
   }
 }
