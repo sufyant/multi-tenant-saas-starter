@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
+    "@tanstack/intent": "0.5.6",
     "railway": "^3.13.1",
     "turbo": "^2.10.12",
     "typescript": "^5"
