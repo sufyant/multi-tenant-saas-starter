@@ -524,3 +524,31 @@ A private product with staging and production, on GitHub Pro and Railway Pro. Pr
 - **Railway builds the image from the source on Hobby.** Each environment then builds its own image, which breaks "Only build your binaries once" (*Continuous Delivery*, chapter 5; Railway docs, "Builds").
 - **A VPS with Kamal.** Cheaper: a server with 1 vCPU and 2 GB costs 12 a month at DigitalOcean (digitalocean.com/pricing/droplets). At today's 0.35 GB an environment, it holds both. But the maintainer runs the server, the database and its backups. Kamal starts a database as an accessory, and does not update it when it deploys (Kamal docs, "Accessories").
 - **Coolify.** Its repository published 11 critical security advisories on 2026-01-03 and 5 more in June and July 2026 (GitHub Security Advisories of `coollabsio/coolify`). Its control plane needs a server with 2 GB of memory (Coolify docs, "Installation").
+
+## 13. The web apps on Railway
+
+The web app (`apps/web`) and the platform app (`apps/platform`) run on Railway next to the API, in the same environment, each as a service of its own. This section holds what they need outside the repository. In the commands, `<web domain>`, `<platform domain>` and `<api domain>` are the custom domains of the environment. No domain name goes into the repository (section 3).
+
+### The API's settings for the web apps
+
+These shared variables exist already. Their values change to the custom domains. Set them in the Railway dashboard, as in step 3 of section 4:
+
+| Shared variable | Value | Why |
+| --- | --- | --- |
+| `Authentication__Clerk__AuthorizedParties__0` | `https://<web domain>` | The API accepts a token only from an origin that this list names (the token's `azp`) |
+| `Authentication__Clerk__AuthorizedParties__1` | `https://<platform domain>` | The same, for the platform app, which runs on an origin of its own |
+| `ControlPlane__Invitations__AcceptUrl` | `https://<web domain>/invitations/accept` | The invitation email links to the web app's accept page (F44 in `docs/frontend/ARCHITECTURE.md`) |
+
+One shared variable is new:
+
+| Shared variable | Value | Why |
+| --- | --- | --- |
+| `CLERK_PUBLISHABLE_KEY` | The publishable key of the environment's Clerk instance (`pk_test_...` or `pk_live_...`) | Both apps read it at run time (F7). It is not a secret, so it is a plain variable, not a sealed one |
+
+The apps read the Clerk secret key from `ControlPlane__Clerk__SecretKey`, which the API reads too. So the secret key has one source (`.railway/railway.ts`).
+
+### Clerk
+
+The staging environment uses the Clerk development instance. A development instance accepts sign-in on any domain: Clerk's docs tell you to use "your host's provided preview domain ... with development API keys" (Clerk docs, "Instances / Environments", "Use your host's provided preview domain"). Its session state travels in the query (`__clerk_db_jwt`) through a "handshake" with its Frontend API on `accounts.dev`, not in cookies of a shared domain (the same page, "Session architecture differences"). The instance setting `allowedOrigins` is for browser extensions, Electron and Capacitor only (Clerk Backend API, "Update instance settings"). So `.clerk/config.json` does not change, and `pnpm clerk:apply` is not part of the manual steps. The smoke test of `deploy.yml` follows Clerk's handshake on each deploy, so it shows when the instance does not accept a domain.
+
+A production instance needs its own domain with DNS records for Clerk's Frontend API. Section 4 of this document covers production later.
