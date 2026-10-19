@@ -30,14 +30,22 @@ export const inviteOwnerBodyEmailMax = 320;
 
 export const InviteOwnerBody = zod.object({
   "email": zod.email().max(inviteOwnerBodyEmailMax),
-  "language": zod.union([zod.null(),zod.enum(['en', 'tr', 'ar']).describe('A language the web speaks, by its BCP 47 language tag.')]).optional()
+  "language": zod.union([zod.null(),zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.')]).optional()
 }).describe('The address of the Owner the platform invites into a tenant without one, and the language of the invitation\'s email: without one, the\nsystem admin\'s own.')
 
 export const InviteOwnerResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string(),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
   "invitedBy": zod.uuid(),
@@ -48,6 +56,11 @@ export const InviteOwnerResponse = zod.object({
 }).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.'),
   "createdAt": zod.iso.datetime({"offset":true}),
   "expiresAt": zod.iso.datetime({"offset":true}),
-  "state": zod.enum(['pending', 'expired', 'accepted', 'cancelled']).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
+  "state": zod.enum({
+  Pending: 'pending',
+  Expired: 'expired',
+  Accepted: 'accepted',
+  Cancelled: 'cancelled',
+}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
 }).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one.')
 

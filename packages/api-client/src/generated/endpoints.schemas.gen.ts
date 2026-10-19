@@ -29,8 +29,8 @@ export type AuditActorResponseKind = typeof AuditActorResponseKind[keyof typeof 
 
 
 export const AuditActorResponseKind = {
-  user: 'user',
-  platform: 'platform',
+  User: 'user',
+  Platform: 'platform',
 } as const;
 
 /**
@@ -52,7 +52,7 @@ export type MemberInvitedDetailsResponseOperation = typeof MemberInvitedDetailsR
 
 
 export const MemberInvitedDetailsResponseOperation = {
-  memberinvited: 'member.invited',
+  MemberInvited: 'member.invited',
 } as const;
 
 /**
@@ -63,9 +63,9 @@ export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
 
 
 export const MemberRole = {
-  owner: 'owner',
-  admin: 'admin',
-  member: 'member',
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
 } as const;
 
 /**
@@ -91,7 +91,7 @@ export type MemberRemovedDetailsResponseOperation = typeof MemberRemovedDetailsR
 
 
 export const MemberRemovedDetailsResponseOperation = {
-  memberremoved: 'member.removed',
+  MemberRemoved: 'member.removed',
 } as const;
 
 /**
@@ -106,7 +106,7 @@ export type MemberRoleChangedDetailsResponseOperation = typeof MemberRoleChanged
 
 
 export const MemberRoleChangedDetailsResponseOperation = {
-  memberrole_changed: 'member.role_changed',
+  MemberRoleChanged: 'member.role_changed',
 } as const;
 
 /**
@@ -122,7 +122,7 @@ export type TenantOwnerInvitedDetailsResponseOperation = typeof TenantOwnerInvit
 
 
 export const TenantOwnerInvitedDetailsResponseOperation = {
-  tenantowner_invited: 'tenant.owner_invited',
+  TenantOwnerInvited: 'tenant.owner_invited',
 } as const;
 
 /**
@@ -139,7 +139,7 @@ export type TenantRenamedDetailsResponseOperation = typeof TenantRenamedDetailsR
 
 
 export const TenantRenamedDetailsResponseOperation = {
-  tenantrenamed: 'tenant.renamed',
+  TenantRenamed: 'tenant.renamed',
 } as const;
 
 /**
@@ -155,7 +155,7 @@ export type TenantSuspendedDetailsResponseOperation = typeof TenantSuspendedDeta
 
 
 export const TenantSuspendedDetailsResponseOperation = {
-  tenantsuspended: 'tenant.suspended',
+  TenantSuspended: 'tenant.suspended',
 } as const;
 
 /**
@@ -179,23 +179,23 @@ export type AuditOperation = typeof AuditOperation[keyof typeof AuditOperation];
 
 
 export const AuditOperation = {
-  invitationrevoked: 'invitation.revoked',
-  memberinvited: 'member.invited',
-  memberjoined: 'member.joined',
-  memberremoved: 'member.removed',
-  memberrole_changed: 'member.role_changed',
-  tenantclosed: 'tenant.closed',
-  tenantcreated: 'tenant.created',
-  tenantowner_invited: 'tenant.owner_invited',
-  tenantreactivated: 'tenant.reactivated',
-  tenantrenamed: 'tenant.renamed',
-  tenantreopened: 'tenant.reopened',
-  tenantsuspended: 'tenant.suspended',
-  userdeleted: 'user.deleted',
-  userpreferences_changed: 'user.preferences_changed',
-  userreactivated: 'user.reactivated',
-  userrenamed: 'user.renamed',
-  usersuspended: 'user.suspended',
+  InvitationRevoked: 'invitation.revoked',
+  MemberInvited: 'member.invited',
+  MemberJoined: 'member.joined',
+  MemberRemoved: 'member.removed',
+  MemberRoleChanged: 'member.role_changed',
+  TenantClosed: 'tenant.closed',
+  TenantCreated: 'tenant.created',
+  TenantOwnerInvited: 'tenant.owner_invited',
+  TenantReactivated: 'tenant.reactivated',
+  TenantRenamed: 'tenant.renamed',
+  TenantReopened: 'tenant.reopened',
+  TenantSuspended: 'tenant.suspended',
+  UserDeleted: 'user.deleted',
+  UserPreferencesChanged: 'user.preferences_changed',
+  UserReactivated: 'user.reactivated',
+  UserRenamed: 'user.renamed',
+  UserSuspended: 'user.suspended',
 } as const;
 
 /**
@@ -205,9 +205,9 @@ export type AuditTargetResponseKind = typeof AuditTargetResponseKind[keyof typeo
 
 
 export const AuditTargetResponseKind = {
-  tenant: 'tenant',
-  user: 'user',
-  invitation: 'invitation',
+  Tenant: 'tenant',
+  User: 'user',
+  Invitation: 'invitation',
 } as const;
 
 /**
@@ -252,9 +252,9 @@ export type Language = typeof Language[keyof typeof Language];
 
 
 export const Language = {
-  en: 'en',
-  tr: 'tr',
-  ar: 'ar',
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
 } as const;
 
 /**
@@ -301,56 +301,56 @@ export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
 
 
 export const ErrorCode = {
-  authforbidden: 'auth.forbidden',
-  authunauthenticated: 'auth.unauthenticated',
-  idempotencykey_in_progress: 'idempotency.key_in_progress',
-  idempotencykey_invalid: 'idempotency.key_invalid',
-  idempotencykey_reused: 'idempotency.key_reused',
-  invitationcode_required: 'invitation.code_required',
-  invitationdaily_limit_reached: 'invitation.daily_limit_reached',
-  invitationemail_mismatch: 'invitation.email_mismatch',
-  invitationexpired: 'invitation.expired',
-  invitationnot_found: 'invitation.not_found',
-  invitationnot_pending: 'invitation.not_pending',
-  invitationowner_requires_owner: 'invitation.owner_requires_owner',
-  invitationsystem_admin_cannot_join: 'invitation.system_admin_cannot_join',
-  membercannot_remove_self: 'member.cannot_remove_self',
-  memberexists: 'member.exists',
-  memberlast_owner: 'member.last_owner',
-  membernot_found: 'member.not_found',
-  memberowner_requires_owner: 'member.owner_requires_owner',
-  pagingcursor_invalid: 'paging.cursor_invalid',
-  pagingfilter_invalid: 'paging.filter_invalid',
-  paginglimit_invalid: 'paging.limit_invalid',
-  pagingpage_invalid: 'paging.page_invalid',
-  pagingpage_size_invalid: 'paging.page_size_invalid',
-  pagingq_invalid: 'paging.q_invalid',
-  pagingsort_invalid: 'paging.sort_invalid',
-  rate_limitexceeded: 'rate_limit.exceeded',
-  requestinvalid: 'request.invalid',
-  requesttimeout: 'request.timeout',
-  requesttoo_large: 'request.too_large',
-  requestunsupported_media_type: 'request.unsupported_media_type',
-  requestvalidation_failed: 'request.validation_failed',
-  routemethod_not_allowed: 'route.method_not_allowed',
-  routenot_found: 'route.not_found',
-  servererror: 'server.error',
-  tenantclosed: 'tenant.closed',
-  tenanthas_owner: 'tenant.has_owner',
-  tenantname_invalid: 'tenant.name_invalid',
-  tenantnot_active: 'tenant.not_active',
-  tenantnot_closed: 'tenant.not_closed',
-  tenantnot_found: 'tenant.not_found',
-  tenantreopen_period_ended: 'tenant.reopen_period_ended',
-  tenantslug_invalid: 'tenant.slug_invalid',
-  tenantslug_taken: 'tenant.slug_taken',
-  tenantsuspended: 'tenant.suspended',
-  userdeleted: 'user.deleted',
-  userhas_memberships: 'user.has_memberships',
-  useris_system_admin: 'user.is_system_admin',
-  userlast_owner: 'user.last_owner',
-  usernot_found: 'user.not_found',
-  usersuspended: 'user.suspended',
+  AuthForbidden: 'auth.forbidden',
+  AuthUnauthenticated: 'auth.unauthenticated',
+  IdempotencyKeyInProgress: 'idempotency.key_in_progress',
+  IdempotencyKeyInvalid: 'idempotency.key_invalid',
+  IdempotencyKeyReused: 'idempotency.key_reused',
+  InvitationCodeRequired: 'invitation.code_required',
+  InvitationDailyLimitReached: 'invitation.daily_limit_reached',
+  InvitationEmailMismatch: 'invitation.email_mismatch',
+  InvitationExpired: 'invitation.expired',
+  InvitationNotFound: 'invitation.not_found',
+  InvitationNotPending: 'invitation.not_pending',
+  InvitationOwnerRequiresOwner: 'invitation.owner_requires_owner',
+  InvitationSystemAdminCannotJoin: 'invitation.system_admin_cannot_join',
+  MemberCannotRemoveSelf: 'member.cannot_remove_self',
+  MemberExists: 'member.exists',
+  MemberLastOwner: 'member.last_owner',
+  MemberNotFound: 'member.not_found',
+  MemberOwnerRequiresOwner: 'member.owner_requires_owner',
+  PagingCursorInvalid: 'paging.cursor_invalid',
+  PagingFilterInvalid: 'paging.filter_invalid',
+  PagingLimitInvalid: 'paging.limit_invalid',
+  PagingPageInvalid: 'paging.page_invalid',
+  PagingPageSizeInvalid: 'paging.page_size_invalid',
+  PagingQInvalid: 'paging.q_invalid',
+  PagingSortInvalid: 'paging.sort_invalid',
+  RateLimitExceeded: 'rate_limit.exceeded',
+  RequestInvalid: 'request.invalid',
+  RequestTimeout: 'request.timeout',
+  RequestTooLarge: 'request.too_large',
+  RequestUnsupportedMediaType: 'request.unsupported_media_type',
+  RequestValidationFailed: 'request.validation_failed',
+  RouteMethodNotAllowed: 'route.method_not_allowed',
+  RouteNotFound: 'route.not_found',
+  ServerError: 'server.error',
+  TenantClosed: 'tenant.closed',
+  TenantHasOwner: 'tenant.has_owner',
+  TenantNameInvalid: 'tenant.name_invalid',
+  TenantNotActive: 'tenant.not_active',
+  TenantNotClosed: 'tenant.not_closed',
+  TenantNotFound: 'tenant.not_found',
+  TenantReopenPeriodEnded: 'tenant.reopen_period_ended',
+  TenantSlugInvalid: 'tenant.slug_invalid',
+  TenantSlugTaken: 'tenant.slug_taken',
+  TenantSuspended: 'tenant.suspended',
+  UserDeleted: 'user.deleted',
+  UserHasMemberships: 'user.has_memberships',
+  UserIsSystemAdmin: 'user.is_system_admin',
+  UserLastOwner: 'user.last_owner',
+  UserNotFound: 'user.not_found',
+  UserSuspended: 'user.suspended',
 } as const;
 
 /**
@@ -360,11 +360,11 @@ export type FieldErrorCode = typeof FieldErrorCode[keyof typeof FieldErrorCode];
 
 
 export const FieldErrorCode = {
-  required: 'required',
-  email_invalid: 'email_invalid',
-  too_long: 'too_long',
-  time_zone_invalid: 'time_zone_invalid',
-  slug_invalid: 'slug_invalid',
+  Required: 'required',
+  EmailInvalid: 'email_invalid',
+  TooLong: 'too_long',
+  TimeZoneInvalid: 'time_zone_invalid',
+  SlugInvalid: 'slug_invalid',
 } as const;
 
 /**
@@ -381,8 +381,8 @@ export type InviterNameResponseKind = typeof InviterNameResponseKind[keyof typeo
 
 
 export const InviterNameResponseKind = {
-  user: 'user',
-  platform: 'platform',
+  User: 'user',
+  Platform: 'platform',
 } as const;
 
 /**
@@ -408,10 +408,10 @@ export type InvitationResponseState = typeof InvitationResponseState[keyof typeo
 
 
 export const InvitationResponseState = {
-  pending: 'pending',
-  expired: 'expired',
-  accepted: 'accepted',
-  cancelled: 'cancelled',
+  Pending: 'pending',
+  Expired: 'expired',
+  Accepted: 'accepted',
+  Cancelled: 'cancelled',
 } as const;
 
 /**
@@ -516,9 +516,9 @@ export type MyTenantResponseStatus = typeof MyTenantResponseStatus[keyof typeof 
 
 
 export const MyTenantResponseStatus = {
-  active: 'active',
-  suspended: 'suspended',
-  closed: 'closed',
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
 } as const;
 
 /**
@@ -547,11 +547,11 @@ export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof Tena
 
 
 export const TenantResponseStatus = {
-  provisioning: 'provisioning',
-  active: 'active',
-  suspended: 'suspended',
-  cancelled: 'cancelled',
-  closed: 'closed',
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
 } as const;
 
 /**
@@ -613,9 +613,9 @@ export type UserResponseStatus = typeof UserResponseStatus[keyof typeof UserResp
 
 
 export const UserResponseStatus = {
-  active: 'active',
-  suspended: 'suspended',
-  deleted: 'deleted',
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
 } as const;
 
 /**
@@ -668,28 +668,28 @@ export type Permission = typeof Permission[keyof typeof Permission];
 
 
 export const Permission = {
-  platformauditread: 'platform.audit.read',
-  platformtenantsclose: 'platform.tenants.close',
-  platformtenantscreate: 'platform.tenants.create',
-  platformtenantsinvite_owner: 'platform.tenants.invite_owner',
-  platformtenantsreactivate: 'platform.tenants.reactivate',
-  platformtenantsread: 'platform.tenants.read',
-  platformtenantsreopen: 'platform.tenants.reopen',
-  platformtenantssuspend: 'platform.tenants.suspend',
-  platformtenantsupdate: 'platform.tenants.update',
-  platformusersdelete: 'platform.users.delete',
-  platformusersreactivate: 'platform.users.reactivate',
-  platformusersread: 'platform.users.read',
-  platformuserssuspend: 'platform.users.suspend',
-  platformusersupdate: 'platform.users.update',
-  tenantauditread: 'tenant.audit.read',
-  tenantinvitationscreate: 'tenant.invitations.create',
-  tenantinvitationsdelete: 'tenant.invitations.delete',
-  tenantinvitationsread: 'tenant.invitations.read',
-  tenantmembersdelete: 'tenant.members.delete',
-  tenantmembersread: 'tenant.members.read',
-  tenantmembersupdate: 'tenant.members.update',
-  tenantprofileread: 'tenant.profile.read',
+  PlatformAuditRead: 'platform.audit.read',
+  PlatformTenantsClose: 'platform.tenants.close',
+  PlatformTenantsCreate: 'platform.tenants.create',
+  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsReactivate: 'platform.tenants.reactivate',
+  PlatformTenantsRead: 'platform.tenants.read',
+  PlatformTenantsReopen: 'platform.tenants.reopen',
+  PlatformTenantsSuspend: 'platform.tenants.suspend',
+  PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformUsersDelete: 'platform.users.delete',
+  PlatformUsersReactivate: 'platform.users.reactivate',
+  PlatformUsersRead: 'platform.users.read',
+  PlatformUsersSuspend: 'platform.users.suspend',
+  PlatformUsersUpdate: 'platform.users.update',
+  TenantAuditRead: 'tenant.audit.read',
+  TenantInvitationsCreate: 'tenant.invitations.create',
+  TenantInvitationsDelete: 'tenant.invitations.delete',
+  TenantInvitationsRead: 'tenant.invitations.read',
+  TenantMembersDelete: 'tenant.members.delete',
+  TenantMembersRead: 'tenant.members.read',
+  TenantMembersUpdate: 'tenant.members.update',
+  TenantProfileRead: 'tenant.profile.read',
 } as const;
 
 /**
@@ -817,9 +817,9 @@ export type UserMembershipResponseTenantStatus = typeof UserMembershipResponseTe
 
 
 export const UserMembershipResponseTenantStatus = {
-  active: 'active',
-  suspended: 'suspended',
-  closed: 'closed',
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
 } as const;
 
 /**
@@ -890,10 +890,10 @@ export type ListTenantsSort = typeof ListTenantsSort[keyof typeof ListTenantsSor
 
 
 export const ListTenantsSort = {
-  name: 'name',
-  '-name': '-name',
-  slug: 'slug',
-  '-slug': '-slug',
+  Name: 'name',
+  NameDescending: '-name',
+  Slug: 'slug',
+  SlugDescending: '-slug',
 } as const;
 
 export type InviteOwnerHeaders = {
@@ -928,10 +928,10 @@ export type ListUsersSort = typeof ListUsersSort[keyof typeof ListUsersSort];
 
 
 export const ListUsersSort = {
-  email: 'email',
-  '-email': '-email',
-  lastName: 'lastName',
-  '-lastName': '-lastName',
+  Email: 'email',
+  EmailDescending: '-email',
+  LastName: 'lastName',
+  LastNameDescending: '-lastName',
 } as const;
 
 export type ListPlatformAuditEntriesParams = {
@@ -967,12 +967,12 @@ export type ListMembersSort = typeof ListMembersSort[keyof typeof ListMembersSor
 
 
 export const ListMembersSort = {
-  role: 'role',
-  '-role': '-role',
-  email: 'email',
-  '-email': '-email',
-  lastName: 'lastName',
-  '-lastName': '-lastName',
+  Role: 'role',
+  RoleDescending: '-role',
+  Email: 'email',
+  EmailDescending: '-email',
+  LastName: 'lastName',
+  LastNameDescending: '-lastName',
 } as const;
 
 export type InviteMemberHeaders = {
@@ -1007,10 +1007,10 @@ export type ListInvitationsSort = typeof ListInvitationsSort[keyof typeof ListIn
 
 
 export const ListInvitationsSort = {
-  expiresAt: 'expiresAt',
-  '-expiresAt': '-expiresAt',
-  email: 'email',
-  '-email': '-email',
+  ExpiresAt: 'expiresAt',
+  ExpiresAtDescending: '-expiresAt',
+  Email: 'email',
+  EmailDescending: '-email',
 } as const;
 
 export type ListAuditEntriesParams = {
@@ -1044,7 +1044,7 @@ export type ListMyTenantsSort = typeof ListMyTenantsSort[keyof typeof ListMyTena
 
 
 export const ListMyTenantsSort = {
-  name: 'name',
-  '-name': '-name',
+  Name: 'name',
+  NameDescending: '-name',
 } as const;
 

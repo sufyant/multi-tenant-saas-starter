@@ -23,9 +23,17 @@ export const AcceptInvitationResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['active', 'suspended', 'closed']).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
+}).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.')
 }).describe('A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user\'s there.')
@@ -37,16 +45,28 @@ export const GetInvitationPreviewBody = zod.object({
 export const GetInvitationPreviewResponse = zod.object({
   "tenantName": zod.string(),
   "inviterName": zod.object({
-  "kind": zod.enum(['user', 'platform']).describe('Who invited: a user of the tenant, or the platform, for which a system admin acted.'),
+  "kind": zod.enum({
+  User: 'user',
+  Platform: 'platform',
+}).describe('Who invited: a user of the tenant, or the platform, for which a system admin acted.'),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
   "deleted": zod.boolean().nullable()
 }).describe('Who invited: a user, with the names stored now and `deleted` for a user a system admin deleted, or the platform,\nwith no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
   "expiresAt": zod.iso.datetime({"offset":true}),
-  "state": zod.enum(['pending', 'expired', 'accepted', 'cancelled']).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
+  "state": zod.enum({
+  Pending: 'pending',
+  Expired: 'expired',
+  Accepted: 'accepted',
+  Cancelled: 'cancelled',
+}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
 }).describe('What the accept screen shows the invited person before they accept: the tenant\'s name, who invited, the role the invitation\ngives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or\n`cancelled`. Only a caller with the invited address gets it.')
 

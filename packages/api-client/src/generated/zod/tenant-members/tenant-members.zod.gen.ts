@@ -21,9 +21,20 @@ export const listMembersQueryQMax = 100;
 export const ListMembersQueryParams = zod.object({
   "page": zod.int().min(1).optional(),
   "pageSize": zod.int().min(1).max(listMembersQueryPageSizeMax).optional(),
-  "sort": zod.enum(['role', '-role', 'email', '-email', 'lastName', '-lastName']).optional(),
+  "sort": zod.enum({
+  Role: 'role',
+  RoleDescending: '-role',
+  Email: 'email',
+  EmailDescending: '-email',
+  LastName: 'lastName',
+  LastNameDescending: '-lastName',
+}).optional(),
   "q": zod.string().max(listMembersQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
-  "role": zod.enum(['owner', 'admin', 'member']).optional()
+  "role": zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).optional()
 })
 
 export const ListMembersResponse = zod.object({
@@ -33,7 +44,11 @@ export const ListMembersResponse = zod.object({
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
   "deleted": zod.boolean(),
@@ -50,7 +65,11 @@ export const ChangeMemberRoleParams = zod.object({
 })
 
 export const ChangeMemberRoleBody = zod.object({
-  "role": zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')
+  "role": zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')
 }).describe('The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum\'s\nfirst value.')
 
 export const ChangeMemberRoleResponse = zod.object({
@@ -59,7 +78,11 @@ export const ChangeMemberRoleResponse = zod.object({
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
   "deleted": zod.boolean(),

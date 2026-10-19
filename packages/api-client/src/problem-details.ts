@@ -39,8 +39,8 @@ export function actionFor(
 ): ProblemAction {
   if (status === 401) return { kind: "sign-in" };
   if (!problem)
-    return { kind: "message", key: `errors.${ErrorCode.servererror}` };
-  if (status === 403 && problem.code === ErrorCode.usersuspended)
+    return { kind: "message", key: `errors.${ErrorCode.ServerError}` };
+  if (status === 403 && problem.code === ErrorCode.UserSuspended)
     return { kind: "account-suspended" };
   const fields = fieldErrorsOf(problem);
   if (Object.keys(fields).length > 0) return { kind: "field-errors", fields };

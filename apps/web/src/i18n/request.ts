@@ -10,7 +10,7 @@ export default getRequestConfig(async () => {
     (await cookies()).get(localeCookie)?.value,
     (await headers()).get("accept-language"),
     Object.values(Language),
-    Language.en,
+    Language.En,
   );
   return { locale, messages: messages[locale] };
 });

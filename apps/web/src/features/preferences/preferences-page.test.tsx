@@ -18,7 +18,7 @@ const me = getGetMeResponseMock({
   firstName: "Ayşe",
   lastName: "Yılmaz",
   email: "ayse@northwind.io",
-  language: Language.tr,
+  language: Language.Tr,
   timeZone: "Europe/Istanbul",
 });
 

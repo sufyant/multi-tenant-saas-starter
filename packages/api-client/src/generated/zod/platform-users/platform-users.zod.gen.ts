@@ -17,9 +17,18 @@ export const listUsersQueryQMax = 100;
 export const ListUsersQueryParams = zod.object({
   "page": zod.int().min(1).optional(),
   "pageSize": zod.int().min(1).max(listUsersQueryPageSizeMax).optional(),
-  "sort": zod.enum(['email', '-email', 'lastName', '-lastName']).optional(),
+  "sort": zod.enum({
+  Email: 'email',
+  EmailDescending: '-email',
+  LastName: 'lastName',
+  LastNameDescending: '-lastName',
+}).optional(),
   "q": zod.string().max(listUsersQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
-  "status": zod.enum(['active', 'suspended', 'deleted']).optional()
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+}).optional()
 })
 
 export const ListUsersResponse = zod.object({
@@ -28,7 +37,11 @@ export const ListUsersResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "status": zod.enum(['active', 'suspended', 'deleted']).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+}).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
@@ -47,7 +60,11 @@ export const GetUserResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "status": zod.enum(['active', 'suspended', 'deleted']).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+}).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true}),
@@ -61,9 +78,17 @@ export const GetUserResponse = zod.object({
   "tenantId": zod.uuid(),
   "tenantName": zod.string(),
   "tenantSlug": zod.string(),
-  "tenantStatus": zod.enum(['active', 'suspended', 'closed']).describe('The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.'),
+  "tenantStatus": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
+}).describe('The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
   "joinedAt": zod.iso.datetime({"offset":true}),
@@ -91,7 +116,11 @@ export const RenameUserResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "status": zod.enum(['active', 'suspended', 'deleted']).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+}).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
@@ -112,7 +141,11 @@ export const SuspendUserResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "status": zod.enum(['active', 'suspended', 'deleted']).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+}).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
@@ -127,7 +160,11 @@ export const ReactivateUserResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "status": zod.enum(['active', 'suspended', 'deleted']).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+}).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})

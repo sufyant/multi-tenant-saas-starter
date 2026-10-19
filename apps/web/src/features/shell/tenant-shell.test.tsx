@@ -48,7 +48,7 @@ const answers = (total: number) => [
   getGetMyTenantMockHandler(
     getGetMyTenantResponseMock({
       ...northwind,
-      permissions: [Permission.tenantmembersread],
+      permissions: [Permission.TenantMembersRead],
     }),
   ),
   getGetMeMockHandler(

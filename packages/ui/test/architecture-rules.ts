@@ -412,7 +412,7 @@ export function dateFormattingOutsideFormatter(
 
 /**
  * Rule F3: no value of a contract enum as a string literal. A screen reads `Object.values(Language)` or
- * `MemberRole.owner`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed, and so
+ * `MemberRole.Owner`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed, and so
  * is a literal type, such as the element name of `ComponentProps<"tr">`.
  */
 export function enumLiterals(
@@ -453,7 +453,7 @@ export function enumLiterals(
 /**
  * The enums whose values no screen writes by hand (F3): every const object of the generated client but the sort orders
  * (`...Sort`) and the kinds (`...Kind`). Their values are common words of code and HTML (`email`, `name`, `user`, `platform`), so a
- * check would refuse `type="email"`. A screen still writes them through the const object: `ListMembersSort.email`.
+ * check would refuse `type="email"`. A screen still writes them through the const object: `ListMembersSort.Email`.
  */
 export function contractEnumNames(generatedSchemasFile: string): string[] {
   const text = readFileSync(generatedSchemasFile, "utf8");

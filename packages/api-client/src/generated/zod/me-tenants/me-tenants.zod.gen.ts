@@ -17,7 +17,10 @@ export const listMyTenantsQueryQMax = 100;
 export const ListMyTenantsQueryParams = zod.object({
   "page": zod.int().min(1).optional(),
   "pageSize": zod.int().min(1).max(listMyTenantsQueryPageSizeMax).optional(),
-  "sort": zod.enum(['name', '-name']).optional(),
+  "sort": zod.enum({
+  Name: 'name',
+  NameDescending: '-name',
+}).optional(),
   "q": zod.string().max(listMyTenantsQueryQMax).optional().describe('The search. The API trims it before it counts its length.')
 })
 
@@ -26,9 +29,17 @@ export const ListMyTenantsResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['active', 'suspended', 'closed']).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
+}).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.')
 }).describe('A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user\'s there.')),

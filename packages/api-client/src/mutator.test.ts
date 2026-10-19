@@ -155,7 +155,7 @@ describe("apiFetch", () => {
       { "Idempotency-Key": "key-1" },
     );
 
-    expect(tenant.status).toBe(TenantResponseStatus.provisioning);
+    expect(tenant.status).toBe(TenantResponseStatus.Provisioning);
     expect(requests[0]?.headers.get("Idempotency-Key")).toBe("key-1");
   });
 
