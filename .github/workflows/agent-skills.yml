@@ -32,7 +32,10 @@ jobs:
       - run: corepack enable
 
       # The GitHub-hosted Ubuntu image has jq (actions/runner-images, Ubuntu 24.04 readme).
+      # The skills CLI reads GITHUB_TOKEN for GitHub API calls, so the job does not share the unauthenticated limit of 60 calls per hour.
       - run: pnpm skills:update
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       # A changed skill changes its hash in skills-lock.json, a new or removed file too.
       - name: Fail when a skill changed
