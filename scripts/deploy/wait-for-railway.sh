@@ -1,27 +1,31 @@
 #!/usr/bin/env bash
-# Waits until the new deployment of both API services is SUCCESS. Their names come from
-# .railway/api.json. A new deployment is one whose
+# Waits until the new deployment of every service of the apps in APPS is SUCCESS. Their names come from
+# .railway/<app>.json: both API services for `api`, one service for `web` or `platform`. A new deployment is one whose
 # ID was not in $RUNNER_TEMP/deployments-before-<service>.json. Railway keeps the old deployment
 # serving when the new one fails its health check, so the script does not roll back. It prints
 # deployment IDs and statuses only, never a variable. A failed list call counts as "no new
 # deployment yet", and the script asks again. A jq failure stops the script.
 #
-# Inputs: RAILWAY_TOKEN (secret), RAILWAY_CLI_IMAGE, RUNNER_TEMP. WAIT_TIMEOUT_SECONDS (default 600)
+# Inputs: APPS (one or more of api, web and platform, separated by spaces), RAILWAY_TOKEN (secret), RAILWAY_CLI_IMAGE,
+# RUNNER_TEMP. WAIT_TIMEOUT_SECONDS (default 600)
 # and WAIT_POLL_SECONDS (default 15) let a local test of the timeout finish in seconds. The workflow
 # does not set them.
-# Exit codes: 0 when both are SUCCESS; 1 when one is FAILED, CRASHED or REMOVED, or after the timeout;
+# Exit codes: 0 when all are SUCCESS; 1 when one is FAILED, CRASHED or REMOVED, or after the timeout;
 # jq's exit code when jq fails.
 set -euo pipefail
 
-: "${RAILWAY_TOKEN:?}" "${RAILWAY_CLI_IMAGE:?}" "${RUNNER_TEMP:?}"
+: "${APPS:?}" "${RAILWAY_TOKEN:?}" "${RAILWAY_CLI_IMAGE:?}" "${RUNNER_TEMP:?}"
 timeout_seconds="${WAIT_TIMEOUT_SECONDS:-600}"
 poll_seconds="${WAIT_POLL_SECONDS:-15}"
 
 railway() { docker run --rm -e RAILWAY_TOKEN -e CI "$RAILWAY_CLI_IMAGE" railway "$@"; }
 
 declare -A state
-service_names=$(jq -r '.services[]' "$(dirname "${BASH_SOURCE[0]}")/../../.railway/api.json")
-mapfile -t pending <<<"$service_names"
+pending=()
+for app in $APPS; do
+  service_names=$(jq -r '.services[]? // .service' "$(dirname "${BASH_SOURCE[0]}")/../../.railway/$app.json")
+  mapfile -t -O "${#pending[@]}" pending <<<"$service_names"
+done
 deadline=$((SECONDS + timeout_seconds))
 while (( ${#pending[@]} > 0 )); do
   waiting=()

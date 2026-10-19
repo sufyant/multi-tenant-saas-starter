@@ -32,7 +32,6 @@ internal static class HostingOptionsExtensions
             .BindConfiguration(HostingOptions.Section)
             .Validate(settings => settings.RoleOrNull is not null, $"{HostingOptions.Section}:Role must be web, worker or all.")
             .Validate(settings => settings.ShutdownTimeout > TimeSpan.Zero, $"{HostingOptions.Section}:ShutdownTimeout must be positive.")
-            .Validate(settings => settings.Cors.AreOrigins, $"{HostingOptions.Section}:Cors:AllowedOrigins must list origins such as https://app.example.com, without a wildcard or a path.")
             .Validate(settings => settings.ManagementPort is > 0 and <= ushort.MaxValue, $"{HostingOptions.Section}:ManagementPort must be a port from 1 to 65535.")
             .Validate(
                 settings => !publicPorts.Contains(settings.ManagementPort),
@@ -71,18 +70,6 @@ internal static class HostingOptionsExtensions
     private static string[] Split(string? value) => value?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
 }
 
-// The browser origins that may call the API (Host:Cors); none when the list is empty.
-internal sealed class HostingCorsOptions
-{
-    public string[] AllowedOrigins { get; set; } = [];
-
-    // An origin is a scheme, a host and a port, exactly as a browser sends it: no wildcard, no path, no trailing slash.
-    public bool AreOrigins => AllowedOrigins.All(origin =>
-        Uri.TryCreate(origin, UriKind.Absolute, out var uri)
-        && uri.Scheme is "https" or "http"
-        && uri.GetLeftPart(UriPartial.Authority) == origin);
-}
-
 // The host's own settings (section Host), checked on start.
 internal sealed class HostingOptions
 {
@@ -92,8 +79,6 @@ internal sealed class HostingOptions
 
     // How long a stopping host may take to finish the work it has (Twelve-Factor IX).
     public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
-
-    public HostingCorsOptions Cors { get; set; } = new();
 
     // The port of the health endpoints (section 8). Only the platform's health check and probes reach it.
     public int ManagementPort { get; set; } = 8081;

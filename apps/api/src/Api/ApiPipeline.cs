@@ -10,10 +10,8 @@ using Api.Observability;
 using Api.Persistence;
 using Api.RateLimiting;
 using Api.Routing;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
 using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
@@ -56,7 +54,6 @@ internal static class ApiPipeline
             builder.Services.AddHostedService<IdempotencyCleanup>();
         }
 
-        builder.Services.AddApiCors(host);
         builder.Services.AddUserRateLimiting();
         builder.Services.AddHealthChecks();
         builder.Services.AddApiContract();
@@ -90,11 +87,9 @@ internal static class ApiPipeline
             .UseHealthChecks($"{HealthPath}/live", new HealthCheckOptions { Predicate = _ => false })
             .UseHealthChecks($"{HealthPath}/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }));
 
-        // Routing runs first so tenant resolution sees the tenant id. A browser's preflight is answered before anything asks who the
-        // caller is. The rate limiter needs only the user, so a caller over their limit costs no membership lookup. Authorization comes
-        // last, so callers it turns away have been rate limited too.
+        // Routing runs first so tenant resolution sees the tenant id. The rate limiter needs only the user, so a caller over their limit
+        // costs no membership lookup. Authorization comes last, so callers it turns away have been rate limited too.
         app.UseRouting();
-        app.UseCors();
         app.UseAuthentication();
         app.UseRateLimiter();
         app.UseMiddleware<TenantResolutionMiddleware>();
@@ -205,40 +200,4 @@ internal static class ApiPipeline
             // Each process logs every message it handled, at Information (Wolverine's default is Debug).
             options.Policies.MessageSuccessLogLevel(LogLevel.Information);
         });
-
-    // API8. The options are built at their first use, after the endpoints are mapped, so the methods and the exposed headers come
-    // from the endpoints and from no list.
-    private static void AddApiCors(this IServiceCollection services, HostingOptions host)
-    {
-        services.AddCors();
-        services.AddOptions<CorsOptions>().Configure<EndpointDataSource>((cors, endpoints) => cors.AddDefaultPolicy(policy => policy
-            .WithOrigins(host.Cors.AllowedOrigins)
-            .WithMethods(MethodsOf(endpoints))
-            .WithHeaders(HeaderNames.Authorization, HeaderNames.ContentType, IdempotencyMiddleware.Header)
-            .WithExposedHeaders(ExposedHeadersOf(endpoints))));
-    }
-
-    // The HTTP methods of the endpoints under /v1, in ordinal order. A worker maps none.
-    private static string[] MethodsOf(EndpointDataSource endpoints) =>
-    [
-        .. V1Endpoints(endpoints)
-            .SelectMany(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? [])
-            .Distinct()
-            .Order(StringComparer.Ordinal),
-    ];
-
-    // The response headers that the endpoints under /v1 make the host send, in ordinal order, from the one map that the OpenAPI document
-    // reads too (ResponseHeaders).
-    private static string[] ExposedHeadersOf(EndpointDataSource endpoints) =>
-    [
-        .. V1Endpoints(endpoints)
-            .SelectMany(endpoint => ResponseHeaders.SentBy(endpoint.Metadata))
-            .Distinct()
-            .Order(StringComparer.Ordinal),
-    ];
-
-    private static IEnumerable<RouteEndpoint> V1Endpoints(EndpointDataSource endpoints) =>
-        endpoints.Endpoints
-            .OfType<RouteEndpoint>()
-            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith($"{RouteGroups.V1}/", StringComparison.Ordinal) == true);
 }

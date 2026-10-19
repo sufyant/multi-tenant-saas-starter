@@ -1,19 +1,22 @@
-// Railway settings of the API, as code (Railway docs, "Infrastructure as Code").
+// Railway settings of the API and the web apps, as code (Railway docs, "Infrastructure as Code").
 //
 // This file manages the services of the environment that the Railway CLI is linked to:
 // - the PostgreSQL service `postgres`, from Railway's template, with its region;
-// - the two API services: their names, region, replicas, health check and variables.
+// - the two API services: their names, region, replicas, health check and variables;
+// - the two web apps, `web` and `platform`: the same, from .railway/web.json and .railway/platform.json.
 //
 // It does not manage:
-// - The image of the API services. CI sets it on each deploy, by digest (docs/deployment.md). So
-//   no API service has a `source` here.
+// - The image of each service. CI sets it on each deploy, by digest (docs/deployment.md). So
+//   no service has a `source` here.
+// - The domains. Each environment has its own custom domains, which stay out of the repository. They are
+//   Railway service settings (docs/deployment.md, section 4).
 // - The database's public access, backups and point-in-time recovery. The `postgres` helper cannot
 //   hold them. docs/deployment.md, section 4, lists them as manual steps.
 // - The values. Each product sets its own values as shared variables of the environment. This
 //   file references each one by name and never holds a value (The Twelve-Factor App, factor III).
 //
-// Apply deletes a service variable that is not in this file. Add every variable of the two API
-// services here, not in the Railway dashboard.
+// Apply deletes a service variable that is not in this file. Add every variable of every service
+// here, not in the Railway dashboard.
 //
 // The same file serves the environments staging and production. No setting differs today; a
 // setting that must differ can read `ctx.environment`.
@@ -28,10 +31,14 @@ import { defineRailway, postgres, project, service } from "railway/iac";
 // health path. The API's own defaults are the source of the port and the path;
 // InfrastructureValueTests in apps/api checks that this file names the same.
 import infrastructure from "./api.json" with { type: "json" };
+// The same values of each web app: its service name, port and health path. route.test.ts in each app checks the path, and
+// env.test.ts in each app checks what this file gives the service.
+import platform from "./platform.json" with { type: "json" };
+import web from "./web.json" with { type: "json" };
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
-// Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3). One optional
-// key is added: Host:Cors:AllowedOrigins:0, for the web app's origin. Authentication:Clerk:AuthorizedParties has two items:
+// Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3).
+// Authentication:Clerk:AuthorizedParties has two items:
 // 0 is the web app's origin and 1 the platform app's, because the platform runs on an origin of its own and the API checks the
 // token's party. ConnectionStrings:Database
 // connects directly to the environment's PostgreSQL service, with no pooler, so Wolverine uses it
@@ -54,7 +61,6 @@ const sharedVariables = [
   "ControlPlane__Invitations__AcceptUrl",
   "Notifications__Resend__ApiKey",
   "Notifications__Resend__From",
-  "Host__Cors__AllowedOrigins__0",
 ];
 
 export default defineRailway((ctx) => {
@@ -90,11 +96,32 @@ export default defineRailway((ctx) => {
       },
     });
 
+  // A web app: the Next.js server of apps/web or apps/platform. It reads every variable of its .env.example at start (F7).
+  // - API_URL: the BFF reaches api-web over the environment's private network, never its public domain. A Railway
+  //   reference to api-web's private domain, on the API's public port, resolved by Railway; plain http, because WireGuard
+  //   encrypts private traffic (Railway docs, "How Private Networking Works").
+  // - CLERK_SECRET_KEY: the same shared variable that the API reads as ControlPlane__Clerk__SecretKey, so the key has one source.
+  // - CLERK_PUBLISHABLE_KEY: a shared variable of its own, read at run time, so one image serves every environment.
+  // - PORT: the port of the server and of Railway's health check.
+  const app = (settings: typeof web) =>
+    service(settings.service, {
+      replicas: { [region]: 1 },
+      healthcheck: settings.healthPath,
+      env: {
+        PORT: String(settings.port),
+        API_URL: `http://\${{${infrastructure.services.web}.RAILWAY_PRIVATE_DOMAIN}}:${infrastructure.publicPort}`,
+        CLERK_PUBLISHABLE_KEY: ctx.shared.CLERK_PUBLISHABLE_KEY,
+        CLERK_SECRET_KEY: ctx.shared.ControlPlane__Clerk__SecretKey,
+      },
+    });
+
   return project(ctx.projectName, {
     resources: [
       database,
       api(infrastructure.services.web, "web"),
       api(infrastructure.services.worker, "worker"),
+      app(web),
+      app(platform),
     ],
   });
 });

@@ -174,7 +174,7 @@ Rulesets, including tag rulesets, and environment secrets are enforced on privat
 
 Required reviewers work on public repositories only, on GitHub Free, Pro and Team. On a private product repository on these plans, the script prints `FAIL` for the production reviewer, and production would deploy without an approval. Do not set `DEPLOY_PRODUCTION` there.
 
-Artifact attestations work on public repositories on every current plan. A private repository needs GitHub Enterprise Cloud. `publish-api` then fails at its attestation step.
+Artifact attestations work on public repositories on every current plan. A private repository needs GitHub Enterprise Cloud. `publish-image.yml` then fails at its attestation step.
 
 On GitHub Free, they work only on public repositories.
 
@@ -215,8 +215,8 @@ Source: GitHub Docs: "Configuring two-factor authentication", "About passkeys", 
 
 Do these steps in the order of `docs/deployment.md`, section "First deployment".
 
-- Make the GHCR package public after its first push. A new package is private, also when it comes from a public repository. A package that is linked to its repository gets the repository's access permissions, but not its visibility. Railway pulls the image without credentials, so the package must be public. Go to the package's settings, "Danger Zone", "Change visibility", and choose "Public". You cannot make a public package private again.
-- For each environment, set its variable `API_URL` to the public URL of `api-web` in that environment: `gh variable set API_URL --env <environment> --body <URL>`. Without it, the smoke test of `deploy.yml` fails.
+- Make each GHCR package public after its first push: `api`, `web` and `platform`. A new package is private, also when it comes from a public repository. A package that is linked to its repository gets the repository's access permissions, but not its visibility. Railway pulls the image without credentials, so the package must be public. Go to the package's settings, "Danger Zone", "Change visibility", and choose "Public". You cannot make a public package private again.
+- For each environment, set its variables `API_URL`, `WEB_URL` and `PLATFORM_URL` to the public URLs of `api-web`, `web` and `platform` in that environment: `gh variable set API_URL --env <environment> --body <URL>`, and the same for the other two. Without them, the smoke tests of `deploy.yml` fail. `docs/deployment.md`, section 13, gives the domains.
 - Set the repository variable `DEPLOY_STAGING` to `true` with `gh variable set DEPLOY_STAGING --body true`, after staging is set up. Without it, the job `deploy-staging` is skipped and `main` stays green. To stop the staging deploys, delete the variable with `gh variable delete DEPLOY_STAGING`.
 - Set the repository variable `DEPLOY_PRODUCTION` to `true` with `gh variable set DEPLOY_PRODUCTION --body true`, after production is set up and when the product has users. Without it, the jobs `deploy-production` and `tag-release` are skipped and `main` stays green. To stop the production deploys, delete the variable with `gh variable delete DEPLOY_PRODUCTION`.
 

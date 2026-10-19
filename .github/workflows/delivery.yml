@@ -1,10 +1,10 @@
 name: Delivery
 
 # Delivers main. This file builds nothing itself. The jobs run in this order:
-# 1. ci: calls ci.yml, which builds, tests and scans the images and keeps the tested API image.
-# 2. publish-api: publishes that image to GHCR and attests it.
-# 3. deploy-staging: deploys it to staging with deploy.yml.
-# 4. deploy-production: deploys it to production with deploy.yml, after the maintainer's approval.
+# 1. ci: calls ci.yml, which builds, tests and scans the images and keeps the tested images.
+# 2. publish-api, publish-web, publish-platform: publish those images to GHCR and attest them, with publish-image.yml.
+# 3. deploy-staging: deploys the three digests to staging with deploy.yml.
+# 4. deploy-production: deploys the same digests to production with deploy.yml, after the maintainer's approval.
 # 5. tag-release: names the version that production now runs.
 # docs/deployment.md describes the flow.
 on:
@@ -31,98 +31,53 @@ jobs:
     with:
       keep-image: true
 
-  # Pushes the image that api-image in ci.yml tested to GHCR and attests it (SLSA v1.0, Build Level 2).
-  # The jobs of a called workflow run in the caller's run (the github context, run_id included, is
-  # the caller's), and download-artifact reads the current run by default. So publish-api downloads
-  # the artifact that api-image uploaded (GitHub Docs, "Reusing workflow configurations", "github
-  # context"; actions/download-artifact README, "run-id").
-  # Syft is pinned by digest, like Grype. Dependabot does not update an image in a run step
-  # (docs/github-settings.md, section 6).
+  # Push the images that ci.yml tested to GHCR and attest them (SLSA v1.0, Build Level 2), with the steps of
+  # publish-image.yml. A caller must grant the permissions of the called job.
   publish-api:
     name: "API image: publish"
     needs: [ci]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     permissions:
       contents: read
       packages: write # push the image and the attestations to GHCR
       id-token: write # get the OIDC token that Sigstore signs the attestations with
       attestations: write # store the attestations in the repository
-    outputs:
-      image: ${{ steps.push.outputs.image }}
-    env:
-      SYFT_IMAGE: ghcr.io/anchore/syft:v1.54.0@sha256:0356562f495d432056237fbea5cbc2d4839c9c75cd500784a66de2e7cc95ca7c
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
+    uses: $/.github/workflows/publish-image.yml
+    with:
+      app: api
 
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: api-image
-          path: ${{ runner.temp }}/api-image
+  publish-web:
+    name: "Web image: publish"
+    needs: [ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write # push the image and the attestations to GHCR
+      id-token: write # get the OIDC token that Sigstore signs the attestations with
+      attestations: write # store the attestations in the repository
+    uses: $/.github/workflows/publish-image.yml
+    with:
+      app: web
 
-      - name: Load the tested image
-        run: docker load -i "$RUNNER_TEMP/api-image/api.tar"
+  publish-platform:
+    name: "Platform image: publish"
+    needs: [ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write # push the image and the attestations to GHCR
+      id-token: write # get the OIDC token that Sigstore signs the attestations with
+      attestations: write # store the attestations in the repository
+    uses: $/.github/workflows/publish-image.yml
+    with:
+      app: platform
 
-      - name: Log in to GHCR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
-
-      # A registry name is lower case, and an owner name can have capitals.
-      # The deploy uses the digest that the registry returns, never a tag.
-      - name: Push the image
-        id: push
-        run: scripts/deploy/push-api-image.sh
-
-      # Syft reads the saved archive, like Grype, so it needs no access to the Docker socket.
-      - name: Make the SBOM
-        run: |
-          docker run --rm -v "$RUNNER_TEMP/api-image/api.tar:/image.tar:ro" "$SYFT_IMAGE" \
-            docker-archive:/image.tar --output spdx-json > "$RUNNER_TEMP/sbom.spdx.json"
-
-      # actions/attest replaces actions/attest-build-provenance and actions/attest-sbom.
-      # The storage record needs the artifact-metadata permission, which this job does not have.
-      - name: Attest the build provenance
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-name: ${{ steps.push.outputs.name }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-          create-storage-record: false
-
-      - name: Attest the SBOM
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-name: ${{ steps.push.outputs.name }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          sbom-path: ${{ runner.temp }}/sbom.spdx.json
-          push-to-registry: true
-          create-storage-record: false
-
-      # actions/attest names the SBOM predicate type after the SBOM's SPDX version.
-      - name: Verify the attestations
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: ${{ steps.push.outputs.image }}
-        run: |
-          gh attestation verify "oci://$IMAGE" --repo "$GITHUB_REPOSITORY"
-          spdx_version=$(jq -r .spdxVersion "$RUNNER_TEMP/sbom.spdx.json")
-          gh attestation verify "oci://$IMAGE" --repo "$GITHUB_REPOSITORY" \
-            --predicate-type "https://spdx.dev/Document/v${spdx_version#SPDX-}"
-
-      - name: Log out of GHCR
-        if: always()
-        run: docker logout ghcr.io
-
-  # Deploys the published digest to staging with the steps in deploy.yml. The repository variable
+  # Deploys the three published digests to staging with the steps in deploy.yml. The repository variable
   # DEPLOY_STAGING switches the job on. Without it the job is skipped, and main stays green before
   # a product has a Railway project.
   deploy-staging:
-    name: "API: deploy to staging"
-    needs: [publish-api]
+    name: "Deploy to staging"
+    needs: [publish-api, publish-web, publish-platform]
     if: vars.DEPLOY_STAGING == 'true'
     permissions:
       contents: read
@@ -132,6 +87,8 @@ jobs:
     with:
       environment: staging
       image: ${{ needs.publish-api.outputs.image }}
+      web-image: ${{ needs.publish-web.outputs.image }}
+      platform-image: ${{ needs.publish-platform.outputs.image }}
     # GitHub passes an environment secret only by name. The called job sets `environment: staging`,
     # so it gets the staging values (GitHub Docs, "Reuse workflows").
     secrets:
@@ -139,13 +96,13 @@ jobs:
       MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
       MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
 
-  # Deploys the digest that staging ran to production, after the maintainer approves the waiting
+  # Deploys the digests that staging ran to production, after the maintainer approves the waiting
   # job: the environment production requires a reviewer ("push-button release", Continuous Delivery,
   # chapter 5). The repository variable DEPLOY_PRODUCTION switches the job on. deploy.yml refuses a
   # commit that is older than the one production runs.
   deploy-production:
-    name: "API: deploy to production"
-    needs: [publish-api, deploy-staging]
+    name: "Deploy to production"
+    needs: [publish-api, publish-web, publish-platform, deploy-staging]
     if: vars.DEPLOY_PRODUCTION == 'true'
     permissions:
       contents: read
@@ -155,6 +112,8 @@ jobs:
     with:
       environment: production
       image: ${{ needs.publish-api.outputs.image }}
+      web-image: ${{ needs.publish-web.outputs.image }}
+      platform-image: ${{ needs.publish-platform.outputs.image }}
     # The called job sets `environment: production`, so it gets the production values.
     secrets:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
@@ -163,18 +122,21 @@ jobs:
 
   # Names the version that production now runs: a CalVer tag vYYYY.0M.0D.N in UTC (calver.org),
   # with N from 1 each day. A tag therefore always names a version that ran in production. The tag
-  # goes on the commit and on the image digest in GHCR. A tag that GITHUB_TOKEN creates starts no
+  # goes on the commit and on each image digest in GHCR. A tag that GITHUB_TOKEN creates starts no
   # workflow. Only this job may write to the repository.
   tag-release:
     name: "Tag the release"
-    needs: [publish-api, deploy-production]
+    needs: [publish-api, publish-web, publish-platform, deploy-production]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write # create the release tag
       packages: write # add the release tag to the image in GHCR
     env:
-      IMAGE: ${{ needs.publish-api.outputs.image }}
+      IMAGES: >-
+        ${{ needs.publish-api.outputs.image }}
+        ${{ needs.publish-web.outputs.image }}
+        ${{ needs.publish-platform.outputs.image }}
     steps:
       - name: Compute the tag
         id: tag
@@ -195,7 +157,7 @@ jobs:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
           object=$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags" \
-            -f tag="$TAG" -f message="Release $TAG of $IMAGE" -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+            -f tag="$TAG" -f message="Release $TAG of $IMAGES" -f object="$GITHUB_SHA" -f type=commit --jq .sha)
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$object" --silent
 
       - name: Log in to GHCR
@@ -209,15 +171,16 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          name="${IMAGE%@*}"
-          digest="${IMAGE#*@}"
-          docker buildx imagetools create --prefer-index=false --tag "$name:$TAG" "$IMAGE"
-          tagged=$(docker buildx imagetools inspect "$name:$TAG" --format '{{json .Manifest}}' | jq -r .digest)
-          if [[ "$tagged" != "$digest" ]]; then
-            echo "::error::$name:$TAG names $tagged, not $digest."
-            exit 1
-          fi
-          echo "Released $TAG: $IMAGE"
+          for image in $IMAGES; do
+            name="${image%@*}"
+            docker buildx imagetools create --prefer-index=false --tag "$name:$TAG" "$image"
+            tagged=$(docker buildx imagetools inspect "$name:$TAG" --format '{{json .Manifest}}' | jq -r .digest)
+            if [[ "$tagged" != "${image#*@}" ]]; then
+              echo "::error::$name:$TAG names $tagged, not ${image#*@}."
+              exit 1
+            fi
+            echo "Released $TAG: $image"
+          done
 
       - name: Log out of GHCR
         if: always()

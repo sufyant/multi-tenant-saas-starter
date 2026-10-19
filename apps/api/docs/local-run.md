@@ -60,12 +60,11 @@ The Notifications module stores no data and has no schema of its own.
 
 ## 5. Configure
 
-Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. A key becomes a variable with `__` in place of `:`, and an array item gets its index (`Host__Cors__AllowedOrigins__0`). A local run sets the required keys and the ports:
+Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. A key becomes a variable with `__` in place of `:`, and an array item gets its index (`Authentication__Clerk__AuthorizedParties__0`). A local run sets the required keys and the ports:
 
 ```sh
 ASPNETCORE_ENVIRONMENT=Development
 Host__Role=web                       # web or worker; one process per role
-Host__Cors__AllowedOrigins__0=https://app.localhost
 ConnectionStrings__Database=Host=localhost;Port=5432;Database=app;Username=api_application;Password=<application password>
 Authentication__Clerk__Issuer=<issuer URL>
 Authentication__Clerk__AuthorizedParties__0=https://app.localhost

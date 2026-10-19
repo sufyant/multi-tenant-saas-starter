@@ -55,6 +55,7 @@ These were decided with the maintainer in step 21a, with their sources. Do not r
 - A value of a contract enum is never a literal, even when it is a word of our own: the action of a suspended user is `account-suspended`, not `suspended`, which `TenantResponseStatus` holds.
 - A command palette in shadcn on Base UI puts `Command` inside `CommandDialog`; without it, cmdk throws.
 - The apps read their variables at start (`instrumentation.ts`), so an image needs every variable of `.env.example` to start.
+- The publishable key is `CLERK_PUBLISHABLE_KEY`, read at run time, and the sign-in page is the constant `/sign-in` (F7). An old `.env.local` with `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` stops the app at start; rename the line.
 
 ## How we design
 

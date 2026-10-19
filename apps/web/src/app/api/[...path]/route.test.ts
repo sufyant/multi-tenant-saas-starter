@@ -23,9 +23,8 @@ const requests: Request[] = [];
 
 beforeAll(() => {
   vi.stubEnv("API_URL", api);
-  vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_x");
+  vi.stubEnv("CLERK_PUBLISHABLE_KEY", "pk_test_x");
   vi.stubEnv("CLERK_SECRET_KEY", "sk_test_x");
-  vi.stubEnv("NEXT_PUBLIC_CLERK_SIGN_IN_URL", "/sign-in");
   server.listen({ onUnhandledFrame: "error" });
   server.events.on("request:start", ({ request }) => {
     requests.push(request.clone());

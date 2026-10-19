@@ -93,7 +93,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Workflows
 
-- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps. `agent-skills.yml` reports every week when an agent skill changed upstream.
+- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps, and `publish-image.yml` the only copy of the publish steps. Each deploy and rollback handles the API, the web app and the platform app together. `agent-skills.yml` reports every week when an agent skill changed upstream.
 - A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
 
 ## Agent skills

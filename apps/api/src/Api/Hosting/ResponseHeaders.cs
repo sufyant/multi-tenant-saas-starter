@@ -5,9 +5,8 @@ using SharedKernel;
 
 namespace Api.Hosting;
 
-// The one map from an endpoint's metadata to the response headers that it makes the host send. The CORS policy exposes them to a
-// browser, and the OpenAPI document declares them, so the two cannot drift (CorsExposedHeadersTests checks the result). The document
-// declares them in this order.
+// The one map from an endpoint's metadata to the response headers that it makes the host send. The OpenAPI document declares them,
+// in this order (OpenApiContractTests and RetryAfterDocumentTests check the result).
 internal static class ResponseHeaders
 {
     public static IEnumerable<string> SentBy(IEnumerable<object> metadata)

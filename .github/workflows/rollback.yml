@@ -1,6 +1,6 @@
 name: Rollback
 
-# Deploys the image of an earlier release to production. A release tag vYYYY.0M.0D.N exists only
+# Deploys the images of an earlier release to production: the API, the web app and the platform app together. A release tag vYYYY.0M.0D.N exists only
 # after a successful production deploy (tag-release in delivery.yml), so its commit passed staging and
 # production before. This workflow builds nothing.
 # Run it on the tag: gh workflow run rollback.yml --ref v2026.10.11.1
@@ -24,7 +24,9 @@ jobs:
       packages: read # read the image in GHCR
       attestations: read # verify the build provenance of the image
     outputs:
-      image: ${{ steps.image.outputs.image }}
+      api: ${{ steps.image.outputs.api }}
+      web: ${{ steps.image.outputs.web }}
+      platform: ${{ steps.image.outputs.platform }}
     steps:
       - name: Check that the ref is a release tag
         run: |
@@ -55,32 +57,41 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
 
-      # publish-api in delivery.yml tags each image with the full commit SHA.
-      - name: Find the image of the commit
+      # publish-image.yml tags each image with the full commit SHA.
+      - name: Find the images of the commit
         id: image
         env:
           COMMIT: ${{ steps.commit.outputs.sha }}
         run: |
-          name="ghcr.io/${GITHUB_REPOSITORY,,}/api"
-          digest=$(docker buildx imagetools inspect "$name:$COMMIT" --format '{{json .Manifest}}' | jq -r .digest) || true
-          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-            echo "::error::Delivery on main did not publish an image for this commit."
-            exit 1
-          fi
-          echo "Image: $name@$digest"
-          echo "image=$name@$digest" >> "$GITHUB_OUTPUT"
+          for app in api web platform; do
+            name="ghcr.io/${GITHUB_REPOSITORY,,}/$app"
+            digest=$(docker buildx imagetools inspect "$name:$COMMIT" --format '{{json .Manifest}}' | jq -r .digest) || true
+            if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::Delivery on main did not publish the $app image for this commit."
+              exit 1
+            fi
+            echo "Image: $name@$digest"
+            echo "$app=$name@$digest" >> "$GITHUB_OUTPUT"
+          done
 
-      # The provenance must come from delivery.yml, run on main, in this repository. publish-api in
-      # delivery.yml signs it, so delivery.yml is the signer workflow.
-      - name: Check where the image came from
+      # The provenance must come from publish-image.yml, which delivery.yml calls, run on main, in this repository.
+      # The reusable workflow that attests is the signer workflow (GitHub Docs, "Using artifact attestations and reusable
+      # workflows to achieve SLSA v1 Build Level 3"). A release tagged before publish-image.yml has rollback.yml of its own
+      # time, which names delivery.yml.
+      - name: Check where the images came from
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE: ${{ steps.image.outputs.image }}
+          IMAGES: >-
+            ${{ steps.image.outputs.api }}
+            ${{ steps.image.outputs.web }}
+            ${{ steps.image.outputs.platform }}
         run: |
-          gh attestation verify "oci://$IMAGE" \
-            --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/delivery.yml" \
-            --source-ref refs/heads/main
+          for image in $IMAGES; do
+            gh attestation verify "oci://$image" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/publish-image.yml" \
+              --source-ref refs/heads/main
+          done
 
       - name: Log out of GHCR
         if: always()
@@ -89,7 +100,7 @@ jobs:
   # The production environment requires the maintainer's approval here too. rollback: true lets
   # deploy.yml deploy a commit older than the one production runs.
   deploy-production:
-    name: "API: roll back production"
+    name: "Roll back production"
     needs: [check]
     permissions:
       contents: read
@@ -98,7 +109,9 @@ jobs:
     uses: $/.github/workflows/deploy.yml
     with:
       environment: production
-      image: ${{ needs.check.outputs.image }}
+      image: ${{ needs.check.outputs.api }}
+      web-image: ${{ needs.check.outputs.web }}
+      platform-image: ${{ needs.check.outputs.platform }}
       rollback: true
     # GitHub passes an environment secret only by name. The called job sets
     # `environment: production`, so it gets the production values (GitHub Docs, "Reuse workflows").

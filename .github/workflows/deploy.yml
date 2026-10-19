@@ -3,7 +3,7 @@ name: Deploy
 # The only copy of the deploy steps. delivery.yml calls it for staging and production, rollback.yml for
 # production (Humble and Farley, Continuous Delivery, chapter 5: "Deploy the same way to every
 # environment").
-# The job reads the secrets and the variable API_URL of its GitHub environment. A caller passes
+# The job reads the secrets and the variables API_URL, WEB_URL and PLATFORM_URL of its GitHub environment. A caller passes
 # the three secrets by name; the job that sets `environment` gets the environment's value
 # (GitHub Docs, "Reuse workflows").
 on:
@@ -15,6 +15,14 @@ on:
         type: string
       image:
         description: "The API image with its digest: ghcr.io/<owner>/<repo>/api@sha256:<digest>"
+        required: true
+        type: string
+      web-image:
+        description: "The web app's image with its digest: ghcr.io/<owner>/<repo>/web@sha256:<digest>"
+        required: true
+        type: string
+      platform-image:
+        description: "The platform app's image with its digest: ghcr.io/<owner>/<repo>/platform@sha256:<digest>"
         required: true
         type: string
       rollback:
@@ -41,27 +49,31 @@ jobs:
     timeout-minutes: 1
     permissions: {}
     steps:
-      - name: Check the environment and the image
+      - name: Check the environment and the images
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           IMAGE: ${{ inputs.image }}
+          WEB_IMAGE: ${{ inputs.web-image }}
+          PLATFORM_IMAGE: ${{ inputs.platform-image }}
         run: |
           if [[ "$ENVIRONMENT" != staging && "$ENVIRONMENT" != production ]]; then
             echo "::error::The environment must be staging or production, not '$ENVIRONMENT'."
             exit 1
           fi
-          if [[ ! "$IMAGE" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]]; then
-            echo "::error::The image must be ghcr.io/<name>@sha256:<digest>, not '$IMAGE'."
-            exit 1
-          fi
+          for image in "$IMAGE" "$WEB_IMAGE" "$PLATFORM_IMAGE"; do
+            if [[ ! "$image" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::An image must be ghcr.io/<name>@sha256:<digest>, not '$image'."
+              exit 1
+            fi
+          done
 
-  # Migrates the database, then deploys the digest to both Railway services of the environment.
+  # Migrates the database, deploys the API's digest to both API services, then the web apps' digests to their services.
   # The Railway CLI is pinned by digest, like Grype in ci.yml.
   deploy:
     name: "Migrate, deploy, smoke test"
     needs: [check-inputs]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     environment: ${{ inputs.environment }}
     # Two deploys to one environment never run at the same time, and a new run never cancels a running
     # migration. Only the migrate step's own time limit stops it.
@@ -133,15 +145,17 @@ jobs:
       # The CLI reads a JSON patch from stdin when stdin is not a terminal, and then ignores
       # --service-config. So `environment edit` gets a terminal (-t), and the step checks that the
       # CLI committed the change.
-      - name: Deploy the image to Railway
+      - name: Deploy the API image to Railway
         env:
+          APP: api
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: scripts/deploy/deploy-to-railway.sh
 
       # Railway keeps the old deployment serving when the new one fails its health check,
       # so the job does not roll back. It prints IDs and statuses only, never a variable.
-      - name: Wait until both services are healthy
+      - name: Wait until both API services are healthy
         env:
+          APPS: api
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: scripts/deploy/wait-for-railway.sh
 
@@ -154,6 +168,32 @@ jobs:
         env:
           API_URL: ${{ vars.API_URL }}
         run: scripts/deploy/smoke-test.sh
+
+      # The web apps go after the API, so a web app never runs against an API older than the one it was tested with.
+      # Each app is a Railway commit of its own.
+      - name: Deploy the web app images to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          WEB_IMAGE: ${{ inputs.web-image }}
+          PLATFORM_IMAGE: ${{ inputs.platform-image }}
+        run: |
+          APP=web IMAGE="$WEB_IMAGE" scripts/deploy/deploy-to-railway.sh
+          APP=platform IMAGE="$PLATFORM_IMAGE" scripts/deploy/deploy-to-railway.sh
+
+      - name: Wait until both web apps are healthy
+        env:
+          APPS: web platform
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: scripts/deploy/wait-for-railway.sh
+
+      # The health check of each app, and a first visit without a session that must end at its sign-in page.
+      - name: Smoke test the web apps
+        env:
+          WEB_URL: ${{ vars.WEB_URL }}
+          PLATFORM_URL: ${{ vars.PLATFORM_URL }}
+        run: |
+          APP=web APP_URL="$WEB_URL" URL_VARIABLE=WEB_URL scripts/deploy/smoke-test-app.sh
+          APP=platform APP_URL="$PLATFORM_URL" URL_VARIABLE=PLATFORM_URL scripts/deploy/smoke-test-app.sh
 
       - name: Log out of GHCR
         if: always()

@@ -286,8 +286,8 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // The response headers an operation's metadata makes the host send, from the one map that the CORS policy reads too
-    // (ResponseHeaders). Each header is declared on the answers that carry it.
+    // The response headers an operation's metadata makes the host send, from the one map (ResponseHeaders). Each header
+    // is declared on the answers that carry it.
     private static Task DescribeResponseHeaders(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         foreach (var header in ResponseHeaders.SentBy(context.Description.ActionDescriptor.EndpointMetadata))

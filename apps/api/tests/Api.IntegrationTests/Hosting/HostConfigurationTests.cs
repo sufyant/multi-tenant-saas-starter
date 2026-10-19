@@ -54,8 +54,6 @@ public sealed class HostConfigurationTests(Database database)
         { "RateLimiting:InvitationAccept:Window", "00:00:00" },
         { "Notifications:Resend:Timeout", "-00:00:01" },
         { "Host:ShutdownTimeout", "00:00:00" },
-        { "Host:Cors:AllowedOrigins:0", "*" },
-        { "Host:Cors:AllowedOrigins:0", "https://app.test/path" },
         { "Host:ManagementPort", "0" },
         { "Host:ManagementPort", "65536" },
     };

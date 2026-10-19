@@ -1,10 +1,10 @@
 # Deployment
 
-This document describes how the API goes from `main` to staging, and after the maintainer's approval to production, on Railway. The web app goes to Vercel in a later step.
+This document describes how the API, the web app and the platform app go from `main` to staging, and after the maintainer's approval to production, on Railway.
 
 ## 1. Purpose and sources
 
-The pipeline builds the API image once, tests it, scans it and publishes that same image. Each environment runs that image by digest. Railway builds nothing, and the repository is not connected to Railway.
+The pipeline builds each image once (the API, the web app and the platform app), tests it, scans it and publishes that same image. Each environment runs those images by digest. No image holds a value that differs between environments: each reads its settings at run time. Railway builds nothing, and the repository is not connected to Railway.
 
 Sources:
 
@@ -18,10 +18,11 @@ Sources:
 
 | File | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `generated`, `api-image`, `web-image`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
-| `delivery.yml` | `push` to `main` | Calls `ci.yml`, then `publish-api`, `deploy-staging`, `deploy-production`, `tag-release`, in this order |
+| `ci.yml` | `pull_request`, and `workflow_call` from `delivery.yml` | Verification only: `node`, `api`, `generated`, `api-image`, `web-image`, `platform-image`, `e2e`, `dependency-review`, and the aggregator `CI`. No publish, no deploy. |
+| `delivery.yml` | `push` to `main` | Calls `ci.yml`, then `publish-api`, `publish-web` and `publish-platform`, then `deploy-staging`, `deploy-production`, `tag-release`, in this order |
+| `publish-image.yml` | `workflow_call` | The only copy of the publish steps, for each of the three images |
 | `deploy.yml` | `workflow_call` | The only copy of the deploy steps, for staging and production |
-| `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the image of that release to **production**, after the approval |
+| `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the three images of that release (`api`, `web`, `platform`) to **production**, after the approval |
 
 Which file to open:
 
@@ -36,21 +37,24 @@ Which file to open:
 
 A workflow calls a script for each long step. A script reads its inputs from environment variables, and its header says how to run it locally when it needs no secret (Humble and Farley, *Continuous Delivery*, chapter 6, "Build and Deployment Scripting").
 
-On a push to `main`, after `ci.yml` passed (the jobs `node`, `api`, `generated`, `api-image`, `web-image` and `CI`):
+On a push to `main`, after `ci.yml` passed:
 
-1. `publish-api` pushes the tested image to GHCR as `ghcr.io/<owner>/<repo>/api`, with the tags `<commit SHA>` and `main`. It reads the digest from the registry. It attests the build provenance and an SPDX SBOM to that digest, and verifies both attestations.
-2. `deploy-staging` calls `deploy.yml` for `staging`, when the repository variable `DEPLOY_STAGING` is `true`.
-3. `deploy-production` waits for the maintainer's approval, then calls `deploy.yml` for `production` with the same digest. It runs only when `deploy-staging` passed and the repository variable `DEPLOY_PRODUCTION` is `true`.
-4. `tag-release` runs only when `deploy-production` passed. It creates the release tag on the commit and on the image digest in GHCR (section 5).
+1. `publish-api`, `publish-web` and `publish-platform` call `publish-image.yml`. Each pushes its tested image to GHCR as `ghcr.io/<owner>/<repo>/<app>` (`api`, `web` or `platform`), with the tags `<commit SHA>` and `main`. It reads the digest from the registry. It attests the build provenance and an SPDX SBOM to that digest, and verifies both attestations. The signer of the attestations is `publish-image.yml` (GitHub Docs, "Using artifact attestations and reusable workflows to achieve SLSA v1 Build Level 3").
+2. `deploy-staging` calls `deploy.yml` for `staging` with the three digests, when the repository variable `DEPLOY_STAGING` is `true`.
+3. `deploy-production` waits for the maintainer's approval, then calls `deploy.yml` for `production` with the same three digests. It runs only when `deploy-staging` passed and the repository variable `DEPLOY_PRODUCTION` is `true`.
+4. `tag-release` runs only when `deploy-production` passed. It creates the release tag on the commit and on each image digest in GHCR (section 5).
 
 `deploy.yml` holds the only copy of the deploy steps. In the GitHub environment that it gets:
 
 1. It checks that the three secrets are set.
 2. For `production`, it checks that the commit is not older than the commit that production runs (section 6). A rollback skips this check.
-3. It runs `migrate` with the image digest.
-4. It sets the digest as the image of `api-web` and `api-worker` in one Railway commit.
-5. It waits until the new deployment of each service is `SUCCESS`.
-6. It smoke-tests the public route: `GET /v1/me/tenants` without a token must answer 401, and `GET /health/ready` must answer 404. The 401 shows that the route reaches the web process and its authentication. The 404 shows that the public route does not reach the health endpoints: they answer only on the management port, 8081. Railway's health check covers readiness there.
+3. It runs `migrate` with the API image's digest.
+4. It sets that digest as the image of `api-web` and `api-worker` in one Railway commit.
+5. It waits until the new deployment of each API service is `SUCCESS`.
+6. It smoke-tests the API's public route: `GET /v1/me/tenants` without a token must answer 401, and `GET /health/ready` must answer 404. The 401 shows that the route reaches the web process and its authentication. The 404 shows that the public route does not reach the health endpoints: they answer only on the management port, 8081. Railway's health check covers readiness there.
+7. It sets the web app's digest on `web` and the platform app's digest on `platform`, one Railway commit for each. The web apps go after the API, so a web app never runs against an API older than the one it was tested with. One exception: a rollback to a release tagged before the web apps were deployed rolls back the API only (section 6).
+8. It waits until the new deployment of `web` and `platform` is `SUCCESS`. Railway's health check calls `GET /health` of each (section 13).
+9. It smoke-tests each app's public route: `GET /health` must answer 200, and `GET /` without a session must end at the app's `/sign-in` with 200. The request asks for HTML, keeps the cookies and follows the redirects, as a browser's first visit does. With a Clerk development instance, Clerk first sends the request through its Frontend API and back, so this step also shows that the instance accepts the domain.
 
 ### Approve a production deploy
 
@@ -85,20 +89,22 @@ The table holds names only. A value never goes into the repository.
 | --- | --- | --- | --- |
 | The workflows, the image name, the Syft and Railway CLI image digests | Repository: `.github/workflows/` | same | same |
 | The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts`. The service names, the management port and the health path are in `.railway/api.json`, which the deploy scripts read too | same | same |
+| The services `web` and `platform`, their region, replicas, health check and variables | Repository: `.railway/railway.ts`. Each app's service name, port and health path are in `.railway/web.json` and `.railway/platform.json`, which the deploy scripts and the apps' tests read too | same | same |
 | The PostgreSQL service `postgres`: Railway's template, its image `postgres-ssl:18` and its region | Repository: `.railway/railway.ts` | same | same |
 | Public access (TCP proxy) of `postgres` | Railway service settings, by hand (section 4, step 7) | own proxy | own proxy |
 | Backups and point-in-time recovery of `postgres` | Railway, by hand with the Railway CLI (section 4, step 11) | off | on |
 | `Host__Role`, `ASPNETCORE_ENVIRONMENT`, `PORT` | Repository: `.railway/railway.ts`, as literal values | same | same |
+| `API_URL` of `web` and `platform`: `http://${{api-web.RAILWAY_PRIVATE_DOMAIN}}:8080` | Repository: `.railway/railway.ts`, as a Railway reference. Railway resolves it in each environment | own private domain | own private domain |
 | The names of the shared variables that each service uses | Repository: `.railway/railway.ts` | same | same |
 | The environments, their reviewers, their deployment branches and tags, the ruleset for release tags | Repository: `scripts/github/apply-settings.sh`, `.github/rulesets/` and `docs/github-settings.md` | branch `main`, no reviewer | branch `main` and tags `v*`, the owner as reviewer |
 | `RAILWAY_TOKEN` | GitHub environment secret | the staging project token | the production project token |
 | `MIGRATIONS_CONNECTION_STRING` | GitHub environment secret | the staging database, through its TCP proxy | the production database, through its TCP proxy |
 | `MIGRATIONS_ROOT_CERTIFICATE` | GitHub environment secret | the root certificate of the staging database | the root certificate of the production database |
-| `API_URL` | GitHub environment variable | the staging URL of `api-web` | the production URL of `api-web` |
+| `API_URL`, `WEB_URL`, `PLATFORM_URL` | GitHub environment variables. The smoke tests of `deploy.yml` read them | `https://<api domain>`, `https://<web domain>`, `https://<platform domain>` of staging | the same, of production |
 | `DEPLOY_STAGING`, `DEPLOY_PRODUCTION` | GitHub repository variables | `DEPLOY_STAGING=true` switches the staging deploy on | `DEPLOY_PRODUCTION=true` switches the production deploy and the release tag on |
-| Each name in `sharedVariables` of `.railway/railway.ts`. Three are secrets: `ConnectionStrings__Database`, `ControlPlane__Clerk__SecretKey` and `Notifications__Resend__ApiKey` | Railway shared variable. A secret is a sealed variable | own value | own value |
+| Each name in `sharedVariables` of `.railway/railway.ts`, and `CLERK_PUBLISHABLE_KEY`. Three are secrets: `ConnectionStrings__Database`, `ControlPlane__Clerk__SecretKey` and `Notifications__Resend__ApiKey` | Railway shared variable. A secret is a sealed variable | own value | own value |
 | The image digest that each service runs | Railway service settings. `deploy.yml` sets it | the latest commit on `main` | the latest approved commit, or a rolled back release |
-| The generated domain of `api-web` | Railway service settings. It is not part of `.railway/railway.ts` | own domain | own domain |
+| The custom domains of `api-web`, `web` and `platform`, and their DNS records | Railway service settings and the maintainer's DNS. Not part of the repository (section 13) | own domains | own domains |
 
 `apps/api/docs/configuration.md` describes each setting. The shared variables have the same names as the service variables, in the `__` form.
 
@@ -140,7 +146,7 @@ Do these steps in this order for one environment. In the commands, `<environment
    pnpm railway:apply
    ```
 
-   The first plan creates `postgres`, `api-web` and `api-worker`. Railway attaches a volume to `postgres`. The API services get no image until the first deploy, so they do not start yet. Read section 7 before you apply a later plan.
+   The first plan creates `postgres`, `api-web`, `api-worker`, `web` and `platform`. Railway attaches a volume to `postgres`. The other services get no image until the first deploy, so they do not start yet. Read section 7 before you apply a later plan.
 
 7. Turn on public access for the database. In the Railway dashboard, open the `postgres` service in `<environment>`, then Settings. In the section Networking, open Public access and press Add Public Access. Add it on port 5432: this is a TCP proxy. Railway shows a proxy domain and a port, for example `shuttle.proxy.rlwy.net:15140`. Note both. The bootstrap (step 10) and the `migrate` command of `deploy.yml` connect through it. Why by hand: the `postgres` helper of `railway/iac` accepts only a region, so `.railway/railway.ts` cannot hold a TCP proxy for it.
 8. Check `postgres` in the dashboard: it runs in `europe-west4`, next to the API, from the image `ghcr.io/railwayapp-templates/postgres-ssl:18`, with a volume on `/var/lib/postgresql/data`.
@@ -252,13 +258,8 @@ Do these steps in this order for one environment. In the commands, `<environment
     gh secret set MIGRATIONS_ROOT_CERTIFICATE --env <environment> < ~/<project>-keys/<environment>-database-root.crt
     ```
 
-13. Generate a Railway domain for `api-web`: in the Railway dashboard, open the service in `<environment>`, Settings, Networking, "Generate Domain". The target port of the domain is 8080. Port 8081 must never get a domain: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain. Store the URL in the GitHub environment:
-
-    ```bash
-    gh variable set API_URL --env <environment> --body https://<the generated domain>
-    ```
-
-14. Make the GHCR package public, once. `publish-api` pushed it first when the deploy pipeline merged to `main`. `docs/github-settings.md`, section 5.4, gives the steps.
+13. Add a custom domain to `api-web`, `web` and `platform`, and store their URLs in the GitHub environment. Section 13, "Custom domains", gives the steps. Port 8081 of `api-web` must never get a domain: `PORT` is 8081 for Railway's health check, and the health endpoints answer only there. The worker needs no domain.
+14. Make the three GHCR packages public, once: `api`, `web` and `platform`. `publish-image.yml` pushed each first when its pipeline merged to `main`. `docs/github-settings.md`, section 5.4, gives the steps.
 15. Start the first deploy:
     - For `staging`, switch the deploy on, then run the workflow on `main` again:
 
@@ -292,7 +293,7 @@ Do these steps in this order for one environment. In the commands, `<environment
 Each successful production deploy gets a release tag in Calendar Versioning: `vYYYY.0M.0D.N`, for example `v2026.10.11.1` (calver.org). The date is the UTC date of the deploy. `N` starts at 1 each day and counts the production deploys of that day.
 
 - The job `tag-release` creates the tag after the production deploy passed. So a tag always names a version that ran in production.
-- The tag is an annotated tag on the commit. Its message names the image digest. The same tag names the digest in GHCR.
+- The tag is an annotated tag on the commit. Its message names the three image digests. The same tag names each digest in GHCR.
 - A release tag cannot be deleted or moved to another commit (`docs/github-settings.md`, section 3.5).
 - Nobody creates or pushes a `v*` tag by hand.
 
@@ -308,9 +309,9 @@ Run `rollback.yml` on an earlier release tag:
 gh workflow run rollback.yml --ref <release tag>
 ```
 
-The workflow checks that the tag is a release tag, that its commit is on `main`, that the image of the commit exists in GHCR, and that its provenance comes from `delivery.yml` on `main`. Then the production job waits for the maintainer's approval, like any production deploy. It skips the check for an older commit, because a rollback deploys one on purpose.
+The workflow checks that the tag is a release tag, that its commit is on `main`, that the three images of the commit (`api`, `web` and `platform`) exist in GHCR, and that their provenance comes from `publish-image.yml` on `main`. It rolls the three back together. Then the production job waits for the maintainer's approval, like any production deploy. It skips the check for an older commit, because a rollback deploys one on purpose.
 
-The run uses `rollback.yml` and `deploy.yml` as they were at that tag.
+The run uses `rollback.yml` and `deploy.yml` as they were at that tag. A release tagged before the web apps were deployed rolls back the API only, and checks `delivery.yml` as the signer, as it did then. The web apps then keep running against the older API.
 
 ### Staging
 
@@ -328,7 +329,7 @@ Railway keeps the old deployment serving when a new one fails its health check. 
 
 ## 7. Railway settings
 
-`.railway/railway.ts` holds the Railway settings of the API as code (Railway docs, "Infrastructure as Code"). `railway.json` and `railway.toml` (Config as Code) are deprecated, and Railway stops reading them on 2026-12-01. Do not add them.
+`.railway/railway.ts` holds the Railway settings of the API and the web apps as code (Railway docs, "Infrastructure as Code"). `railway.json` and `railway.toml` (Config as Code) are deprecated, and Railway stops reading them on 2026-12-01. Do not add them.
 
 The maintainer applies the file by hand to each environment, like `pnpm github:apply`. `railway link` selects the environment:
 
@@ -337,7 +338,11 @@ pnpm railway:plan
 pnpm railway:apply
 ```
 
-`railway:plan` changes nothing. `railway:apply` asks before it applies a destructive change.
+`railway:plan` changes nothing. When the plan has destructive lines, such as a deleted variable or a `source` going to `null`, apply needs `--confirm-destructive`. Add it only after you read the plan and every line in it is expected:
+
+```bash
+pnpm railway:apply --confirm-destructive
+```
 
 No setting in the file differs between the environments today. If one must differ, the file can read `ctx.environment`.
 
@@ -345,14 +350,14 @@ Rules:
 
 - Change a setting of a service in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
-- The API services have no `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of `api-web` and `api-worker` going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). It is not known whether such an apply removes the image. So after the first deploy, do not apply. Add settings with the procedure below.
+- No service but `postgres` has a `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of each deployed service going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). Observed in staging on 2026-10-19, with Railway CLI 5.64.2: `pnpm railway:apply --confirm-destructive` applied a plan with these `source` lines and kept the image. The variables of `api-web` and `api-worker` changed, so Railway redeployed both with the same `ghcr.io/<owner>/<repo>/api` image, and both came online (section 13, step 2). One observation is not a guarantee for another CLI version. So after the first deploy, still add settings with the procedure below when you can. A plan that adds a service needs an apply: apply only a plan that shows exactly the expected lines, and look at the image of each deployed service right after it. If an apply removed an image, rerun the last successful Delivery run of `main` at once, so `deploy.yml` sets the image again by digest.
+- Production has not had an apply since its first deploy. The first apply to production after it goes live is a decision for the maintainer.
 - The first apply of a new environment is safe (step 6 of section 4). The services have no image yet, so the plan shows no change to `source`.
 - A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 3 of section 4).
 - For most keys, an empty value stops the API at start, and the API names the key. Railway then marks the deployment as failed.
 - The file declares `postgres` with the `postgres` helper of `railway/iac`, but Railway's own flows set its volume, its TCP proxy, its backups and its point-in-time recovery (the bucket `Postgres-PITR` and the archive variables). The Railway docs do not say how apply treats these. Do not apply a plan that removes or changes one of them. Report it instead.
 - Do not apply a plan that changes the image of `postgres`. A new major version needs Railway's upgrade flow, not a new image tag (Railway docs, "Upgrading PostgreSQL Major Versions", "Manual Image Edits"). Point-in-time recovery needs a major tag such as `:18`, not a minor tag (Railway docs, "Point-in-Time Recovery", "Limitations").
 - An environment that was set up before step 18f can still have the shared variable `ConnectionStrings__Messaging`. No service references it any more. Delete it in the Railway dashboard.
-- An empty `Host__Cors__AllowedOrigins__0` is not a valid origin, so the API stops. Set it to the web app's origin, also before the web app exists.
 
 Add a shared variable to the API services without apply:
 
@@ -370,7 +375,7 @@ Remove a shared variable from the API services without apply:
 2. Merge, and let the deploy finish in each environment. The version before it may still need the variable to start.
 3. Then, in the Railway dashboard, open Shared Variables, untick `api-web` and `api-worker` for the variable, and delete it.
 
-Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way.
+Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way. The step that added the web apps removed `Host__Cors__AllowedOrigins__0` with its apply (section 13).
 
 ## 8. Migrations and the running version
 
@@ -446,7 +451,7 @@ After a restore, the private host, the proxy and the root certificate are new. U
 
 - **Staging runs no automated acceptance tests yet.** It runs only the smoke test of `deploy.yml`. *Continuous Delivery*, chapter 5, puts an automated acceptance test stage before a release. The job `e2e` of `ci.yml` runs the Playwright tests on each pull request, but it answers the API in the browser and does not test staging, so it does not close this.
 - **Production's backups stay inside Railway.** The volume backups and the archive of point-in-time recovery are in the same Railway project as the database. The 3-2-1 backup rule asks for three copies of the data, on two kinds of media, with one copy off site (Peter Krogh, *The DAM Book*). Planned: a scheduled `pg_dump` of production to storage outside Railway, when production holds real data.
-- **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway.
+- **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway. The web apps call the API over the private network, from their own address, so an anonymous call through a BFF shares the limit of that app's replica too. A BFF answers 401 itself without a session (F6), so few anonymous calls reach the API.
 - **The npm advisories of three packages have no safe fix today.** `uuid` 8.3.2 and `stream-json` 1.9.1 come through `jayson` 4, which `@solana/web3.js` 1.x requires (`^4.3.0`, also in 1.99.0), and `@clerk/ui` brings in the Solana packages. The fixed versions are new major versions (`uuid` 11.1.1, `stream-json` 3.6.0) that `jayson` 4 does not accept (`^8.3.2`, `^1.9.1`). `braces` 3.0.3 has no fixed release (GHSA-vfj7-8cjw-p6xm). Dependabot cannot update a version-pinned transitive dependency with pnpm (dependabot-core issue 15766), so its run fails until then. Check again when `@solana/web3.js` or `braces` releases. Source: `pnpm audit` and `pnpm why`.
 - **A crash outside `Main` can hang the process on arm64.** Step 18g makes `Main` return an exit code. An exception that leaves another thread still calls `abort()`. As PID 1 in a container on arm64, this can hang at full CPU (dotnet/runtime issues 66707 and 111601; 111601 is open for .NET 10). A small init process (`tini`, or `docker run --init`) would reap the process. Planned: decide this in a later step about the image.
 - **No monitoring and no alerts.** OpenTelemetry is not connected to a backend: `OTEL_EXPORTER_OTLP_ENDPOINT` is not set (`apps/api/docs/configuration.md`). A failed deploy shows in GitHub Actions, but a failure at run time shows only in the Railway logs. Nobody gets an alert. Source: *Release It!* (Nygard), "Transparency".
@@ -461,7 +466,9 @@ After a restore, the private host, the proxy and the root certificate are new. U
 - The Railway step fails: the step prints the Railway CLI's own message. Check `RAILWAY_TOKEN` and the service names.
 - A deployment ends as `FAILED`, `CRASHED` or `REMOVED`: the step prints its ID. Read its logs in Railway. A missing shared variable or a private GHCR package are common causes.
 - "Not healthy after 10 minutes" with "no new deployment yet": Railway started no deployment. This can happen when the services already run this digest.
-- "The variable API_URL ... is empty": set it (section 4, step 13).
+- "The variable API_URL ... is empty", or `WEB_URL` or `PLATFORM_URL`: set it (section 13, "Custom domains").
+- `web` or `platform` is not healthy: Railway's health check calls `GET /health` on `PORT`. A missing `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` or `API_URL` stops the app at start, and its log names the variable (F7).
+- The smoke test of a web app fails on `GET /`: the step prints the path where the request ended. `/v1/client/handshake` with status 000 means that Clerk's Frontend API did not answer. A path on the Clerk domain with another status means that the Clerk instance refused the app's domain. Any other path on the app's domain means that the sign-in redirect is wrong.
 - The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role. A 429 means the anonymous rate limit is used up (section 10).
 - `tag-release` fails: production runs the new version, but it has no tag yet. Re-run the job. If the tag was created and only the GHCR step failed, the re-run creates the next `N` for the same commit.
 - "... is not a release tag vYYYY.0M.0D.N" or "... is not on main": run `rollback.yml` on a release tag that `tag-release` created.
@@ -497,7 +504,7 @@ Section 4 of `docs/github-settings.md` names the same limits for `pnpm github:ap
 Pro or Team is the recommended plan for a private product. The pipeline then needs two changes. A later step designs them.
 
 - **The production approval.** Required reviewers are not available, so the `production` environment cannot wait for an approval. Production starts from a manual run of a workflow (`workflow_dispatch`) on `main` instead. Only a person with write access to the repository can start it (GitHub Docs, "Manually running a workflow"). *Continuous Delivery*, chapter 5, calls this a push-button release.
-- **The provenance of the image.** Artifact attestations are not available, so `publish-api` cannot attest the image, and `rollback.yml` cannot run `gh attestation verify`. The release tag already names the image digest (section 5), and a release tag cannot be deleted or moved. The rollback check uses that digest instead: the image that it deploys must have the digest that the tag message names.
+- **The provenance of the image.** Artifact attestations are not available, so `publish-image.yml` cannot attest the images, and `rollback.yml` cannot run `gh attestation verify`. The release tag already names the image digests (section 5), and a release tag cannot be deleted or moved. The rollback check uses those digests instead: each image that it deploys must have the digest that the tag message names.
 
 ### What Railway needs
 
@@ -525,3 +532,120 @@ A private product with staging and production, on GitHub Pro and Railway Pro. Pr
 - **Railway builds the image from the source on Hobby.** Each environment then builds its own image, which breaks "Only build your binaries once" (*Continuous Delivery*, chapter 5; Railway docs, "Builds").
 - **A VPS with Kamal.** Cheaper: a server with 1 vCPU and 2 GB costs 12 a month at DigitalOcean (digitalocean.com/pricing/droplets). At today's 0.35 GB an environment, it holds both. But the maintainer runs the server, the database and its backups. Kamal starts a database as an accessory, and does not update it when it deploys (Kamal docs, "Accessories").
 - **Coolify.** Its repository published 11 critical security advisories on 2026-01-03 and 5 more in June and July 2026 (GitHub Security Advisories of `coollabsio/coolify`). Its control plane needs a server with 2 GB of memory (Coolify docs, "Installation").
+
+## 13. The web apps on Railway
+
+The web app (`apps/web`) and the platform app (`apps/platform`) run on Railway next to the API, in the same environment, each as a service of its own. This section holds what they need outside the repository. In the commands, `<web domain>`, `<platform domain>` and `<api domain>` are the custom domains of the environment. No domain name goes into the repository (section 3).
+
+### The API's settings for the web apps
+
+These shared variables exist already. Their values change to the custom domains. Set them in the Railway dashboard, as in step 3 of section 4:
+
+| Shared variable | Value | Why |
+| --- | --- | --- |
+| `Authentication__Clerk__AuthorizedParties__0` | `https://<web domain>` | The API accepts a token only from an origin that this list names (the token's `azp`) |
+| `Authentication__Clerk__AuthorizedParties__1` | `https://<platform domain>` | The same, for the platform app, which runs on an origin of its own |
+| `ControlPlane__Invitations__AcceptUrl` | `https://<web domain>/invitations/accept` | The invitation email links to the web app's accept page (F44 in `docs/frontend/ARCHITECTURE.md`) |
+
+One shared variable is new:
+
+| Shared variable | Value | Why |
+| --- | --- | --- |
+| `CLERK_PUBLISHABLE_KEY` | The publishable key of the environment's Clerk instance (`pk_test_...` or `pk_live_...`) | Both apps read it at run time (F7). It is not a secret, so it is a plain variable, not a sealed one |
+
+The apps read the Clerk secret key from `ControlPlane__Clerk__SecretKey`, which the API reads too. So the secret key has one source (`.railway/railway.ts`).
+
+### Clerk
+
+The staging environment uses the Clerk development instance. A development instance accepts sign-in on any domain: Clerk's docs tell you to use "your host's provided preview domain ... with development API keys" (Clerk docs, "Instances / Environments", "Use your host's provided preview domain"). Its session state travels in the query (`__clerk_db_jwt`) through a "handshake" with its Frontend API on `accounts.dev`, not in cookies of a shared domain (the same page, "Session architecture differences"). The instance setting `allowedOrigins` is for browser extensions, Electron and Capacitor only (Clerk Backend API, "Update instance settings"). So `.clerk/config.json` does not change, and `pnpm clerk:apply` is not part of the manual steps. The smoke test of `deploy.yml` follows Clerk's handshake on each deploy, so it shows when the instance does not accept a domain.
+
+A production instance needs its own domain with DNS records for Clerk's Frontend API (Clerk docs, "Deploy your app to production"). This document does not cover it yet: production is set up later (section 4).
+
+### The private network
+
+The apps call the API at `http://<api-web private domain>:8080`. `.railway/railway.ts` writes it as a Railway reference, `http://${{api-web.RAILWAY_PRIVATE_DOMAIN}}:8080`, so no host name is a value in the repository.
+
+- Plain `http`: private traffic runs through WireGuard tunnels, and Railway's docs say to use `http://` inside the network (Railway docs, "How Private Networking Works").
+- An environment created after 16 October 2025 resolves a private name to an IPv4 and an IPv6 address; an older one to IPv6 only (the same page, "DNS resolution"). The project of this repository was created after that date, so both environments resolve to both.
+- The API listens on port 8080 on all interfaces (the base image sets `ASPNETCORE_HTTP_PORTS=8080`, and `apps/api/Dockerfile` says so), so it answers on IPv4 and IPv6.
+- `api-web` keeps its public domain for the later mobile app.
+
+### Custom domains
+
+Each environment has its own domains: `<api domain>` for `api-web`, `<web domain>` for `web` and `<platform domain>` for `platform`. They are Railway service settings, not part of `.railway/railway.ts`, because no domain name goes into the repository. For each of the three services, in the Railway dashboard of the environment:
+
+1. Open the service, Settings, Networking, "Custom Domain", and enter the domain.
+2. Choose the target port: 8080 for `api-web`, 3000 for `web` and `platform` (`.railway/web.json` and `.railway/platform.json`). Never 8081 for `api-web`.
+3. Railway shows a `CNAME` record and a `TXT` record. Create both at the DNS provider, exactly as shown. Without the `TXT` record, Railway does not verify the domain, and the domain answers 404 (Railway docs, "Working with Domains").
+4. Wait for the green check mark next to the domain. Railway then issues the certificate.
+
+Then store the URLs in the GitHub environment:
+
+```bash
+gh variable set API_URL --env <environment> --body https://<api domain>
+gh variable set WEB_URL --env <environment> --body https://<web domain>
+gh variable set PLATFORM_URL --env <environment> --body https://<platform domain>
+```
+
+A later plan of `.railway/railway.ts` may show a custom domain going away, as it shows `source` (section 7). Do not apply such a plan. Report it.
+
+### Add the web apps to a running environment
+
+Staging runs the API already. Do these steps in this order, once, for `staging` only. Production waits (section 7). Each step is manual because it sets a value that stays out of the repository, or because only the maintainer may run it (the root `AGENTS.md`, "Repository settings").
+
+Before step 1, set the shared variables in the Railway dashboard, Shared Variables of `staging`: add `CLERK_PUBLISHABLE_KEY`, and change the values of `Authentication__Clerk__AuthorizedParties__0`, `Authentication__Clerk__AuthorizedParties__1` and `ControlPlane__Invitations__AcceptUrl` (section 13, "The API's settings for the web apps"). Why first: a reference to a shared variable that does not exist gives an empty value (section 7). Manual: values never go into the repository. The running API reads the new values only at its next deploy.
+
+1. **Read the plan.** On the pull request branch, with the CLI linked to `staging`:
+
+   ```bash
+   railway link
+   pnpm railway:plan
+   ```
+
+   Apply only if the plan shows exactly these lines: create `web` and `platform`; `source.image` and `source.type` of `api-web` and `api-worker` going to `null` (section 7); "Delete variable" `Host__Cors__AllowedOrigins__0` on `api-web` and `api-worker`. Any other line: stop, and report it. Manual: only the maintainer plans and applies (the root `AGENTS.md`).
+2. **Apply.** The plan has destructive lines, so the command needs `--confirm-destructive` (section 7). Add it only after step 1:
+
+   ```bash
+   pnpm railway:apply --confirm-destructive
+   ```
+
+   Then look at the image of `api-web` and `api-worker` in the Railway dashboard: removed or kept. In staging on 2026-10-19, with Railway CLI 5.64.2, the apply kept it: Railway redeployed both services with the same image, because their variables changed, and both came online (section 7).
+3. **Give the API its image back at once.** Rerun the last successful Delivery run of `main`, before the domains and the DNS wait. Its `deploy.yml` sets the API's image again by digest. Without the CORS variable, the API of `main` still starts, because `Host:Cors:AllowedOrigins` is optional there.
+
+   ```bash
+   gh run list --workflow Delivery --branch main --status success --limit 1
+   ```
+
+   ```bash
+   gh run rerun <run id>
+   ```
+
+   If step 2 kept the image, skip the rerun: the API still runs, and a deploy of the same digest starts no new deployment, so `deploy.yml` would wait 10 minutes and fail (section 11). In staging on 2026-10-19 the apply kept the image, so this rerun was skipped (section 7). Manual: the maintainer decides when a deploy starts.
+4. **Add the custom domains, their DNS records and the GitHub environment variables** for `api-web`, `web` and `platform` (section 13, "Custom domains"). Manual: the domains and the DNS stay out of the repository. A domain verifies only after its `TXT` record resolves, which can take minutes.
+5. **Switch the staging deploy off before the merge.**
+
+   ```bash
+   gh variable set DEPLOY_STAGING --body false
+   ```
+
+   Why: the merge pushes the images `web` and `platform` for the first time, and a new GHCR package is private. Railway pulls without credentials, so the deploy of the merge would fail on them.
+6. **Merge the pull request.** Delivery publishes the three images. `deploy-staging` is skipped.
+7. **Make the GHCR packages `web` and `platform` public** (`docs/github-settings.md`, section 5.4). Manual: the visibility is a setting on the package's page, and a public package cannot become private again.
+8. **Switch the staging deploy on and rerun the merge's Delivery run.** Its `deploy.yml` deploys all three images: it migrates, deploys the API, then `web` and `platform`, and smoke-tests the three.
+
+   ```bash
+   gh variable set DEPLOY_STAGING --body true
+   ```
+
+   ```bash
+   gh run list --workflow Delivery --branch main --limit 1
+   ```
+
+   ```bash
+   gh run rerun <run id>
+   ```
+
+   The first deploy is green when the job "Deploy to staging" passes.
+9. **Delete the old shared variable.** In the Railway dashboard, Shared Variables of `staging`: delete `Host__Cors__AllowedOrigins__0`. No service references it after step 2 (section 7, "Remove a shared variable"). Manual: the dashboard holds the shared variables.
+
+`pnpm clerk:apply` is not a step: `.clerk/config.json` does not change (section 13, "Clerk").

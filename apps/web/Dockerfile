@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# The web app outside Vercel. Vercel builds the app from source, so this image is not deployed.
-# CI builds and runs it to prove that the app does not depend on one host.
+# The web app's image. CI builds, tests and publishes it once, and Railway runs that image by digest in
+# every environment (docs/deployment.md). The build reads no variable: the server reads every setting at run time (F7).
 #
 # Built from the repository root, because the build needs the lockfile and packages/ui:
 #

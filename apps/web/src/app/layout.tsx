@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
+import { env } from "@/env";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -42,8 +43,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full">
+        {/* The key comes from the server at run time, not from the build (F7). */}
         <ClerkProvider
+          publishableKey={env().CLERK_PUBLISHABLE_KEY}
           appearance={{ theme: shadcn }}
+          signInUrl="/sign-in"
           afterSignOutUrl="/sign-in"
         >
           <NextIntlClientProvider>

@@ -3,6 +3,7 @@
     "web": "api-web",
     "worker": "api-worker"
   },
+  "publicPort": 8080,
   "managementPort": 8081,
   "healthPath": "/health/ready"
 }
