@@ -12,7 +12,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { inviterOf } from "./inviter";
 
-type Ended = "expired" | "cancelled" | "accepted" | "notFound";
+type Ended =
+  | Exclude<InvitationResponseState, typeof InvitationResponseState.Pending>
+  | "notFound";
 
 /**
  * An invitation that cannot be accepted (the AcceptEnded board): expired, withdrawn, already accepted, or a link that does not
@@ -24,7 +26,7 @@ export function InvitationEnded({
   onSignOut,
 }: {
   /** Absent for a link that does not work (404). */
-  preview?: InvitationPreviewResponse;
+  preview?: InvitationPreviewResponse & { state: Ended };
   timeZone?: string | null;
   onSignOut: () => void;
 }) {
@@ -42,8 +44,7 @@ export function InvitationEnded({
       ? formatDate(preview.expiresAt, { locale: t("locale.format"), timeZone })
       : "",
   };
-  // The page shows a pending invitation elsewhere, so the state here has ended.
-  const state = (preview?.state ?? "notFound") as Ended;
+  const state: Ended = preview?.state ?? "notFound";
   const tone =
     state === InvitationResponseState.Accepted ? "success" : "neutral";
   const accepted = state === InvitationResponseState.Accepted;

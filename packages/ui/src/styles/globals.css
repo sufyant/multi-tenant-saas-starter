@@ -66,23 +66,6 @@
   }
 }
 
-/* The caret of InputOTP, from shadcn/dist/tailwind.css 4.22.1 (MIT). */
-@theme {
-  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
-
-  @keyframes caret-blink {
-    0%,
-    70%,
-    100% {
-      opacity: 1;
-    }
-    20%,
-    50% {
-      opacity: 0;
-    }
-  }
-}
-
 @utility no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;

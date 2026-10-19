@@ -3,8 +3,8 @@
 import { useAuth, useClerk, useSignUp, useUser } from "@clerk/nextjs";
 import {
   acceptInvitation,
+  actionFor,
   ErrorCode,
-  fieldErrorsOf,
   getGetMeQueryKey,
   getGetMeQueryOptions,
   getInvitationPreview,
@@ -26,7 +26,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { InvitationEnded } from "./invitation-ended";
-import { InvitationFrame } from "./invitation-header";
+import { InvitationFrame } from "./invitation-frame";
 import { JoinCard } from "./join-card";
 import { type Names, NewPersonForm } from "./new-person-form";
 import { WrongEmail } from "./wrong-email";
@@ -34,9 +34,33 @@ import { WrongEmail } from "./wrong-email";
 const codeOf = (error: Error | null) =>
   error instanceof ProblemDetailsError ? error.problem?.code : undefined;
 
-/** This page with its code and nothing else: no ticket, so a reload never signs up twice. */
-const pageOf = (code: string) =>
-  `/invitations/accept?code=${encodeURIComponent(code)}`;
+/** This page without its code: the code waits in this tab's sessionStorage while the person signs in, so it never goes into a
+ * URL we build, nor to Clerk as a redirect address. */
+const page = "/invitations/accept";
+const storedCode = "invitation-code";
+const signInAndBack = `/sign-in?${redirectParameter}=${encodeURIComponent(page)}`;
+
+/** The code of the link, else the one this tab kept before sign-in; undefined until the browser has read it. */
+function useInvitationCode(fromLink: string): string | undefined {
+  const [code, setCode] = useState(fromLink || undefined);
+  useEffect(() => {
+    if (fromLink) return;
+    try {
+      setCode(sessionStorage.getItem(storedCode) ?? "");
+    } catch {
+      setCode("");
+    }
+  }, [fromLink]);
+  return code;
+}
+
+const keepCode = (code: string) => {
+  try {
+    sessionStorage.setItem(storedCode, code);
+  } catch {
+    // Without storage the person opens the link from the email again.
+  }
+};
 
 /**
  * `/invitations/accept?code=...` (F44). A new person arrives from Clerk's invitation with `__clerk_ticket`: the ticket signs
@@ -45,12 +69,13 @@ const pageOf = (code: string) =>
  * bodies of those two calls, never into a log, a toast or a message.
  */
 export function AcceptInvitationPage({
-  code,
+  code: fromLink,
   ticket,
 }: {
   code: string;
   ticket?: string;
 }) {
+  const code = useInvitationCode(fromLink);
   const t = useTranslations();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -61,17 +86,15 @@ export function AcceptInvitationPage({
   const [ticketError, setTicketError] = useState<SignInErrorKey>();
   const signingUp = useRef(false);
 
-  const page = pageOf(code);
   const signedOut = isLoaded && !isSignedIn;
 
   // The ticket sign-up (Clerk, "Sign-up with application invitations"): no names, no password; the session starts on this page.
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs once for a signed-out person with a ticket.
   useEffect(() => {
-    if (!signedOut || signingUp.current) return;
+    if (!signedOut || signingUp.current || code === undefined) return;
+    keepCode(code);
     if (!ticket) {
-      window.location.assign(
-        `/sign-in?${redirectParameter}=${encodeURIComponent(page)}`,
-      );
+      router.replace(signInAndBack);
       return;
     }
     signingUp.current = true;
@@ -84,13 +107,13 @@ export function AcceptInvitationPage({
           window.location.assign(decorateUrl(page)),
       });
     })();
-  }, [signedOut, ticket]);
+  }, [signedOut, ticket, code]);
 
   const preview = useQuery({
     // The code stays in this browser's memory: the key is never sent anywhere.
     queryKey: ["getInvitationPreview", code],
-    queryFn: () => getInvitationPreview({ code }),
-    enabled: Boolean(isSignedIn) && code !== "",
+    queryFn: () => getInvitationPreview({ code: code ?? "" }),
+    enabled: Boolean(isSignedIn) && Boolean(code),
     retry: false,
   });
   const me = useQuery({
@@ -100,8 +123,14 @@ export function AcceptInvitationPage({
   });
 
   const join = useMutation({
-    mutationFn: (names?: Names) => acceptInvitation({ code, ...names }),
+    mutationFn: (names?: Names) =>
+      acceptInvitation({ code: code ?? "", ...names }),
     onSuccess: async (tenant: MyTenantResponse) => {
+      try {
+        sessionStorage.removeItem(storedCode);
+      } catch {
+        // Nothing was kept.
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: getListMyTenantsQueryKey() }),
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() }),
@@ -122,6 +151,7 @@ export function AcceptInvitationPage({
         </p>
       </InvitationFrame>
     );
+  if (code === undefined) return <Skeleton label={t("common.loading")} />;
   if (code === "")
     return (
       <InvitationFrame>
@@ -143,11 +173,10 @@ export function AcceptInvitationPage({
       <InvitationFrame>
         <WrongEmail
           email={email}
-          onSwitchAccount={() =>
-            void signOut({
-              redirectUrl: `/sign-in?${redirectParameter}=${encodeURIComponent(page)}`,
-            })
-          }
+          onSwitchAccount={() => {
+            keepCode(code);
+            void signOut({ redirectUrl: signInAndBack });
+          }}
         />
       </InvitationFrame>
     );
@@ -167,33 +196,42 @@ export function AcceptInvitationPage({
     return <Skeleton label={t("common.loading")} />;
 
   const timeZone = me.data?.timeZone;
-  if (preview.data.state !== InvitationResponseState.Pending)
+  const { state } = preview.data;
+  if (state !== InvitationResponseState.Pending)
     return (
       <InvitationFrame>
         <InvitationEnded
-          preview={preview.data}
+          preview={{ ...preview.data, state }}
           timeZone={timeZone}
           onSignOut={leave}
         />
       </InvitationFrame>
     );
 
-  const joinError = join.error as Error | null;
-  const joinCode = codeOf(joinError);
-  const fields =
-    joinError instanceof ProblemDetailsError && joinError.problem
-      ? fieldErrorsOf(joinError.problem)
-      : {};
+  // A failed join reads its answer as every screen does (F4): sign-in for a 401, the suspended screen, the form's fields, else
+  // the message of the code.
+  if (join.error instanceof ProblemDetailsError) {
+    const kind = actionFor(join.error.status, join.error.problem).kind;
+    if (kind === "sign-in" || kind === "account-suspended")
+      return <ProblemScreen error={join.error} />;
+  }
+  const action =
+    join.error &&
+    actionFor(
+      join.error instanceof ProblemDetailsError ? join.error.status : 500,
+      join.error instanceof ProblemDetailsError ? join.error.problem : null,
+    );
+  const fields = action?.kind === "field-errors" ? action.fields : {};
   const fieldErrors = {
     firstName: fields.firstName?.[0] && `validation.${fields.firstName[0]}`,
     lastName: fields.lastName?.[0] && `validation.${fields.lastName[0]}`,
   };
+  const key = action?.kind === "message" ? action.key : undefined;
   const message =
-    joinError && Object.keys(fields).length === 0
-      ? t.has(`errors.${joinCode}` as "errors.server.error")
-        ? t(`errors.${joinCode}` as "errors.server.error")
-        : t("problems.errorText")
-      : undefined;
+    key &&
+    (t.has(key as "errors.server.error")
+      ? t(key as "errors.server.error")
+      : t("problems.errorText"));
 
   return (
     <InvitationFrame>

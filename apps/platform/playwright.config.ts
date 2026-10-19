@@ -27,6 +27,8 @@ export default defineConfig({
       name: "setup",
       testMatch: /global\.setup\.ts/,
       teardown: "teardown",
+      // The setup types the authenticator's secret and the backup codes: no trace may record them.
+      use: { trace: "off" },
     },
     { name: "teardown", testMatch: /global\.teardown\.ts/ },
     {
@@ -48,7 +50,7 @@ export default defineConfig({
       name: "two-step",
       testMatch: /two-step\.spec\.ts/,
       dependencies: ["setup"],
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], trace: "off" },
     },
   ],
 });

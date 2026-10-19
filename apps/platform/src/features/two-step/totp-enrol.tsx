@@ -38,6 +38,8 @@ export function TotpEnrol({
   const [error, setError] = useState<SignInErrorKey>();
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
+  // A retry after Clerk turned the factor on but did not make the backup codes asks only for the codes.
+  const verified = useRef(false);
   // React runs an effect twice in development; a second createTOTP would replace the secret the QR code shows.
   const started = useRef(false);
 
@@ -54,7 +56,8 @@ export function TotpEnrol({
     event.preventDefault();
     setPending(true);
     try {
-      await user.verifyTOTP({ code });
+      if (!verified.current) await user.verifyTOTP({ code });
+      verified.current = true;
       const backup = await user.createBackupCode();
       onEnrolled(backup.codes);
     } catch (reason) {

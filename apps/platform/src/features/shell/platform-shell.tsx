@@ -16,7 +16,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { NoAccess } from "@/shared/no-access";
 import { ProblemScreen } from "@/shared/problem-screen";
@@ -52,11 +52,14 @@ export function PlatformShell({ children }: { children: ReactNode }) {
       { query: { enabled: notAUserYet(me.error), retry: false } },
     ),
   );
+  // GetMe is read once more after the door let the person in. A 404 after that is final: "You don't have access".
+  const [askedAgain, setAskedAgain] = useState(false);
   const { refetch } = me;
   useEffect(() => {
-    if (door.isSuccess) void refetch();
-  }, [door.isSuccess, refetch]);
-  if (notAUserYet(me.error) && !door.isError)
+    if (door.isSuccess && !askedAgain)
+      void refetch().finally(() => setAskedAgain(true));
+  }, [door.isSuccess, askedAgain, refetch]);
+  if (notAUserYet(me.error) && !door.isError && !askedAgain)
     return <Skeleton label={t("common.loading")} />;
   if (me.error) return <ProblemScreen error={me.error} />;
   if (!me.data) return <Skeleton label={t("common.loading")} />;

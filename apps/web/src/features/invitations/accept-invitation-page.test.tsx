@@ -34,7 +34,10 @@ const clerk = vi.hoisted(() => ({
   signOut: (() => {}) as unknown,
   signUp: {} as unknown,
 }));
-const push = vi.hoisted(() => ({ fn: (() => {}) as unknown }));
+const push = vi.hoisted(() => ({
+  fn: (() => {}) as unknown,
+  replace: (() => {}) as unknown,
+}));
 vi.mock("@clerk/nextjs", () => ({
   useAuth: () => ({ isLoaded: true, isSignedIn: clerk.isSignedIn }),
   useUser: () => ({
@@ -44,7 +47,11 @@ vi.mock("@clerk/nextjs", () => ({
   useSignUp: () => ({ signUp: clerk.signUp }),
 }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: push.fn, replace: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({
+    push: push.fn,
+    replace: push.replace,
+    refresh: vi.fn(),
+  }),
 }));
 
 const code = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f.s3cr3t";
@@ -91,7 +98,11 @@ afterAll(() => server.close());
 function setUp() {
   clerk.signOut = vi.fn();
   push.fn = vi.fn();
+  push.replace = vi.fn();
+  sessionStorage.clear();
 }
+
+const signInAndBack = "/sign-in?redirect_url=%2Finvitations%2Faccept";
 
 describe("AcceptInvitationPage", () => {
   it("AcceptInvitationPage_KnownPerson_JoinsInOneClickAndOpensTheOrganisation", async () => {
@@ -332,9 +343,8 @@ describe("AcceptInvitationPage", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Switch account" }));
 
-    expect(clerk.signOut).toHaveBeenCalledWith({
-      redirectUrl: `/sign-in?redirect_url=${encodeURIComponent(`/invitations/accept?code=${encodeURIComponent(code)}`)}`,
-    });
+    expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: signInAndBack });
+    expect(sessionStorage.getItem("invitation-code")).toBe(code);
   });
 
   it.each([
@@ -368,8 +378,14 @@ describe("AcceptInvitationPage", () => {
         signUp.status = "complete";
         return { error: null };
       }),
-      finalize: vi.fn(async () => ({ error: null })),
+      finalize: vi.fn(
+        async ({ navigate }: { navigate: (args: unknown) => void }) => {
+          navigate({ decorateUrl });
+          return { error: null };
+        },
+      ),
     };
+    const decorateUrl = vi.fn((url: string) => `#${url}`);
     clerk.signUp = signUp;
 
     const { container } = renderWithProviders(
@@ -379,6 +395,60 @@ describe("AcceptInvitationPage", () => {
     await vi.waitFor(() => expect(signUp.finalize).toHaveBeenCalledTimes(1));
     expect(signUp.ticket).toHaveBeenCalledWith({ ticket: "ticket_abc" });
     expect(container.querySelector("#clerk-captcha")).toBeInTheDocument();
+    expect(decorateUrl).toHaveBeenCalledWith("/invitations/accept");
+  });
+
+  it("AcceptInvitationPage_SignedOutWithoutATicket_KeepsTheCodeAndGoesToSignIn", async () => {
+    setUp();
+    clerk.isSignedIn = false;
+
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    await vi.waitFor(() =>
+      expect(push.replace).toHaveBeenCalledWith(signInAndBack),
+    );
+    expect(sessionStorage.getItem("invitation-code")).toBe(code);
+  });
+
+  it("AcceptInvitationPage_BackFromSignInWithoutTheCode_UsesTheKeptCode", async () => {
+    setUp();
+    sessionStorage.setItem("invitation-code", code);
+    const previewed = vi.fn();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler(async ({ request }) => {
+        previewed(await request.json());
+        return pending;
+      }),
+    );
+
+    renderWithProviders(<AcceptInvitationPage code="" />);
+
+    expect(
+      await screen.findByRole("button", { name: "Join Northwind MRO" }),
+    ).toBeInTheDocument();
+    expect(previewed).toHaveBeenCalledWith({ code });
+  });
+
+  it("AcceptInvitationPage_JoinWhileSuspended_ShowsTheSuspendedScreen", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler(pending),
+      http.post("*/v1/me/invitations/accept", () =>
+        problem(403, ErrorCode.UserSuspended),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Join Northwind MRO" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Your account is suspended" }),
+    ).toBeInTheDocument();
   });
 
   it("AcceptInvitationPage_ExpiredTicket_SaysToAskForANewInvitation", async () => {

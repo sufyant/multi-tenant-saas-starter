@@ -2,6 +2,7 @@ import { ErrorCode } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
+  getListTenantsMockHandler,
 } from "@repo/api-client/msw";
 import { screen } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
@@ -84,14 +85,25 @@ describe("PlatformShell", () => {
       getGetMeMockHandler(
         getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
       ),
-      http.get("*/v1/platform/tenants", () =>
-        HttpResponse.json({ items: [], page: 1, pageSize: 1, total: 0 }),
-      ),
+      getListTenantsMockHandler(),
     );
 
     renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(await screen.findByText("Content")).toBeInTheDocument();
+  });
+
+  it("PlatformShell_DoorLetsInButGetMeStill404_SaysYouDontHaveAccess", async () => {
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(notAUser, { status: 404 })),
+      getListTenantsMockHandler(),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    expect(
+      await screen.findByRole("heading", { name: "You don’t have access" }),
+    ).toBeInTheDocument();
   });
 
   it("PlatformShell_NotAUserAndTheDoorRefuses_SaysYouDontHaveAccess", async () => {

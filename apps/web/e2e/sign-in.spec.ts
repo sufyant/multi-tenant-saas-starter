@@ -31,16 +31,17 @@ test("SignIn_EmailCode_ShowsTheCodeStep", async ({ page }) => {
 });
 
 // Each provider button starts Clerk's redirect to the provider. The test stops at the provider's door: it signs in to nothing.
-for (const [name, host] of [
-  ["Continue with Google", "accounts.google.com"],
-  ["Continue with Microsoft", "login.microsoftonline.com"],
+for (const [provider, name, host] of [
+  ["Google", "Continue with Google", "accounts.google.com"],
+  ["Microsoft", "Continue with Microsoft", "login.microsoftonline.com"],
 ] as const) {
-  test(`SignIn_${name.replaceAll(" ", "")}_StartsTheRedirectToTheProvider`, async ({
+  test(`SignIn_${provider}_StartsTheRedirectToTheProvider`, async ({
     page,
   }) => {
     await setupClerkTestingToken({ page });
     await page.route(`https://${host}/**`, (route) => route.abort());
     await page.goto("/sign-in");
+    await expectAccessible(page);
 
     const toProvider = page.waitForRequest((request) =>
       request.url().startsWith(`https://${host}/`),

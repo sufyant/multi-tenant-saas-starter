@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { expect, type Page } from "@playwright/test";
 import { Secret, TOTP } from "otpauth";
+import { deleteUser } from "./clerk-users";
 
 // What the setup keeps for the other tests and the teardown, beside the session in playwright/.clerk (ignored by git): the
-// temporary user, the authenticator's secret and the backup codes. Nothing of it goes into a log or a report.
+// temporary user, the authenticator's secret and the backup codes. The setup and the backup-code test record no trace
+// (playwright.config.ts), so a failed run's report holds none of them.
 export type PlatformUser = {
   id: string;
   email: string;
@@ -89,4 +91,10 @@ export async function leaveTwoStep(page: Page, secret: string): Promise<void> {
   ]);
   if (await challenge.isVisible()) await passTheChallenge(page, secret);
   await expect(page).not.toHaveURL(/two-step/, { timeout: 30_000 });
+}
+
+/** Deletes the setup's user, when the setup made one. */
+export async function deleteSavedUser(): Promise<void> {
+  const user = readUser();
+  if (user) await deleteUser(user.id);
 }
