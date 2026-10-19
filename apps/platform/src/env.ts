@@ -2,12 +2,13 @@ import { z } from "zod";
 
 // Every environment variable of the app, read once through one schema (F7). `env()` runs at server start
 // (instrumentation.ts), so a missing variable fails there, not at its first use. API_URL is a server variable: no
-// NEXT_PUBLIC_ name, so the browser never sees it.
+// NEXT_PUBLIC_ name, so the browser never sees it. CLERK_PUBLISHABLE_KEY has no NEXT_PUBLIC_ name either, because a build would
+// write such a value into the image: the server reads it at run time and gives it to ClerkProvider and clerkMiddleware, so one
+// image serves every environment.
 const schema = z.object({
   API_URL: z.url(),
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_PUBLISHABLE_KEY: z.string().min(1),
   CLERK_SECRET_KEY: z.string().min(1),
-  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().startsWith("/"),
 });
 
 export type Env = z.infer<typeof schema>;

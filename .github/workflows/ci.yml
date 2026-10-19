@@ -365,7 +365,7 @@ jobs:
       - name: Build the apps and run the Playwright tests
         if: steps.secrets.outputs.present == 'true'
         env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
+          CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
           E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
         run: scripts/ci/test-e2e.sh

@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { env } from "@/env";
 import { hasVerifiedSecondFactor } from "@/shared/second-factor";
 
 // Every page needs a session but sign-in, its SSO callback and the health check (F46). The BFF under /api checks the session itself and answers 401
@@ -14,15 +15,22 @@ const isOpen = createRouteMatcher([
 // convenience: the API still refuses every /v1/platform request without one (A6), and the BFF passes that answer on.
 const needsNoSecondFactor = createRouteMatcher(["/two-step(.*)"]);
 
-export default clerkMiddleware(async (auth, request) => {
-  if (isOpen(request)) return;
-  const { factorVerificationAge } = await auth.protect();
-  if (
-    !needsNoSecondFactor(request) &&
-    !hasVerifiedSecondFactor(factorVerificationAge)
-  )
-    return NextResponse.redirect(new URL("/two-step", request.url));
-});
+// The publishable key comes from the server at run time, and the sign-in page is the same in every environment (F7).
+export default clerkMiddleware(
+  async (auth, request) => {
+    if (isOpen(request)) return;
+    const { factorVerificationAge } = await auth.protect();
+    if (
+      !needsNoSecondFactor(request) &&
+      !hasVerifiedSecondFactor(factorVerificationAge)
+    )
+      return NextResponse.redirect(new URL("/two-step", request.url));
+  },
+  () => ({
+    publishableKey: env().CLERK_PUBLISHABLE_KEY,
+    signInUrl: "/sign-in",
+  }),
+);
 
 export const config = {
   matcher: [
