@@ -28,3 +28,6 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 Element.prototype.scrollIntoView ??= () => {};
+
+// jsdom has no elementFromPoint. input-otp calls it to find a password manager's badge beside the code.
+document.elementFromPoint ??= () => null;

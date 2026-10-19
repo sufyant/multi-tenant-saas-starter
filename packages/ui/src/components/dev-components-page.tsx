@@ -2,11 +2,16 @@
 
 // /dev/components (F33): every component as the design system's previews show it, in their sample data, with a language and a
 // theme switch. Both apps mount it outside production builds. The sample texts are literals on purpose: this page is outside F25.
+import { NextIntlClientProvider } from "next-intl";
 import { useTheme } from "next-themes";
 import { type ReactNode, useState } from "react";
+import ar from "../../messages/ar.json";
+import en from "../../messages/en.json";
+import tr from "../../messages/tr.json";
 import { AppShell } from "./app-shell";
 import { Banner } from "./banner";
 import { Button } from "./button";
+import { CodeInput } from "./code-input";
 import { Combobox } from "./combobox";
 import { Dialog } from "./dialog";
 import { EmptyState } from "./empty-state";
@@ -23,7 +28,9 @@ import {
 } from "./icon";
 import { Input } from "./input";
 import { OrgMenu } from "./org-menu";
+import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
+import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
 import { Skeleton } from "./skeleton";
 import { Status } from "./status";
 import { SubNav } from "./sub-nav";
@@ -35,6 +42,8 @@ import { showToast } from "./toast";
 import { UserMenu } from "./user-menu";
 
 const at = "2026-10-16T13:32:00Z";
+const messages = { en, tr, ar };
+const noop = () => {};
 const now = "2026-10-16T15:40:00Z";
 
 const samples = {
@@ -365,6 +374,60 @@ export function DevComponentsPage({
           lockedReason="Used in links. It can't be changed."
         />
       </Section>
+
+      <Section name="CodeInput">
+        <CodeInput label="Code" value="" onChange={noop} />
+        <CodeInput
+          label="Code"
+          value="482190"
+          onChange={noop}
+          error="That code is not right. Check the email and try again."
+        />
+      </Section>
+
+      <Section name="ProviderButtons">
+        <div className="w-80">
+          <ProviderButtons
+            labels={{
+              oauth_google: "Continue with Google",
+              oauth_microsoft: "Continue with Microsoft",
+            }}
+            onSelect={noop}
+          />
+        </div>
+      </Section>
+
+      <NextIntlClientProvider
+        locale={language}
+        messages={messages[language]}
+        timeZone={sample.timeZone}
+      >
+        <Section name="SignIn">
+          <div className="flex w-[400px] max-w-full flex-col gap-6">
+            <EmailStep
+              title="Sign in to Starter"
+              onSubmit={noop}
+              onProvider={noop}
+            />
+          </div>
+          <div className="flex w-[400px] max-w-full flex-col gap-6">
+            <CodeStep
+              email="ayse@northwind.io"
+              onSubmit={noop}
+              onResend={noop}
+              onUseAnotherEmail={noop}
+              error="codeExpired"
+            />
+          </div>
+          <div className="flex w-[400px] max-w-full flex-col gap-6">
+            <SecondFactorStep
+              onSubmit={noop}
+              exit={<TextButton>Sign out</TextButton>}
+              error="locked"
+            />
+          </div>
+        </Section>
+      </NextIntlClientProvider>
 
       <Section name="Status">
         <Status tone="info">Provisioning</Status>

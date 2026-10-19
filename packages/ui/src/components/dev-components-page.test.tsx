@@ -2,11 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DevComponentsPage } from "./dev-components-page";
 
-// The 20 components of the design system's components/index.d.ts.
+// The 20 components of the design system's components/index.d.ts, and the sign-in parts of step 21b.
 const names = [
   "AppShell",
   "Banner",
   "Button",
+  "CodeInput",
   "Combobox",
   "Dialog",
   "EmptyState",
@@ -14,7 +15,9 @@ const names = [
   "Icon",
   "Input",
   "OrgMenu",
+  "ProviderButtons",
   "RowMenu",
+  "SignIn",
   "Skeleton",
   "Status",
   "SubNav",
