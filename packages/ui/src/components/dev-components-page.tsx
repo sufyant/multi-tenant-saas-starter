@@ -280,7 +280,6 @@ export function DevComponentsPage({
     Object.keys(samples)[0] as keyof typeof samples,
   );
   const { theme = "system", setTheme } = useTheme();
-  const [rail, setRail] = useState(false);
   const sample = samples[language];
   const avatar = (row: Member) => (
     <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
@@ -733,95 +732,105 @@ export function DevComponentsPage({
       </Section>
 
       <Section name="AppShell">
-        <fieldset className="flex gap-1">
-          <legend className="sr-only">Rail</legend>
-          <Button
-            variant={rail ? "secondary" : "primary"}
-            aria-pressed={!rail}
-            onClick={() => setRail(false)}
-          >
-            Icon rail
-          </Button>
-          <Button
-            variant={rail ? "primary" : "secondary"}
-            aria-pressed={rail}
-            onClick={() => setRail(true)}
-          >
-            Rail with labels
-          </Button>
-        </fieldset>
-        <p className="text-small text-muted-foreground">
-          The rail shows its labels from bp-desktop only. A tablet keeps the
-          icon rail.
-        </p>
-        <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
-          <AppShell
-            key={String(rail)}
-            railExpanded={rail}
-            nav={[
-              {
-                id: "overview",
-                label: sample.overview,
-                icon: HomeIcon,
-                href: "#overview",
-              },
-              {
-                id: "settings",
-                label: sample.settings,
-                icon: SettingsIcon,
-                href: "#settings",
-                placement: "bottom",
-              },
-            ]}
-            current="settings"
-            logo="S"
-            logoLabel="Home"
-            logoHref="#home"
-            crumbs={[
-              { label: "Northwind Traders" },
-              { label: sample.settings },
-              { label: sample.members },
-            ]}
-            orgMenu={
-              <OrgMenu
-                name="Northwind Traders"
-                slug="northwind"
-                initials="N"
-                memberRole="Owner"
-                switchLabel="Switch organisation"
-                switchHref="#choose"
-              />
-            }
-            userMenu={
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
-                AY
-              </span>
-            }
-            labels={{
-              navigation: "Main",
-              menu: "Open menu",
-              search: "Search",
-              searchShortcut: "⌘K",
-              breadcrumb: "Breadcrumb",
-              commandTitle: "Go to",
-              commandPlaceholder: "Search pages",
-              commandEmpty: "No page found",
-              close: "Close",
-              railToggle: "Menu labels",
-              railShortcut: "⌘B",
-            }}
-            onNavigate={() => {}}
-          >
-            <h1 className="text-page-title">{sample.members}</h1>
-            <Freshness
-              at={at}
-              locale={sample.locale}
-              timeZone={sample.timeZone}
-              label={sample.updated}
-            />
-          </AppShell>
-        </div>
+        <AppShellPreview sample={sample} />
       </Section>
     </div>
+  );
+}
+
+/** The AppShell with its two rail states. The switch lives here, so it renders only this preview, not the whole page. */
+function AppShellPreview({ sample }: { sample: Sample }) {
+  const [rail, setRail] = useState(false);
+  return (
+    <>
+      <fieldset className="flex gap-1">
+        <legend className="sr-only">Rail</legend>
+        <Button
+          variant={rail ? "secondary" : "primary"}
+          aria-pressed={!rail}
+          onClick={() => setRail(false)}
+        >
+          Icon rail
+        </Button>
+        <Button
+          variant={rail ? "primary" : "secondary"}
+          aria-pressed={rail}
+          onClick={() => setRail(true)}
+        >
+          Rail with labels
+        </Button>
+      </fieldset>
+      <p className="text-small text-muted-foreground">
+        The rail shows its labels from bp-desktop only. A tablet keeps the icon
+        rail.
+      </p>
+      <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
+        <AppShell
+          key={String(rail)}
+          railExpanded={rail}
+          nav={[
+            {
+              id: "overview",
+              label: sample.overview,
+              icon: HomeIcon,
+              href: "#overview",
+            },
+            {
+              id: "settings",
+              label: sample.settings,
+              icon: SettingsIcon,
+              href: "#settings",
+              placement: "bottom",
+            },
+          ]}
+          current="settings"
+          logo="S"
+          logoLabel="Home"
+          logoHref="#home"
+          crumbs={[
+            { label: "Northwind Traders" },
+            { label: sample.settings },
+            { label: sample.members },
+          ]}
+          orgMenu={
+            <OrgMenu
+              name="Northwind Traders"
+              slug="northwind"
+              initials="N"
+              memberRole="Owner"
+              switchLabel="Switch organisation"
+              switchHref="#choose"
+            />
+          }
+          userMenu={
+            <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
+              AY
+            </span>
+          }
+          labels={{
+            navigation: "Main",
+            menu: "Open menu",
+            search: "Search",
+            searchShortcut: "⌘K",
+            breadcrumb: "Breadcrumb",
+            commandTitle: "Go to",
+            commandPlaceholder: "Search pages",
+            commandEmpty: "No page found",
+            close: "Close",
+            railToggle: "Menu labels",
+            railShortcut: "⌘B",
+          }}
+          onNavigate={() => {}}
+        >
+          <h1 className="text-page-title">{sample.members}</h1>
+          <Freshness
+            at={at}
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+            label={sample.updated}
+          />
+        </AppShell>
+      </div>
+    </>
   );
 }

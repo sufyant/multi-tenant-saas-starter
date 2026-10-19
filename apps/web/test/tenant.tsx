@@ -183,3 +183,6 @@ export async function pickFromRowMenu(
   );
   await userEvent.click(await screen.findByRole("menuitem", { name: item }));
 }
+
+/** The time a test of a whole page may take (Vitest's default is 5 s). */
+export const pageTestTimeout = 15_000;
