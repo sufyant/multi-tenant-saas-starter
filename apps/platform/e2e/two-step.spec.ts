@@ -8,7 +8,8 @@ import { enrolledUser, signInWithEmailCode } from "./two-step";
 test("TwoStep_BackupCode_SignsInOnceAndNeverAgain", async ({ browser }) => {
   test.setTimeout(120_000);
   const { email, backupCode } = enrolledUser();
-  const first = await browser.newPage();
+  // axe needs a page of a context of its own.
+  const first = await (await browser.newContext()).newPage();
   await setupClerkTestingToken({ page: first });
   await mockApi(first);
   await first.goto("/sign-in");
@@ -20,7 +21,7 @@ test("TwoStep_BackupCode_SignsInOnceAndNeverAgain", async ({ browser }) => {
   await first.getByRole("button", { name: "Continue" }).click();
   await expect(first).not.toHaveURL(/sign-in|two-step/, { timeout: 30_000 });
 
-  const second = await browser.newPage();
+  const second = await (await browser.newContext()).newPage();
   await setupClerkTestingToken({ page: second });
   await second.goto("/sign-in");
   await signInWithEmailCode(second, email);
