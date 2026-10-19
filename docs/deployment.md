@@ -338,7 +338,11 @@ pnpm railway:plan
 pnpm railway:apply
 ```
 
-`railway:plan` changes nothing. `railway:apply` asks before it applies a destructive change.
+`railway:plan` changes nothing. When the plan has destructive lines, such as a deleted variable or a `source` going to `null`, apply needs `--confirm-destructive`. Add it only after you read the plan and every line in it is expected:
+
+```bash
+pnpm railway:apply --confirm-destructive
+```
 
 No setting in the file differs between the environments today. If one must differ, the file can read `ctx.environment`.
 
@@ -346,8 +350,8 @@ Rules:
 
 - Change a setting of a service in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
-- No service but `postgres` has a `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of each deployed service going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). It is not known whether such an apply removes the image. So after the first deploy, do not apply. Add settings with the procedure below. One exception: a plan that adds a service. The maintainer chose it for the web apps, in staging only (section 13, "Add the web apps to a running environment"): apply only a plan that shows exactly the expected lines, then rerun the last successful Delivery run of `main` at once, so `deploy.yml` sets the API's image again by digest.
-- What that apply did to the image of `api-web` and `api-worker` is recorded here, with the date and the Railway CLI version: *not recorded yet* (removed or kept). The maintainer writes it after step 3 of section 13. Production waits for this record. The first apply to production after it goes live is a decision for the maintainer.
+- No service but `postgres` has a `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of each deployed service going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). Observed in staging on 2026-10-19, with Railway CLI 5.64.2: `pnpm railway:apply --confirm-destructive` applied a plan with these `source` lines and kept the image. The variables of `api-web` and `api-worker` changed, so Railway redeployed both with the same `ghcr.io/<owner>/<repo>/api` image, and both came online (section 13, step 2). One observation is not a guarantee for another CLI version. So after the first deploy, still add settings with the procedure below when you can. A plan that adds a service needs an apply: apply only a plan that shows exactly the expected lines, and look at the image of each deployed service right after it. If an apply removed an image, rerun the last successful Delivery run of `main` at once, so `deploy.yml` sets the image again by digest.
+- Production has not had an apply since its first deploy. The first apply to production after it goes live is a decision for the maintainer.
 - The first apply of a new environment is safe (step 6 of section 4). The services have no image yet, so the plan shows no change to `source`.
 - A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 3 of section 4).
 - For most keys, an empty value stops the API at start, and the API names the key. Railway then marks the deployment as failed.
@@ -599,13 +603,13 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
    ```
 
    Apply only if the plan shows exactly these lines: create `web` and `platform`; `source.image` and `source.type` of `api-web` and `api-worker` going to `null` (section 7); "Delete variable" `Host__Cors__AllowedOrigins__0` on `api-web` and `api-worker`. Any other line: stop, and report it. Manual: only the maintainer plans and applies (the root `AGENTS.md`).
-2. **Apply.**
+2. **Apply.** The plan has destructive lines, so the command needs `--confirm-destructive` (section 7). Add it only after step 1:
 
    ```bash
-   pnpm railway:apply
+   pnpm railway:apply --confirm-destructive
    ```
 
-   Note the Railway CLI version (`railway --version`) and the date. Look at the image of `api-web` in the Railway dashboard: removed or kept.
+   Then look at the image of `api-web` and `api-worker` in the Railway dashboard: removed or kept. In staging on 2026-10-19, with Railway CLI 5.64.2, the apply kept it: Railway redeployed both services with the same image, because their variables changed, and both came online (section 7).
 3. **Give the API its image back at once.** Rerun the last successful Delivery run of `main`, before the domains and the DNS wait. Its `deploy.yml` sets the API's image again by digest. Without the CORS variable, the API of `main` still starts, because `Host:Cors:AllowedOrigins` is optional there.
 
    ```bash
@@ -616,7 +620,7 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
    gh run rerun <run id>
    ```
 
-   If step 2 kept the image, skip the rerun: the API still runs, and a deploy of the same digest starts no new deployment, so `deploy.yml` would wait 10 minutes and fail (section 11). Then write what step 2 did to the image into section 7, with the date and the CLI version, in a pull request. Manual: the maintainer decides when a deploy starts.
+   If step 2 kept the image, skip the rerun: the API still runs, and a deploy of the same digest starts no new deployment, so `deploy.yml` would wait 10 minutes and fail (section 11). In staging on 2026-10-19 the apply kept the image, so this rerun was skipped (section 7). Manual: the maintainer decides when a deploy starts.
 4. **Add the custom domains, their DNS records and the GitHub environment variables** for `api-web`, `web` and `platform` (section 13, "Custom domains"). Manual: the domains and the DNS stay out of the repository. A domain verifies only after its `TXT` record resolves, which can take minutes.
 5. **Switch the staging deploy off before the merge.**
 
