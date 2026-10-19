@@ -10,7 +10,7 @@ const outputPath = "packages/ui/src/styles/tokens.gen.css";
 /**
  * The CSS of the tokens: light colours and shadows on :root, dark ones on .dark, and every other token on :root. A colour value
  * `{name}` names another token and becomes `var(--name)`. The breakpoints also go into a Tailwind `@theme` block, because a media
- * query cannot read a variable.
+ * query cannot read a variable. The `@theme inline` block maps the tokens into Tailwind's theme (themeLines).
  * @param {any} tokens The content of tokens.json.
  * @returns {string}
  */
@@ -78,7 +78,79 @@ ${dark.join("\n")}
 @theme {
 ${breakpoints.join("\n")}
 }
+
+/* shadcn's variable names are the token names, so each Tailwind theme variable reads the token of the same meaning. A token whose
+   name Tailwind already uses (radius-md, shadow-md, font-sans) keeps its name: this file is outside every cascade layer, so its
+   value wins over Tailwind's default in the theme layer. A shadow is named here too, because Tailwind writes its default shadow into
+   the utility. */
+@theme inline {
+${themeLines(tokens).join("\n")}
+}
 `;
+}
+
+/**
+ * The lines of the `@theme inline` block, in groups: the colours, the sizes, the shadows, the families, the text styles and the
+ * layers. A size whose name ends with `-max` is a maximum width, so it is a container; every other size is a spacing. A text style
+ * whose name extends another's (`body-strong`, `body-ar`) is a variant of it and gets no utility of its own. A text style names its
+ * weight when it is not the normal 400, and its tracking when it has one. The spacing scale, the radii and the breakpoints are not
+ * here: the first two keep Tailwind's names, and the breakpoints are in the `@theme` block above.
+ * @param {any} tokens The content of tokens.json.
+ * @returns {string[]}
+ */
+function themeLines(tokens) {
+  /** @param {string} name @param {string} token */
+  const line = (name, token) => `  --${name}: var(--${token});`;
+  /** @type {{ name: string, fontWeight: number, letterSpacing?: string }[]} */
+  const styles = tokens.type.groups.flatMap(
+    (/** @type {{ styles: any[] }} */ group) => group.styles,
+  );
+  const baseStyles = styles.filter(
+    (style) => !styles.some((other) => style.name.startsWith(`${other.name}-`)),
+  );
+
+  return [
+    tokens.color.tokens.map((/** @type {{ name: string }} */ token) =>
+      line(`color-${token.name}`, token.name),
+    ),
+    tokens.size.tokens.map((/** @type {{ name: string }} */ token) =>
+      line(
+        `${token.name.endsWith("-max") ? "container" : "spacing"}-${token.name}`,
+        token.name,
+      ),
+    ),
+    tokens.shadow.tokens.map((/** @type {{ name: string }} */ token) =>
+      line(token.name, token.name),
+    ),
+    Object.keys(tokens.type.families).map((name) =>
+      line(`font-${name}`, `font-${name}`),
+    ),
+    baseStyles.flatMap((style) => [
+      line(`text-${style.name}`, `font-${style.name}-size`),
+      line(`text-${style.name}--line-height`, `font-${style.name}-line-height`),
+      ...(style.fontWeight === 400
+        ? []
+        : [
+            line(
+              `text-${style.name}--font-weight`,
+              `font-${style.name}-weight`,
+            ),
+          ]),
+      ...(style.letterSpacing === undefined
+        ? []
+        : [
+            line(
+              `text-${style.name}--letter-spacing`,
+              `font-${style.name}-tracking`,
+            ),
+          ]),
+    ]),
+    tokens.zIndex.tokens.map((/** @type {{ name: string }} */ token) =>
+      line(`z-index-${token.name.replace(/^z-/, "")}`, token.name),
+    ),
+  ]
+    .filter((group) => group.length > 0)
+    .flatMap((group, index) => (index === 0 ? group : ["", ...group]));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

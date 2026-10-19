@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildTokensCss } from "./build-tokens.mjs";
 
-// The @theme inline block that globals.css held by hand before build-tokens.mjs wrote it (F20). The script must write it unchanged.
+// The @theme inline block that globals.css held by hand before build-tokens.mjs wrote it (F20). The script must write it unchanged,
+// with one exception: the families follow the order of tokens.json (sans, arabic, mono), where the hand-written block had mono before
+// arabic. The order of two declarations does not change the CSS.
 const handWrittenThemeBlock = `@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -61,8 +63,8 @@ const handWrittenThemeBlock = `@theme inline {
   --shadow-lg: var(--shadow-lg);
 
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
   --font-arabic: var(--font-arabic);
+  --font-mono: var(--font-mono);
 
   --text-page-title: var(--font-page-title-size);
   --text-page-title--line-height: var(--font-page-title-line-height);
