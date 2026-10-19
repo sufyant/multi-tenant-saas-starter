@@ -55,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin <<<"$GITHUB_TOKEN"
 
-      # publish-api in delivery.yml tags each image with the full commit SHA.
+      # publish-image.yml tags each image with the full commit SHA.
       - name: Find the image of the commit
         id: image
         env:
@@ -70,8 +70,10 @@ jobs:
           echo "Image: $name@$digest"
           echo "image=$name@$digest" >> "$GITHUB_OUTPUT"
 
-      # The provenance must come from delivery.yml, run on main, in this repository. publish-api in
-      # delivery.yml signs it, so delivery.yml is the signer workflow.
+      # The provenance must come from publish-image.yml, which delivery.yml calls, run on main, in this repository.
+      # The reusable workflow that attests is the signer workflow (GitHub Docs, "Using artifact attestations and reusable
+      # workflows to achieve SLSA v1 Build Level 3"). A release tagged before publish-image.yml has rollback.yml of its own
+      # time, which names delivery.yml.
       - name: Check where the image came from
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +81,7 @@ jobs:
         run: |
           gh attestation verify "oci://$IMAGE" \
             --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/delivery.yml" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/publish-image.yml" \
             --source-ref refs/heads/main
 
       - name: Log out of GHCR
