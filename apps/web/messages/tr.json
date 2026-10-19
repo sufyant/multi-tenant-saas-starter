@@ -30,7 +30,11 @@
   },
   "organisations": {
     "chooseTitle": "Bir kuruluş seçin",
-    "chooseText": "Birden fazla kuruluşun üyesisiniz. Şimdi çalışacağınız kuruluşu seçin."
+    "chooseText": "{count} kuruluşa üyesiniz.",
+    "status": {
+      "suspended": "Askıda",
+      "closed": "Kapalı"
+    }
   },
   "overview": {
     "title": "Genel bakış",
@@ -48,5 +52,47 @@
     "now": "Şu an",
     "theme": "Tema",
     "themeHint": "Bu cihazda saklanır."
+  },
+  "signInPage": {
+    "title": "Starter'a giriş yapın"
+  },
+  "invitations": {
+    "settingUp": "Hesabınız hazırlanıyor",
+    "inviterSubject": {
+      "platform": "Platform",
+      "deletedUser": "Sizi davet eden kişi"
+    },
+    "inviterObject": {
+      "platform": "platform",
+      "deletedUser": "sizi davet eden kişi"
+    },
+    "invited": "{inviter} sizi {tenant} kuruluşuna katılmaya davet etti",
+    "invitedAs": "{inviter} sizi {tenant} kuruluşuna {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}} olarak katılmaya davet etti",
+    "yourRole": "Rolünüz",
+    "expires": "Bitiş",
+    "join": "{tenant} kuruluşuna katıl",
+    "joinsWith": "<email></email> e-postasıyla katılırsınız. Davet yalnızca bu adres için geçerlidir.",
+    "newPersonText": "Ekip arkadaşlarınıza kim olduğunuzu söyleyin. Bu adlar üye listesinde ve Etkinlik'te görünür.",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "joined": "{tenant} kuruluşuna katıldınız",
+    "goToOrganisations": "Kuruluşlarıma git",
+    "open": "{tenant} kuruluşunu aç",
+    "expiredStatus": "Süresi doldu",
+    "expiredTitle": "Bu davetin süresi doldu",
+    "expiredText": "{tenant} kuruluşuna katılma bağlantısının süresi {date} tarihinde doldu. Yeni bir davet için başvurun: {inviter}.",
+    "cancelledStatus": "Geri çekildi",
+    "cancelledTitle": "Bu davet geri çekildi",
+    "cancelledText": "{tenant} kuruluşuna katılma daveti geri çekildi veya yerine daha yeni bir davet geldi. Gelen kutunuzda daha yeni bir e-posta arayın veya yeni bir davet için başvurun: {inviter}.",
+    "acceptedStatus": "Kabul edildi",
+    "acceptedTitle": "Bu daveti zaten kabul ettiniz",
+    "acceptedText": "{tenant} kuruluşunun üyesisiniz. Devam etmek için kuruluşu açın.",
+    "notFoundStatus": "Geçersiz",
+    "notFoundTitle": "Bu bağlantı çalışmıyor",
+    "notFoundText": "Yeni bir davet isteyin.",
+    "wrongEmailTitle": "Bu davet başka bir e-posta için",
+    "wrongEmailText": "<email></email> olarak giriş yaptınız. Daveti alan e-postayla giriş yapın.",
+    "switchAccount": "Hesap değiştir",
+    "backHome": "Ana sayfaya dön"
   }
 }

@@ -49,7 +49,11 @@
             "paths": {
               "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
               "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
-              "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
+              "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md).",
+              "@clerk/nextjs": {
+                "importNames": ["SignIn", "SignUp", "UserProfile"],
+                "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."
+              }
             },
             "patterns": [
               {
@@ -119,7 +123,11 @@
               "options": {
                 "paths": {
                   "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
-                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md).",
+                  "@clerk/nextjs": {
+                    "importNames": ["SignIn", "SignUp", "UserProfile"],
+                    "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."
+                  }
                 },
                 "patterns": [
                   {
@@ -157,7 +165,11 @@
               "options": {
                 "paths": {
                   "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
-                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md).",
+                  "@clerk/nextjs": {
+                    "importNames": ["SignIn", "SignUp", "UserProfile"],
+                    "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."
+                  }
                 },
                 "patterns": [
                   {
@@ -182,7 +194,11 @@
               "options": {
                 "paths": {
                   "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
-                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md)."
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md).",
+                  "@clerk/nextjs": {
+                    "importNames": ["SignIn", "SignUp", "UserProfile"],
+                    "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."
+                  }
                 },
                 "patterns": [
                   {
@@ -207,7 +223,11 @@
               "options": {
                 "paths": {
                   "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
-                  "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md)."
+                  "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
+                  "@clerk/nextjs": {
+                    "importNames": ["SignIn", "SignUp", "UserProfile"],
+                    "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."
+                  }
                 },
                 "patterns": [
                   {

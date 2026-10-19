@@ -30,7 +30,11 @@
   },
   "organisations": {
     "chooseTitle": "اختر مؤسسة",
-    "chooseText": "أنت عضو في أكثر من مؤسسة. اختر المؤسسة التي تعمل فيها الآن."
+    "chooseText": "أنت عضو في {count, plural, zero {# مؤسسة} one {مؤسسة واحدة} two {مؤسستين} few {# مؤسسات} many {# مؤسسة} other {# مؤسسة}}.",
+    "status": {
+      "suspended": "موقوفة",
+      "closed": "مغلقة"
+    }
   },
   "overview": {
     "title": "نظرة عامة",
@@ -48,5 +52,47 @@
     "now": "الآن",
     "theme": "المظهر",
     "themeHint": "يُحفظ على هذا الجهاز."
+  },
+  "signInPage": {
+    "title": "تسجيل الدخول إلى Starter"
+  },
+  "invitations": {
+    "settingUp": "جارٍ إعداد حسابك",
+    "inviterSubject": {
+      "platform": "المنصّة",
+      "deletedUser": "الشخص الذي دعاك"
+    },
+    "inviterObject": {
+      "platform": "المنصّة",
+      "deletedUser": "الشخص الذي دعاك"
+    },
+    "invited": "دعاك {inviter} للانضمام إلى {tenant}",
+    "invitedAs": "دعاك {inviter} للانضمام إلى {tenant} بدور {role, select, owner {مالك} admin {مسؤول} member {عضو} other {{roleName}}}",
+    "yourRole": "دورك",
+    "expires": "تنتهي",
+    "join": "انضم إلى {tenant}",
+    "joinsWith": "تنضم بالبريد الإلكتروني <email></email>. تعمل الدعوة لهذا العنوان فقط.",
+    "newPersonText": "عرّف زملاءك بنفسك. تظهر هذه الأسماء في قائمة الأعضاء وفي النشاط.",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "joined": "انضممت إلى {tenant}",
+    "goToOrganisations": "اذهب إلى مؤسساتي",
+    "open": "افتح {tenant}",
+    "expiredStatus": "منتهية",
+    "expiredTitle": "انتهت صلاحية هذه الدعوة",
+    "expiredText": "انتهت صلاحية رابط الانضمام إلى {tenant} في {date}. اطلب من {inviter} دعوتك مرة أخرى.",
+    "cancelledStatus": "مسحوبة",
+    "cancelledTitle": "سُحبت هذه الدعوة",
+    "cancelledText": "سُحبت دعوة الانضمام إلى {tenant} أو استُبدلت بدعوة أحدث. ابحث في بريدك عن رسالة أحدث، أو اطلب من {inviter} دعوتك مرة أخرى.",
+    "acceptedStatus": "مقبولة",
+    "acceptedTitle": "قبلت هذه الدعوة من قبل",
+    "acceptedText": "أنت عضو في {tenant}. افتحها للمتابعة.",
+    "notFoundStatus": "غير صالح",
+    "notFoundTitle": "هذا الرابط لا يعمل",
+    "notFoundText": "اطلب دعوة جديدة.",
+    "wrongEmailTitle": "هذه الدعوة لبريد إلكتروني آخر",
+    "wrongEmailText": "أنت مسجّل الدخول باسم <email></email>. سجّل الدخول بالبريد الذي وصلته الدعوة.",
+    "switchAccount": "تبديل الحساب",
+    "backHome": "العودة إلى الصفحة الرئيسية"
   }
 }

@@ -3,9 +3,11 @@
 import {
   getGetMeQueryOptions,
   getListMyTenantsQueryOptions,
+  MyTenantResponseStatus,
   schemas,
 } from "@repo/api-client";
 import { Skeleton } from "@repo/ui/components/skeleton";
+import { Status } from "@repo/ui/components/status";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,15 +46,12 @@ export function ChooseOrganisation() {
       <LocaleSync language={me.data.language} />
       <h1 className="text-page-title">{t("organisations.chooseTitle")}</h1>
       <p className="text-body text-muted-foreground">
-        {t("organisations.chooseText")}
+        {t("organisations.chooseText", { count: tenants.data.total })}
       </p>
       <ul className="flex flex-col">
-        {tenants.data.items.map((tenant) => (
-          <li key={tenant.id} className="border-b border-border">
-            <Link
-              href={`/${tenant.slug}`}
-              className="flex min-h-14 items-center gap-3 px-2 hover:bg-accent"
-            >
+        {tenants.data.items.map((tenant) => {
+          const row = (
+            <>
               <span className="flex flex-1 flex-col">
                 <span className="font-medium">{tenant.name}</span>
                 <bdi
@@ -67,9 +66,35 @@ export function ChooseOrganisation() {
                   ? t(`shell.roles.${tenant.role.builtIn}`)
                   : tenant.role.name}
               </span>
-            </Link>
-          </li>
-        ))}
+            </>
+          );
+          // A suspended or closed organisation cannot be opened (the SelectTenant board): it shows its status and no link.
+          return (
+            <li key={tenant.id} className="border-b border-border">
+              {tenant.status === MyTenantResponseStatus.Active ? (
+                <Link
+                  href={`/${tenant.slug}`}
+                  className="flex min-h-14 items-center gap-3 px-2 hover:bg-accent"
+                >
+                  {row}
+                </Link>
+              ) : (
+                <div className="flex min-h-14 items-center gap-3 px-2 opacity-60">
+                  {row}
+                  <Status
+                    tone={
+                      tenant.status === MyTenantResponseStatus.Suspended
+                        ? "warning"
+                        : "neutral"
+                    }
+                  >
+                    {t(`organisations.status.${tenant.status}`)}
+                  </Status>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </main>
   );

@@ -24,6 +24,7 @@ pnpm --filter @repo/web build
 | `@tanstack/react-query` | Server data in the browser (F8) | MIT |
 | `next-intl` | Messages and the locale (F13) | MIT |
 | `nuqs` | Filters, tabs, paging and sort in the URL (F9) | MIT |
+| `react-hook-form`, `@hookform/resolvers` | The new person's names on the accept page, with the generated Zod schema (F11). The maintainer's decision in step 21b | MIT |
 | `next-themes` | Light, dark and system (F24) | MIT |
 | `zod` | `src/env.ts` and the Zod error map (F7, F12) | MIT |
 | `vitest`, `jsdom`, `@vitejs/plugin-react`, `vite-tsconfig-paths` | The unit tests (development only) | MIT |

@@ -41,6 +41,29 @@
     "themeHint": "Saved on this device."
   },
   "access": {
-    "noAccessText": "This app is for the system admins of the provider. Your account is not one."
+    "noAccessTitle": "You don’t have access",
+    "noAccessText": "You are signed in as <email></email>. This account has no access here."
+  },
+  "signInPage": {
+    "title": "Sign in to the platform"
+  },
+  "twoStep": {
+    "enrolTitle": "Set up your authenticator app",
+    "enrolText": "Platform staff sign in with a second step. This takes two minutes and you only do it once.",
+    "scan": "Open an authenticator app on your phone and scan this code.",
+    "qrLabel": "QR code for your authenticator app",
+    "cannotScan": "Cannot scan? Type this key instead:",
+    "copyKey": "Copy key",
+    "copied": "Copied",
+    "enterCode": "Enter the 6-digit code the app shows",
+    "turnOn": "Turn on two-step sign-in",
+    "backupTitle": "Save your backup codes",
+    "backupText": "Each code signs you in once if you lose your phone. Keep them somewhere safe and offline. This is the only time they are shown in full.",
+    "backupCodes": "Backup codes",
+    "copyCodes": "Copy codes",
+    "download": "Download as text",
+    "fileName": "backup-codes.txt",
+    "saved": "I saved these codes. I understand I cannot see them again, only make new ones.",
+    "continue": "Continue to the platform"
   }
 }

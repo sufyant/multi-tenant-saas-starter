@@ -1,5 +1,9 @@
 import type { Page } from "@playwright/test";
 import {
+  ErrorCode,
+  type InvitationPreviewResponse,
+  InvitationResponseState,
+  InviterNameResponseKind,
   Language,
   MemberRole,
   type MeResponse,
@@ -49,5 +53,48 @@ export async function mockApi(
         ),
       },
     }),
+  );
+}
+
+export const invitationCode = `${northwind.id}.e2e-secret`;
+
+export const pendingInvitation: InvitationPreviewResponse = {
+  tenantName: northwind.name,
+  inviterName: {
+    kind: InviterNameResponseKind.User,
+    firstName: "Ayşe",
+    lastName: "Yılmaz",
+    deleted: false,
+  },
+  role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+  expiresAt: "2099-10-23T13:32:00Z",
+  state: InvitationResponseState.Pending,
+};
+
+const problem = (status: number, code: ErrorCode) => ({
+  status,
+  json: { status, title: "Refused", code, traceId: "00-e2e" },
+});
+
+/** The accept page's calls: the preview answers the invitation or a problem, and GetMe answers a user or 404. */
+export async function mockInvitation(
+  page: Page,
+  preview: InvitationPreviewResponse | ErrorCode,
+  { knownUser = true }: { knownUser?: boolean } = {},
+): Promise<void> {
+  await mockApi(page);
+  if (!knownUser)
+    await page.route("**/api/v1/me", (route) =>
+      route.fulfill(problem(404, ErrorCode.UserNotFound)),
+    );
+  await page.route("**/api/v1/me/invitations/preview", (route) =>
+    route.fulfill(
+      typeof preview === "string"
+        ? problem(preview === ErrorCode.InvitationNotFound ? 404 : 403, preview)
+        : { json: preview },
+    ),
+  );
+  await page.route("**/api/v1/me/invitations/accept", (route) =>
+    route.fulfill({ json: northwind }),
   );
 }
