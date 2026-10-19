@@ -30,7 +30,11 @@
   },
   "organisations": {
     "chooseTitle": "Choose an organisation",
-    "chooseText": "You are a member of more than one organisation. Choose the one you work in now."
+    "chooseText": "You belong to {count, plural, one {# organisation} other {# organisations}}.",
+    "status": {
+      "suspended": "Suspended",
+      "closed": "Closed"
+    }
   },
   "overview": {
     "title": "Overview",
@@ -51,5 +55,44 @@
   },
   "signInPage": {
     "title": "Sign in to Starter"
+  },
+  "invitations": {
+    "settingUp": "Setting up your account",
+    "inviterSubject": {
+      "platform": "The platform",
+      "deletedUser": "The person who invited you"
+    },
+    "inviterObject": {
+      "platform": "the platform",
+      "deletedUser": "the person who invited you"
+    },
+    "invited": "{inviter} invited you to join {tenant}",
+    "invitedAs": "{inviter} invited you to join {tenant} as {role, select, owner {an Owner} admin {an Admin} member {a Member} other {{roleName}}}",
+    "yourRole": "Your role",
+    "expires": "Expires",
+    "join": "Join {tenant}",
+    "joinsWith": "You join with the email <email></email>. The invitation only works for this address.",
+    "newPersonText": "Tell your colleagues who you are. These names appear in the member list and in Activity.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "joined": "You joined {tenant}",
+    "goToOrganisations": "Go to my organisations",
+    "open": "Open {tenant}",
+    "expiredStatus": "Expired",
+    "expiredTitle": "This invitation expired",
+    "expiredText": "The link to join {tenant} expired on {date}. Ask {inviter} to invite you again.",
+    "cancelledStatus": "Withdrawn",
+    "cancelledTitle": "This invitation was withdrawn",
+    "cancelledText": "The invitation to join {tenant} was withdrawn or replaced by a newer one. Check your inbox for a newer email, or ask {inviter} to invite you again.",
+    "acceptedStatus": "Accepted",
+    "acceptedTitle": "You already accepted this invitation",
+    "acceptedText": "You are a member of {tenant}. Open it to continue.",
+    "notFoundStatus": "Not valid",
+    "notFoundTitle": "This link does not work",
+    "notFoundText": "Ask for a new invitation.",
+    "wrongEmailTitle": "This invitation is for a different email",
+    "wrongEmailText": "You’re signed in as <email></email>. Sign in with the email that received the invitation.",
+    "switchAccount": "Switch account",
+    "backHome": "Back to home"
   }
 }

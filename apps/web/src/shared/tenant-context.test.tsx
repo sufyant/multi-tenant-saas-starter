@@ -6,10 +6,24 @@ import {
 import { screen } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { renderWithProviders } from "../../test/render";
 import { TenantProvider, useCan, useTenant } from "./tenant-context";
 
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({ signOut: vi.fn() }),
+  useUser: () => ({
+    user: { primaryEmailAddress: { emailAddress: "ali.kaya@gmail.com" } },
+  }),
+}));
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());

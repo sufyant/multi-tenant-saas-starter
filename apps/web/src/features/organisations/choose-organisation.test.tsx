@@ -22,6 +22,12 @@ const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace, refresh: vi.fn(), push: vi.fn() }),
 }));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({ signOut: vi.fn() }),
+  useUser: () => ({
+    user: { primaryEmailAddress: { emailAddress: "ali.kaya@gmail.com" } },
+  }),
+}));
 vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
 
 const server = setupServer();
@@ -108,6 +114,43 @@ describe("ChooseOrganisation", () => {
 
     expect(
       await screen.findByRole("heading", { name: "No access yet" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_SuspendedOrganisation_ShowsItsStatusAndNoLink", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([
+        tenant("Northwind MRO", "northwind"),
+        { ...tenant("Atlas Technic", "atlas"), status: "suspended" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByText("You belong to 2 organisations."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Suspended")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Atlas Technic/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_NoOrganisation_ShowsWhoIsSignedInAndSignOut", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(await screen.findByText("ali.kaya@gmail.com")).toHaveAttribute(
+      "dir",
+      "ltr",
+    );
+    expect(
+      screen.getByRole("button", { name: "Sign out" }),
     ).toBeInTheDocument();
   });
 });

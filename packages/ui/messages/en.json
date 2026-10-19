@@ -35,7 +35,7 @@
   },
   "problems": {
     "noAccessTitle": "No access yet",
-    "noAccessText": "You are not a member of an organisation yet. When someone invites you, the invitation comes by email.",
+    "noAccessText": "You’re not in an organisation yet. Open the invitation link in your email, or ask an admin to invite you.",
     "suspendedTitle": "Your account is suspended",
     "suspendedText": "You cannot use the app while your account is suspended. Contact the person who manages your organisation.",
     "errorTitle": "Something went wrong",

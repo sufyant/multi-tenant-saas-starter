@@ -35,7 +35,7 @@
   },
   "problems": {
     "noAccessTitle": "Henüz erişiminiz yok",
-    "noAccessText": "Henüz bir kuruluşun üyesi değilsiniz. Biri sizi davet ettiğinde davet e-postayla gelir.",
+    "noAccessText": "Henüz bir kuruluşta değilsiniz. E-postanızdaki davet bağlantısını açın veya bir yöneticiden sizi davet etmesini isteyin.",
     "suspendedTitle": "Hesabınız askıya alındı",
     "suspendedText": "Hesabınız askıdayken uygulamayı kullanamazsınız. Kuruluşunuzu yöneten kişiyle iletişime geçin.",
     "errorTitle": "Bir sorun oluştu",
