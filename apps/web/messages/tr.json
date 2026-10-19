@@ -70,14 +70,14 @@
     "invitedAs": "{inviter} sizi {tenant} kuruluşuna {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}} olarak katılmaya davet etti",
     "yourRole": "Rolünüz",
     "expires": "Bitiş",
-    "join": "{tenant} kuruluşuna katılın",
+    "join": "{tenant} kuruluşuna katıl",
     "joinsWith": "<email></email> e-postasıyla katılırsınız. Davet yalnızca bu adres için geçerlidir.",
     "newPersonText": "Ekip arkadaşlarınıza kim olduğunuzu söyleyin. Bu adlar üye listesinde ve Etkinlik'te görünür.",
     "firstName": "Ad",
     "lastName": "Soyad",
     "joined": "{tenant} kuruluşuna katıldınız",
-    "goToOrganisations": "Kuruluşlarıma gidin",
-    "open": "{tenant} kuruluşunu açın",
+    "goToOrganisations": "Kuruluşlarıma git",
+    "open": "{tenant} kuruluşunu aç",
     "expiredStatus": "Süresi doldu",
     "expiredTitle": "Bu davetin süresi doldu",
     "expiredText": "{tenant} kuruluşuna katılma bağlantısının süresi {date} tarihinde doldu. Yeni bir davet için başvurun: {inviter}.",
@@ -92,7 +92,7 @@
     "notFoundText": "Yeni bir davet isteyin.",
     "wrongEmailTitle": "Bu davet başka bir e-posta için",
     "wrongEmailText": "<email></email> olarak giriş yaptınız. Daveti alan e-postayla giriş yapın.",
-    "switchAccount": "Hesap değiştirin",
-    "backHome": "Ana sayfaya dönün"
+    "switchAccount": "Hesap değiştir",
+    "backHome": "Ana sayfaya dön"
   }
 }

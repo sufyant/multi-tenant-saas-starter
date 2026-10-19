@@ -53,17 +53,17 @@
     "scan": "Telefonunuzda bir doğrulama uygulaması açın ve bu kodu tarayın.",
     "qrLabel": "Doğrulama uygulamanız için QR kodu",
     "cannotScan": "Tarayamıyor musunuz? Bunun yerine bu anahtarı yazın:",
-    "copyKey": "Anahtarı kopyalayın",
+    "copyKey": "Anahtarı kopyala",
     "copied": "Kopyalandı",
     "enterCode": "Uygulamanın gösterdiği 6 haneli kodu girin",
-    "turnOn": "İki adımlı girişi açın",
+    "turnOn": "İki adımlı girişi aç",
     "backupTitle": "Yedek kodlarınızı kaydedin",
     "backupText": "Telefonunuzu kaybederseniz her kod sizi bir kez içeri alır. Kodları güvenli ve çevrim dışı bir yerde saklayın. Kodlar yalnızca bu kez tam olarak gösterilir.",
     "backupCodes": "Yedek kodlar",
-    "copyCodes": "Kodları kopyalayın",
-    "download": "Metin olarak indirin",
+    "copyCodes": "Kodları kopyala",
+    "download": "Metin olarak indir",
     "fileName": "yedek-kodlar.txt",
     "saved": "Bu kodları kaydettim. Kodları bir daha göremeyeceğimi, yalnızca yenilerini oluşturabileceğimi anlıyorum.",
-    "continue": "Platforma devam edin"
+    "continue": "Platforma devam et"
   }
 }
