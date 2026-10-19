@@ -3,7 +3,7 @@ import { clerk, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test as setup } from "@playwright/test";
 import { mockApi } from "./api";
 import { expectAccessible } from "./axe";
-import { createUser } from "./clerk-users";
+import { createUser, deleteStaleUsers } from "./clerk-users";
 import {
   leaveTwoStep,
   passTheChallenge,
@@ -19,6 +19,10 @@ setup(
   "enrol a temporary user and sign in with the second factor",
   async ({ page }) => {
     setup.setTimeout(180_000);
+    // The count of stale users is no secret; the CI log shows it.
+    console.log(
+      `Deleted ${await deleteStaleUsers()} stale e2e-platform users.`,
+    );
     const email = `e2e-platform-${randomUUID().slice(0, 8)}+clerk_test@example.com`;
     const id = await createUser(email);
     saveUser({ id, email });

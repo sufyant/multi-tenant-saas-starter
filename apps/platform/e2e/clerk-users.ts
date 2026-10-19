@@ -34,3 +34,38 @@ export async function deleteUser(id: string): Promise<void> {
     throw new Error(`Clerk did not delete the test user: ${response.status()}`);
   await context.dispose();
 }
+
+type ClerkUser = {
+  id: string;
+  created_at: number;
+  email_addresses: { email_address: string }[];
+};
+
+const isTemporary = (user: ClerkUser) =>
+  user.email_addresses.some(
+    ({ email_address }) =>
+      email_address.startsWith("e2e-platform-") &&
+      email_address.endsWith("+clerk_test@example.com"),
+  );
+
+/**
+ * Deletes every temporary user of an earlier run that is older than an hour. A run that CI cancelled before its teardown so
+ * leaves nothing behind for long; a run that is still going, in another job, keeps its own user. Answers how many it deleted.
+ */
+export async function deleteStaleUsers(): Promise<number> {
+  const context = await request.newContext({
+    extraHTTPHeaders: { Authorization: `Bearer ${secretKey()}` },
+  });
+  const response = await context.get(`${api}/users`, {
+    params: { email_address_query: "e2e-platform-", limit: 100 },
+  });
+  if (!response.ok())
+    throw new Error(`Clerk did not list the test users: ${response.status()}`);
+  const anHourAgo = Date.now() - 60 * 60 * 1000;
+  const stale = ((await response.json()) as ClerkUser[]).filter(
+    (user) => isTemporary(user) && user.created_at < anHourAgo,
+  );
+  await context.dispose();
+  for (const user of stale) await deleteUser(user.id);
+  return stale.length;
+}
