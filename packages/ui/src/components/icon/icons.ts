@@ -17,6 +17,8 @@ export {
   MenuIcon,
   MoreHorizontalIcon,
   OctagonXIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
   PlusIcon,
   SearchIcon,
   SendIcon,

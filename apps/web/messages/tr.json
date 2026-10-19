@@ -11,6 +11,8 @@
     "menu": "Menüyü aç",
     "search": "Ara",
     "searchShortcut": "⌘K",
+    "railToggle": "Menü etiketleri",
+    "railShortcut": "⌘B",
     "breadcrumb": "Konum",
     "commandTitle": "Git",
     "commandPlaceholder": "Sayfa ara",

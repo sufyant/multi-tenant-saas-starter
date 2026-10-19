@@ -11,6 +11,8 @@
     "menu": "Open menu",
     "search": "Search",
     "searchShortcut": "⌘K",
+    "railToggle": "Menu labels",
+    "railShortcut": "⌘B",
     "breadcrumb": "Breadcrumb",
     "commandTitle": "Go to",
     "commandPlaceholder": "Search pages",

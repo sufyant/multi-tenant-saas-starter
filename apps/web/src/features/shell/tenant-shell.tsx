@@ -26,7 +26,14 @@ const initialsOf = (...names: (string | null)[]) =>
  * The tenant web's AppShell (F28, F30): Overview and Settings in the rail, the breadcrumb that starts with the organisation, the
  * OrgMenu when the user has more than one organisation, the UserMenu from GetMe, and ⌘K.
  */
-export function TenantShell({ children }: { children: ReactNode }) {
+export function TenantShell({
+  railExpanded,
+  children,
+}: {
+  /** The rail shows its labels on desktop: the layout read the cookie (F49). */
+  railExpanded: boolean;
+  children: ReactNode;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -130,7 +137,10 @@ export function TenantShell({ children }: { children: ReactNode }) {
           commandPlaceholder: t("shell.commandPlaceholder"),
           commandEmpty: t("shell.commandEmpty"),
           close: t("common.close"),
+          railToggle: t("shell.railToggle"),
+          railShortcut: t("shell.railShortcut"),
         }}
+        railExpanded={railExpanded}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}
       >

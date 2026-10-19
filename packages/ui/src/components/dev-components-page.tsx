@@ -280,6 +280,7 @@ export function DevComponentsPage({
     Object.keys(samples)[0] as keyof typeof samples,
   );
   const { theme = "system", setTheme } = useTheme();
+  const [rail, setRail] = useState(false);
   const sample = samples[language];
   const avatar = (row: Member) => (
     <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
@@ -732,8 +733,31 @@ export function DevComponentsPage({
       </Section>
 
       <Section name="AppShell">
+        <fieldset className="flex gap-1">
+          <legend className="sr-only">Rail</legend>
+          <Button
+            variant={rail ? "secondary" : "primary"}
+            aria-pressed={!rail}
+            onClick={() => setRail(false)}
+          >
+            Icon rail
+          </Button>
+          <Button
+            variant={rail ? "primary" : "secondary"}
+            aria-pressed={rail}
+            onClick={() => setRail(true)}
+          >
+            Rail with labels
+          </Button>
+        </fieldset>
+        <p className="text-small text-muted-foreground">
+          The rail shows its labels from bp-desktop only. A tablet keeps the
+          icon rail.
+        </p>
         <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
           <AppShell
+            key={String(rail)}
+            railExpanded={rail}
             nav={[
               {
                 id: "overview",
@@ -783,6 +807,8 @@ export function DevComponentsPage({
               commandPlaceholder: "Search pages",
               commandEmpty: "No page found",
               close: "Close",
+              railToggle: "Menu labels",
+              railShortcut: "⌘B",
             }}
             onNavigate={() => {}}
           >

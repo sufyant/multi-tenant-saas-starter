@@ -25,6 +25,8 @@ const labels = {
   commandPlaceholder: "Search pages",
   commandEmpty: "No page found",
   close: "Close",
+  railToggle: "Menu labels",
+  railShortcut: "⌘B",
 };
 
 const props = {
@@ -98,6 +100,106 @@ describe("AppShell", () => {
     );
 
     expect(screen.getByRole("banner")).toHaveTextContent(/^Platform/);
+  });
+
+  it("AppShell_NoCookie_ShowsTheIconRail", () => {
+    render(
+      <AppShell {...props} onNavigate={vi.fn()}>
+        Content
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("AppShell_ExpandedFromTheServer_StartsExpanded", () => {
+    render(
+      <AppShell {...props} railExpanded onNavigate={vi.fn()}>
+        Content
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("AppShell_Toggle_ExpandsTheRailAndSavesTheCookie", async () => {
+    render(
+      <AppShell {...props} onNavigate={vi.fn()}>
+        Content
+      </AppShell>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Menu labels" }));
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(document.cookie).toContain("sidebar_state=true");
+  });
+
+  it("AppShell_CommandB_TogglesTheRail", async () => {
+    render(
+      <AppShell {...props} railExpanded onNavigate={vi.fn()}>
+        Content
+      </AppShell>,
+    );
+
+    await userEvent.keyboard("{Meta>}b{/Meta}");
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(document.cookie).toContain("sidebar_state=false");
+  });
+
+  it("AppShell_ControlB_TogglesTheRail", async () => {
+    render(
+      <AppShell {...props} onNavigate={vi.fn()}>
+        Content
+      </AppShell>,
+    );
+
+    await userEvent.keyboard("{Control>}b{/Control}");
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("AppShell_CommandBInATextField_LeavesTheRail", async () => {
+    render(
+      <AppShell {...props} onNavigate={vi.fn()}>
+        <input aria-label="Notes" />
+      </AppShell>,
+    );
+
+    await userEvent.click(screen.getByRole("textbox", { name: "Notes" }));
+    await userEvent.keyboard("{Meta>}b{/Meta}");
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("AppShell_Expanded_ShowsTheLabelsInTheRail", () => {
+    render(
+      <AppShell {...props} railExpanded onNavigate={vi.fn()}>
+        Content
+      </AppShell>,
+    );
+
+    const rail = screen.getByRole("navigation", { name: "Main" });
+    expect(within(rail).getByText("Overview")).toBeInTheDocument();
   });
 
   it("AppShell_InRtl_Renders", () => {

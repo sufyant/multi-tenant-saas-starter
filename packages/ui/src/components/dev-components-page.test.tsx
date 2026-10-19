@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { DevComponentsPage } from "./dev-components-page";
 
@@ -37,5 +38,18 @@ describe("DevComponentsPage", () => {
       .getAllByRole("region")
       .map((section) => section.getAttribute("aria-labelledby"));
     expect(sections.sort()).toEqual(names.map((name) => `dev-${name}`));
+  });
+
+  it("DevComponentsPage_RailWithLabels_ShowsTheExpandedRail", async () => {
+    render(<DevComponentsPage languages={["en"]} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Rail with labels" }),
+    );
+
+    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
   });
 });

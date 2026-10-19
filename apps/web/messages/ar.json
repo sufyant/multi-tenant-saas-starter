@@ -11,6 +11,8 @@
     "menu": "فتح القائمة",
     "search": "بحث",
     "searchShortcut": "⌘K",
+    "railToggle": "تسميات القائمة",
+    "railShortcut": "⌘B",
     "breadcrumb": "المسار",
     "commandTitle": "انتقال إلى",
     "commandPlaceholder": "ابحث عن صفحة",
