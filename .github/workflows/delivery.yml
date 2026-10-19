@@ -3,8 +3,8 @@ name: Delivery
 # Delivers main. This file builds nothing itself. The jobs run in this order:
 # 1. ci: calls ci.yml, which builds, tests and scans the images and keeps the tested images.
 # 2. publish-api, publish-web, publish-platform: publish those images to GHCR and attest them, with publish-image.yml.
-# 3. deploy-staging: deploys it to staging with deploy.yml.
-# 4. deploy-production: deploys it to production with deploy.yml, after the maintainer's approval.
+# 3. deploy-staging: deploys the three digests to staging with deploy.yml.
+# 4. deploy-production: deploys the same digests to production with deploy.yml, after the maintainer's approval.
 # 5. tag-release: names the version that production now runs.
 # docs/deployment.md describes the flow.
 on:
@@ -72,12 +72,12 @@ jobs:
     with:
       app: platform
 
-  # Deploys the published digest to staging with the steps in deploy.yml. The repository variable
+  # Deploys the three published digests to staging with the steps in deploy.yml. The repository variable
   # DEPLOY_STAGING switches the job on. Without it the job is skipped, and main stays green before
   # a product has a Railway project.
   deploy-staging:
-    name: "API: deploy to staging"
-    needs: [publish-api]
+    name: "Deploy to staging"
+    needs: [publish-api, publish-web, publish-platform]
     if: vars.DEPLOY_STAGING == 'true'
     permissions:
       contents: read
@@ -87,6 +87,8 @@ jobs:
     with:
       environment: staging
       image: ${{ needs.publish-api.outputs.image }}
+      web-image: ${{ needs.publish-web.outputs.image }}
+      platform-image: ${{ needs.publish-platform.outputs.image }}
     # GitHub passes an environment secret only by name. The called job sets `environment: staging`,
     # so it gets the staging values (GitHub Docs, "Reuse workflows").
     secrets:
@@ -94,13 +96,13 @@ jobs:
       MIGRATIONS_CONNECTION_STRING: ${{ secrets.MIGRATIONS_CONNECTION_STRING }}
       MIGRATIONS_ROOT_CERTIFICATE: ${{ secrets.MIGRATIONS_ROOT_CERTIFICATE }}
 
-  # Deploys the digest that staging ran to production, after the maintainer approves the waiting
+  # Deploys the digests that staging ran to production, after the maintainer approves the waiting
   # job: the environment production requires a reviewer ("push-button release", Continuous Delivery,
   # chapter 5). The repository variable DEPLOY_PRODUCTION switches the job on. deploy.yml refuses a
   # commit that is older than the one production runs.
   deploy-production:
-    name: "API: deploy to production"
-    needs: [publish-api, deploy-staging]
+    name: "Deploy to production"
+    needs: [publish-api, publish-web, publish-platform, deploy-staging]
     if: vars.DEPLOY_PRODUCTION == 'true'
     permissions:
       contents: read
@@ -110,6 +112,8 @@ jobs:
     with:
       environment: production
       image: ${{ needs.publish-api.outputs.image }}
+      web-image: ${{ needs.publish-web.outputs.image }}
+      platform-image: ${{ needs.publish-platform.outputs.image }}
     # The called job sets `environment: production`, so it gets the production values.
     secrets:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
@@ -118,18 +122,21 @@ jobs:
 
   # Names the version that production now runs: a CalVer tag vYYYY.0M.0D.N in UTC (calver.org),
   # with N from 1 each day. A tag therefore always names a version that ran in production. The tag
-  # goes on the commit and on the image digest in GHCR. A tag that GITHUB_TOKEN creates starts no
+  # goes on the commit and on each image digest in GHCR. A tag that GITHUB_TOKEN creates starts no
   # workflow. Only this job may write to the repository.
   tag-release:
     name: "Tag the release"
-    needs: [publish-api, deploy-production]
+    needs: [publish-api, publish-web, publish-platform, deploy-production]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write # create the release tag
       packages: write # add the release tag to the image in GHCR
     env:
-      IMAGE: ${{ needs.publish-api.outputs.image }}
+      IMAGES: >-
+        ${{ needs.publish-api.outputs.image }}
+        ${{ needs.publish-web.outputs.image }}
+        ${{ needs.publish-platform.outputs.image }}
     steps:
       - name: Compute the tag
         id: tag
@@ -150,7 +157,7 @@ jobs:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
           object=$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags" \
-            -f tag="$TAG" -f message="Release $TAG of $IMAGE" -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+            -f tag="$TAG" -f message="Release $TAG of $IMAGES" -f object="$GITHUB_SHA" -f type=commit --jq .sha)
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$object" --silent
 
       - name: Log in to GHCR
@@ -164,15 +171,16 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          name="${IMAGE%@*}"
-          digest="${IMAGE#*@}"
-          docker buildx imagetools create --prefer-index=false --tag "$name:$TAG" "$IMAGE"
-          tagged=$(docker buildx imagetools inspect "$name:$TAG" --format '{{json .Manifest}}' | jq -r .digest)
-          if [[ "$tagged" != "$digest" ]]; then
-            echo "::error::$name:$TAG names $tagged, not $digest."
-            exit 1
-          fi
-          echo "Released $TAG: $IMAGE"
+          for image in $IMAGES; do
+            name="${image%@*}"
+            docker buildx imagetools create --prefer-index=false --tag "$name:$TAG" "$image"
+            tagged=$(docker buildx imagetools inspect "$name:$TAG" --format '{{json .Manifest}}' | jq -r .digest)
+            if [[ "$tagged" != "${image#*@}" ]]; then
+              echo "::error::$name:$TAG names $tagged, not ${image#*@}."
+              exit 1
+            fi
+            echo "Released $TAG: $image"
+          done
 
       - name: Log out of GHCR
         if: always()
