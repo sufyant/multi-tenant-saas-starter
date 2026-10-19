@@ -33,7 +33,8 @@ const refused = (code: string) => ({
   }),
 });
 
-const decorateUrl = vi.fn((url: string) => url);
+// A hash keeps jsdom on the page: it cannot load another document.
+const decorateUrl = vi.fn((url: string) => `#${url}`);
 const finalize = vi.fn(
   async ({ navigate }: { navigate: (args: unknown) => void }) => {
     navigate({ session: {}, decorateUrl });
