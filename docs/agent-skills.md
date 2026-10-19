@@ -58,18 +58,18 @@ Not kept:
 - `agent-email-inbox`: the API receives no email.
 - `neon-postgres`: the database is Railway PostgreSQL, not Neon.
 - `theme-factory`, `mcp-builder`: they serve no part of the product.
-- `frontend-design` (`anthropics/skills`): it tells the agent to choose its own palette, typefaces and layout, but the design is fixed by `packages/ui/tokens/tokens.json` and the D5 boards.
-- `webapp-testing` (`anthropics/skills`): it writes Python Playwright scripts, but the repository tests the browser with TypeScript Playwright in `apps/<app>/e2e/` and `@clerk/testing` (F35, F37).
+- `frontend-design` (`anthropics/skills`): it tells the agent to choose its own palette, typefaces and layout, but the design is fixed by `packages/ui/tokens/tokens.json`.
+- `webapp-testing` (`anthropics/skills`): it writes Python Playwright scripts, but the repository tests the browser with TypeScript Playwright in `apps/<app>/e2e/` and `@clerk/testing` (`docs/frontend/ARCHITECTURE.md`, F35).
 - `migrate-radix-to-base` (`shadcn/ui`): the components are on Base UI from the start.
 - `react-best-practices` (`vercel-labs/agent-skills`): its rules recommend SWR for client data (`client-swr-dedup`), but the repository uses TanStack Query (closed decision, `docs/frontend/ARCHITECTURE.md`, F8).
-- `next-best-practices` (`vercel-labs/next-skills`): Vercel retired it (README of `vercel-labs/next-skills`). The Next.js knowledge ships inside `next` (`node_modules/next/dist/docs/`) and in the block that `next dev` writes into `apps/*/AGENTS.md`.
+- `next-best-practices` (`vercel-labs/next-skills`): Vercel retired it (README of `vercel-labs/next-skills`). The Next.js knowledge ships inside `next` (`node_modules/next/dist/docs/`) and in the block that `next dev` writes into `apps/web/AGENTS.md` and `apps/platform/AGENTS.md`.
 - The two `migrate-v8-to-v9` skills of `@tanstack/react-table` and `@tanstack/table-core`: the repository started on TanStack Table v9.
 
 A removed skill is one command away if a need appears (section 4).
 
 ## 4. Add, update or remove a skill
 
-The list of skills lives once, in `skills-lock.json` (D1). No document or script repeats the install commands. Agents never install, update or remove a skill. They report a stale or missing skill to the maintainer.
+The list of skills lives once, in `skills-lock.json` (D1). No document or script repeats the list of skills. Agents never install, update or remove a skill. They report a stale or missing skill to the maintainer.
 
 To add one skill, run the command from the repository root. `--copy` writes a real folder. `-a claude-code` installs for Claude Code only. Without `--copy`, the tool creates a store in `.agents/` and symlinks to it.
 
@@ -85,7 +85,7 @@ npx skills@1.7.2 add resend/resend-skills --copy -a claude-code -y -s resend
 
 To update all of them, run `pnpm skills:update`. It runs `scripts/agent-skills/update.sh`, which reads each skill and its source from `skills-lock.json` and runs the command above for it. Then it removes `.agents/` and `agent/` and runs `scripts/ci/check-agent-skills.sh`. `npx skills update` is not used: skills@1.7.2 runs `skills add` without `--copy` for a changed skill, so it writes `.agents/` and a symlink.
 
-The workflow `.github/workflows/agent-skills.yml` runs `pnpm skills:update` every Monday and on `workflow_dispatch`. It fails when a skill changed upstream and lists the changed skills in the job summary. It opens no pull request and no issue. The maintainer then runs `pnpm skills:update` on a branch and opens a pull request.
+The workflow `.github/workflows/agent-skills.yml` runs `pnpm skills:update` every Monday and on `workflow_dispatch`. It fails when a skill changed upstream and lists the changed skills in the job summary. It also fails when a skill can no longer be installed, for example after upstream removed or renamed it; then the log of the step `pnpm skills:update` names the skill, and the job summary is empty. It opens no pull request and no issue. The maintainer then runs `pnpm skills:update` on a branch and opens a pull request.
 
 The TanStack Table skills update with their package (section 3).
 

@@ -1,9 +1,9 @@
 name: Agent skills
 
 # Reports when an agent skill changed upstream (docs/agent-skills.md, section 4). It installs every skill
-# of skills-lock.json again and fails when a folder or a hash differs. It opens no pull request and no
-# issue: the maintainer runs `pnpm skills:update` on a branch. Dependabot and Renovate follow the same
-# pattern for dependencies; neither updates agent skills.
+# of skills-lock.json again and fails when a folder or a hash differs, or when a skill can no longer be
+# installed (the log of the update step names it). It opens no pull request and no issue: the maintainer
+# runs `pnpm skills:update` on a branch. Dependabot and Renovate do not cover agent skills.
 on:
   # Monday 06:17 UTC. A minute other than :00 is less likely to be delayed (GitHub Docs, "Events that
   # trigger workflows", schedule).
