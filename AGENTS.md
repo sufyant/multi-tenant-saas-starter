@@ -93,13 +93,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Workflows
 
-- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps.
+- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps. `agent-skills.yml` reports every week when an agent skill changed upstream.
 - A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
 
 ## Agent skills
 
-- Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder.
+- Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder. One exception: the TanStack Table skills ship inside their packages (`docs/agent-skills.md`).
 - Add a skill only for a tool this repository uses or has a planned place for. `docs/agent-skills.md` lists them.
+- Agents never install, update or remove a skill. Report a stale or missing skill to the maintainer.
 
 ## Monorepo tasks
 
