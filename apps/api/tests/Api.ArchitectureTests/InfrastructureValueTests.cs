@@ -5,6 +5,8 @@ namespace Api.ArchitectureTests;
 
 // Audit B15: railway.ts and the deploy scripts read the management port and the health path from .railway/api.json, and the
 // Dockerfile exposes the port. The host owns both values, so a copy that drifted would fail only at the deploy's health check.
+// The web apps reach the API on its public port, which the image owns (ASPNETCORE_HTTP_PORTS of its base image), so the
+// Dockerfile exposes that port too.
 public sealed class InfrastructureValueTests
 {
     [Fact]
@@ -20,5 +22,6 @@ public sealed class InfrastructureValueTests
         infrastructure.RootElement.GetProperty("managementPort").GetInt32().ShouldBe(managementPort);
         infrastructure.RootElement.GetProperty("healthPath").GetString().ShouldBe($"{healthPath}/ready");
         File.ReadLines(Path.Combine(Solution.Root, "Dockerfile")).ShouldContain($"EXPOSE {managementPort}");
+        File.ReadLines(Path.Combine(Solution.Root, "Dockerfile")).ShouldContain($"EXPOSE {infrastructure.RootElement.GetProperty("publicPort").GetInt32()}");
     }
 }
