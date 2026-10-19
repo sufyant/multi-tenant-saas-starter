@@ -31,7 +31,7 @@ afterAll(() => server.close());
 
 const northwind: MyTenantResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
-  name: "Northwind MRO",
+  name: "Northwind Traders",
   slug: "northwind",
   status: "active",
   role: { builtIn: "member", name: "member" },
@@ -72,7 +72,7 @@ describe("TenantProvider", () => {
     );
 
     expect(
-      await screen.findByText("Northwind MRO true false"),
+      await screen.findByText("Northwind Traders true false"),
     ).toBeInTheDocument();
   });
 

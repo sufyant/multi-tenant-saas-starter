@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { OrgMenu } from "./org-menu";
 
 const props = {
-  name: "Northwind MRO",
+  name: "Northwind Traders",
   slug: "northwind",
   initials: "N",
   memberRole: "Owner",
@@ -17,7 +17,7 @@ describe("OrgMenu", () => {
     render(<OrgMenu {...props} />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Northwind MRO" }),
+      screen.getByRole("button", { name: "Northwind Traders" }),
     );
 
     expect(

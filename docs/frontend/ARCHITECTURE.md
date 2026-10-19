@@ -64,7 +64,7 @@ The scope:
 
 Out of scope: a CSP (production preparation), Storybook, the mobile app, the marketing app.
 
-The template names no product. Sample organisations in code, tests and screenshots use the invented names of the design system: Northwind MRO, Atlas Technic, Shannon Aero, Kestrel Base.
+The template names no product. Sample organisations in code, tests and screenshots use the invented names of the design system: Northwind Traders, Atlas Logistics, Shannon Studio, Kestrel Labs.
 
 ## 1. Contract and data
 

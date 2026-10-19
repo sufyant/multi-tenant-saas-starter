@@ -76,7 +76,7 @@ describe("apiFetch", () => {
       http.post("*/v1/me/invitations/accept", () =>
         HttpResponse.json({
           id: tenantId,
-          name: "Northwind MRO",
+          name: "Northwind Traders",
           slug: "northwind",
           status: "active",
         }),
@@ -135,7 +135,7 @@ describe("apiFetch", () => {
         HttpResponse.json(
           {
             id: tenantId,
-            name: "Atlas Technic",
+            name: "Atlas Logistics",
             slug: "atlas",
             status: "provisioning",
             suspensionReason: null,
@@ -148,7 +148,7 @@ describe("apiFetch", () => {
 
     const tenant = await createTenant(
       {
-        name: "Atlas Technic",
+        name: "Atlas Logistics",
         slug: "atlas",
         ownerEmail: "owner@atlas.example",
       },

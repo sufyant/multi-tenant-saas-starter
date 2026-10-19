@@ -16,7 +16,7 @@ import {
 import { Input as InputBase } from "../ui/input";
 
 export type DialogProps = {
-  /** The question, naming the object: "Remove Ayşe Yılmaz from Northwind MRO?" Never "Are you sure?". */
+  /** The question, naming the object: "Remove Ayşe Yılmaz from Northwind Traders?" Never "Are you sure?". */
   title: ReactNode;
   /** What happens next and what stays. */
   description?: ReactNode;

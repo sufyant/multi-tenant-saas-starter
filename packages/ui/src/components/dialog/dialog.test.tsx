@@ -9,7 +9,7 @@ describe("Dialog", () => {
       <Dialog
         defaultOpen
         tone="destructive"
-        title="Close Northwind MRO?"
+        title="Close Northwind Traders?"
         actionLabel="Close tenant"
         cancelLabel="Cancel"
         confirmText="northwind"

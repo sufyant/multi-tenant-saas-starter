@@ -17,7 +17,7 @@ const tones: Record<StatusTone, { dot: string; text: string }> = {
 };
 
 export type StatusProps = {
-  /** Flight deck meaning: success normal, warning caution, info pending, neutral ended, destructive act now. */
+  /** Status meaning: success normal, warning caution, info pending, neutral ended, destructive act now. */
   tone?: StatusTone;
   /** The word. Colour is never the only signal. */
   children: ReactNode;

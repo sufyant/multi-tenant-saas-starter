@@ -35,7 +35,7 @@ afterAll(() => server.close());
 
 const northwind: MyTenantResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
-  name: "Northwind MRO",
+  name: "Northwind Traders",
   slug: "northwind",
   status: "active",
   role: { builtIn: "owner", name: "owner" },
@@ -75,7 +75,7 @@ describe("TenantShell", () => {
     const crumbs = within(
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
     ).getAllByRole("listitem");
-    expect(crumbs[0]).toHaveTextContent("Northwind MRO");
+    expect(crumbs[0]).toHaveTextContent("Northwind Traders");
     expect(screen.getAllByText("Preferences").length).toBeGreaterThan(0);
   });
 
@@ -86,7 +86,7 @@ describe("TenantShell", () => {
 
     await screen.findByRole("navigation", { name: "Breadcrumb" });
     expect(
-      screen.queryByRole("button", { name: "Northwind MRO" }),
+      screen.queryByRole("button", { name: "Northwind Traders" }),
     ).not.toBeInTheDocument();
   });
 
@@ -96,7 +96,7 @@ describe("TenantShell", () => {
     renderWithProviders(shell());
 
     expect(
-      await screen.findByRole("button", { name: "Northwind MRO" }),
+      await screen.findByRole("button", { name: "Northwind Traders" }),
     ).toBeInTheDocument();
   });
 });

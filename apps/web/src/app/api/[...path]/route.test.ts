@@ -41,7 +41,7 @@ afterAll(() => server.close());
 
 const tenant = {
   id: tenantId,
-  name: "Atlas Technic",
+  name: "Atlas Logistics",
   slug: "atlas",
   status: "provisioning",
   suspensionReason: null,
@@ -77,7 +77,7 @@ describe("BFF", () => {
           "Idempotency-Key": "key-1",
         },
         body: JSON.stringify({
-          name: "Atlas Technic",
+          name: "Atlas Logistics",
           slug: "atlas",
           ownerEmail: "owner@atlas.example",
         }),
@@ -86,7 +86,7 @@ describe("BFF", () => {
 
     expect(requests[0]?.headers.get("Idempotency-Key")).toBe("key-1");
     expect(await requests[0]?.json()).toEqual({
-      name: "Atlas Technic",
+      name: "Atlas Logistics",
       slug: "atlas",
       ownerEmail: "owner@atlas.example",
     });

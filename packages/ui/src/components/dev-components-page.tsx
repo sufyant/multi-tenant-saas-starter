@@ -63,14 +63,14 @@ const samples = {
     invitations: "Invitations",
     email: "Email",
     emailHint: "The invitation goes to this address.",
-    removeQuestion: "Remove Ayşe Yılmaz from Northwind MRO?",
+    removeQuestion: "Remove Ayşe Yılmaz from Northwind Traders?",
     removeDescription:
       "She loses access at once. Her past activity stays in the log.",
-    bannerTitle: "Atlas Technic is suspended.",
+    bannerTitle: "Atlas Logistics is suspended.",
     bannerText: "Members cannot sign in. Reason: contract under review.",
     emptyTitle: "No pending invitations",
     emptyText:
-      "Invite people by email. They join Northwind MRO when they accept.",
+      "Invite people by email. They join Northwind Traders when they accept.",
     toast: "Invitation sent",
     settings: "Settings",
     overview: "Overview",
@@ -92,14 +92,14 @@ const samples = {
     invitations: "Davetler",
     email: "E-posta",
     emailHint: "Davet bu adrese gider.",
-    removeQuestion: "Ayşe Yılmaz Northwind MRO'dan çıkarılsın mı?",
+    removeQuestion: "Ayşe Yılmaz Northwind Traders'dan çıkarılsın mı?",
     removeDescription:
       "Erişimini hemen kaybeder. Geçmiş etkinliği kayıtta kalır.",
-    bannerTitle: "Atlas Technic askıya alındı.",
+    bannerTitle: "Atlas Logistics askıya alındı.",
     bannerText: "Üyeler giriş yapamaz. Neden: sözleşme incelemede.",
     emptyTitle: "Bekleyen davet yok",
     emptyText:
-      "Kişileri e-postayla davet edin. Kabul ettiklerinde Northwind MRO'ya katılırlar.",
+      "Kişileri e-postayla davet edin. Kabul ettiklerinde Northwind Traders'a katılırlar.",
     toast: "Davet gönderildi",
     settings: "Ayarlar",
     overview: "Genel bakış",
@@ -121,9 +121,9 @@ const samples = {
     invitations: "الدعوات",
     email: "البريد الإلكتروني",
     emailHint: "تُرسل الدعوة إلى هذا العنوان.",
-    removeQuestion: "إزالة عائشة يلماز من Northwind MRO؟",
+    removeQuestion: "إزالة عائشة يلماز من Northwind Traders؟",
     removeDescription: "ستفقد الوصول فورًا. يبقى نشاطها السابق في السجل.",
-    bannerTitle: "Atlas Technic موقوفة.",
+    bannerTitle: "Atlas Logistics موقوفة.",
     bannerText: "لا يمكن للأعضاء تسجيل الدخول.",
     emptyTitle: "لا توجد دعوات معلّقة",
     emptyText: "ادعُ الأشخاص بالبريد الإلكتروني.",
@@ -486,7 +486,7 @@ export function DevComponentsPage({
           </Banner>
         </div>
         <div className="w-full">
-          <Banner tone="info" title="Shannon Aero is being set up.">
+          <Banner tone="info" title="Shannon Studio is being set up.">
             The first owner gets an invitation when setup finishes.
           </Banner>
         </div>
@@ -661,7 +661,7 @@ export function DevComponentsPage({
         <Dialog
           trigger={<Button>Close tenant</Button>}
           tone="destructive"
-          title="Close Northwind MRO?"
+          title="Close Northwind Traders?"
           description="Members cannot sign in. Pending invitations are cancelled. You can reopen it within 30 days."
           confirmText="northwind"
           confirmLabel="Type northwind to confirm"
@@ -697,7 +697,7 @@ export function DevComponentsPage({
 
       <Section name="OrgMenu">
         <OrgMenu
-          name="Northwind MRO"
+          name="Northwind Traders"
           slug="northwind"
           initials="N"
           memberRole="Owner"
@@ -754,13 +754,13 @@ export function DevComponentsPage({
             logoLabel="Home"
             logoHref="#home"
             crumbs={[
-              { label: "Northwind MRO" },
+              { label: "Northwind Traders" },
               { label: sample.settings },
               { label: sample.members },
             ]}
             orgMenu={
               <OrgMenu
-                name="Northwind MRO"
+                name="Northwind Traders"
                 slug="northwind"
                 initials="N"
                 memberRole="Owner"
