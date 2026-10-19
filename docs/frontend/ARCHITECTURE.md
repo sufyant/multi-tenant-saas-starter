@@ -128,7 +128,7 @@ The client is generated. No app writes an API type, an enum value, a permission 
 | --- | --- | --- | --- |
 | F35 | Vitest and Testing Library, beside the file they test (`x.test.tsx` beside `x.tsx`); no `__tests__` folder. A test finds an element by its role and name. MSW handlers come from the generated client (`@repo/api-client/msw`). Playwright with `@clerk/testing` signs in through our sign-in page. Test names are `Operation_Scenario_ExpectedOutcome`; an architecture test is named `Rule_Scope_Expectation` (`F17_PackagesUi_UsesNoPhysicalDirectionClass`) | The API's N9 and section 9. Testing Library, "Guiding Principles". Khorikov, *Unit Testing Principles, Practices, and Patterns*, Chapter 9 (mock only what you do not own) | `testFolders`, `testsBesideTheirFile` |
 | F36 | A rule gets a Biome rule when Biome has one. Otherwise it gets a Vitest architecture test: a pure function in `packages/ui/test/architecture-rules.ts`, which each `architecture.test.ts` runs on its own folder. No second linter | Ford, Parsons, Kua, *Building Evolutionary Architectures*, Chapter 2 (fitness functions) | `architecture-rules.test.ts` proves that each rule finds what it must find |
-| F37 | Every Playwright page test runs `@axe-core/playwright` for WCAG 2.2 AA | W3C, WCAG 2.2 | `e2e/axe.ts` in each app |
+| F37 | Every Playwright page test runs `@axe-core/playwright` for WCAG 2.2 AA | W3C, WCAG 2.2 | `e2e/axe.ts` in each app; the `e2e` job of `.github/workflows/ci.yml` runs every Playwright test on each pull request |
 
 ## 7. Versions and security
 
