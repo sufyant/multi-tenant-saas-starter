@@ -32,5 +32,15 @@
     "railway": "^3.13.1",
     "turbo": "^2.10.12",
     "typescript": "^5"
+  },
+  "intent": {
+    "skills": [
+      "@tanstack/react-table#getting-started",
+      "@tanstack/react-table#table-state",
+      "@tanstack/table-core#core",
+      "@tanstack/table-core#custom-features",
+      "@tanstack/table-core#table-features",
+      "@tanstack/table-core#table-state"
+    ]
   }
 }
