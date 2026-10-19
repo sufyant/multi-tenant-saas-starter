@@ -22,7 +22,7 @@ Sources:
 | `delivery.yml` | `push` to `main` | Calls `ci.yml`, then `publish-api`, `publish-web` and `publish-platform`, then `deploy-staging`, `deploy-production`, `tag-release`, in this order |
 | `publish-image.yml` | `workflow_call` | The only copy of the publish steps, for each of the three images |
 | `deploy.yml` | `workflow_call` | The only copy of the deploy steps, for staging and production |
-| `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the image of that release to **production**, after the approval |
+| `rollback.yml` | `workflow_dispatch` on a release tag | No build. Deploys the three images of that release (`api`, `web`, `platform`) to **production**, after the approval |
 
 Which file to open:
 
@@ -52,7 +52,7 @@ On a push to `main`, after `ci.yml` passed:
 4. It sets that digest as the image of `api-web` and `api-worker` in one Railway commit.
 5. It waits until the new deployment of each API service is `SUCCESS`.
 6. It smoke-tests the API's public route: `GET /v1/me/tenants` without a token must answer 401, and `GET /health/ready` must answer 404. The 401 shows that the route reaches the web process and its authentication. The 404 shows that the public route does not reach the health endpoints: they answer only on the management port, 8081. Railway's health check covers readiness there.
-7. It sets the web app's digest on `web` and the platform app's digest on `platform`, one Railway commit for each. The web apps go after the API, so a web app never runs against an API older than the one it was tested with.
+7. It sets the web app's digest on `web` and the platform app's digest on `platform`, one Railway commit for each. The web apps go after the API, so a web app never runs against an API older than the one it was tested with. One exception: a rollback to a release tagged before the web apps were deployed rolls back the API only (section 6).
 8. It waits until the new deployment of `web` and `platform` is `SUCCESS`. Railway's health check calls `GET /health` of each (section 13).
 9. It smoke-tests each app's public route: `GET /health` must answer 200, and `GET /` without a session must end at the app's `/sign-in` with 200. The request asks for HTML, keeps the cookies and follows the redirects, as a browser's first visit does. With a Clerk development instance, Clerk first sends the request through its Frontend API and back, so this step also shows that the instance accepts the domain.
 
@@ -311,7 +311,7 @@ gh workflow run rollback.yml --ref <release tag>
 
 The workflow checks that the tag is a release tag, that its commit is on `main`, that the three images of the commit (`api`, `web` and `platform`) exist in GHCR, and that their provenance comes from `publish-image.yml` on `main`. It rolls the three back together. Then the production job waits for the maintainer's approval, like any production deploy. It skips the check for an older commit, because a rollback deploys one on purpose.
 
-The run uses `rollback.yml` and `deploy.yml` as they were at that tag. A release tagged before the web apps were deployed rolls back the API only, and checks `delivery.yml` as the signer, as it did then.
+The run uses `rollback.yml` and `deploy.yml` as they were at that tag. A release tagged before the web apps were deployed rolls back the API only, and checks `delivery.yml` as the signer, as it did then. The web apps then keep running against the older API.
 
 ### Staging
 
@@ -616,7 +616,7 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
    gh run rerun <run id>
    ```
 
-   Then write what step 2 did to the image into section 7, with the date and the CLI version, in a pull request. Manual: the maintainer decides when a deploy starts.
+   If step 2 kept the image, skip the rerun: the API still runs, and a deploy of the same digest starts no new deployment, so `deploy.yml` would wait 10 minutes and fail (section 11). Then write what step 2 did to the image into section 7, with the date and the CLI version, in a pull request. Manual: the maintainer decides when a deploy starts.
 4. **Add the custom domains, their DNS records and the GitHub environment variables** for `api-web`, `web` and `platform` (section 13, "Custom domains"). Manual: the domains and the DNS stay out of the repository. A domain verifies only after its `TXT` record resolves, which can take minutes.
 5. **Switch the staging deploy off before the merge.**
 

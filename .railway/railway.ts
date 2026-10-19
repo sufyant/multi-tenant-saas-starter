@@ -32,7 +32,7 @@ import { defineRailway, postgres, project, service } from "railway/iac";
 // InfrastructureValueTests in apps/api checks that this file names the same.
 import infrastructure from "./api.json" with { type: "json" };
 // The same values of each web app: its service name, port and health path. route.test.ts in each app checks the path, and
-// railway.test.ts checks what this file gives the service.
+// env.test.ts in each app checks what this file gives the service.
 import platform from "./platform.json" with { type: "json" };
 import web from "./web.json" with { type: "json" };
 
