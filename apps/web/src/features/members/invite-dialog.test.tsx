@@ -368,23 +368,31 @@ describe("InviteDialog", { timeout: pageTestTimeout }, () => {
   });
 
   it("Invite_SuspendedUser_ReadsGetMeAgain", async () => {
-    const reads: string[] = [];
+    // The order of the calls: GetMe must come after the refused invitation, whatever GetMe the page read before it.
+    const calls: string[] = [];
     server.use(
       http.get("*/v1/me", () => {
-        reads.push("read");
+        calls.push("GetMe");
         return HttpResponse.json(meOf(MemberRole.Owner));
+      }),
+      http.post(`*/v1/tenants/${northwind.id}/invitations`, () => {
+        calls.push("InviteMember");
+        return problem(403, ErrorCode.UserSuspended);
       }),
       ...tenantAnswers(MemberRole.Owner),
       membersAnswer(),
-      inviteAnswer([() => problem(403, ErrorCode.UserSuspended)]),
     );
 
     renderInTenant(<MembersPage />);
     const dialog = await openInvite();
     await typeEmail(dialog, "khalid@northwind.io");
-    const before = reads.length;
     await send(dialog);
 
-    await waitFor(() => expect(reads.length).toBe(before + 1));
+    await waitFor(() =>
+      expect(calls.slice(calls.indexOf("InviteMember"))).toEqual([
+        "InviteMember",
+        "GetMe",
+      ]),
+    );
   });
 });

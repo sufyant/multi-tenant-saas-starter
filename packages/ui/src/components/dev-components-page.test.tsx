@@ -40,7 +40,11 @@ describe("DevComponentsPage", () => {
     expect(sections.sort()).toEqual(names.map((name) => `dev-${name}`));
   });
 
-  it("DevComponentsPage_RailWithLabels_ShowsTheExpandedRail", async () => {
+  // The test renders every component of the design system. On CI, beside the builds, that alone can take 5 s. It waits
+  // longer; it never retries.
+  it("DevComponentsPage_RailWithLabels_ShowsTheExpandedRail", {
+    timeout: 15_000,
+  }, async () => {
     render(<DevComponentsPage languages={["en"]} />);
 
     await userEvent.click(
