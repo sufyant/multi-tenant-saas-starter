@@ -44,7 +44,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               },
               "Location": {
@@ -93,7 +96,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -114,7 +120,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -135,7 +144,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -156,7 +168,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -177,7 +192,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               },
               "Retry-After": {
@@ -243,7 +261,13 @@
                 "slug",
                 "-slug"
               ],
-              "type": "string"
+              "type": "string",
+              "x-enumNames": [
+                "Name",
+                "NameDescending",
+                "Slug",
+                "SlugDescending"
+              ]
             }
           },
           {
@@ -1153,7 +1177,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -1194,7 +1221,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -1215,7 +1245,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -1236,7 +1269,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -1257,7 +1293,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -1278,7 +1317,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               },
               "Retry-After": {
@@ -1346,7 +1388,13 @@
                 "lastName",
                 "-lastName"
               ],
-              "type": "string"
+              "type": "string",
+              "x-enumNames": [
+                "Email",
+                "EmailDescending",
+                "LastName",
+                "LastNameDescending"
+              ]
             }
           },
           {
@@ -2362,7 +2410,15 @@
                 "lastName",
                 "-lastName"
               ],
-              "type": "string"
+              "type": "string",
+              "x-enumNames": [
+                "Role",
+                "RoleDescending",
+                "Email",
+                "EmailDescending",
+                "LastName",
+                "LastNameDescending"
+              ]
             }
           },
           {
@@ -2802,7 +2858,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -2843,7 +2902,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -2864,7 +2926,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -2885,7 +2950,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -2906,7 +2974,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               }
             },
@@ -2927,7 +2998,10 @@
                   "enum": [
                     "true"
                   ],
-                  "type": "string"
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
                 }
               },
               "Retry-After": {
@@ -2993,7 +3067,13 @@
                 "email",
                 "-email"
               ],
-              "type": "string"
+              "type": "string",
+              "x-enumNames": [
+                "ExpiresAt",
+                "ExpiresAtDescending",
+                "Email",
+                "EmailDescending"
+              ]
             }
           },
           {
@@ -3646,7 +3726,11 @@
                 "name",
                 "-name"
               ],
-              "type": "string"
+              "type": "string",
+              "x-enumNames": [
+                "Name",
+                "NameDescending"
+              ]
             }
           },
           {
@@ -4069,7 +4153,11 @@
           "platform"
         ],
         "type": "string",
-        "description": "The kind of actor of an audit entry."
+        "description": "The kind of actor of an audit entry.",
+        "x-enumNames": [
+          "User",
+          "Platform"
+        ]
       },
       "AuditDetailsResponse": {
         "required": [
@@ -4171,7 +4259,26 @@
           "user.suspended"
         ],
         "type": "string",
-        "description": "The operation of an audit entry, area.action."
+        "description": "The operation of an audit entry, area.action.",
+        "x-enumNames": [
+          "InvitationRevoked",
+          "MemberInvited",
+          "MemberJoined",
+          "MemberRemoved",
+          "MemberRoleChanged",
+          "TenantClosed",
+          "TenantCreated",
+          "TenantOwnerInvited",
+          "TenantReactivated",
+          "TenantRenamed",
+          "TenantReopened",
+          "TenantSuspended",
+          "UserDeleted",
+          "UserPreferencesChanged",
+          "UserReactivated",
+          "UserRenamed",
+          "UserSuspended"
+        ]
       },
       "AuditTargetResponse": {
         "required": [
@@ -4211,7 +4318,12 @@
           "invitation"
         ],
         "type": "string",
-        "description": "The kind of target of an audit entry."
+        "description": "The kind of target of an audit entry.",
+        "x-enumNames": [
+          "Tenant",
+          "User",
+          "Invitation"
+        ]
       },
       "ChangeMemberRoleRequest": {
         "required": [
@@ -4356,7 +4468,59 @@
           "user.suspended"
         ],
         "type": "string",
-        "description": "The error's code, area.reason. A client shows its own text for it, never the English detail."
+        "description": "The error's code, area.reason. A client shows its own text for it, never the English detail.",
+        "x-enumNames": [
+          "AuthForbidden",
+          "AuthUnauthenticated",
+          "IdempotencyKeyInProgress",
+          "IdempotencyKeyInvalid",
+          "IdempotencyKeyReused",
+          "InvitationCodeRequired",
+          "InvitationDailyLimitReached",
+          "InvitationEmailMismatch",
+          "InvitationExpired",
+          "InvitationNotFound",
+          "InvitationNotPending",
+          "InvitationOwnerRequiresOwner",
+          "InvitationSystemAdminCannotJoin",
+          "MemberCannotRemoveSelf",
+          "MemberExists",
+          "MemberLastOwner",
+          "MemberNotFound",
+          "MemberOwnerRequiresOwner",
+          "PagingCursorInvalid",
+          "PagingFilterInvalid",
+          "PagingLimitInvalid",
+          "PagingPageInvalid",
+          "PagingPageSizeInvalid",
+          "PagingQInvalid",
+          "PagingSortInvalid",
+          "RateLimitExceeded",
+          "RequestInvalid",
+          "RequestTimeout",
+          "RequestTooLarge",
+          "RequestUnsupportedMediaType",
+          "RequestValidationFailed",
+          "RouteMethodNotAllowed",
+          "RouteNotFound",
+          "ServerError",
+          "TenantClosed",
+          "TenantHasOwner",
+          "TenantNameInvalid",
+          "TenantNotActive",
+          "TenantNotClosed",
+          "TenantNotFound",
+          "TenantReopenPeriodEnded",
+          "TenantSlugInvalid",
+          "TenantSlugTaken",
+          "TenantSuspended",
+          "UserDeleted",
+          "UserHasMemberships",
+          "UserIsSystemAdmin",
+          "UserLastOwner",
+          "UserNotFound",
+          "UserSuspended"
+        ]
       },
       "FieldErrorCode": {
         "enum": [
@@ -4367,7 +4531,14 @@
           "slug_invalid"
         ],
         "type": "string",
-        "description": "Why one field of a request failed validation."
+        "description": "Why one field of a request failed validation.",
+        "x-enumNames": [
+          "Required",
+          "EmailInvalid",
+          "TooLong",
+          "TimeZoneInvalid",
+          "SlugInvalid"
+        ]
       },
       "GetInvitationPreviewRequest": {
         "required": [
@@ -4462,7 +4633,13 @@
           "cancelled"
         ],
         "type": "string",
-        "description": "The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold."
+        "description": "The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.",
+        "x-enumNames": [
+          "Pending",
+          "Expired",
+          "Accepted",
+          "Cancelled"
+        ]
       },
       "InviteMemberRequest": {
         "required": [
@@ -4555,7 +4732,11 @@
           "platform"
         ],
         "type": "string",
-        "description": "Who invited: a user of the tenant, or the platform, for which a system admin acted."
+        "description": "Who invited: a user of the tenant, or the platform, for which a system admin acted.",
+        "x-enumNames": [
+          "User",
+          "Platform"
+        ]
       },
       "Language": {
         "enum": [
@@ -4564,7 +4745,12 @@
           "ar"
         ],
         "type": "string",
-        "description": "A language the web speaks, by its BCP 47 language tag."
+        "description": "A language the web speaks, by its BCP 47 language tag.",
+        "x-enumNames": [
+          "En",
+          "Tr",
+          "Ar"
+        ]
       },
       "ListPageOfInvitationResponse": {
         "required": [
@@ -4722,7 +4908,10 @@
             "enum": [
               "member.invited"
             ],
-            "type": "string"
+            "type": "string",
+            "x-enumNames": [
+              "MemberInvited"
+            ]
           },
           "role": {
             "$ref": "#/components/schemas/RoleResponse"
@@ -4747,7 +4936,10 @@
             "enum": [
               "member.removed"
             ],
-            "type": "string"
+            "type": "string",
+            "x-enumNames": [
+              "MemberRemoved"
+            ]
           },
           "role": {
             "$ref": "#/components/schemas/RoleResponse"
@@ -4809,7 +5001,12 @@
           "member"
         ],
         "type": "string",
-        "description": "A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given."
+        "description": "A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.",
+        "x-enumNames": [
+          "Owner",
+          "Admin",
+          "Member"
+        ]
       },
       "MemberRoleChangedDetailsResponse": {
         "required": [
@@ -4822,7 +5019,10 @@
             "enum": [
               "member.role_changed"
             ],
-            "type": "string"
+            "type": "string",
+            "x-enumNames": [
+              "MemberRoleChanged"
+            ]
           },
           "oldRole": {
             "$ref": "#/components/schemas/RoleResponse"
@@ -4959,7 +5159,12 @@
           "closed"
         ],
         "type": "string",
-        "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it."
+        "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.",
+        "x-enumNames": [
+          "Active",
+          "Suspended",
+          "Closed"
+        ]
       },
       "OwnerInvitationResponse": {
         "required": [
@@ -5008,7 +5213,31 @@
           "tenant.profile.read"
         ],
         "type": "string",
-        "description": "A name of the permission list. Every endpoint checks its own permission."
+        "description": "A name of the permission list. Every endpoint checks its own permission.",
+        "x-enumNames": [
+          "PlatformAuditRead",
+          "PlatformTenantsClose",
+          "PlatformTenantsCreate",
+          "PlatformTenantsInviteOwner",
+          "PlatformTenantsReactivate",
+          "PlatformTenantsRead",
+          "PlatformTenantsReopen",
+          "PlatformTenantsSuspend",
+          "PlatformTenantsUpdate",
+          "PlatformUsersDelete",
+          "PlatformUsersReactivate",
+          "PlatformUsersRead",
+          "PlatformUsersSuspend",
+          "PlatformUsersUpdate",
+          "TenantAuditRead",
+          "TenantInvitationsCreate",
+          "TenantInvitationsDelete",
+          "TenantInvitationsRead",
+          "TenantMembersDelete",
+          "TenantMembersRead",
+          "TenantMembersUpdate",
+          "TenantProfileRead"
+        ]
       },
       "PreferencesResponse": {
         "required": [
@@ -5334,7 +5563,10 @@
             "enum": [
               "tenant.owner_invited"
             ],
-            "type": "string"
+            "type": "string",
+            "x-enumNames": [
+              "TenantOwnerInvited"
+            ]
           },
           "invitationId": {
             "type": "string",
@@ -5395,7 +5627,10 @@
             "enum": [
               "tenant.renamed"
             ],
-            "type": "string"
+            "type": "string",
+            "x-enumNames": [
+              "TenantRenamed"
+            ]
           },
           "oldName": {
             "type": "string"
@@ -5455,7 +5690,14 @@
           "closed"
         ],
         "type": "string",
-        "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled."
+        "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.",
+        "x-enumNames": [
+          "Provisioning",
+          "Active",
+          "Suspended",
+          "Cancelled",
+          "Closed"
+        ]
       },
       "TenantSuspendedDetailsResponse": {
         "required": [
@@ -5467,7 +5709,10 @@
             "enum": [
               "tenant.suspended"
             ],
-            "type": "string"
+            "type": "string",
+            "x-enumNames": [
+              "TenantSuspended"
+            ]
           },
           "reason": {
             "type": "string"
@@ -5598,7 +5843,12 @@
           "closed"
         ],
         "type": "string",
-        "description": "The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it."
+        "description": "The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.",
+        "x-enumNames": [
+          "Active",
+          "Suspended",
+          "Closed"
+        ]
       },
       "UserNameResponse": {
         "required": [
@@ -5685,7 +5935,12 @@
           "deleted"
         ],
         "type": "string",
-        "description": "The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs."
+        "description": "The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.",
+        "x-enumNames": [
+          "Active",
+          "Suspended",
+          "Deleted"
+        ]
       }
     },
     "securitySchemes": {

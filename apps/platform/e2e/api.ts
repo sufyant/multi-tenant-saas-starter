@@ -15,7 +15,7 @@ export const me = (language: Language): MeResponse => ({
 
 export async function mockApi(
   page: Page,
-  language: Language = Language.en,
+  language: Language = Language.En,
 ): Promise<void> {
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({ json: me(language) }),

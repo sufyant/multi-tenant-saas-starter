@@ -40,6 +40,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     private const string MemberRoleSchema = "#/components/schemas/MemberRole";
 
+    private const string EnumNames = "x-enumNames";
+
     // The enums the host adds to fields that are strings in C# (N11i, N11j): the permissions and the audit operations.
     private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema];
 
@@ -112,6 +114,52 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         enums.ShouldNotBeEmpty();
         untyped.ShouldBeEmpty();
+    }
+
+    // N11z: a generated client names each member of an enum from x-enumNames, one name for each value.
+    [Fact]
+    public void BuildOpenApiDocument_EveryEnum_HasOneEnumNameForEachValue()
+    {
+        var enums = ObjectsIn(_document, "#").Where(found => found.Value.TryGetProperty("enum", out _)).ToList();
+
+        var unnamed = enums
+            .Where(found => !found.Value.TryGetProperty(EnumNames, out var names) || names.GetArrayLength() != found.Value.GetProperty("enum").GetArrayLength())
+            .Select(found => found.Path);
+
+        enums.ShouldNotBeEmpty();
+        unnamed.ShouldBeEmpty();
+    }
+
+    // N11z: two members of one enum never share a name, or the generated client would keep one of them.
+    [Fact]
+    public void BuildOpenApiDocument_EnumNamesOfOneEnum_AreUnique()
+    {
+        var named = ObjectsIn(_document, "#").Where(found => found.Value.TryGetProperty(EnumNames, out _)).ToList();
+
+        var repeated = named
+            .Where(found => NamesOf(found.Value).Distinct(StringComparer.Ordinal).Count() != NamesOf(found.Value).Count)
+            .Select(found => found.Path);
+
+        named.ShouldNotBeEmpty();
+        repeated.ShouldBeEmpty();
+    }
+
+    // N11z: the name of a member is its value split on '.', '_' and '-', each part in PascalCase. A leading '-', a descending sort, is
+    // the suffix Descending.
+    [Theory]
+    [InlineData("#/components/schemas/ErrorCode", "server.error", "ServerError")]
+    [InlineData("#/components/schemas/ErrorCode", "user.suspended", "UserSuspended")]
+    [InlineData("#/components/schemas/Permission", "platform.tenants.invite_owner", "PlatformTenantsInviteOwner")]
+    [InlineData("#/components/schemas/Language", "en", "En")]
+    [InlineData("#/components/schemas/MemberRole", "owner", "Owner")]
+    [InlineData("#/paths/~1v1~1platform~1users/get/parameters/sort", "-email", "EmailDescending")]
+    public void BuildOpenApiDocument_EnumValue_IsNamedFromItsParts(string schema, string value, string expected)
+    {
+        var found = EnumAt(schema);
+
+        var name = NamesOf(found)[ValuesOf(found).IndexOf(value)];
+
+        name.ShouldBe(expected);
     }
 
     // Step 20k: a built-in role is one lower-case word, as every other enum of the document.
@@ -696,6 +744,10 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private static string EnumOf(JsonElement schema) =>
         schema.TryGetProperty("enum", out var values) ? string.Join(", ", values.EnumerateArray().Select(value => value.GetString())) : "<no enum>";
 
+    private static List<string> NamesOf(JsonElement schema) => [.. schema.GetProperty(EnumNames).EnumerateArray().Select(name => name.GetString()!)];
+
+    private static List<string> ValuesOf(JsonElement schema) => [.. schema.GetProperty("enum").EnumerateArray().Select(value => value.GetString()!)];
+
     private static Type? EnumTypeOf(Type type) => (Nullable.GetUnderlyingType(type) ?? type) is { IsEnum: true } found ? found : null;
 
     // The values an enum has in JSON, from SharedKernel's one source of them (B10).
@@ -852,6 +904,14 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private IEnumerable<(string Method, string Path, JsonElement Value)> Operations() =>
         _document.GetProperty("paths").EnumerateObject()
             .SelectMany(path => path.Value.EnumerateObject().Select(operation => (operation.Name, path.Name, operation.Value)));
+
+    // The schema at a JSON pointer, with ~1 for '/'. In an array, such as an operation's parameters, a segment is the item's name, and
+    // a parameter gives its schema.
+    private JsonElement EnumAt(string pointer) =>
+        pointer.Split('/').Skip(1).Select(segment => segment.Replace("~1", "/", StringComparison.Ordinal)).Aggregate(_document, (element, segment) =>
+            element.ValueKind == JsonValueKind.Array
+                ? element.EnumerateArray().Single(item => item.GetProperty("name").GetString() == segment).GetProperty("schema")
+                : element.GetProperty(segment));
 
     private JsonElement.ObjectEnumerator Schemas() => _document.GetProperty("components").GetProperty("schemas").EnumerateObject();
 }

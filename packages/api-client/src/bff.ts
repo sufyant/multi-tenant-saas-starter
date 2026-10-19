@@ -42,11 +42,11 @@ export function createBff({
       encodedSeparator.test(raw) ||
       raw.split("/").includes("..")
     ) {
-      return problem(404, ErrorCode.routenot_found);
+      return problem(404, ErrorCode.RouteNotFound);
     }
     const path = raw.slice(prefix.length);
     const token = await getToken();
-    if (!token) return problem(401, ErrorCode.authunauthenticated);
+    if (!token) return problem(401, ErrorCode.AuthUnauthenticated);
 
     const operation = findOperation(request.method, path);
     const headers = new Headers({ Authorization: `Bearer ${token}` });
@@ -69,7 +69,7 @@ export function createBff({
       });
     } catch {
       // The API did not answer: down, unreachable or timed out. The browser gets Problem Details, as for any error (F4).
-      return problem(502, ErrorCode.servererror);
+      return problem(502, ErrorCode.ServerError);
     }
 
     const passed = new Headers();

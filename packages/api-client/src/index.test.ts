@@ -25,7 +25,7 @@ describe("schemas", () => {
   it("InviteMemberBody_NullLanguage_IsAccepted", () => {
     const invite = {
       email: "ayse@northwind.example",
-      role: MemberRole.member,
+      role: MemberRole.Member,
       language: null,
     };
 
@@ -35,7 +35,7 @@ describe("schemas", () => {
   it("InviteMemberBody_ListedLanguage_IsAccepted", () => {
     const invite = {
       email: "ayse@northwind.example",
-      role: MemberRole.member,
+      role: MemberRole.Member,
       language: "tr",
     };
 
@@ -45,7 +45,7 @@ describe("schemas", () => {
   it("InviteMemberBody_UnlistedLanguage_IsRefused", () => {
     const invite = {
       email: "ayse@northwind.example",
-      role: MemberRole.member,
+      role: MemberRole.Member,
       language: "de",
     };
 

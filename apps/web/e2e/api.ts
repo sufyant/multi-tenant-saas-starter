@@ -14,7 +14,7 @@ export const northwind: MyTenantResponse = {
   name: "Northwind MRO",
   slug: "northwind",
   status: "active",
-  role: { builtIn: MemberRole.owner, name: MemberRole.owner },
+  role: { builtIn: MemberRole.Owner, name: MemberRole.Owner },
 };
 
 export const me = (language: Language): MeResponse => ({
@@ -29,7 +29,7 @@ export const me = (language: Language): MeResponse => ({
 
 export async function mockApi(
   page: Page,
-  language: Language = Language.en,
+  language: Language = Language.En,
 ): Promise<void> {
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({ json: me(language) }),

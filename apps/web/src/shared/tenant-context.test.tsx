@@ -28,8 +28,8 @@ function Probe() {
   const can = useCan();
   return (
     <p>
-      {tenant.name} {String(can(Permission.tenantmembersread))}{" "}
-      {String(can(Permission.tenantmembersdelete))}
+      {tenant.name} {String(can(Permission.TenantMembersRead))}{" "}
+      {String(can(Permission.TenantMembersDelete))}
     </p>
   );
 }
@@ -46,7 +46,7 @@ describe("TenantProvider", () => {
       getGetMyTenantMockHandler(
         getGetMyTenantResponseMock({
           ...northwind,
-          permissions: [Permission.tenantmembersread],
+          permissions: [Permission.TenantMembersRead],
         }),
       ),
     );

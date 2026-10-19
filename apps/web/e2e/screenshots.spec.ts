@@ -45,7 +45,7 @@ test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 834, height: 1112 });
-  await mockApi(page, Language.tr);
+  await mockApi(page, Language.Tr);
 
   await page.goto(`/${northwind.slug}/settings/preferences`);
   await page.getByRole("heading", { level: 1, name: "Tercihler" }).waitFor();

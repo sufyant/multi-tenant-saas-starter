@@ -25,7 +25,7 @@ namespace Api.Hosting;
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
 // sort and filters, the limits of a request and of a list, the values of an enum with a converter of its own, the idempotency key and
 // the headers of an answer, the bearer scheme, the members of the one error schema with the enums of the error codes, the enum of the
-// permissions, and the enum of the audit operations. They change the document only. The one rule here that the wire follows is how
+// permissions, the enum of the audit operations, and a name for each member of every enum. They change the document only. The one rule here that the wire follows is how
 // JSON reads a number, because the document describes the numbers from it.
 internal static partial class OpenApiContract
 {
@@ -40,6 +40,8 @@ internal static partial class OpenApiContract
     private const string AuditOperationsClass = "AuditOperations";
 
     private const string OperationMember = "operation";
+
+    private const string EnumNamesExtension = "x-enumNames";
 
     // An idempotent operation replays a saved result: its success or a business rejection. A request that failed validation (400) or
     // authentication (401) saves none (I5, I6).
@@ -122,7 +124,8 @@ internal static partial class OpenApiContract
                     .AddDocumentTransformer(DescribeProblemDetails)
                     .AddDocumentTransformer(DescribePermissions)
                     .AddDocumentTransformer(DescribeDiscriminators)
-                    .AddDocumentTransformer(DescribeAuditOperations);
+                    .AddDocumentTransformer(DescribeAuditOperations)
+                    .AddDocumentTransformer(NameEnumMembers);
             });
 
     // A nullable enum, such as MemberRole?, gets the schema name of its enum, MemberRole, so the two schemas would share one name, and the
@@ -623,4 +626,45 @@ internal static partial class OpenApiContract
 
     private static OpenApiSchema EnumSchema(IReadOnlyList<string> values, string description) =>
         new() { Type = JsonSchemaType.String, Enum = [.. values.Select(value => (JsonNode)JsonValue.Create(value))], Description = description };
+
+    // N11z: a generated client names each member of an enum. Without names, it joins the letters of the value: server.error becomes
+    // servererror. So every enum of the document gets x-enumNames, one name for each value, from one rule (MemberName). The enums come
+    // from the schema transformers and from the operation and document transformers before this one, so this one runs last and reads
+    // the whole document: the components, and each operation's parameters, bodies and answers.
+    private static Task NameEnumMembers(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        var operations = document.Paths.Values.SelectMany(path => path.Operations ?? []).Select(operation => operation.Value).ToList();
+        var answers = operations.SelectMany(operation => operation.Responses?.Values.AsEnumerable() ?? []).ToList();
+        var roots = (document.Components?.Schemas?.Values ?? [])
+            .Concat(operations.SelectMany(operation => operation.Parameters ?? []).Select(parameter => parameter.Schema))
+            .Concat(operations.SelectMany(operation => operation.RequestBody?.Content?.Values ?? []).Select(media => media.Schema))
+            .Concat(answers.SelectMany(answer => answer.Content?.Values ?? []).Select(media => media.Schema))
+            .Concat(answers.SelectMany(answer => answer.Headers?.Values ?? []).Select(header => header.Schema));
+        foreach (var schema in roots.SelectMany(SchemasIn).Where(schema => schema.Enum is { Count: > 0 }))
+        {
+            schema.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+            schema.Extensions[EnumNamesExtension] = new JsonNodeExtension(
+                new JsonArray([.. schema.Enum!.Select(value => (JsonNode)JsonValue.Create(MemberName(value!.GetValue<string>())))]));
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // A schema and every schema written inside it. A reference is not followed: the schema it names is a component of its own.
+    private static IEnumerable<OpenApiSchema> SchemasIn(IOpenApiSchema? schema) =>
+        schema is not OpenApiSchema found
+            ? []
+            : new[] { found.Items, found.AdditionalProperties }
+                .Concat(found.Properties?.Values ?? [])
+                .Concat(found.AllOf ?? [])
+                .Concat(found.AnyOf ?? [])
+                .Concat(found.OneOf ?? [])
+                .SelectMany(SchemasIn)
+                .Prepend(found);
+
+    // N11z: the value split on '.', '_' and '-', each part in PascalCase: platform.tenants.invite_owner is PlatformTenantsInviteOwner. A
+    // leading '-', a descending sort, is the suffix Descending: -email is EmailDescending.
+    private static string MemberName(string value) =>
+        string.Concat(value.Split(['.', '_', '-'], StringSplitOptions.RemoveEmptyEntries).Select(part => char.ToUpperInvariant(part[0]) + part[1..]))
+        + (value.StartsWith('-') ? "Descending" : string.Empty);
 }

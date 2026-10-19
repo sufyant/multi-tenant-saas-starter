@@ -32,14 +32,24 @@ export const CreateTenantBody = zod.object({
   "name": zod.string().max(createTenantBodyNameMax),
   "slug": zod.string().min(createTenantBodySlugMin).max(createTenantBodySlugMax).regex(createTenantBodySlugRegExp),
   "ownerEmail": zod.email().max(createTenantBodyOwnerEmailMax),
-  "language": zod.union([zod.null(),zod.enum(['en', 'tr', 'ar']).describe('A language the web speaks, by its BCP 47 language tag.')]).optional()
+  "language": zod.union([zod.null(),zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.')]).optional()
 }).describe('A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner\'s\ninvitation email: without one, the system admin\'s own. The API trims the name before it counts its length.')
 
 export const CreateTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -54,9 +64,20 @@ export const listTenantsQueryQMax = 100;
 export const ListTenantsQueryParams = zod.object({
   "page": zod.int().min(1).optional(),
   "pageSize": zod.int().min(1).max(listTenantsQueryPageSizeMax).optional(),
-  "sort": zod.enum(['name', '-name', 'slug', '-slug']).optional(),
+  "sort": zod.enum({
+  Name: 'name',
+  NameDescending: '-name',
+  Slug: 'slug',
+  SlugDescending: '-slug',
+}).optional(),
   "q": zod.string().max(listTenantsQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).optional()
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).optional()
 })
 
 export const ListTenantsResponse = zod.object({
@@ -64,7 +85,13 @@ export const ListTenantsResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
@@ -79,7 +106,12 @@ export const ListTenantsResponse = zod.object({
   "ownerInvitation": zod.union([zod.null(),zod.object({
   "email": zod.string(),
   "expiresAt": zod.iso.datetime({"offset":true}),
-  "state": zod.enum(['pending', 'expired', 'accepted', 'cancelled']).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
+  "state": zod.enum({
+  Pending: 'pending',
+  Expired: 'expired',
+  Accepted: 'accepted',
+  Cancelled: 'cancelled',
+}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
 }).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner.')])
 }).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.')),
   "page": zod.int(),
@@ -95,7 +127,13 @@ export const GetTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
@@ -110,7 +148,12 @@ export const GetTenantResponse = zod.object({
   "ownerInvitation": zod.union([zod.null(),zod.object({
   "email": zod.string(),
   "expiresAt": zod.iso.datetime({"offset":true}),
-  "state": zod.enum(['pending', 'expired', 'accepted', 'cancelled']).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
+  "state": zod.enum({
+  Pending: 'pending',
+  Expired: 'expired',
+  Accepted: 'accepted',
+  Cancelled: 'cancelled',
+}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
 }).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner.')])
 }).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first.')
 
@@ -130,7 +173,13 @@ export const RenameTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -151,7 +200,13 @@ export const SuspendTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -164,7 +219,13 @@ export const ReactivateTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -177,7 +238,13 @@ export const CloseTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -190,7 +257,13 @@ export const ReopenTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['provisioning', 'active', 'suspended', 'cancelled', 'closed']).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  "status": zod.enum({
+  Provisioning: 'provisioning',
+  Active: 'active',
+  Suspended: 'suspended',
+  Cancelled: 'cancelled',
+  Closed: 'closed',
+}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')

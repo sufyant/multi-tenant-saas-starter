@@ -15,12 +15,43 @@ export const GetMyTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
-  "status": zod.enum(['active', 'suspended', 'closed']).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
+}).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum(['owner', 'admin', 'member']).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
+  "builtIn": zod.union([zod.null(),zod.enum({
+  Owner: 'owner',
+  Admin: 'admin',
+  Member: 'member',
+}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
   "name": zod.string()
 }).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
-  "permissions": zod.array(zod.enum(['platform.audit.read', 'platform.tenants.close', 'platform.tenants.create', 'platform.tenants.invite_owner', 'platform.tenants.reactivate', 'platform.tenants.read', 'platform.tenants.reopen', 'platform.tenants.suspend', 'platform.tenants.update', 'platform.users.delete', 'platform.users.reactivate', 'platform.users.read', 'platform.users.suspend', 'platform.users.update', 'tenant.audit.read', 'tenant.invitations.create', 'tenant.invitations.delete', 'tenant.invitations.read', 'tenant.members.delete', 'tenant.members.read', 'tenant.members.update', 'tenant.profile.read']).describe('A name of the permission list. Every endpoint checks its own permission.')),
+  "permissions": zod.array(zod.enum({
+  PlatformAuditRead: 'platform.audit.read',
+  PlatformTenantsClose: 'platform.tenants.close',
+  PlatformTenantsCreate: 'platform.tenants.create',
+  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsReactivate: 'platform.tenants.reactivate',
+  PlatformTenantsRead: 'platform.tenants.read',
+  PlatformTenantsReopen: 'platform.tenants.reopen',
+  PlatformTenantsSuspend: 'platform.tenants.suspend',
+  PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformUsersDelete: 'platform.users.delete',
+  PlatformUsersReactivate: 'platform.users.reactivate',
+  PlatformUsersRead: 'platform.users.read',
+  PlatformUsersSuspend: 'platform.users.suspend',
+  PlatformUsersUpdate: 'platform.users.update',
+  TenantAuditRead: 'tenant.audit.read',
+  TenantInvitationsCreate: 'tenant.invitations.create',
+  TenantInvitationsDelete: 'tenant.invitations.delete',
+  TenantInvitationsRead: 'tenant.invitations.read',
+  TenantMembersDelete: 'tenant.members.delete',
+  TenantMembersRead: 'tenant.members.read',
+  TenantMembersUpdate: 'tenant.members.update',
+  TenantProfileRead: 'tenant.profile.read',
+}).describe('A name of the permission list. Every endpoint checks its own permission.')),
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself.')
 

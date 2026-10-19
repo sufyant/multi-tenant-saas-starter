@@ -6,7 +6,7 @@ import { expectAccessible } from "./axe";
 
 test("Preferences_English_IsLeftToRight", async ({ page }) => {
   await setupClerkTestingToken({ page });
-  await mockApi(page, Language.en);
+  await mockApi(page, Language.En);
 
   await page.goto(`/${northwind.slug}/settings/preferences`);
 
@@ -19,7 +19,7 @@ test("Preferences_English_IsLeftToRight", async ({ page }) => {
 
 test("Preferences_Arabic_IsRightToLeft", async ({ page }) => {
   await setupClerkTestingToken({ page });
-  await mockApi(page, Language.ar);
+  await mockApi(page, Language.Ar);
 
   await page.goto(`/${northwind.slug}/settings/preferences`);
 
