@@ -11,7 +11,7 @@ const tones: Record<BannerTone, string> = {
 };
 
 export type BannerProps = {
-  /** The fact, in one bold sentence: "Atlas Technic is suspended." */
+  /** The fact, in one bold sentence: "Atlas Logistics is suspended." */
   title: ReactNode;
   tone?: BannerTone;
   /** At most one action, a secondary button at the end. */

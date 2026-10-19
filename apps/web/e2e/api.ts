@@ -15,7 +15,7 @@ import {
 // The BFF has its own tests (src/app/api/[...path]/route.test.ts).
 export const northwind: MyTenantResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
-  name: "Northwind MRO",
+  name: "Northwind Traders",
   slug: "northwind",
   status: "active",
   role: { builtIn: MemberRole.Owner, name: MemberRole.Owner },

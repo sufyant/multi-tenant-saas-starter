@@ -57,7 +57,7 @@ vi.mock("next/navigation", () => ({
 const code = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f.s3cr3t";
 
 const pending: InvitationPreviewResponse = {
-  tenantName: "Northwind MRO",
+  tenantName: "Northwind Traders",
   inviterName: {
     kind: InviterNameResponseKind.User,
     firstName: "Ayşe",
@@ -115,7 +115,7 @@ describe("AcceptInvitationPage", () => {
         accepted(await request.json());
         return {
           id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
-          name: "Northwind MRO",
+          name: "Northwind Traders",
           slug: "northwind",
           status: "active",
           role: { builtIn: MemberRole.Member, name: MemberRole.Member },
@@ -127,11 +127,11 @@ describe("AcceptInvitationPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Ayşe Yılmaz invited you to join Northwind MRO",
+        name: "Ayşe Yılmaz invited you to join Northwind Traders",
       }),
     ).toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind MRO" }),
+      screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
 
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
@@ -148,7 +148,7 @@ describe("AcceptInvitationPage", () => {
         accepted(await request.json());
         return {
           id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
-          name: "Northwind MRO",
+          name: "Northwind Traders",
           slug: "northwind",
           status: "active",
           role: { builtIn: MemberRole.Member, name: MemberRole.Member },
@@ -160,7 +160,7 @@ describe("AcceptInvitationPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Ayşe Yılmaz invited you to join Northwind MRO as a Member",
+        name: "Ayşe Yılmaz invited you to join Northwind Traders as a Member",
       }),
     ).toBeInTheDocument();
     await user.type(
@@ -169,7 +169,7 @@ describe("AcceptInvitationPage", () => {
     );
     await user.type(screen.getByRole("textbox", { name: "Last name" }), "Kaya");
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind MRO" }),
+      screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
 
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
@@ -199,7 +199,7 @@ describe("AcceptInvitationPage", () => {
       "Kaya",
     );
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind MRO" }),
+      screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
 
     expect(
@@ -235,7 +235,7 @@ describe("AcceptInvitationPage", () => {
     );
     await user.type(screen.getByRole("textbox", { name: "Last name" }), "Kaya");
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind MRO" }),
+      screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
 
     expect(
@@ -260,7 +260,7 @@ describe("AcceptInvitationPage", () => {
       await screen.findByRole("heading", { name: title }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Join Northwind MRO" }),
+      screen.queryByRole("button", { name: "Join Northwind Traders" }),
     ).not.toBeInTheDocument();
   });
 
@@ -302,7 +302,7 @@ describe("AcceptInvitationPage", () => {
 
       expect(
         await screen.findByText(
-          `The link to join Northwind MRO expired on 9 Oct 2026. ${ask}`,
+          `The link to join Northwind Traders expired on 9 Oct 2026. ${ask}`,
         ),
       ).toBeInTheDocument();
     },
@@ -322,7 +322,7 @@ describe("AcceptInvitationPage", () => {
     expect(
       await screen.findByRole("heading", { name: "This link does not work" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Northwind MRO")).not.toBeInTheDocument();
+    expect(screen.queryByText("Northwind Traders")).not.toBeInTheDocument();
   });
 
   it("AcceptInvitationPage_AnotherEmail_ShowsOnlyTheCallersAddressAndSwitchesAccount", async () => {
@@ -425,7 +425,7 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code="" />);
 
     expect(
-      await screen.findByRole("button", { name: "Join Northwind MRO" }),
+      await screen.findByRole("button", { name: "Join Northwind Traders" }),
     ).toBeInTheDocument();
     expect(previewed).toHaveBeenCalledWith({ code });
   });
@@ -443,7 +443,7 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.click(
-      await screen.findByRole("button", { name: "Join Northwind MRO" }),
+      await screen.findByRole("button", { name: "Join Northwind Traders" }),
     );
 
     expect(

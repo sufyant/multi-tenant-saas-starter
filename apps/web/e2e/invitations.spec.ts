@@ -23,14 +23,14 @@ test("AcceptInvitation_KnownPerson_JoinsAndOpensTheOrganisation", async ({
 
   await expect(
     page.getByRole("heading", {
-      name: "Ayşe Yılmaz invited you to join Northwind MRO",
+      name: "Ayşe Yılmaz invited you to join Northwind Traders",
     }),
   ).toBeVisible();
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Join Northwind MRO" }).click();
+  await page.getByRole("button", { name: "Join Northwind Traders" }).click();
 
   await expect(page).toHaveURL(`/${northwind.slug}`);
-  await expect(page.getByText("You joined Northwind MRO")).toBeVisible();
+  await expect(page.getByText("You joined Northwind Traders")).toBeVisible();
 });
 
 test("AcceptInvitation_NewPerson_AsksForTheNames", async ({ page }) => {
@@ -97,7 +97,7 @@ test("AcceptInvitation_Arabic_IsMirrored", async ({
 
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(
-    page.getByRole("button", { name: "انضم إلى Northwind MRO" }),
+    page.getByRole("button", { name: "انضم إلى Northwind Traders" }),
   ).toBeVisible();
   await expectAccessible(page);
 });

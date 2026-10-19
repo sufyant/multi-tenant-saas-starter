@@ -3,13 +3,14 @@ import { test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { mockApi, northwind } from "./api";
 
-// The screenshots of the pull request of step 21a. They run only with E2E_SCREENSHOTS=1 and write to docs/frontend/screenshots.
+// Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/web/test-results/screenshots,
+// which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
 test.skip(
   !process.env.E2E_SCREENSHOTS,
   "Set E2E_SCREENSHOTS=1 to take the screenshots.",
 );
 
-const folder = "../../docs/frontend/screenshots";
+const folder = "test-results/screenshots";
 
 test("Screenshot_DevComponents_EnglishLightDesktop", async ({ page }) => {
   await setupClerkTestingToken({ page });

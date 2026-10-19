@@ -4,10 +4,10 @@ import { Input } from "./input";
 
 describe("Input", () => {
   it("Input_WithLabel_IsNamedByIt", () => {
-    render(<Input label="Tenant name" defaultValue="Northwind MRO" />);
+    render(<Input label="Tenant name" defaultValue="Northwind Traders" />);
 
     expect(screen.getByRole("textbox", { name: "Tenant name" })).toHaveValue(
-      "Northwind MRO",
+      "Northwind Traders",
     );
   });
 

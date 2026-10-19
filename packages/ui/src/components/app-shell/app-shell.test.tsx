@@ -34,7 +34,7 @@ const props = {
   logoLabel: "Home",
   logoHref: "/northwind",
   crumbs: [
-    { label: "Northwind MRO" },
+    { label: "Northwind Traders" },
     { label: "Settings" },
     { label: "Preferences" },
   ],
@@ -66,7 +66,7 @@ describe("AppShell", () => {
     const crumbs = within(
       screen.getByRole("navigation", { name: "Breadcrumb" }),
     ).getAllByRole("listitem");
-    expect(crumbs[0]).toHaveTextContent("Northwind MRO");
+    expect(crumbs[0]).toHaveTextContent("Northwind Traders");
   });
 
   it("AppShell_CommandK_OpensThePaletteWithTheNavigation", async () => {

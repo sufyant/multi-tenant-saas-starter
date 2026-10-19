@@ -56,26 +56,25 @@ describe("ChooseOrganisation", () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
       page([
-        tenant("Northwind MRO", "northwind"),
-        tenant("Atlas Technic", "atlas"),
+        tenant("Northwind Traders", "northwind"),
+        tenant("Atlas Logistics", "atlas"),
       ]),
     );
 
     renderWithProviders(<ChooseOrganisation />);
 
     expect(
-      await screen.findByRole("link", { name: /Northwind MRO/ }),
+      await screen.findByRole("link", { name: /Northwind Traders/ }),
     ).toHaveAttribute("href", "/northwind");
-    expect(screen.getByRole("link", { name: /Atlas Technic/ })).toHaveAttribute(
-      "href",
-      "/atlas",
-    );
+    expect(
+      screen.getByRole("link", { name: /Atlas Logistics/ }),
+    ).toHaveAttribute("href", "/atlas");
   });
 
   it("ChooseOrganisation_OneOrganisation_OpensIt", async () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
-      page([tenant("Northwind MRO", "northwind")]),
+      page([tenant("Northwind Traders", "northwind")]),
     );
 
     renderWithProviders(<ChooseOrganisation />);
@@ -121,8 +120,8 @@ describe("ChooseOrganisation", () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
       page([
-        tenant("Northwind MRO", "northwind"),
-        { ...tenant("Atlas Technic", "atlas"), status: "suspended" },
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Atlas Logistics", "atlas"), status: "suspended" },
       ]),
     );
 
@@ -133,7 +132,7 @@ describe("ChooseOrganisation", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Suspended")).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: /Atlas Technic/ }),
+      screen.queryByRole("link", { name: /Atlas Logistics/ }),
     ).not.toBeInTheDocument();
   });
 
