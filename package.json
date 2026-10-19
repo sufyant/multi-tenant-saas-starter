@@ -25,7 +25,8 @@
     "railway:plan": "railway config plan",
     "railway:apply": "railway config apply",
     "clerk:plan": "scripts/clerk/config.sh plan",
-    "clerk:apply": "scripts/clerk/config.sh apply"
+    "clerk:apply": "scripts/clerk/config.sh apply",
+    "skills:update": "scripts/agent-skills/update.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
