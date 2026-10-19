@@ -1,3 +1,15 @@
+<!-- intent-skills:start -->
+## Skill Loading
+
+Use the repository’s installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
+- Run `pnpm exec intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `pnpm exec intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+<!-- intent-skills:end -->
+
 # AGENTS.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
@@ -81,13 +93,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Workflows
 
-- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps.
+- `ci.yml` verifies. `delivery.yml` delivers. `rollback.yml` deploys an earlier release to production. `deploy.yml` holds the only copy of the deploy steps. `agent-skills.yml` reports every week when an agent skill changed upstream.
 - A `run` block over 15 lines goes into `scripts/ci/` or `scripts/deploy/`.
 
 ## Agent skills
 
-- Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder.
+- Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder. One exception: the TanStack Table skills ship inside their packages (`docs/agent-skills.md`).
 - Add a skill only for a tool this repository uses or has a planned place for. `docs/agent-skills.md` lists them.
+- Agents never install, update or remove a skill. Report a stale or missing skill to the maintainer.
 
 ## Monorepo tasks
 

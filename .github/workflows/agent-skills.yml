@@ -1,0 +1,55 @@
+name: Agent skills
+
+# Reports when an agent skill changed upstream (docs/agent-skills.md, section 4). It installs every skill
+# of skills-lock.json again and fails when a folder or a hash differs, or when a skill can no longer be
+# installed (the log of the update step names it). It opens no pull request and no issue: the maintainer
+# runs `pnpm skills:update` on a branch. Dependabot and Renovate do not cover agent skills.
+on:
+  # Monday 06:17 UTC. A minute other than :00 is less likely to be delayed (GitHub Docs, "Events that
+  # trigger workflows", schedule).
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: "Check the agent skills for updates"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # packageManager in package.json fixes the pnpm version. The script needs no pnpm install.
+      - run: corepack enable
+
+      # The GitHub-hosted Ubuntu image has jq (actions/runner-images, Ubuntu 24.04 readme).
+      # The skills CLI reads GITHUB_TOKEN for GitHub API calls, so the job does not share the unauthenticated limit of 60 calls per hour.
+      - run: pnpm skills:update
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # A changed skill changes its hash in skills-lock.json, a new or removed file too.
+      - name: Fail when a skill changed
+        run: |
+          if git diff --quiet -- .claude/skills skills-lock.json; then
+            exit 0
+          fi
+          {
+            echo "## Agent skills changed upstream"
+            diff <(git show HEAD:skills-lock.json | jq -r '.skills | to_entries[] | "\(.key) \(.value.computedHash)"') \
+              <(jq -r '.skills | to_entries[] | "\(.key) \(.value.computedHash)"' skills-lock.json) |
+              sed -n 's/^> \([^ ]*\) .*/- \1/p'
+            echo
+            echo "Run \`pnpm skills:update\` on a branch and open a pull request."
+          } >> "$GITHUB_STEP_SUMMARY"
+          git --no-pager diff --stat -- .claude/skills skills-lock.json
+          exit 1

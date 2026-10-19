@@ -25,12 +25,24 @@
     "railway:plan": "railway config plan",
     "railway:apply": "railway config apply",
     "clerk:plan": "scripts/clerk/config.sh plan",
-    "clerk:apply": "scripts/clerk/config.sh apply"
+    "clerk:apply": "scripts/clerk/config.sh apply",
+    "skills:update": "scripts/agent-skills/update.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
+    "@tanstack/intent": "0.5.6",
     "railway": "^3.13.1",
     "turbo": "^2.10.12",
     "typescript": "^5"
+  },
+  "intent": {
+    "skills": [
+      "@tanstack/react-table#getting-started",
+      "@tanstack/react-table#table-state",
+      "@tanstack/table-core#core",
+      "@tanstack/table-core#custom-features",
+      "@tanstack/table-core#table-features",
+      "@tanstack/table-core#table-state"
+    ]
   }
 }
