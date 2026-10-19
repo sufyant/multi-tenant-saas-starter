@@ -48,5 +48,8 @@
     "now": "Now",
     "theme": "Theme",
     "themeHint": "Saved on this device."
+  },
+  "signInPage": {
+    "title": "Sign in to Starter"
   }
 }

@@ -48,5 +48,8 @@
     "now": "Şu an",
     "theme": "Tema",
     "themeHint": "Bu cihazda saklanır."
+  },
+  "signInPage": {
+    "title": "Starter'a giriş yapın"
   }
 }

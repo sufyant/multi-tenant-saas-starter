@@ -48,5 +48,8 @@
     "now": "الآن",
     "theme": "المظهر",
     "themeHint": "يُحفظ على هذا الجهاز."
+  },
+  "signInPage": {
+    "title": "تسجيل الدخول إلى Starter"
   }
 }

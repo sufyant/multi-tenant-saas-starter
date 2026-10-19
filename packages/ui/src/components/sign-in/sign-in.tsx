@@ -1,6 +1,7 @@
 "use client";
 
 import { useSignIn } from "@clerk/nextjs";
+import type { Language } from "@repo/api-client";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { AuthLayout } from "../auth-layout";
@@ -21,7 +22,7 @@ export type SignInProps = {
   /** The platform app's ink label. */
   platformLabel?: string;
   /** The app's `setLocale` server action (F13). */
-  onLanguageChange: (language: string) => Promise<void>;
+  onLanguageChange: (language: Language) => Promise<void>;
 };
 
 /** The query parameter that `SsoCallback` sets when an SSO sign-in could not finish. */

@@ -42,5 +42,8 @@
   },
   "access": {
     "noAccessText": "This app is for the system admins of the provider. Your account is not one."
+  },
+  "signInPage": {
+    "title": "Sign in to the platform"
   }
 }

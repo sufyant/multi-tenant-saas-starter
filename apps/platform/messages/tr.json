@@ -42,5 +42,8 @@
   },
   "access": {
     "noAccessText": "Bu uygulama sağlayıcının sistem yöneticileri içindir. Hesabınız bunlardan biri değil."
+  },
+  "signInPage": {
+    "title": "Platforma giriş yapın"
   }
 }
