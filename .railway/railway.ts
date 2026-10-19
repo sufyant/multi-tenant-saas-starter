@@ -30,8 +30,8 @@ import { defineRailway, postgres, project, service } from "railway/iac";
 import infrastructure from "./api.json" with { type: "json" };
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
-// Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3). One optional
-// key is added: Host:Cors:AllowedOrigins:0, for the web app's origin. Authentication:Clerk:AuthorizedParties has two items:
+// Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3).
+// Authentication:Clerk:AuthorizedParties has two items:
 // 0 is the web app's origin and 1 the platform app's, because the platform runs on an origin of its own and the API checks the
 // token's party. ConnectionStrings:Database
 // connects directly to the environment's PostgreSQL service, with no pooler, so Wolverine uses it
@@ -54,7 +54,6 @@ const sharedVariables = [
   "ControlPlane__Invitations__AcceptUrl",
   "Notifications__Resend__ApiKey",
   "Notifications__Resend__From",
-  "Host__Cors__AllowedOrigins__0",
 ];
 
 export default defineRailway((ctx) => {

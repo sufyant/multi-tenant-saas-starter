@@ -6,7 +6,7 @@ namespace Api.Idempotency;
 internal sealed class IdempotencyMiddleware(RequestDelegate next)
 {
     // I2: the one name of the header, the one bound of its length and the one range of its characters, the visible ASCII characters.
-    // CORS, the OpenAPI document, its pattern and the database column use them.
+    // The OpenAPI document, its pattern and the database column use them.
     public const string Header = "Idempotency-Key";
 
     public const int MaxLength = 255;

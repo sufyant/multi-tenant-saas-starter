@@ -78,7 +78,7 @@ public sealed partial class ConfigurationDocumentTests
         set.Except(DocumentedKeys()).ShouldBeEmpty();
     }
 
-    // A variable such as Host__Cors__AllowedOrigins__0 is the key Host:Cors:AllowedOrigins.
+    // A variable such as Authentication__Clerk__AuthorizedParties__0 is the key Authentication:Clerk:AuthorizedParties.
     private static string KeyOf(string variable) => ListIndex().Replace(variable, "").Replace("__", ":", StringComparison.Ordinal);
 
     private static IEnumerable<(string Key, string Required)> DocumentedRows() =>

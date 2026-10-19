@@ -352,7 +352,6 @@ Rules:
 - The file declares `postgres` with the `postgres` helper of `railway/iac`, but Railway's own flows set its volume, its TCP proxy, its backups and its point-in-time recovery (the bucket `Postgres-PITR` and the archive variables). The Railway docs do not say how apply treats these. Do not apply a plan that removes or changes one of them. Report it instead.
 - Do not apply a plan that changes the image of `postgres`. A new major version needs Railway's upgrade flow, not a new image tag (Railway docs, "Upgrading PostgreSQL Major Versions", "Manual Image Edits"). Point-in-time recovery needs a major tag such as `:18`, not a minor tag (Railway docs, "Point-in-Time Recovery", "Limitations").
 - An environment that was set up before step 18f can still have the shared variable `ConnectionStrings__Messaging`. No service references it any more. Delete it in the Railway dashboard.
-- An empty `Host__Cors__AllowedOrigins__0` is not a valid origin, so the API stops. Set it to the web app's origin, also before the web app exists.
 
 Add a shared variable to the API services without apply:
 
@@ -370,7 +369,7 @@ Remove a shared variable from the API services without apply:
 2. Merge, and let the deploy finish in each environment. The version before it may still need the variable to start.
 3. Then, in the Railway dashboard, open Shared Variables, untick `api-web` and `api-worker` for the variable, and delete it.
 
-Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way.
+Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way, and the step that deployed the web apps removed `Host__Cors__AllowedOrigins__0`.
 
 ## 8. Migrations and the running version
 
