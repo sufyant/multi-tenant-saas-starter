@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { expect, type Page } from "@playwright/test";
 import { Secret, TOTP } from "otpauth";
 import { deleteUser } from "./clerk-users";
@@ -15,8 +16,11 @@ export type PlatformUser = {
 
 export const userFile = "playwright/.clerk/platform-user.json";
 
-export const saveUser = (user: PlatformUser) =>
+// The folder exists only after Playwright's first storageState, so the first save makes it.
+export function saveUser(user: PlatformUser): void {
+  mkdirSync(dirname(userFile), { recursive: true });
   writeFileSync(userFile, JSON.stringify(user));
+}
 
 export const readUser = (): PlatformUser | undefined =>
   existsSync(userFile)
