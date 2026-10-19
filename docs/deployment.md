@@ -346,7 +346,8 @@ Rules:
 
 - Change a setting of a service in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
-- No service but `postgres` has a `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of each deployed service going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). It is not known whether such an apply removes the image. So after the first deploy, do not apply. Add settings with the procedure below. One exception: a plan that adds a service. Then apply, and start a deploy at once (rerun the latest Delivery run on `main`), so `deploy.yml` sets each image again by digest. The maintainer chose this when the web apps were added (section 13). The deployed services may have no image between the apply and the deploy.
+- No service but `postgres` has a `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of each deployed service going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). It is not known whether such an apply removes the image. So after the first deploy, do not apply. Add settings with the procedure below. One exception: a plan that adds a service. The maintainer chose it for the web apps, in staging only (section 13, "Add the web apps to a running environment"): apply only a plan that shows exactly the expected lines, then rerun the last successful Delivery run of `main` at once, so `deploy.yml` sets the API's image again by digest.
+- What that apply did to the image of `api-web` and `api-worker` is recorded here, with the date and the Railway CLI version: *not recorded yet* (removed or kept). The maintainer writes it after step 3 of section 13. Production waits for this record. The first apply to production after it goes live is a decision for the maintainer.
 - The first apply of a new environment is safe (step 6 of section 4). The services have no image yet, so the plan shows no change to `source`.
 - A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 3 of section 4).
 - For most keys, an empty value stops the API at start, and the API names the key. Railway then marks the deployment as failed.
@@ -586,35 +587,47 @@ A later plan of `.railway/railway.ts` may show a custom domain going away, as it
 
 ### Add the web apps to a running environment
 
-Staging runs the API already. Do these steps in this order, once for `staging`. Each step is manual because it sets a value that stays out of the repository, or because only the maintainer may run it (the root `AGENTS.md`, "Repository settings"). `<environment>` is `staging`.
+Staging runs the API already. Do these steps in this order, once, for `staging` only. Production waits (section 7). Each step is manual because it sets a value that stays out of the repository, or because only the maintainer may run it (the root `AGENTS.md`, "Repository settings").
 
-1. **Set the shared variables.** In the Railway dashboard, Shared Variables of `<environment>`: add `CLERK_PUBLISHABLE_KEY`, and change the values of `Authentication__Clerk__AuthorizedParties__0`, `Authentication__Clerk__AuthorizedParties__1` and `ControlPlane__Invitations__AcceptUrl` (section 13, "The API's settings for the web apps"). Manual: values never go into the repository. The running API reads the new values only at its next deploy.
-2. **Switch the staging deploy off.** Manual: a repository variable.
+Before step 1, set the shared variables in the Railway dashboard, Shared Variables of `staging`: add `CLERK_PUBLISHABLE_KEY`, and change the values of `Authentication__Clerk__AuthorizedParties__0`, `Authentication__Clerk__AuthorizedParties__1` and `ControlPlane__Invitations__AcceptUrl` (section 13, "The API's settings for the web apps"). Why first: a reference to a shared variable that does not exist gives an empty value (section 7). Manual: values never go into the repository. The running API reads the new values only at its next deploy.
 
-   ```bash
-   gh variable set DEPLOY_STAGING --body false
-   ```
-
-   Why: the merge would deploy to `web` and `platform`, which do not exist yet, and the run would fail.
-3. **Merge the pull request.** Delivery publishes the three images. `deploy-staging` is skipped.
-4. **Make the GHCR packages `web` and `platform` public.** `docs/github-settings.md`, section 5.4. Manual: the visibility is a setting on the package's page, and a public package cannot become private again. Railway pulls the images without credentials.
-5. **Set the GitHub environment variables** `API_URL`, `WEB_URL` and `PLATFORM_URL` (section 13, "Custom domains", the `gh variable set` commands). Manual: they hold the domains.
-6. **Apply the Railway settings.** On `main`, with the CLI linked to `<environment>`:
+1. **Read the plan.** On the pull request branch, with the CLI linked to `staging`:
 
    ```bash
    railway link
    pnpm railway:plan
    ```
 
-   The plan must show: create `web` and `platform`; for `api-web` and `api-worker`, "Delete variable" `Host__Cors__AllowedOrigins__0`, and `source.image` and `source.type` going to `null` (section 7). Nothing else. Any other line means that the file and Railway differ: stop and report it. Then:
+   Apply only if the plan shows exactly these lines: create `web` and `platform`; `source.image` and `source.type` of `api-web` and `api-worker` going to `null` (section 7); "Delete variable" `Host__Cors__AllowedOrigins__0` on `api-web` and `api-worker`. Any other line: stop, and report it. Manual: only the maintainer plans and applies (the root `AGENTS.md`).
+2. **Apply.**
 
    ```bash
    pnpm railway:apply
    ```
 
-   Manual: only the maintainer applies (the root `AGENTS.md`). The maintainer chose to apply and then deploy at once (section 7), so go on to step 7 and step 8 without a pause: the API services may have no image until step 8.
-7. **Add the custom domains and their DNS records** to `api-web`, `web` and `platform` (section 13, "Custom domains"). Manual: the domains and the DNS stay out of the repository. A domain verifies only after its `TXT` record resolves, which can take minutes.
-8. **Switch the staging deploy on and start the first deploy.**
+   Note the Railway CLI version (`railway --version`) and the date. Look at the image of `api-web` in the Railway dashboard: removed or kept.
+3. **Give the API its image back at once.** Rerun the last successful Delivery run of `main`, before the domains and the DNS wait. Its `deploy.yml` sets the API's image again by digest. Without the CORS variable, the API of `main` still starts, because `Host:Cors:AllowedOrigins` is optional there.
+
+   ```bash
+   gh run list --workflow Delivery --branch main --status success --limit 1
+   ```
+
+   ```bash
+   gh run rerun <run id>
+   ```
+
+   Then write what step 2 did to the image into section 7, with the date and the CLI version, in a pull request. Manual: the maintainer decides when a deploy starts.
+4. **Add the custom domains, their DNS records and the GitHub environment variables** for `api-web`, `web` and `platform` (section 13, "Custom domains"). Manual: the domains and the DNS stay out of the repository. A domain verifies only after its `TXT` record resolves, which can take minutes.
+5. **Switch the staging deploy off before the merge.**
+
+   ```bash
+   gh variable set DEPLOY_STAGING --body false
+   ```
+
+   Why: the merge pushes the images `web` and `platform` for the first time, and a new GHCR package is private. Railway pulls without credentials, so the deploy of the merge would fail on them.
+6. **Merge the pull request.** Delivery publishes the three images. `deploy-staging` is skipped.
+7. **Make the GHCR packages `web` and `platform` public** (`docs/github-settings.md`, section 5.4). Manual: the visibility is a setting on the package's page, and a public package cannot become private again.
+8. **Switch the staging deploy on and rerun the merge's Delivery run.** Its `deploy.yml` deploys all three images: it migrates, deploys the API, then `web` and `platform`, and smoke-tests the three.
 
    ```bash
    gh variable set DEPLOY_STAGING --body true
@@ -628,7 +641,7 @@ Staging runs the API already. Do these steps in this order, once for `staging`. 
    gh run rerun <run id>
    ```
 
-   Manual: a repository variable, and the maintainer decides when a deploy starts. `deploy.yml` migrates, deploys the API, then `web` and `platform`, and smoke-tests the three. The first deploy is green when the job "Deploy to staging" passes.
-9. **Delete the old shared variable.** After step 8 is green, in the Railway dashboard, Shared Variables of `<environment>`: delete `Host__Cors__AllowedOrigins__0`. No service references it after step 6 (section 7, "Remove a shared variable"). Manual: the dashboard holds the shared variables.
+   The first deploy is green when the job "Deploy to staging" passes.
+9. **Delete the old shared variable.** In the Railway dashboard, Shared Variables of `staging`: delete `Host__Cors__AllowedOrigins__0`. No service references it after step 2 (section 7, "Remove a shared variable"). Manual: the dashboard holds the shared variables.
 
 `pnpm clerk:apply` is not a step: `.clerk/config.json` does not change (section 13, "Clerk").
