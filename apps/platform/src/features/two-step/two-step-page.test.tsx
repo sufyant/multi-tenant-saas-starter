@@ -32,7 +32,12 @@ function fakeClerk({
       secret,
       uri: `otpauth://totp/Starter:admin?secret=${secret}`,
     })),
-    verifyTOTP: vi.fn(async () => ({ verified: true })),
+    verifyTOTP: vi.fn(
+      async (): Promise<{ verified: boolean; backupCodes?: string[] }> => ({
+        verified: true,
+        backupCodes,
+      }),
+    ),
     createBackupCode: vi.fn(async () => ({ codes: backupCodes })),
   };
   const session = {
@@ -98,6 +103,21 @@ describe("TwoStepPage", () => {
     expect(user.verifyTOTP).toHaveBeenCalledWith({ code: "123456" });
     const list = await screen.findByRole("list", { name: "Backup codes" });
     expect(list.querySelectorAll("li")).toHaveLength(10);
+    expect(user.createBackupCode).not.toHaveBeenCalled();
+  });
+
+  it("TwoStepPage_VerificationWithoutBackupCodes_AsksClerkForThem", async () => {
+    const { user } = fakeClerk();
+    user.verifyTOTP.mockResolvedValueOnce({ verified: true });
+    const person = userEvent.setup();
+    renderWithProviders(<TwoStepPage />);
+
+    await enrol(person);
+
+    expect(
+      await screen.findByRole("list", { name: "Backup codes" }),
+    ).toBeInTheDocument();
+    expect(user.createBackupCode).toHaveBeenCalledTimes(1);
   });
 
   it("TwoStepPage_WrongCodeAtEnrolment_SaysToWaitForANewOne", async () => {

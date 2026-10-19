@@ -56,10 +56,13 @@ export function TotpEnrol({
     event.preventDefault();
     setPending(true);
     try {
-      if (!verified.current) await user.verifyTOTP({ code });
+      // Clerk answers the verification with the ten codes when backup codes are on. Asking for new ones would need a
+      // reverification, because the account now has a second factor; so createBackupCode is only the fallback.
+      const totp = verified.current
+        ? undefined
+        : await user.verifyTOTP({ code });
       verified.current = true;
-      const backup = await user.createBackupCode();
-      onEnrolled(backup.codes);
+      onEnrolled(totp?.backupCodes ?? (await user.createBackupCode()).codes);
     } catch (reason) {
       setError(signInErrorKey(reason, "totp"));
       setPending(false);

@@ -46,6 +46,9 @@ setup(
     const codes = page
       .getByRole("list", { name: "Backup codes" })
       .getByRole("listitem");
+    // An error under the code names Clerk's answer in the report, where a missing list would say nothing.
+    await expect(codes.or(page.getByRole("alert"))).not.toHaveCount(0);
+    expect(await page.getByRole("alert").allInnerTexts()).toEqual([]);
     await expect(codes).toHaveCount(10);
     await expectAccessible(page);
     saveUser({ id, email, secret, backupCodes: await codes.allInnerTexts() });
