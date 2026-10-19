@@ -11,14 +11,18 @@ const day = 24 * 60 * 60 * 1000;
  */
 export const expiresSoonWithin = day;
 
-export type InvitationStatus = "invited" | "expiresSoon" | "expired";
+export type InvitationStatus =
+  | "invited"
+  | "expiresSoon"
+  | typeof InvitationResponseState.Expired;
 
 /** The status a row shows: Expired from the API's state, else Expires soon or Invited from the time left. */
 export function invitationStatus(
   invitation: Pick<InvitationResponse, "state" | "expiresAt">,
   now: Date,
 ): InvitationStatus {
-  if (invitation.state === InvitationResponseState.Expired) return "expired";
+  if (invitation.state === InvitationResponseState.Expired)
+    return InvitationResponseState.Expired;
   const left = new Date(invitation.expiresAt).getTime() - now.getTime();
   return left < expiresSoonWithin ? "expiresSoon" : "invited";
 }

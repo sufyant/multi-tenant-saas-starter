@@ -3,6 +3,7 @@
 import { MemberRole } from "@repo/api-client";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 
 /** The roles a viewer may give: Owner only from an Owner (K1). */
 export const rolesFor = (viewerIsOwner: boolean) =>
@@ -21,6 +22,7 @@ export function RoleChoice({
   onChange: (role: MemberRole) => void;
 }) {
   const t = useTranslations();
+  const id = useId();
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="sr-only">{t("members.role")}</legend>
@@ -38,11 +40,18 @@ export function RoleChoice({
             value={role}
             checked={role === value}
             onChange={() => onChange(role)}
+            aria-labelledby={`${id}-${role}-name`}
+            aria-describedby={`${id}-${role}`}
             className="mt-0.5 size-4 shrink-0 accent-primary"
           />
           <span className="flex flex-col">
-            <span className="font-medium">{t(`shell.roles.${role}`)}</span>
-            <span className="text-small text-muted-foreground">
+            <span id={`${id}-${role}-name`} className="font-medium">
+              {t(`shell.roles.${role}`)}
+            </span>
+            <span
+              id={`${id}-${role}`}
+              className="text-small text-muted-foreground"
+            >
               {t(`members.roleDescriptions.${role}`)}
             </span>
           </span>

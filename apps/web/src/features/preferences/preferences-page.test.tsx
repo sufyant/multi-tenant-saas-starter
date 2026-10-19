@@ -1,4 +1,4 @@
-import { Language } from "@repo/api-client";
+import { Language, MemberRole } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
@@ -6,7 +6,7 @@ import {
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { renderWithProviders } from "../../../test/render";
+import { renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { PreferencesPage } from "./preferences-page";
 
 const server = setupServer();
@@ -24,9 +24,9 @@ const me = getGetMeResponseMock({
 
 describe("PreferencesPage", () => {
   it("PreferencesPage_GetMe_ShowsNameEmailLanguageAndTimeZone", async () => {
-    server.use(getGetMeMockHandler(me));
+    server.use(getGetMeMockHandler(me), ...tenantAnswers(MemberRole.Member));
 
-    renderWithProviders(<PreferencesPage settingsBase="/northwind/settings" />);
+    renderInTenant(<PreferencesPage />);
 
     expect(await screen.findByText("Ayşe Yılmaz")).toBeInTheDocument();
     expect(screen.getByText("ayse@northwind.io")).toBeInTheDocument();
@@ -35,9 +35,12 @@ describe("PreferencesPage", () => {
   });
 
   it("PreferencesPage_NoTimeZone_SaysTheDevicesZone", async () => {
-    server.use(getGetMeMockHandler({ ...me, timeZone: null }));
+    server.use(
+      getGetMeMockHandler({ ...me, timeZone: null }),
+      ...tenantAnswers(MemberRole.Member),
+    );
 
-    renderWithProviders(<PreferencesPage settingsBase="/northwind/settings" />);
+    renderInTenant(<PreferencesPage />);
 
     expect(
       await screen.findByText("Not set: this device's time zone"),
@@ -45,12 +48,9 @@ describe("PreferencesPage", () => {
   });
 
   it("PreferencesPage_InArabic_ShowsArabicTexts", async () => {
-    server.use(getGetMeMockHandler(me));
+    server.use(getGetMeMockHandler(me), ...tenantAnswers(MemberRole.Member));
 
-    renderWithProviders(
-      <PreferencesPage settingsBase="/northwind/settings" />,
-      "ar",
-    );
+    renderInTenant(<PreferencesPage />, { locale: "ar" });
 
     expect(
       await screen.findByRole("heading", { name: "التفضيلات" }),

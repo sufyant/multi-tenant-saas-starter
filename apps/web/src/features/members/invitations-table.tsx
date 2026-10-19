@@ -2,6 +2,7 @@
 
 import {
   type InvitationResponse,
+  InvitationResponseState,
   type InviteMemberRequest,
   inviteMember,
   ListInvitationsSort,
@@ -43,7 +44,7 @@ const sorts = {
 const tones: Record<InvitationStatus, StatusTone> = {
   invited: "info",
   expiresSoon: "warning",
-  expired: "neutral",
+  [InvitationResponseState.Expired]: "neutral",
 };
 
 /**
@@ -151,7 +152,7 @@ export function InvitationsTable({
   ];
 
   const itemsFor = (invitation: InvitationResponse): RowMenuItem[] => {
-    const expired = statusOf(invitation) === "expired";
+    const expired = statusOf(invitation) === InvitationResponseState.Expired;
     const role = invitation.role.builtIn;
     const items: RowMenuItem[] = [];
     if (canInvite && role)
@@ -217,7 +218,7 @@ export function InvitationsTable({
       {revoking && (
         <RevokeInvitationDialog
           invitation={revoking}
-          expired={statusOf(revoking) === "expired"}
+          expired={statusOf(revoking) === InvitationResponseState.Expired}
           onClose={() => setRevoking(null)}
         />
       )}
