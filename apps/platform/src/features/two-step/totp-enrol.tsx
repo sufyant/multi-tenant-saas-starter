@@ -78,7 +78,7 @@ export function TotpEnrol({
       </div>
       <AuthCard>
         <form noValidate onSubmit={submit} className="flex flex-col gap-4">
-          <ol className="flex list-inside list-decimal flex-col gap-4 text-body">
+          <ol className="flex list-outside list-decimal flex-col gap-4 ps-5 text-body">
             <li>
               {t("twoStep.scan")}
               <div className="mt-3 flex flex-col gap-3">
@@ -102,7 +102,7 @@ export function TotpEnrol({
                     readOnly
                     value={groupsOfFour(totp?.secret ?? "")}
                     dir="ltr"
-                    className="min-w-0 flex-1 [&_input]:font-mono"
+                    className="min-w-0 flex-1 basis-64 [&_input]:font-mono"
                   />
                   <Button
                     type="button"
