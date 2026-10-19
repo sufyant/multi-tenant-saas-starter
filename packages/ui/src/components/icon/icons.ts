@@ -11,6 +11,7 @@ export {
   HistoryIcon,
   HouseIcon as HomeIcon,
   InfoIcon,
+  LoaderCircleIcon,
   LockIcon,
   LogOutIcon,
   type LucideIcon,

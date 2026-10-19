@@ -3,6 +3,7 @@
 import { type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
+import { Icon, LoaderCircleIcon } from "../icon";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -29,6 +30,8 @@ export type DialogProps = {
   /** The label of the type-to-confirm field: "Type northwind to confirm". */
   confirmLabel?: string;
   onConfirm?: () => void;
+  /** The action runs: the confirm button is busy and disabled until the server answers (F47). */
+  pending?: boolean;
   /** The element that opens the dialog. */
   trigger?: React.ReactElement;
   open?: boolean;
@@ -50,6 +53,7 @@ export function Dialog({
   confirmText,
   confirmLabel,
   onConfirm,
+  pending = false,
   trigger,
   open,
   onOpenChange,
@@ -108,8 +112,17 @@ export function Dialog({
           </AlertDialogCancel>
           <Button
             variant={tone === "destructive" ? "destructive" : "primary"}
-            disabled={blocked}
+            disabled={blocked || pending}
+            aria-busy={pending || undefined}
             onClick={onConfirm}
+            icon={
+              pending ? (
+                <Icon
+                  icon={LoaderCircleIcon}
+                  className="animate-spin motion-reduce:animate-none"
+                />
+              ) : undefined
+            }
           >
             {actionLabel}
           </Button>

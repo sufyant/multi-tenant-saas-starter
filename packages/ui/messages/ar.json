@@ -10,7 +10,9 @@
     "previous": "السابق",
     "next": "التالي",
     "page": "الصفحة {page} من {count}",
-    "goHome": "الذهاب إلى الرئيسية"
+    "goHome": "الذهاب إلى الرئيسية",
+    "updated": "آخر تحديث",
+    "reference": "المرجع {id} · {time}"
   },
   "theme": {
     "label": "المظهر",
