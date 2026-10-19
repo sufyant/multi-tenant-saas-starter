@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { useTenant } from "@/shared/tenant-context";
 import { nameOf } from "./person";
 import { problemOf } from "./problem";
-import { refreshMembers, refreshWhenTenantGone } from "./refresh";
+import { afterRefusal, refreshMembers } from "./refresh";
 import { useFailureText } from "./use-failure-text";
 
 /**
@@ -34,7 +34,7 @@ export function RemoveMemberDialog({
     mutationFn: () => removeMember(tenant.id, member.userId),
     onSuccess: () => refreshMembers(queryClient, tenant.id),
     onError: (error) => {
-      refreshWhenTenantGone(queryClient, tenant.id, error);
+      afterRefusal(queryClient, tenant.id, error);
       if (problemOf(error)?.code === ErrorCode.MemberNotFound)
         void refreshMembers(queryClient, tenant.id);
     },

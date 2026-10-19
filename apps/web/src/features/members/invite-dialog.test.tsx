@@ -1,4 +1,5 @@
 import {
+  ErrorCode,
   type InvitationResponse,
   InvitationResponseState,
   Language,
@@ -6,7 +7,7 @@ import {
 } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { HttpResponse, http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -145,7 +146,7 @@ describe("InviteDialog", () => {
     server.use(
       ...tenantAnswers(MemberRole.Owner),
       membersAnswer(),
-      inviteAnswer([() => problem(409, "member.exists")]),
+      inviteAnswer([() => problem(409, ErrorCode.MemberExists)]),
     );
 
     renderInTenant(<MembersPage />);
@@ -170,7 +171,7 @@ describe("InviteDialog", () => {
             {
               status: 400,
               title: "Invalid",
-              code: "request.validation_failed",
+              code: ErrorCode.RequestValidationFailed,
               traceId: "00-trace-01",
               errors: { email: ["email_invalid"] },
             },
@@ -214,13 +215,13 @@ describe("InviteDialog", () => {
   it.each([
     [
       429,
-      "invitation.daily_limit_reached",
+      ErrorCode.InvitationDailyLimitReached,
       "Daily limit reached",
       "Northwind Traders has sent the most invitations allowed in the last 24 hours. Try again later.",
     ],
     [
       403,
-      "invitation.owner_requires_owner",
+      ErrorCode.InvitationOwnerRequiresOwner,
       "Only an Owner can invite an Owner.",
       "Choose Admin or Member, or ask an Owner to send this invitation.",
     ],
@@ -274,7 +275,7 @@ describe("InviteDialog", () => {
     server.use(
       ...tenantAnswers(MemberRole.Owner),
       membersAnswer(),
-      inviteAnswer([() => problem(409, "member.exists")], calls),
+      inviteAnswer([() => problem(409, ErrorCode.MemberExists)], calls),
     );
 
     renderInTenant(<MembersPage />);
@@ -313,5 +314,74 @@ describe("InviteDialog", () => {
 
     await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls[1]?.key).not.toBe(calls[0]?.key);
+  });
+
+  it("Invite_EnterTwiceWhileSending_SendsOnce", async () => {
+    const calls: Call[] = [];
+    server.use(
+      // The answer takes a moment, so the second Enter comes while the first request runs.
+      http.post(`*/v1/tenants/${northwind.id}/invitations`, async () => {
+        await delay(200);
+      }),
+      ...tenantAnswers(MemberRole.Owner),
+      membersAnswer(),
+      inviteAnswer(
+        [() => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 })],
+        calls,
+      ),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await typeEmail(dialog, "khalid@northwind.io");
+    await userEvent.keyboard("{Enter}{Enter}");
+
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    expect(calls).toHaveLength(1);
+  });
+
+  it("IdempotencyKey_SendAgainAfterARefusal_GetsANewKey", async () => {
+    const calls: Call[] = [];
+    server.use(
+      ...tenantAnswers(MemberRole.Owner),
+      membersAnswer(),
+      inviteAnswer(
+        [() => problem(429, ErrorCode.InvitationDailyLimitReached)],
+        calls,
+      ),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await typeEmail(dialog, "khalid@northwind.io");
+    await send(dialog);
+    await within(dialog).findByRole("status");
+    await send(dialog);
+
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]?.key).not.toBe(calls[0]?.key);
+  });
+
+  it("Invite_SuspendedUser_ReadsGetMeAgain", async () => {
+    const reads: string[] = [];
+    server.use(
+      http.get("*/v1/me", () => {
+        reads.push("read");
+        return HttpResponse.json(meOf(MemberRole.Owner));
+      }),
+      ...tenantAnswers(MemberRole.Owner),
+      membersAnswer(),
+      inviteAnswer([() => problem(403, ErrorCode.UserSuspended)]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await typeEmail(dialog, "khalid@northwind.io");
+    const before = reads.length;
+    await send(dialog);
+
+    await waitFor(() => expect(reads.length).toBe(before + 1));
   });
 });

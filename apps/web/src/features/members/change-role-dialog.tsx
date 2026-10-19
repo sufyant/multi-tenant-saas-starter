@@ -15,11 +15,7 @@ import { useState } from "react";
 import { useTenant } from "@/shared/tenant-context";
 import { nameOf } from "./person";
 import { problemOf } from "./problem";
-import {
-  refreshMembers,
-  refreshTenant,
-  refreshWhenTenantGone,
-} from "./refresh";
+import { afterRefusal, refreshMembers, refreshTenant } from "./refresh";
 import { RoleChoice, rolesFor } from "./role-choice";
 import { useFailureText } from "./use-failure-text";
 
@@ -55,7 +51,7 @@ export function ChangeRoleDialog({
         self && refreshTenant(queryClient, tenant.id),
       ]),
     onError: (error) => {
-      refreshWhenTenantGone(queryClient, tenant.id, error);
+      afterRefusal(queryClient, tenant.id, error);
       if (problemOf(error)?.code === ErrorCode.MemberNotFound)
         void refreshMembers(queryClient, tenant.id);
     },

@@ -58,81 +58,102 @@ test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
 const members = `/${northwind.slug}/settings/members`;
 const shots: {
   name: string;
+  file: string;
   role: MemberRole;
   language: Language;
   scheme: "light" | "dark";
   width: number;
   height: number;
-  query?: string;
-  rail?: boolean;
+  query: string;
+  rail: boolean;
 }[] = [
   {
-    name: "members-owner-en-light-desktop",
+    name: "Members_OwnerEnglishLightDesktop",
+    file: "members-owner-en-light-desktop",
     role: MemberRole.Owner,
     language: Language.En,
     scheme: "light",
     width: 1440,
     height: 900,
+    query: "",
+    rail: false,
   },
   {
-    name: "members-owner-en-light-desktop-rail",
+    name: "Members_OwnerEnglishLightDesktopRailExpanded",
+    file: "members-owner-en-light-desktop-rail",
     role: MemberRole.Owner,
     language: Language.En,
     scheme: "light",
     width: 1440,
     height: 900,
     rail: true,
+    query: "",
   },
   {
-    name: "members-admin-en-dark-desktop",
+    name: "Members_AdminEnglishDarkDesktop",
+    file: "members-admin-en-dark-desktop",
     role: MemberRole.Admin,
     language: Language.En,
     scheme: "dark",
     width: 1440,
     height: 900,
+    query: "",
+    rail: false,
   },
   {
-    name: "members-member-tr-light-tablet",
+    name: "Members_MemberTurkishLightTablet",
+    file: "members-member-tr-light-tablet",
     role: MemberRole.Member,
     language: Language.Tr,
     scheme: "light",
     width: 834,
     height: 1112,
+    query: "",
+    rail: false,
   },
   {
-    name: "members-owner-ar-dark-desktop-rail",
+    name: "Members_OwnerArabicDarkDesktopRailExpanded",
+    file: "members-owner-ar-dark-desktop-rail",
     role: MemberRole.Owner,
     language: Language.Ar,
     scheme: "dark",
     width: 1440,
     height: 900,
     rail: true,
+    query: "",
   },
   {
-    name: "members-owner-ar-light-phone",
+    name: "Members_OwnerArabicLightPhone",
+    file: "members-owner-ar-light-phone",
     role: MemberRole.Owner,
     language: Language.Ar,
     scheme: "light",
     width: 390,
     height: 844,
+    query: "",
+    rail: false,
   },
   {
-    name: "invitations-owner-en-light-desktop",
+    name: "Invitations_OwnerEnglishLightDesktop",
+    file: "invitations-owner-en-light-desktop",
     role: MemberRole.Owner,
     language: Language.En,
     scheme: "light",
     width: 1440,
     height: 900,
     query: "?tab=invitations",
+    rail: false,
   },
   {
-    name: "invitations-owner-tr-dark-phone",
+    name: "Invitations_OwnerTurkishDarkPhone",
+    file: "invitations-owner-tr-dark-phone",
     role: MemberRole.Owner,
     language: Language.Tr,
     scheme: "dark",
     width: 390,
     height: 844,
     query: "?tab=invitations",
+    rail: false,
   },
 ];
 
@@ -142,16 +163,16 @@ for (const shot of shots) {
     await page.emulateMedia({ colorScheme: shot.scheme });
     await page.setViewportSize({ width: shot.width, height: shot.height });
     await context.addCookies([
-      { name: railCookieName, value: String(shot.rail === true), url: baseURL },
+      { name: railCookieName, value: String(shot.rail), url: baseURL },
     ]);
     await mockMembers(page, { role: shot.role, language: shot.language });
 
-    await page.goto(`${members}${shot.query ?? ""}`);
+    await page.goto(`${members}${shot.query}`);
     await page.getByRole("heading", { level: 1 }).waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
     await page.screenshot({
-      path: `${folder}/${shot.name}.png`,
+      path: `${folder}/${shot.file}.png`,
       fullPage: true,
     });
   });

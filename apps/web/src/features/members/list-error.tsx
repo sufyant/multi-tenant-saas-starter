@@ -1,9 +1,11 @@
 "use client";
 
+import { actionFor, ProblemDetailsError } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { formatUtc } from "@repo/ui/lib/format-date-time";
 import { useTranslations } from "next-intl";
+import { ProblemScreen } from "@/shared/problem-screen";
 import { problemOf, referenceOf } from "./problem";
 
 /**
@@ -24,6 +26,13 @@ export function ListError({
 }) {
   const t = useTranslations();
   const problem = problemOf(error);
+  // A 401 and a suspended user leave the list: sign-in, or the suspended screen (F4).
+  const action =
+    error instanceof ProblemDetailsError
+      ? actionFor(error.status, error.problem).kind
+      : null;
+  if (action === "sign-in" || action === "account-suspended")
+    return <ProblemScreen error={error} />;
   return (
     <EmptyState
       kind="error"

@@ -1,4 +1,4 @@
-import { MemberRole, Permission } from "@repo/api-client";
+import { ErrorCode, MemberRole, Permission } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -280,7 +280,7 @@ describe("MembersPage", () => {
     server.use(
       ...tenantAnswers(MemberRole.Owner),
       http.get(`*/v1/tenants/${northwind.id}/members`, () =>
-        problem(500, "server.error"),
+        problem(500, ErrorCode.ServerError),
       ),
     );
 
@@ -294,5 +294,23 @@ describe("MembersPage", () => {
     expect(
       within(alert).getByRole("button", { name: "Try again" }),
     ).toBeInTheDocument();
+  });
+
+  it("MembersPage_SuspendedUser_ShowsTheSuspendedScreen", async () => {
+    server.use(
+      ...tenantAnswers(MemberRole.Owner),
+      http.get(`*/v1/tenants/${northwind.id}/members`, () =>
+        problem(403, ErrorCode.UserSuspended),
+      ),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Your account is suspended" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Try again" }),
+    ).not.toBeInTheDocument();
   });
 });

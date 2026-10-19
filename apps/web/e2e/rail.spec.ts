@@ -60,4 +60,5 @@ test("Rail_Tablet_KeepsTheIconRailWithoutAToggle", async ({ page }) => {
   await expect(rail(page)).toBeVisible();
   await expect(toggle(page)).toBeHidden();
   expect(await widthOf(page)).toBe(56);
+  await expectAccessible(page);
 });

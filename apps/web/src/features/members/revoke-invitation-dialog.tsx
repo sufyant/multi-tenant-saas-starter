@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useTenant } from "@/shared/tenant-context";
 import { problemOf } from "./problem";
-import { refreshInvitations, refreshWhenTenantGone } from "./refresh";
+import { afterRefusal, refreshInvitations } from "./refresh";
 import { useFailureText } from "./use-failure-text";
 
 /**
@@ -39,7 +39,7 @@ export function RevokeInvitationDialog({
     mutationFn: () => revokeInvitation(tenant.id, invitation.id),
     onSuccess: () => refreshInvitations(queryClient, tenant.id),
     onError: (error) => {
-      refreshWhenTenantGone(queryClient, tenant.id, error);
+      afterRefusal(queryClient, tenant.id, error);
       const code = problemOf(error)?.code;
       if (
         code !== ErrorCode.InvitationNotPending &&

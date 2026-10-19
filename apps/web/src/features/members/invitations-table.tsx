@@ -25,7 +25,7 @@ import {
   invitationStatus,
 } from "./invitation-status";
 import { nameOf } from "./person";
-import { refreshInvitations, refreshWhenTenantGone } from "./refresh";
+import { afterRefusal, refreshInvitations } from "./refresh";
 import { RevokeInvitationDialog } from "./revoke-invitation-dialog";
 import { sortFrom, sortOf } from "./table-sort";
 import { useFailureText } from "./use-failure-text";
@@ -85,7 +85,7 @@ export function InvitationsTable({
       }),
     onSuccess: () => refreshInvitations(queryClient, tenant.id),
     onError: (error) => {
-      refreshWhenTenantGone(queryClient, tenant.id, error);
+      afterRefusal(queryClient, tenant.id, error);
       showToast({
         tone: "destructive",
         title: t("members.notSent"),

@@ -25,7 +25,7 @@ import type { z } from "zod";
 import { useTenant } from "@/shared/tenant-context";
 import { daysLeft } from "./invitation-status";
 import { problemOf } from "./problem";
-import { refreshInvitations, refreshWhenTenantGone } from "./refresh";
+import { afterRefusal, refreshInvitations } from "./refresh";
 import { rolesFor } from "./role-choice";
 import { useFailureText } from "./use-failure-text";
 import { useIntentKey } from "./use-intent-key";
@@ -75,8 +75,15 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
     }) => inviteMember(tenant.id, invitation, { "Idempotency-Key": key }),
     onSuccess: () => refreshInvitations(queryClient, tenant.id),
     onError: (error) => {
-      refreshWhenTenantGone(queryClient, tenant.id, error);
+      afterRefusal(queryClient, tenant.id, error);
       if (!(error instanceof ProblemDetailsError)) return;
+      // The API saved this answer under the key (I6): sending the same intent later needs a new key to run again. A request
+      // still running (409 idempotency.key_in_progress) and a server failure (5xx, nothing saved) keep the key.
+      if (
+        error.status < 500 &&
+        error.problem?.code !== ErrorCode.IdempotencyKeyInProgress
+      )
+        renew();
       const action = actionFor(error.status, error.problem);
       if (action.kind === "field-errors")
         for (const [field, [code]] of Object.entries(action.fields))
@@ -111,23 +118,26 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   })();
 
   const emailError = form.formState.errors.email?.message;
-  const submit = form.handleSubmit((invitation) =>
-    invite.mutate(
-      { invitation, key },
-      {
-        onSuccess: (sent) => {
-          renew();
-          onClose();
-          showToast({
-            title: t("members.sent"),
-            description: t("members.sentText", {
-              email: sent.email,
-              days: daysLeft(sent.expiresAt, new Date()),
-            }),
-          });
+  // The button is disabled while the request runs; Enter in the email field is held back the same way (F47).
+  const submit = form.handleSubmit(
+    (invitation) =>
+      invite.isPending ||
+      invite.mutate(
+        { invitation, key },
+        {
+          onSuccess: (sent) => {
+            renew();
+            onClose();
+            showToast({
+              title: t("members.sent"),
+              description: t("members.sentText", {
+                email: sent.email,
+                days: daysLeft(sent.expiresAt, new Date()),
+              }),
+            });
+          },
         },
-      },
-    ),
+      ),
   );
 
   return (
@@ -158,6 +168,12 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
               : emailError
           }
           {...form.register("email")}
+          onKeyDown={(event) => {
+            // The Comboboxes are fields too, so the browser does not send the form on Enter; the email field does.
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            void submit();
+          }}
         />
         <Combobox
           label={t("members.role")}

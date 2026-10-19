@@ -1,4 +1,4 @@
-import { MemberRole } from "@repo/api-client";
+import { ErrorCode, MemberRole } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -71,25 +71,25 @@ describe("RemoveMemberDialog", () => {
   it.each([
     [
       409,
-      "member.last_owner",
+      ErrorCode.MemberLastOwner,
       "Northwind Traders needs at least one Owner.",
       "Make someone else an Owner first, then remove this member.",
     ],
     [
       403,
-      "member.owner_requires_owner",
+      ErrorCode.MemberOwnerRequiresOwner,
       "Only an Owner can remove an Owner.",
       "Ask an Owner of Northwind Traders.",
     ],
     [
       404,
-      "member.not_found",
+      ErrorCode.MemberNotFound,
       "John Byrne is no longer a member.",
       "Someone removed them already. The list has been refreshed.",
     ],
     [
       403,
-      "member.cannot_remove_self",
+      ErrorCode.MemberCannotRemoveSelf,
       "Couldn’t remove John Byrne",
       "You cannot remove yourself.",
     ],

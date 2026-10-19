@@ -1,12 +1,14 @@
 import {
+  actionFor,
   ErrorCode,
+  getGetMeQueryKey,
   getGetMyTenantQueryKey,
   getListInvitationsQueryKey,
   getListMembersQueryKey,
   getListMyTenantsQueryKey,
+  ProblemDetailsError,
 } from "@repo/api-client";
 import type { QueryClient } from "@tanstack/react-query";
-import { problemOf } from "./problem";
 
 // After a change the screen waits for the server and then reads again (F47): it invalidates the lists by their generated keys.
 // No optimistic update: the API owns the Owner rules (K1).
@@ -37,12 +39,21 @@ const tenantGone = new Set<string>([
   ErrorCode.TenantNotFound,
 ]);
 
-/** The organisation is suspended, closed or no longer the caller's: the tenant layout reads it again and shows its page. */
-export function refreshWhenTenantGone(
+/**
+ * What a refused command means beyond its dialog (F4): a 401 goes to sign-in; a suspended user reads GetMe again, and the shell
+ * shows the suspended screen; an organisation that is suspended, closed or no longer the caller's is read again, and the tenant
+ * layout shows its page.
+ */
+export function afterRefusal(
   queryClient: QueryClient,
   tenantId: string,
   error: unknown,
 ): void {
-  const code = problemOf(error)?.code;
-  if (code && tenantGone.has(code)) void refreshTenant(queryClient, tenantId);
+  if (!(error instanceof ProblemDetailsError)) return;
+  const action = actionFor(error.status, error.problem);
+  if (action.kind === "sign-in") window.location.assign("/sign-in");
+  if (action.kind === "account-suspended")
+    void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+  if (error.problem && tenantGone.has(error.problem.code))
+    void refreshTenant(queryClient, tenantId);
 }

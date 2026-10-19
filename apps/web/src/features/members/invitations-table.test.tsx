@@ -1,4 +1,5 @@
 import {
+  ErrorCode,
   type InvitationResponse,
   InvitationResponseState,
   MemberRole,
@@ -198,7 +199,7 @@ describe("InvitationsTable", () => {
       ...tenantAnswers(MemberRole.Owner),
       listAnswer(),
       http.post(`*/v1/tenants/${northwind.id}/invitations`, () =>
-        problem(409, "member.exists"),
+        problem(409, ErrorCode.MemberExists),
       ),
     );
 
@@ -281,7 +282,7 @@ describe("InvitationsTable", () => {
       ...tenantAnswers(MemberRole.Owner),
       listAnswer(undefined, requests),
       http.delete(`*/v1/tenants/${northwind.id}/invitations/${ali.id}`, () =>
-        problem(409, "invitation.not_pending"),
+        problem(409, ErrorCode.InvitationNotPending),
       ),
     );
 
@@ -338,5 +339,35 @@ describe("InvitationsTable", () => {
         sort: "-expiresAt",
       },
     ]);
+  });
+
+  it("Invitations_RevokeAGoneOne_SaysItNoLongerExistsAndRefreshes", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(MemberRole.Owner),
+      listAnswer(undefined, requests),
+      http.delete(`*/v1/tenants/${northwind.id}/invitations/${ali.id}`, () =>
+        problem(404, ErrorCode.InvitationNotFound),
+      ),
+    );
+
+    renderInTenant(<MembersPage />, { url });
+    await pickFromRowMenu(
+      "Invitations",
+      "ali@northwind.io",
+      "Revoke invitation",
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Revoke invitation" }),
+    );
+
+    expect(
+      (await screen.findAllByText("That invitation no longer exists"))[0],
+    ).toBeInTheDocument();
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
   });
 });
