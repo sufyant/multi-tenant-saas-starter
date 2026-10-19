@@ -83,7 +83,7 @@ If a task needs a decision that `docs/frontend/ARCHITECTURE.md` does not cover, 
 - Branch from `main`: `feat/<name>`, `fix/<name>` or `docs/<name>`. Small commits: the test, then the change, then the documents. Open a pull request; do not merge it.
 - The pull request description is a report: what changed for each item, the red run of each new test, the test count before and after by package, every package installed or raised with its version, and every choice a reviewer could question.
 - Before you open the pull request, run the `architecture-reviewer` subagent and fix what it finds.
-- Screenshots are never committed. An agent saves them under `apps/web/test-results/screenshots`, which Git ignores, and names that folder in the pull request. The maintainer attaches them to the pull request.
+- Never commit a screenshot. Save screenshots under `apps/web/test-results/screenshots`. Git ignores this folder. Name the folder in the pull request. The maintainer attaches the screenshots to the pull request.
 
 ## How we test
 
