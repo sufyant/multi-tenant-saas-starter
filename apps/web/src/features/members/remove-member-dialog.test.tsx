@@ -16,7 +16,6 @@ import {
   john,
   membersAnswer,
   northwind,
-  pageTestTimeout,
   people,
   pickFromRowMenu,
   problem,
@@ -42,9 +41,7 @@ const openRemove = async () => {
   });
 };
 
-// Each test renders the whole page and drives it like a person: on CI, beside the builds, one takes up to 8 times as long
-// as here, and the first of a file also pays the warm-up. The test waits longer; it never retries.
-describe("RemoveMemberDialog", { timeout: pageTestTimeout }, () => {
+describe("RemoveMemberDialog", () => {
   it("RemoveMember_Success_ClosesToastsAndRefreshesTheList", async () => {
     const requests: URLSearchParams[] = [];
     server.use(

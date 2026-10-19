@@ -20,7 +20,6 @@ import {
 import {
   ayse,
   northwind,
-  pageTestTimeout,
   pickFromRowMenu,
   problem,
   renderInTenant,
@@ -86,9 +85,7 @@ const rowOf = async (email: string) =>
     ).findByText(email)
   ).closest("tr");
 
-// Each test renders the whole page and drives it like a person: on CI, beside the builds, one takes up to 8 times as long
-// as here, and the first of a file also pays the warm-up. The test waits longer; it never retries.
-describe("InvitationsTable", { timeout: pageTestTimeout }, () => {
+describe("InvitationsTable", () => {
   it("Invitations_Statuses_InvitedExpiresSoonAndExpired", async () => {
     server.use(...tenantAnswers(MemberRole.Owner), listAnswer());
 

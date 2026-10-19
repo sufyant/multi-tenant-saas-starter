@@ -17,7 +17,6 @@ import {
   john,
   membersAnswer,
   northwind,
-  pageTestTimeout,
   people,
   problem,
   renderInTenant,
@@ -50,9 +49,7 @@ const openMenu = async (name: string) => {
   );
 };
 
-// Each test renders the whole page and drives it like a person: on CI, beside the builds, one takes up to 8 times as long
-// as here, and the first of a file also pays the warm-up. The test waits longer; it never retries.
-describe("MembersPage", { timeout: pageTestTimeout }, () => {
+describe("MembersPage", () => {
   it("MembersPage_Owner_SeesInviteTabsAndEveryAction", async () => {
     server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
 
