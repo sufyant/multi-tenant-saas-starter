@@ -46,9 +46,11 @@ setup(
     const codes = page
       .getByRole("list", { name: "Backup codes" })
       .getByRole("listitem");
-    // An error under the code names Clerk's answer in the report, where a missing list would say nothing.
-    await expect(codes.or(page.getByRole("alert"))).not.toHaveCount(0);
-    expect(await page.getByRole("alert").allInnerTexts()).toEqual([]);
+    // An error under the code names Clerk's answer in the report, where a missing list would say nothing. Only the main
+    // region counts: Next.js keeps an empty alert of its own, the route announcer.
+    const errors = page.getByRole("main").getByRole("alert");
+    await expect(codes.or(errors)).not.toHaveCount(0);
+    expect(await errors.allInnerTexts()).toEqual([]);
     await expect(codes).toHaveCount(10);
     await expectAccessible(page);
     saveUser({ id, email, secret, backupCodes: await codes.allInnerTexts() });
