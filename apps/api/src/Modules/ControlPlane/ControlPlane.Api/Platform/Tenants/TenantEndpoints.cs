@@ -161,5 +161,5 @@ public static class TenantEndpoints
     private static TenantOwnerResponse ToResponse(TenantOwnerView owner) => new(owner.UserId, owner.FirstName, owner.LastName, owner.Email);
 
     private static OwnerInvitationResponse ToResponse(OwnerInvitationView invitation) =>
-        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfInvitation(invitation.State));
+        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfInvitation(invitation.State), invitation.Language);
 }

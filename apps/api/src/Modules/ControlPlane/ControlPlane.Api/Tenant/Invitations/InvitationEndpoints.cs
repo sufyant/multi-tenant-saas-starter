@@ -45,7 +45,8 @@ public static class InvitationEndpoints
         ToResponse(invitation.InvitedByName),
         invitation.CreatedAt,
         invitation.ExpiresAt,
-        ResponseStatus.OfInvitation(invitation.State));
+        ResponseStatus.OfInvitation(invitation.State),
+        invitation.Language);
 
     // The platform's user detail names the system admin who suspended a user in the same shape (N7g).
     internal static UserNameResponse ToResponse(UserNameView name) => new(name.FirstName, name.LastName, name.Deleted);

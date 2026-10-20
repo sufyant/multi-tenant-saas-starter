@@ -84,6 +84,9 @@ internal sealed class Tenant
     /// </summary>
     public InvitationStatus? OwnerInvitationStatus { get; private set; }
 
+    /// <summary>The language the latest Owner invitation keeps for its email (K8), while the tenant has no Owner.</summary>
+    public Language? OwnerInvitationLanguage { get; private set; }
+
     /// <summary>The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
@@ -297,7 +300,8 @@ internal sealed class Tenant
     {
         (MemberCount, OwnerCount, FirstOwnerId) = (summary.Members, summary.Owners, summary.FirstOwnerId);
         var invitation = summary.Owners == 0 ? summary.LatestOwnerInvitation : null;
-        (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus) = (invitation?.Email, invitation?.ExpiresAt, invitation?.Status);
+        (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage) =
+            (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language);
     }
 
     /// <summary>The state of the latest Owner invitation at this moment, while the tenant has no Owner; none otherwise.</summary>

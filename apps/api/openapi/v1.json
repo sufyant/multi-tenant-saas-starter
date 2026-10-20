@@ -4590,7 +4590,8 @@
           "invitedByName",
           "createdAt",
           "expiresAt",
-          "state"
+          "state",
+          "language"
         ],
         "type": "object",
         "properties": {
@@ -4621,9 +4622,12 @@
           },
           "state": {
             "$ref": "#/components/schemas/InvitationResponseState"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
           }
         },
-        "description": "A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one."
+        "description": "A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so a client that invites the\nsame person again can send it back."
       },
       "InvitationResponseState": {
         "enum": [
@@ -5170,7 +5174,8 @@
         "required": [
           "email",
           "expiresAt",
-          "state"
+          "state",
+          "language"
         ],
         "type": "object",
         "properties": {
@@ -5183,9 +5188,20 @@
           },
           "state": {
             "$ref": "#/components/schemas/InvitationResponseState"
+          },
+          "language": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Language"
+              }
+            ],
+            "description": "A language the web speaks, by its BCP 47 language tag."
           }
         },
-        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner."
+        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier\ninvitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of\nARCHITECTURE.md)."
       },
       "Permission": {
         "enum": [
