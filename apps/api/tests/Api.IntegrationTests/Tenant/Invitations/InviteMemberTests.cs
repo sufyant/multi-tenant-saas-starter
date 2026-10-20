@@ -60,7 +60,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         invitation.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state", "language"], ignoreOrder: true);
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
@@ -99,6 +99,35 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await _testData.InvitationLanguageOfAsync(email)).ShouldBe("ar");
         _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
+    }
+
+    // K8: the answer and the list carry the language the invitation keeps, not the inviter's, so a client that invites again can send it back.
+    [Fact]
+    public async Task InviteMember_WithALanguageOtherThanTheInviters_AnswersItAndListsIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: "en"), role: "Owner"));
+        var email = NewEmail();
+
+        var invited = await _api.WaitingForMessagesAsync(() => inviter.InviteMemberAsync(tenant.Id, email, language: "ar"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("language").GetString().ShouldBe("ar");
+        var page = await inviter.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/invitations", Cancellation);
+        page.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("email").GetString() == email)
+            .GetProperty("language").GetString().ShouldBe("ar");
+    }
+
+    [Fact]
+    public async Task InviteMember_WithoutALanguage_AnswersTheInvitersLanguage()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: "tr"), role: "Owner");
+
+        var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, NewEmail()));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("language").GetString().ShouldBe("tr");
     }
 
     // The language is one of the list, by its tag, as in PATCH /v1/me/preferences.

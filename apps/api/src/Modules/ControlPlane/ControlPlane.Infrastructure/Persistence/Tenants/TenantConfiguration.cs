@@ -28,5 +28,6 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         tenant.HasOne<User>().WithMany().HasForeignKey(t => t.FirstOwnerId).OnDelete(DeleteBehavior.Restrict);
         tenant.Property(t => t.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
         tenant.Property(t => t.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
+        tenant.Property(t => t.OwnerInvitationLanguage).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
     }
 }

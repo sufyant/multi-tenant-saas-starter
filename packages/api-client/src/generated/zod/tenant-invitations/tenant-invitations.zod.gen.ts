@@ -66,8 +66,13 @@ export const InviteMemberResponse = zod.object({
   Expired: 'expired',
   Accepted: 'accepted',
   Cancelled: 'cancelled',
-}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
-}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one.')
+}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.'),
+  "language": zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.')
+}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so a client that invites the\nsame person again can send it back.')
 
 export const ListInvitationsParams = zod.object({
   "tenantId": zod.uuid()
@@ -122,8 +127,13 @@ export const ListInvitationsResponse = zod.object({
   Expired: 'expired',
   Accepted: 'accepted',
   Cancelled: 'cancelled',
-}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.')
-}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one.')),
+}).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.'),
+  "language": zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.')
+}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so a client that invites the\nsame person again can send it back.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
