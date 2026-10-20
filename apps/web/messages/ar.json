@@ -107,7 +107,7 @@
   },
   "permissionDenied": {
     "title": "لا يمكنك فتح {page}",
-    "text": "دورك في {organisation} هو {role}. اطلب من مالك أو مسؤول في {organisation} إذا احتجت إلى شيء منها.",
+    "text": "دورك في {organisation} هو {role}. يمكن للمالكين والمسؤولين قراءة {page}. اطلب من أحدهم إذا احتجت إلى شيء منها.",
     "back": "العودة إلى نظرة عامة"
   },
   "members": {
@@ -220,5 +220,49 @@
     "status": "الحالة",
     "created": "تاريخ الإنشاء",
     "yourRole": "دورك"
+  },
+  "activity": {
+    "title": "النشاط",
+    "log": "سجل النشاط",
+    "today": "اليوم، {date}",
+    "yesterday": "أمس، {date}",
+    "platform": "المنصة",
+    "thePlatform": "المنصة",
+    "deletedUser": "مستخدم محذوف",
+    "unnamedUser": "مستخدم بلا اسم",
+    "older": "عرض النشاط الأقدم",
+    "loading": "جارٍ تحميل النشاط",
+    "empty": "لا يوجد نشاط بعد",
+    "emptyText": "تظهر هنا التغييرات على الأعضاء والدعوات والمؤسسة.",
+    "error": "تعذّر تحميل النشاط",
+    "olderError": "تعذّر تحميل النشاط الأقدم",
+    "restarted": "البدء من أحدث نشاط",
+    "operations": {
+      "invitation": {
+        "revoked": "<actor></actor> ألغى دعوة."
+      },
+      "member": {
+        "invited": "<actor></actor> دعا شخصًا بدور {role}.",
+        "joined": "<target></target> انضم إلى المؤسسة.",
+        "removed": "<actor></actor> أزال <target></target> ({role}) من المؤسسة.",
+        "role_changed": "<actor></actor> غيّر دور <target></target> من {oldRole} إلى {newRole}."
+      },
+      "tenant": {
+        "closed": "<actor></actor> أغلق هذه المؤسسة.",
+        "created": "<actor></actor> أنشأ هذه المؤسسة.",
+        "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
+        "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
+        "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
+        "reopened": "<actor></actor> أعاد فتح هذه المؤسسة.",
+        "suspended": "<actor></actor> أوقف هذه المؤسسة."
+      },
+      "user": {
+        "deleted": "<actor></actor> حذف حساب <target></target>.",
+        "preferences_changed": "<actor></actor> غيّر تفضيلاته.",
+        "reactivated": "<actor></actor> أعاد تفعيل حساب <target></target>.",
+        "renamed": "<actor></actor> غيّر اسم <target></target>.",
+        "suspended": "<actor></actor> أوقف حساب <target></target>."
+      }
+    }
   }
 }

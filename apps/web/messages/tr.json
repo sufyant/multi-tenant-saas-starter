@@ -107,7 +107,7 @@
   },
   "permissionDenied": {
     "title": "{page} sayfasını açamazsınız",
-    "text": "{organisation} kuruluşundaki rolünüz: {role}. Buradan bir şeye ihtiyacınız varsa {organisation} kuruluşunun bir Sahibine veya Yöneticisine başvurun.",
+    "text": "{organisation} kuruluşundaki rolünüz: {role}. {page} sayfasını Sahipler ve Yöneticiler okuyabilir. Buradan bir şeye ihtiyacınız varsa onlardan birine başvurun.",
     "back": "Genel bakışa dön"
   },
   "members": {
@@ -220,5 +220,49 @@
     "status": "Durum",
     "created": "Oluşturulma",
     "yourRole": "Rolünüz"
+  },
+  "activity": {
+    "title": "Etkinlik",
+    "log": "Etkinlik kaydı",
+    "today": "Bugün, {date}",
+    "yesterday": "Dün, {date}",
+    "platform": "Platform",
+    "thePlatform": "Platform",
+    "deletedUser": "Silinmiş kullanıcı",
+    "unnamedUser": "Adsız kullanıcı",
+    "older": "Daha eski etkinlikleri göster",
+    "loading": "Etkinlik yükleniyor",
+    "empty": "Henüz etkinlik yok",
+    "emptyText": "Üyeler, davetler ve kuruluştaki değişiklikler burada görünür.",
+    "error": "Etkinlik yüklenemedi",
+    "olderError": "Eski etkinlikler yüklenemedi",
+    "restarted": "En yeni etkinlikten başlanıyor",
+    "operations": {
+      "invitation": {
+        "revoked": "<actor></actor> bir daveti geri aldı."
+      },
+      "member": {
+        "invited": "<actor></actor> birini {role} rolüyle davet etti.",
+        "joined": "<target></target> kuruluşa katıldı.",
+        "removed": "<actor></actor>, <target></target> adlı üyeyi ({role}) kuruluştan çıkardı.",
+        "role_changed": "<actor></actor>, <target></target> adlı üyenin rolünü {oldRole} rolünden {newRole} rolüne değiştirdi."
+      },
+      "tenant": {
+        "closed": "<actor></actor> bu kuruluşu kapattı.",
+        "created": "<actor></actor> bu kuruluşu oluşturdu.",
+        "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
+        "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
+        "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",
+        "reopened": "<actor></actor> bu kuruluşu yeniden açtı.",
+        "suspended": "<actor></actor> bu kuruluşu askıya aldı."
+      },
+      "user": {
+        "deleted": "<actor></actor>, <target></target> adlı kullanıcının hesabını sildi.",
+        "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
+        "reactivated": "<actor></actor>, <target></target> adlı kullanıcının hesabını yeniden etkinleştirdi.",
+        "renamed": "<actor></actor>, <target></target> adlı kullanıcının adını değiştirdi.",
+        "suspended": "<actor></actor>, <target></target> adlı kullanıcının hesabını askıya aldı."
+      }
+    }
   }
 }

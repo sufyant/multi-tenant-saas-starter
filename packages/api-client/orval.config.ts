@@ -30,6 +30,11 @@ export default defineConfig({
           signal: true,
           version: 5,
         },
+        operations: {
+          ListAuditEntries: {
+            query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
+          },
+        },
       },
     },
   },

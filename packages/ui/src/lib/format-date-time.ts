@@ -55,6 +55,25 @@ export function formatTime(at: Instant, options: DateTimeOptions): string {
   return format(at, options, timePart);
 }
 
+/**
+ * The calendar day of an instant in the zone, as `2026-10-16`: the key that groups a list by day. It changes at the zone's
+ * midnight, not at UTC's. Null or absent zone: the browser's.
+ */
+export function calendarDay(
+  at: Instant,
+  options: Pick<DateTimeOptions, "timeZone">,
+): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    ...base({ locale: "en-US", ...options }),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(toDate(at));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 /** The same moment in UTC: `13:32 UTC`. The screen writes "UTC", never "Z" or "GMT". */
 export function formatUtc(at: Instant, options: DateTimeOptions): string {
   return `${format(at, { locale: options.locale, timeZone: "UTC" }, { ...timePart, hourCycle: "h23" })} UTC`;

@@ -6,11 +6,11 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { problemOf } from "@/shared/problem";
 import { useTenant } from "@/shared/tenant-context";
+import { useFailureText } from "@/shared/use-failure-text";
 import { nameOf } from "./person";
-import { problemOf } from "./problem";
 import { afterRefusal, refreshMembers } from "./refresh";
-import { useFailureText } from "./use-failure-text";
 
 /**
  * Remove a member (the RemoveMember and PhoneRemove boards): it names the person and the organisation. The API decides; each

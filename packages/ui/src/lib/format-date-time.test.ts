@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  calendarDay,
   formatDate,
   formatDateTime,
   formatRelative,
@@ -144,5 +145,21 @@ describe("format-date-time", () => {
     ["31Days", "16 أكتوبر 2026", "2026-11-16T13:32:00Z"],
   ])("FormatRelative_%sLaterInArSa_Says %s", (_, expected, now) => {
     expect(formatRelative(at, { ...riyadh, now })).toBe(expected);
+  });
+
+  // The calendar day changes at the zone's midnight: 22:30 UTC is still the 15th in Dublin (UTC+1) and already the 16th in Riyadh (UTC+3).
+  it.each([
+    ["Europe/Dublin", "2026-10-15T22:59:00Z", "2026-10-15"],
+    ["Europe/Dublin", "2026-10-15T23:00:00Z", "2026-10-16"],
+    ["Asia/Riyadh", "2026-10-15T20:59:00Z", "2026-10-15"],
+    ["Asia/Riyadh", "2026-10-15T21:00:00Z", "2026-10-16"],
+  ])("CalendarDay_%sAt%s_Is %s", (timeZone, instant, expected) => {
+    expect(calendarDay(instant, { timeZone })).toBe(expected);
+  });
+
+  it("CalendarDay_AnyZone_WritesYearMonthAndDayInWesternDigits", () => {
+    expect(calendarDay(at, { timeZone: "Asia/Riyadh" })).toMatch(
+      /^\d{4}-\d{2}-\d{2}$/,
+    );
   });
 });
