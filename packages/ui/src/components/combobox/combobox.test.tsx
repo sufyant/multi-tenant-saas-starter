@@ -79,4 +79,40 @@ describe("Combobox", () => {
       "العربية",
     );
   });
+
+  it("Combobox_Error_ReplacesTheHintAndMarksTheFieldInvalid", () => {
+    render(
+      <Combobox
+        {...props}
+        options={languages}
+        value="en-IE"
+        hint="Dates use this format."
+        error="Choose a language from the list."
+      />,
+    );
+
+    const field = screen.getByRole("combobox", { name: "Language and format" });
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(field).toHaveAccessibleDescription(
+      "Choose a language from the list.",
+    );
+    expect(
+      screen.queryByText("Dates use this format."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("Combobox_Hint_DescribesTheField", () => {
+    render(
+      <Combobox
+        {...props}
+        options={languages}
+        value="en-IE"
+        hint="Dates use this format."
+      />,
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: "Language and format" }),
+    ).toHaveAccessibleDescription("Dates use this format.");
+  });
 });

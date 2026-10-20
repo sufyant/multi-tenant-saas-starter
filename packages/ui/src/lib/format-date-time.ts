@@ -83,7 +83,7 @@ function zonePart(
   at: Instant,
   locale: string,
   timeZone: string | undefined,
-  style: "long" | "longOffset",
+  style: "long" | "longGeneric" | "longOffset",
 ): string {
   const parts = new Intl.DateTimeFormat(locale, {
     timeZone,
@@ -92,28 +92,60 @@ function zonePart(
   return parts.find((part) => part.type === "timeZoneName")?.value ?? "";
 }
 
+/** The IANA name of the browser's zone, such as `Europe/Dublin`. */
+export function browserTimeZone(): string {
+  return new Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/** The zone's offset from UTC at an instant: `UTC+1`, `UTC+5:30`, `UTC-4`. Null or absent zone: the browser's. */
+export function utcOffset(at: Instant, timeZone?: string | null): string {
+  // The offset is read in one fixed locale, whose format is GMT+01:00, and then written as UTC+1.
+  const offset = zonePart(
+    at,
+    "en-US",
+    timeZone ?? browserTimeZone(),
+    "longOffset",
+  ).replace(/^GMT/, "");
+  const [, sign = "+", hours = "0", minutes] =
+    /^([+-])?(\d{2})?(?::(\d{2}))?$/.exec(offset) ?? [];
+  return `UTC${sign}${Number(hours)}${minutes && minutes !== "00" ? `:${minutes}` : ""}`;
+}
+
+/** The browser's name for the zone in the language, or null when it has only an offset for it. */
+function namedZone(
+  at: Instant,
+  locale: string,
+  timeZone: string,
+  style: "long" | "longGeneric",
+): string | null {
+  const latin = `${locale}-u-nu-latn`;
+  const name = zonePart(at, latin, timeZone, style);
+  return name !== zonePart(at, latin, timeZone, "longOffset") ? name : null;
+}
+
+/** The city of an IANA zone: `America/Argentina/Buenos_Aires` gives `Buenos Aires`. */
+const cityOf = (timeZone: string) =>
+  (timeZone.split("/").pop() ?? timeZone).replaceAll("_", " ");
+
 /**
  * The zone's name in the user's language with its offset: `Irish Standard Time (UTC+1)`. When the browser has no name for the
  * zone, it gives only an offset; the city of the IANA zone takes its place: `Istanbul (UTC+3)`.
  */
 export function zoneLabel(at: Instant, options: DateTimeOptions): string {
-  const timeZone =
-    options.timeZone ??
-    new Intl.DateTimeFormat(options.locale).resolvedOptions().timeZone;
-  // The offset is read in one fixed locale, whose format is GMT+01:00, and then written as UTC+1.
-  const offset = zonePart(at, "en-US", timeZone, "longOffset").replace(
-    /^GMT/,
-    "",
-  );
-  const [, sign = "+", hours = "0", minutes] =
-    /^([+-])?(\d{2})?(?::(\d{2}))?$/.exec(offset) ?? [];
-  const utc = `UTC${sign}${Number(hours)}${minutes && minutes !== "00" ? `:${minutes}` : ""}`;
-  const latin = `${options.locale}-u-nu-latn`;
-  const name = zonePart(at, latin, timeZone, "long");
-  // The browser has no name for the zone when its long name is only the offset.
-  const named = name !== zonePart(at, latin, timeZone, "longOffset");
-  const city = (timeZone.split("/").pop() ?? timeZone).replaceAll("_", " ");
-  return `${named ? name : city} (${utc})`;
+  const timeZone = options.timeZone ?? browserTimeZone();
+  const name = namedZone(at, options.locale, timeZone, "long");
+  return `${name ?? cityOf(timeZone)} (${utcOffset(at, timeZone)})`;
+}
+
+/**
+ * A zone as a person looks for it in a list: its city and its generic name in the user's language, `Dublin, Ireland Time`. When
+ * the browser has no name for the zone, the city alone: `Istanbul`. The city is the IANA zone's, in English: the Intl API names no
+ * city.
+ */
+export function zoneName(at: Instant, options: DateTimeOptions): string {
+  const timeZone = options.timeZone ?? browserTimeZone();
+  const name = namedZone(at, options.locale, timeZone, "longGeneric");
+  return name ? `${cityOf(timeZone)}, ${name}` : cityOf(timeZone);
 }
 
 const minute = 60_000;

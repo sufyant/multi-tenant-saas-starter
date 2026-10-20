@@ -1,12 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  browserTimeZone,
   calendarDay,
   formatDate,
   formatDateTime,
   formatRelative,
   formatTime,
   formatUtc,
+  utcOffset,
   zoneLabel,
+  zoneName,
 } from "./format-date-time";
 
 const at = "2026-10-16T13:32:00Z";
@@ -160,6 +163,47 @@ describe("format-date-time", () => {
   it("CalendarDay_AnyZone_WritesYearMonthAndDayInWesternDigits", () => {
     expect(calendarDay(at, { timeZone: "Asia/Riyadh" })).toMatch(
       /^\d{4}-\d{2}-\d{2}$/,
+    );
+  });
+
+  it.each([
+    ["Europe/Dublin", "2026-10-16T13:32:00Z", "UTC+1"],
+    ["Europe/Dublin", "2026-12-03T09:14:00Z", "UTC+0"],
+    ["Asia/Kolkata", "2026-10-16T13:32:00Z", "UTC+5:30"],
+    ["America/New_York", "2026-10-16T13:32:00Z", "UTC-4"],
+  ])("UtcOffset_%sAt%s_Is %s", (timeZone, instant, expected) => {
+    expect(utcOffset(instant, timeZone)).toBe(expected);
+  });
+
+  it("ZoneName_DublinInEnIe_IsTheCityAndTheZonesName", () => {
+    expect(zoneName(at, dublin)).toMatch(/^Dublin, \S/);
+  });
+
+  it("ZoneName_CityWithUnderscores_WritesSpaces", () => {
+    expect(
+      zoneName(at, {
+        locale: "en-IE",
+        timeZone: "America/Argentina/Buenos_Aires",
+      }),
+    ).toMatch(/^Buenos Aires, \S/);
+  });
+
+  it("ZoneName_ArSa_WritesTheZonesNameWithWesternDigits", () => {
+    expect(zoneName(at, riyadh)).toMatch(/^Riyadh, \S/);
+    expect(zoneName(at, riyadh)).not.toMatch(/[٠-٩]/);
+  });
+
+  it("ZoneName_ZoneWithoutAName_IsTheCityOnly", () => {
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
+      UnnamedZoneFormat as never,
+    );
+
+    expect(zoneName(at, istanbul)).toBe("Istanbul");
+  });
+
+  it("BrowserTimeZone_AnyRuntime_IsAnIanaName", () => {
+    expect(browserTimeZone()).toBe(
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
     );
   });
 });

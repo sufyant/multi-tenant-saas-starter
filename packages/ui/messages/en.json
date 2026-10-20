@@ -33,7 +33,8 @@
     "email_invalid": "Enter an email address like name@company.com.",
     "format_invalid": "This format is not valid.",
     "choose_value": "Choose one of the options.",
-    "invalid": "This value is not valid."
+    "invalid": "This value is not valid.",
+    "time_zone_invalid": "Choose a time zone from the list."
   },
   "problems": {
     "noAccessTitle": "No access yet",

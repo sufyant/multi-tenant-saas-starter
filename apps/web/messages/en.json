@@ -47,15 +47,19 @@
   },
   "preferences": {
     "title": "Preferences",
-    "readOnly": "You can change your language and time zone in a later version.",
-    "name": "Name",
-    "email": "Email",
     "language": "Language",
     "timeZone": "Time zone",
-    "browserTimeZone": "Not set: this device's time zone",
-    "now": "Now",
-    "theme": "Theme",
-    "themeHint": "Saved on this device."
+    "text": "These follow you to every organisation and device.",
+    "languageHint": "Dates and numbers use this language’s format.",
+    "languageSearch": "Search languages",
+    "languageEmpty": "No language found",
+    "timeZoneHint": "Every time on screen is shown in this zone.",
+    "timeZoneSearch": "Search cities or zones",
+    "timeZoneEmpty": "No time zone found",
+    "thisDevice": "{zone} (this device)",
+    "save": "Save preferences",
+    "saved": "Preferences saved",
+    "notSaved": "Preferences not saved"
   },
   "signInPage": {
     "title": "Sign in to Starter"
