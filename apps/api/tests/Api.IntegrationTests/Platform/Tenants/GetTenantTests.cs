@@ -119,7 +119,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     }
 
     // Deployment, section 8: the version before this one writes the summary without the language while the migration has already run.
-    // The answer then has no language, never an error, until a later release fills it again (section 13).
+    // The answer then has no language, never an error, until the migrations are squashed before production (section 13).
     [Fact]
     public async Task GetTenant_ASummaryWithoutTheLanguage_AnswersTheInvitationWithoutIt()
     {

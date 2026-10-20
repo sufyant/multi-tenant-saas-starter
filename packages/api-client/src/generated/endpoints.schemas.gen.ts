@@ -574,7 +574,8 @@ export interface TenantOwnerResponse {
  * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
  * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
  * again can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier
- * invitation; a later release fills it again and makes it required (section 13 of ARCHITECTURE.md).
+ * invitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of
+ * ARCHITECTURE.md).
  */
 export interface OwnerInvitationResponse {
   email: string;
