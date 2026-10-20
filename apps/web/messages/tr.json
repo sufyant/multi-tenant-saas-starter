@@ -42,8 +42,8 @@
   },
   "overview": {
     "title": "Genel bakış",
-    "emptyTitle": "Burada henüz bir şey yok",
-    "emptyText": "Kuruluşunuzun işleri burada görünür."
+    "organisation": "Kuruluş",
+    "text": "Ürün bölümleri eklendikçe menüde görünür. Şu anda burada yapılacak başka bir şey yok."
   },
   "preferences": {
     "title": "Tercihler",

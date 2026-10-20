@@ -42,8 +42,8 @@
   },
   "overview": {
     "title": "Overview",
-    "emptyTitle": "Nothing here yet",
-    "emptyText": "The work of your organisation appears here."
+    "organisation": "Organisation",
+    "text": "Product sections appear in the rail as they are added. There is nothing else to do here right now."
   },
   "preferences": {
     "title": "Preferences",
