@@ -36,7 +36,8 @@
     "chooseText": "{count} kuruluşa üyesiniz.",
     "status": {
       "suspended": "Askıda",
-      "closed": "Kapalı"
+      "closed": "Kapalı",
+      "active": "Etkin"
     }
   },
   "overview": {
@@ -100,7 +101,9 @@
   },
   "settings": {
     "organisation": "Kuruluş",
-    "members": "Üyeler"
+    "members": "Üyeler",
+    "general": "Genel",
+    "activity": "Etkinlik"
   },
   "permissionDenied": {
     "title": "{page} sayfasını açamazsınız",
@@ -210,5 +213,12 @@
     "dailyLimitText": "{organisation} son 24 saatte izin verilen en fazla daveti gönderdi. Daha sonra yeniden deneyin.",
     "inviteOwner": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
     "inviteOwnerText": "Yönetici veya Üye seçin ya da bu daveti bir Sahibin göndermesini isteyin."
+  },
+  "general": {
+    "title": "Genel",
+    "name": "Ad",
+    "status": "Durum",
+    "created": "Oluşturulma",
+    "yourRole": "Rolünüz"
   }
 }

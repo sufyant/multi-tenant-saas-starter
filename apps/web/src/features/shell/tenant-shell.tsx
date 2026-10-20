@@ -46,8 +46,10 @@ export function TenantShell({
   const base = `/${tenant.slug}`;
   const sections = {
     settings: "shell.settings",
-    preferences: "shell.preferences",
+    general: "settings.general",
     members: "shell.members",
+    activity: "settings.activity",
+    preferences: "shell.preferences",
   } as const;
   const crumbs = [
     { label: tenant.name },

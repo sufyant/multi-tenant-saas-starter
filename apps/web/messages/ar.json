@@ -36,7 +36,8 @@
     "chooseText": "أنت عضو في {count, plural, zero {# مؤسسة} one {مؤسسة واحدة} two {مؤسستين} few {# مؤسسات} many {# مؤسسة} other {# مؤسسة}}.",
     "status": {
       "suspended": "موقوفة",
-      "closed": "مغلقة"
+      "closed": "مغلقة",
+      "active": "نشطة"
     }
   },
   "overview": {
@@ -100,7 +101,9 @@
   },
   "settings": {
     "organisation": "المؤسسة",
-    "members": "الأعضاء"
+    "members": "الأعضاء",
+    "general": "عام",
+    "activity": "النشاط"
   },
   "permissionDenied": {
     "title": "لا يمكنك فتح {page}",
@@ -210,5 +213,12 @@
     "dailyLimitText": "أرسلت {organisation} أكبر عدد مسموح من الدعوات خلال آخر 24 ساعة. حاول مرة أخرى لاحقًا.",
     "inviteOwner": "لا يدعو المالك إلا مالك.",
     "inviteOwnerText": "اختر مسؤولًا أو عضوًا، أو اطلب من مالك إرسال هذه الدعوة."
+  },
+  "general": {
+    "title": "عام",
+    "name": "الاسم",
+    "status": "الحالة",
+    "created": "تاريخ الإنشاء",
+    "yourRole": "دورك"
   }
 }

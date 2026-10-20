@@ -36,7 +36,8 @@
     "chooseText": "You belong to {count, plural, one {# organisation} other {# organisations}}.",
     "status": {
       "suspended": "Suspended",
-      "closed": "Closed"
+      "closed": "Closed",
+      "active": "Active"
     }
   },
   "overview": {
@@ -100,7 +101,9 @@
   },
   "settings": {
     "organisation": "Organisation",
-    "members": "Members"
+    "members": "Members",
+    "general": "General",
+    "activity": "Activity"
   },
   "permissionDenied": {
     "title": "You can’t open {page}",
@@ -210,5 +213,12 @@
     "dailyLimitText": "{organisation} has sent the most invitations allowed in the last 24 hours. Try again later.",
     "inviteOwner": "Only an Owner can invite an Owner.",
     "inviteOwnerText": "Choose Admin or Member, or ask an Owner to send this invitation."
+  },
+  "general": {
+    "title": "General",
+    "name": "Name",
+    "status": "Status",
+    "created": "Created",
+    "yourRole": "Your role"
   }
 }
