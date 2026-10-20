@@ -443,7 +443,8 @@ export interface UserNameResponse {
  * A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are
  * stored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once
  * its expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations
- * only, and inviting answers the new one.
+ * only, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so "Invite again" can send it
+ * back.
  */
 export interface InvitationResponse {
   id: string;
@@ -454,6 +455,7 @@ export interface InvitationResponse {
   createdAt: string;
   expiresAt: string;
   state: InvitationResponseState;
+  language: Language;
 }
 
 /**
@@ -570,12 +572,16 @@ export interface TenantOwnerResponse {
 /**
  * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
  * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
- * while the tenant has no Owner.
+ * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so "Invite the Owner again" can send
+ * it back. The language is null only when the previous version wrote the summary during a deploy; a later release fills it and makes it
+ * required (section 13 of ARCHITECTURE.md).
  */
 export interface OwnerInvitationResponse {
   email: string;
   expiresAt: string;
   state: InvitationResponseState;
+  /** A language the web speaks, by its BCP 47 language tag. */
+  language: null | Language;
 }
 
 /**
