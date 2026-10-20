@@ -80,7 +80,8 @@ export function TenantShell({
             id: "settings",
             label: t("shell.settings"),
             icon: SettingsIcon,
-            href: `${base}/settings/preferences`,
+            // General: the first SubNav item that every role can read (F5).
+            href: `${base}/settings/general`,
             placement: "bottom",
           },
         ]}

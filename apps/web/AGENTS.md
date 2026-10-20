@@ -17,4 +17,5 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - `/` is "Choose an organisation". With one organisation it redirects to `/[tenantSlug]`.
 - The breadcrumb starts with the organisation name. It opens the OrgMenu when the user has more than one organisation.
 - What the user may do comes from `GetMyTenant.permissions` (F5).
+- The rail's Settings item opens General, the first SubNav item that every role can read.
 - `/invitations/accept?code=...` is open in the proxy: it signs a new person up with Clerk's ticket, or sends a signed-out person to sign-in and back (F44).

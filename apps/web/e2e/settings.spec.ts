@@ -24,6 +24,22 @@ test("General_Owner_ShowsTheOrganisationReadOnly", async ({ page }) => {
   await expectAccessible(page);
 });
 
+test("Rail_Settings_OpensGeneral", async ({ page }) => {
+  await mockMembers(page, { role: MemberRole.Member });
+  await open(page, `/${northwind.slug}`);
+
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Settings" })
+    .click();
+
+  await expect(page).toHaveURL(`${settings}/general`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "General" }),
+  ).toBeVisible();
+  await expectAccessible(page);
+});
+
 test("Activity_TwoPages_ShowsOlderActivityThenNoButton", async ({ page }) => {
   await mockAuditLog(page);
   await open(page, `${settings}/activity`);
