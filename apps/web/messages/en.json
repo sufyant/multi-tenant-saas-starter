@@ -264,5 +264,13 @@
         "suspended": "<actor></actor> suspended the account of <target></target>."
       }
     }
+  },
+  "blocked": {
+    "suspendedTitle": "{organisation} is suspended",
+    "suspendedText": "You cannot open this organisation right now. Your data and your membership are kept. Contact your organisation’s Owner if you need to know more.",
+    "closedTitle": "{organisation} is closed",
+    "closedText": "This organisation was closed and cannot be opened. Your data is kept for now. Contact your organisation’s Owner if you need to know more.",
+    "organisation": "Organisation",
+    "chooseAnother": "Choose another organisation"
   }
 }

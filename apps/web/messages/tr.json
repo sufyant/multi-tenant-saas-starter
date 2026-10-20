@@ -264,5 +264,13 @@
         "suspended": "<actor></actor>, <target></target> adlı kullanıcının hesabını askıya aldı."
       }
     }
+  },
+  "blocked": {
+    "suspendedTitle": "{organisation} askıya alındı",
+    "suspendedText": "Bu kuruluşu şu anda açamazsınız. Verileriniz ve üyeliğiniz korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
+    "closedTitle": "{organisation} kapatıldı",
+    "closedText": "Bu kuruluş kapatıldı ve açılamaz. Verileriniz şimdilik korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
+    "organisation": "Kuruluş",
+    "chooseAnother": "Başka bir kuruluş seçin"
   }
 }

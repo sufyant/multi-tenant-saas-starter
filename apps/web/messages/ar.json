@@ -264,5 +264,13 @@
         "suspended": "<actor></actor> أوقف حساب <target></target>."
       }
     }
+  },
+  "blocked": {
+    "suspendedTitle": "{organisation} موقوفة",
+    "suspendedText": "لا يمكنك فتح هذه المؤسسة الآن. بياناتك وعضويتك محفوظة. تواصل مع مالك مؤسستك إذا احتجت إلى معرفة المزيد.",
+    "closedTitle": "{organisation} مغلقة",
+    "closedText": "أُغلقت هذه المؤسسة ولا يمكن فتحها. بياناتك محفوظة حاليًا. تواصل مع مالك مؤسستك إذا احتجت إلى معرفة المزيد.",
+    "organisation": "المؤسسة",
+    "chooseAnother": "اختر مؤسسة أخرى"
   }
 }
