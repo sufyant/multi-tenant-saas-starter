@@ -53,10 +53,17 @@ function blockedBy(error: unknown): BlockedStatus | null {
   return action.kind === "tenant-blocked" ? action.status : null;
 }
 
+/** True when the value is the id, or an array or object that holds it at any depth. */
+function holds(value: unknown, id: string): boolean {
+  if (value === id) return true;
+  if (typeof value !== "object" || value === null) return false;
+  return Object.values(value).some((item) => holds(item, id));
+}
+
 /**
  * Turns the route's slug into the tenant (F30), through the cached ListMyTenants: the API path keeps the id. A slug that is not
- * in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell. When any
- * call of a page answers that the organisation stopped, the list is read again, so the page follows (F47).
+ * in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell. When a call
+ * of this organisation answers that it stopped, the list is read again, so the page follows (F47).
  */
 export function TenantProvider({
   slug,
@@ -82,26 +89,29 @@ export function TenantProvider({
     }),
   );
 
+  const tenantId = tenant?.id;
   useEffect(() => {
-    const reread = (error: unknown) => {
-      if (blockedBy(error))
+    if (!tenantId) return;
+    // Only a call of this organisation counts: its query key or its command's variables hold the tenant's id.
+    const reread = (error: unknown, call: unknown) => {
+      if (blockedBy(error) && holds(call, tenantId))
         void queryClient.invalidateQueries({
           queryKey: getListMyTenantsQueryKey(),
         });
     };
     const queries = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === "updated" && event.action.type === "error")
-        reread(event.action.error);
+        reread(event.action.error, event.query.queryKey);
     });
     const commands = queryClient.getMutationCache().subscribe((event) => {
       if (event.type === "updated" && event.action.type === "error")
-        reread(event.action.error);
+        reread(event.action.error, event.mutation.state.variables);
     });
     return () => {
       queries();
       commands();
     };
-  }, [queryClient]);
+  }, [queryClient, tenantId]);
 
   const error = matching.error ?? all.error;
   if (error) return <ProblemScreen error={error} />;

@@ -99,21 +99,42 @@ function suspendedAfterTheFirstRead() {
 }
 
 /** A read of a page: the members, whose error the page leaves to its own list. */
-function MembersReader() {
+function MembersReader({ tenantId }: { tenantId?: string }) {
   const { tenant } = useTenant();
-  const members = useQuery(getListMembersQueryOptions(tenant.id));
-  return <p>{members.status}</p>;
+  const members = useQuery(getListMembersQueryOptions(tenantId ?? tenant.id));
+  return <p>Members {members.status}</p>;
+}
+
+/** ListMyTenants answers Northwind, active, and counts its reads. */
+function countsTheReads(reads: { count: number }) {
+  return http.get("*/v1/me/tenants", () => {
+    reads.count += 1;
+    return HttpResponse.json({
+      items: [northwind],
+      page: 1,
+      pageSize: 100,
+      total: 1,
+    });
+  });
 }
 
 /** A command of a page: remove a member, whose refusal the page leaves to its own dialog. */
 function RemoveButton() {
   const { tenant } = useTenant();
   const remove = useMutation({
-    mutationFn: () =>
-      removeMember(tenant.id, "0198f0a2-0000-7000-8000-000000000004"),
+    mutationFn: ({ tenantId, userId }: { tenantId: string; userId: string }) =>
+      removeMember(tenantId, userId),
   });
   return (
-    <button type="button" onClick={() => remove.mutate()}>
+    <button
+      type="button"
+      onClick={() =>
+        remove.mutate({
+          tenantId: tenant.id,
+          userId: "0198f0a2-0000-7000-8000-000000000004",
+        })
+      }
+    >
       Remove
     </button>
   );
@@ -299,5 +320,31 @@ describe("TenantProvider", () => {
         name: "Northwind Traders is suspended",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("TenantProvider_AnotherTenantsReadSaysSuspended_ReadsNoListAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countsTheReads(reads),
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantMembersRead],
+        }),
+      ),
+      http.get(`*/v1/tenants/${atlas.id}/members`, () =>
+        problem(403, ErrorCode.TenantSuspended),
+      ),
+    );
+
+    renderWithProviders(
+      <TenantProvider slug="northwind">
+        <MembersReader tenantId={atlas.id} />
+      </TenantProvider>,
+    );
+
+    expect(await screen.findByText("Members error")).toBeInTheDocument();
+    expect(reads.count).toBe(2);
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
   });
 });
