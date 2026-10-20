@@ -308,6 +308,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("owner_invitation_expires_at");
 
+                    b.Property<string>("OwnerInvitationLanguage")
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("owner_invitation_language");
+
                     b.Property<string>("OwnerInvitationStatus")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
