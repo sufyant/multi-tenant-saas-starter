@@ -72,7 +72,7 @@ export const InviteMemberResponse = zod.object({
   Tr: 'tr',
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.')
-}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so "Invite again" can send it\nback.')
+}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so a client that invites the\nsame person again can send it back.')
 
 export const ListInvitationsParams = zod.object({
   "tenantId": zod.uuid()
@@ -133,7 +133,7 @@ export const ListInvitationsResponse = zod.object({
   Tr: 'tr',
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.')
-}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so "Invite again" can send it\nback.')),
+}).describe('A pending invitation: the invited address, its role, the user id of the member who invited and their names as they are\nstored now, when it was created and expires, and its state at the moment of the request: `pending`, or `expired` once\nits expiry has passed. It is never `accepted` or `cancelled`, because the list holds pending invitations\nonly, and inviting answers the new one. It carries the language the invitation keeps for its email (K8), so a client that invites the\nsame person again can send it back.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()

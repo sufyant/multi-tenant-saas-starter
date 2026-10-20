@@ -168,7 +168,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe(kept);
     }
 
-    // K8: the answer and the tenant's detail carry the language the invitation keeps, so "Invite the Owner again" can send it back.
+    // K8: the answer and the tenant's detail carry the language the invitation keeps, so a client that invites the Owner again can send it back.
     [Fact]
     public async Task InviteOwner_InAnotherLanguage_AnswersItAndTheTenantDetailShowsIt()
     {

@@ -101,7 +101,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
     }
 
-    // K8: the answer and the list carry the language the invitation keeps, not the inviter's, so "Invite again" can send it back.
+    // K8: the answer and the list carry the language the invitation keeps, not the inviter's, so a client that invites again can send it back.
     [Fact]
     public async Task InviteMember_WithALanguageOtherThanTheInviters_AnswersItAndListsIt()
     {

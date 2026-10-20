@@ -194,7 +194,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         copies.ShouldBeEmpty();
     }
 
-    // K8: every invitation keeps the language of its email, so its answer always carries it. "Invite again" sends it back. The Owner
+    // K8: every invitation keeps the language of its email, so its answer always carries it, and a client that invites again can send it back. The Owner
     // invitation of the tenant summary may be null for one release (deployment, section 8; ARCHITECTURE.md, section 13).
     [Theory]
     [InlineData("InvitationResponse", false)]
