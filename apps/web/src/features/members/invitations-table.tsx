@@ -78,7 +78,7 @@ export function InvitationsTable({
   const canRevoke = can(Permission.TenantInvitationsDelete);
 
   const inviteAgain = useMutation({
-    // The email's language is left out: the API then uses the inviter's own (K8). InvitationResponse does not carry it.
+    // The new email keeps the row's language, not the viewer's (K8).
     mutationFn: (request: InviteMemberRequest) =>
       inviteMember(tenant.id, request, {
         "Idempotency-Key": crypto.randomUUID(),
@@ -162,7 +162,11 @@ export function InvitationsTable({
         reason: t("members.inviteRoleHintAdmin"),
         onSelect: () =>
           inviteAgain.mutate(
-            { email: invitation.email, role },
+            {
+              email: invitation.email,
+              role,
+              language: invitation.language,
+            },
             {
               onSuccess: (sent) =>
                 showToast({

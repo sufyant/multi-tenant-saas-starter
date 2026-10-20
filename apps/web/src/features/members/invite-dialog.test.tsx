@@ -43,6 +43,7 @@ const sent = (email: string): InvitationResponse => ({
   role: { builtIn: MemberRole.Member, name: MemberRole.Member },
   invitedBy: ayse.userId,
   invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
+  language: Language.En,
   createdAt: new Date().toISOString(),
   expiresAt: new Date(Date.now() + 7 * day).toISOString(),
   state: InvitationResponseState.Pending,

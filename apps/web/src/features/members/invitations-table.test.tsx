@@ -2,6 +2,7 @@ import {
   ErrorCode,
   type InvitationResponse,
   InvitationResponseState,
+  Language,
   MemberRole,
 } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -46,6 +47,7 @@ const invitation = (
   role: { builtIn: MemberRole.Member, name: MemberRole.Member },
   invitedBy: ayse.userId,
   invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
+  language: Language.En,
   createdAt: new Date().toISOString(),
   expiresAt: new Date(Date.now() + hoursLeft * hour).toISOString(),
   state:
@@ -54,9 +56,13 @@ const invitation = (
       : InvitationResponseState.Expired,
   ...overrides,
 });
-const ali = invitation("inv-01", "ali@northwind.io", 6 * 24);
+// The viewer reads the page in English; Ali's email went out in Arabic and Conor's in Turkish.
+const ali = invitation("inv-01", "ali@northwind.io", 6 * 24, {
+  language: Language.Ar,
+});
 const conor = invitation("inv-03", "conor@northwind.io", 20, {
   invitedByName: { firstName: null, lastName: null, deleted: true },
+  language: Language.Tr,
 });
 const padraig = invitation("inv-04", "padraig@northwind.io", -4 * 24);
 const owner = invitation("inv-05", "fatma@northwind.io", 3 * 24, {
@@ -190,6 +196,7 @@ describe("InvitationsTable", () => {
     expect(bodies[0]).toEqual({
       email: "ali@northwind.io",
       role: MemberRole.Member,
+      language: Language.Ar,
     });
     expect(screen.getAllByText("Invitation sent again")[0]).toBeInTheDocument();
   });
@@ -369,5 +376,31 @@ describe("InvitationsTable", () => {
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
+  });
+
+  it("Invitations_InviteAgainARowInArabic_SendsArabicNotTheViewersEnglish", async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      ...tenantAnswers(MemberRole.Owner),
+      listAnswer(),
+      http.post(
+        `*/v1/tenants/${northwind.id}/invitations`,
+        async ({ request }) => {
+          bodies.push(await request.json());
+          return HttpResponse.json(
+            invitation("inv-07", "ali@northwind.io", 7 * 24, {
+              language: Language.Ar,
+            }),
+            { status: 201 },
+          );
+        },
+      ),
+    );
+
+    renderInTenant(<MembersPage />, { url });
+    await pickFromRowMenu("Invitations", "ali@northwind.io", "Invite again");
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ language: Language.Ar });
   });
 });

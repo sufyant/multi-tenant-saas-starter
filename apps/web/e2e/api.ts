@@ -164,12 +164,14 @@ const invited = (
   email: string,
   days: number,
   role: MemberRole = MemberRole.Member,
+  language: Language = Language.En,
 ): InvitationResponse => ({
   id,
   email,
   role: { builtIn: role, name: role },
   invitedBy: me(Language.En).id,
   invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
+  language,
   createdAt: inDays(days - 7),
   expiresAt: inDays(days),
   state:
@@ -178,13 +180,21 @@ const invited = (
       : InvitationResponseState.Expired,
 });
 
+// The viewer reads in English by default; Ali's email went out in Arabic and Fatma's in Turkish.
 export const invitations: InvitationResponse[] = [
-  invited("0198f0a2-0000-7000-8000-0000000000a1", "ali@northwind.io", 6),
+  invited(
+    "0198f0a2-0000-7000-8000-0000000000a1",
+    "ali@northwind.io",
+    6,
+    MemberRole.Member,
+    Language.Ar,
+  ),
   invited(
     "0198f0a2-0000-7000-8000-0000000000a2",
     "fatma@northwind.io",
     3,
     MemberRole.Admin,
+    Language.Tr,
   ),
   invited("0198f0a2-0000-7000-8000-0000000000a3", "conor@northwind.io", 0.5),
   invited("0198f0a2-0000-7000-8000-0000000000a4", "padraig@northwind.io", -4),
@@ -266,6 +276,8 @@ export async function mockMembers(
         "0198f0a2-0000-7000-8000-0000000000a5",
         route.request().postDataJSON().email,
         7,
+        route.request().postDataJSON().role,
+        route.request().postDataJSON().language,
       ),
     }),
   );
