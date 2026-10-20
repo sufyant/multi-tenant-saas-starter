@@ -47,6 +47,24 @@ describe("Dialog", () => {
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 
+  it("Dialog_Pending_DisablesTheActionAndSaysItIsWorking", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <Dialog
+        defaultOpen
+        pending
+        title="Remove Ayşe Yılmaz?"
+        actionLabel="Remove member"
+        cancelLabel="Cancel"
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const action = await screen.findByRole("button", { name: "Remove member" });
+    expect(action).toBeDisabled();
+    expect(action).toHaveAttribute("aria-busy", "true");
+  });
+
   it("Dialog_InRtl_NamesTheObject", async () => {
     render(
       <div dir="rtl">

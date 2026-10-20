@@ -62,7 +62,7 @@ const answers = (total: number) => [
 
 const shell = () => (
   <TenantProvider slug="northwind">
-    <TenantShell>Content</TenantShell>
+    <TenantShell railExpanded={false}>Content</TenantShell>
   </TenantProvider>
 );
 

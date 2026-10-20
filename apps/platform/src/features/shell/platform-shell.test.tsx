@@ -51,7 +51,9 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
 
     expect(await screen.findByRole("banner")).toHaveTextContent(/^Platform/);
   });
@@ -63,7 +65,9 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
@@ -88,7 +92,9 @@ describe("PlatformShell", () => {
       getListTenantsMockHandler(),
     );
 
-    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
 
     expect(await screen.findByText("Content")).toBeInTheDocument();
   });
@@ -99,7 +105,9 @@ describe("PlatformShell", () => {
       getListTenantsMockHandler(),
     );
 
-    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
@@ -122,7 +130,9 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),

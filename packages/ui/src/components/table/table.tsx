@@ -113,6 +113,8 @@ export function Table<Row extends RowData>({
       id: column.key,
       accessorFn: (row: Row) => (row as Record<string, unknown>)[column.key],
       enableSorting: column.sortable ?? false,
+      // The first click sorts up, whatever the cell's value: a column of a rendered person has no string to guess from.
+      sortDescFirst: false,
     })) as ColumnDef<typeof features, Row>[],
     data: rows,
     getRowId: (row: Row) => String(row[rowKey]),

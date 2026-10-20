@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { railCookieOf } from "../../lib/rail-state";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
 import {
@@ -14,6 +15,8 @@ import {
   Icon,
   type LucideIcon,
   MenuIcon,
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
   SearchIcon,
 } from "../icon";
 import {
@@ -55,6 +58,10 @@ export type AppShellLabels = {
   commandEmpty: string;
   /** The drawer's close button. */
   close: string;
+  /** The rail's toggle on desktop. Its name stays; `aria-expanded` says the state. */
+  railToggle: string;
+  /** The keyboard hint of the toggle: "⌘B", or "Ctrl B" off Apple devices. */
+  railShortcut: string;
 };
 
 export type AppShellProps = {
@@ -75,15 +82,31 @@ export type AppShellProps = {
   linkComponent?: ElementType;
   /** Goes to a page chosen in the command palette. */
   onNavigate: (href: string) => void;
+  /** The rail shows its labels on desktop (F49). The app's layout reads it from the cookie on the server, so the first paint is right. */
+  railExpanded?: boolean;
   /** Previews only: render the phone drawer open. */
   drawerOpen?: boolean;
   children: ReactNode;
 };
 
+/** A key press in a text field belongs to the field, so ⌘B there never moves the rail. */
+const typing = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+
+/** Flips the rail and saves the choice: the one write of the cookie that each app's layout reads (shadcn/ui, "Sidebar"). */
+const flipRail = (open: boolean) => {
+  // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is missing from jsdom and from Safari before 18.4.
+  document.cookie = railCookieOf(!open);
+  return !open;
+};
+
 /**
  * The frame of every signed-in page (the AppShell README): an icon rail at the start edge, a top bar with the breadcrumb, search
- * (⌘K) and the user's avatar, and the content. Under bp-tablet the rail becomes a drawer from the start edge. The whole shell
- * mirrors in right-to-left.
+ * (⌘K) and the user's avatar, and the content. From bp-desktop the rail expands to show its labels: the toggle at its foot or ⌘B,
+ * saved in a cookie (F49). On a tablet it stays the icon rail; under bp-tablet it becomes a drawer from the start edge. The whole
+ * shell mirrors in right-to-left.
  */
 export function AppShell({
   nav,
@@ -98,23 +121,32 @@ export function AppShell({
   labels,
   linkComponent: Link = "a",
   onNavigate,
+  railExpanded = false,
   drawerOpen = false,
   children,
 }: AppShellProps) {
   const [drawer, setDrawer] = useState(drawerOpen);
   const [palette, setPalette] = useState(false);
+  const [expanded, setExpanded] = useState(railExpanded);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      if (!(event.metaKey || event.ctrlKey)) return;
+      const key = event.key.toLowerCase();
+      if (key === "k") {
         event.preventDefault();
         setPalette((open) => !open);
+      }
+      if (key === "b" && !typing(event.target)) {
+        event.preventDefault();
+        setExpanded(flipRail);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Expanded, the label shows from bp-desktop and the tooltip hides there; a tablet keeps the icon rail and its tooltips.
   const railItem = (item: NavItem) => (
     <Tooltip key={item.id}>
       <TooltipTrigger
@@ -123,13 +155,25 @@ export function AppShell({
         aria-current={item.id === current ? "page" : undefined}
         className={cn(
           "flex size-10 items-center justify-center rounded-md text-sidebar-foreground hover:bg-accent",
+          expanded &&
+            "desktop:h-10 desktop:w-full desktop:justify-start desktop:gap-3 desktop:px-3",
           item.id === current &&
             "bg-sidebar-accent text-sidebar-accent-foreground shadow-xs",
         )}
       >
         <Icon icon={item.icon} size={18} />
+        {expanded && (
+          <span className="hidden truncate text-body desktop:inline">
+            {item.label}
+          </span>
+        )}
       </TooltipTrigger>
-      <TooltipContent side="inline-end">{item.label}</TooltipContent>
+      <TooltipContent
+        side="inline-end"
+        className={cn(expanded && "desktop:hidden")}
+      >
+        {item.label}
+      </TooltipContent>
     </Tooltip>
   );
 
@@ -158,7 +202,11 @@ export function AppShell({
     <div className="flex min-h-dvh bg-background text-foreground">
       <nav
         aria-label={labels.navigation}
-        className="sticky top-0 hidden h-dvh w-rail-width shrink-0 flex-col items-center gap-1 border-e border-sidebar-border bg-sidebar py-2 tablet:flex"
+        className={cn(
+          "sticky top-0 hidden h-dvh w-rail-width shrink-0 flex-col items-center gap-1 border-e border-sidebar-border bg-sidebar py-2 tablet:flex",
+          expanded &&
+            "desktop:w-rail-expanded desktop:items-stretch desktop:px-2",
+        )}
       >
         <Link
           href={logoHref}
@@ -170,6 +218,34 @@ export function AppShell({
         {top.map(railItem)}
         <div className="mt-auto flex flex-col gap-1">
           {bottom.map(railItem)}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-label={labels.railToggle}
+                  onClick={() => setExpanded(flipRail)}
+                />
+              }
+              className={cn(
+                "hidden size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-accent desktop:flex",
+                expanded && "desktop:w-full desktop:justify-start desktop:px-3",
+              )}
+            >
+              <Icon
+                icon={expanded ? PanelLeftCloseIcon : PanelLeftOpenIcon}
+                size={18}
+                directional
+              />
+            </TooltipTrigger>
+            <TooltipContent side="inline-end">
+              {labels.railToggle}{" "}
+              <kbd dir="ltr" className="font-mono text-mono">
+                {labels.railShortcut}
+              </kbd>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </nav>
 

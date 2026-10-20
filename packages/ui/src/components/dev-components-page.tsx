@@ -268,6 +268,551 @@ function memberColumns(sample: Sample): TableColumn<Member>[] {
   ];
 }
 
+type GroupContext = {
+  sample: Sample;
+  language: keyof typeof samples;
+  theme: string;
+  setTheme: (theme: string) => void;
+};
+
+const avatar = (row: Member) => (
+  <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
+    {row.initials}
+  </span>
+);
+
+/** Each component of the design system, as one group of previews. A test renders one group at a time. */
+const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
+  [
+    {
+      name: "Button",
+      render: ({ sample }) => (
+        <>
+          <Button variant="primary" icon={<Icon icon={PlusIcon} />}>
+            {sample.invite}
+          </Button>
+          <Button>{sample.export}</Button>
+          <Button variant="ghost">{sample.cancel}</Button>
+          <Button variant="destructive">{sample.remove}</Button>
+          <Button variant="primary" disabled>
+            {sample.saving}
+          </Button>
+          <Button size="lg">Phone 44</Button>
+          <Button size="xl" variant="primary">
+            Tablet 48
+          </Button>
+        </>
+      ),
+    },
+    {
+      name: "Icon",
+      render: () => (
+        <>
+          {Object.entries({
+            HomeIcon,
+            UsersIcon,
+            BuildingIcon,
+            HistoryIcon,
+            SettingsIcon,
+            GlobeIcon,
+          }).map(([name, glyph]) => (
+            <Icon key={name} icon={glyph} size={18} label={name} />
+          ))}
+        </>
+      ),
+    },
+    {
+      name: "Input",
+      render: ({ sample }) => (
+        <>
+          <Input
+            className="w-72"
+            label={sample.email}
+            type="email"
+            placeholder="name@company.com"
+            hint={sample.emailHint}
+          />
+          <Input
+            className="w-72"
+            label={sample.email}
+            type="email"
+            defaultValue="ali@northwind"
+            error="Enter an email address like name@company.com."
+          />
+          <Input
+            className="w-72"
+            label="Slug"
+            defaultValue="northwind"
+            lockedReason="Used in links. It can't be changed."
+          />
+        </>
+      ),
+    },
+    {
+      name: "CodeInput",
+      render: () => (
+        <>
+          <CodeInput label="Code" value="" onChange={noop} />
+          <CodeInput
+            label="Code"
+            value="482190"
+            onChange={noop}
+            error="That code is not right. Check the email and try again."
+          />
+        </>
+      ),
+    },
+    {
+      name: "ProviderButtons",
+      render: () => (
+        <>
+          <div className="w-80">
+            <ProviderButtons
+              labels={{
+                oauth_google: "Continue with Google",
+                oauth_microsoft: "Continue with Microsoft",
+              }}
+              onSelect={noop}
+            />
+          </div>
+        </>
+      ),
+    },
+    {
+      name: "SignIn",
+      render: ({ sample, language }) => (
+        <>
+          <NextIntlClientProvider
+            locale={language}
+            messages={messages[language]}
+            timeZone={sample.timeZone}
+          >
+            <div className="flex w-[400px] max-w-full flex-col gap-6">
+              <EmailStep
+                title="Sign in to Starter"
+                onSubmit={noop}
+                onProvider={noop}
+              />
+            </div>
+            <div className="flex w-[400px] max-w-full flex-col gap-6">
+              <CodeStep
+                email="ayse@northwind.io"
+                onSubmit={noop}
+                onResend={noop}
+                onUseAnotherEmail={noop}
+                error="codeExpired"
+              />
+            </div>
+            <div className="flex w-[400px] max-w-full flex-col gap-6">
+              <SecondFactorStep
+                onSubmit={noop}
+                exit={<TextButton>Sign out</TextButton>}
+                error="locked"
+              />
+            </div>
+          </NextIntlClientProvider>
+        </>
+      ),
+    },
+    {
+      name: "Status",
+      render: ({ sample }) => (
+        <>
+          <Status tone="info">Provisioning</Status>
+          <Status tone="success">{sample.active}</Status>
+          <Status tone="warning">{sample.suspended}</Status>
+          <Status tone="neutral">Closed</Status>
+          <Status tone="destructive">Cancelled</Status>
+        </>
+      ),
+    },
+    {
+      name: "Tag",
+      render: ({ sample }) => (
+        <>
+          <span className="flex items-center gap-1.5">
+            Ayşe Yılmaz <Tag>{sample.you}</Tag>
+          </span>
+        </>
+      ),
+    },
+    {
+      name: "Time",
+      render: ({ sample }) => (
+        <>
+          <Time at={at} locale={sample.locale} timeZone={sample.timeZone} />
+          <Time
+            at={at}
+            now={now}
+            show="relative"
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+          />
+          <Time
+            at="2026-12-03T09:14:00Z"
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+          />
+        </>
+      ),
+    },
+    {
+      name: "Freshness",
+      render: ({ sample }) => (
+        <>
+          <Freshness
+            at={at}
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+            label={sample.updated}
+          />
+          <Freshness
+            at="2026-10-16T09:05:00Z"
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+            label={sample.updated}
+            stale
+          />
+        </>
+      ),
+    },
+    {
+      name: "Banner",
+      render: ({ sample }) => (
+        <>
+          <div className="w-full">
+            <Banner
+              tone="warning"
+              title={sample.bannerTitle}
+              action={<Button>Reactivate</Button>}
+            >
+              {sample.bannerText}
+            </Banner>
+          </div>
+          <div className="w-full">
+            <Banner tone="info" title="Shannon Studio is being set up.">
+              The first owner gets an invitation when setup finishes.
+            </Banner>
+          </div>
+        </>
+      ),
+    },
+    {
+      name: "EmptyState",
+      render: ({ sample }) => (
+        <>
+          <div className="w-full max-w-xl">
+            <EmptyState
+              title={sample.emptyTitle}
+              description={sample.emptyText}
+              action={
+                <Button variant="primary" icon={<Icon icon={PlusIcon} />}>
+                  {sample.invite}
+                </Button>
+              }
+            />
+          </div>
+          <div className="w-full max-w-xl">
+            <EmptyState
+              kind="error"
+              title="Couldn’t load members"
+              description="The connection dropped. Your data is safe. Try again."
+              code="Ref 7f3a9c · 13:32 UTC"
+              action={<Button>Try again</Button>}
+            />
+          </div>
+        </>
+      ),
+    },
+    {
+      name: "Skeleton",
+      render: () => (
+        <>
+          <div className="w-full max-w-xl">
+            <Skeleton rows={3} label="Loading members" />
+          </div>
+        </>
+      ),
+    },
+    {
+      name: "Tabs",
+      render: ({ sample }) => (
+        <>
+          <Tabs
+            label={sample.members}
+            current="members"
+            items={[
+              { id: "members", label: sample.members, count: 6 },
+              { id: "invitations", label: sample.invitations, count: 3 },
+            ]}
+          />
+        </>
+      ),
+    },
+    {
+      name: "SubNav",
+      render: ({ sample }) => (
+        <>
+          <SubNav
+            label={sample.settings}
+            current="members"
+            groups={[
+              {
+                label: "Organisation",
+                items: [
+                  { id: "general", label: "General", href: "#general" },
+                  { id: "members", label: sample.members, href: "#members" },
+                  { id: "activity", label: "Activity", href: "#activity" },
+                ],
+              },
+              {
+                label: sample.you,
+                items: [
+                  {
+                    id: "preferences",
+                    label: "Preferences",
+                    href: "#preferences",
+                  },
+                ],
+              },
+            ]}
+          />
+        </>
+      ),
+    },
+    {
+      name: "Table",
+      render: ({ sample }) => (
+        <>
+          <div className="w-full">
+            <Table
+              label={sample.members}
+              columns={memberColumns(sample)}
+              rows={members}
+              rowKey="id"
+              rowCount={members.length}
+              page={1}
+              pageSize={20}
+              pager={{
+                previous: "Previous",
+                next: "Next",
+                page: (page, count) => `Page ${page} of ${count}`,
+              }}
+              cardLead={avatar}
+              actionsLabel="Actions"
+              actions={(row) => (
+                <RowMenu
+                  label={`Actions for ${row.name}`}
+                  items={[{ label: "Change role" }]}
+                />
+              )}
+            />
+          </div>
+          <div className="w-[360px] rounded-lg border border-border p-3">
+            <Table
+              label={`${sample.members} (phone)`}
+              columns={memberColumns(sample)}
+              rows={members}
+              rowKey="id"
+              rowCount={members.length}
+              page={1}
+              pageSize={20}
+              pager={{
+                previous: "Previous",
+                next: "Next",
+                page: (page, count) => `Page ${page} of ${count}`,
+              }}
+              cardLead={avatar}
+              actions={(row) => (
+                <RowMenu
+                  label={`Actions for ${row.name}`}
+                  items={[{ label: "Change role" }]}
+                />
+              )}
+            />
+          </div>
+        </>
+      ),
+    },
+    {
+      name: "RowMenu",
+      render: () => (
+        <>
+          <RowMenu
+            label="Actions for Ayşe Yılmaz"
+            items={[
+              {
+                label: "Change role",
+                disabled: true,
+                reason: "An organisation needs at least one Owner.",
+              },
+              { separator: true },
+              {
+                label: "Remove from organisation",
+                tone: "destructive",
+                disabled: true,
+                reason: "An organisation needs at least one Owner.",
+              },
+            ]}
+          />
+        </>
+      ),
+    },
+    {
+      name: "Combobox",
+      render: () => (
+        <>
+          <Combobox
+            className="w-72"
+            label="Language and format"
+            value="en-IE"
+            options={languages}
+            searchPlaceholder="Search languages"
+            emptyLabel="No language found"
+          />
+          <Combobox
+            variant="compact"
+            icon={GlobeIcon}
+            label="Language"
+            value="en-IE"
+            options={[{ id: "en-IE", label: "English" }]}
+            searchPlaceholder="Search languages"
+            emptyLabel="No language found"
+          />
+        </>
+      ),
+    },
+    {
+      name: "Dialog",
+      render: ({ sample }) => (
+        <>
+          <Dialog
+            trigger={<Button variant="destructive">{sample.remove}</Button>}
+            tone="destructive"
+            title={sample.removeQuestion}
+            description={sample.removeDescription}
+            actionLabel={sample.remove}
+            cancelLabel={sample.cancel}
+          />
+          <Dialog
+            trigger={<Button>Close tenant</Button>}
+            tone="destructive"
+            title="Close Northwind Traders?"
+            description="Members cannot sign in. Pending invitations are cancelled. You can reopen it within 30 days."
+            confirmText="northwind"
+            confirmLabel="Type northwind to confirm"
+            actionLabel="Close tenant"
+            cancelLabel={sample.cancel}
+          />
+        </>
+      ),
+    },
+    {
+      name: "Toast",
+      render: ({ sample }) => (
+        <>
+          <Button
+            onClick={() =>
+              showToast({
+                title: sample.toast,
+                description: "ali@northwind.io has 7 days to accept.",
+              })
+            }
+          >
+            {sample.toast}
+          </Button>
+          <Button
+            onClick={() =>
+              showToast({
+                tone: "destructive",
+                title: "Couldn’t send the invitation",
+                description:
+                  "This tenant has sent 50 invitations today. Try again tomorrow.",
+              })
+            }
+          >
+            Couldn’t send
+          </Button>
+        </>
+      ),
+    },
+    {
+      name: "OrgMenu",
+      render: () => (
+        <>
+          <OrgMenu
+            name="Northwind Traders"
+            slug="northwind"
+            initials="N"
+            memberRole="Owner"
+            switchLabel="Switch organisation"
+            switchHref="#choose"
+          />
+        </>
+      ),
+    },
+    {
+      name: "UserMenu",
+      render: ({ sample, theme, setTheme }) => (
+        <>
+          <UserMenu
+            name="Ayşe Yılmaz"
+            email="ayse@northwind.io"
+            initials="AY"
+            label="Account"
+            languageName={
+              languages.find((option) => option.id === sample.locale)?.label ??
+              sample.locale
+            }
+            languageLabel="Language"
+            preferencesHref="#preferences"
+            theme={theme}
+            themes={[
+              { id: "light", label: "Light" },
+              { id: "dark", label: "Dark" },
+              { id: "system", label: "System" },
+            ]}
+            themeLabel="Theme"
+            onThemeChange={setTheme}
+            signOutLabel="Sign out"
+            onSignOut={() => {}}
+          />
+        </>
+      ),
+    },
+    {
+      name: "AppShell",
+      render: ({ sample }) => (
+        <>
+          <AppShellPreview sample={sample} />
+        </>
+      ),
+    },
+  ];
+
+/** The names of the groups, in the page's order. */
+export const devComponentGroups = groups.map((group) => group.name);
+
+/** One group of the page, in a language of the samples: what a test renders, so it never renders the whole page. */
+export function DevComponentGroup({
+  name,
+  language = Object.keys(samples)[0] as keyof typeof samples,
+}: {
+  name: string;
+  language?: keyof typeof samples;
+}) {
+  const { theme = "system", setTheme } = useTheme();
+  const group = groups.find((candidate) => candidate.name === name);
+  if (!group) throw new Error(`No group "${name}" on the dev page.`);
+  return (
+    <div lang={language} dir={samples[language].dir}>
+      <Section name={group.name}>
+        {group.render({ sample: samples[language], language, theme, setTheme })}
+      </Section>
+    </div>
+  );
+}
+
 export type DevComponentsPageProps = {
   /** The languages of the contract, from the generated `Language`: the page offers each one. */
   languages: readonly string[];
@@ -281,11 +826,6 @@ export function DevComponentsPage({
   );
   const { theme = "system", setTheme } = useTheme();
   const sample = samples[language];
-  const avatar = (row: Member) => (
-    <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
-      {row.initials}
-    </span>
-  );
 
   return (
     <div
@@ -323,479 +863,108 @@ export function DevComponentsPage({
         </fieldset>
       </header>
 
-      <Section name="Button">
-        <Button variant="primary" icon={<Icon icon={PlusIcon} />}>
-          {sample.invite}
-        </Button>
-        <Button>{sample.export}</Button>
-        <Button variant="ghost">{sample.cancel}</Button>
-        <Button variant="destructive">{sample.remove}</Button>
-        <Button variant="primary" disabled>
-          {sample.saving}
-        </Button>
-        <Button size="lg">Phone 44</Button>
-        <Button size="xl" variant="primary">
-          Tablet 48
-        </Button>
-      </Section>
-
-      <Section name="Icon">
-        {Object.entries({
-          HomeIcon,
-          UsersIcon,
-          BuildingIcon,
-          HistoryIcon,
-          SettingsIcon,
-          GlobeIcon,
-        }).map(([name, glyph]) => (
-          <Icon key={name} icon={glyph} size={18} label={name} />
-        ))}
-      </Section>
-
-      <Section name="Input">
-        <Input
-          className="w-72"
-          label={sample.email}
-          type="email"
-          placeholder="name@company.com"
-          hint={sample.emailHint}
-        />
-        <Input
-          className="w-72"
-          label={sample.email}
-          type="email"
-          defaultValue="ali@northwind"
-          error="Enter an email address like name@company.com."
-        />
-        <Input
-          className="w-72"
-          label="Slug"
-          defaultValue="northwind"
-          lockedReason="Used in links. It can't be changed."
-        />
-      </Section>
-
-      <Section name="CodeInput">
-        <CodeInput label="Code" value="" onChange={noop} />
-        <CodeInput
-          label="Code"
-          value="482190"
-          onChange={noop}
-          error="That code is not right. Check the email and try again."
-        />
-      </Section>
-
-      <Section name="ProviderButtons">
-        <div className="w-80">
-          <ProviderButtons
-            labels={{
-              oauth_google: "Continue with Google",
-              oauth_microsoft: "Continue with Microsoft",
-            }}
-            onSelect={noop}
-          />
-        </div>
-      </Section>
-
-      <NextIntlClientProvider
-        locale={language}
-        messages={messages[language]}
-        timeZone={sample.timeZone}
-      >
-        <Section name="SignIn">
-          <div className="flex w-[400px] max-w-full flex-col gap-6">
-            <EmailStep
-              title="Sign in to Starter"
-              onSubmit={noop}
-              onProvider={noop}
-            />
-          </div>
-          <div className="flex w-[400px] max-w-full flex-col gap-6">
-            <CodeStep
-              email="ayse@northwind.io"
-              onSubmit={noop}
-              onResend={noop}
-              onUseAnotherEmail={noop}
-              error="codeExpired"
-            />
-          </div>
-          <div className="flex w-[400px] max-w-full flex-col gap-6">
-            <SecondFactorStep
-              onSubmit={noop}
-              exit={<TextButton>Sign out</TextButton>}
-              error="locked"
-            />
-          </div>
+      {groups.map((group) => (
+        <Section key={group.name} name={group.name}>
+          {group.render({ sample, language, theme, setTheme })}
         </Section>
-      </NextIntlClientProvider>
-
-      <Section name="Status">
-        <Status tone="info">Provisioning</Status>
-        <Status tone="success">{sample.active}</Status>
-        <Status tone="warning">{sample.suspended}</Status>
-        <Status tone="neutral">Closed</Status>
-        <Status tone="destructive">Cancelled</Status>
-      </Section>
-
-      <Section name="Tag">
-        <span className="flex items-center gap-1.5">
-          Ayşe Yılmaz <Tag>{sample.you}</Tag>
-        </span>
-      </Section>
-
-      <Section name="Time">
-        <Time at={at} locale={sample.locale} timeZone={sample.timeZone} />
-        <Time
-          at={at}
-          now={now}
-          show="relative"
-          locale={sample.locale}
-          timeZone={sample.timeZone}
-        />
-        <Time
-          at="2026-12-03T09:14:00Z"
-          locale={sample.locale}
-          timeZone={sample.timeZone}
-        />
-      </Section>
-
-      <Section name="Freshness">
-        <Freshness
-          at={at}
-          locale={sample.locale}
-          timeZone={sample.timeZone}
-          label={sample.updated}
-        />
-        <Freshness
-          at="2026-10-16T09:05:00Z"
-          locale={sample.locale}
-          timeZone={sample.timeZone}
-          label={sample.updated}
-          stale
-        />
-      </Section>
-
-      <Section name="Banner">
-        <div className="w-full">
-          <Banner
-            tone="warning"
-            title={sample.bannerTitle}
-            action={<Button>Reactivate</Button>}
-          >
-            {sample.bannerText}
-          </Banner>
-        </div>
-        <div className="w-full">
-          <Banner tone="info" title="Shannon Studio is being set up.">
-            The first owner gets an invitation when setup finishes.
-          </Banner>
-        </div>
-      </Section>
-
-      <Section name="EmptyState">
-        <div className="w-full max-w-xl">
-          <EmptyState
-            title={sample.emptyTitle}
-            description={sample.emptyText}
-            action={
-              <Button variant="primary" icon={<Icon icon={PlusIcon} />}>
-                {sample.invite}
-              </Button>
-            }
-          />
-        </div>
-        <div className="w-full max-w-xl">
-          <EmptyState
-            kind="error"
-            title="Couldn’t load members"
-            description="The connection dropped. Your data is safe. Try again."
-            code="Ref 7f3a9c · 13:32 UTC"
-            action={<Button>Try again</Button>}
-          />
-        </div>
-      </Section>
-
-      <Section name="Skeleton">
-        <div className="w-full max-w-xl">
-          <Skeleton rows={3} label="Loading members" />
-        </div>
-      </Section>
-
-      <Section name="Tabs">
-        <Tabs
-          label={sample.members}
-          current="members"
-          items={[
-            { id: "members", label: sample.members, count: 6 },
-            { id: "invitations", label: sample.invitations, count: 3 },
-          ]}
-        />
-      </Section>
-
-      <Section name="SubNav">
-        <SubNav
-          label={sample.settings}
-          current="members"
-          groups={[
-            {
-              label: "Organisation",
-              items: [
-                { id: "general", label: "General", href: "#general" },
-                { id: "members", label: sample.members, href: "#members" },
-                { id: "activity", label: "Activity", href: "#activity" },
-              ],
-            },
-            {
-              label: sample.you,
-              items: [
-                {
-                  id: "preferences",
-                  label: "Preferences",
-                  href: "#preferences",
-                },
-              ],
-            },
-          ]}
-        />
-      </Section>
-
-      <Section name="Table">
-        <div className="w-full">
-          <Table
-            label={sample.members}
-            columns={memberColumns(sample)}
-            rows={members}
-            rowKey="id"
-            rowCount={members.length}
-            page={1}
-            pageSize={20}
-            pager={{
-              previous: "Previous",
-              next: "Next",
-              page: (page, count) => `Page ${page} of ${count}`,
-            }}
-            cardLead={avatar}
-            actionsLabel="Actions"
-            actions={(row) => (
-              <RowMenu
-                label={`Actions for ${row.name}`}
-                items={[{ label: "Change role" }]}
-              />
-            )}
-          />
-        </div>
-        <div className="w-[360px] rounded-lg border border-border p-3">
-          <Table
-            label={`${sample.members} (phone)`}
-            columns={memberColumns(sample)}
-            rows={members}
-            rowKey="id"
-            rowCount={members.length}
-            page={1}
-            pageSize={20}
-            pager={{
-              previous: "Previous",
-              next: "Next",
-              page: (page, count) => `Page ${page} of ${count}`,
-            }}
-            cardLead={avatar}
-            actions={(row) => (
-              <RowMenu
-                label={`Actions for ${row.name}`}
-                items={[{ label: "Change role" }]}
-              />
-            )}
-          />
-        </div>
-      </Section>
-
-      <Section name="RowMenu">
-        <RowMenu
-          label="Actions for Ayşe Yılmaz"
-          items={[
-            {
-              label: "Change role",
-              disabled: true,
-              reason: "An organisation needs at least one Owner.",
-            },
-            { separator: true },
-            {
-              label: "Remove from organisation",
-              tone: "destructive",
-              disabled: true,
-              reason: "An organisation needs at least one Owner.",
-            },
-          ]}
-        />
-      </Section>
-
-      <Section name="Combobox">
-        <Combobox
-          className="w-72"
-          label="Language and format"
-          value="en-IE"
-          options={languages}
-          searchPlaceholder="Search languages"
-          emptyLabel="No language found"
-        />
-        <Combobox
-          variant="compact"
-          icon={GlobeIcon}
-          label="Language"
-          value="en-IE"
-          options={[{ id: "en-IE", label: "English" }]}
-          searchPlaceholder="Search languages"
-          emptyLabel="No language found"
-        />
-      </Section>
-
-      <Section name="Dialog">
-        <Dialog
-          trigger={<Button variant="destructive">{sample.remove}</Button>}
-          tone="destructive"
-          title={sample.removeQuestion}
-          description={sample.removeDescription}
-          actionLabel={sample.remove}
-          cancelLabel={sample.cancel}
-        />
-        <Dialog
-          trigger={<Button>Close tenant</Button>}
-          tone="destructive"
-          title="Close Northwind Traders?"
-          description="Members cannot sign in. Pending invitations are cancelled. You can reopen it within 30 days."
-          confirmText="northwind"
-          confirmLabel="Type northwind to confirm"
-          actionLabel="Close tenant"
-          cancelLabel={sample.cancel}
-        />
-      </Section>
-
-      <Section name="Toast">
-        <Button
-          onClick={() =>
-            showToast({
-              title: sample.toast,
-              description: "ali@northwind.io has 7 days to accept.",
-            })
-          }
-        >
-          {sample.toast}
-        </Button>
-        <Button
-          onClick={() =>
-            showToast({
-              tone: "destructive",
-              title: "Couldn’t send the invitation",
-              description:
-                "This tenant has sent 50 invitations today. Try again tomorrow.",
-            })
-          }
-        >
-          Couldn’t send
-        </Button>
-      </Section>
-
-      <Section name="OrgMenu">
-        <OrgMenu
-          name="Northwind Traders"
-          slug="northwind"
-          initials="N"
-          memberRole="Owner"
-          switchLabel="Switch organisation"
-          switchHref="#choose"
-        />
-      </Section>
-
-      <Section name="UserMenu">
-        <UserMenu
-          name="Ayşe Yılmaz"
-          email="ayse@northwind.io"
-          initials="AY"
-          label="Account"
-          languageName={
-            languages.find((option) => option.id === sample.locale)?.label ??
-            sample.locale
-          }
-          languageLabel="Language"
-          preferencesHref="#preferences"
-          theme={theme}
-          themes={[
-            { id: "light", label: "Light" },
-            { id: "dark", label: "Dark" },
-            { id: "system", label: "System" },
-          ]}
-          themeLabel="Theme"
-          onThemeChange={setTheme}
-          signOutLabel="Sign out"
-          onSignOut={() => {}}
-        />
-      </Section>
-
-      <Section name="AppShell">
-        <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
-          <AppShell
-            nav={[
-              {
-                id: "overview",
-                label: sample.overview,
-                icon: HomeIcon,
-                href: "#overview",
-              },
-              {
-                id: "settings",
-                label: sample.settings,
-                icon: SettingsIcon,
-                href: "#settings",
-                placement: "bottom",
-              },
-            ]}
-            current="settings"
-            logo="S"
-            logoLabel="Home"
-            logoHref="#home"
-            crumbs={[
-              { label: "Northwind Traders" },
-              { label: sample.settings },
-              { label: sample.members },
-            ]}
-            orgMenu={
-              <OrgMenu
-                name="Northwind Traders"
-                slug="northwind"
-                initials="N"
-                memberRole="Owner"
-                switchLabel="Switch organisation"
-                switchHref="#choose"
-              />
-            }
-            userMenu={
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
-                AY
-              </span>
-            }
-            labels={{
-              navigation: "Main",
-              menu: "Open menu",
-              search: "Search",
-              searchShortcut: "⌘K",
-              breadcrumb: "Breadcrumb",
-              commandTitle: "Go to",
-              commandPlaceholder: "Search pages",
-              commandEmpty: "No page found",
-              close: "Close",
-            }}
-            onNavigate={() => {}}
-          >
-            <h1 className="text-page-title">{sample.members}</h1>
-            <Freshness
-              at={at}
-              locale={sample.locale}
-              timeZone={sample.timeZone}
-              label={sample.updated}
-            />
-          </AppShell>
-        </div>
-      </Section>
+      ))}
     </div>
+  );
+}
+
+/** The AppShell with its two rail states. The switch lives here, so it renders only this preview, not the whole page. */
+function AppShellPreview({ sample }: { sample: Sample }) {
+  const [rail, setRail] = useState(false);
+  return (
+    <>
+      <fieldset className="flex gap-1">
+        <legend className="sr-only">Rail</legend>
+        <Button
+          variant={rail ? "secondary" : "primary"}
+          aria-pressed={!rail}
+          onClick={() => setRail(false)}
+        >
+          Icon rail
+        </Button>
+        <Button
+          variant={rail ? "primary" : "secondary"}
+          aria-pressed={rail}
+          onClick={() => setRail(true)}
+        >
+          Rail with labels
+        </Button>
+      </fieldset>
+      <p className="text-small text-muted-foreground">
+        The rail shows its labels from bp-desktop only. A tablet keeps the icon
+        rail.
+      </p>
+      <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
+        <AppShell
+          key={String(rail)}
+          railExpanded={rail}
+          nav={[
+            {
+              id: "overview",
+              label: sample.overview,
+              icon: HomeIcon,
+              href: "#overview",
+            },
+            {
+              id: "settings",
+              label: sample.settings,
+              icon: SettingsIcon,
+              href: "#settings",
+              placement: "bottom",
+            },
+          ]}
+          current="settings"
+          logo="S"
+          logoLabel="Home"
+          logoHref="#home"
+          crumbs={[
+            { label: "Northwind Traders" },
+            { label: sample.settings },
+            { label: sample.members },
+          ]}
+          orgMenu={
+            <OrgMenu
+              name="Northwind Traders"
+              slug="northwind"
+              initials="N"
+              memberRole="Owner"
+              switchLabel="Switch organisation"
+              switchHref="#choose"
+            />
+          }
+          userMenu={
+            <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
+              AY
+            </span>
+          }
+          labels={{
+            navigation: "Main",
+            menu: "Open menu",
+            search: "Search",
+            searchShortcut: "⌘K",
+            breadcrumb: "Breadcrumb",
+            commandTitle: "Go to",
+            commandPlaceholder: "Search pages",
+            commandEmpty: "No page found",
+            close: "Close",
+            railToggle: "Menu labels",
+            railShortcut: "⌘B",
+          }}
+          onNavigate={() => {}}
+        >
+          <h1 className="text-page-title">{sample.members}</h1>
+          <Freshness
+            at={at}
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+            label={sample.updated}
+          />
+        </AppShell>
+      </div>
+    </>
   );
 }

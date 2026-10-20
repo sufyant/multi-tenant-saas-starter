@@ -39,7 +39,14 @@ const notAUserYet = (error: Error | null) =>
  * writes their user and their grant then (`SystemAdminDirectory`, the API's section 6). So when GetMe answers 404, the shell asks
  * the door once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
  */
-export function PlatformShell({ children }: { children: ReactNode }) {
+export function PlatformShell({
+  railExpanded,
+  children,
+}: {
+  /** The rail shows its labels on desktop: the layout read the cookie (F49). */
+  railExpanded: boolean;
+  children: ReactNode;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -138,7 +145,10 @@ export function PlatformShell({ children }: { children: ReactNode }) {
           commandPlaceholder: t("shell.commandPlaceholder"),
           commandEmpty: t("shell.commandEmpty"),
           close: t("common.close"),
+          railToggle: t("shell.railToggle"),
+          railShortcut: t("shell.railShortcut"),
         }}
+        railExpanded={railExpanded}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}
       >

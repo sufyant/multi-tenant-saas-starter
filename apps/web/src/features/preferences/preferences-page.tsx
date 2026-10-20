@@ -2,24 +2,23 @@
 
 import { getGetMeQueryOptions } from "@repo/api-client";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { SubNav } from "@repo/ui/components/sub-nav";
 import { Time } from "@repo/ui/components/time";
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@repo/ui/components/ui/toggle-group";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useEffect, useId, useState } from "react";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { SettingsNav } from "@/shared/settings-nav";
 
 /**
  * Settings > Preferences (F31): the signed-in user's name, email, language and time zone from GetMe, read-only, and the theme,
  * which is saved on the device. The change of the language and time zone comes with the first form.
  */
-export function PreferencesPage({ settingsBase }: { settingsBase: string }) {
+export function PreferencesPage() {
   const t = useTranslations();
   const themeId = useId();
   const { theme = "system", setTheme } = useTheme();
@@ -33,23 +32,7 @@ export function PreferencesPage({ settingsBase }: { settingsBase: string }) {
 
   return (
     <div className="flex flex-col gap-6 tablet:flex-row">
-      <SubNav
-        label={t("shell.settings")}
-        current="preferences"
-        groups={[
-          {
-            label: t("shell.you"),
-            items: [
-              {
-                id: "preferences",
-                label: t("shell.preferences"),
-                href: `${settingsBase}/preferences`,
-              },
-            ],
-          },
-        ]}
-        linkComponent={Link}
-      />
+      <SettingsNav current="preferences" />
       <section className="flex max-w-2xl flex-1 flex-col gap-4">
         <h1 className="text-page-title">{t("preferences.title")}</h1>
         <p className="text-body text-muted-foreground">

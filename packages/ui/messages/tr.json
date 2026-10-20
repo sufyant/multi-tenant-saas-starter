@@ -10,7 +10,9 @@
     "previous": "Önceki",
     "next": "Sonraki",
     "page": "Sayfa {page} / {count}",
-    "goHome": "Ana sayfaya git"
+    "goHome": "Ana sayfaya git",
+    "updated": "Güncellendi",
+    "reference": "Ref {id} · {time}"
   },
   "theme": {
     "label": "Tema",

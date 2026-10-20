@@ -100,6 +100,21 @@ describe("Table", () => {
     expect(onSortChange).toHaveBeenCalledWith({ key: "name", desc: false });
   });
 
+  it("Table_ClickAColumnWithoutAStringValue_SortsAscendingFirst", async () => {
+    const onSortChange = vi.fn();
+    render(
+      <Table
+        {...props}
+        columns={[{ ...columns[0], key: "person" } as TableColumn<Member>]}
+        onSortChange={onSortChange}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Name" }));
+
+    expect(onSortChange).toHaveBeenCalledWith({ key: "person", desc: false });
+  });
+
   it("Table_MorePagesThanOne_PagesOnTheServer", async () => {
     const onPageChange = vi.fn();
     render(<Table {...props} rowCount={45} onPageChange={onPageChange} />);
