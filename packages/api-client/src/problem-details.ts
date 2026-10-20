@@ -1,6 +1,7 @@
 import {
   ErrorCode,
   type FieldErrorCode,
+  MyTenantResponseStatus,
   type ProblemDetails,
 } from "./generated/endpoints.schemas.gen";
 
@@ -8,6 +9,12 @@ import {
 export type ProblemAction =
   | { kind: "sign-in" }
   | { kind: "account-suspended" }
+  | {
+      kind: "tenant-blocked";
+      status:
+        | typeof MyTenantResponseStatus.Suspended
+        | typeof MyTenantResponseStatus.Closed;
+    }
   | { kind: "field-errors"; fields: Record<string, FieldErrorCode[]> }
   | { kind: "message"; key: `errors.${ErrorCode}` };
 
@@ -30,7 +37,8 @@ export function fieldErrorsOf(
 
 /**
  * What to do with an error answer. A pure function, so a test covers each branch without React. A 401 goes to sign-in; a 403
- * `user.suspended` goes to the suspended screen; field errors go to the form; any other code shows its message `errors.<code>`.
+ * `user.suspended` goes to the suspended screen; a 403 `tenant.suspended` or `tenant.closed` goes to the organisation's blocked
+ * page; field errors go to the form; any other code shows its message `errors.<code>`.
  * A body that is not Problem Details shows the message of `server.error`.
  */
 export function actionFor(
@@ -42,6 +50,10 @@ export function actionFor(
     return { kind: "message", key: `errors.${ErrorCode.ServerError}` };
   if (status === 403 && problem.code === ErrorCode.UserSuspended)
     return { kind: "account-suspended" };
+  if (status === 403 && problem.code === ErrorCode.TenantSuspended)
+    return { kind: "tenant-blocked", status: MyTenantResponseStatus.Suspended };
+  if (status === 403 && problem.code === ErrorCode.TenantClosed)
+    return { kind: "tenant-blocked", status: MyTenantResponseStatus.Closed };
   const fields = fieldErrorsOf(problem);
   if (Object.keys(fields).length > 0) return { kind: "field-errors", fields };
   return { kind: "message", key: `errors.${problem.code}` };

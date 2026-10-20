@@ -78,10 +78,26 @@ describe("actionFor", () => {
     });
   });
 
-  it("ActionFor_403OtherThanSuspended_ShowsTheMessageOfTheCode", () => {
+  it("ActionFor_403TenantSuspended_GoesToTheSuspendedOrganisationPage", () => {
     expect(actionFor(403, problem({ code: "tenant.suspended" }))).toEqual({
+      kind: "tenant-blocked",
+      status: "suspended",
+    });
+  });
+
+  it("ActionFor_403TenantClosed_GoesToTheClosedOrganisationPage", () => {
+    expect(actionFor(403, problem({ code: "tenant.closed" }))).toEqual({
+      kind: "tenant-blocked",
+      status: "closed",
+    });
+  });
+
+  it("ActionFor_403OtherCode_ShowsTheMessageOfTheCode", () => {
+    expect(
+      actionFor(403, problem({ code: "member.owner_requires_owner" })),
+    ).toEqual({
       kind: "message",
-      key: "errors.tenant.suspended",
+      key: "errors.member.owner_requires_owner",
     });
   });
 

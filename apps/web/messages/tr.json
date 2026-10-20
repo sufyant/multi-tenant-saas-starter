@@ -36,25 +36,30 @@
     "chooseText": "{count} kuruluşa üyesiniz.",
     "status": {
       "suspended": "Askıda",
-      "closed": "Kapalı"
+      "closed": "Kapalı",
+      "active": "Etkin"
     }
   },
   "overview": {
     "title": "Genel bakış",
-    "emptyTitle": "Burada henüz bir şey yok",
-    "emptyText": "Kuruluşunuzun işleri burada görünür."
+    "organisation": "Kuruluş",
+    "text": "Ürün bölümleri eklendikçe menüde görünür. Şu anda burada yapılacak başka bir şey yok."
   },
   "preferences": {
     "title": "Tercihler",
-    "readOnly": "Dilinizi ve saat diliminizi sonraki bir sürümde değiştirebilirsiniz.",
-    "name": "Ad",
-    "email": "E-posta",
     "language": "Dil",
     "timeZone": "Saat dilimi",
-    "browserTimeZone": "Ayarlanmadı: bu cihazın saat dilimi",
-    "now": "Şu an",
-    "theme": "Tema",
-    "themeHint": "Bu cihazda saklanır."
+    "text": "Bunlar sizi her kuruluşta ve her cihazda izler.",
+    "languageHint": "Tarihler ve sayılar bu dilin biçimini kullanır.",
+    "languageSearch": "Dil ara",
+    "languageEmpty": "Dil bulunamadı",
+    "timeZoneHint": "Ekrandaki her saat bu dilimde gösterilir.",
+    "timeZoneSearch": "Şehir veya dilim ara",
+    "timeZoneEmpty": "Saat dilimi bulunamadı",
+    "thisDevice": "{zone} (bu cihaz)",
+    "save": "Tercihleri kaydet",
+    "saved": "Tercihler kaydedildi",
+    "notSaved": "Tercihler kaydedilmedi"
   },
   "signInPage": {
     "title": "Starter'a giriş yapın"
@@ -100,11 +105,13 @@
   },
   "settings": {
     "organisation": "Kuruluş",
-    "members": "Üyeler"
+    "members": "Üyeler",
+    "general": "Genel",
+    "activity": "Etkinlik"
   },
   "permissionDenied": {
     "title": "{page} sayfasını açamazsınız",
-    "text": "{organisation} kuruluşundaki rolünüz: {role}. Buradan bir şeye ihtiyacınız varsa {organisation} kuruluşunun bir Sahibine veya Yöneticisine başvurun.",
+    "text": "{organisation} kuruluşundaki rolünüz: {role}. {page} sayfasını Sahipler ve Yöneticiler okuyabilir. Buradan bir şeye ihtiyacınız varsa onlardan birine başvurun.",
     "back": "Genel bakışa dön"
   },
   "members": {
@@ -210,5 +217,64 @@
     "dailyLimitText": "{organisation} son 24 saatte izin verilen en fazla daveti gönderdi. Daha sonra yeniden deneyin.",
     "inviteOwner": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
     "inviteOwnerText": "Yönetici veya Üye seçin ya da bu daveti bir Sahibin göndermesini isteyin."
+  },
+  "general": {
+    "title": "Genel",
+    "name": "Ad",
+    "status": "Durum",
+    "created": "Oluşturulma",
+    "yourRole": "Rolünüz"
+  },
+  "activity": {
+    "title": "Etkinlik",
+    "log": "Etkinlik kaydı",
+    "today": "Bugün, {date}",
+    "yesterday": "Dün, {date}",
+    "platform": "Platform",
+    "thePlatform": "Platform",
+    "deletedUser": "Silinmiş kullanıcı",
+    "unnamedUser": "Adsız kullanıcı",
+    "older": "Daha eski etkinlikleri göster",
+    "loading": "Etkinlik yükleniyor",
+    "empty": "Henüz etkinlik yok",
+    "emptyText": "Üyeler, davetler ve kuruluştaki değişiklikler burada görünür.",
+    "error": "Etkinlik yüklenemedi",
+    "olderError": "Eski etkinlikler yüklenemedi",
+    "restarted": "En yeni etkinlikten başlanıyor",
+    "operations": {
+      "invitation": {
+        "revoked": "<actor></actor> bir daveti geri aldı."
+      },
+      "member": {
+        "invited": "<actor></actor> birini {role} rolüyle davet etti.",
+        "joined": "<target></target> kuruluşa katıldı.",
+        "removed": "<actor></actor>, <target></target> adlı üyeyi ({role}) kuruluştan çıkardı.",
+        "role_changed": "<actor></actor>, <target></target> adlı üyenin rolünü {oldRole} rolünden {newRole} rolüne değiştirdi."
+      },
+      "tenant": {
+        "closed": "<actor></actor> bu kuruluşu kapattı.",
+        "created": "<actor></actor> bu kuruluşu oluşturdu.",
+        "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
+        "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
+        "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",
+        "reopened": "<actor></actor> bu kuruluşu yeniden açtı.",
+        "suspended": "<actor></actor> bu kuruluşu askıya aldı."
+      },
+      "user": {
+        "deleted": "<actor></actor>, <target></target> adlı kullanıcının hesabını sildi.",
+        "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
+        "reactivated": "<actor></actor>, <target></target> adlı kullanıcının hesabını yeniden etkinleştirdi.",
+        "renamed": "<actor></actor>, <target></target> adlı kullanıcının adını değiştirdi.",
+        "suspended": "<actor></actor>, <target></target> adlı kullanıcının hesabını askıya aldı."
+      }
+    }
+  },
+  "blocked": {
+    "suspendedTitle": "{organisation} askıya alındı",
+    "suspendedText": "Bu kuruluşu şu anda açamazsınız. Verileriniz ve üyeliğiniz korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
+    "closedTitle": "{organisation} kapatıldı",
+    "closedText": "Bu kuruluş kapatıldı ve açılamaz. Verileriniz şimdilik korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
+    "organisation": "Kuruluş",
+    "chooseAnother": "Başka bir kuruluş seçin"
   }
 }

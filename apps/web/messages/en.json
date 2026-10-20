@@ -36,25 +36,30 @@
     "chooseText": "You belong to {count, plural, one {# organisation} other {# organisations}}.",
     "status": {
       "suspended": "Suspended",
-      "closed": "Closed"
+      "closed": "Closed",
+      "active": "Active"
     }
   },
   "overview": {
     "title": "Overview",
-    "emptyTitle": "Nothing here yet",
-    "emptyText": "The work of your organisation appears here."
+    "organisation": "Organisation",
+    "text": "Product sections appear in the rail as they are added. There is nothing else to do here right now."
   },
   "preferences": {
     "title": "Preferences",
-    "readOnly": "You can change your language and time zone in a later version.",
-    "name": "Name",
-    "email": "Email",
     "language": "Language",
     "timeZone": "Time zone",
-    "browserTimeZone": "Not set: this device's time zone",
-    "now": "Now",
-    "theme": "Theme",
-    "themeHint": "Saved on this device."
+    "text": "These follow you to every organisation and device.",
+    "languageHint": "Dates and numbers use this language’s format.",
+    "languageSearch": "Search languages",
+    "languageEmpty": "No language found",
+    "timeZoneHint": "Every time on screen is shown in this zone.",
+    "timeZoneSearch": "Search cities or zones",
+    "timeZoneEmpty": "No time zone found",
+    "thisDevice": "{zone} (this device)",
+    "save": "Save preferences",
+    "saved": "Preferences saved",
+    "notSaved": "Preferences not saved"
   },
   "signInPage": {
     "title": "Sign in to Starter"
@@ -100,11 +105,13 @@
   },
   "settings": {
     "organisation": "Organisation",
-    "members": "Members"
+    "members": "Members",
+    "general": "General",
+    "activity": "Activity"
   },
   "permissionDenied": {
     "title": "You can’t open {page}",
-    "text": "Your role in {organisation} is {role}. Ask an Owner or an Admin of {organisation} if you need something from it.",
+    "text": "Your role in {organisation} is {role}. Owners and Admins can read {page}. Ask one of them if you need something from it.",
     "back": "Back to Overview"
   },
   "members": {
@@ -210,5 +217,64 @@
     "dailyLimitText": "{organisation} has sent the most invitations allowed in the last 24 hours. Try again later.",
     "inviteOwner": "Only an Owner can invite an Owner.",
     "inviteOwnerText": "Choose Admin or Member, or ask an Owner to send this invitation."
+  },
+  "general": {
+    "title": "General",
+    "name": "Name",
+    "status": "Status",
+    "created": "Created",
+    "yourRole": "Your role"
+  },
+  "activity": {
+    "title": "Activity",
+    "log": "Activity log",
+    "today": "Today, {date}",
+    "yesterday": "Yesterday, {date}",
+    "platform": "Platform",
+    "thePlatform": "The platform",
+    "deletedUser": "Deleted user",
+    "unnamedUser": "Unnamed user",
+    "older": "Show older activity",
+    "loading": "Loading activity",
+    "empty": "No activity yet",
+    "emptyText": "Changes to members, invitations and the organisation appear here.",
+    "error": "Couldn’t load activity",
+    "olderError": "Couldn’t load older activity",
+    "restarted": "Starting from the newest activity",
+    "operations": {
+      "invitation": {
+        "revoked": "<actor></actor> revoked an invitation."
+      },
+      "member": {
+        "invited": "<actor></actor> invited someone as {role}.",
+        "joined": "<target></target> joined the organisation.",
+        "removed": "<actor></actor> removed <target></target> ({role}) from the organisation.",
+        "role_changed": "<actor></actor> changed the role of <target></target> from {oldRole} to {newRole}."
+      },
+      "tenant": {
+        "closed": "<actor></actor> closed this organisation.",
+        "created": "<actor></actor> created this organisation.",
+        "owner_invited": "<actor></actor> invited someone as Owner.",
+        "reactivated": "<actor></actor> reactivated this organisation.",
+        "renamed": "<actor></actor> renamed the organisation from <name>{oldName}</name> to <name>{newName}</name>.",
+        "reopened": "<actor></actor> reopened this organisation.",
+        "suspended": "<actor></actor> suspended this organisation."
+      },
+      "user": {
+        "deleted": "<actor></actor> deleted the account of <target></target>.",
+        "preferences_changed": "<actor></actor> changed their preferences.",
+        "reactivated": "<actor></actor> reactivated the account of <target></target>.",
+        "renamed": "<actor></actor> changed the name of <target></target>.",
+        "suspended": "<actor></actor> suspended the account of <target></target>."
+      }
+    }
+  },
+  "blocked": {
+    "suspendedTitle": "{organisation} is suspended",
+    "suspendedText": "You cannot open this organisation right now. Your data and your membership are kept. Contact your organisation’s Owner if you need to know more.",
+    "closedTitle": "{organisation} is closed",
+    "closedText": "This organisation was closed and cannot be opened. Your data is kept for now. Contact your organisation’s Owner if you need to know more.",
+    "organisation": "Organisation",
+    "chooseAnother": "Choose another organisation"
   }
 }

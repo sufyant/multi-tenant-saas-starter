@@ -20,12 +20,12 @@ import { Input as InputBase } from "@repo/ui/components/ui/input";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { ListError } from "@/shared/list-error";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
-import { ListError } from "./list-error";
 import { MembersTable } from "./members-table";
 import {
   searchDelay,

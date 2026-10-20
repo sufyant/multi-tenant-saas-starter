@@ -1,0 +1,91 @@
+import {
+  AuditActorResponseKind,
+  type AuditDetailsResponse,
+  type AuditEntryResponse,
+  AuditOperation,
+  AuditTargetResponseKind,
+  type CursorPageOfAuditEntryResponse,
+  MemberInvitedDetailsResponseOperation,
+  MemberRemovedDetailsResponseOperation,
+  MemberRole,
+  MemberRoleChangedDetailsResponseOperation,
+  TenantOwnerInvitedDetailsResponseOperation,
+  TenantRenamedDetailsResponseOperation,
+  TenantSuspendedDetailsResponseOperation,
+} from "@repo/api-client";
+import { getListAuditEntriesMockHandler } from "@repo/api-client/msw";
+
+// The tenant log's entries of the Activity board, and the answers of ListAuditEntries.
+
+const role = (name: MemberRole) => ({ builtIn: name, name });
+
+/** An entry of the tenant log: Ayşe acted on Khalid. */
+export const entry = (
+  overrides: Partial<AuditEntryResponse> = {},
+): AuditEntryResponse => ({
+  id: "0198f0a2-0000-7000-8000-0000000000e1",
+  occurredAt: "2026-10-16T13:32:00Z",
+  operation: AuditOperation.MemberJoined,
+  details: null,
+  actor: {
+    kind: AuditActorResponseKind.User,
+    userId: "0198f0a2-0000-7000-8000-000000000001",
+    displayName: "Ayşe Yılmaz",
+    deleted: false,
+  },
+  target: {
+    kind: AuditTargetResponseKind.User,
+    id: "0198f0a2-0000-7000-8000-000000000007",
+    name: "Khalid Al-Harbi",
+    deleted: false,
+  },
+  ...overrides,
+});
+
+/** The details the API keeps for an operation (the union of AuditDetailsResponse). */
+export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
+  {
+    [AuditOperation.MemberInvited]: {
+      operation: MemberInvitedDetailsResponseOperation.MemberInvited,
+      role: role(MemberRole.Member),
+      replacedInvitationId: null,
+    },
+    [AuditOperation.MemberRemoved]: {
+      operation: MemberRemovedDetailsResponseOperation.MemberRemoved,
+      role: role(MemberRole.Admin),
+    },
+    [AuditOperation.MemberRoleChanged]: {
+      operation: MemberRoleChangedDetailsResponseOperation.MemberRoleChanged,
+      oldRole: role(MemberRole.Member),
+      newRole: role(MemberRole.Admin),
+    },
+    [AuditOperation.TenantOwnerInvited]: {
+      operation: TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited,
+      invitationId: "0198f0a2-0000-7000-8000-0000000000a1",
+      replacedInvitationId: null,
+    },
+    [AuditOperation.TenantRenamed]: {
+      operation: TenantRenamedDetailsResponseOperation.TenantRenamed,
+      oldName: "Northwind",
+      newName: "Northwind Traders",
+    },
+    [AuditOperation.TenantSuspended]: {
+      operation: TenantSuspendedDetailsResponseOperation.TenantSuspended,
+      reason: "Unpaid invoice 2026-114",
+    },
+  };
+
+/**
+ * ListAuditEntries that answers one page for each cursor: the first page without a cursor, the next for the cursor before it.
+ * Each request's cursor is recorded.
+ */
+export function auditLogAnswer(
+  pages: Record<string, CursorPageOfAuditEntryResponse>,
+  cursors: (string | null)[] = [],
+) {
+  return getListAuditEntriesMockHandler(({ request }) => {
+    const cursor = new URL(request.url).searchParams.get("cursor");
+    cursors.push(cursor);
+    return pages[cursor ?? ""] ?? { items: [], nextCursor: null };
+  });
+}

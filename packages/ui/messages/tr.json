@@ -33,7 +33,8 @@
     "email_invalid": "ad@sirket.com gibi bir e-posta adresi girin.",
     "format_invalid": "Bu biçim geçerli değil.",
     "choose_value": "Seçeneklerden birini seçin.",
-    "invalid": "Bu değer geçerli değil."
+    "invalid": "Bu değer geçerli değil.",
+    "time_zone_invalid": "Listeden bir saat dilimi seçin."
   },
   "problems": {
     "noAccessTitle": "Henüz erişiminiz yok",

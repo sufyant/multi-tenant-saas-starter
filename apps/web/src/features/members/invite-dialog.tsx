@@ -22,12 +22,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { problemOf } from "@/shared/problem";
 import { useTenant } from "@/shared/tenant-context";
+import { useFailureText } from "@/shared/use-failure-text";
 import { daysLeft } from "./invitation-status";
-import { problemOf } from "./problem";
 import { afterRefusal, refreshInvitations } from "./refresh";
 import { rolesFor } from "./role-choice";
-import { useFailureText } from "./use-failure-text";
 import { useIntentKey } from "./use-intent-key";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;

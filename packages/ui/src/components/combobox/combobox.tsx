@@ -25,7 +25,10 @@ export type ComboboxOption = {
 
 export type ComboboxProps = {
   label: ReactNode;
+  /** Help under the field. An error replaces it. */
   hint?: ReactNode;
+  /** What went wrong and how to fix it. */
+  error?: ReactNode;
   value?: string;
   options: ComboboxOption[];
   onValueChange?: (id: string) => void;
@@ -54,6 +57,7 @@ const matches = (option: ComboboxOption, query: string) => {
 export function Combobox({
   label,
   hint,
+  error,
   value,
   options,
   onValueChange,
@@ -65,6 +69,8 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const labelId = useId();
+  const noteId = useId();
+  const note = error ?? hint;
   const selected = options.find((option) => option.id === value) ?? null;
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -90,6 +96,8 @@ export function Combobox({
       >
         <ComboboxPrimitive.Trigger
           aria-labelledby={labelId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={note ? noteId : undefined}
           className={cn(
             "inline-flex items-center gap-2 rounded-md text-body outline-none focus-visible:ring-2 focus-visible:ring-ring",
             variant === "field"
@@ -135,7 +143,17 @@ export function Combobox({
           </ComboboxList>
         </ComboboxContent>
       </ComboboxPrimitive.Root>
-      {hint && <p className="text-small text-muted-foreground">{hint}</p>}
+      {note && (
+        <p
+          id={noteId}
+          className={cn(
+            "text-small",
+            error ? "text-destructive-text" : "text-muted-foreground",
+          )}
+        >
+          {note}
+        </p>
+      )}
     </div>
   );
 }

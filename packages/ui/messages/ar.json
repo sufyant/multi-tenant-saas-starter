@@ -33,7 +33,8 @@
     "email_invalid": "أدخل عنوان بريد إلكتروني مثل name@company.com.",
     "format_invalid": "هذا التنسيق غير صالح.",
     "choose_value": "اختر أحد الخيارات.",
-    "invalid": "هذه القيمة غير صالحة."
+    "invalid": "هذه القيمة غير صالحة.",
+    "time_zone_invalid": "اختر منطقة زمنية من القائمة."
   },
   "problems": {
     "noAccessTitle": "لا يوجد وصول بعد",
