@@ -21,11 +21,3 @@ export function groupByDay(
   }
   return groups;
 }
-
-/** The calendar day before a day: `2026-03-01` gives `2026-02-28`. */
-export function dayBefore(day: string): string {
-  const [year, month, date] = day.split("-").map(Number);
-  return new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, (date ?? 1) - 1))
-    .toISOString()
-    .slice(0, 10);
-}

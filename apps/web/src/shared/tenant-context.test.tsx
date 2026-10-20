@@ -1,5 +1,6 @@
 import {
   ErrorCode,
+  getListMembersQueryOptions,
   MemberRole,
   type MyTenantResponse,
   MyTenantResponseStatus,
@@ -10,7 +11,7 @@ import {
   getGetMyTenantMockHandler,
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -95,6 +96,13 @@ function suspendedAfterTheFirstRead() {
       total: 1,
     });
   });
+}
+
+/** A read of a page: the members, whose error the page leaves to its own list. */
+function MembersReader() {
+  const { tenant } = useTenant();
+  const members = useQuery(getListMembersQueryOptions(tenant.id));
+  return <p>{members.status}</p>;
 }
 
 /** A command of a page: remove a member, whose refusal the page leaves to its own dialog. */
@@ -257,6 +265,33 @@ describe("TenantProvider", () => {
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Remove" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Northwind Traders is suspended",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("TenantProvider_ReadSaysSuspended_ShowsTheSuspendedPage", async () => {
+    server.use(
+      suspendedAfterTheFirstRead(),
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantMembersRead],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/members`, () =>
+        problem(403, ErrorCode.TenantSuspended),
+      ),
+    );
+
+    renderWithProviders(
+      <TenantProvider slug="northwind">
+        <MembersReader />
+      </TenantProvider>,
     );
 
     expect(

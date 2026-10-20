@@ -107,7 +107,12 @@ function PreferencesForm({ me }: { me: MeResponse }) {
         error instanceof ProblemDetailsError
           ? actionFor(error.status, error.problem)
           : null;
+      // A 401 goes to sign-in; a suspended user reads GetMe again, and the shell shows the suspended screen (F4, F47).
       if (action?.kind === "sign-in") return window.location.assign("/sign-in");
+      if (action?.kind === "account-suspended")
+        return void queryClient.invalidateQueries({
+          queryKey: getGetMeQueryKey(),
+        });
       const [code] =
         action?.kind === "field-errors" ? (action.fields.timeZone ?? []) : [];
       if (code)

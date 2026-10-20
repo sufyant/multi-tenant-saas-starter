@@ -101,13 +101,19 @@ const isSentence = (text: string) => (_: string, element: Element | null) =>
 const findSentence = (text: string) => screen.findByText(isSentence(text));
 const getSentence = (text: string) => screen.getByText(isSentence(text));
 
-/** The first page answers with a next cursor; a request with a cursor answers 400 paging.cursor_invalid. */
-const refusesEveryCursor = (cursors: (string | null)[]) =>
+/** The first page answers with a next cursor; a request with a cursor is refused: 400 paging.cursor_invalid, 401, or a server error. */
+const refusesEveryCursor = (cursors: (string | null)[], status = 400) =>
   http.get("*/v1/tenants/:tenantId/audit-log", ({ request }) => {
     const cursor = new URL(request.url).searchParams.get("cursor");
     cursors.push(cursor);
     return cursor
-      ? problem(400, ErrorCode.PagingCursorInvalid)
+      ? problem(
+          status,
+          {
+            400: ErrorCode.PagingCursorInvalid,
+            401: ErrorCode.AuthUnauthenticated,
+          }[status] ?? ErrorCode.ServerError,
+        )
       : HttpResponse.json({ items: [joined], nextCursor: "page-2" });
   });
 
@@ -332,5 +338,35 @@ describe("ActivityPage", () => {
         name: "Bugün, 16 Eki 2026",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("ActivityPage_OlderPageFails_SaysSoAndKeepsTheEntries", async () => {
+    server.use(...answer(MemberRole.Owner), refusesEveryCursor([], 500));
+    renderInTenant(<ActivityPage />, { url });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Show older activity" }),
+    );
+
+    expect(
+      await screen.findByText("Couldn’t load older activity"),
+    ).toBeInTheDocument();
+    expect(
+      getSentence("Khalid Al-Harbi joined the organisation."),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivityPage_OlderPageSignedOut_GoesToSignIn", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    server.use(...answer(MemberRole.Owner), refusesEveryCursor([], 401));
+    renderInTenant(<ActivityPage />, { url });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Show older activity" }),
+    );
+
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/sign-in"));
+    vi.unstubAllGlobals();
   });
 });

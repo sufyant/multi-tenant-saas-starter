@@ -21,7 +21,7 @@ import {
   vi,
 } from "vitest";
 import { setLocale } from "@/i18n/set-locale";
-import { renderInTenant, tenantAnswers } from "../../../test/tenant";
+import { problem, renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { PreferencesPage } from "./preferences-page";
 
 const refresh = vi.fn();
@@ -80,6 +80,10 @@ const refusesTheTimeZone = () =>
       { status: 400 },
     ),
   );
+
+/** ChangePreferences refuses with the status and the code. */
+const refuses = (status: number, code: ErrorCode) =>
+  http.patch("*/v1/me/preferences", () => problem(status, code));
 
 const field = (name: string) => screen.findByRole("combobox", { name });
 
@@ -225,5 +229,32 @@ describe("PreferencesPage", () => {
       await screen.findByRole("heading", { name: "التفضيلات" }),
     ).toBeInTheDocument();
     expect(await field("اللغة")).toHaveTextContent("العربية");
+  });
+
+  it("PreferencesPage_UserSuspended_ReadsGetMeAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      refuses(403, ErrorCode.UserSuspended),
+      ...preferencesAnswers(me, [], reads),
+    );
+    renderInTenant(<PreferencesPage />, { url });
+
+    await save();
+
+    await vi.waitFor(() => expect(reads.count).toBe(2));
+  });
+
+  it("PreferencesPage_ServerError_SaysNotSavedWithTheReference", async () => {
+    server.use(refuses(500, ErrorCode.ServerError), ...preferencesAnswers(me));
+    renderInTenant(<PreferencesPage />, { url });
+
+    await save();
+
+    expect(
+      await screen.findByText("Preferences not saved"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Ref 4bf92f3577b34da6a3ce929d0e0e4736/),
+    ).toBeInTheDocument();
   });
 });

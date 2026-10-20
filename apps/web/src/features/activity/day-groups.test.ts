@@ -1,6 +1,6 @@
 import type { AuditEntryResponse } from "@repo/api-client";
 import { describe, expect, it } from "vitest";
-import { dayBefore, groupByDay } from "./day-groups";
+import { groupByDay } from "./day-groups";
 
 const at = (occurredAt: string) => ({ occurredAt }) as AuditEntryResponse;
 
@@ -34,15 +34,5 @@ describe("groupByDay", () => {
 
   it("GroupByDay_NoEntries_IsEmpty", () => {
     expect(groupByDay([], "Europe/Dublin")).toEqual([]);
-  });
-});
-
-describe("dayBefore", () => {
-  it.each([
-    ["2026-10-16", "2026-10-15"],
-    ["2026-03-01", "2026-02-28"],
-    ["2026-01-01", "2025-12-31"],
-  ])("DayBefore_%s_Is %s", (day, expected) => {
-    expect(dayBefore(day)).toBe(expected);
   });
 });

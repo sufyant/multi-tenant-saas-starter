@@ -74,6 +74,14 @@ export function calendarDay(
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+/** The calendar day before a day of `calendarDay`: `2026-03-01` gives `2026-02-28`. */
+export function dayBefore(day: string): string {
+  const [year = 0, month = 1, date = 1] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date - 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
 /** The same moment in UTC: `13:32 UTC`. The screen writes "UTC", never "Z" or "GMT". */
 export function formatUtc(at: Instant, options: DateTimeOptions): string {
   return `${format(at, { locale: options.locale, timeZone: "UTC" }, { ...timePart, hourCycle: "h23" })} UTC`;

@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  actionFor,
   ErrorCode,
   getGetMeQueryOptions,
   getListAuditEntriesInfiniteQueryOptions,
   Permission,
+  ProblemDetailsError,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
@@ -12,7 +14,11 @@ import { Freshness } from "@repo/ui/components/freshness";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Time } from "@repo/ui/components/time";
 import { showToast } from "@repo/ui/components/toast";
-import { calendarDay, formatDate } from "@repo/ui/lib/format-date-time";
+import {
+  calendarDay,
+  dayBefore,
+  formatDate,
+} from "@repo/ui/lib/format-date-time";
 import {
   useInfiniteQuery,
   useQuery,
@@ -27,7 +33,7 @@ import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
 import { ActivitySentence } from "./activity-sentence";
-import { dayBefore, groupByDay } from "./day-groups";
+import { groupByDay } from "./day-groups";
 
 /** The entries of one page of the log. The API's limit is 1 to 100. */
 const pageSize = 50;
@@ -71,6 +77,13 @@ export function ActivityPage() {
   const showOlder = async () => {
     const result = await log.fetchNextPage();
     if (!result.isFetchNextPageError) return;
+    // A 401 goes to sign-in (F4); a 403 of a stopped organisation is the tenant layout's (F47).
+    const action =
+      result.error instanceof ProblemDetailsError
+        ? actionFor(result.error.status, result.error.problem).kind
+        : null;
+    if (action === "sign-in") return window.location.assign("/sign-in");
+    if (action === "tenant-blocked") return;
     if (problemOf(result.error)?.code === ErrorCode.PagingCursorInvalid) {
       showToast({ title: t("activity.restarted"), tone: "info" });
       await queryClient.resetQueries({ queryKey: options.queryKey });
