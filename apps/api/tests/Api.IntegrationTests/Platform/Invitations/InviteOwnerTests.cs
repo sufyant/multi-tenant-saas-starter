@@ -49,7 +49,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         invitation.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state", "language"], ignoreOrder: true);
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         (invitation.GetProperty("email").GetString(), Roles.Of(invitation)).ShouldBe((owner, Roles.BuiltIn("owner")));
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":null,"lastName":null,"deleted":false}""");
@@ -166,6 +166,22 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, owner, language));
 
         (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe(kept);
+    }
+
+    // K8: the answer and the tenant's detail carry the language the invitation keeps, so "Invite the Owner again" can send it back.
+    [Fact]
+    public async Task InviteOwner_InAnotherLanguage_AnswersItAndTheTenantDetailShowsIt()
+    {
+        var admin = await SystemAdminAsync();
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+
+        var invited = await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, PlatformTenants.Email(), "tr"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("language").GetString().ShouldBe("tr");
+        var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+        found.GetProperty("ownerInvitation").GetProperty("language").GetString().ShouldBe("tr");
+        await _summaries.ShouldMatchTheRowsAsync(tenant);
     }
 
     // I1: the endpoint creates an invitation, so the same key with the same request answers with the first invitation again.

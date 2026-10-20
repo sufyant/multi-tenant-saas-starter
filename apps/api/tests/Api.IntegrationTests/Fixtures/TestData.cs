@@ -139,7 +139,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         DateTimeOffset? expiresAt = null,
         Guid? id = null,
         string? invitedBy = null,
-        string? secret = null)
+        string? secret = null,
+        string language = "en")
     {
         var invitationId = id ?? Guid.NewGuid();
         var inviter = await UserIdOfAsync(invitedBy ?? await AddUserAsync());
@@ -149,7 +150,7 @@ internal sealed class TestData(Database database, string databaseName = Database
             $"""
             INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, secret_hash, status, language)
             SELECT '{invitationId}', '{tenantId}', '{email ?? $"{Guid.NewGuid():N}@example.com"}', roles.id, '{inviter}', now(),
-                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', 'en'
+                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', '{language}'
             FROM control_plane.roles WHERE roles.built_in = '{role}'
             """,
             database: databaseName);

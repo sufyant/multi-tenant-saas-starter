@@ -118,6 +118,23 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         Invitation(found).ShouldBe($"{email}|{_time.GetUtcNow().AddDays(7):O}|pending");
     }
 
+    // Deployment, section 8: the version before this one writes the summary without the language while the migration has already run.
+    // The answer then has no language, never an error, until a later release fills it again (section 13).
+    [Fact]
+    public async Task GetTenant_ASummaryWithoutTheLanguage_AnswersTheInvitationWithoutIt()
+    {
+        var admin = await SystemAdminAsync();
+        var email = PlatformTenants.Email();
+        var tenant = await _tenants.CreateAsync(admin, email);
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET owner_invitation_language = NULL WHERE id = '{tenant}'");
+
+        var found = await admin.GetAsync($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        found.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var invitation = (await found.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("ownerInvitation");
+        (invitation.GetProperty("email").GetString(), invitation.GetProperty("language").ValueKind).ShouldBe((email, JsonValueKind.Null));
+    }
+
     // The state "expired" is read from the expiry at the moment of the request, not stored.
     [Fact]
     public async Task GetTenant_ItsOwnerInvitationExpired_AnswersItAsExpired()

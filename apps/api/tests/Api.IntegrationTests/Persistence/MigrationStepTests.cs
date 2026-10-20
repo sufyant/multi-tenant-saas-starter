@@ -75,6 +75,31 @@ public sealed class MigrationStepTests(Database database)
         again.Output.ShouldContain("Migrated the api schema: 0 migrations applied");
     }
 
+    // R12: the migration that adds the Owner invitation's language to the summary fills it for the tenants that exist, from their own
+    // invitations, so the summary still says what the rows say.
+    [Fact]
+    public async Task Migrate_ATenantWithAPendingOwnerInvitation_FillsItsLanguageInTheSummary()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddOwnerInvitationLanguage");
+        var testData = new TestData(database, name);
+        var summaries = new TenantSummaries(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var invitation = await testData.AddInvitationAsync(tenant.Id, role: "Owner", language: "ar");
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenants AS tenant SET owner_invitation_email = invitation.email,
+                owner_invitation_expires_at = invitation.expires_at, owner_invitation_status = invitation.status
+            FROM control_plane.invitations AS invitation WHERE tenant.id = '{tenant.Id}' AND invitation.id = '{invitation}'
+            """,
+            name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await summaries.StoredAsync(tenant.Id)).ShouldEndWith("|ar");
+        await summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()

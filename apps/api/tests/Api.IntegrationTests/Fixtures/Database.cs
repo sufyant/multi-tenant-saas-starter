@@ -5,6 +5,7 @@ using ControlPlane.Infrastructure;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -156,6 +157,21 @@ public sealed class Database : IAsyncLifetime
                 ControlPlaneDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
         var last = controlPlane.Database.GetMigrations().Last();
         await controlPlane.Database.ExecuteSqlAsync($"DELETE FROM control_plane.__ef_migrations_history WHERE migration_id = {last}");
+
+        return name;
+    }
+
+    // A database set up the way a deployment is, then with ControlPlane taken back to the migration before the named one: the data a
+    // migration finds when it runs in production. Each migration's Down takes its change out.
+    public async Task<string> CreateDatabaseBeforeControlPlaneMigrationAsync(string migration)
+    {
+        var name = await CreateMigratedDatabaseAsync();
+        await using var controlPlane = new ControlPlaneDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<ControlPlaneDbContext>(
+                ControlPlaneDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        var migrations = controlPlane.Database.GetMigrations().ToList();
+        var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
+        await controlPlane.GetService<IMigrator>().MigrateAsync(before);
 
         return name;
     }

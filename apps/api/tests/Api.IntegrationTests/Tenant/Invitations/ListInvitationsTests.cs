@@ -51,7 +51,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state", "language"], ignoreOrder: true);
     }
 
     // The API answers the state from the invitation's expiry by its own clock (Invitation.StateAt), so the screen never reads it from the
