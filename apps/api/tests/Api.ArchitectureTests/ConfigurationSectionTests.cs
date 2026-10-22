@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace Api.ArchitectureTests;
 
-// Section 7, configuration rule 1: each module has its own configuration section. A module names each section it binds in a
+// Section 7, configuration rules 1 and 6: each module has its own configuration section. A module names each section it binds in a
 // Section constant, so the constants of its projects are every section it reads.
 public sealed class ConfigurationSectionTests
 {
@@ -21,5 +21,20 @@ public sealed class ConfigurationSectionTests
             .Select(field => (string)field.GetRawConstantValue()!);
 
         sections.Where(section => section != module && !section.StartsWith($"{module}:", StringComparison.Ordinal)).ShouldBeEmpty();
+    }
+
+    // Rule 6: each options class has a section of its own, so a vendor's name stays in a section of that vendor's settings only. One pair
+    // waits for a later step: SystemAdminOptions shares the section ControlPlane with TenantCreationOptions.
+    [Fact]
+    public void BindConfiguration_EachSection_IsNamedByOneClass()
+    {
+        var shared = Solution.AllProjects
+            .SelectMany(project => Solution.Load(project).GetTypes())
+            .SelectMany(type => type.GetFields(Declared).Where(field => field is { IsLiteral: true, Name: "Section" }).Select(field => (type, section: (string)field.GetRawConstantValue()!)))
+            .GroupBy(constant => constant.section, constant => constant.type.Name)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key}: {string.Join(", ", group.Order())}");
+
+        shared.ShouldBe(["ControlPlane: SystemAdminOptions, TenantCreationOptions"]);
     }
 }

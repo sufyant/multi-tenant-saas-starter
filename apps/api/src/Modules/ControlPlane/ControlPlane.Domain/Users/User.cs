@@ -25,7 +25,7 @@ internal sealed class User(Guid id, string externalId)
 
     /// <summary>
     /// The user's status: a deletion outranks a suspension, because the identity provider no longer knows the person. It is an
-    /// expression, so the queries filter by the same rule (B9).
+    /// expression, so the queries filter by the same rule (N7s).
     /// </summary>
     public static Expression<Func<User, UserStatus>> StatusOf => StatusExpression;
 

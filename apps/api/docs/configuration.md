@@ -11,11 +11,16 @@ Each process checks its settings when it starts. If a required setting is missin
 | Key | Required | Default | What it does |
 | --- | --- | --- | --- |
 | `Host:Role` | Required | none | The process type: `web` serves the API, `worker` handles messages, `all` does both in one process (local development and tests) |
-| `Api:IdempotencyKeyRetention` | Optional | `1.00:00:00` | How long the host keeps request keys and their results. Must be at least 24 hours. The worker sends a cleanup message each hour. Cleanup keeps an active claim |
+| `Host:Idempotency:KeyRetention` | Optional | `1.00:00:00` | How long the host keeps request keys and their results. Must be at least 24 hours. The worker sends a cleanup message each hour. Cleanup keeps an active claim |
 | `Host:ShutdownTimeout` | Optional | `00:00:30` | How long a stopping process may take to finish the work it has |
 | `Host:ManagementPort` | Optional | `8081` | The port of the health endpoints `/health/live` and `/health/ready`. The process listens on it on all interfaces and answers nothing else there. It must differ from the public port. Each process on one machine needs its own management port |
-| `Messaging:UnknownMessages:Delay` | Optional | `00:00:30` | How long a worker waits before a message it has no handler for is offered again. During a rolling deploy, an old worker puts back a message only the new version knows. Must be positive (W12) |
-| `Messaging:UnknownMessages:Tries` | Optional | `10` | How many times a worker puts back a message it has no handler for. After that, the message goes to the dead letter queue. Delay times tries must be longer than a deploy. Must be positive (W12) |
+| `Host:Messaging:UnknownMessages:Delay` | Optional | `00:00:30` | How long a worker waits before a message it has no handler for is offered again. During a rolling deploy, an old worker puts back a message only the new version knows. Must be positive (W12) |
+| `Host:Messaging:UnknownMessages:Tries` | Optional | `10` | How many times a worker puts back a message it has no handler for. After that, the message goes to the dead letter queue. Delay times tries must be longer than a deploy. Must be positive (W12) |
+| `Host:Messaging:DeadLetters:Retention` | Optional | `14.00:00:00` | How long a message stays in the dead letter queue. Then a worker deletes it. An invitation email's message holds the address and the link with its secret. Must be positive (W13; `docs/deployment.md`, section 14) |
+| `Host:RateLimiting:PermitLimit` | Optional | `1000` (`appsettings.json`) | Requests each user may make in a window, in each process |
+| `Host:RateLimiting:Window` | Optional | `00:01:00` (`appsettings.json`) | The rate limit's window |
+| `Host:RateLimiting:InvitationAccept:PermitLimit` | Optional | `10` | Invitation accepts each user may make in a window, on top of the general limit |
+| `Host:RateLimiting:InvitationAccept:Window` | Optional | `00:01:00` | The window of the invitation accept limit |
 | `ConnectionStrings:Database` | Required | none | The application role's connection. Requests and handlers use it, and Wolverine too unless `ConnectionStrings:Messaging` is set |
 | `ConnectionStrings:Messaging` | Optional | `ConnectionStrings:Database` | The application role's direct or session-mode connection for Wolverine's message store. Needed when `ConnectionStrings:Database` goes through a pooler in transaction mode |
 | `ConnectionStrings:Migrations` | Required by `migrate` only | none | The owner role's direct connection. Given only to the `migrate` command, never to a running process (R3) |
@@ -23,23 +28,19 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Authentication:Clerk:AuthorizedParties` | Required outside Development. **Development:** may be empty | none | The origins of the clients allowed to use the API (the tokens' `azp`): item 0 is the web app's origin, item 1 the platform app's, which runs on an origin of its own. With none, a token issued to any origin is accepted |
 | `ForwardedHeaders:KnownProxies` | Optional | none | IP addresses of trusted reverse proxies. With no proxy and no network, forwarded headers are not read |
 | `ForwardedHeaders:KnownNetworks` | Optional | none | Trusted proxy networks in CIDR notation |
-| `RateLimiting:PermitLimit` | Optional | `1000` (`appsettings.json`) | Requests each user may make in a window, in each process |
-| `RateLimiting:Window` | Optional | `00:01:00` (`appsettings.json`) | The rate limit's window |
-| `RateLimiting:InvitationAccept:PermitLimit` | Optional | `10` | Invitation accepts each user may make in a window, on top of the general limit |
-| `RateLimiting:InvitationAccept:Window` | Optional | `00:01:00` | The window of the invitation accept limit |
 | `ControlPlane:FirstSystemAdminEmail` | Required while the system admin list is empty | none | The verified email address of the first system admin, who is granted on their first request to `/v1/platform/...` |
 | `ControlPlane:ActivationTimeout` | Optional | `00:10:00` | From the start of a tenant creation until the tenant is active; then the tenant creation needs attention |
-| `ControlPlane:InvitationEmailTimeout` | Optional | `02:00:00` | From the tenant's activation until the invitation email is sent. Must be longer than `ControlPlane:Clerk:RetryDelays` and `Notifications:InvitationEmailRetryDelays` together. The host checks this on start; the error names the three keys and their values |
+| `ControlPlane:InvitationEmailTimeout` | Optional | `02:00:00` | From the tenant's activation until the invitation email is sent. Must be longer than `ControlPlane:IdentityProvider:RetryDelays` and `Notifications:InvitationEmails:RetryDelays` together. The host checks this on start; the error names the three keys and their values |
 | `ControlPlane:CancellationTimeout` | Optional | `00:10:00` | From the start of a cancellation until the tenant is cancelled; then the tenant creation needs attention |
 | `ControlPlane:Clerk:SecretKey` | Required | none | The identity provider's Backend API secret key |
 | `ControlPlane:Clerk:BackendApiUrl` | Optional | `https://api.clerk.com/v1/` | The identity provider's Backend API URL, ending in `/` |
 | `ControlPlane:Clerk:Timeout` | Optional | `00:00:10` | How long a Backend API call may take |
-| `ControlPlane:Clerk:RetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of a call to the identity provider that failed: letting an invited address sign up, withdrawing it, deleting a user. Positive, and each longer than the one before. Configured pauses replace the defaults. After the last try the message goes to the dead letter queue |
+| `ControlPlane:IdentityProvider:RetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of a call to the identity provider that failed: letting an invited address sign up, withdrawing it, deleting a user. Positive, and each longer than the one before. Configured pauses replace the defaults. After the last try the message goes to the dead letter queue |
 | `ControlPlane:Invitations:AcceptUrl` | Required | none | The frontend page that accepts an invitation. The invitation code is added as the `code` parameter |
 | `ControlPlane:Invitations:Lifetime` | Optional | `7.00:00:00` | How long an invitation can be accepted. At least one day: the invitation email says it in whole days, rounded down |
 | `ControlPlane:Invitations:DailyLimitPerTenant` | Optional | `50` | How many invitations a tenant may create in a rolling window of `InviteMemberHandler.LimitWindow`, cancelled and replaced ones included. Positive |
 | `ControlPlane:Tenants:ReopenPeriod` | Optional | `30.00:00:00` | How long after its closure a system admin can reopen a tenant (K4). Positive |
-| `Notifications:InvitationEmailRetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of an invitation email, to a tenant's first owner or to a person a member invited. Each is positive and longer than the one before |
+| `Notifications:InvitationEmails:RetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of an invitation email, to a tenant's first owner or to a person a member invited. Each is positive and longer than the one before |
 | `Notifications:Resend:ApiKey` | Required outside Development. **Development:** may be empty | none | Resend's API key. In Development without it, or without `From`, email is written to the log. With both set, email is really sent, in Development too |
 | `Notifications:Resend:From` | Required outside Development. **Development:** may be empty | none | The sender, such as `App <no-reply@example.com>`, on a domain verified at Resend |
 | `Notifications:Resend:ApiUrl` | Optional | `https://api.resend.com/` | Resend's API URL |

@@ -75,7 +75,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         (await SuspendedAtAsync(systemAdmin)).ShouldBeNull();
     }
 
-    // One error code has one text (C7): suspension answers the text that deletion answers.
+    // One error code has one text (N11w): suspension answers the text that deletion answers.
     [Fact]
     public async Task SuspendUser_ASystemAdmin_AnswersTheTextOfTheCode()
     {

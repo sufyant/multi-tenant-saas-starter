@@ -15,12 +15,12 @@ public sealed class IdempotencyRetentionTests(Database database)
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString, settings: new Dictionary<string, string?>
         {
-            ["Api:IdempotencyKeyRetention"] = "23:59:59",
+            ["Host:Idempotency:KeyRetention"] = "23:59:59",
         });
 
         var start = () => api.CreateClient();
 
-        start.ShouldThrow<Exception>().Message.ShouldContain("Api:IdempotencyKeyRetention");
+        start.ShouldThrow<Exception>().Message.ShouldContain("Host:Idempotency:KeyRetention");
     }
 
     [Theory]
@@ -34,7 +34,7 @@ public sealed class IdempotencyRetentionTests(Database database)
             {
                 ["Host:Role"] = "worker",
                 ["ConnectionStrings:Database"] = await OwnDatabaseAsync(),
-                ["Api:IdempotencyKeyRetention"] = TimeSpan.FromHours(retentionHours).ToString("c", System.Globalization.CultureInfo.InvariantCulture),
+                ["Host:Idempotency:KeyRetention"] = TimeSpan.FromHours(retentionHours).ToString("c", System.Globalization.CultureInfo.InvariantCulture),
             },
             services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(clock)));
         var subject = Guid.NewGuid().ToString();

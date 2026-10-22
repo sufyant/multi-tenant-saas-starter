@@ -191,7 +191,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         await invoke.ShouldThrowAsync<FormatException>();
     }
 
-    // Spike T8: each handler of one event runs in its own transaction (O3).
+    // The spike's T08_separated_handlers_commit_independently: each handler of one event runs in its own transaction (O3).
     [Fact]
     public async Task PublishAnEventWithTwoHandlers_OneThrows_TheOtherCommits()
     {
@@ -204,7 +204,8 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         (await ReadProbesAsync(tenant)).ShouldBe([$"recorded:{value}"]);
     }
 
-    // Spike T10a: Wolverine does not look at a Result, so a handler rejects before it changes anything (W7).
+    // The spike's T10a_failed_result_after_a_change_is_committed: Wolverine does not look at a Result, so a handler rejects before it
+    // changes anything (W7).
     [Fact]
     public async Task InvokeForTenant_HandlerRejectsAfterAChange_ChangeIsCommitted()
     {

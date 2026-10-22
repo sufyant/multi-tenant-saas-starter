@@ -104,7 +104,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return found.SingleOrDefault();
     }
 
-    // B8: the one sequence of a membership's change (R13): the membership, the tenant's summary, the user's count, and the save.
+    // The one sequence of a membership's change (R13): the membership, the tenant's summary, the user's count, and the save.
     async Task ITenantRepository.AddMembershipAsync(Tenant tenant, Guid userId, Guid roleId, DateTimeOffset joinedAt, CancellationToken cancellationToken)
     {
         controlPlane.Memberships.Add(new Membership(controlPlane.ActiveTenant, userId, roleId, joinedAt));

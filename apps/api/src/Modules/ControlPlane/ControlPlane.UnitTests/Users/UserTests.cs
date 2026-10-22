@@ -45,7 +45,7 @@ public sealed class UserTests
     }
 
     // A person who joins through an invitation is created at that moment. ControlPlane adds and counts the membership of the tenant they
-    // join, as it does for a known user (B8), so a new user starts with none.
+    // join, as it does for a known user (R13), so a new user starts with none.
     [Fact]
     public void JoinUser_NewPerson_IsCreatedAtTheMomentWithNoMembershipYet()
     {
@@ -236,7 +236,7 @@ public sealed class UserTests
         user.TimeZone.ShouldBeNull();
     }
 
-    // B9: a deletion outranks a suspension, and a query reads the status by the same rule as the user does.
+    // N7s: a deletion outranks a suspension, and a query reads the status by the same rule as the user does.
     [Fact]
     public void DeleteUser_Suspended_IsDeletedToTheUserAndToAQuery()
     {

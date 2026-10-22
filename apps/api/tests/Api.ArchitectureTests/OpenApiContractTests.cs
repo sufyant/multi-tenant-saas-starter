@@ -766,7 +766,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     private static Type? EnumTypeOf(Type type) => (Nullable.GetUnderlyingType(type) ?? type) is { IsEnum: true } found ? found : null;
 
-    // The values an enum has in JSON, from SharedKernel's one source of them (B10).
+    // The values an enum has in JSON, from SharedKernel's one source of them (D1).
     private static string JsonValuesOf(Type type) =>
         type.IsEnum ? string.Join(", ", JsonNamesOf(type)) : $"<{type.Name}, not an enum>";
 

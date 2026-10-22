@@ -16,7 +16,7 @@ Run from `apps/api/`.
 - Test: `dotnet test --solution Api.slnx`. Needs Docker: tests run on PostgreSQL 18 in a container.
 - Format C#: `dotnet format whitespace Api.slnx`.
 - Write Wolverine's handler code after a change to a handler, a message, a saga, a middleware or a registration: `pnpm codegen` (`pnpm api:codegen` from the repository root). Commit `src/Api/Internal/Generated`. `HandlerCodeFileTests` fails otherwise. (W10)
-- Run every generator after a change to a source of generated code: `pnpm generate` from the repository root. It writes the CSS of the design tokens, the permission list, Wolverine's handler code, `openapi/v1.json` and the API client, in that order. Commit what it changes; the CI job `generated` fails otherwise. (D1, "Generated files" in section 2)
+- Run every generator after a change to a source of generated code: `pnpm generate` from the repository root. It writes the CSS of the design tokens, the permission list, Wolverine's handler code, `openapi/v1.json` and the API client, in that order. Commit what it changes; the CI job `generated` fails otherwise. A version change of a generator package, such as Wolverine or Orval, is a change to a source of generated code too. (D1, "Generated files" in section 2)
 - Add a migration to module X: `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/X/X.Infrastructure --output-dir Persistence/Migrations`.
 - Run the system: follow `docs/local-run.md`. One build output; `Host:Role` is `web`, `worker` or `all`.
 

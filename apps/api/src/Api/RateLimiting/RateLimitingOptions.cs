@@ -2,7 +2,7 @@ namespace Api.RateLimiting;
 
 internal sealed class RateLimitingOptions
 {
-    public const string Section = "RateLimiting";
+    public const string Section = "Host:RateLimiting";
 
     public int PermitLimit { get; set; }
 

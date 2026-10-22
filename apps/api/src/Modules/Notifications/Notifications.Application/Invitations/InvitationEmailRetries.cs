@@ -21,7 +21,7 @@ internal sealed class InvitationEmailRetries(IOptions<InvitationEmailOptions> se
 
     public void Apply(IReadOnlyList<HandlerChain> chains, GenerationRules rules, IServiceContainer container)
     {
-        var (inline, scheduled) = GrowingRetries.Of(settings.Value.RetryDelays);
+        var (inline, scheduled) = GrowingRetries.Of(settings.Value.Delays);
         foreach (var chain in chains.Where(chain => chain.MessageType == typeof(OwnerInvitationReadyEvent) || chain.MessageType == typeof(MemberInvitationReadyEvent)))
         {
             var retries = chain.OnAnyException();

@@ -23,10 +23,10 @@ internal static class UnknownMessageOptionsExtensions
     }
 }
 
-// How far apart, and how often, a node puts back a message it has no handler for (Messaging:UnknownMessages, W12).
+// How far apart, and how often, a node puts back a message it has no handler for (Host:Messaging:UnknownMessages, W12).
 internal sealed class UnknownMessageOptions
 {
-    public const string Section = "Messaging:UnknownMessages";
+    public const string Section = "Host:Messaging:UnknownMessages";
 
     public TimeSpan Delay { get; set; } = TimeSpan.FromSeconds(30);
 

@@ -82,9 +82,9 @@ public sealed class InvitationDeliveryTests(Database database)
             database.ConnectionStringFor(DatabaseRoles.Application),
             settings: new Dictionary<string, string?>
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:00:00.100",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:00:00.200",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:00:00.400",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:00:00.100",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:00:00.200",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:00:00.400",
             });
         api.Email.FailNext(2);
         var email = $"{Guid.NewGuid():N}@example.com";
@@ -112,9 +112,9 @@ public sealed class InvitationDeliveryTests(Database database)
             database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:02:00",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:03:00",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:01:00",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:02:00",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:03:00",
             });
         var refused = $"{Guid.NewGuid():N}@example.com";
         var next = $"{Guid.NewGuid():N}@example.com";
@@ -147,9 +147,9 @@ public sealed class InvitationDeliveryTests(Database database)
             database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:02:00",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:03:00",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:01:00",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:02:00",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:03:00",
             },
             configureServices: services => services.AddLogging(logging => logging.AddProvider(new SlowRescheduleLog())));
         var refused = $"{Guid.NewGuid():N}@example.com";
