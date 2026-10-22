@@ -38,6 +38,6 @@ public static class RemoveMemberHandler
 
         var now = time.GetUtcNow();
         var role = facts.Roles.Of(target.RoleId);
-        return (Result.Success(), [new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name)]);
+        return (Result.Success(), [new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name, role.Id, role.BuiltIn is not null)]);
     }
 }

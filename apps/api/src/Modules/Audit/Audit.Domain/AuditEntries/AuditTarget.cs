@@ -9,4 +9,7 @@ internal sealed record AuditTarget(AuditTargetKind Kind, Guid Id, string? Name)
 
     /// <summary>An invitation, by its id only: its email address is a person's (K3).</summary>
     public static AuditTarget Invitation(Guid invitationId) => new(AuditTargetKind.Invitation, invitationId, null);
+
+    /// <summary>A role of the tenant, with its name of that moment: a role is not a person (K3).</summary>
+    public static AuditTarget Role(Guid roleId, string name) => new(AuditTargetKind.Role, roleId, name);
 }

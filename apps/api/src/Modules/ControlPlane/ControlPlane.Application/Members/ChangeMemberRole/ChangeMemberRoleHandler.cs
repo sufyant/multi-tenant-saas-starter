@@ -28,7 +28,11 @@ public static class ChangeMemberRoleHandler
         var (tenant, actor, actorMembership) = start.Value;
 
         var facts = await tenants.FindMemberFactsAsync(command.UserId, cancellationToken);
-        var role = facts.Roles.BuiltIn(Enum.Parse<BuiltInRole>(command.Role));
+        if (facts.Roles.Find(command.RoleId) is not { } role)
+        {
+            return (Role.NotFound, []);
+        }
+
         var changed = tenant.ChangeRole(actorMembership, role, facts);
         if (!changed.IsSuccess)
         {
@@ -47,6 +51,21 @@ public static class ChangeMemberRoleHandler
         await tenants.SaveAsync(tenant, cancellationToken);
 
         var now = time.GetUtcNow();
-        return (member, [new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, oldRole.Name, role.Name)]);
+        return (
+            member,
+            [
+                new MemberRoleChangedEvent(
+                    Guid.CreateVersion7(now),
+                    now,
+                    tenant.Id,
+                    target.UserId,
+                    actor.Id,
+                    oldRole.Name,
+                    role.Name,
+                    oldRole.Id,
+                    oldRole.BuiltIn is not null,
+                    role.Id,
+                    role.BuiltIn is not null),
+            ]);
     }
 }

@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
+using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api.Platform.Users;
 
@@ -150,7 +151,7 @@ public static class UserEndpoints
         membership.TenantName,
         membership.TenantSlug,
         ResponseStatus.OfUserMembership(membership.TenantStatus),
-        MemberEndpoints.ToResponse(membership.Role),
+        RoleEndpoints.ToResponse(membership.Role),
         membership.JoinedAt,
         membership.LastOwner);
 }

@@ -37,7 +37,11 @@ public static class InviteMemberHandler
         var now = time.GetUtcNow();
         var email = EmailAddress.Create(command.Email);
         var roles = await tenants.FindRolesAsync(cancellationToken);
-        var role = roles.BuiltIn(Enum.Parse<BuiltInRole>(command.Role));
+        if (roles.Find(command.RoleId) is not { } role)
+        {
+            return (Role.NotFound, []);
+        }
+
         var inviter = Inviter.Member(actor.Id, actor.Language, roles.Of(actorMembership.RoleId));
         var secret = InvitationSecret.Generate();
         var invited = tenant.Invite(
@@ -63,7 +67,9 @@ public static class InviteMemberHandler
                     invitation.Id,
                     actor.Id,
                     role.Name,
-                    replaced.SingleOrDefault()?.Id),
+                    replaced.SingleOrDefault()?.Id,
+                    role.Id,
+                    role.BuiltIn is not null),
                 OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
                 .. WithdrawSignUpCommand.For(replaced),
             ]);

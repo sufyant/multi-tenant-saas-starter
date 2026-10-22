@@ -33,6 +33,28 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode MemberOwnerRequiresOwner = ErrorCode.Declare("member.owner_requires_owner");
 
+    public static readonly ErrorCode RoleBuiltIn = ErrorCode.Declare("role.built_in");
+
+    public static readonly ErrorCode RoleEscalation = ErrorCode.Declare("role.escalation");
+
+    public static readonly ErrorCode RoleInUse = ErrorCode.Declare("role.in_use");
+
+    public static readonly ErrorCode RoleLimitReached = ErrorCode.Declare("role.limit_reached");
+
+    public static readonly ErrorCode RoleNameInvalid = ErrorCode.Declare("role.name_invalid");
+
+    public static readonly ErrorCode RoleNameTaken = ErrorCode.Declare("role.name_taken");
+
+    public static readonly ErrorCode RoleNotFound = ErrorCode.Declare("role.not_found");
+
+    public static readonly ErrorCode RoleNotPermitted = ErrorCode.Declare("role.not_permitted");
+
+    public static readonly ErrorCode RolePermissionInvalid = ErrorCode.Declare("role.permission_invalid");
+
+    public static readonly ErrorCode RolePermissionOwnerOnly = ErrorCode.Declare("role.permission_owner_only");
+
+    public static readonly ErrorCode RolePermissionsRequired = ErrorCode.Declare("role.permissions_required");
+
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
 
     public static readonly ErrorCode TenantHasOwner = ErrorCode.Declare("tenant.has_owner");

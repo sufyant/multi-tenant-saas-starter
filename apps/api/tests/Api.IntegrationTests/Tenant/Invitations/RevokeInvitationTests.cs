@@ -163,6 +163,36 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         _api.Identity.Withdrawn.Where(withdrawn => withdrawn == signUp).ShouldHaveSingleItem();
     }
 
+    // Decision 2 of step r4b: nobody revokes an invitation that gives a role stronger than their own.
+    [Fact]
+    public async Task RevokeInvitation_OfARoleStrongerThanTheRevokers_IsForbiddenAsAnEscalationAndStaysPending()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.delete", "tenant.members.read", "tenant.profile.read");
+        var revoker = await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter);
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, role: "Admin");
+
+        var revoked = await RevokeAsync(revoker, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(revoked)).ShouldBe("role.escalation");
+        (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
+    }
+
+    [Fact]
+    public async Task RevokeInvitation_OfARoleTheRevokerHoldsExactly_CancelsIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.delete", "tenant.members.read", "tenant.profile.read");
+        var revoker = await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter);
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id);
+
+        var revoked = await RevokeAsync(revoker, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Cancelled");
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

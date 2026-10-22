@@ -43,7 +43,7 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Profile Ltd", tenant.Slug, "active"));
-        Roles.Of(found).ShouldBe(Roles.BuiltIn(name));
+        RoleAnswers.Of(found).ShouldBe(RoleAnswers.BuiltIn(name));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(createdAt);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt"], ignoreOrder: true);
     }
@@ -73,6 +73,25 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
         found.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(permissions);
+    }
+
+    // A3: a custom role's member gets that role's permissions, from its rows, and the door lets them in and keeps them out by them.
+    [Fact]
+    public async Task GetMyTenant_AMemberOfACustomRole_ReturnsItsPermissionsAndTheDoorAllowsAndRefusesByThem()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Auditor", Permissions.TenantProfileRead, Permissions.TenantAuditRead);
+        var client = _api.CreateClient(await _testData.AddMemberWithRoleAsync(tenant.Id, roleId));
+
+        var found = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
+        var allowed = await client.GetAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
+        var refused = await client.GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
+
+        found.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe([Permissions.TenantAuditRead, Permissions.TenantProfileRead]);
+        RoleAnswers.Of(found).ShouldBe(RoleAnswers.Custom("Auditor"));
+        found.GetProperty("role").GetProperty("id").GetGuid().ShouldBe(roleId);
+        allowed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        refused.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     // The list is for the screen only: a Member whose list lacks a permission is still refused by the endpoint that needs it.

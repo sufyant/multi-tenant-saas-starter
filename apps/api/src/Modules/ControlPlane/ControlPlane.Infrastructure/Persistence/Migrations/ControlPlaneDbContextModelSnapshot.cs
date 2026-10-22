@@ -53,6 +53,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("TenantId", "Id")
                         .HasName("ak_roles_tenant_id_id");
 
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_roles_name");
+
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_roles_tenant_id");
 
@@ -61,10 +64,39 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_roles_tenant_id_built_in")
                         .HasFilter("built_in IS NOT NULL");
 
+                    b.HasIndex(new[] { "Name" }, "ix_roles_name_trgm")
+                        .HasDatabaseName("ix_roles_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_roles_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_roles_name_trgm"), new[] { "gin_trgm_ops" });
+
                     b.ToTable("roles", "control_plane", t =>
                         {
                             t.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member')");
                         });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Roles.RolePermission", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Permission")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("permission");
+
+                    b.HasKey("TenantId", "RoleId", "Permission")
+                        .HasName("pk_role_permissions");
+
+                    b.ToTable("role_permissions", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
@@ -121,7 +153,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(35)")
                         .HasColumnName("language");
 
-                    b.Property<Guid>("RoleId")
+                    b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid")
                         .HasColumnName("role_id");
 
@@ -183,7 +215,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_invitations_pending_email")
                         .HasFilter("status = 'Pending'");
 
-                    b.ToTable("invitations", "control_plane");
+                    b.ToTable("invitations", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_invitations_pending_has_role", "status <> 'Pending' OR role_id IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
@@ -429,6 +464,17 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_roles_tenants_tenant_id");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Roles.RolePermission", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
+                        .WithMany("Grants")
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_permissions_roles_tenant_id_role_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
@@ -465,8 +511,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("TenantId", "RoleId")
                         .HasPrincipalKey("TenantId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
+                        .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_invitations_roles_tenant_id_role_id");
                 });
 
@@ -512,6 +557,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SuspendedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_users_users_suspended_by");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
+                {
+                    b.Navigation("Grants");
                 });
 #pragma warning restore 612, 618
         }

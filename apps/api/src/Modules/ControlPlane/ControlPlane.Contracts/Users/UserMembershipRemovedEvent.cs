@@ -8,6 +8,15 @@ namespace ControlPlane.Contracts.Users;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="UserId">The user id of the user who left.</param>
-/// <param name="Role">The built-in role the user had: <c>owner</c>, <c>admin</c> or <c>member</c>.</param>
+/// <param name="Role">The name of the role the user had: <c>owner</c>, <c>admin</c>, <c>member</c> or a custom role's.</param>
+/// <param name="RoleId">The id of that role. Null only in a message that a version before step r4b published.</param>
+/// <param name="RoleBuiltIn">Whether that role is built in. Null only in a message that a version before step r4b published.</param>
 [MessageName("user-membership-removed")]
-public sealed record UserMembershipRemovedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, string Role);
+public sealed record UserMembershipRemovedEvent(
+    Guid EventId,
+    DateTimeOffset OccurredAt,
+    Guid TenantId,
+    Guid UserId,
+    string Role,
+    Guid? RoleId,
+    bool? RoleBuiltIn);

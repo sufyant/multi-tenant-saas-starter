@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
+using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api.Me.Invitations;
 
@@ -110,7 +111,7 @@ public static class MyInvitationEndpoints
             preview.Inviter.Name?.FirstName,
             preview.Inviter.Name?.LastName,
             preview.Inviter.Name?.Deleted),
-        MemberEndpoints.ToResponse(preview.Role),
+        preview.Role is null ? null : RoleEndpoints.ToResponse(preview.Role),
         preview.ExpiresAt,
         ResponseStatus.OfInvitation(preview.State));
 }

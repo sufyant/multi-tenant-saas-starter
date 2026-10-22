@@ -19,6 +19,13 @@ internal static class TenantTables
                 """),
         ["control_plane.invitations"] = new(ApplicationMayUpdate: true, tenant => InvitationRow(tenant, MemberRole)),
         ["control_plane.memberships"] = new(ApplicationMayUpdate: true, tenant => MembershipRow(tenant, MemberRole)),
+        ["control_plane.role_permissions"] = new(
+            ApplicationMayUpdate: true,
+            tenant => $"""
+                WITH role AS (
+                    INSERT INTO control_plane.roles (id, tenant_id, name) VALUES (gen_random_uuid(), '{tenant}', 'Isolation granted') RETURNING id)
+                INSERT INTO control_plane.role_permissions (tenant_id, role_id, permission) SELECT '{tenant}', role.id, 'tenant.members.read' FROM role
+                """),
         ["control_plane.roles"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO control_plane.roles (id, tenant_id, name) VALUES (gen_random_uuid(), '{tenant}', 'Isolation')",
@@ -40,12 +47,14 @@ internal static class TenantTables
     public static string CountRowsOf(string table, Guid tenantId) =>
         $"SELECT count(*) FROM {table} WHERE tenant_id = '{tenantId}' AND {All[table].OwnRows}";
 
-    // A2: a row of a table that names a role, with the role given by its id.
+    // A2, A3: a row of a table that names a role, with the role given by its id.
     public static string InsertRowWithRole(string table, Guid tenantId, Guid roleId) => table switch
     {
         "control_plane.invitations" => InvitationRow(tenantId, $"'{roleId}'"),
         "control_plane.memberships" => MembershipRow(tenantId, $"'{roleId}'"),
-        _ => throw new ArgumentOutOfRangeException(nameof(table), table, "Only memberships and invitations name a role."),
+        "control_plane.role_permissions" =>
+            $"INSERT INTO control_plane.role_permissions (tenant_id, role_id, permission) VALUES ('{tenantId}', '{roleId}', 'tenant.members.read')",
+        _ => throw new ArgumentOutOfRangeException(nameof(table), table, "Only memberships, invitations and role permissions name a role."),
     };
 
     private static string InvitationRow(Guid tenant, string role) =>

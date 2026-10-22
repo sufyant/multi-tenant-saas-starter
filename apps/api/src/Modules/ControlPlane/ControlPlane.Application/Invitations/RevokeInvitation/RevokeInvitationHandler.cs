@@ -9,7 +9,8 @@ namespace ControlPlane.Application.Invitations.RevokeInvitation;
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row
 // is locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
-// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. The rule is the tenant's (M1, Tenant.Revoke).
+// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. The rules are the tenant's (M1,
+// Tenant.Revoke), the escalation rule among them: the revoker's role holds every permission of the invitation's role.
 // Rejections come first (W7).
 public static class RevokeInvitationHandler
 {
@@ -26,10 +27,11 @@ public static class RevokeInvitationHandler
             return (start.Error, []);
         }
 
-        var (tenant, actor, _) = start.Value;
+        var (tenant, actor, actorMembership) = start.Value;
 
         var invitation = await tenants.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken);
-        var revoked = tenant.Revoke(invitation);
+        var roles = await tenants.FindRolesAsync(cancellationToken);
+        var revoked = tenant.Revoke(roles.Of(actorMembership.RoleId), invitation, roles);
         if (!revoked.IsSuccess || revoked.Value == StateChange.Unchanged)
         {
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), []);

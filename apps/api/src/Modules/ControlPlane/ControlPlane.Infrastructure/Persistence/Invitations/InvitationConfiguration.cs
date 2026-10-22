@@ -25,8 +25,12 @@ internal sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitat
         invitation.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
         invitation.Property(i => i.Language).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
         invitation.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId);
-        // A2: a role of the invitation's own tenant, as a membership's.
-        invitation.HasOne<Role>().WithMany().HasForeignKey(i => new { i.TenantId, i.RoleId }).HasPrincipalKey(r => new { r.TenantId, r.Id }).OnDelete(DeleteBehavior.Restrict);
+        // A2: a role of the invitation's own tenant, as a membership's. A finished invitation keeps no role once its custom role is deleted:
+        // the migration KeepFinishedInvitationsOfADeletedRole writes the key ON DELETE SET NULL (role_id), which nulls the role and keeps the
+        // tenant (PostgreSQL 15 and later). EF Core cannot model a column list there, so the model says NoAction and the database does the
+        // rest. A pending invitation always has a role (ck_invitations_pending_has_role), and a role in use cannot be deleted (A3).
+        invitation.HasOne<Role>().WithMany().HasForeignKey(i => new { i.TenantId, i.RoleId }).HasPrincipalKey(r => new { r.TenantId, r.Id }).OnDelete(DeleteBehavior.NoAction);
+        invitation.ToTable(table => table.HasCheckConstraint("ck_invitations_pending_has_role", "status <> 'Pending' OR role_id IS NOT NULL"));
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedBy).OnDelete(DeleteBehavior.Restrict);
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.AcceptedBy).OnDelete(DeleteBehavior.Restrict);
     }

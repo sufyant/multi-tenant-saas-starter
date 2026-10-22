@@ -19,7 +19,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
 /// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, system admins), and the roles,
-/// memberships and invitations, which belong to a tenant and are under row level security.
+/// their permissions, memberships and invitations, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
@@ -44,6 +44,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     internal DbSet<Membership> Memberships => Set<Membership>();
 
     internal DbSet<Role> Roles => Set<Role>();
+
+    internal DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     internal DbSet<Invitation> Invitations => Set<Invitation>();
 
@@ -119,6 +121,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new TenantSummaryConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
+        modelBuilder.ApplyConfiguration(new RolePermissionConfiguration());
         modelBuilder.ApplyConfiguration(new MembershipConfiguration());
         modelBuilder.ApplyConfiguration(new InvitationConfiguration());
         modelBuilder.ApplyConfiguration(new SystemAdminConfiguration());

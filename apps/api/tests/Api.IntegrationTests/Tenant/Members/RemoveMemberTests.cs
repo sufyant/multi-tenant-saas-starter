@@ -45,7 +45,8 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await IsMemberAsync(tenant.Id, member)).ShouldBe(0);
         (await _audit.TenantLogAsync(member))
             .ShouldBe($"{tenant.Id}:member.removed|User|{await _testData.UserIdOfAsync(actor)}|User|{member}|-");
-        (await _audit.TenantDetailsAsync(member)).ShouldBe($$"""{"role": "{{recordedRole}}"}""");
+        (await _audit.TenantDetailsAsync(member))
+            .ShouldBe($$"""{"role": "{{recordedRole}}", "roleId": "{{await _testData.RoleIdOfAsync(tenant.Id, memberRole)}}", "roleBuiltIn": true}""");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -195,6 +196,35 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "@")).ShouldBe(0);
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "Grace")).ShouldBe(0);
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "Hopper")).ShouldBe(0);
+    }
+
+    // Decision 2 of step r4b: nobody removes a member whose role is stronger than their own.
+    [Fact]
+    public async Task RemoveMember_AMemberWhoseRoleIsStrongerThanTheActors_IsForbiddenAsAnEscalationAndStays()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var lead = await _testData.AddCustomRoleAsync(tenant.Id, "Lead", "tenant.members.delete", "tenant.members.read", "tenant.profile.read");
+        var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, lead);
+        var admin = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Admin"));
+
+        var removed = await _api.CreateClient(actor).RemoveMemberAsync(tenant.Id, admin);
+
+        removed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(removed)).ShouldBe("role.escalation");
+        (await IsMemberAsync(tenant.Id, admin)).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task RemoveMember_AMemberWhoseRoleTheActorHoldsExactly_RemovesIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var lead = await _testData.AddCustomRoleAsync(tenant.Id, "Lead", "tenant.members.delete", "tenant.members.read", "tenant.profile.read");
+        var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, lead);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+
+        var removed = await _api.CreateClient(actor).RemoveMemberAsync(tenant.Id, member);
+
+        removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

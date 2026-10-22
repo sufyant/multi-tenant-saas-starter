@@ -49,7 +49,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             OwnerInvitationView.Of(found.Summary, now));
     }
 
-    // The tenant, the person and their membership's role, in three queries; row level security keeps the membership to the active tenant.
+    // The tenant, the person and their membership's role with its permissions, in three queries; row level security keeps the membership
+    // and the role's permissions to the active tenant. A custom role's permissions are its rows (A3).
     async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, CancellationToken cancellationToken)
     {
         if (await FindAsync(cancellationToken) is not { } tenant
@@ -59,6 +60,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
                     where membership.UserId == user.Id
                     join found in controlPlane.Roles on membership.RoleId equals found.Id
                     select found)
+                .Include(found => found.Grants)
                 .AsNoTracking()
                 .SingleOrDefaultAsync(cancellationToken) is not { } role)
         {

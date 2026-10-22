@@ -34,7 +34,9 @@ public static class RemoveUserMembershipHandler
         await tenants.RemoveMembershipAsync(tenant, membership, cancellationToken);
 
         var now = time.GetUtcNow();
-        var role = facts.Roles.Of(membership.RoleId).Name;
-        return (Result.Success(), [new UserMembershipRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, command.UserId, role)]);
+        var role = facts.Roles.Of(membership.RoleId);
+        return (
+            Result.Success(),
+            [new UserMembershipRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, command.UserId, role.Name, role.Id, role.BuiltIn is not null)]);
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
@@ -27,6 +28,9 @@ internal sealed class Tenant
         Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed or closed.");
 
     private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MemberLastOwner, "A tenant always has at least one Owner.");
+
+    private static readonly Error RoleBuiltIn =
+        Error.Conflict(ControlPlaneErrorCodes.RoleBuiltIn, "A built-in role keeps its name and its permissions, and cannot be deleted.");
 
     private Tenant(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
@@ -211,7 +215,8 @@ internal sealed class Tenant
     /// <summary>
     /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's, asked as the permission
     /// <c>tenant.owners.manage</c> (A1): only a member whose role holds it gives or takes a role that holds it, and the last member whose
-    /// role holds it keeps it. A member may change their own role under the same rules. The caller holds the tenant's
+    /// role holds it keeps it. The actor's role holds every permission of the member's role and of the new one (decision 2 of step r4b,
+    /// <see cref="Role.CheckEscalation"/>). A member may change their own role under the same rules. The caller holds the tenant's
     /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). Every rejection comes before the
     /// change.
     /// </summary>
@@ -224,9 +229,16 @@ internal sealed class Tenant
 
         var oldRole = facts.Roles.Of(target.RoleId);
         var givesOrTakesOwner = ManagesOwners(role) || ManagesOwners(oldRole);
-        if (givesOrTakesOwner && !ManagesOwners(facts.Roles.Of(actor.RoleId)))
+        var actorRole = facts.Roles.Of(actor.RoleId);
+        if (givesOrTakesOwner && !ManagesOwners(actorRole))
         {
             return OwnerRequiresOwner;
+        }
+
+        var escalation = Role.CheckEscalation(actorRole, oldRole.Permissions.Concat(role.Permissions));
+        if (!escalation.IsSuccess)
+        {
+            return escalation.Error;
         }
 
         if (ManagesOwners(oldRole) && !ManagesOwners(role) && facts.Owners <= 1)
@@ -239,7 +251,8 @@ internal sealed class Tenant
 
     /// <summary>
     /// The actor removes the target member, under the rules of K1: nobody removes themselves, only a member whose role holds
-    /// <c>tenant.owners.manage</c> removes a member whose role holds it, and the last such member stays (A1). The caller holds the tenant's lock and read the facts under it (K6j). Returns the membership to remove; the caller
+    /// <c>tenant.owners.manage</c> removes a member whose role holds it, the actor's role holds every permission of the member's role
+    /// (<see cref="Role.CheckEscalation"/>), and the last such member stays (A1). The caller holds the tenant's lock and read the facts under it (K6j). Returns the membership to remove; the caller
     /// removes it, with what follows from it (R13).
     /// </summary>
     public Result<Membership> Remove(Membership actor, MemberFacts facts)
@@ -254,10 +267,18 @@ internal sealed class Tenant
             return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
         }
 
-        var targetManagesOwners = ManagesOwners(facts.Roles.Of(target.RoleId));
-        if (targetManagesOwners && !ManagesOwners(facts.Roles.Of(actor.RoleId)))
+        var targetRole = facts.Roles.Of(target.RoleId);
+        var actorRole = facts.Roles.Of(actor.RoleId);
+        var targetManagesOwners = ManagesOwners(targetRole);
+        if (targetManagesOwners && !ManagesOwners(actorRole))
         {
             return OwnerRequiresOwner;
+        }
+
+        var escalation = Role.CheckEscalation(actorRole, targetRole.Permissions);
+        if (!escalation.IsSuccess)
+        {
+            return escalation.Error;
         }
 
         return targetManagesOwners && facts.Owners <= 1 ? LastOwner : target;
@@ -332,16 +353,132 @@ internal sealed class Tenant
         }
 
         var accepted = invitation.Accept(verifiedEmails, userId, now);
-        return accepted.IsSuccess ? new Membership(Id, userId, invitation.RoleId, now) : accepted.Error;
+        return accepted.IsSuccess
+            ? new Membership(Id, userId, invitation.RoleId ?? throw new InvalidOperationException("A pending invitation always has a role."), now)
+            : accepted.Error;
     }
 
     /// <summary>
-    /// A member revokes the invitation, so its link stops working at once (K2): none, or another tenant's, is not found, and the
+    /// A member of the actor's role revokes the invitation, so its link stops working at once (K2): none, or another tenant's, is not
+    /// found; the actor's role holds every permission of the role the invitation gives (<see cref="Role.CheckEscalation"/>); and the
     /// invitation's own rule decides the rest (<see cref="Invitation.Revoke"/>). The caller holds the tenant's lock, then the
     /// invitation's (K6e).
     /// </summary>
-    public Result<StateChange> Revoke(Invitation? invitation) =>
-        invitation is not null && invitation.TenantId == Id ? invitation.Revoke() : Invitation.NotFound;
+    public Result<StateChange> Revoke(Role actor, Invitation? invitation, TenantRoles roles)
+    {
+        if (invitation is null || invitation.TenantId != Id)
+        {
+            return Invitation.NotFound;
+        }
+
+        // A finished invitation whose role was deleted gives no role, so nobody acts on a role through it.
+        var escalation = invitation.RoleId is { } roleId ? Role.CheckEscalation(actor, roles.Of(roleId).Permissions) : Result.Success();
+        return escalation.IsSuccess ? invitation.Revoke() : escalation.Error;
+    }
+
+    /// <summary>
+    /// The actor creates a custom role of the tenant (A3), under the tenant's rules, in this order: the actor's role holds
+    /// <c>tenant.roles.create</c>; the name, without the spaces around it, is 1 to <see cref="Role.NameMaxLength"/> characters and no other
+    /// role of the tenant has it; the permissions are in the tenant pool, none is owner-only, and there is one at least; the actor's role
+    /// holds every one of them (<see cref="Role.CheckEscalation"/>); and the tenant has fewer custom roles than the limit (decision 3 of
+    /// step r4b, OWASP API4). The caller holds the tenant's lock and read the facts under it (K6a). Returns the new role, which the
+    /// caller adds. Every rejection comes before any change.
+    /// </summary>
+    public Result<Role> CreateRole(Role actor, NewRole request, RoleFacts facts, int limit)
+    {
+        var name = request.Name.Trim();
+        var permissions = request.Permissions.ToFrozenSet(StringComparer.Ordinal);
+        var allowed = CheckRoleAction(actor, PermissionPools.TenantRolesCreate);
+        if (allowed.IsSuccess)
+        {
+            allowed = CheckRoleContent(actor, name, permissions, facts.NameTaken);
+        }
+
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        return facts.CustomRoles >= limit
+            ? Error.Conflict(ControlPlaneErrorCodes.RoleLimitReached, "The tenant has as many custom roles as it may.")
+            : Role.CreateCustom(request.Id, Id, name, permissions);
+    }
+
+    /// <summary>
+    /// The actor gives a custom role of the tenant the name and exactly these permissions, under the rules of <see cref="CreateRole"/>:
+    /// the actor's role holds <c>tenant.roles.update</c>, the role exists and is custom (a built-in role cannot be changed, A2), the name
+    /// and the permissions are valid, and the actor's role holds every permission of the role before and after. The caller holds the
+    /// tenant's lock and read the facts under it (K6a). The name and the permissions the role has change nothing (I1). Every rejection
+    /// comes before the change.
+    /// </summary>
+    public Result<RoleUpdate> UpdateRole(Role actor, string name, IReadOnlyCollection<string> permissions, RoleFacts facts)
+    {
+        var allowed = CheckRoleAction(actor, PermissionPools.TenantRolesUpdate);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        var found = CustomRoleOf(facts);
+        if (!found.IsSuccess)
+        {
+            return found.Error;
+        }
+
+        var role = found.Value;
+        var trimmed = name.Trim();
+        var wanted = permissions.ToFrozenSet(StringComparer.Ordinal);
+        allowed = CheckRoleContent(actor, trimmed, wanted, facts.NameTaken);
+        if (allowed.IsSuccess)
+        {
+            allowed = Role.CheckEscalation(actor, role.Permissions);
+        }
+
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        var oldName = role.Name;
+        if (trimmed == oldName && wanted.SetEquals(role.Permissions))
+        {
+            return new RoleUpdate(role, oldName, FrozenSet<string>.Empty, FrozenSet<string>.Empty, StateChange.Unchanged);
+        }
+
+        var (added, removed) = role.Change(trimmed, wanted);
+        return new RoleUpdate(role, oldName, added, removed, StateChange.Changed);
+    }
+
+    /// <summary>
+    /// The actor deletes a custom role of the tenant: the actor's role holds <c>tenant.roles.delete</c>, the role exists and is custom (a
+    /// built-in role cannot be deleted, A2), the actor's role holds every permission of the role, and no membership or pending invitation
+    /// uses it. A finished invitation keeps no role then. The caller holds the tenant's lock and read the facts under it (K6a). Returns
+    /// the role to delete; the caller deletes it.
+    /// </summary>
+    public Result<Role> DeleteRole(Role actor, RoleFacts facts)
+    {
+        var allowed = CheckRoleAction(actor, PermissionPools.TenantRolesDelete);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        var found = CustomRoleOf(facts);
+        if (!found.IsSuccess)
+        {
+            return found.Error;
+        }
+
+        var escalation = Role.CheckEscalation(actor, found.Value.Permissions);
+        if (!escalation.IsSuccess)
+        {
+            return escalation.Error;
+        }
+
+        return facts.InUse
+            ? Error.Conflict(ControlPlaneErrorCodes.RoleInUse, "A member or a pending invitation has the role.")
+            : found.Value;
+    }
 
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
@@ -388,13 +525,20 @@ internal sealed class Tenant
     // A1: an Owner rule asks for the Owners' permission, never for the Owner role.
     private static bool ManagesOwners(Role role) => role.Holds(PermissionPools.TenantOwnersManage);
 
-    // A member's invitation: the role rule first, then a member's address, then the daily limit (section 6, "Member invitation").
+    // A member's invitation: the role rules first, the Owner's and then the escalation rule, then a member's address, then the daily limit
+    // (section 6, "Member invitation").
     private static Result CheckMemberInvitation(Role inviter, Role role, InvitationFacts facts, int dailyLimit)
     {
         var allowed = Invitation.CheckInviter(inviter, role);
         if (!allowed.IsSuccess)
         {
             return allowed;
+        }
+
+        var escalation = Role.CheckEscalation(inviter, role.Permissions);
+        if (!escalation.IsSuccess)
+        {
+            return escalation;
         }
 
         if (facts.AddressIsMember)
@@ -415,6 +559,54 @@ internal sealed class Tenant
         && slug[0] != '-'
         && slug[^1] != '-'
         && !slug.Contains("--", StringComparison.Ordinal);
+
+    // The first check of every change to a role: the actor's role holds the operation's permission. The door asked it before the lock,
+    // and a change to the actor's role may have committed since.
+    private static Result CheckRoleAction(Role actor, string permission) =>
+        actor.Holds(permission)
+            ? Result.Success()
+            : Error.Forbidden(ControlPlaneErrorCodes.RoleNotPermitted, "Your role does not hold the permission to change roles this way.");
+
+    // A custom role's name and permissions (A3), then the escalation rule on the new permissions.
+    private static Result CheckRoleContent(Role actor, string trimmedName, FrozenSet<string> permissions, bool nameTaken)
+    {
+        if (trimmedName.Length is < 1 or > Role.NameMaxLength)
+        {
+            return Error.Validation(
+                ControlPlaneErrorCodes.RoleNameInvalid, $"A role's name is 1 to {Role.NameMaxLength} characters, not counting the spaces around it.");
+        }
+
+        if (nameTaken)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.RoleNameTaken, "The tenant has a role with this name.");
+        }
+
+        if (!permissions.IsSubsetOf(PermissionPools.TenantPool))
+        {
+            return Error.Validation(ControlPlaneErrorCodes.RolePermissionInvalid, "A role holds permissions of the tenant pool only.");
+        }
+
+        if (permissions.Overlaps(PermissionPools.OwnerOnly))
+        {
+            return Error.Unprocessable(ControlPlaneErrorCodes.RolePermissionOwnerOnly, "A custom role never holds a permission that only the Owner role holds.");
+        }
+
+        return permissions.Count == 0
+            ? Error.Validation(ControlPlaneErrorCodes.RolePermissionsRequired, "A role holds one permission at least.")
+            : Role.CheckEscalation(actor, permissions);
+    }
+
+    // The role a change names: one of this tenant's roles, and a custom one. Row level security hides another tenant's roles, so the
+    // tenant check guards the code, not a request.
+    private Result<Role> CustomRoleOf(RoleFacts facts)
+    {
+        if (facts.Target is not { } role || role.TenantId != Id)
+        {
+            return Role.NotFound;
+        }
+
+        return role.BuiltIn is null ? role : RoleBuiltIn;
+    }
 
     // The target is a member of this tenant only. Row level security hides another tenant's memberships, so this guards the code, not a
     // request.

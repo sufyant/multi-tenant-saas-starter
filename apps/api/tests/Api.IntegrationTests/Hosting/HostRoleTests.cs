@@ -324,7 +324,7 @@ public sealed class HostRoleTests(Database database)
         var tenant = await testData.AddTenantAsync();
         var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(language: "tr"), role: "Owner"));
 
-        var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test");
+        var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test", role: (await testData.RoleIdOfAsync(tenant.Id, "Member")).ToString());
         await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -416,7 +416,7 @@ public sealed class HostRoleTests(Database database)
         var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var member = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id));
 
-        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, "admin");
+        var changed = await owner.ChangeMemberRoleAsync(tenant.Id, member, (await testData.RoleIdOfAsync(tenant.Id, "Admin")).ToString());
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);

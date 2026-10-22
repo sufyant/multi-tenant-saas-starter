@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
@@ -13,6 +14,24 @@ public sealed class TenantTests
     private const string Reason = "Unpaid invoices";
 
     private const int DailyLimit = 50;
+
+    private const int RoleLimit = 20;
+
+    private const string MembersRead = PermissionPools.TenantMembersRead;
+
+    private const string MembersUpdate = PermissionPools.TenantMembersUpdate;
+
+    private const string MembersDelete = PermissionPools.TenantMembersDelete;
+
+    private const string ProfileRead = PermissionPools.TenantProfileRead;
+
+    private const string InvitationsCreate = PermissionPools.TenantInvitationsCreate;
+
+    private const string InvitationsRead = PermissionPools.TenantInvitationsRead;
+
+    private const string InvitationsDelete = PermissionPools.TenantInvitationsDelete;
+
+    private const string AuditRead = PermissionPools.TenantAuditRead;
 
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
 
@@ -339,7 +358,7 @@ public sealed class TenantTests
     {
         var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
-        var revoked = Active().Revoke(invitation);
+        var revoked = Active().Revoke(RoleOf("Owner"), invitation, Roles);
 
         revoked.Value.ShouldBe(StateChange.Changed);
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
@@ -348,7 +367,7 @@ public sealed class TenantTests
     [Fact]
     public void RevokeInvitation_NoInvitation_IsNotFound()
     {
-        var revoked = Active().Revoke(null);
+        var revoked = Active().Revoke(RoleOf("Owner"), null, Roles);
 
         revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
         revoked.Error.Type.ShouldBe(ErrorType.NotFound);
@@ -360,7 +379,7 @@ public sealed class TenantTests
         var other = Invitation.Create(
             Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
 
-        var revoked = Active().Revoke(other);
+        var revoked = Active().Revoke(RoleOf("Owner"), other, Roles);
 
         revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
         other.Status.ShouldBe(InvitationStatus.Pending);
@@ -372,7 +391,7 @@ public sealed class TenantTests
         var invitation = PendingTo("ada@example.com", RoleOf("Member"));
         invitation.Accept(Verified("ada@example.com"), Guid.NewGuid(), Now);
 
-        var revoked = Active().Revoke(invitation);
+        var revoked = Active().Revoke(RoleOf("Owner"), invitation, Roles);
 
         revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
     }
@@ -1013,6 +1032,407 @@ public sealed class TenantTests
         allowed.IsSuccess.ShouldBeTrue();
     }
 
+    // Decision 2 of step r4b: the escalation rule, asked of every operation on a role. A custom actor holds exactly the permissions a
+    // test names, so the cases differ by one permission.
+    [Fact]
+    public void CreateRole_ByAnOwner_CreatesACustomRoleWithItsTrimmedNameAndItsPermissions()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("  Billing  ", MembersRead, InvitationsRead), RoleFacts(), RoleLimit);
+
+        created.Value.BuiltIn.ShouldBeNull();
+        created.Value.TenantId.ShouldBe(Id);
+        created.Value.Name.ShouldBe("Billing");
+        created.Value.Permissions.ShouldBe([MembersRead, InvitationsRead], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void CreateRole_AnActorWhoseRoleDoesNotHoldThePermission_IsForbidden()
+    {
+        var created = Active().CreateRole(RoleOf("Admin"), NewRole("Billing", MembersRead), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNotPermitted);
+        created.Error.Type.ShouldBe(ErrorType.Forbidden);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidNames))]
+    public void CreateRole_ANameThatIsEmptyOrTooLong_IsInvalid(string name)
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole(name, MembersRead), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNameInvalid);
+        created.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    [Fact]
+    public void CreateRole_ANameTheTenantHas_IsAConflict()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Owner", MembersRead), RoleFacts(nameTaken: true), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNameTaken);
+        created.Error.Type.ShouldBe(ErrorType.Conflict);
+    }
+
+    // A custom role chooses from the tenant pool only (A3).
+    [Theory]
+    [InlineData("tenant.nothing.read")]
+    [InlineData("platform.users.read")]
+    public void CreateRole_APermissionOutsideTheTenantPool_IsInvalid(string permission)
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", MembersRead, permission), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RolePermissionInvalid);
+        created.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    // A3: a custom role never holds a permission of PermissionPools.OwnerOnly, not even from an Owner.
+    [Fact]
+    public void CreateRole_AnOwnerOnlyPermission_IsUnprocessable()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Deputy", MembersRead, PermissionPools.TenantOwnersManage), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RolePermissionOwnerOnly);
+        created.Error.Type.ShouldBe(ErrorType.Unprocessable);
+    }
+
+    [Fact]
+    public void CreateRole_NoPermission_IsInvalid()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Nobody"), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RolePermissionsRequired);
+        created.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    [Fact]
+    public void CreateRole_AnActorWhoHoldsExactlyItsPermissions_CreatesIt()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesCreate, MembersRead);
+
+        var created = Active().CreateRole(actor, NewRole("Copy", PermissionPools.TenantRolesCreate, MembersRead), RoleFacts(), RoleLimit);
+
+        created.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CreateRole_APermissionTheActorDoesNotHold_IsAnEscalation()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesCreate, MembersRead);
+
+        var created = Active().CreateRole(actor, NewRole("Stronger", MembersRead, InvitationsRead), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+        created.Error.Type.ShouldBe(ErrorType.Forbidden);
+    }
+
+    // Decision 3 of step r4b: the limit counts custom roles only (OWASP API4).
+    [Fact]
+    public void CreateRole_AtTheLimit_IsAConflict()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", MembersRead), RoleFacts(customRoles: RoleLimit), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleLimitReached);
+        created.Error.Type.ShouldBe(ErrorType.Conflict);
+    }
+
+    [Fact]
+    public void CreateRole_OnePlaceBelowTheLimit_CreatesIt()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", MembersRead), RoleFacts(customRoles: RoleLimit - 1), RoleLimit);
+
+        created.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void UpdateRole_ANewNameAndPermissions_ChangesThemAndAnswersWhatItAddedAndRemoved()
+    {
+        var role = Custom("Billing", MembersRead, InvitationsRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), " Finance ", [MembersRead, AuditRead], RoleFacts(role));
+
+        updated.Value.Change.ShouldBe(StateChange.Changed);
+        updated.Value.OldName.ShouldBe("Billing");
+        updated.Value.Added.ShouldBe([AuditRead]);
+        updated.Value.Removed.ShouldBe([InvitationsRead]);
+        role.Name.ShouldBe("Finance");
+        role.Permissions.ShouldBe([MembersRead, AuditRead], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void UpdateRole_TheNameAndPermissionsItHas_ChangesNothing()
+    {
+        var role = Custom("Billing", MembersRead, InvitationsRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [InvitationsRead, MembersRead], RoleFacts(role));
+
+        updated.Value.Change.ShouldBe(StateChange.Unchanged);
+        updated.Value.Added.ShouldBeEmpty();
+        updated.Value.Removed.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void UpdateRole_AnActorWhoseRoleDoesNotHoldThePermission_IsForbidden()
+    {
+        var updated = Active().UpdateRole(RoleOf("Admin"), "Billing", [MembersRead], RoleFacts(Custom("Billing", MembersRead)));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNotPermitted);
+    }
+
+    [Fact]
+    public void UpdateRole_NoSuchRole_IsNotFound()
+    {
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [MembersRead], RoleFacts());
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNotFound);
+        updated.Error.Type.ShouldBe(ErrorType.NotFound);
+    }
+
+    // A2: a built-in role keeps its name and its permissions in code.
+    [Theory]
+    [InlineData("Owner")]
+    [InlineData("Admin")]
+    [InlineData("Member")]
+    public void UpdateRole_ABuiltInRole_IsAConflict(string builtIn)
+    {
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Renamed", [MembersRead], RoleFacts(RoleOf(builtIn)));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleBuiltIn);
+        updated.Error.Type.ShouldBe(ErrorType.Conflict);
+    }
+
+    [Fact]
+    public void UpdateRole_ANameAnotherRoleHas_IsAConflictAndChangesNothing()
+    {
+        var role = Custom("Billing", MembersRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), "admin", [MembersRead], RoleFacts(role, nameTaken: true));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNameTaken);
+        role.Name.ShouldBe("Billing");
+    }
+
+    [Fact]
+    public void UpdateRole_AnOwnerOnlyPermission_IsUnprocessableAndChangesNothing()
+    {
+        var role = Custom("Billing", MembersRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [MembersRead, PermissionPools.TenantOwnersManage], RoleFacts(role));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RolePermissionOwnerOnly);
+        role.Permissions.ShouldBe([MembersRead]);
+    }
+
+    [Fact]
+    public void UpdateRole_AnActorWhoHoldsExactlyThePermissionsBeforeAndAfter_ChangesIt()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, MembersRead, InvitationsRead);
+
+        var updated = Active().UpdateRole(actor, "Billing", [MembersRead, InvitationsRead], RoleFacts(Custom("Billing", MembersRead, PermissionPools.TenantRolesUpdate)));
+
+        updated.Value.Change.ShouldBe(StateChange.Changed);
+    }
+
+    // Before: an actor never takes from a role a permission they do not hold themselves.
+    [Fact]
+    public void UpdateRole_ARoleThatHoldsAPermissionTheActorDoesNot_IsAnEscalationAndChangesNothing()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, MembersRead);
+        var role = Custom("Billing", MembersRead, AuditRead);
+
+        var updated = Active().UpdateRole(actor, "Billing", [MembersRead], RoleFacts(role));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+        role.Permissions.ShouldBe([MembersRead, AuditRead], ignoreOrder: true);
+    }
+
+    // After: an actor never gives a role a permission they do not hold themselves.
+    [Fact]
+    public void UpdateRole_APermissionTheActorDoesNotHold_IsAnEscalation()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, MembersRead);
+
+        var updated = Active().UpdateRole(actor, "Billing", [MembersRead, AuditRead], RoleFacts(Custom("Billing", MembersRead)));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+    }
+
+    [Fact]
+    public void DeleteRole_ACustomRoleNobodyUses_AnswersTheRoleToDelete()
+    {
+        var role = Custom("Billing", MembersRead);
+
+        var deleted = Active().DeleteRole(RoleOf("Owner"), RoleFacts(role));
+
+        deleted.Value.ShouldBe(role);
+    }
+
+    [Fact]
+    public void DeleteRole_AnActorWhoseRoleDoesNotHoldThePermission_IsForbidden()
+    {
+        var deleted = Active().DeleteRole(RoleOf("Admin"), RoleFacts(Custom("Billing", MembersRead)));
+
+        deleted.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNotPermitted);
+    }
+
+    [Fact]
+    public void DeleteRole_NoSuchRole_IsNotFound()
+    {
+        var deleted = Active().DeleteRole(RoleOf("Owner"), RoleFacts());
+
+        deleted.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleNotFound);
+    }
+
+    [Theory]
+    [InlineData("Owner")]
+    [InlineData("Admin")]
+    [InlineData("Member")]
+    public void DeleteRole_ABuiltInRole_IsAConflict(string builtIn)
+    {
+        var deleted = Active().DeleteRole(RoleOf("Owner"), RoleFacts(RoleOf(builtIn)));
+
+        deleted.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleBuiltIn);
+    }
+
+    [Fact]
+    public void DeleteRole_ARoleThatHoldsAPermissionTheActorDoesNot_IsAnEscalation()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesDelete, MembersRead);
+
+        var deleted = Active().DeleteRole(actor, RoleFacts(Custom("Billing", MembersRead, AuditRead)));
+
+        deleted.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+    }
+
+    [Fact]
+    public void DeleteRole_ARoleTheActorHoldsExactly_AnswersTheRoleToDelete()
+    {
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesDelete, MembersRead);
+        var role = Custom("Billing", PermissionPools.TenantRolesDelete, MembersRead);
+
+        var deleted = Active().DeleteRole(actor, RoleFacts(role));
+
+        deleted.Value.ShouldBe(role);
+    }
+
+    // A membership or a pending invitation that uses the role keeps it (409).
+    [Fact]
+    public void DeleteRole_ARoleInUse_IsAConflict()
+    {
+        var deleted = Active().DeleteRole(RoleOf("Owner"), RoleFacts(Custom("Billing", MembersRead), inUse: true));
+
+        deleted.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleInUse);
+        deleted.Error.Type.ShouldBe(ErrorType.Conflict);
+    }
+
+    [Fact]
+    public void InviteMember_ARoleTheInviterHoldsExactly_CreatesTheInvitation()
+    {
+        var inviter = Custom("Recruiter", InvitationsCreate, MembersRead);
+
+        var invited = Active().Invite(Inviter.Member(InviterId, Language.Tr, inviter), Request("ada@example.com", Custom("Recruiter too", InvitationsCreate, MembersRead)), Facts(owners: 1), DailyLimit);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void InviteMember_ARoleWithAPermissionTheInviterDoesNotHold_IsAnEscalationAndCancelsNothing()
+    {
+        var inviter = Custom("Recruiter", InvitationsCreate, MembersRead);
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+
+        var invited = Active().Invite(Inviter.Member(InviterId, Language.Tr, inviter), Request("ada@example.com", RoleOf("Admin")), Facts(owners: 1, pending: [pending]), DailyLimit);
+
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void ChangeMemberRole_RolesTheActorHoldsExactly_ChangesIt()
+    {
+        var actorRole = Custom("Lead", MembersUpdate, MembersRead);
+        var newRole = Custom("Lead too", MembersUpdate, MembersRead);
+        var oldRole = Custom("Reader", MembersRead);
+        var roles = RolesWith(actorRole, newRole, oldRole);
+        var target = Membership(oldRole);
+
+        var result = Active().ChangeRole(Membership(actorRole), newRole, new MemberFacts(target, 1, roles));
+
+        result.Value.Change.ShouldBe(StateChange.Changed);
+    }
+
+    [Fact]
+    public void ChangeMemberRole_ToARoleWithAPermissionTheActorDoesNotHold_IsAnEscalationAndChangesNothing()
+    {
+        var actorRole = Custom("Lead", MembersUpdate, MembersRead, ProfileRead);
+        var roles = RolesWith(actorRole);
+        var target = Membership(RoleOf("Member"));
+
+        var result = Active().ChangeRole(Membership(actorRole), RoleOf("Admin"), new MemberFacts(target, 1, roles));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+        target.RoleId.ShouldBe(RoleOf("Member").Id);
+    }
+
+    // Nobody acts on someone stronger: the member's current role counts too.
+    [Fact]
+    public void ChangeMemberRole_AMemberWhoseRoleHoldsAPermissionTheActorDoesNot_IsAnEscalationAndChangesNothing()
+    {
+        var actorRole = Custom("Lead", MembersUpdate, MembersRead, ProfileRead);
+        var roles = RolesWith(actorRole);
+        var target = Membership(RoleOf("Admin"));
+
+        var result = Active().ChangeRole(Membership(actorRole), RoleOf("Member"), new MemberFacts(target, 1, roles));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+        target.RoleId.ShouldBe(RoleOf("Admin").Id);
+    }
+
+    [Fact]
+    public void RemoveMember_AMemberWhoseRoleTheActorHoldsExactly_AnswersTheMembershipToRemove()
+    {
+        var actorRole = Custom("Lead", MembersDelete, MembersRead);
+        var targetRole = Custom("Lead too", MembersDelete, MembersRead);
+        var target = Membership(targetRole);
+
+        var result = Active().Remove(Membership(actorRole), new MemberFacts(target, 1, RolesWith(actorRole, targetRole)));
+
+        result.Value.ShouldBe(target);
+    }
+
+    [Fact]
+    public void RemoveMember_AMemberWhoseRoleHoldsAPermissionTheActorDoesNot_IsAnEscalation()
+    {
+        var actorRole = Custom("Lead", MembersDelete, MembersRead, ProfileRead);
+
+        var result = Active().Remove(Membership(actorRole), new MemberFacts(Membership(RoleOf("Admin")), 1, RolesWith(actorRole)));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnInvitationOfARoleTheActorHoldsExactly_CancelsIt()
+    {
+        var actorRole = Custom("Recruiter", InvitationsDelete, MembersRead);
+        var invitedRole = Custom("Recruiter too", InvitationsDelete, MembersRead);
+        var invitation = PendingTo("ada@example.com", invitedRole);
+
+        var revoked = Active().Revoke(actorRole, invitation, RolesWith(actorRole, invitedRole));
+
+        revoked.Value.ShouldBe(StateChange.Changed);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnInvitationOfARoleWithAPermissionTheActorDoesNotHold_IsAnEscalationAndStaysPending()
+    {
+        var actorRole = Custom("Recruiter", InvitationsDelete, MembersRead, ProfileRead);
+        var invitation = PendingTo("ada@example.com", RoleOf("Admin"));
+
+        var revoked = Active().Revoke(actorRole, invitation, RolesWith(actorRole));
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
     private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
 
     private static Tenant Suspended()
@@ -1058,4 +1478,18 @@ public sealed class TenantTests
         Invitation.Create(Guid.NewGuid(), Id, EmailAddress.Create(email), role, InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
 
     private static Membership Membership(string role) => new(Id, Guid.NewGuid(), RoleOf(role).Id, DateTimeOffset.UnixEpoch);
+
+    private static Role Custom(string name, params string[] permissions) =>
+        Role.CreateCustom(Guid.NewGuid(), Id, name, permissions.ToFrozenSet(StringComparer.Ordinal));
+
+    // The tenant's built-in roles and these custom roles.
+    private static TenantRoles RolesWith(params Role[] custom) =>
+        new([.. Enum.GetValues<BuiltInRole>().Select(builtIn => Roles.BuiltIn(builtIn)), .. custom]);
+
+    private static NewRole NewRole(string name, params string[] permissions) => new(Guid.NewGuid(), name, permissions);
+
+    private static RoleFacts RoleFacts(Role? target = null, int customRoles = 0, bool nameTaken = false, bool inUse = false) =>
+        new(target, customRoles, nameTaken, inUse);
+
+    private static Membership Membership(Role role) => new(Id, Guid.NewGuid(), role.Id, DateTimeOffset.UnixEpoch);
 }

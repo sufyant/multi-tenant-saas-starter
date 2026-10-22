@@ -1,5 +1,4 @@
 using ControlPlane.Application.Members.ListMembers;
-using ControlPlane.Domain.Roles;
 using SharedKernel;
 
 namespace ControlPlane.Application.Members;
@@ -12,9 +11,9 @@ namespace ControlPlane.Application.Members;
 public interface IMemberQueries
 {
     /// <summary>
-    /// A page of the active tenant's members of the role or every role, with the copy of their profile and whether the user was deleted,
+    /// A page of the active tenant's members of the role with this id or every role, with the copy of their profile and whether the user was deleted,
     /// whose email address or name contains the search: by the sort field, then by user id. The search starts from the tenant's
     /// memberships, never from the users.
     /// </summary>
-    internal Task<ListPage<MemberView>> ListMembersAsync(ListRequest<ListMembersSort> list, BuiltInRole? role, CancellationToken cancellationToken);
+    internal Task<ListPage<MemberView>> ListMembersAsync(ListRequest<ListMembersSort> list, Guid? roleId, CancellationToken cancellationToken);
 }

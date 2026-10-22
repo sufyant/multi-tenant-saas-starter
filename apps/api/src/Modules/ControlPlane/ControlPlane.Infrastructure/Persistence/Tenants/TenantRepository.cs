@@ -43,9 +43,56 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     Task<Membership?> ITenantRepository.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
 
-    // Row level security keeps the roles to the active tenant; the query names no tenant.
+    // Row level security keeps the roles and their permissions to the active tenant; the query names no tenant.
     async Task<TenantRoles> ITenantRepository.FindRolesAsync(CancellationToken cancellationToken) =>
-        new(await controlPlane.TenantRoles.AsNoTracking().ToListAsync(cancellationToken));
+        new(await controlPlane.TenantRoles.Include(role => role.Grants).AsNoTracking().ToListAsync(cancellationToken));
+
+    // Row level security keeps every read to the active tenant. A name is compared with lower(), as the unique index on the tenant and
+    // lower(name) compares it, so the check and the index never disagree.
+    async Task<RoleFacts> ITenantRepository.FindRoleFactsAsync(Guid? roleId, string? name, CancellationToken cancellationToken)
+    {
+        var target = roleId is { } id
+            ? await controlPlane.TenantRoles.Include(role => role.Grants).SingleOrDefaultAsync(role => role.Id == id, cancellationToken)
+            : null;
+        var nameTaken = name is not null
+            && await controlPlane.Database.SqlQuery<int>(
+                    $"""
+                    SELECT 1 AS "Value" FROM control_plane.roles
+                    WHERE lower(name) = lower({name}) AND id IS DISTINCT FROM {roleId}
+                    """)
+                .AnyAsync(cancellationToken);
+        var inUse = roleId is { } used
+            && (await Memberships.AnyAsync(membership => membership.RoleId == used, cancellationToken)
+                || await controlPlane.TenantInvitations.AnyAsync(invitation => invitation.RoleId == used && invitation.Status == InvitationStatus.Pending, cancellationToken));
+        return new RoleFacts(target, await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken), nameTaken, inUse);
+    }
+
+    async Task ITenantRepository.AddRoleAsync(Role role, CancellationToken cancellationToken)
+    {
+        controlPlane.Roles.Add(OfActiveTenant(role, role.TenantId));
+        await controlPlane.SaveChangesAsync(cancellationToken);
+    }
+
+    // A permission's row has the tenant column, which the database fills (TenantDbContext), so EF Core takes a new row it finds in the
+    // role's permissions for one that exists. The rows of the added permissions are added here by name; a removed row is an orphan of
+    // its role, which EF Core deletes.
+    async Task ITenantRepository.SaveRoleAsync(RoleUpdate update, CancellationToken cancellationToken)
+    {
+        var role = OfActiveTenant(update.Role, update.Role.TenantId);
+        controlPlane.ChangeTracker.DetectChanges();
+        foreach (var grant in role.Grants.Where(grant => update.Added.Contains(grant.Permission)))
+        {
+            controlPlane.Entry(grant).State = EntityState.Added;
+        }
+
+        await controlPlane.SaveChangesAsync(cancellationToken);
+    }
+
+    async Task ITenantRepository.DeleteRoleAsync(Role role, CancellationToken cancellationToken)
+    {
+        controlPlane.Roles.Remove(OfActiveTenant(role, role.TenantId));
+        await controlPlane.SaveChangesAsync(cancellationToken);
+    }
 
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
         new(

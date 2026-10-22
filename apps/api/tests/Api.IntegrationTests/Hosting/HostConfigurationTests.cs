@@ -44,6 +44,7 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
         { "ControlPlane:IdentityProvider:RetryDelays:0", "00:00:00" },
         { "ControlPlane:Tenants:ReopenPeriod", "00:00:00" },
+        { "ControlPlane:Roles:MaxCustomRolesPerTenant", "0" },
         { "Host:RateLimiting:InvitationAccept:PermitLimit", "0" },
         { "Host:RateLimiting:InvitationAccept:Window", "00:00:00" },
         { "Notifications:Resend:Timeout", "-00:00:01" },

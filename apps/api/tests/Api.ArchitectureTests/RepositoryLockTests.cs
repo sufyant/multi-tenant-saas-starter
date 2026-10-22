@@ -10,11 +10,13 @@ public sealed class RepositoryLockTests
 {
     private static readonly string[] LockSuffixes = ["ForUpdateAsync", "ForNoKeyUpdateAsync"];
 
-    // K6a: the one read of a root that no command changes, which a repository returns without a lock, wrapped in a type of its own: the
-    // tenant's roles (TenantRoles, A2), which ITenantRepository returns, and MemberFacts carries.
+    // K6a: the reads of a root that a repository returns without a row lock of its own, wrapped in a type of its own: the tenant's roles
+    // (TenantRoles, A2), which ITenantRepository returns and MemberFacts carries, and the custom role a command changes, which RoleFacts
+    // carries. Every command that writes a role, its permissions, a membership or an invitation locks the tenant first (M1; the
+    // maintainer's decision in step r4b).
     private static readonly Dictionary<string, string[]> WrappedRootReads = new(StringComparer.Ordinal)
     {
-        ["ControlPlane"] = ["ITenantRepository.FindMemberFactsAsync", "ITenantRepository.FindRolesAsync"],
+        ["ControlPlane"] = ["ITenantRepository.FindMemberFactsAsync", "ITenantRepository.FindRoleFactsAsync", "ITenantRepository.FindRolesAsync"],
     };
 
     public static TheoryData<string> Modules => [.. Solution.Modules];

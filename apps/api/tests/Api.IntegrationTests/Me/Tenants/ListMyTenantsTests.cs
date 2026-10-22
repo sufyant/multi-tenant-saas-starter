@@ -59,8 +59,8 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
         page.GetProperty("items").EnumerateArray()
-            .Select(item => (item.GetProperty("id").GetGuid(), Roles.Of(item)))
-            .ShouldBe([(owned.Id, Roles.BuiltIn("owner")), (administered.Id, Roles.BuiltIn("admin")), (joined.Id, Roles.BuiltIn("member"))]);
+            .Select(item => (item.GetProperty("id").GetGuid(), RoleAnswers.Of(item)))
+            .ShouldBe([(owned.Id, RoleAnswers.BuiltIn("owner")), (administered.Id, RoleAnswers.BuiltIn("admin")), (joined.Id, RoleAnswers.BuiltIn("member"))]);
     }
 
     // The page is one query, with the role joined: a longer page sends no more commands (K5).

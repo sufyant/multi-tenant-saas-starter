@@ -42,7 +42,7 @@ public sealed class OwnRolesPolicyTests(Database database)
     }
 
     [Fact]
-    public async Task UpdateRole_AsADeclaredUser_ChangesNoRow()
+    public async Task ChangeRoleRow_AsADeclaredUser_ChangesNoRow()
     {
         var (user, userId) = await UserAsync();
         var tenant = await _testData.AddTenantAsync();
