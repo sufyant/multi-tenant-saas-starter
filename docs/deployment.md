@@ -652,7 +652,7 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
 
 ## 14. Retry a failed message
 
-A message that fails all its retries goes to the dead letter queue: the table `wolverine.wolverine_dead_letters` in the environment's database (W11 in `apps/api/docs/ARCHITECTURE.md`). Wolverine keeps it for `Messaging:DeadLetters:Retention`, 14 days by default. Then a worker deletes it (W13). The API has no endpoint for dead letters.
+A message that fails all its retries goes to the dead letter queue: the table `wolverine.wolverine_dead_letters` in the environment's database (W11 in `apps/api/docs/ARCHITECTURE.md`). Wolverine keeps it for `Host:Messaging:DeadLetters:Retention`, 14 days by default. Then a worker deletes it (W13). The API has no endpoint for dead letters.
 
 Retry a dead letter only after its cause is fixed. Examples: the email service was down for longer than the retries, or a setting was wrong and is now correct. A message whose cause is still there fails its retries again and comes back to the table.
 

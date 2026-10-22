@@ -8,7 +8,7 @@ namespace SharedKernel;
 /// <summary>
 /// The name of each member of an enum in JSON, as System.Text.Json writes it: the name the member declares, else its own name in camel
 /// case. A sort field is so the name of its property in the response. The names are compared exactly. It is the one place that names an
-/// enum member in JSON: the lists, the converter, the host's error answers and the tests read it (B10).
+/// enum member in JSON: the lists, the converter, the host's error answers and the tests read it (D1).
 /// </summary>
 [SuppressMessage("Naming", "CA1711", Justification = "The type names the JSON form of an enum; it is no enum.")]
 [SuppressMessage("Design", "CA1000", Justification = "A generic static class reads the members of each enum once and keeps them.")]

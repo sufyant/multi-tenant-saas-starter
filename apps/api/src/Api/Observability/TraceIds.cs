@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace Api.Observability;
 
-// The one place that derives the trace id the host names (B25). The formats stay as they were.
+// The one place that derives the trace id the host names (D1). The formats stay as they were.
 internal static class TraceIds
 {
     // A Problem Details answer and a saved idempotent result: the id of the current activity, else the request's own identifier.

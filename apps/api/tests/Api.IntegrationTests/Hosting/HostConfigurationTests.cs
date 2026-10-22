@@ -50,8 +50,8 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:InvitationEmailTimeout", "-00:00:01" },
         { "ControlPlane:CancellationTimeout", "00:00:00" },
         { "ControlPlane:Tenants:ReopenPeriod", "00:00:00" },
-        { "RateLimiting:InvitationAccept:PermitLimit", "0" },
-        { "RateLimiting:InvitationAccept:Window", "00:00:00" },
+        { "Host:RateLimiting:InvitationAccept:PermitLimit", "0" },
+        { "Host:RateLimiting:InvitationAccept:Window", "00:00:00" },
         { "Notifications:Resend:Timeout", "-00:00:01" },
         { "Host:ShutdownTimeout", "00:00:00" },
         { "Host:ManagementPort", "0" },
@@ -148,9 +148,9 @@ public sealed class HostConfigurationTests(Database database)
                 ["ControlPlane:Clerk:RetryDelays:0"] = "00:01:00",
                 ["ControlPlane:Clerk:RetryDelays:1"] = "00:02:00",
                 ["ControlPlane:Clerk:RetryDelays:2"] = "00:03:00",
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:04:00",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:05:00",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:06:00",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:04:00",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:05:00",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:06:00",
                 ["ControlPlane:InvitationEmailTimeout"] = "00:21:00",
             });
 
@@ -159,7 +159,7 @@ public sealed class HostConfigurationTests(Database database)
         var message = start.ShouldThrow<Exception>().Message;
         message.ShouldContain("ControlPlane:InvitationEmailTimeout (00:21:00)");
         message.ShouldContain("ControlPlane:Clerk:RetryDelays (00:01:00, 00:02:00, 00:03:00)");
-        message.ShouldContain("Notifications:InvitationEmailRetryDelays (00:04:00, 00:05:00, 00:06:00)");
+        message.ShouldContain("Notifications:InvitationEmails:RetryDelays (00:04:00, 00:05:00, 00:06:00)");
     }
 
     // The default timeout is two hours. A last email pause of 1:40 brings the retries to 2:07:20.
@@ -170,10 +170,10 @@ public sealed class HostConfigurationTests(Database database)
             database.ApplicationConnectionString,
             settings: new Dictionary<string, string?>(DefaultRetries)
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:00:10",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:01:00",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:05:00",
-                ["Notifications:InvitationEmailRetryDelays:3"] = "01:40:00",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:00:10",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:01:00",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:05:00",
+                ["Notifications:InvitationEmails:RetryDelays:3"] = "01:40:00",
             });
 
         var start = () => api.CreateClient();
@@ -181,7 +181,7 @@ public sealed class HostConfigurationTests(Database database)
         var message = start.ShouldThrow<Exception>().Message;
         message.ShouldContain("ControlPlane:InvitationEmailTimeout (02:00:00)");
         message.ShouldContain("ControlPlane:Clerk:RetryDelays");
-        message.ShouldContain("Notifications:InvitationEmailRetryDelays (00:00:10, 00:01:00, 00:05:00, 01:40:00)");
+        message.ShouldContain("Notifications:InvitationEmails:RetryDelays (00:00:10, 00:01:00, 00:05:00, 01:40:00)");
     }
 
     // Section 6: once the system admin list has a system admin, the first system admin's setting has no effect.
