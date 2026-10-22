@@ -180,7 +180,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K6. Concurrency
 
-- Every handler that changes data, a saga step included, first locks the root row of the aggregate it changes (`SELECT … FOR UPDATE`). Updating a tenant locks that tenant's row; updating an invoice locks that invoice's row, never the tenant's.
+- Every handler that changes data, a saga step included, first locks the root row of each aggregate it changes (`SELECT … FOR UPDATE`); a transaction changes more than one aggregate only as ARCHITECTURE.md, M2, allows. Updating a tenant locks that tenant's row; updating an invoice locks that invoice's row, never the tenant's.
 - In ControlPlane, memberships and invitations belong to the tenant aggregate, and "at least one Owner" is the tenant's rule. So a change to them locks the tenant row.
 - A rule that only keeps a value unique uses a database constraint (a unique index), not a lock.
 - Locks are taken in one order: the aggregate root first. A lock lives only inside one transaction, never across two HTTP requests.

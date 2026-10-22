@@ -13,7 +13,7 @@ using Wolverine;
 namespace ControlPlane.Application.Invitations.AcceptInvitation;
 
 // The rules are the tenant's (M1, Tenant.CheckInvitationFound, Tenant.Accept). The acceptance changes two aggregates in one transaction,
-// because a business rule spans them: the user's creation or count follows the membership (R13). Rejections come first (W7).
+// because a business rule spans them: the user's creation or count follows the membership (M2, R13). Rejections come first (W7).
 public static class AcceptInvitationHandler
 {
     public static async Task<(Result<MyTenantView>, OutgoingMessages)> HandleAsync(
