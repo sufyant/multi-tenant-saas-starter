@@ -12,8 +12,8 @@ Audit: **T** = the tenant's audit log, **P** = the platform audit log.
 The signed-in user, acting for themselves. No permission; the user reaches only their own data (N6).
 
 - `GetMe` has no status. A suspended user gets 403 `user.suspended` on every `me` endpoint, and a deleted user 403 `user.deleted` (A9), so the status would always be "active".
-- A person becomes a user only through an invitation or as the first system admin. `GetMe` answers a signed-in person who is not a user yet with 404 `user.not_found`. The web shows "no access yet".
-- A user's preferences are their `language`, one of the `Language` list (`en`, `tr`, `ar`), and their `timeZone`, an IANA name such as `Europe/Dublin`, or null for "not set": the web then uses the browser's time zone. They follow the user to every tenant and device. A new user starts with the language of the invitation they accept; the first system admin starts with `en` (K8).
+- A person becomes a user only through an invitation or as a root system admin at the system door (ARCHITECTURE.md, section 6, "Root system admins"). `GetMe` answers a signed-in person who is not a user yet with 404 `user.not_found`. The web shows "no access yet".
+- A user's preferences are their `language`, one of the `Language` list (`en`, `tr`, `ar`), and their `timeZone`, an IANA name such as `Europe/Dublin`, or null for "not set": the web then uses the browser's time zone. They follow the user to every tenant and device. A new user starts with the language of the invitation they accept; a root system admin who enters first through the system door starts with `en` (K8).
 
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -216,7 +216,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 - One list of languages: `en`, `tr`, `ar`. It is the enum `Language` in `SharedKernel` and the schema `Language` in the OpenAPI document, so the generated client has the same list (`OpenApiContractTests`). A new language is a new member of the enum and its email texts.
 - The API sends codes and data, and the screen writes every text in its own language (K5). The API writes text only in emails, in the language of the invitation. It handles no `Accept-Language` and writes no error text in another language.
-- A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. The first system admin starts with `en`.
+- A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. A root system admin who enters first through the system door starts with `en`.
 - A user's `timeZone` is an IANA name, or null for "not set". The API never interprets it: the image has no time zone data (ARCHITECTURE.md, section 7). It checks the shape only, keeps the name and gives it back. The web offers the list. The API formats no date or time.
 - `InviteMember`, `CreateTenant` and `InviteOwner` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant` and `InviteOwner`, the system admin's. The invitation keeps it.
 - The invitation emails say how long the link works, in whole days, from the invitation's lifetime, and show no date or time, so they need no time zone.

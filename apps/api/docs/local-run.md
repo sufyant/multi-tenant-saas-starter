@@ -7,10 +7,10 @@ These steps take an empty machine to a created tenant and an accepted invitation
 - The .NET SDK named in `apps/api/global.json` (10.0.402 or a later 10.0 SDK).
 - PostgreSQL 18 and `psql`.
 - An identity provider instance for development. It must serve OpenID Connect discovery (`/.well-known/openid-configuration` and its key set) over HTTPS with a certificate the machine trusts, and its Backend API. You need:
-  - its issuer URL (`Authentication:Clerk:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
+  - its issuer URL (`Host:Authentication:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
   - a way to get a session token for a user. The token carries `sub`, `sid`, `iss`, `exp` and `nbf`; a token without `sid`, such as a JWT template's token, is refused. A token for the system door also carries `fva` with a verified second factor (for example `[0,0]`).
   - invite-only sign-up (Restricted), as `.clerk/config.json` sets it. The application lets an invited address without an account sign up through Clerk's invitation, and reads a user's verified email addresses when they accept an invitation (`docs/setup.md`).
-  - a user whose verified email address is the one you put in `ControlPlane:FirstSystemAdminEmail`. In Restricted mode you create that account yourself (`docs/setup.md`, "The first system admin"). That user becomes the first system admin on their first request to `/v1/platform/...` (section 6).
+  - a user whose verified email address is one you put in `ControlPlane:SystemAdmins:RootEmails`. In Restricted mode you create that account yourself (`docs/setup.md`, "Root system admins"). That user becomes a root system admin on their first request to `/v1/platform/...` with a second factor (section 6, "Root system admins").
 
 ## 2. Database
 
@@ -60,15 +60,15 @@ The Notifications module stores no data and has no schema of its own.
 
 ## 5. Configure
 
-Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. A key becomes a variable with `__` in place of `:`, and an array item gets its index (`Authentication__Clerk__AuthorizedParties__0`). A local run sets the required keys and the ports:
+Configuration comes from environment variables (section 7). `apps/api/docs/configuration.md` lists every key: whether it is required, its default and what Development relaxes. A key becomes a variable with `__` in place of `:`, and an array item gets its index (`Host__Authentication__AuthorizedParties__0`). A local run sets the required keys and the ports:
 
 ```sh
 ASPNETCORE_ENVIRONMENT=Development
 Host__Role=web                       # web or worker; one process per role
 ConnectionStrings__Database=Host=localhost;Port=5432;Database=app;Username=api_application;Password=<application password>
-Authentication__Clerk__Issuer=<issuer URL>
-Authentication__Clerk__AuthorizedParties__0=https://app.localhost
-ControlPlane__FirstSystemAdminEmail=<first system admin's email>
+Host__Authentication__Issuer=<issuer URL>
+Host__Authentication__AuthorizedParties__0=https://app.localhost
+ControlPlane__SystemAdmins__RootEmails__0=<a root system admin's email>
 ControlPlane__Clerk__SecretKey=<Backend API secret key>
 ControlPlane__Invitations__AcceptUrl=https://app.localhost/invitations/accept
 ASPNETCORE_URLS=http://127.0.0.1:5080   # the public port; each web process on the machine needs its own
@@ -82,7 +82,7 @@ Notes:
 - Leave `ConnectionStrings__Messaging` unset; Wolverine then uses `ConnectionStrings__Database`.
 - Do not give the running processes `ConnectionStrings__Migrations` (R3).
 - Leave `OTEL_EXPORTER_OTLP_ENDPOINT` unset unless a collector listens there; without it no telemetry is sent.
-- Development relaxes three things: `Authentication:Clerk:AuthorizedParties` may be empty, `Notifications:Resend:*` may be empty (email goes to the log), and the OpenAPI document and Scalar are served on the web process.
+- Development relaxes three things: `Host:Authentication:AuthorizedParties` may be empty, `Notifications:Resend:*` may be empty (email goes to the log), and the OpenAPI document and Scalar are served on the web process.
 
 ## 6. Start the web and the worker
 
@@ -112,7 +112,7 @@ For a single process, `Host__Role=all` runs both roles in one process.
 
 ## 7. Create a tenant
 
-As the first system admin, with a token that has a verified second factor:
+As a root system admin, with a token that has a verified second factor:
 
 ```sh
 curl -X POST http://127.0.0.1:5080/v1/platform/tenants \
