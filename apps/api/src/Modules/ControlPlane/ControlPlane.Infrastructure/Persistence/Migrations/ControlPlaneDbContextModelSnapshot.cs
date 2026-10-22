@@ -24,50 +24,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ControlPlane.Application.Tenants.TenantCreation.TenantCreationSaga", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<TimeSpan>("CancellationTimeout")
-                        .HasColumnType("interval")
-                        .HasColumnName("cancellation_timeout");
-
-                    b.Property<TimeSpan>("InvitationEmailTimeout")
-                        .HasColumnType("interval")
-                        .HasColumnName("invitation_email_timeout");
-
-                    b.Property<Guid>("InvitationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("invitation_id");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("state");
-
-                    b.Property<Guid>("TenantId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id")
-                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id")
-                        .HasName("pk_tenant_creation_sagas");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_tenant_creation_sagas_tenant_id");
-
-                    b.ToTable("tenant_creation_sagas", "control_plane");
-                });
-
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -268,11 +224,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<string>("CancellationReason")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("cancellation_reason");
 
                     b.Property<DateTimeOffset?>("ClosedAt")
                         .HasColumnType("timestamp with time zone")

@@ -170,6 +170,35 @@ public sealed class MigrationStepTests(Database database)
             "CREATE UNIQUE INDEX ix_invitations_pending_email ON control_plane.invitations USING btree (tenant_id, email) WHERE ((status)::text = 'Pending'::text)");
     }
 
+    // Tenant creation is one transaction (section 6, "Tenant creation process"). The migration that removes the creation saga makes a
+    // provisioning tenant active and a cancelled one closed at the migration's time, so it can be reopened; an active tenant stays as it
+    // is. It drops the saga's table and the cancellation reason.
+    [Fact]
+    public async Task Migrate_ProvisioningAndCancelledTenants_BecomeActiveAndClosedAndTheSagaTableGoes()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("RemoveTenantCreationSaga");
+        var testData = new TestData(database, name);
+        var provisioning = await testData.AddTenantAsync(status: "Provisioning");
+        var cancelled = await testData.AddTenantAsync(status: "Cancelled");
+        var active = await testData.AddTenantAsync();
+        var started = await database.ScalarAsSuperuserAsync<DateTime>("SELECT now()", name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(format('%s|%s', status, CASE WHEN closed_at IS NULL THEN '-' WHEN closed_at >= '{started:O}'::timestamptz THEN 'now' ELSE 'before' END), ', '
+                ORDER BY array_position(ARRAY['{provisioning.Id}', '{cancelled.Id}', '{active.Id}']::uuid[], id))
+            FROM control_plane.tenants WHERE id IN ('{provisioning.Id}', '{cancelled.Id}', '{active.Id}')
+            """,
+            name)).ShouldBe("Active|-, Closed|now, Active|-");
+        (await database.ScalarAsSuperuserAsync<bool>("SELECT to_regclass('control_plane.tenant_creation_sagas') IS NULL", name)).ShouldBeTrue();
+        (await database.ScalarAsSuperuserAsync<long>(
+            "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'control_plane' AND table_name = 'tenants' AND column_name = 'cancellation_reason'",
+            name)).ShouldBe(0);
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()
