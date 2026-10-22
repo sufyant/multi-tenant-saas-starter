@@ -59,8 +59,8 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
         page.GetProperty("items").EnumerateArray()
-            .Select(item => (item.GetProperty("id").GetGuid(), Roles.Of(item)))
-            .ShouldBe([(owned.Id, Roles.BuiltIn("owner")), (administered.Id, Roles.BuiltIn("admin")), (joined.Id, Roles.BuiltIn("member"))]);
+            .Select(item => (item.GetProperty("id").GetGuid(), RoleAnswers.Of(item)))
+            .ShouldBe([(owned.Id, RoleAnswers.BuiltIn("owner")), (administered.Id, RoleAnswers.BuiltIn("admin")), (joined.Id, RoleAnswers.BuiltIn("member"))]);
     }
 
     // The page is one query, with the role joined: a longer page sends no more commands (K5).
@@ -92,22 +92,6 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
 
         Tenants(page).ShouldBe([(earlier.Id, "Same Ltd", earlier.Slug), (later.Id, "Same Ltd", later.Slug)]);
-    }
-
-    [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
-    public async Task ListMyTenants_ATenantProvisioningOrCancelled_IsNotListed(string status)
-    {
-        var active = await _testData.AddTenantAsync(name: "Active Ltd");
-        var hidden = await _testData.AddTenantAsync(status: status, name: "Hidden Ltd");
-        var user = await _testData.AddMemberAsync(active.Id);
-        await _testData.AddMemberAsync(hidden.Id, user);
-
-        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
-
-        Tenants(page).ShouldBe([(active.Id, "Active Ltd", active.Slug)]);
-        page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
     // The member of a suspended tenant still sees it, with its status, so a client can tell them why they cannot enter it.

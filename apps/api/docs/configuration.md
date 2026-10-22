@@ -29,9 +29,6 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ForwardedHeaders:KnownProxies` | Optional | none | IP addresses of trusted reverse proxies. With no proxy and no network, forwarded headers are not read |
 | `ForwardedHeaders:KnownNetworks` | Optional | none | Trusted proxy networks in CIDR notation |
 | `ControlPlane:FirstSystemAdminEmail` | Required while the system admin list is empty | none | The verified email address of the first system admin, who is granted on their first request to `/v1/platform/...` |
-| `ControlPlane:ActivationTimeout` | Optional | `00:10:00` | From the start of a tenant creation until the tenant is active; then the tenant creation needs attention |
-| `ControlPlane:InvitationEmailTimeout` | Optional | `02:00:00` | From the tenant's activation until the invitation email is sent. Must be longer than `ControlPlane:IdentityProvider:RetryDelays` and `Notifications:InvitationEmails:RetryDelays` together. The host checks this on start; the error names the three keys and their values |
-| `ControlPlane:CancellationTimeout` | Optional | `00:10:00` | From the start of a cancellation until the tenant is cancelled; then the tenant creation needs attention |
 | `ControlPlane:Clerk:SecretKey` | Required | none | The identity provider's Backend API secret key |
 | `ControlPlane:Clerk:BackendApiUrl` | Optional | `https://api.clerk.com/v1/` | The identity provider's Backend API URL, ending in `/` |
 | `ControlPlane:Clerk:Timeout` | Optional | `00:00:10` | How long a Backend API call may take |
@@ -39,6 +36,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `ControlPlane:Invitations:AcceptUrl` | Required | none | The frontend page that accepts an invitation. The invitation code is added as the `code` parameter |
 | `ControlPlane:Invitations:Lifetime` | Optional | `7.00:00:00` | How long an invitation can be accepted. At least one day: the invitation email says it in whole days, rounded down |
 | `ControlPlane:Invitations:DailyLimitPerTenant` | Optional | `50` | How many invitations a tenant may create in a rolling window of `InviteMemberHandler.LimitWindow`, cancelled and replaced ones included. Positive |
+| `ControlPlane:Roles:MaxCustomRolesPerTenant` | Optional | `20` | How many custom roles a tenant may have. The built-in roles do not count. At least 1. Over it, `CreateRole` answers 409 `role.limit_reached` (the maintainer's decision 3 in step r4b; OWASP API4) |
 | `ControlPlane:Tenants:ReopenPeriod` | Optional | `30.00:00:00` | How long after its closure a system admin can reopen a tenant (K4). Positive |
 | `Notifications:InvitationEmails:RetryDelays` | Optional | `00:00:10`, `00:01:00`, `00:05:00`, `00:15:00` | The pauses before each new try of an invitation email, to a tenant's first owner or to a person a member invited. Each is positive and longer than the one before |
 | `Notifications:Resend:ApiKey` | Required outside Development. **Development:** may be empty | none | Resend's API key. In Development without it, or without `From`, email is written to the log. With both set, email is really sent, in Development too |

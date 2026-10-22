@@ -16,6 +16,12 @@ public static class AuditOperations
 
     public const string MemberRoleChanged = "member.role_changed";
 
+    public const string RoleCreated = "role.created";
+
+    public const string RoleDeleted = "role.deleted";
+
+    public const string RoleUpdated = "role.updated";
+
     public const string TenantClosed = "tenant.closed";
 
     public const string TenantCreated = "tenant.created";

@@ -7,14 +7,15 @@ using SharedKernel;
 namespace ControlPlane.Application.Invitations;
 
 /// <summary>
-/// An invitation as a member sees it: the invited address, the built-in role it gives, the user who invited and their names as
+/// An invitation as a member sees it: the invited address, the role it gives (none only for a finished invitation whose custom role was
+/// deleted), the user who invited and their names as
 /// they are stored now, when it was created and expires, and its state at the moment it is read (<c>Pending</c>, <c>Expired</c>,
 /// <c>Accepted</c>, <c>Cancelled</c>; <see cref="Invitation.StateAt"/>), and the language it keeps for its email (K8). Inviting and the invitation list answer it.
 /// </summary>
 public sealed record InvitationView(
     Guid Id,
     string Email,
-    RoleView Role,
+    RoleView? Role,
     Guid InvitedBy,
     UserNameView InvitedByName,
     DateTimeOffset CreatedAt,
@@ -22,10 +23,10 @@ public sealed record InvitationView(
     string State,
     Language Language)
 {
-    internal static InvitationView Of(Invitation invitation, UserNameView inviterName, DateTimeOffset now) => new(
+    internal static InvitationView Of(Invitation invitation, Role? role, UserNameView inviterName, DateTimeOffset now) => new(
         invitation.Id,
         invitation.Email,
-        RoleView.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
+        role is null ? null : RoleView.Of(role),
         invitation.InvitedBy,
         inviterName,
         invitation.CreatedAt,

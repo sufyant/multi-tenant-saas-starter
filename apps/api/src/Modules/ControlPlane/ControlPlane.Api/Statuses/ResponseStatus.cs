@@ -16,10 +16,8 @@ internal static class ResponseStatus
 {
     public static TenantResponseStatus OfTenant(string status) => status switch
     {
-        "Provisioning" => TenantResponseStatus.Provisioning,
         "Active" => TenantResponseStatus.Active,
         "Suspended" => TenantResponseStatus.Suspended,
-        "Cancelled" => TenantResponseStatus.Cancelled,
         "Closed" => TenantResponseStatus.Closed,
         _ => throw Unknown(status),
     };
@@ -41,7 +39,7 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
-    // A membership exists only in a tenant past its creation's pivot (section 6).
+    // A tenant is active, suspended or closed (K4).
     public static UserMembershipResponseTenantStatus OfUserMembership(string status) => status switch
     {
         "Active" => UserMembershipResponseTenantStatus.Active,
@@ -69,10 +67,8 @@ internal static class ResponseStatus
     // A filter's value is the status of a response; the query names ControlPlane's status.
     public static string OfTenant(TenantResponseStatus status) => status switch
     {
-        TenantResponseStatus.Provisioning => "Provisioning",
         TenantResponseStatus.Active => "Active",
         TenantResponseStatus.Suspended => "Suspended",
-        TenantResponseStatus.Cancelled => "Cancelled",
         TenantResponseStatus.Closed => "Closed",
         _ => throw Unknown(status.ToString()),
     };

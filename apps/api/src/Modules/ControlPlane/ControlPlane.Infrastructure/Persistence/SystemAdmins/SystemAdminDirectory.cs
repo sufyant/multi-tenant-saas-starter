@@ -1,5 +1,6 @@
 using ControlPlane.Application.Identity;
 using ControlPlane.Contracts.SystemAdmins;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.SystemAdmins;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -26,10 +27,12 @@ internal sealed class SystemAdminDirectory(
         if (!isSystemAdmin && mayBecomeTheFirst)
         {
             // The verified addresses come from the identity provider's server, as when an invitation is accepted.
-            var verifiedEmails = await identity.FindVerifiedEmailsAsync(externalUserId, cancellationToken);
-            if (SystemDoor.IsFirstSystemAdmin(settings.Value.FirstSystemAdminEmail!, secondFactorVerified: true, verifiedEmails))
+            // Both addresses enter here in their one form.
+            var verifiedEmails = EmailAddress.AllOf(await identity.FindVerifiedEmailsAsync(externalUserId, cancellationToken));
+            var firstSystemAdminEmail = EmailAddress.Create(settings.Value.FirstSystemAdminEmail!);
+            if (SystemDoor.IsFirstSystemAdmin(firstSystemAdminEmail, secondFactorVerified: true, verifiedEmails))
             {
-                await GrantTheFirstAsync(externalUserId, settings.Value.FirstSystemAdminEmail!.Trim(), cancellationToken);
+                await GrantTheFirstAsync(externalUserId, firstSystemAdminEmail, cancellationToken);
                 isSystemAdmin = await IsSystemAdminAsync(externalUserId, cancellationToken);
             }
         }
@@ -44,14 +47,14 @@ internal sealed class SystemAdminDirectory(
     // provider verified, no names and English, as no invitation chose a language, and the grant, and it writes the grant only while the
     // system admin list is empty: of two pods that let the same person in at the same moment, one writes it. A system admin gives the first one
     // their names (A7).
-    private async Task GrantTheFirstAsync(string externalUserId, string email, CancellationToken cancellationToken)
+    private async Task GrantTheFirstAsync(string externalUserId, EmailAddress email, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
         await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH added AS (
                 INSERT INTO control_plane.users (id, external_id, email, language)
-                VALUES ({Guid.CreateVersion7(now)}, {externalUserId}, {email}, 'en')
+                VALUES ({Guid.CreateVersion7(now)}, {externalUserId}, {email.Value}, 'en')
                 ON CONFLICT (external_id) DO NOTHING
                 RETURNING id),
             person AS (

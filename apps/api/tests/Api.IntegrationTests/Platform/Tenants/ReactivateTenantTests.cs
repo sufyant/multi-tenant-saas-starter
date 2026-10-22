@@ -49,16 +49,11 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(stored);
     }
 
-    // A tenant whose creation has not passed its pivot, or never will, is neither suspended nor reactivated, and a closed one comes back
-    // only through a reopening.
+    // A closed tenant is neither suspended nor reactivated: it comes back only through a reopening.
     [Theory]
-    [InlineData("Provisioning", "suspend")]
-    [InlineData("Provisioning", "reactivate")]
-    [InlineData("Cancelled", "suspend")]
-    [InlineData("Cancelled", "reactivate")]
     [InlineData("Closed", "suspend")]
     [InlineData("Closed", "reactivate")]
-    public async Task SuspendOrReactivateTenant_ProvisioningCancelledOrClosed_IsAConflictAndChangesNothing(string status, string action)
+    public async Task SuspendOrReactivateTenant_Closed_IsAConflictAndChangesNothing(string status, string action)
     {
         var tenant = await _testData.AddTenantAsync(status: status);
 

@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -35,7 +36,7 @@ public sealed class InvitationTests
     [Fact]
     public void CreateInvitation_InArabic_KeepsTheLanguage()
     {
-        var invitation = Invitation.Create(Id, TenantId, "ada@example.com", BuiltInRoles.Member, ActorId, Now, Lifetime, Token, Language.Ar);
+        var invitation = Invitation.Create(Id, TenantId, EmailAddress.Create("ada@example.com"), RoleOf("Member"), ActorId, Now, Lifetime, Token, Language.Ar);
 
         invitation.Language.ShouldBe(Language.Ar);
     }
@@ -51,7 +52,7 @@ public sealed class InvitationTests
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
     }
 
-    // A compensation may arrive twice.
+    // A cancellation may come twice.
     [Fact]
     public void CancelInvitation_AlreadyCancelled_ChangesNothing()
     {
@@ -68,7 +69,7 @@ public sealed class InvitationTests
     public void CancelInvitation_Accepted_StaysAccepted()
     {
         var invitation = Invite("ada@example.com");
-        invitation.Accept(["ada@example.com"], AccepterId, Now);
+        invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
 
         var cancelled = invitation.Cancel();
 
@@ -154,7 +155,7 @@ public sealed class InvitationTests
         var invitation = Invite("ada@example.com");
         invitation.Cancel();
 
-        var accepted = invitation.Accept(["ada@example.com"], AccepterId, Now);
+        var accepted = invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
 
         accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
@@ -174,7 +175,7 @@ public sealed class InvitationTests
     {
         var invitation = Invite("ada@example.com");
 
-        var accepted = invitation.Accept(["other@example.com", "ada@example.com"], AccepterId, Now.AddDays(1));
+        var accepted = invitation.Accept(EmailAddress.AllOf(["other@example.com", "ada@example.com"]), AccepterId, Now.AddDays(1));
 
         accepted.IsSuccess.ShouldBeTrue();
         invitation.Status.ShouldBe(InvitationStatus.Accepted);
@@ -186,7 +187,7 @@ public sealed class InvitationTests
     {
         var invitation = Invite("Ada@Example.com");
 
-        var accepted = invitation.Accept(["ada@example.com"], AccepterId, Now);
+        var accepted = invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
 
         accepted.IsSuccess.ShouldBeTrue();
     }
@@ -195,9 +196,9 @@ public sealed class InvitationTests
     public void AcceptInvitation_AlreadyAccepted_IsRejected()
     {
         var invitation = Invite("ada@example.com");
-        invitation.Accept(["ada@example.com"], AccepterId, Now);
+        invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
 
-        var second = invitation.Accept(["ada@example.com"], AccepterId, Now);
+        var second = invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
 
         second.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
     }
@@ -207,7 +208,7 @@ public sealed class InvitationTests
     {
         var invitation = Invite("ada@example.com");
 
-        var accepted = invitation.Accept(["ada@example.com"], AccepterId, Now.AddDays(7));
+        var accepted = invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now.AddDays(7));
 
         accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationExpired);
         invitation.Status.ShouldBe(InvitationStatus.Pending);
@@ -219,7 +220,7 @@ public sealed class InvitationTests
     {
         var invitation = Invite("ada@example.com");
 
-        var accepted = invitation.Accept(["grace@example.com"], AccepterId, Now);
+        var accepted = invitation.Accept(EmailAddress.AllOf(["grace@example.com"]), AccepterId, Now);
 
         accepted.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
         invitation.Status.ShouldBe(InvitationStatus.Pending);
@@ -231,7 +232,7 @@ public sealed class InvitationTests
     {
         var invitation = Invite("ada@example.com");
 
-        var allowed = invitation.CheckAcceptance(["ada@example.com"], Now);
+        var allowed = invitation.CheckAcceptance(EmailAddress.AllOf(["ada@example.com"]), Now);
 
         allowed.IsSuccess.ShouldBeTrue();
         invitation.Status.ShouldBe(InvitationStatus.Pending);
@@ -243,7 +244,7 @@ public sealed class InvitationTests
     {
         var invitation = Invite("ada@example.com");
 
-        var allowed = invitation.CheckAcceptance(["grace@example.com"], Now);
+        var allowed = invitation.CheckAcceptance(EmailAddress.AllOf(["grace@example.com"]), Now);
 
         allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
         invitation.Status.ShouldBe(InvitationStatus.Pending);
@@ -270,7 +271,7 @@ public sealed class InvitationTests
     public void PreviewInvitation_AcceptedAfterItsExpiry_IsAccepted()
     {
         var invitation = Invite("ada@example.com");
-        invitation.Accept(["ada@example.com"], AccepterId, Now);
+        invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
 
         invitation.StateAt(Now.AddDays(8)).ShouldBe(InvitationState.Accepted);
     }
@@ -291,9 +292,9 @@ public sealed class InvitationTests
         var invitation = Invite("ada@example.com");
         invitation.Cancel();
 
-        var allowed = invitation.CheckEmail(["grace@example.com"]);
+        var allowed = invitation.CheckEmail(EmailAddress.AllOf(["grace@example.com"]));
 
-        allowed.Error.ShouldBe(Invite("ada@example.com").CheckAcceptance(["grace@example.com"], Now).Error);
+        allowed.Error.ShouldBe(Invite("ada@example.com").CheckAcceptance(EmailAddress.AllOf(["grace@example.com"]), Now).Error);
     }
 
     [Fact]
@@ -301,14 +302,54 @@ public sealed class InvitationTests
     {
         var invitation = Invite("Ada@Example.com");
 
-        invitation.CheckEmail(["other@example.com", " ada@example.com "]).IsSuccess.ShouldBeTrue();
+        invitation.CheckEmail(EmailAddress.AllOf(["other@example.com", " ada@example.com "])).IsSuccess.ShouldBeTrue();
+    }
+
+    // At the end of its lifetime a pending invitation withdraws the identity provider's invitation.
+    [Fact]
+    public void ExpireSignUp_APendingInvitationAtItsExpiry_WithdrawsTheProviderInvitation()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime).ShouldBe("inv_1");
+    }
+
+    // The module's clock decides: a message that arrives early withdraws nothing.
+    [Fact]
+    public void ExpireSignUp_BeforeTheExpiry_WithdrawsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime - TimeSpan.FromSeconds(1)).ShouldBeNull();
+    }
+
+    // A cancelled invitation withdrew it when it ended.
+    [Fact]
+    public void ExpireSignUp_ACancelledInvitation_WithdrawsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+        invitation.Cancel();
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime).ShouldBeNull();
+    }
+
+    [Fact]
+    public void ExpireSignUp_AnAddressWithAnAccount_WithdrawsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp(null);
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime).ShouldBeNull();
     }
 
     // K1: only an Owner gives the Owner role, so only an Owner invites an Owner.
     [Fact]
     public void InviteMember_AnAdminForTheOwnerRole_IsForbidden()
     {
-        var allowed = Invitation.CheckInviter(BuiltInRoles.Admin, BuiltInRoles.Owner);
+        var allowed = Invitation.CheckInviter(RoleOf("Admin"), RoleOf("Owner"));
 
         allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner);
         allowed.Error.Type.ShouldBe(SharedKernel.ErrorType.Forbidden);
@@ -327,8 +368,8 @@ public sealed class InvitationTests
         allowed.IsSuccess.ShouldBeTrue();
     }
 
-    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
+    private static Role RoleOf(string role) => Role.CreateBuiltIn(Guid.NewGuid(), TenantId, Enum.Parse<BuiltInRole>(role));
 
     private static Invitation Invite(string email) =>
-        Invitation.Create(Id, TenantId, email, BuiltInRoles.Member, ActorId, Now, Lifetime, Token, Language.En);
+        Invitation.Create(Id, TenantId, EmailAddress.Create(email), RoleOf("Member"), ActorId, Now, Lifetime, Token, Language.En);
 }

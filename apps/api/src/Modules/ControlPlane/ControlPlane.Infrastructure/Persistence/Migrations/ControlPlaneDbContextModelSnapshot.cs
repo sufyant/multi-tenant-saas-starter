@@ -24,50 +24,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ControlPlane.Application.Tenants.TenantCreation.TenantCreationSaga", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<TimeSpan>("CancellationTimeout")
-                        .HasColumnType("interval")
-                        .HasColumnName("cancellation_timeout");
-
-                    b.Property<TimeSpan>("InvitationEmailTimeout")
-                        .HasColumnType("interval")
-                        .HasColumnName("invitation_email_timeout");
-
-                    b.Property<Guid>("InvitationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("invitation_id");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("state");
-
-                    b.Property<Guid>("TenantId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id")
-                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id")
-                        .HasName("pk_tenant_creation_sagas");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_tenant_creation_sagas_tenant_id");
-
-                    b.ToTable("tenant_creation_sagas", "control_plane");
-                });
-
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -75,7 +31,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("BuiltIn")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("built_in");
@@ -86,30 +41,62 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
                     b.HasKey("Id")
                         .HasName("pk_roles");
 
-                    b.ToTable("roles", "control_plane");
+                    b.HasAlternateKey("TenantId", "Id")
+                        .HasName("ak_roles_tenant_id_id");
 
-                    b.HasData(
-                        new
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_roles_name");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_roles_tenant_id");
+
+                    b.HasIndex("TenantId", "BuiltIn")
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_tenant_id_built_in")
+                        .HasFilter("built_in IS NOT NULL");
+
+                    b.HasIndex(new[] { "Name" }, "ix_roles_name_trgm")
+                        .HasDatabaseName("ix_roles_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_roles_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_roles_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("roles", "control_plane", t =>
                         {
-                            Id = new Guid("00000000-0000-7000-8000-000000000001"),
-                            BuiltIn = "Owner",
-                            Name = "owner"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-7000-8000-000000000002"),
-                            BuiltIn = "Admin",
-                            Name = "admin"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-7000-8000-000000000003"),
-                            BuiltIn = "Member",
-                            Name = "member"
+                            t.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member')");
                         });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Roles.RolePermission", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<string>("Permission")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("permission");
+
+                    b.HasKey("TenantId", "RoleId", "Permission")
+                        .HasName("pk_role_permissions");
+
+                    b.ToTable("role_permissions", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
@@ -166,7 +153,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(35)")
                         .HasColumnName("language");
 
-                    b.Property<Guid>("RoleId")
+                    b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid")
                         .HasColumnName("role_id");
 
@@ -207,9 +194,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("InvitedBy")
                         .HasDatabaseName("ix_invitations_invited_by");
 
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_invitations_role_id");
-
                     b.HasIndex("SecretHash")
                         .IsUnique()
                         .HasDatabaseName("ix_invitations_secret_hash");
@@ -217,13 +201,24 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_invitations_tenant_id");
 
+                    b.HasIndex("TenantId", "RoleId")
+                        .HasDatabaseName("ix_invitations_tenant_id_role_id");
+
                     b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm")
                         .HasDatabaseName("ix_invitations_email_trgm");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), new[] { "gin_trgm_ops" });
 
-                    b.ToTable("invitations", "control_plane");
+                    b.HasIndex(new[] { "TenantId", "Email" }, "ix_invitations_pending_email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_pending_email")
+                        .HasFilter("status = 'Pending'");
+
+                    b.ToTable("invitations", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_invitations_pending_has_role", "status <> 'Pending' OR role_id IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
@@ -249,11 +244,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("TenantId", "UserId")
                         .HasName("pk_memberships");
 
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_memberships_role_id");
-
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_memberships_user_id");
+
+                    b.HasIndex("TenantId", "RoleId")
+                        .HasDatabaseName("ix_memberships_tenant_id_role_id");
 
                     b.ToTable("memberships", "control_plane");
                 });
@@ -264,11 +259,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("CancellationReason")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("cancellation_reason");
-
                     b.Property<DateTimeOffset?>("ClosedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("closed_at");
@@ -277,21 +267,65 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid?>("FirstOwnerId")
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("character varying(63)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("SuspensionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("suspension_reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tenants");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_tenants_name");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tenants_slug");
+
+                    b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
+                        .HasDatabaseName("ix_tenants_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm")
+                        .HasDatabaseName("ix_tenants_slug_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("tenants", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
+                {
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
-                        .HasColumnName("first_owner_id");
+                        .HasColumnName("tenant_id");
 
                     b.Property<int>("MemberCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("member_count");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
 
                     b.Property<int>("OwnerCount")
                         .ValueGeneratedOnAdd()
@@ -318,49 +352,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("owner_invitation_status");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(63)
-                        .HasColumnType("character varying(63)")
-                        .HasColumnName("slug");
+                    b.HasKey("TenantId")
+                        .HasName("pk_tenant_summaries");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("SuspensionReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("suspension_reason");
-
-                    b.HasKey("Id")
-                        .HasName("pk_tenants");
-
-                    b.HasIndex("FirstOwnerId")
-                        .HasDatabaseName("ix_tenants_first_owner_id");
-
-                    b.HasIndex("Name")
-                        .HasDatabaseName("ix_tenants_name");
-
-                    b.HasIndex("Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ix_tenants_slug");
-
-                    b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
-                        .HasDatabaseName("ix_tenants_name_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm")
-                        .HasDatabaseName("ix_tenants_slug_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.ToTable("tenants", "control_plane");
+                    b.ToTable("tenant_summaries", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -459,6 +454,27 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("users", "control_plane");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_roles_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Roles.RolePermission", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
+                        .WithMany("Grants")
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_permissions_roles_tenant_id_role_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
@@ -484,30 +500,23 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_invitations_users_invited_by");
 
-                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_invitations_roles_role_id");
-
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_invitations_tenants_tenant_id");
+
+                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_invitations_roles_tenant_id_role_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
                 {
-                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_memberships_roles_role_id");
-
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -521,15 +530,24 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+
+                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_memberships_roles_tenant_id_role_id");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
                 {
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("FirstOwnerId")
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithOne()
+                        .HasForeignKey("ControlPlane.Domain.Tenants.TenantSummary", "TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_tenants_users_first_owner_id");
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_summaries_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -539,6 +557,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SuspendedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_users_users_suspended_by");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
+                {
+                    b.Navigation("Grants");
                 });
 #pragma warning restore 612, 618
         }

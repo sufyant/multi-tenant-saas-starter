@@ -9,5 +9,6 @@ internal static class ExtraPolicies
         ("audit.platform_entries", "platform_insert", "INSERT"),
         ("audit.platform_entries", "platform_read", "SELECT"),
         ("control_plane.memberships", "own_memberships", "SELECT"),
+        ("control_plane.roles", "own_roles", "SELECT"),
     ];
 }

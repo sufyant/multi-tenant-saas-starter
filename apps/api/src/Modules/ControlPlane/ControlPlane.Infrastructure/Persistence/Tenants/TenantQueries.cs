@@ -3,6 +3,7 @@ using ControlPlane.Application.Tenants.GetMyTenant;
 using ControlPlane.Application.Tenants.GetTenant;
 using ControlPlane.Application.Tenants.ListMyTenants;
 using ControlPlane.Application.Tenants.ListTenants;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -23,41 +24,54 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     async Task<TenantView?> ITenantQueries.FindTenantAsync(CancellationToken cancellationToken) =>
         await FindAsync(cancellationToken) is { } tenant ? TenantView.Of(tenant) : null;
 
-    // Two queries, as before the views: the tenant with its summary (R12), then its Owners from its own rows.
+    // Two queries, as before the views: the tenant with its summary joined (R12), then its Owners from its own rows.
     async Task<TenantDetailView?> ITenantQueries.FindTenantDetailAsync(TimeSpan reopenPeriod, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        if (await FindAsync(cancellationToken) is not { } tenant)
+        var found = await (
+                from tenant in controlPlane.Tenants
+                where tenant.Id == controlPlane.ActiveTenant
+                join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
+                select new { Tenant = tenant, Summary = summary })
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (found is null)
         {
             return null;
         }
 
         var owners = await ListOwnersAsync(cancellationToken);
         return new TenantDetailView(
-            TenantView.Of(tenant),
-            tenant.ReopenableUntil(reopenPeriod),
-            tenant.MemberCount,
-            tenant.OwnerCount,
+            TenantView.Of(found.Tenant),
+            found.Tenant.ReopenableUntil(reopenPeriod),
+            found.Summary.MemberCount,
+            found.Summary.OwnerCount,
             [.. owners.Select(TenantOwnerView.Of)],
-            OwnerInvitationView.Of(tenant, now));
+            OwnerInvitationView.Of(found.Summary, now));
     }
 
-    // The tenant, the person and their membership, in three queries; row level security keeps the membership to the active tenant.
+    // The tenant, the person and their membership's role with its permissions, in three queries; row level security keeps the membership
+    // and the role's permissions to the active tenant. A custom role's permissions are its rows (A3).
     async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, CancellationToken cancellationToken)
     {
         if (await FindAsync(cancellationToken) is not { } tenant
             || await controlPlane.Users.AsNoTracking().SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken) is not { } user
-            || await controlPlane.TenantMemberships.AsNoTracking().SingleOrDefaultAsync(membership => membership.UserId == user.Id, cancellationToken) is not { } membership)
+            || await (
+                    from membership in controlPlane.TenantMemberships
+                    where membership.UserId == user.Id
+                    join found in controlPlane.Roles on membership.RoleId equals found.Id
+                    select found)
+                .Include(found => found.Grants)
+                .AsNoTracking()
+                .SingleOrDefaultAsync(cancellationToken) is not { } role)
         {
             return null;
         }
 
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId);
         return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
     }
 
-    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant. Its summary names the first Owner,
-    // and the users table is not under row level security either (R6): one query joins each tenant's first Owner, so the page is one round
-    // trip, with no query for each tenant.
+    // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. The page joins
+    // each tenant's summary (R12): one query, with no query for each tenant.
     async Task<ListPage<TenantListItemView>> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         TenantStatus? status,
@@ -81,9 +95,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         var total = await tenants.CountAsync(cancellationToken);
         var rows =
             from tenant in tenants
-            join user in controlPlane.Users on tenant.FirstOwnerId equals user.Id into owners
-            from owner in owners.DefaultIfEmpty()
-            select new { Tenant = tenant, Owner = owner };
+            join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
+            select new { Tenant = tenant, Summary = summary };
         var sorted = list.Sort switch
         {
             ListTenantsSort.Slug => rows.OrderBy(row => row.Tenant.Slug, list.Descending),
@@ -101,10 +114,9 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
                 .. page.Select(row => new TenantListItemView(
                     TenantView.Of(row.Tenant),
                     row.Tenant.ReopenableUntil(reopenPeriod),
-                    row.Tenant.MemberCount,
-                    row.Tenant.OwnerCount,
-                    row.Owner is { } owner ? TenantOwnerView.Of(owner) : null,
-                    OwnerInvitationView.Of(row.Tenant, now))),
+                    row.Summary.MemberCount,
+                    row.Summary.OwnerCount,
+                    OwnerInvitationView.Of(row.Summary, now))),
             ],
             list.Paging,
             total);
@@ -128,7 +140,6 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             from membership in controlPlane.Memberships
             join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
             join role in controlPlane.Roles on membership.RoleId equals role.Id
-            where tenant.Status == TenantStatus.Active || tenant.Status == TenantStatus.Suspended || tenant.Status == TenantStatus.Closed
             select new { Tenant = tenant, Role = role };
         if (list.Search is { } search)
         {
@@ -151,10 +162,11 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     }
 
     // Row level security keeps the memberships to the active tenant; the users table is not under it (R6), so the query starts from them.
+    // An Owner is a member whose role holds the Owners' permission (A1, K1).
     private async Task<IReadOnlyList<User>> ListOwnersAsync(CancellationToken cancellationToken) =>
         await (
                 from membership in controlPlane.TenantMemberships
-                where membership.RoleId == BuiltInRoles.Owner.Id
+                join role in controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage)) on membership.RoleId equals role.Id
                 join user in controlPlane.Users on membership.UserId equals user.Id
                 orderby membership.JoinedAt, membership.UserId
                 select user)

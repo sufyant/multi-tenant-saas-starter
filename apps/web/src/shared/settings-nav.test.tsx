@@ -1,7 +1,8 @@
-import { MemberRole, Permission } from "@repo/api-client";
+import { Permission } from "@repo/api-client";
 import { screen, within } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import { renderInTenant, tenantAnswers } from "../../test/tenant";
 import { SettingsNav } from "./settings-nav";
 
@@ -17,7 +18,7 @@ const links = async () =>
 
 describe("SettingsNav", () => {
   it("SettingsNav_Owner_ShowsGeneralMembersActivityAndPreferences", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner));
+    server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<SettingsNav current="general" />);
 
@@ -30,7 +31,7 @@ describe("SettingsNav", () => {
   });
 
   it("SettingsNav_Admin_ShowsActivity", async () => {
-    server.use(...tenantAnswers(MemberRole.Admin));
+    server.use(...tenantAnswers(BuiltInRole.Admin));
 
     renderInTenant(<SettingsNav current="activity" />);
 
@@ -40,7 +41,7 @@ describe("SettingsNav", () => {
   });
 
   it("SettingsNav_Member_LeavesOutActivity", async () => {
-    server.use(...tenantAnswers(MemberRole.Member));
+    server.use(...tenantAnswers(BuiltInRole.Member));
 
     renderInTenant(<SettingsNav current="general" />);
 
@@ -52,7 +53,7 @@ describe("SettingsNav", () => {
   });
 
   it("SettingsNav_NoOrganisationPermission_ShowsOnlyPreferences", async () => {
-    server.use(...tenantAnswers(MemberRole.Member, []));
+    server.use(...tenantAnswers(BuiltInRole.Member, []));
 
     renderInTenant(<SettingsNav current="preferences" />);
 
@@ -64,7 +65,7 @@ describe("SettingsNav", () => {
 
   it("SettingsNav_ProfileReadOnly_ShowsGeneral", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Member, [Permission.TenantProfileRead]),
+      ...tenantAnswers(BuiltInRole.Member, [Permission.TenantProfileRead]),
     );
 
     renderInTenant(<SettingsNav current="general" />);

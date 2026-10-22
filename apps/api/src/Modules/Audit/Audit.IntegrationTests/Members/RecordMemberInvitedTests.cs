@@ -58,5 +58,5 @@ public sealed class RecordMemberInvitedTests(Database database)
     }
 
     private static MemberInvitedEvent Invited(Guid? replaced) =>
-        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin", replaced);
+        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin", replaced, Guid.CreateVersion7(), true);
 }

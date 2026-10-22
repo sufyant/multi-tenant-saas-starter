@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
+using Audit.Application.Roles;
 using Audit.Application.Tenants;
 using Audit.Domain;
 
@@ -20,6 +21,10 @@ public static class AuditDetailsTypes
 
     public const string MemberRoleChanged = AuditOperations.MemberRoleChanged;
 
+    public const string RoleCreated = AuditOperations.RoleCreated;
+
+    public const string RoleUpdated = AuditOperations.RoleUpdated;
+
     public const string TenantOwnerInvited = AuditOperations.TenantOwnerInvited;
 
     public const string TenantRenamed = AuditOperations.TenantRenamed;
@@ -34,6 +39,9 @@ public static class AuditDetailsTypes
         [AuditOperations.MemberJoined] = null,
         [AuditOperations.MemberRemoved] = typeof(MemberRemovedDetails),
         [AuditOperations.MemberRoleChanged] = typeof(MemberRoleChangedDetails),
+        [AuditOperations.RoleCreated] = typeof(RoleCreatedDetails),
+        [AuditOperations.RoleDeleted] = null,
+        [AuditOperations.RoleUpdated] = typeof(RoleUpdatedDetails),
         [AuditOperations.TenantClosed] = null,
         [AuditOperations.TenantCreated] = null,
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),

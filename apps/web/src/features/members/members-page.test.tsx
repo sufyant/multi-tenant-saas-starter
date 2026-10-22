@@ -1,4 +1,4 @@
-import { ErrorCode, MemberRole, Permission } from "@repo/api-client";
+import { ErrorCode, Permission } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -12,6 +12,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
   john,
@@ -20,6 +21,7 @@ import {
   people,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
@@ -51,7 +53,7 @@ const openMenu = async (name: string) => {
 
 describe("MembersPage", () => {
   it("MembersPage_Owner_SeesInviteTabsAndEveryAction", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
 
@@ -71,7 +73,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_Owner_CannotRemoveThemselvesAndSaysWhy", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
     await openMenu("Ayşe Yılmaz");
@@ -89,7 +91,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_YourOwnRow_HasTheYouTag", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
 
@@ -98,7 +100,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_Admin_CannotTouchAnOwnerAndSaysWhy", async () => {
-    server.use(...tenantAnswers(MemberRole.Admin), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Admin), membersAnswer());
 
     renderInTenant(<MembersPage />);
     await openMenu("Ayşe Yılmaz");
@@ -112,7 +114,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_Member_SeesAReadOnlyListWithoutTabsOrInvite", async () => {
-    server.use(...tenantAnswers(MemberRole.Member), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Member), membersAnswer());
 
     renderInTenant(<MembersPage />);
 
@@ -129,7 +131,7 @@ describe("MembersPage", () => {
   it("MembersPage_MemberOpensTheInvitationsTab_SeesTheMembers", async () => {
     const invitationRequests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Member),
+      ...tenantAnswers(BuiltInRole.Member),
       membersAnswer(),
       invitationsAnswer(invitationRequests),
     );
@@ -144,7 +146,7 @@ describe("MembersPage", () => {
 
   it("MembersPage_NoReadPermission_SaysPermissionDenied", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Member, [Permission.TenantProfileRead]),
+      ...tenantAnswers(BuiltInRole.Member, [Permission.TenantProfileRead]),
     );
 
     renderInTenant(<MembersPage />);
@@ -159,7 +161,7 @@ describe("MembersPage", () => {
 
   it("MembersPage_DeletedUser_SaysDeletedUser", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer([
         ayse,
         {
@@ -182,19 +184,19 @@ describe("MembersPage", () => {
   it("MembersPage_TheUrl_DrivesSearchFilterPageAndSort", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(people, requests),
     );
 
     renderInTenant(<MembersPage />, {
-      url: "/northwind/settings/members?q=byrne&role=member&page=2&sort=-lastName",
+      url: `/northwind/settings/members?q=byrne&roleId=${roleOf.member.id}&page=2&sort=-lastName`,
     });
 
     await waitFor(() => expect(requests).toHaveLength(1));
     expect(requests.map((params) => Object.fromEntries(params))).toEqual([
       {
         q: "byrne",
-        role: MemberRole.Member,
+        roleId: roleOf.member.id,
         page: "2",
         sort: "-lastName",
       },
@@ -205,7 +207,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_TypeASearch_WritesItToTheUrlAfterAPause", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
     await userEvent.type(
@@ -218,7 +220,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_SortByName_WritesTheSortToTheUrl", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
     await userEvent.click(
@@ -230,7 +232,7 @@ describe("MembersPage", () => {
 
   it("MembersPage_BackAndForward_RestoreTheTab", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       invitationsAnswer(),
     );
@@ -263,7 +265,7 @@ describe("MembersPage", () => {
   });
 
   it("MembersPage_SearchFindsNothing_OffersToClearIt", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer([]));
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer([]));
 
     renderInTenant(<MembersPage />, {
       url: "/northwind/settings/members?q=nobody",
@@ -278,7 +280,7 @@ describe("MembersPage", () => {
 
   it("MembersPage_ListFails_ShowsTheReferenceAndTryAgain", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       http.get(`*/v1/tenants/${northwind.id}/members`, () =>
         problem(500, ErrorCode.ServerError),
       ),
@@ -298,7 +300,7 @@ describe("MembersPage", () => {
 
   it("MembersPage_SuspendedUser_ShowsTheSuspendedScreen", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       http.get(`*/v1/tenants/${northwind.id}/members`, () =>
         problem(403, ErrorCode.UserSuspended),
       ),

@@ -32,10 +32,8 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
-    [InlineData("Provisioning", "provisioning")]
     [InlineData("Active", "active")]
     [InlineData("Suspended", "suspended")]
-    [InlineData("Cancelled", "cancelled")]
     [InlineData("Closed", "closed")]
     public async Task GetTenant_ATenantInAnyStatus_ReturnsItWithItsStatus(string stored, string answered)
     {
@@ -126,7 +124,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var admin = await SystemAdminAsync();
         var email = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, email);
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET owner_invitation_language = NULL WHERE id = '{tenant}'");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{tenant}'");
 
         var found = await admin.GetAsync($"/v1/platform/tenants/{tenant}", Cancellation);
 

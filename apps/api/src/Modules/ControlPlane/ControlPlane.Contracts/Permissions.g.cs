@@ -43,6 +43,8 @@ public static class Permissions
 
     public const string TenantMembersDelete = "tenant.members.delete";
 
+    public const string TenantOwnersManage = "tenant.owners.manage";
+
     public const string TenantProfileRead = "tenant.profile.read";
 
     public const string TenantInvitationsCreate = "tenant.invitations.create";
@@ -52,4 +54,12 @@ public static class Permissions
     public const string TenantInvitationsDelete = "tenant.invitations.delete";
 
     public const string TenantAuditRead = "tenant.audit.read";
+
+    public const string TenantRolesRead = "tenant.roles.read";
+
+    public const string TenantRolesCreate = "tenant.roles.create";
+
+    public const string TenantRolesUpdate = "tenant.roles.update";
+
+    public const string TenantRolesDelete = "tenant.roles.delete";
 }

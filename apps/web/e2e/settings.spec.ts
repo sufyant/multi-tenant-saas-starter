@@ -1,6 +1,7 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { MemberRole, MyTenantResponseStatus } from "@repo/api-client";
+import { MyTenantResponseStatus } from "@repo/api-client";
+import { BuiltInRole } from "../src/shared/roles";
 import { mockAuditLog, mockMembers, mockTenantStatus, northwind } from "./api";
 import { expectAccessible } from "./axe";
 
@@ -25,7 +26,7 @@ test("General_Owner_ShowsTheOrganisationReadOnly", async ({ page }) => {
 });
 
 test("Rail_Settings_OpensGeneral", async ({ page }) => {
-  await mockMembers(page, { role: MemberRole.Member });
+  await mockMembers(page, { role: BuiltInRole.Member });
   await open(page, `/${northwind.slug}`);
 
   await page
@@ -63,7 +64,7 @@ test("Activity_TwoPages_ShowsOlderActivityThenNoButton", async ({ page }) => {
 });
 
 test("Activity_Member_SaysPermissionDenied", async ({ page }) => {
-  await mockAuditLog(page, { role: MemberRole.Member });
+  await mockAuditLog(page, { role: BuiltInRole.Member });
   await open(page, `${settings}/activity`);
 
   await expect(
@@ -87,7 +88,7 @@ test("Organisation_Suspended_ShowsItsPageWithNoReason", async ({ page }) => {
 
 test("Organisation_Closed_ShowsItsPage", async ({ page }) => {
   await mockTenantStatus(page, MyTenantResponseStatus.Closed, {
-    role: MemberRole.Member,
+    role: BuiltInRole.Member,
   });
   await open(page, `${settings}/members`);
 

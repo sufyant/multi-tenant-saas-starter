@@ -3,9 +3,10 @@
 import {
   ListInvitationsSort,
   ListMembersSort,
-  MemberRole,
+  schemas,
 } from "@repo/api-client";
 import {
+  createParser,
   parseAsInteger,
   parseAsString,
   parseAsStringLiteral,
@@ -19,7 +20,7 @@ export type Tab = (typeof tabs)[number];
 export const searchDelay = 300;
 
 /**
- * The page's list state in the URL (F8, F9): `?tab=invitations&q=…&role=…&page=…&sort=…`. Each change pushes a history
+ * The page's list state in the URL (F8, F9): `?tab=invitations&q=…&roleId=…&page=…&sort=…`. Each change pushes a history
  * entry, so back and forward restore it. A value the contract does not have reads as absent.
  */
 const sorts = [
@@ -31,10 +32,19 @@ const sorts = [
 export const sortValue = (value: string | null) =>
   sorts.find((sort) => sort === value) ?? null;
 
+/** A role id: the list contract's filter is a uuid. */
+const roleIdParser = createParser({
+  parse: (value) =>
+    schemas.ListMembersQueryParams.shape.roleId.safeParse(value).success
+      ? value
+      : null,
+  serialize: (value: string) => value,
+});
+
 const parsers = {
   tab: parseAsStringLiteral(tabs).withDefault("members"),
   q: parseAsString.withDefault(""),
-  role: parseAsStringLiteral(Object.values(MemberRole)),
+  roleId: roleIdParser,
   page: parseAsInteger.withDefault(1),
   sort: parseAsStringLiteral(sorts),
 };

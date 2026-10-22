@@ -1,4 +1,4 @@
-import { ErrorCode, MemberRole } from "@repo/api-client";
+import { ErrorCode } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -12,6 +12,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import {
   john,
   membersAnswer,
@@ -45,7 +46,7 @@ describe("RemoveMemberDialog", () => {
   it("RemoveMember_Success_ClosesToastsAndRefreshesTheList", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(people, requests),
       removeAnswer(() => new HttpResponse(null, { status: 204 })),
     );
@@ -97,7 +98,7 @@ describe("RemoveMemberDialog", () => {
     "RemoveMember_Refused%s_%s_ShowsTheBoardsTextInTheDialog",
     async (status, code, title, text) => {
       server.use(
-        ...tenantAnswers(MemberRole.Owner),
+        ...tenantAnswers(BuiltInRole.Owner),
         membersAnswer(),
         removeAnswer(() => problem(status, code)),
       );

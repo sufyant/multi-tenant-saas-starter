@@ -17,13 +17,6 @@ public static class NotificationsInfrastructure
     /// <summary>The key of the pauses before each new try of an invitation email.</summary>
     public const string InvitationEmailRetryDelaysKey = $"{InvitationEmailOptions.Section}:{nameof(InvitationEmailOptions.RetryDelays)}";
 
-    /// <summary>
-    /// The pauses before each new try of an invitation email, as configured or by default. The host checks the tenant creation's wait
-    /// for the email against them (section 6, "Tenant creation process").
-    /// </summary>
-    public static IReadOnlyList<TimeSpan> InvitationEmailRetryDelays(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<InvitationEmailOptions>>().Value.Delays;
-
     public static IServiceCollection AddNotificationsInfrastructure(this IServiceCollection services)
     {
         // Outside Development email goes only through Resend. Without its settings no email could leave, invitations included, so the

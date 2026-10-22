@@ -6,7 +6,6 @@ using Tenancy;
 namespace Api.IntegrationTests.Hosting;
 
 // Section 9, rule 6.
-[RuntimeHandlerCode]
 public sealed class SharedDatabaseCleanupTests(Database database)
 {
     [Fact]

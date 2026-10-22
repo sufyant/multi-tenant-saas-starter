@@ -35,9 +35,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await UseADatabaseOfItsOwnAsync();
         var random = Guid.NewGuid().ToString();
         var delta = await _testData.AddTenantAsync(name: "Delta Ltd");
-        var alpha = await _testData.AddTenantAsync(status: "Provisioning", name: "Alpha Ltd");
         var charlie = await _testData.AddTenantAsync(status: "Suspended", name: "Charlie Ltd");
-        var bravo = await _testData.AddTenantAsync(status: "Cancelled", name: "Bravo Ltd");
         var echoLater = await _testData.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
         var echoEarlier = await _testData.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
 
@@ -47,19 +45,17 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Tenants(page).ShouldBe(
         [
-            (alpha.Id, "Alpha Ltd", alpha.Slug, "provisioning"),
-            (bravo.Id, "Bravo Ltd", bravo.Slug, "cancelled"),
             (charlie.Id, "Charlie Ltd", charlie.Slug, "suspended"),
             (delta.Id, "Delta Ltd", delta.Slug, "active"),
             (echoEarlier.Id, "Echo Ltd", echoEarlier.Slug, "active"),
             (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "reopenableUntil", "memberCount", "ownerCount", "firstOwner", "ownerInvitation"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation"],
             ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
-        page.GetProperty("total").GetInt32().ShouldBe(6);
+        page.GetProperty("total").GetInt32().ShouldBe(4);
     }
 
     [Fact]
@@ -119,17 +115,13 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("provisioning", "Alpha")]
     [InlineData("active", "Bravo")]
     [InlineData("suspended", "Charlie")]
-    [InlineData("cancelled", "Delta")]
     [InlineData("closed", "Echo")]
     public async Task ListTenants_AStatusFilter_ReturnsTheTenantsInThatStatusOnly(string status, string found)
     {
-        await _testData.AddTenantAsync(status: "Provisioning", name: $"{_marker} Alpha");
         await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
         await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
-        await _testData.AddTenantAsync(status: "Cancelled", name: $"{_marker} Delta");
         await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
@@ -210,11 +202,11 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("suspensionReason").GetString()).ShouldBe(["Unpaid invoices", null]);
     }
 
-    // Each item counts the tenant's members and Owners, names the Owner who joined first, and, while the tenant has no Owner, its latest
+    // Each item counts the tenant's members and Owners, and, while the tenant has no Owner, names its latest
     // Owner invitation, whose state "expired" comes from its expiry at the moment of the request. A closed tenant says until when it can
     // be reopened. The tenants are made through the API, so their summary comes from the commands (R12).
     [Fact]
-    public async Task ListTenants_TenantsInEachStateOfTheirOwners_AnswerTheCountsTheFirstOwnerAndTheInvitation()
+    public async Task ListTenants_TenantsInEachStateOfTheirOwners_AnswerTheCountsAndTheInvitation()
     {
         var admin = await SystemAdminAsync();
         var tenants = new PlatformTenants(database, _api);
@@ -237,10 +229,10 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
         Owners(page).ShouldBe(
         [
-            $"{owned}|2|2|{await _testData.UserIdOfAsync(first)}|Ada|Lovelace|{ada}|-|-",
-            $"{pendingTenant}|0|0|-|{pending}|{now.AddDays(7):O}|pending|-",
-            $"{closedTenant}|0|0|-|{closed}|{now.AddDays(7):O}|cancelled|{now.AddDays(30):O}",
-            $"{expiredTenant}|0|0|-|{expired}|{expiredAt:O}|expired|-",
+            $"{owned}|2|2|-|-",
+            $"{pendingTenant}|0|0|{pending}|{now.AddDays(7):O}|pending|-",
+            $"{closedTenant}|0|0|{closed}|{now.AddDays(7):O}|cancelled|{now.AddDays(30):O}",
+            $"{expiredTenant}|0|0|{expired}|{expiredAt:O}|expired|-",
         ]);
     }
 
@@ -253,7 +245,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var tenants = new PlatformTenants(database, _api);
         var without = await tenants.CreateAsync(admin, Email(), name: $"{_marker} Alpha");
         await tenants.CreateAsync(admin, Email(), name: $"{_marker} Bravo");
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET owner_invitation_language = NULL WHERE id = '{without}'");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{without}'");
 
         var response = await admin.GetAsync($"/v1/platform/tenants?q={_marker}", Cancellation);
 
@@ -272,17 +264,13 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             item.GetProperty("status").GetString()!)),
     ];
 
-    // Each item as "id|memberCount|ownerCount|firstOwner|ownerInvitation|reopenableUntil": the first Owner as "userId|firstName|lastName|email",
-    // the invitation as "email|expiresAt|state", "-" for null.
+    // Each item as "id|memberCount|ownerCount|ownerInvitation|reopenableUntil": the invitation as "email|expiresAt|state", "-" for null.
     private static List<string> Owners(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => string.Join('|',
             item.GetProperty("id").GetGuid(),
             item.GetProperty("memberCount").GetInt32(),
             item.GetProperty("ownerCount").GetInt32(),
-            item.GetProperty("firstOwner") is { ValueKind: JsonValueKind.Object } owner
-                ? $"{owner.GetProperty("userId").GetGuid()}|{owner.GetProperty("firstName").GetString()}|{owner.GetProperty("lastName").GetString()}|{owner.GetProperty("email").GetString()}"
-                : "-",
             item.GetProperty("ownerInvitation") is { ValueKind: JsonValueKind.Object } invitation
                 ? $"{invitation.GetProperty("email").GetString()}|{invitation.GetProperty("expiresAt").GetDateTimeOffset():O}|{invitation.GetProperty("state").GetString()}"
                 : "-",

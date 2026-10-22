@@ -51,7 +51,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         invitation.EnumerateObject().Select(field => field.Name)
             .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state", "language"], ignoreOrder: true);
         invitation.GetProperty("state").GetString().ShouldBe("pending");
-        (invitation.GetProperty("email").GetString(), Roles.Of(invitation)).ShouldBe((owner, Roles.BuiltIn("owner")));
+        (invitation.GetProperty("email").GetString(), RoleAnswers.Of(invitation)).ShouldBe((owner, RoleAnswers.BuiltIn("owner")));
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":null,"lastName":null,"deleted":false}""");
         var id = invitation.GetProperty("id").GetGuid();
         (await _testData.InvitationStatusOfAsync(id)).ShouldBe("Pending");
@@ -115,9 +115,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("Provisioning")]
     [InlineData("Suspended")]
-    [InlineData("Cancelled")]
     [InlineData("Closed")]
     public async Task InviteOwner_ATenantThatIsNotActive_IsAConflictAndInvitesNobody(string status)
     {

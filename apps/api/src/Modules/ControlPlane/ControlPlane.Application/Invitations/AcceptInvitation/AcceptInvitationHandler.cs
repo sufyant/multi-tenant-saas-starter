@@ -1,20 +1,21 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
-using ControlPlane.Domain;
-using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using FluentValidation;
 using FluentValidation.Results;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Invitations.AcceptInvitation;
 
-// Rejections come first (W7).
+// The rules are the tenant's (M1, Tenant.CheckInvitationFound, Tenant.Accept). The acceptance changes two aggregates in one transaction,
+// because a business rule spans them: the user's creation or count follows the membership (M2, R13). Rejections come first (W7).
 public static class AcceptInvitationHandler
 {
-    public static async Task<(Result<MyTenantView>, MemberJoinedEvent?)> HandleAsync(
+    public static async Task<(Result<MyTenantView>, OutgoingMessages)> HandleAsync(
         AcceptInvitationCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -25,10 +26,15 @@ public static class AcceptInvitationHandler
         // A suspension then runs before or after the acceptance, never between its check and its change. A code that names no tenant
         // answers like an invitation that does not exist, and so does a cancelled invitation.
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
-            || await tenants.FindInvitationForUpdateAsync(InvitationSecret.Hash(command.Secret), cancellationToken) is not { } invitation
-            || invitation.Status == InvitationStatus.Cancelled)
+            || await tenants.FindInvitationForUpdateAsync(InvitationSecret.Hash(command.Secret), cancellationToken) is not { } invitation)
         {
-            return (Errors.InvitationNotFound, null);
+            return (Errors.InvitationNotFound, []);
+        }
+
+        var found = tenant.CheckInvitationFound(invitation);
+        if (!found.IsSuccess)
+        {
+            return (found.Error, []);
         }
 
         var now = time.GetUtcNow();
@@ -40,47 +46,33 @@ public static class AcceptInvitationHandler
         // that both wait to update would deadlock. Two acceptances of a person who is not a user yet run one after the other too
         // (K6f), so the second finds the first one's user and goes on as for a known user.
         var existing = await users.FindUserForNoKeyUpdateAsync(command.ActorId, cancellationToken);
-        if (existing?.DeletedAt is not null)
-        {
-            return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), null);
-        }
+        var facts = existing is null
+            ? AcceptanceFacts.None
+            : new AcceptanceFacts(
+                existing.DeletedAt is not null,
+                await users.IsSystemAdminAsync(existing.Id, cancellationToken),
+                await tenants.FindMembershipAsync(existing.Id, cancellationToken) is not null);
 
-        // T5: system admins enter through the system door, never as tenant members.
-        if (existing is not null && await users.IsSystemAdminAsync(existing.Id, cancellationToken))
-        {
-            return (Error.Unprocessable(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin, "A system admin cannot join a tenant."), null);
-        }
-
-        if (existing is not null && await tenants.FindMembershipAsync(existing.Id, cancellationToken) is not null)
-        {
-            return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "You are already a member of this tenant."), null);
-        }
-
-        var allowed = invitation.CheckAcceptance(command.VerifiedEmails, now);
+        // The identity provider's addresses enter here, in their one form (EmailAddress).
+        var verifiedEmails = EmailAddress.AllOf(command.VerifiedEmails);
+        var allowed = tenant.CheckAcceptance(invitation, facts, verifiedEmails, now);
         if (!allowed.IsSuccess)
         {
-            return (allowed.Error, null);
-        }
-
-        // Only the invited person with a live invitation learns that the tenant is suspended (as T3). The invitation stays pending,
-        // so it can be accepted once the tenant is reactivated.
-        if (tenant.Status == TenantStatus.Suspended)
-        {
-            return (Error.Conflict(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."), null);
+            return (allowed.Error, []);
         }
 
         // A person who is not a user yet gives their names, as a validator would refuse them: a 400 that names each missing field. It
-        // comes after the invitation's own checks, so a stranger with the link learns nothing more, and before any change (W7).
+        // comes after the tenant's checks, so a stranger with the link learns nothing more, and before any change (W7).
         if (existing is null && (command.FirstName is null || command.LastName is null))
         {
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language, now);
-        var accepted = invitation.Accept(command.VerifiedEmails, user.Id, now);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, EmailAddress.Create(invitation.Email), command.FirstName!, command.LastName!, invitation.Language, now);
+        var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {
-            return (accepted.Error, null);
+            return (accepted.Error, []);
         }
 
         if (existing is null)
@@ -88,10 +80,12 @@ public static class AcceptInvitationHandler
             users.Add(user);
         }
 
-        await tenants.AddMembershipAsync(tenant, user.Id, invitation.RoleId, now, cancellationToken);
+        var membership = accepted.Value;
+        await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
+        var roles = await tenants.FindRolesAsync(cancellationToken);
         return (
-            MyTenantView.Of(tenant, BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
-            new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
+            MyTenantView.Of(tenant, roles.Of(membership.RoleId)),
+            [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id)]);
     }
 
     private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>

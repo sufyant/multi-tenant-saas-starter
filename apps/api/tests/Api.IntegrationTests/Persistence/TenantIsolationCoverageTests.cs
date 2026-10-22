@@ -1,7 +1,6 @@
 namespace Api.IntegrationTests.Persistence;
 
 // How isolation behaves is proven in Tenancy.IntegrationTests; this proves every tenant table gets it.
-[RuntimeHandlerCode]
 public sealed class TenantIsolationCoverageTests(Database database)
 {
     [Fact]

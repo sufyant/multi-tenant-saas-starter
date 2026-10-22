@@ -6,7 +6,6 @@ import {
   getListMembersQueryOptions,
   ListInvitationsSort,
   ListMembersSort,
-  MemberRole,
   Permission,
   schemas,
 } from "@repo/api-client";
@@ -22,11 +21,14 @@ import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { ListError } from "@/shared/list-error";
 import { PermissionDenied } from "@/shared/permission-denied";
+import { inListOrder } from "@/shared/roles";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { useRoleName } from "@/shared/use-role-name";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
 import { MembersTable } from "./members-table";
+import { listRolesOptions } from "./role-choice";
 import {
   searchDelay,
   sortValue,
@@ -39,6 +41,7 @@ const allRoles = "all";
 /** Settings > Members (the Members boards): the Members tab, and the Invitations tab for whom may read them (F5). */
 export function MembersPage() {
   const t = useTranslations();
+  const roleName = useRoleName();
   const can = useCan();
   const { tenant } = useTenant();
   const [params, setParams] = useListParams();
@@ -50,12 +53,15 @@ export function MembersPage() {
   );
   const seesInvitations = can(Permission.TenantInvitationsRead);
   const readsMembers = can(Permission.TenantMembersRead);
+  // The role filter's choices are the tenant's roles, for whom may read them.
+  const readsRoles = can(Permission.TenantRolesRead);
+  const roles = useQuery(listRolesOptions(tenant.id, readsRoles));
   // A person without the Invitations tab who opens ?tab=invitations sees the Members tab.
   const tab: Tab = seesInvitations ? params.tab : "members";
-  const { q, role, page, sort } = params;
+  const { q, roleId, page, sort } = params;
   const search = {
     q: q || undefined,
-    role: role ?? undefined,
+    roleId: roleId ?? undefined,
     page,
   };
 
@@ -100,8 +106,8 @@ export function MembersPage() {
       </Frame>
     );
 
-  const filtered = Boolean(q || role);
-  const clear = () => void setParams({ q: null, role: null, page: null });
+  const filtered = Boolean(q || roleId);
+  const clear = () => void setParams({ q: null, roleId: null, page: null });
   const timeZone = me.data?.timeZone;
 
   const body = (() => {
@@ -220,7 +226,7 @@ export function MembersPage() {
               void setParams({
                 tab: next === "invitations" ? "invitations" : null,
                 q: null,
-                role: null,
+                roleId: null,
                 page: null,
                 sort: null,
               })
@@ -228,28 +234,30 @@ export function MembersPage() {
           />
         )}
         <div className="flex flex-1 flex-wrap items-end justify-end gap-2">
-          <Combobox
-            variant="compact"
-            label={t("members.roleFilter")}
-            value={role ?? allRoles}
-            options={[
-              { id: allRoles, label: t("members.allRoles") },
-              ...Object.values(MemberRole).map((choice) => ({
-                id: choice,
-                label: t(`shell.roles.${choice}`),
-              })),
-            ]}
-            onValueChange={(id) =>
-              void setParams({
-                role:
-                  Object.values(MemberRole).find((choice) => choice === id) ??
-                  null,
-                page: null,
-              })
-            }
-            searchPlaceholder={t("members.roleSearch")}
-            emptyLabel={t("members.roleEmpty")}
-          />
+          {readsRoles && (
+            <Combobox
+              variant="compact"
+              label={t("members.roleFilter")}
+              value={roleId ?? allRoles}
+              options={[
+                { id: allRoles, label: t("members.allRoles") },
+                ...inListOrder(roles.data?.items ?? []).map((choice) => ({
+                  id: choice.id,
+                  label: roleName(choice),
+                })),
+              ]}
+              onValueChange={(id) =>
+                void setParams({
+                  roleId:
+                    roles.data?.items.find((choice) => choice.id === id)?.id ??
+                    null,
+                  page: null,
+                })
+              }
+              searchPlaceholder={t("members.roleSearch")}
+              emptyLabel={t("members.roleEmpty")}
+            />
+          )}
           <Search
             key={tab}
             value={q}

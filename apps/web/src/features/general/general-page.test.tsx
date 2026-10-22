@@ -1,7 +1,7 @@
-import { MemberRole } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import { renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { GeneralPage } from "./general-page";
 
@@ -18,7 +18,7 @@ const valueBeside = (term: string) =>
 
 describe("GeneralPage", () => {
   it("GeneralPage_Owner_ShowsNameStatusCreatedAndRole", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner));
+    server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<GeneralPage />, { url });
 
@@ -32,7 +32,7 @@ describe("GeneralPage", () => {
   });
 
   it("GeneralPage_Member_ShowsTheSameRowsAndNoForm", async () => {
-    server.use(...tenantAnswers(MemberRole.Member));
+    server.use(...tenantAnswers(BuiltInRole.Member));
 
     renderInTenant(<GeneralPage />, { url });
 
@@ -45,7 +45,7 @@ describe("GeneralPage", () => {
   });
 
   it("GeneralPage_NoProfilePermission_SaysPermissionDenied", async () => {
-    server.use(...tenantAnswers(MemberRole.Member, []));
+    server.use(...tenantAnswers(BuiltInRole.Member, []));
 
     renderInTenant(<GeneralPage />, { url });
 
@@ -55,7 +55,7 @@ describe("GeneralPage", () => {
   });
 
   it("GeneralPage_InTurkish_ShowsTurkishTexts", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner));
+    server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<GeneralPage />, { url, locale: "tr" });
 

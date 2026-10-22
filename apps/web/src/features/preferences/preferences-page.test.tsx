@@ -2,7 +2,6 @@ import {
   type ChangePreferencesRequest,
   ErrorCode,
   Language,
-  MemberRole,
   type MeResponse,
 } from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
@@ -21,6 +20,7 @@ import {
   vi,
 } from "vitest";
 import { setLocale } from "@/i18n/set-locale";
+import { BuiltInRole } from "@/shared/roles";
 import { problem, renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { PreferencesPage } from "./preferences-page";
 
@@ -62,7 +62,7 @@ function preferencesAnswers(
       bodies.push(body);
       return HttpResponse.json(body);
     }),
-    ...tenantAnswers(MemberRole.Member),
+    ...tenantAnswers(BuiltInRole.Member),
   ];
 }
 

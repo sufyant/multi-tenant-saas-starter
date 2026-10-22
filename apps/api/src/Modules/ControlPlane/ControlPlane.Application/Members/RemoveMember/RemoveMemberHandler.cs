@@ -1,19 +1,17 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
-using ControlPlane.Domain.Roles;
-using ControlPlane.Domain.Tenants;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Members.RemoveMember;
 
-// K6: the tenant row is locked first; then the actor's and the target's memberships are read and the Owners counted under the lock, so
-// two removals at once run one after the other and never leave the tenant without an Owner. The rules are the tenant's (M1,
-// Tenant.CheckRemoval). Rejections come first (W7). The tenant door reads the membership on every request (T7), so the removed member's
-// next request is not let in.
+// K6: the tenant row is locked first; then the target's membership is read and the Owners counted under the lock, so two removals at
+// once run one after the other and never leave the tenant without an Owner. The rules are the tenant's (M1, Tenant.Remove). Rejections
+// come first (W7). The tenant door reads the membership on every request (T7), so the removed member's next request is not let in.
 public static class RemoveMemberHandler
 {
-    public static async Task<(Result, MemberRemovedEvent?)> HandleAsync(
+    public static async Task<(Result, OutgoingMessages)> HandleAsync(
         RemoveMemberCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -23,26 +21,23 @@ public static class RemoveMemberHandler
         var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
         if (!start.IsSuccess)
         {
-            return (start.Error, null);
+            return (start.Error, []);
         }
 
         var (tenant, actor, actorMembership) = start.Value;
 
-        if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
+        var facts = await tenants.FindMemberFactsAsync(command.UserId, cancellationToken);
+        var removed = tenant.Remove(actorMembership, facts);
+        if (!removed.IsSuccess)
         {
-            return (Errors.MemberNotFound, null);
+            return (removed, []);
         }
 
-        var allowed = Tenant.CheckRemoval(actorMembership, target, await tenants.CountOwnersAsync(cancellationToken));
-        if (!allowed.IsSuccess)
-        {
-            return (allowed, null);
-        }
-
+        var target = removed.Value;
         await tenants.RemoveMembershipAsync(tenant, target, cancellationToken);
 
         var now = time.GetUtcNow();
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
-        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name));
+        var role = facts.Roles.Of(target.RoleId);
+        return (Result.Success(), [new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name, role.Id, role.BuiltIn is not null)]);
     }
 }

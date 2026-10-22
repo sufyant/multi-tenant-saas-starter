@@ -203,6 +203,7 @@
     "inviteEmailPlaceholder": "name@company.com",
     "inviteRoleHintOwner": "Owners can also give the Owner role.",
     "inviteRoleHintAdmin": "Only an Owner can invite an Owner.",
+    "revokeOwnerHint": "Only an Owner can revoke an Owner's invitation.",
     "inviteLanguage": "Email language",
     "inviteLanguageHint": "The invitation email and their first screens use this language. They can change it later.",
     "languageSearch": "Search languages",
@@ -250,6 +251,11 @@
         "joined": "<target></target> joined the organisation.",
         "removed": "<actor></actor> removed <target></target> ({role}) from the organisation.",
         "role_changed": "<actor></actor> changed the role of <target></target> from {oldRole} to {newRole}."
+      },
+      "role": {
+        "created": "<actor></actor> created the role <target></target>.",
+        "deleted": "<actor></actor> deleted the role <target></target>.",
+        "updated": "<actor></actor> changed the role <target></target>."
       },
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",

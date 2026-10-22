@@ -12,7 +12,71 @@ internal sealed class TestData(Database database, string databaseName = Database
     // The invitation code of a link: the tenant id, a dot and the secret (section 6).
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
+    // Every tenant has its summary from its creation on, empty until a command writes it (R12), and its own Owner, Admin and Member roles
+    // (A2), written with its tenant declared. A database before the migration GiveEachTenantItsRoles has one role of each kind, which
+    // every tenant shares, so a tenant there gets no roles of its own.
     public async Task<(Guid Id, string Slug)> AddTenantAsync(
+        string status = "Active",
+        string? slug = null,
+        string name = "Acme Ltd",
+        Guid? tenantId = null,
+        string? suspensionReason = null,
+        DateTimeOffset? closedAt = null,
+        DateTimeOffset? createdAt = null)
+    {
+        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt);
+        await database.ScalarAsync<object>($"INSERT INTO control_plane.tenant_summaries (tenant_id) VALUES ('{tenant.Id}')", database: databaseName);
+        if (await HasRolesOfEachTenantAsync())
+        {
+            await database.ExecuteInTenantAsync(
+                tenant.Id,
+                $"""
+                INSERT INTO control_plane.roles (id, tenant_id, name, built_in)
+                SELECT gen_random_uuid(), '{tenant.Id}', lower(built_in), built_in FROM unnest(ARRAY['Owner', 'Admin', 'Member']) AS built_in
+                """,
+                database: databaseName);
+        }
+
+        return tenant;
+    }
+
+    // A custom role of the tenant with these permissions (A3), written with its tenant declared, as CreateRole writes it.
+    public async Task<Guid> AddCustomRoleAsync(Guid tenantId, string name, params string[] permissions)
+    {
+        var roleId = Guid.NewGuid();
+        await database.ExecuteInTenantAsync(
+            tenantId,
+            $"""
+            INSERT INTO control_plane.roles (id, tenant_id, name) VALUES ('{roleId}', '{tenantId}', '{name}');
+            INSERT INTO control_plane.role_permissions (tenant_id, role_id, permission)
+            SELECT '{tenantId}', '{roleId}', permission FROM unnest(ARRAY[{string.Join(", ", permissions.Select(permission => $"'{permission}'"))}]::text[]) AS permission;
+            """,
+            database: databaseName);
+        return roleId;
+    }
+
+    // The id of the tenant's built-in role of this kind (Owner, Admin, Member).
+    public Task<Guid> RoleIdOfAsync(Guid tenantId, string builtIn) =>
+        database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in = '{builtIn}'", databaseName);
+
+    // A member of the tenant with the role of this id, a custom role included; its user's count follows, as AddMemberAsync keeps it.
+    public async Task<string> AddMemberWithRoleAsync(Guid tenantId, Guid roleId, string? externalId = null)
+    {
+        externalId ??= await AddUserAsync();
+        await database.ExecuteInTenantAsync(
+            tenantId,
+            $"""
+            INSERT INTO control_plane.memberships (tenant_id, user_id, role_id, joined_at)
+            SELECT '{tenantId}', users.id, '{roleId}', now() FROM control_plane.users WHERE users.external_id = '{externalId}';
+            UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE external_id = '{externalId}';
+            """,
+            database: databaseName);
+
+        return externalId;
+    }
+
+    // The tenant row alone, as before the summary had its own table: for a test of the migrations before MoveTenantSummary.
+    public async Task<(Guid Id, string Slug)> AddTenantRowAsync(
         string status = "Active",
         string? slug = null,
         string name = "Acme Ltd",
@@ -61,11 +125,10 @@ internal sealed class TestData(Database database, string databaseName = Database
             WITH owners AS (
                 SELECT memberships.* FROM control_plane.memberships JOIN control_plane.roles ON roles.id = memberships.role_id
                 WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'Owner')
-            UPDATE control_plane.tenants SET
+            UPDATE control_plane.tenant_summaries SET
                 member_count = (SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
-                owner_count = (SELECT count(*) FROM owners),
-                first_owner_id = (SELECT user_id FROM owners ORDER BY joined_at, user_id LIMIT 1)
-            WHERE id = '{tenantId}'
+                owner_count = (SELECT count(*) FROM owners)
+            WHERE tenant_id = '{tenantId}'
             """,
             databaseName);
 
@@ -140,7 +203,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         Guid? id = null,
         string? invitedBy = null,
         string? secret = null,
-        string language = "en")
+        string language = "en",
+        Guid? roleId = null)
     {
         var invitationId = id ?? Guid.NewGuid();
         var inviter = await UserIdOfAsync(invitedBy ?? await AddUserAsync());
@@ -151,7 +215,7 @@ internal sealed class TestData(Database database, string databaseName = Database
             INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, secret_hash, status, language)
             SELECT '{invitationId}', '{tenantId}', '{email ?? $"{Guid.NewGuid():N}@example.com"}', roles.id, '{inviter}', now(),
                 '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', '{language}'
-            FROM control_plane.roles WHERE roles.built_in = '{role}'
+            FROM control_plane.roles WHERE {(roleId is { } custom ? $"roles.id = '{custom}'" : $"roles.built_in = '{role}'")}
             """,
             database: databaseName);
 
@@ -201,6 +265,14 @@ internal sealed class TestData(Database database, string databaseName = Database
 
     // The moment the test gives, else the moment of the insert.
     private static string Moment(DateTimeOffset? moment) => moment is { } given ? $"'{given:O}'" : "now()";
+
+    private async Task<bool> HasRolesOfEachTenantAsync() =>
+        await database.ScalarAsync<bool>(
+            """
+            SELECT EXISTS (SELECT FROM information_schema.columns
+                WHERE table_schema = 'control_plane' AND table_name = 'roles' AND column_name = 'tenant_id')
+            """,
+            database: databaseName);
 }
 
 internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted, string Language = "en", string? TimeZone = null);

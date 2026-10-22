@@ -1,5 +1,4 @@
 using System.Text.Json;
-using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
@@ -19,8 +18,8 @@ using Wolverine;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, users, roles, system admins), and the memberships,
-/// invitations and tenant creation sagas, which belong to a tenant and are under row level security.
+/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, system admins), and the roles,
+/// their permissions, memberships and invitations, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
@@ -38,17 +37,19 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
 
     internal DbSet<Tenant> Tenants => Set<Tenant>();
 
+    internal DbSet<TenantSummary> TenantSummaries => Set<TenantSummary>();
+
     internal DbSet<User> Users => Set<User>();
 
     internal DbSet<Membership> Memberships => Set<Membership>();
 
     internal DbSet<Role> Roles => Set<Role>();
 
+    internal DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
     internal DbSet<Invitation> Invitations => Set<Invitation>();
 
     internal DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
-
-    internal DbSet<TenantCreationSaga> TenantCreationSagas => Set<TenantCreationSaga>();
 
     /// <summary>
     /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
@@ -67,6 +68,22 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         }
     }
 
+    /// <summary>
+    /// Whether the transaction saved a change to a membership or an invitation after the tenant's summary was last written (K6k). The
+    /// transaction then does not commit (<see cref="TenantSummaryInterceptor"/>): <see cref="TenantRepository"/> writes the summary.
+    /// </summary>
+    internal bool SummaryOwed { get; private set; }
+
+    /// <summary>The active tenant's roles. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
+    internal IQueryable<Role> TenantRoles
+    {
+        get
+        {
+            _ = ActiveTenant;
+            return Roles;
+        }
+    }
+
     /// <summary>The active tenant's invitations. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
     internal IQueryable<Invitation> TenantInvitations
     {
@@ -77,6 +94,21 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         }
     }
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        OweSummary();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        OweSummary();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>The repository wrote the tenant's summary after the last change to a membership or an invitation.</summary>
+    internal void SummaryWritten() => SummaryOwed = false;
+
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -86,11 +118,22 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.HasPostgresExtension("pg_trgm");
 
         modelBuilder.ApplyConfiguration(new TenantConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantSummaryConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
+        modelBuilder.ApplyConfiguration(new RolePermissionConfiguration());
         modelBuilder.ApplyConfiguration(new MembershipConfiguration());
         modelBuilder.ApplyConfiguration(new InvitationConfiguration());
-        modelBuilder.ApplyConfiguration(new TenantCreationSagaConfiguration());
         modelBuilder.ApplyConfiguration(new SystemAdminConfiguration());
+    }
+
+    // Only a change inside a transaction is owed: the transaction is what commits it (W1). Entries() detects the changes first.
+    private void OweSummary()
+    {
+        if (Database.CurrentTransaction is not null
+            && ChangeTracker.Entries().Any(entry => entry.Entity is Membership or Invitation && entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+        {
+            SummaryOwed = true;
+        }
     }
 }

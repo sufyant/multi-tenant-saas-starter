@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
 
@@ -10,7 +11,8 @@ namespace ControlPlane.Domain.Tenants;
 /// </summary>
 internal sealed class Invitation : ITenantEntity
 {
-    public const int EmailMaxLength = 320;
+    /// <summary>No invitation answers the code or the id: none was found, or it is another tenant's, or it was cancelled (K2).</summary>
+    public static readonly Error NotFound = Error.NotFound(ControlPlaneErrorCodes.InvitationNotFound, "The invitation was not found.");
 
     // The body holds no address, not even part of one: the person learns only that theirs is not the invited one.
     private static readonly Error EmailMismatch =
@@ -20,7 +22,7 @@ internal sealed class Invitation : ITenantEntity
         Guid id,
         Guid tenantId,
         string email,
-        Guid roleId,
+        Guid? roleId,
         Guid invitedBy,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
@@ -43,9 +45,14 @@ internal sealed class Invitation : ITenantEntity
 
     public Guid TenantId { get; private init; }
 
+    /// <summary>The invited address, in its one form (<see cref="EmailAddress"/>).</summary>
     public string Email { get; private init; }
 
-    public Guid RoleId { get; private init; }
+    /// <summary>
+    /// The role the invitation gives. A pending invitation always has one (a CHECK). A finished invitation keeps none once its custom role
+    /// is deleted (ON DELETE SET NULL); its audit entries keep the role's name (K3).
+    /// </summary>
+    public Guid? RoleId { get; private init; }
 
     /// <summary>
     /// The SHA-256 hash of the secret the invitation's link carries. Only an invitation from before secrets were born with their
@@ -77,35 +84,33 @@ internal sealed class Invitation : ITenantEntity
     public static Invitation Create(
         Guid id,
         Guid tenantId,
-        string email,
+        EmailAddress email,
         Role role,
         Guid invitedBy,
         DateTimeOffset now,
         TimeSpan lifetime,
         string secret,
         Language language) =>
-        new(id, tenantId, email.Trim(), role.Id, invitedBy, now, now + lifetime, InvitationSecret.Hash(secret), language);
+        new(id, tenantId, email.Value, role.Id, invitedBy, now, now + lifetime, InvitationSecret.Hash(secret), language);
 
     /// <summary>
-    /// Whether a member of the inviter's role may invite someone with the role (K1): only an Owner gives the Owner role. It changes
-    /// nothing, so a caller checks it before any change.
+    /// Whether a member of the inviter's role may invite someone with the role (K1): only a member whose role holds
+    /// <c>tenant.owners.manage</c> gives a role that holds it (A1). It changes nothing, so a caller checks it before any change.
     /// </summary>
     public static Result CheckInviter(Role inviter, Role role) =>
-        role.BuiltIn == BuiltInRole.Owner && inviter.BuiltIn != BuiltInRole.Owner
+        role.Holds(PermissionPools.TenantOwnersManage) && !inviter.Holds(PermissionPools.TenantOwnersManage)
             ? Error.Forbidden(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner, "Only an Owner can invite an Owner.")
             : Result.Success();
 
     /// <summary>
-    /// Whether one of these verified email addresses is the invited address, compared without case, whatever the invitation's status. The
+    /// Whether one of these verified email addresses is the invited address, both in their one form, whatever the invitation's status. The
     /// preview asks it of the invitation it read, before it reads anything else, so a holder of the link without the invited address learns
     /// nothing more than the email told them; the acceptance asks it last, with the same error.
     /// </summary>
-    public static Result CheckEmail(string invitedEmail, IEnumerable<string> verifiedEmails) =>
-        verifiedEmails.Any(email => string.Equals(email.Trim(), invitedEmail, StringComparison.OrdinalIgnoreCase))
-            ? Result.Success()
-            : EmailMismatch;
+    public static Result CheckEmail(string invitedEmail, IEnumerable<EmailAddress> verifiedEmails) =>
+        verifiedEmails.Any(email => email.Value == invitedEmail) ? Result.Success() : EmailMismatch;
 
-    /// <summary>Cancels a pending invitation, as when nobody could be told of it. A used or cancelled one stays as it is.</summary>
+    /// <summary>Cancels a pending invitation, as a replacement or a closure does. A used or cancelled one stays as it is.</summary>
     public StateChange Cancel()
     {
         if (Status != InvitationStatus.Pending)
@@ -150,11 +155,19 @@ internal sealed class Invitation : ITenantEntity
     }
 
     /// <summary>
+    /// The identity provider's invitation to withdraw at the end of the invitation's lifetime: an invitation still pending keeps it until
+    /// then. A revoked, replaced or cancelled one withdrew it when it ended, an accepted one no longer needs it, and before the expiry by
+    /// this clock nothing is withdrawn. None when nothing is withdrawn.
+    /// </summary>
+    public string? SignUpToWithdrawAt(DateTimeOffset now) =>
+        Status == InvitationStatus.Pending && now >= ExpiresAt ? SignUpInvitationId : null;
+
+    /// <summary>
     /// Whether the invitation can be accepted now by someone with these verified email addresses: it is pending, it has not expired,
     /// and one of the addresses is the invited one. It changes nothing, so a caller can check more after it and still refuse
     /// without a change.
     /// </summary>
-    public Result CheckAcceptance(IEnumerable<string> verifiedEmails, DateTimeOffset now)
+    public Result CheckAcceptance(IEnumerable<EmailAddress> verifiedEmails, DateTimeOffset now)
     {
         if (Status != InvitationStatus.Pending)
         {
@@ -169,8 +182,8 @@ internal sealed class Invitation : ITenantEntity
         return CheckEmail(verifiedEmails);
     }
 
-    /// <summary>Whether one of these verified email addresses is this invitation's address (<see cref="CheckEmail(string, IEnumerable{string})"/>).</summary>
-    public Result CheckEmail(IEnumerable<string> verifiedEmails) => CheckEmail(Email, verifiedEmails);
+    /// <summary>Whether one of these verified email addresses is this invitation's address (<see cref="CheckEmail(string, IEnumerable{EmailAddress})"/>).</summary>
+    public Result CheckEmail(IEnumerable<EmailAddress> verifiedEmails) => CheckEmail(Email, verifiedEmails);
 
     /// <summary>The state of the invitation at this moment: a pending invitation is expired from its expiry on.</summary>
     public InvitationState StateAt(DateTimeOffset now) => Status switch
@@ -181,7 +194,7 @@ internal sealed class Invitation : ITenantEntity
     };
 
     /// <summary>Uses up the invitation for the user, after the same checks as <see cref="CheckAcceptance"/>.</summary>
-    public Result Accept(IEnumerable<string> verifiedEmails, Guid userId, DateTimeOffset now)
+    public Result Accept(IEnumerable<EmailAddress> verifiedEmails, Guid userId, DateTimeOffset now)
     {
         var allowed = CheckAcceptance(verifiedEmails, now);
         if (!allowed.IsSuccess)

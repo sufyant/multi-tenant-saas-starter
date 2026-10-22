@@ -134,7 +134,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
             holder,
             holding,
             $"""
-            UPDATE control_plane.memberships SET role_id = (SELECT id FROM control_plane.roles WHERE built_in = 'Member')
+            UPDATE control_plane.memberships SET role_id = (SELECT id FROM control_plane.roles WHERE tenant_id = '{owned.Id}' AND built_in = 'Member')
             WHERE tenant_id = '{owned.Id}' AND user_id = '{otherOwner}'
             """);
         await holding.CommitAsync(Cancellation);

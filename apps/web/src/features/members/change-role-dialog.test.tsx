@@ -1,4 +1,4 @@
-import { ErrorCode, MemberRole } from "@repo/api-client";
+import { ErrorCode } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -22,6 +22,7 @@ import {
   pickFromRowMenu,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
 } from "../../../test/tenant";
 
@@ -36,6 +37,7 @@ const countedTenant = (reads: string[]) =>
     });
   });
 
+import { BuiltInRole } from "@/shared/roles";
 import { MembersPage } from "./members-page";
 
 vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ signOut: vi.fn() }) }));
@@ -64,13 +66,13 @@ describe("ChangeRoleDialog", () => {
     const requests: URLSearchParams[] = [];
     const bodies: unknown[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(people, requests),
       changeAnswer(
         () =>
           HttpResponse.json({
             ...john,
-            role: { builtIn: MemberRole.Admin, name: MemberRole.Admin },
+            role: roleOf.admin,
           }),
         bodies,
       ),
@@ -85,7 +87,7 @@ describe("ChangeRoleDialog", () => {
 
     expect(await screen.findByText("Role changed")).toBeInTheDocument();
     expect(screen.getByText("John Byrne is now an Admin.")).toBeInTheDocument();
-    expect(bodies).toEqual([{ role: MemberRole.Admin }]);
+    expect(bodies).toEqual([{ roleId: roleOf.admin.id }]);
     expect(requests).toHaveLength(2);
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
@@ -93,7 +95,7 @@ describe("ChangeRoleDialog", () => {
   });
 
   it("ChangeRole_Owner_OffersTheThreeRolesWithTheirDescriptions", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
@@ -106,7 +108,7 @@ describe("ChangeRoleDialog", () => {
   });
 
   it("ChangeRole_Admin_OffersNoOwner", async () => {
-    server.use(...tenantAnswers(MemberRole.Admin), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Admin), membersAnswer());
 
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
@@ -140,7 +142,7 @@ describe("ChangeRoleDialog", () => {
     "ChangeRole_Refused%s_%s_ShowsTheBoardsTextInTheDialog",
     async (status, code, title, text) => {
       server.use(
-        ...tenantAnswers(MemberRole.Owner),
+        ...tenantAnswers(BuiltInRole.Owner),
         membersAnswer(),
         changeAnswer(() => problem(status, code)),
       );
@@ -160,7 +162,7 @@ describe("ChangeRoleDialog", () => {
   it("ChangeRole_MemberGone_RefreshesTheList", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(people, requests),
       changeAnswer(() => problem(404, ErrorCode.MemberNotFound)),
     );
@@ -178,12 +180,12 @@ describe("ChangeRoleDialog", () => {
     const reads: string[] = [];
     server.use(
       countedTenant(reads),
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       http.patch(`*/v1/tenants/${northwind.id}/members/${ayse.userId}`, () =>
         HttpResponse.json({
           ...ayse,
-          role: { builtIn: MemberRole.Admin, name: MemberRole.Admin },
+          role: roleOf.admin,
         }),
       ),
     );
@@ -209,7 +211,7 @@ describe("ChangeRoleDialog", () => {
       const reads: string[] = [];
       server.use(
         countedTenant(reads),
-        ...tenantAnswers(MemberRole.Owner),
+        ...tenantAnswers(BuiltInRole.Owner),
         membersAnswer(),
         changeAnswer(() => problem(status, code)),
       );

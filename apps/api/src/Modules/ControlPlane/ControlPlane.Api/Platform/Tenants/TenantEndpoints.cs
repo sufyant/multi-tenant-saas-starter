@@ -142,7 +142,6 @@ public static class TenantEndpoints
         item.ReopenableUntil,
         item.MemberCount,
         item.OwnerCount,
-        item.FirstOwner is { } owner ? ToResponse(owner) : null,
         item.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
 
     private static TenantDetailResponse ToResponse(TenantDetailView tenant) => new(

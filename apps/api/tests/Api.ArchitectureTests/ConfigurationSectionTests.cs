@@ -23,8 +23,7 @@ public sealed class ConfigurationSectionTests
         sections.Where(section => section != module && !section.StartsWith($"{module}:", StringComparison.Ordinal)).ShouldBeEmpty();
     }
 
-    // Rule 6: each options class has a section of its own, so a vendor's name stays in a section of that vendor's settings only. One pair
-    // waits for a later step: SystemAdminOptions shares the section ControlPlane with TenantCreationOptions.
+    // Rule 6: each options class has a section of its own, so a vendor's name stays in a section of that vendor's settings only.
     [Fact]
     public void BindConfiguration_EachSection_IsNamedByOneClass()
     {
@@ -35,6 +34,6 @@ public sealed class ConfigurationSectionTests
             .Where(group => group.Count() > 1)
             .Select(group => $"{group.Key}: {string.Join(", ", group.Order())}");
 
-        shared.ShouldBe(["ControlPlane: SystemAdminOptions, TenantCreationOptions"]);
+        shared.ShouldBeEmpty();
     }
 }

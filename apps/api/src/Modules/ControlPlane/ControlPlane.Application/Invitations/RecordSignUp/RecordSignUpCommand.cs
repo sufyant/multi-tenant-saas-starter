@@ -13,5 +13,4 @@ public sealed record RecordSignUpCommand(
     string TenantName,
     Uri Link,
     string? SignUpInvitationId,
-    DateTimeOffset ExpiresAt,
-    bool ForFirstOwner);
+    DateTimeOffset ExpiresAt);
