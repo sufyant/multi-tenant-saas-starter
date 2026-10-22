@@ -4,23 +4,23 @@ import {
   changeMemberRole,
   ErrorCode,
   type MemberResponse,
-  MemberRole,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { problemOf } from "@/shared/problem";
+import { builtInRoleOf, isOwner } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
 import { nameOf } from "./person";
 import { afterRefusal, refreshMembers, refreshTenant } from "./refresh";
-import { RoleChoice, rolesFor } from "./role-choice";
+import { listRolesOptions, RoleChoice, rolesFor } from "./role-choice";
 
 /**
- * Change a member's role (the ChangeRole board): the three roles, Owner only for an Owner (K1). The API decides; each refusal shows
+ * Change a member's role (the ChangeRole board): the tenant's roles (ListRoles), Owner only for an Owner (K1). The API decides; each refusal shows
  * its text in the dialog (F47).
  */
 export function ChangeRoleDialog({
@@ -37,14 +37,13 @@ export function ChangeRoleDialog({
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const { tenant, detail } = useTenant();
-  const [role, setRole] = useState<MemberRole>(
-    member.role.builtIn ?? MemberRole.Member,
-  );
+  const roles = useQuery(listRolesOptions(tenant.id));
+  const [roleId, setRoleId] = useState(member.role.id);
   const name = nameOf(member) ?? t("members.deletedUser");
   const organisation = tenant.name;
 
   const change = useMutation({
-    mutationFn: () => changeMemberRole(tenant.id, member.userId, { role }),
+    mutationFn: () => changeMemberRole(tenant.id, member.userId, { roleId }),
     onSuccess: () =>
       Promise.all([
         refreshMembers(queryClient, tenant.id),
@@ -91,7 +90,7 @@ export function ChangeRoleDialog({
       description={t("members.changeRoleText", {
         name,
         organisation,
-        role: member.role.builtIn ?? "",
+        role: builtInRoleOf(member.role) ?? "",
         roleName: member.role.name,
       })}
       actionLabel={t("members.changeRole")}
@@ -105,7 +104,7 @@ export function ChangeRoleDialog({
               title: t("members.roleChanged"),
               description: t("members.roleChangedText", {
                 name,
-                role: changed.role.builtIn ?? "",
+                role: builtInRoleOf(changed.role) ?? "",
                 roleName: changed.role.name,
               }),
             });
@@ -114,9 +113,9 @@ export function ChangeRoleDialog({
       }
     >
       <RoleChoice
-        roles={rolesFor(detail.role.builtIn === MemberRole.Owner)}
-        value={role}
-        onChange={setRole}
+        roles={rolesFor(roles.data?.items ?? [], isOwner(detail.role))}
+        value={roleId}
+        onChange={setRoleId}
       />
       {failure && (
         <Banner tone="destructive" title={failure.title}>

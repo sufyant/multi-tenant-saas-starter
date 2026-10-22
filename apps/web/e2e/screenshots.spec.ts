@@ -1,8 +1,9 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { Language, MemberRole, MyTenantResponseStatus } from "@repo/api-client";
+import { Language, MyTenantResponseStatus } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { railCookieName } from "@repo/ui/lib/rail-state";
+import { BuiltInRole } from "../src/shared/roles";
 import {
   me,
   mockApi,
@@ -67,7 +68,7 @@ const members = `/${northwind.slug}/settings/members`;
 const shots: {
   name: string;
   file: string;
-  role: MemberRole;
+  role: BuiltInRole;
   language: Language;
   scheme: "light" | "dark";
   width: number;
@@ -78,7 +79,7 @@ const shots: {
   {
     name: "Members_OwnerEnglishLightDesktop",
     file: "members-owner-en-light-desktop",
-    role: MemberRole.Owner,
+    role: BuiltInRole.Owner,
     language: Language.En,
     scheme: "light",
     width: 1440,
@@ -89,7 +90,7 @@ const shots: {
   {
     name: "Members_OwnerEnglishLightDesktopRailExpanded",
     file: "members-owner-en-light-desktop-rail",
-    role: MemberRole.Owner,
+    role: BuiltInRole.Owner,
     language: Language.En,
     scheme: "light",
     width: 1440,
@@ -100,7 +101,7 @@ const shots: {
   {
     name: "Members_AdminEnglishDarkDesktop",
     file: "members-admin-en-dark-desktop",
-    role: MemberRole.Admin,
+    role: BuiltInRole.Admin,
     language: Language.En,
     scheme: "dark",
     width: 1440,
@@ -111,7 +112,7 @@ const shots: {
   {
     name: "Members_MemberTurkishLightTablet",
     file: "members-member-tr-light-tablet",
-    role: MemberRole.Member,
+    role: BuiltInRole.Member,
     language: Language.Tr,
     scheme: "light",
     width: 834,
@@ -122,7 +123,7 @@ const shots: {
   {
     name: "Members_OwnerArabicDarkDesktopRailExpanded",
     file: "members-owner-ar-dark-desktop-rail",
-    role: MemberRole.Owner,
+    role: BuiltInRole.Owner,
     language: Language.Ar,
     scheme: "dark",
     width: 1440,
@@ -133,7 +134,7 @@ const shots: {
   {
     name: "Members_OwnerArabicLightPhone",
     file: "members-owner-ar-light-phone",
-    role: MemberRole.Owner,
+    role: BuiltInRole.Owner,
     language: Language.Ar,
     scheme: "light",
     width: 390,
@@ -144,7 +145,7 @@ const shots: {
   {
     name: "Invitations_OwnerEnglishLightDesktop",
     file: "invitations-owner-en-light-desktop",
-    role: MemberRole.Owner,
+    role: BuiltInRole.Owner,
     language: Language.En,
     scheme: "light",
     width: 1440,
@@ -155,7 +156,7 @@ const shots: {
   {
     name: "Invitations_OwnerTurkishDarkPhone",
     file: "invitations-owner-tr-dark-phone",
-    role: MemberRole.Owner,
+    role: BuiltInRole.Owner,
     language: Language.Tr,
     scheme: "dark",
     width: 390,
@@ -201,21 +202,22 @@ const variants = [
 ] as const;
 
 /** The viewer of the role reads the tenant log, in the language. */
-const viewer = (language: Language, role: MemberRole) => async (page: Page) => {
-  await mockAuditLog(page, { role });
-  await page.route("**/api/v1/me", (route) =>
-    route.fulfill({ json: me(language) }),
-  );
-};
+const viewer =
+  (language: Language, role: BuiltInRole) => async (page: Page) => {
+    await mockAuditLog(page, { role });
+    await page.route("**/api/v1/me", (route) =>
+      route.fulfill({ json: me(language) }),
+    );
+  };
 
 const pages = variants.flatMap(({ language, scheme, size }) =>
   [
-    ["general", `${settings}/general`, viewer(language, MemberRole.Owner)],
-    ["activity", `${settings}/activity`, viewer(language, MemberRole.Owner)],
+    ["general", `${settings}/general`, viewer(language, BuiltInRole.Owner)],
+    ["activity", `${settings}/activity`, viewer(language, BuiltInRole.Owner)],
     [
       "activity-member",
       `${settings}/activity`,
-      viewer(language, MemberRole.Member),
+      viewer(language, BuiltInRole.Member),
     ],
     [
       "preferences",

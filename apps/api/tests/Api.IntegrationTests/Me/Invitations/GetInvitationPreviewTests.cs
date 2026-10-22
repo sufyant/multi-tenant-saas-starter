@@ -46,7 +46,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         preview.EnumerateObject().Select(field => field.Name).ShouldBe(["tenantName", "inviterName", "role", "expiresAt", "state"], ignoreOrder: true);
         preview.GetProperty("tenantName").GetString().ShouldBe("Preview Ltd");
         preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"user","firstName":"Ada","lastName":"Lovelace","deleted":false}""");
-        Roles.Of(preview).ShouldBe(Roles.BuiltIn("admin"));
+        RoleAnswers.Of(preview).ShouldBe(RoleAnswers.BuiltIn("admin"));
         preview.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(Later, TimeSpan.FromMilliseconds(1));
         preview.GetProperty("state").GetString().ShouldBe("pending");
     }
@@ -94,7 +94,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
 
         preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"platform","firstName":null,"lastName":null,"deleted":null}""");
-        Roles.Of(preview).ShouldBe(Roles.BuiltIn("owner"));
+        RoleAnswers.Of(preview).ShouldBe(RoleAnswers.BuiltIn("owner"));
     }
 
     // A system admin's deletion erased the inviter's names (A8): the screen says "Deleted user", as for audit (K3).
@@ -259,6 +259,27 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         allowed.Select(response => response.StatusCode).Distinct().ShouldBe([HttpStatusCode.NotFound]);
         rejected.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
         other.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // Step r4b: a finished invitation loses its role when its custom role is deleted; the preview answers it without one.
+    [Fact]
+    public async Task GetInvitationPreview_AFinishedInvitationWhoseRoleWasDeleted_AnswersItWithoutARole()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+        var secret = Guid.NewGuid().ToString("N");
+        var email = $"{Guid.NewGuid():N}@example.com";
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Cancelled", expiresAt: Later, secret: secret, roleId: roleId);
+        var invitee = $"user_{Guid.NewGuid():N}";
+        _api.Identity.AddAccount(invitee, email);
+        await database.ExecuteInTenantAsync(tenant.Id, $"DELETE FROM control_plane.roles WHERE id = '{roleId}'");
+
+        var preview = await PreviewAsync(invitee, TestData.InvitationCodeOf(tenant.Id, secret));
+
+        preview.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await preview.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        body.GetProperty("role").ValueKind.ShouldBe(JsonValueKind.Null);
+        body.GetProperty("state").GetString().ShouldBe("cancelled");
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

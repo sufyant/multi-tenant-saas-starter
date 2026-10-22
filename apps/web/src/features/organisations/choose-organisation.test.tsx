@@ -16,6 +16,7 @@ import {
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../../test/render";
+import { roleOf } from "../../../test/tenant";
 import { ChooseOrganisation } from "./choose-organisation";
 
 const replace = vi.fn();
@@ -43,7 +44,7 @@ const tenant = (name: string, slug: string): MyTenantResponse => ({
   name,
   slug,
   status: "active",
-  role: { builtIn: "owner", name: "owner" },
+  role: roleOf.owner,
 });
 
 const page = (items: MyTenantResponse[]) =>

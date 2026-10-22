@@ -22,7 +22,7 @@ internal sealed class Invitation : ITenantEntity
         Guid id,
         Guid tenantId,
         string email,
-        Guid roleId,
+        Guid? roleId,
         Guid invitedBy,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
@@ -48,7 +48,11 @@ internal sealed class Invitation : ITenantEntity
     /// <summary>The invited address, in its one form (<see cref="EmailAddress"/>).</summary>
     public string Email { get; private init; }
 
-    public Guid RoleId { get; private init; }
+    /// <summary>
+    /// The role the invitation gives. A pending invitation always has one (a CHECK). A finished invitation keeps none once its custom role
+    /// is deleted (ON DELETE SET NULL); its audit entries keep the role's name (K3).
+    /// </summary>
+    public Guid? RoleId { get; private init; }
 
     /// <summary>
     /// The SHA-256 hash of the secret the invitation's link carries. Only an invitation from before secrets were born with their

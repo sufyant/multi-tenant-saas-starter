@@ -203,6 +203,7 @@
     "inviteEmailPlaceholder": "ad@sirket.com",
     "inviteRoleHintOwner": "Sahipler Sahip rolünü de verebilir.",
     "inviteRoleHintAdmin": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
+    "revokeOwnerHint": "Bir Sahibin davetini yalnızca bir Sahip iptal edebilir.",
     "inviteLanguage": "E-posta dili",
     "inviteLanguageHint": "Davet e-postası ve ilk ekranlar bu dilde olur. Kişi daha sonra değiştirebilir.",
     "languageSearch": "Dil ara",
@@ -250,6 +251,11 @@
         "joined": "<target></target> kuruluşa katıldı.",
         "removed": "<actor></actor>, <target></target> adlı üyeyi ({role}) kuruluştan çıkardı.",
         "role_changed": "<actor></actor>, <target></target> adlı üyenin rolünü {oldRole} rolünden {newRole} rolüne değiştirdi."
+      },
+      "role": {
+        "created": "<actor></actor>, <target></target> rolünü oluşturdu.",
+        "deleted": "<actor></actor>, <target></target> rolünü sildi.",
+        "updated": "<actor></actor>, <target></target> rolünü değiştirdi."
       },
       "tenant": {
         "closed": "<actor></actor> bu kuruluşu kapattı.",

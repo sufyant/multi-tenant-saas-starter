@@ -8,4 +8,5 @@ export * from './platform-users/platform-users.gen';
 export * from './tenant-auditlogs/tenant-auditlogs.gen';
 export * from './tenant-invitations/tenant-invitations.gen';
 export * from './tenant-members/tenant-members.gen';
+export * from './tenant-roles/tenant-roles.gen';
 export * from './tenant-tenants/tenant-tenants.gen';

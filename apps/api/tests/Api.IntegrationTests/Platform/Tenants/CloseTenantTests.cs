@@ -131,21 +131,27 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("RevokeInvitation")]
     [InlineData("ChangeMemberRole")]
     [InlineData("RemoveMember")]
+    [InlineData("CreateRole")]
+    [InlineData("UpdateRole")]
+    [InlineData("DeleteRole")]
     public async Task TenantCommand_WaitingWhileTheTenantCloses_IsForbiddenAndChangesNothing(string command)
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
         var invitation = await _testData.AddInvitationAsync(tenant.Id);
+        var role = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
         var members = await MembersOfAsync(tenant.Id);
+        var roles = await RolesOfAsync(tenant.Id);
         var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
-            tenant.Id, () => admin.CloseTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation));
+            tenant.Id, () => admin.CloseTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation, role));
 
         responses[1].StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(responses[1])).ShouldBe("tenant.closed");
         (await MembersOfAsync(tenant.Id)).ShouldBe(members);
+        (await RolesOfAsync(tenant.Id)).ShouldBe(roles);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(1);
         (await PendingInvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
@@ -156,21 +162,27 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("RevokeInvitation")]
     [InlineData("ChangeMemberRole")]
     [InlineData("RemoveMember")]
+    [InlineData("CreateRole")]
+    [InlineData("UpdateRole")]
+    [InlineData("DeleteRole")]
     public async Task TenantCommand_WaitingWhileTheTenantIsSuspended_IsForbiddenAndChangesNothing(string command)
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
         var invitation = await _testData.AddInvitationAsync(tenant.Id);
+        var role = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
         var members = await MembersOfAsync(tenant.Id);
+        var roles = await RolesOfAsync(tenant.Id);
         var admin = await SystemAdminAsync();
 
         var responses = await database.OneAfterTheOtherAsync(
-            tenant.Id, () => admin.SuspendTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation));
+            tenant.Id, () => admin.SuspendTenantAsync(tenant.Id), () => Send(command, owner, tenant.Id, member, invitation, role));
 
         responses[1].StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(responses[1])).ShouldBe("tenant.suspended");
         (await MembersOfAsync(tenant.Id)).ShouldBe(members);
+        (await RolesOfAsync(tenant.Id)).ShouldBe(roles);
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(1);
         (await _testData.InvitationStatusOfAsync(invitation)).ShouldBe("Pending");
     }
@@ -189,8 +201,11 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         _api.Identity.Withdrawn.Where(withdrawn => withdrawn == first || withdrawn == second).ShouldBe([first, second], ignoreOrder: true);
     }
 
-    private static Task<HttpResponseMessage> Send(string command, HttpClient owner, Guid tenantId, Guid member, Guid invitation) => command switch
+    private static Task<HttpResponseMessage> Send(string command, HttpClient owner, Guid tenantId, Guid member, Guid invitation, Guid role) => command switch
     {
+        "CreateRole" => owner.CreateRoleAsync(tenantId, "Auditor", ["tenant.profile.read", "tenant.audit.read"]),
+        "UpdateRole" => owner.UpdateRoleAsync(tenantId, role, "Finance", ["tenant.profile.read", "tenant.audit.read"]),
+        "DeleteRole" => owner.DeleteRoleAsync(tenantId, role),
         "InviteMember" => owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com"),
         "RevokeInvitation" => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitation}", Cancellation),
         "ChangeMemberRole" => owner.ChangeMemberRoleAsync(tenantId, member, "admin"),
@@ -209,6 +224,17 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     private Task<string?> MembersOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(
             $"SELECT string_agg(user_id || ':' || role_id, ', ' ORDER BY user_id) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'");
+
+    // Every role of the tenant with its name and permissions, so a command that changed a role, or added or deleted one, shows.
+    private Task<string?> RolesOfAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(roles.id || ':' || roles.name || ':' || coalesce(granted.permissions, '-'), ', ' ORDER BY roles.id)
+            FROM control_plane.roles
+            LEFT JOIN (SELECT role_id, string_agg(permission, ' ' ORDER BY permission) AS permissions FROM control_plane.role_permissions GROUP BY role_id) AS granted
+                ON granted.role_id = roles.id
+            WHERE roles.tenant_id = '{tenantId}'
+            """);
 
     private Task<long> InvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");

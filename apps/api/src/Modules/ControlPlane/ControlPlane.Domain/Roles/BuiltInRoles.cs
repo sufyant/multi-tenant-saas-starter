@@ -10,8 +10,18 @@ internal static class BuiltInRoles
 {
     private static readonly FrozenSet<string> OwnerPermissions = PermissionPools.TenantPool.ToFrozenSet(StringComparer.Ordinal);
 
-    // Admins hold what owners hold, but the permissions that are the owners' alone (K1).
-    private static readonly FrozenSet<string> AdminPermissions = PermissionPools.TenantPool.Except(PermissionPools.OwnerOnly).ToFrozenSet(StringComparer.Ordinal);
+    // Of the built-in roles, only the Owner creates, changes and deletes a custom role. These are not owner-only: an Owner may give them
+    // to a custom role (the maintainer's decision 1 in step r4b).
+    private static readonly FrozenSet<string> RoleManagement = FrozenSet.Create(
+        StringComparer.Ordinal,
+        PermissionPools.TenantRolesCreate,
+        PermissionPools.TenantRolesUpdate,
+        PermissionPools.TenantRolesDelete);
+
+    // Admins hold what owners hold, but the permissions that are the owners' alone (K1) and the management of roles. They read the roles,
+    // because they give them.
+    private static readonly FrozenSet<string> AdminPermissions =
+        PermissionPools.TenantPool.Except(PermissionPools.OwnerOnly).Except(RoleManagement).ToFrozenSet(StringComparer.Ordinal);
 
     // Members get the permissions of the capabilities that modules add for them.
     private static readonly FrozenSet<string> MemberPermissions = FrozenSet.Create(

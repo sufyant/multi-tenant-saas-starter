@@ -23,6 +23,7 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
         { "ListMyTenants", "user" },
         { "ListMembers", "member" },
         { "ListInvitations", "member" },
+        { "ListRoles", "member" },
     };
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

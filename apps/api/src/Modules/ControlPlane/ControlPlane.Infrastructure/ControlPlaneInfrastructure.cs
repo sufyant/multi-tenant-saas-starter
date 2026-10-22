@@ -1,5 +1,6 @@
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Roles;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
@@ -9,6 +10,7 @@ using ControlPlane.Contracts.Users;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Invitations;
+using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
@@ -49,7 +51,14 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<ITenantQueries, TenantQueries>();
         services.AddScoped<IMemberQueries, MemberQueries>();
         services.AddScoped<IInvitationQueries, InvitationQueries>();
+        services.AddScoped<IRoleQueries, RoleQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
+
+        services.AddOptions<RoleOptions>()
+            .BindConfiguration(RoleOptions.Section)
+            .Validate(settings => settings.MaxCustomRolesPerTenant >= 1, $"{RoleOptions.Section}:MaxCustomRolesPerTenant must be at least 1.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<RoleOptions>>().Value);
 
         services.AddOptions<InvitationOptions>()
             .BindConfiguration(InvitationOptions.Section)

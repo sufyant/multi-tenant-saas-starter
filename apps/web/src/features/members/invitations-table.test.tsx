@@ -3,7 +3,6 @@ import {
   type InvitationResponse,
   InvitationResponseState,
   Language,
-  MemberRole,
 } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -18,12 +17,14 @@ import {
   it,
   vi,
 } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
   northwind,
   pickFromRowMenu,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
@@ -44,7 +45,7 @@ const invitation = (
 ): InvitationResponse => ({
   id,
   email,
-  role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+  role: roleOf.member,
   invitedBy: ayse.userId,
   invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
   language: Language.En,
@@ -66,7 +67,7 @@ const conor = invitation("inv-03", "conor@northwind.io", 20, {
 });
 const padraig = invitation("inv-04", "padraig@northwind.io", -4 * 24);
 const owner = invitation("inv-05", "fatma@northwind.io", 3 * 24, {
-  role: { builtIn: MemberRole.Owner, name: MemberRole.Owner },
+  role: roleOf.owner,
 });
 
 const listAnswer = (
@@ -93,7 +94,7 @@ const rowOf = async (email: string) =>
 
 describe("InvitationsTable", () => {
   it("Invitations_Statuses_InvitedExpiresSoonAndExpired", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), listAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
 
     renderInTenant(<MembersPage />, { url });
 
@@ -103,7 +104,7 @@ describe("InvitationsTable", () => {
   });
 
   it("Invitations_InvitedBy_NamesThePersonOrSaysDeletedUser", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), listAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
 
     renderInTenant(<MembersPage />, { url });
 
@@ -112,7 +113,7 @@ describe("InvitationsTable", () => {
   });
 
   it("Invitations_PendingMenu_InviteAgainAndRevoke", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), listAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
 
     renderInTenant(<MembersPage />, { url });
     await userEvent.click(
@@ -131,7 +132,7 @@ describe("InvitationsTable", () => {
   });
 
   it("Invitations_ExpiredMenu_InviteAgainAndCancel", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), listAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
 
     renderInTenant(<MembersPage />, { url });
     await userEvent.click(
@@ -150,7 +151,7 @@ describe("InvitationsTable", () => {
   });
 
   it("Invitations_AdminOnAnOwnerInvitation_CannotInviteAgainAndSaysWhy", async () => {
-    server.use(...tenantAnswers(MemberRole.Admin), listAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Admin), listAnswer());
 
     renderInTenant(<MembersPage />, { url });
     await userEvent.click(
@@ -169,7 +170,7 @@ describe("InvitationsTable", () => {
     const keys: (string | null)[] = [];
     const bodies: unknown[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(),
       http.post(
         `*/v1/tenants/${northwind.id}/invitations`,
@@ -195,7 +196,7 @@ describe("InvitationsTable", () => {
     expect(keys[1]).not.toBe(keys[0]);
     expect(bodies[0]).toEqual({
       email: "ali@northwind.io",
-      role: MemberRole.Member,
+      roleId: roleOf.member.id,
       language: Language.Ar,
     });
     expect(screen.getAllByText("Invitation sent again")[0]).toBeInTheDocument();
@@ -203,7 +204,7 @@ describe("InvitationsTable", () => {
 
   it("Invitations_InviteAgainRefused_SaysWhyInAToast", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(),
       http.post(`*/v1/tenants/${northwind.id}/invitations`, () =>
         problem(409, ErrorCode.MemberExists),
@@ -224,7 +225,7 @@ describe("InvitationsTable", () => {
   it("Invitations_Revoke_ConfirmsRevokesAndRefreshes", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(undefined, requests),
       http.delete(
         `*/v1/tenants/${northwind.id}/invitations/${ali.id}`,
@@ -256,7 +257,7 @@ describe("InvitationsTable", () => {
 
   it("Invitations_CancelExpired_SaysItsLinkAlreadyStopped", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(),
       http.delete(
         `*/v1/tenants/${northwind.id}/invitations/${padraig.id}`,
@@ -286,7 +287,7 @@ describe("InvitationsTable", () => {
   it("Invitations_RevokeAnAcceptedOne_SaysTheyJoinedAndRefreshes", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(undefined, requests),
       http.delete(`*/v1/tenants/${northwind.id}/invitations/${ali.id}`, () =>
         problem(409, ErrorCode.InvitationNotPending),
@@ -314,7 +315,7 @@ describe("InvitationsTable", () => {
   });
 
   it("Invitations_None_SaysSoAndOffersToInvite", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner), listAnswer([]));
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer([]));
 
     renderInTenant(<MembersPage />, { url });
 
@@ -329,19 +330,19 @@ describe("InvitationsTable", () => {
   it("Invitations_TheUrl_DrivesSearchFilterAndSort", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(undefined, requests),
     );
 
     renderInTenant(<MembersPage />, {
-      url: `${url}&q=ali&role=admin&sort=-expiresAt`,
+      url: `${url}&q=ali&roleId=${roleOf.admin.id}&sort=-expiresAt`,
     });
 
     await waitFor(() => expect(requests).toHaveLength(1));
     expect(requests.map((params) => Object.fromEntries(params))).toEqual([
       {
         q: "ali",
-        role: MemberRole.Admin,
+        roleId: roleOf.admin.id,
         page: "1",
         sort: "-expiresAt",
       },
@@ -351,7 +352,7 @@ describe("InvitationsTable", () => {
   it("Invitations_RevokeAGoneOne_SaysItNoLongerExistsAndRefreshes", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(undefined, requests),
       http.delete(`*/v1/tenants/${northwind.id}/invitations/${ali.id}`, () =>
         problem(404, ErrorCode.InvitationNotFound),
@@ -381,7 +382,7 @@ describe("InvitationsTable", () => {
   it("Invitations_InviteAgainARowInArabic_SendsArabicNotTheViewersEnglish", async () => {
     const bodies: unknown[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       listAnswer(),
       http.post(
         `*/v1/tenants/${northwind.id}/invitations`,

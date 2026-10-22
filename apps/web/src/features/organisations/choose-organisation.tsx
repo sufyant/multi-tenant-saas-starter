@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { NoAccess } from "@/shared/no-access";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { useRoleName } from "@/shared/use-role-name";
 
 /**
  * "Choose an organisation" at `/` (F30). One organisation opens at once; none, or a person who is not a user yet, sees "No access
@@ -23,6 +24,7 @@ import { ProblemScreen } from "@/shared/problem-screen";
  */
 export function ChooseOrganisation() {
   const t = useTranslations();
+  const roleName = useRoleName();
   const router = useRouter();
   const me = useQuery(getGetMeQueryOptions());
   const tenants = useQuery(
@@ -62,9 +64,7 @@ export function ChooseOrganisation() {
                 </bdi>
               </span>
               <span className="text-body text-muted-foreground">
-                {tenant.role.builtIn
-                  ? t(`shell.roles.${tenant.role.builtIn}`)
-                  : tenant.role.name}
+                {roleName(tenant.role)}
               </span>
             </>
           );

@@ -103,16 +103,29 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
 
     // The tenants table is not under row level security (R6), so the one query joins each membership's tenant and role. The tenant's
     // summary counts its Owners (R12): a user whose role holds the Owners' permission (A1, K1) in a tenant with one Owner is its last Owner.
+    // The query asks it with Role.Holding, which reads no permission rows for an owner-only permission: the transaction declares the user,
+    // and row level security shows it no row of role_permissions (R11).
     private async Task<IReadOnlyList<UserMembershipView>> ListMembershipsAsync(Guid userId, CancellationToken cancellationToken)
     {
         await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        var ownerRoles = controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage));
         var memberships = await (
                 from membership in controlPlane.Memberships
                 join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
                 join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
                 join role in controlPlane.Roles on membership.RoleId equals role.Id
                 orderby tenant.Name, tenant.Id
-                select new { tenant.Id, tenant.Name, tenant.Slug, tenant.Status, Role = role, membership.JoinedAt, summary.OwnerCount })
+                select new
+                {
+                    tenant.Id,
+                    tenant.Name,
+                    tenant.Slug,
+                    tenant.Status,
+                    Role = role,
+                    membership.JoinedAt,
+                    summary.OwnerCount,
+                    ManagesOwners = ownerRoles.Any(owner => owner.Id == role.Id),
+                })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -125,7 +138,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
                 membership.Status.ToString(),
                 RoleView.Of(membership.Role),
                 membership.JoinedAt,
-                membership.Role.Holds(PermissionPools.TenantOwnersManage) && membership.OwnerCount == 1)),
+                membership.ManagesOwners && membership.OwnerCount == 1)),
         ];
     }
 }

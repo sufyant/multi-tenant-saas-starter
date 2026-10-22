@@ -21,14 +21,14 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
     // each inviter's user and each invitation's role in the same query, so they are read with the page, with no query for each invitation.
     async Task<ListPage<InvitationView>> IInvitationQueries.ListPendingInvitationsAsync(
         ListRequest<ListInvitationsSort> list,
-        BuiltInRole? role,
+        Guid? roleId,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
         var invitations = controlPlane.TenantInvitations.Where(invitation => invitation.Status == InvitationStatus.Pending);
-        if (role is { } wanted)
+        if (roleId is { } wanted)
         {
-            invitations = invitations.Where(invitation => controlPlane.Roles.Any(found => found.Id == invitation.RoleId && found.BuiltIn == wanted));
+            invitations = invitations.Where(invitation => invitation.RoleId == wanted);
         }
 
         if (list.Search is { } search)
@@ -56,13 +56,17 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
     }
 
     // Row level security keeps the invitations to the active tenant, so the secret of another tenant's invitation finds none. The users
-    // table is not under row level security (R6): one query joins the inviter's user, as the list does.
+    // table is not under row level security (R6): one query joins the inviter's user, as the list does. A finished invitation whose custom
+    // role was deleted has none, so the role is joined only when there is one.
     async Task<InvitationView?> IInvitationQueries.FindInvitationAsync(string secretHash, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var found = await controlPlane.TenantInvitations
-            .Where(invitation => invitation.SecretHash == secretHash)
-            .Join(controlPlane.Users, invitation => invitation.InvitedBy, user => user.Id, (invitation, user) => new { Invitation = invitation, Inviter = user })
-            .Join(controlPlane.Roles, row => row.Invitation.RoleId, role => role.Id, (row, role) => new { row.Invitation, row.Inviter, Role = role })
+        var found = await (
+                from invitation in controlPlane.TenantInvitations
+                where invitation.SecretHash == secretHash
+                join inviter in controlPlane.Users on invitation.InvitedBy equals inviter.Id
+                join role in controlPlane.Roles on invitation.RoleId equals role.Id into roles
+                from role in roles.DefaultIfEmpty()
+                select new { Invitation = invitation, Inviter = inviter, Role = role })
             .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
 

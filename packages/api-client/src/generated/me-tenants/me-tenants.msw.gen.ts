@@ -17,7 +17,6 @@ import type {
 } from 'msw';
 
 import {
-  MemberRole,
   MyTenantResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
@@ -25,7 +24,7 @@ import type {
 } from '../endpoints.schemas.gen';
 
 
-export const getListMyTenantsResponseMock = (overrideResponse: Partial<Extract<ListPageOfMyTenantResponse, object>> = {}): ListPageOfMyTenantResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {builtIn: faker.helpers.arrayElement([null,faker.helpers.arrayElement(Object.values(MemberRole)),]), name: faker.string.alpha({length: {min: 10, max: 20}})}})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
+export const getListMyTenantsResponseMock = (overrideResponse: Partial<Extract<ListPageOfMyTenantResponse, object>> = {}): ListPageOfMyTenantResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
 
 
 export const getListMyTenantsMockHandler = (overrideResponse?: ListPageOfMyTenantResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfMyTenantResponse> | ListPageOfMyTenantResponse), options?: RequestHandlerOptions) => {

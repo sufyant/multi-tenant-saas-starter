@@ -24,10 +24,36 @@ public interface ITenantRepository
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The active tenant's roles, read without tracking: a command finds a membership's or an invitation's role, or the built-in role it
-    /// assigns, and a rule asks what the role may do (A1). A command never changes a role.
+    /// The active tenant's roles with their permissions, read without tracking and without a lock of their own: a command finds a
+    /// membership's or an invitation's role, or the role it gives, and a rule asks what the role may do (A1). Every command that writes a
+    /// role, its permissions, a membership or an invitation locks the tenant first, so the roles stay as read until the transaction ends
+    /// (M1, K6a).
     /// </summary>
     internal Task<TenantRoles> FindRolesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// What a change to a custom role needs to know of the active tenant (<see cref="RoleFacts"/>): the role with this id and its
+    /// permissions, tracked, so the change is saved, or none; how many custom roles the tenant has; whether another of its roles has the
+    /// name, compared with <c>lower()</c> as the unique index compares it; and whether a membership or a pending invitation uses the role.
+    /// The caller holds the tenant's lock, which every change to a role, a membership or an invitation takes first, so the facts stay true
+    /// until the transaction ends (K6a).
+    /// </summary>
+    internal Task<RoleFacts> FindRoleFactsAsync(Guid? roleId, string? name, CancellationToken cancellationToken);
+
+    /// <summary>Adds the custom role to the active tenant, with its permissions, and saves it. The caller holds the tenant's lock (K6a).</summary>
+    internal Task AddRoleAsync(Role role, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Saves what <see cref="Tenant.UpdateRole"/> did to the custom role: its name, the rows of the permissions it added, and the removal
+    /// of the rows of the permissions it removed. The caller holds the tenant's lock (K6a).
+    /// </summary>
+    internal Task SaveRoleAsync(RoleUpdate update, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes the custom role of the active tenant and saves it. Its permissions go with it, and a finished invitation that gave it keeps
+    /// no role. The caller holds the tenant's lock (K6a).
+    /// </summary>
+    internal Task DeleteRoleAsync(Role role, CancellationToken cancellationToken);
 
     /// <summary>
     /// What a change to the user's membership needs to know of the active tenant (<see cref="MemberFacts"/>): the membership, how many

@@ -3,12 +3,10 @@ using ControlPlane.Domain.Roles;
 namespace ControlPlane.Application.Members;
 
 /// <summary>
-/// A role as the screens read it: the built-in role by ControlPlane's name (<c>Owner</c>), as a status keeps ControlPlane's name, and
-/// the role's stored name (<c>owner</c>). The module's Api project maps the built-in role to its enum when it builds a response, so a
-/// saved idempotent result replays to the same answer. Every role is built in; a custom role comes later (A3).
+/// A role as the screens read it where it is given to a member or an invitation: its id, its stored name (<c>owner</c>, or a custom
+/// role's name) and whether it is built in (A2, A3). A request gives a role by its id.
 /// </summary>
-public sealed record RoleView(string BuiltIn, string Name)
+public sealed record RoleView(Guid Id, string Name, bool BuiltIn)
 {
-    internal static RoleView Of(Role role) =>
-        new(role.BuiltIn?.ToString() ?? throw new InvalidOperationException("Every role is built in until custom roles come (A3)."), role.Name);
+    internal static RoleView Of(Role role) => new(role.Id, role.Name, role.BuiltIn is not null);
 }

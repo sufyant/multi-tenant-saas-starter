@@ -163,6 +163,79 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         _api.Identity.Withdrawn.Where(withdrawn => withdrawn == signUp).ShouldHaveSingleItem();
     }
 
+    // Decision 2 of step r4b: nobody revokes an invitation that gives a role stronger than their own.
+    [Fact]
+    public async Task RevokeInvitation_OfARoleStrongerThanTheRevokers_IsForbiddenAsAnEscalationAndStaysPending()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.delete", "tenant.members.read", "tenant.profile.read");
+        var revoker = await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter);
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, role: "Admin");
+
+        var revoked = await RevokeAsync(revoker, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(revoked)).ShouldBe("role.escalation");
+        (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
+    }
+
+    [Fact]
+    public async Task RevokeInvitation_OfARoleTheRevokerHoldsExactly_CancelsIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.delete", "tenant.members.read", "tenant.profile.read");
+        var revoker = await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter);
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id);
+
+        var revoked = await RevokeAsync(revoker, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Cancelled");
+    }
+
+    // Decision 2 of step r4b: an Admin does not revoke a pending invitation to the Owner role, which is stronger than the Admin's.
+    [Fact]
+    public async Task RevokeInvitation_AnAdminOnAPendingOwnerInvitation_IsForbiddenAsAnEscalation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, role: "Owner");
+
+        var revoked = await RevokeAsync(admin, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(revoked)).ShouldBe("role.escalation");
+        (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
+    }
+
+    // I1: a cancelled invitation gives no role any more, so a revoker of a weaker role gets the answer of a second revocation.
+    [Fact]
+    public async Task RevokeInvitation_ACancelledInvitationOfAStrongerRole_AnswersNoContent()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, role: "Owner", status: "Cancelled");
+
+        var revoked = await RevokeAsync(admin, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
+    // A finished invitation whose custom role was deleted names no role; revoking it again answers as before.
+    [Fact]
+    public async Task RevokeInvitation_ACancelledInvitationWhoseRoleWasDeleted_AnswersNoContent()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, status: "Cancelled", roleId: roleId);
+        await database.ExecuteInTenantAsync(tenant.Id, $"DELETE FROM control_plane.roles WHERE id = '{roleId}'");
+
+        var revoked = await RevokeAsync(owner, tenant.Id, invitationId);
+
+        revoked.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

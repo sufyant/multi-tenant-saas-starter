@@ -19,6 +19,7 @@ import {
 } from "vitest";
 import { TenantProvider } from "@/shared/tenant-context";
 import { renderWithProviders } from "../../../test/render";
+import { roleOf } from "../../../test/tenant";
 import { TenantShell } from "./tenant-shell";
 
 vi.mock("next/navigation", () => ({
@@ -38,7 +39,7 @@ const northwind: MyTenantResponse = {
   name: "Northwind Traders",
   slug: "northwind",
   status: "active",
-  role: { builtIn: "owner", name: "owner" },
+  role: roleOf.owner,
 };
 
 const answers = (total: number) => [

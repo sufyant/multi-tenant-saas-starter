@@ -20,6 +20,7 @@ internal static class ResponseStatus
         "Tenant" => AuditTargetResponseKind.Tenant,
         "User" => AuditTargetResponseKind.User,
         "Invitation" => AuditTargetResponseKind.Invitation,
+        "Role" => AuditTargetResponseKind.Role,
         _ => throw Unknown(kind),
     };
 

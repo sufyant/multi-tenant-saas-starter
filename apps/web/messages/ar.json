@@ -203,6 +203,7 @@
     "inviteEmailPlaceholder": "name@company.com",
     "inviteRoleHintOwner": "يمكن للمالكين منح دور المالك أيضًا.",
     "inviteRoleHintAdmin": "لا يدعو المالك إلا مالك.",
+    "revokeOwnerHint": "لا يلغي دعوة المالك إلا مالك.",
     "inviteLanguage": "لغة البريد",
     "inviteLanguageHint": "تستخدم رسالة الدعوة وشاشاته الأولى هذه اللغة. يمكنه تغييرها لاحقًا.",
     "languageSearch": "ابحث عن لغة",
@@ -250,6 +251,11 @@
         "joined": "<target></target> انضم إلى المؤسسة.",
         "removed": "<actor></actor> أزال <target></target> ({role}) من المؤسسة.",
         "role_changed": "<actor></actor> غيّر دور <target></target> من {oldRole} إلى {newRole}."
+      },
+      "role": {
+        "created": "<actor></actor> أنشأ الدور <target></target>.",
+        "deleted": "<actor></actor> حذف الدور <target></target>.",
+        "updated": "<actor></actor> غيّر الدور <target></target>."
       },
       "tenant": {
         "closed": "<actor></actor> أغلق هذه المؤسسة.",

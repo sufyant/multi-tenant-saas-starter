@@ -64,7 +64,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
-        Roles.Of(invitation).ShouldBe(Roles.BuiltIn("member"));
+        RoleAnswers.Of(invitation).ShouldBe(RoleAnswers.BuiltIn("member"));
         invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _testData.UserIdOfAsync(inviter));
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
@@ -178,7 +178,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        Roles.Of(await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(Roles.BuiltIn("owner"));
+        RoleAnswers.Of(await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(RoleAnswers.BuiltIn("owner"));
     }
 
     [Theory]
@@ -196,16 +196,16 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
 
+    // Step r4b: a request gives a role by its id, which is required. A request without one, with a name in place of an id, with a number
+    // or with a role name in the old field is refused before the handler, and never falls back to an empty id.
     [Theory]
     [InlineData("""{ "email": "ada@example.com" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Guest" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": 7 }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": 0 }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Owner, Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Admin, Member" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": " Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "OWNER" }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": "Guest" }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": 7 }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": 0 }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": "owner" }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": null }""")]
+    [InlineData("""{ "email": "ada@example.com", "role": "admin" }""")]
     public async Task InviteMember_WithoutAKnownRole_IsABadRequest(string body)
     {
         var tenant = await _testData.AddTenantAsync();
@@ -646,6 +646,63 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         messages.MovedToErrorQueue.SingleMessage<OpenSignUpCommand>().InvitationId.ShouldBe(invitationId);
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == email);
         (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
+    }
+
+    // A3: an invitation gives a custom role by its id, and the invitation answers it as it answers a built-in role.
+    [Fact]
+    public async Task InviteMember_ACustomRole_CreatesTheInvitationWithIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, NewEmail(), role: roleId.ToString());
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        RoleAnswers.Of(invitation).ShouldBe(RoleAnswers.Custom("Billing"));
+        invitation.GetProperty("role").GetProperty("id").GetGuid().ShouldBe(roleId);
+    }
+
+    // Row level security hides another tenant's roles, so its id is not found, and nothing is invited.
+    [Fact]
+    public async Task InviteMember_ARoleOfAnotherTenant_IsNotFoundAndInvitesNobody()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var other = await _testData.AddTenantAsync();
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, NewEmail(), role: (await _testData.RoleIdOfAsync(other.Id, "Member")).ToString());
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await CodeOfAsync(invited)).ShouldBe("role.not_found");
+        (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.invitations")).ShouldBe(0);
+    }
+
+    // Decision 2 of step r4b: nobody invites someone with a role stronger than their own.
+    [Fact]
+    public async Task InviteMember_ARoleStrongerThanTheInvitersRole_IsForbiddenAsAnEscalation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.create", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var inviter = _api.CreateClient(await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter));
+
+        var invited = await inviter.InviteMemberAsync(tenant.Id, NewEmail(), role: "admin");
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(invited)).ShouldBe("role.escalation");
+    }
+
+    [Fact]
+    public async Task InviteMember_ARoleTheInviterHoldsExactly_CreatesTheInvitation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.create", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var inviter = _api.CreateClient(await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter));
+
+        var invited = await inviter.InviteMemberAsync(tenant.Id, NewEmail(), role: "member");
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     private static (string? Role, string? ReplacedInvitationId) Details(string? json)

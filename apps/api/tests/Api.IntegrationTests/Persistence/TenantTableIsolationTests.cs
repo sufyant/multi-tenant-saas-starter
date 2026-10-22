@@ -82,12 +82,13 @@ public sealed class TenantTableIsolationTests(Database database)
         (await database.ScalarAsSuperuserAsync<long>(CountRowsOf(table, other))).ShouldBe(0);
     }
 
-    // A2: a membership and an invitation name a role of their own tenant. A foreign key check bypasses row level security (PostgreSQL
-    // documentation, 5.9, "Row Security Policies"), so the composite foreign key on the tenant and the role refuses another tenant's role
-    // (Citus documentation, "Multi-tenant applications").
+    // A2, A3: a membership, an invitation and a custom role's permission name a role of their own tenant. A foreign key check bypasses
+    // row level security (PostgreSQL documentation, 5.9, "Row Security Policies"), so the composite foreign key on the tenant and the role
+    // refuses another tenant's role (Citus documentation, "Multi-tenant applications").
     [Theory]
     [InlineData("control_plane.memberships")]
     [InlineData("control_plane.invitations")]
+    [InlineData("control_plane.role_permissions")]
     public async Task InsertIntoTenantTable_ARoleOfAnotherTenant_IsRefused(string table)
     {
         var (tenant, other) = await TwoTenantsAsync();

@@ -1,7 +1,7 @@
-import { MemberRole } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import { renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { OverviewPage } from "./overview-page";
 
@@ -15,7 +15,7 @@ const valueBeside = (term: string) =>
 
 describe("OverviewPage", () => {
   it("OverviewPage_Admin_ShowsTheOrganisationWithItsSlugAndTheRole", async () => {
-    server.use(...tenantAnswers(MemberRole.Admin));
+    server.use(...tenantAnswers(BuiltInRole.Admin));
 
     renderInTenant(<OverviewPage />, { url: "/northwind" });
 
@@ -34,7 +34,7 @@ describe("OverviewPage", () => {
   });
 
   it("OverviewPage_Loaded_SaysWhenItWasUpdated", async () => {
-    server.use(...tenantAnswers(MemberRole.Owner));
+    server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<OverviewPage />, { url: "/northwind" });
 

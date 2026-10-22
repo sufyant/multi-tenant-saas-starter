@@ -5,6 +5,8 @@ import { AuthCard } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
 import { formatRelative } from "@repo/ui/lib/format-date-time";
 import { useTranslations } from "next-intl";
+import { builtInRoleOf } from "@/shared/roles";
+import { useRoleName } from "@/shared/use-role-name";
 import { type Inviter, inviterOf } from "./inviter";
 
 /** The organisation, who invited and the role: the head of both accept screens. */
@@ -23,8 +25,8 @@ export function InvitationHeading({
         ? inviter.name
         : t(`invitations.inviterSubject.${inviter.kind}`),
     tenant: preview.tenantName,
-    role: preview.role.builtIn ?? "other",
-    roleName: preview.role.name,
+    role: (preview.role && builtInRoleOf(preview.role)) ?? "other",
+    roleName: preview.role?.name ?? "",
   };
   return (
     <div className="flex flex-col gap-4">
@@ -38,18 +40,12 @@ export function InvitationHeading({
         <span className="font-medium">{preview.tenantName}</span>
       </div>
       <h1 className="text-page-title">
-        {withRole
+        {withRole && preview.role
           ? t("invitations.invitedAs", values)
           : t("invitations.invited", values)}
       </h1>
     </div>
   );
-}
-
-/** The role of the invitation in the user's language: a built-in role from the messages, a custom role by its stored name. */
-export function useRoleName(preview: InvitationPreviewResponse): string {
-  const t = useTranslations("shell.roles");
-  return preview.role.builtIn ? t(preview.role.builtIn) : preview.role.name;
 }
 
 /** A known person joins in one click (the AcceptInvitation board). */
@@ -69,13 +65,19 @@ export function JoinCard({
   error?: string;
 }) {
   const t = useTranslations();
-  const role = useRoleName(preview);
+  const roleName = useRoleName();
   return (
     <AuthCard>
       <InvitationHeading preview={preview} />
       <dl className="grid grid-cols-[8rem_1fr] gap-y-3 text-body">
-        <dt className="text-muted-foreground">{t("invitations.yourRole")}</dt>
-        <dd>{role}</dd>
+        {preview.role && (
+          <>
+            <dt className="text-muted-foreground">
+              {t("invitations.yourRole")}
+            </dt>
+            <dd>{roleName(preview.role)}</dd>
+          </>
+        )}
         <dt className="text-muted-foreground">{t("invitations.expires")}</dt>
         <dd>
           {formatRelative(preview.expiresAt, {

@@ -5,8 +5,12 @@ namespace Api.IntegrationTests.Fixtures;
 
 internal static class MemberRequests
 {
-    public static Task<HttpResponseMessage> ChangeMemberRoleAsync(this HttpClient client, Guid tenantId, Guid userId, string role) =>
-        client.PatchAsJsonAsync($"/v1/tenants/{tenantId}/members/{userId}", new { role }, TestContext.Current.CancellationToken);
+    // The role is a role's name, which the client reads as an id from the tenant's roles (Roles.IdOfAsync), or an id.
+    public static async Task<HttpResponseMessage> ChangeMemberRoleAsync(this HttpClient client, Guid tenantId, Guid userId, string role)
+    {
+        var roleId = Guid.TryParse(role, out var id) ? id : await client.IdOfAsync(tenantId, role);
+        return await client.PatchAsJsonAsync($"/v1/tenants/{tenantId}/members/{userId}", new { roleId }, TestContext.Current.CancellationToken);
+    }
 
     public static Task<HttpResponseMessage> RemoveMemberAsync(this HttpClient client, Guid tenantId, Guid userId) =>
         client.DeleteAsync($"/v1/tenants/{tenantId}/members/{userId}", TestContext.Current.CancellationToken);
