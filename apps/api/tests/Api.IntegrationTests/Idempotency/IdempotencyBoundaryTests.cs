@@ -9,7 +9,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Api.IntegrationTests.Idempotency;
 
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The test handler of RecordIdempotentProbe pauses and fails on demand (IdempotencyGate).")]
 public sealed class IdempotencyBoundaryTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

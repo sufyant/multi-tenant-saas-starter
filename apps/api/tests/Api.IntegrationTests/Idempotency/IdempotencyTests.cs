@@ -7,7 +7,7 @@ using Wolverine;
 
 namespace Api.IntegrationTests.Idempotency;
 
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("CreateTenant_CommitFailsAfterTheResultWrite adds the test policy IdempotencyCommitFailurePolicy.")]
 public sealed class IdempotencyTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

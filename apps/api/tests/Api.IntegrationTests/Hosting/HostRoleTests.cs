@@ -59,7 +59,7 @@ namespace Api.IntegrationTests.Hosting;
 // Section 1: one build output runs as two process types, chosen by Host:Role. The web host serves the API and runs the command a
 // request sends; whatever that command sends on is handled by a worker host. The two hosts share a database of their own here, so no
 // other test's host takes part.
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The hosts have the test policy RecordHandlerRuns and the probe handlers of ProbePinged, ProbeAnnounced and FailProbe.")]
 public sealed class HostRoleTests(Database database)
 {
     // The handlers of every tenant creation message after the first, as section 6 lists them.

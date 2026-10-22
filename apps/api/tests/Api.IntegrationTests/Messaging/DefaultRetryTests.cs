@@ -8,7 +8,7 @@ using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Messaging;
 
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The test handlers of RetryProbe and SpecificRetryProbe always fail and count their tries; no module handler does.")]
 public sealed class DefaultRetryTests(Database database)
 {
     [Theory]

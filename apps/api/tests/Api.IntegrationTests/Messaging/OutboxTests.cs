@@ -7,7 +7,7 @@ namespace Api.IntegrationTests.Messaging;
 
 // A handler's messages are stored in its own transaction, so they commit and roll back with its work (O1), and they are delivered
 // after the commit, under the handler's tenant (O2).
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The probe handlers write, send, stop and fail on demand in one transaction (WriteProbeAndAnnounce, WriteProbeThenFail, WriteProbeUnlessRejected, ReadProbesLater).")]
 public sealed class OutboxTests(Database database) : IAsyncLifetime
 {
     private PipelineHost _host = null!;

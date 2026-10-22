@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Persistence;
 
 // Wolverine opens, saves and commits the transaction of every handler, and the transaction declares the tenant of the message
 // when it starts (W1, W2). Row level security does the rest.
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The probe handlers write and read rows under a tenant and report the tenant their transaction declared (WriteProbe, ReadProbes, ObserveTenant).")]
 public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
