@@ -381,10 +381,11 @@ internal sealed class Tenant
     /// <summary>
     /// The actor creates a custom role of the tenant (A3), under the tenant's rules, in this order: the actor's role holds
     /// <c>tenant.roles.create</c>; the name, without the spaces around it, is 1 to <see cref="Role.NameMaxLength"/> characters and no other
-    /// role of the tenant has it; the permissions are in the tenant pool, none is owner-only, and there is one at least; the actor's role
-    /// holds every one of them (<see cref="Role.CheckEscalation"/>); and the tenant has fewer custom roles than the limit (decision 3 of
-    /// step r4b, OWASP API4). The caller holds the tenant's lock and read the facts under it (K6a). Returns the new role, which the
-    /// caller adds. Every rejection comes before any change.
+    /// role of the tenant has it; the permissions are in the tenant pool, none is owner-only, and there is one at least; they hold the
+    /// permissions the others need (<see cref="Role.CheckRequiredPermissions"/>); the actor's role holds every one of them
+    /// (<see cref="Role.CheckEscalation"/>); and the tenant has fewer custom roles than the limit (decision 3 of step r4b, OWASP API4).
+    /// The caller holds the tenant's lock and read the facts under it (K6a). Returns the new role, which the caller adds. Every rejection
+    /// comes before any change.
     /// </summary>
     public Result<Role> CreateRole(Role actor, NewRole request, RoleFacts facts, int limit)
     {

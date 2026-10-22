@@ -105,7 +105,7 @@
       "permission_owner_only": "A custom role cannot hold a permission that only the Owner role holds.",
       "permissions_required": "Choose at least one permission.",
       "profile_read_required": "A role must be able to read the organisation's profile.",
-      "roles_read_required": "A role that invites people or changes roles must be able to read the roles."
+      "roles_read_required": "A role that invites people or changes a member's role must be able to read the roles."
     },
     "route": {
       "method_not_allowed": "This action is not available here.",
