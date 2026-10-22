@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;

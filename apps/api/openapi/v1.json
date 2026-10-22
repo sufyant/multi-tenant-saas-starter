@@ -5688,19 +5688,15 @@
       },
       "TenantResponseStatus": {
         "enum": [
-          "provisioning",
           "active",
           "suspended",
-          "cancelled",
           "closed"
         ],
         "type": "string",
-        "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.",
+        "description": "The status of a tenant: active from its creation, suspended or closed (K4).",
         "x-enumNames": [
-          "Provisioning",
           "Active",
           "Suspended",
-          "Cancelled",
           "Closed"
         ]
       },

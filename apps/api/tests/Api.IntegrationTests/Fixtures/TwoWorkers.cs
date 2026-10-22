@@ -218,12 +218,6 @@ internal sealed class TwoWorkers : IAsyncDisposable
         $"SELECT count(*) FROM wolverine.wolverine_incoming_envelopes WHERE status = 'Handled' AND message_type = '{typeof(TMessage).ToMessageTypeName()}'",
         DatabaseName) == count);
 
-    public Task WaitForSagaStateAsync(Guid tenantId, string state) =>
-        Waiting.UntilAsync(async () => await SagaStateAsync(tenantId) == state);
-
-    public Task<string?> SagaStateAsync(Guid tenantId) =>
-        _database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", DatabaseName);
-
     public Task<long> DeadLettersAsync() =>
         _database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM wolverine.wolverine_dead_letters", DatabaseName);
 

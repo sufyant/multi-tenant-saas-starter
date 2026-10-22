@@ -112,17 +112,6 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    [Fact]
-    public async Task ListMembers_TenantThatIsNotActive_IsNotFound()
-    {
-        var tenant = await _testData.AddTenantAsync(status: "Provisioning");
-        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-
-        var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
-
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
-
     // T5: a system admin is not a member, so the tenant door does not let them in.
     [Fact]
     public async Task ListMembers_AsASystemAdminWhoIsNotAMember_IsNotFound()

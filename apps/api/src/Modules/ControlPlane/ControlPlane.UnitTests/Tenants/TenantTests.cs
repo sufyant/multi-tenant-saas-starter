@@ -103,73 +103,11 @@ public sealed class TenantTests
     }
 
     [Fact]
-    public void CreateTenant_New_IsProvisioning()
+    public void CreateTenant_New_IsActive()
     {
         var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-
-        tenant.Status.ShouldBe(TenantStatus.Provisioning);
-    }
-
-    [Fact]
-    public void ActivateTenant_WhenProvisioning_IsActive()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-
-        tenant.Activate();
 
         tenant.Status.ShouldBe(TenantStatus.Active);
-    }
-
-    // A tenant's creation ends active or cancelled, never both.
-    [Fact]
-    public void ActivateTenant_Cancelled_StaysCancelled()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-        tenant.Cancel("identity_provider_failed");
-
-        var activated = tenant.Activate();
-
-        activated.ShouldBe(StateChange.Unchanged);
-        tenant.Status.ShouldBe(TenantStatus.Cancelled);
-    }
-
-    [Fact]
-    public void CancelTenant_Provisioning_IsCancelledWithItsReason()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-
-        var cancelled = tenant.Cancel("identity_provider_failed");
-
-        cancelled.ShouldBe(StateChange.Changed);
-        tenant.Status.ShouldBe(TenantStatus.Cancelled);
-        tenant.CancellationReason.ShouldBe("identity_provider_failed");
-    }
-
-    // A compensation may arrive twice; the first reason stays.
-    [Fact]
-    public void CancelTenant_AlreadyCancelled_KeepsTheFirstReason()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-        tenant.Cancel("identity_provider_failed");
-
-        var cancelled = tenant.Cancel("registration_timed_out");
-
-        cancelled.ShouldBe(StateChange.Unchanged);
-        tenant.CancellationReason.ShouldBe("identity_provider_failed");
-    }
-
-    // Activation is the pivot: an active tenant is not cancelled.
-    [Fact]
-    public void CancelTenant_Active_StaysActive()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-        tenant.Activate();
-
-        var cancelled = tenant.Cancel("activation_failed");
-
-        cancelled.ShouldBe(StateChange.Unchanged);
-        tenant.Status.ShouldBe(TenantStatus.Active);
-        tenant.CancellationReason.ShouldBeNull();
     }
 
     [Fact]
@@ -217,47 +155,6 @@ public sealed class TenantTests
 
         reactivated.Value.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Active);
-    }
-
-    // A tenant whose creation has not passed its pivot, or never will, is neither suspended nor reactivated.
-    [Fact]
-    public void SuspendOrReactivateTenant_Provisioning_IsRejected()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-
-        var suspended = tenant.Suspend(Reason);
-        var reactivated = tenant.Reactivate();
-
-        suspended.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
-        reactivated.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
-        tenant.Status.ShouldBe(TenantStatus.Provisioning);
-    }
-
-    [Fact]
-    public void SuspendOrReactivateTenant_Cancelled_IsRejected()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-        tenant.Cancel("activation_failed");
-
-        var suspended = tenant.Suspend(Reason);
-        var reactivated = tenant.Reactivate();
-
-        suspended.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
-        reactivated.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
-        tenant.Status.ShouldBe(TenantStatus.Cancelled);
-    }
-
-    // A suspended tenant is past the pivot: a late compensation does not cancel it.
-    [Fact]
-    public void CancelTenant_Suspended_StaysSuspended()
-    {
-        var tenant = Active();
-        tenant.Suspend(Reason);
-
-        var cancelled = tenant.Cancel("activation_failed");
-
-        cancelled.ShouldBe(StateChange.Unchanged);
-        tenant.Status.ShouldBe(TenantStatus.Suspended);
     }
 
     [Fact]
@@ -358,8 +255,6 @@ public sealed class TenantTests
     }
 
     [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
     [InlineData("Closed")]
     public void RenameTenant_NeitherActiveNorSuspended_IsRejected(string status)
     {
@@ -409,19 +304,6 @@ public sealed class TenantTests
         tenant.ClosedAt.ShouldBe(Now);
     }
 
-    [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
-    public void CloseTenant_ProvisioningOrCancelled_IsRejected(string status)
-    {
-        var tenant = InStatus(status);
-
-        var closed = tenant.Close(Now, []);
-
-        closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
-        tenant.ClosedAt.ShouldBeNull();
-    }
-
     // K6h: the closure cancels every pending invitation, expired ones included, in the same change.
     [Fact]
     public void CloseTenant_WithPendingInvitations_CancelsEachOne()
@@ -446,56 +328,6 @@ public sealed class TenantTests
 
         closed.Value.Cancelled.ShouldBeEmpty();
         pending.Status.ShouldBe(InvitationStatus.Pending);
-    }
-
-    [Fact]
-    public void CloseTenant_ProvisioningWithAPendingInvitation_IsRejectedAndCancelsNothing()
-    {
-        var pending = PendingTo("ada@example.com", BuiltInRoles.Owner);
-
-        var closed = InStatus("Provisioning").Close(Now, [pending]);
-
-        closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
-        pending.Status.ShouldBe(InvitationStatus.Pending);
-    }
-
-    [Theory]
-    [InlineData("Active")]
-    [InlineData("Suspended")]
-    public void CancelTenant_PastThePivot_ChangesNothingAndAnswersNone(string status)
-    {
-        var tenant = InStatus(status);
-
-        var cancelled = tenant.CancelCreation("activation_failed");
-
-        cancelled.ShouldBeNull();
-        tenant.Status.ShouldBe(Enum.Parse<TenantStatus>(status));
-    }
-
-    [Fact]
-    public void CancelTenant_Provisioning_IsCancelledWithTheReason()
-    {
-        var tenant = InStatus("Provisioning");
-
-        var cancelled = tenant.CancelCreation("activation_failed");
-
-        cancelled.ShouldBe(StateChange.Changed);
-        tenant.Status.ShouldBe(TenantStatus.Cancelled);
-        tenant.CancellationReason.ShouldBe("activation_failed");
-    }
-
-    // A closed tenant is past the pivot too, and stays closed; the compensation still reports, as before.
-    [Theory]
-    [InlineData("Closed")]
-    [InlineData("Cancelled")]
-    public void CancelTenant_ClosedOrCancelled_ChangesNothing(string status)
-    {
-        var tenant = InStatus(status);
-
-        var cancelled = tenant.CancelCreation("identity_provider_failed");
-
-        cancelled.ShouldBe(StateChange.Unchanged);
-        tenant.Status.ShouldBe(Enum.Parse<TenantStatus>(status));
     }
 
     [Fact]
@@ -541,18 +373,6 @@ public sealed class TenantTests
         revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
     }
 
-    // A closed tenant is past the pivot: a late compensation does not cancel it.
-    [Fact]
-    public void CancelTenant_Closed_StaysClosed()
-    {
-        var tenant = Closed();
-
-        var cancelled = tenant.Cancel("activation_failed");
-
-        cancelled.ShouldBe(StateChange.Unchanged);
-        tenant.Status.ShouldBe(TenantStatus.Closed);
-    }
-
     [Fact]
     public void ReopenTenant_ClosedWithinThePeriod_IsActiveAndForgetsTheClosureAndTheReason()
     {
@@ -594,8 +414,6 @@ public sealed class TenantTests
     }
 
     [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
     [InlineData("Suspended")]
     public void ReopenTenant_NeitherClosedNorActive_IsRejected(string status)
     {
@@ -638,7 +456,6 @@ public sealed class TenantTests
     [Theory]
     [InlineData("Active")]
     [InlineData("Suspended")]
-    [InlineData("Provisioning")]
     public void ReadReopenableUntil_ATenantThatIsNotClosed_IsNone(string status)
     {
         var tenant = InStatus(status);
@@ -669,9 +486,7 @@ public sealed class TenantTests
     }
 
     [Theory]
-    [InlineData("Provisioning")]
     [InlineData("Suspended")]
-    [InlineData("Cancelled")]
     [InlineData("Closed")]
     public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
     {
@@ -1194,12 +1009,7 @@ public sealed class TenantTests
         allowed.IsSuccess.ShouldBeTrue();
     }
 
-    private static Tenant Active()
-    {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
-        tenant.Activate();
-        return tenant;
-    }
+    private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
 
     private static Tenant Suspended()
     {
@@ -1220,11 +1030,9 @@ public sealed class TenantTests
         var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         _ = status switch
         {
-            "Provisioning" => true,
-            "Cancelled" => tenant.Cancel("activation_failed") is StateChange.Changed,
-            "Active" => tenant.Activate() is StateChange.Changed,
-            "Suspended" => tenant.Activate() is StateChange.Changed && tenant.Suspend(Reason).Value is StateChange.Changed,
-            "Closed" => tenant.Activate() is StateChange.Changed && tenant.Close(Now, []).Value.Change is StateChange.Changed,
+            "Active" => true,
+            "Suspended" => tenant.Suspend(Reason).Value is StateChange.Changed,
+            "Closed" => tenant.Close(Now, []).Value.Change is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;

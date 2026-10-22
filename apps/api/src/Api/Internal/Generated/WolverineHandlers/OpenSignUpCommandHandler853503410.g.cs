@@ -4,13 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: OpenOwnerSignUpCommandHandler593688574
+    // START: OpenSignUpCommandHandler853503410
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class OpenOwnerSignUpCommandHandler593688574 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class OpenSignUpCommandHandler853503410 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
 
-        public OpenOwnerSignUpCommandHandler593688574(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
+        public OpenSignUpCommandHandler853503410(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
         {
             _serviceScopeFactory = serviceScopeFactory;
         }
@@ -22,13 +22,13 @@ namespace Internal.Generated.WolverineHandlers
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var identityProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<ControlPlane.Application.Identity.IIdentityProvider>(serviceScope.ServiceProvider);
             // The actual message body
-            var openOwnerSignUpCommand = (ControlPlane.Application.Invitations.OpenOwnerSignUp.OpenOwnerSignUpCommand)context.Envelope.Message;
+            var openSignUpCommand = (ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.OpenOwnerSignUp.OpenOwnerSignUpHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.OpenOwnerSignUp.OpenOwnerSignUpHandler");
+            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler");
+            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler");
             
             // The actual message execution
-            var outgoing1 = await ControlPlane.Application.Invitations.OpenOwnerSignUp.OpenOwnerSignUpHandler.HandleAsync(openOwnerSignUpCommand, identityProvider, cancellation).ConfigureAwait(false);
+            var outgoing1 = await ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler.HandleAsync(openSignUpCommand, identityProvider, cancellation).ConfigureAwait(false);
 
             
             // Outgoing, cascaded message
@@ -36,7 +36,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: OpenOwnerSignUpCommandHandler593688574
+    // END: OpenSignUpCommandHandler853503410
     
     
 }

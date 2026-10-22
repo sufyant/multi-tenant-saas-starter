@@ -42,11 +42,8 @@ public static class RecordSignUpHandler
         var (language, lifetime) = (invitation.Language, invitation.ExpiresAt - invitation.CreatedAt);
         OutgoingMessages messages =
         [
-            opened.ForFirstOwner
-                ? new OwnerInvitationReadyEvent(
-                    Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime)
-                : new MemberInvitationReadyEvent(
-                    Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime),
+            new InvitationReadyEvent(
+                Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime),
         ];
         if (opened.SignUpInvitationId is not null)
         {

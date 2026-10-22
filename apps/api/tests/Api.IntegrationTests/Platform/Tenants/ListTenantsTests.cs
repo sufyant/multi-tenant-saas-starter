@@ -35,9 +35,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await UseADatabaseOfItsOwnAsync();
         var random = Guid.NewGuid().ToString();
         var delta = await _testData.AddTenantAsync(name: "Delta Ltd");
-        var alpha = await _testData.AddTenantAsync(status: "Provisioning", name: "Alpha Ltd");
         var charlie = await _testData.AddTenantAsync(status: "Suspended", name: "Charlie Ltd");
-        var bravo = await _testData.AddTenantAsync(status: "Cancelled", name: "Bravo Ltd");
         var echoLater = await _testData.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"f{random[1..]}"));
         var echoEarlier = await _testData.AddTenantAsync(name: "Echo Ltd", tenantId: Guid.Parse($"0{random[1..]}"));
 
@@ -47,8 +45,6 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Tenants(page).ShouldBe(
         [
-            (alpha.Id, "Alpha Ltd", alpha.Slug, "provisioning"),
-            (bravo.Id, "Bravo Ltd", bravo.Slug, "cancelled"),
             (charlie.Id, "Charlie Ltd", charlie.Slug, "suspended"),
             (delta.Id, "Delta Ltd", delta.Slug, "active"),
             (echoEarlier.Id, "Echo Ltd", echoEarlier.Slug, "active"),
@@ -119,17 +115,13 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("provisioning", "Alpha")]
     [InlineData("active", "Bravo")]
     [InlineData("suspended", "Charlie")]
-    [InlineData("cancelled", "Delta")]
     [InlineData("closed", "Echo")]
     public async Task ListTenants_AStatusFilter_ReturnsTheTenantsInThatStatusOnly(string status, string found)
     {
-        await _testData.AddTenantAsync(status: "Provisioning", name: $"{_marker} Alpha");
         await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
         await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
-        await _testData.AddTenantAsync(status: "Cancelled", name: $"{_marker} Delta");
         await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);

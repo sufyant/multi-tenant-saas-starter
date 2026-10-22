@@ -19,20 +19,17 @@ using Audit.Application.Users.RecordUserRenamed;
 using Audit.Application.Users.RecordUserSuspended;
 using ControlPlane.Application.Invitations.InviteMember;
 using ControlPlane.Application.Invitations.InviteOwner;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.RevokeInvitation;
 using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.RemoveMember;
-using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
 using ControlPlane.Application.Tenants.RenameTenant;
 using ControlPlane.Application.Tenants.ReopenTenant;
 using ControlPlane.Application.Tenants.SuspendTenant;
-using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users.ChangePreferences;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
@@ -47,8 +44,6 @@ using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
-using Notifications.Application.Invitations.SendMemberInvitationEmail;
-using Notifications.Contracts.Invitations;
 using Tenancy;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
@@ -62,24 +57,21 @@ namespace Api.IntegrationTests.Hosting;
 [RuntimeHandlerCode("The hosts have the test policy RecordHandlerRuns and the probe handlers of ProbePinged, ProbeAnnounced and FailProbe.")]
 public sealed class HostRoleTests(Database database)
 {
-    // The handlers of every tenant creation message after the first, as section 6 lists them.
-    private static readonly HandlerRun[] HandlersAfterTheFirstStep =
+    // The handlers of every message the tenant creation sends, as section 6 lists them.
+    private static readonly HandlerRun[] HandlersAfterTheCreation =
     [
-        new(typeof(ActivateTenantCommand), typeof(ActivateTenantHandler)),
-        new(typeof(ActivateTenantReply), typeof(TenantCreationSaga)),
         new(typeof(TenantActivatedEvent), typeof(RecordTenantCreatedHandler)),
-        new(typeof(OpenOwnerSignUpCommand), typeof(OpenOwnerSignUpHandler)),
+        new(typeof(OpenSignUpCommand), typeof(OpenSignUpHandler)),
         new(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
-        new(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)),
-        new(typeof(SendInvitationEmailReply), typeof(TenantCreationSaga)),
+        new(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)),
     ];
 
-    private static readonly HandlerRun FirstStep = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
+    private static readonly HandlerRun Creation = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task CreateTenant_OnAWebAndAWorkerHost_RunsEveryStepAfterTheFirstInTheWorker()
+    public async Task CreateTenant_OnAWebAndAWorkerHost_RunsEveryMessageAfterTheCreationInTheWorker()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         var runs = new HandlerRuns();
@@ -89,13 +81,11 @@ public sealed class HostRoleTests(Database database)
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
-        var tenantId = await IdOfAsync(created);
-        await Waiting.UntilAsync(async () => await SagaStateAsync(name, tenantId) == "Completed");
+        await Waiting.UntilAsync(() => worker.Email.Sent.Count > 0);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        runs.In("web").ShouldBe([FirstStep]);
-        runs.In("worker").Distinct().ShouldBe(HandlersAfterTheFirstStep, ignoreOrder: true);
-        (await SagaStateAsync(name, tenantId)).ShouldBe("Completed");
+        runs.In("web").ShouldBe([Creation]);
+        runs.In("worker").Distinct().ShouldBe(HandlersAfterTheCreation, ignoreOrder: true);
         worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
     }
 
@@ -107,28 +97,26 @@ public sealed class HostRoleTests(Database database)
         await using var web = Host(name, "web", runs);
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
-        var tenantId = await IdOfAsync(created);
-        var waiting = await SagaStateAsync(name, tenantId);
         var queued = await database.ScalarAsync<long>(
             """
             SELECT count(*) FROM (
                 SELECT message_type FROM wolverine.wolverine_queue_messages
                 UNION ALL SELECT message_type FROM wolverine.wolverine_outgoing_envelopes) AS waiting
-            WHERE message_type = 'activate-tenant'
+            WHERE message_type = 'open-sign-up'
             """,
             database: name);
 
         await using var worker = Host(name, "worker", runs);
         _ = worker.Services;
-        await Waiting.UntilAsync(async () => await SagaStateAsync(name, tenantId) == "Completed");
+        await Waiting.UntilAsync(() => worker.Email.Sent.Count > 0);
 
-        waiting.ShouldBe("Activating");
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
         queued.ShouldBe(1L);
-        runs.In("web").ShouldBe([FirstStep]);
-        (await SagaStateAsync(name, tenantId)).ShouldBe("Completed");
+        runs.In("web").ShouldBe([Creation]);
+        worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
     }
 
-    // O3, W4: the Audit handler of the activation runs beside the saga's, in the worker, once.
+    // O3: the Audit handler of the creation runs in the worker, once.
     [Fact]
     public async Task CreateTenant_OnAWebAndAWorkerHost_WritesOneTenantCreatedAuditEntry()
     {
@@ -139,10 +127,8 @@ public sealed class HostRoleTests(Database database)
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var tenantId = await IdOfAsync(await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" }));
-        await Waiting.UntilAsync(async () => await SagaStateAsync(name, tenantId) == "Completed");
         await Waiting.UntilAsync(async () => await TenantCreatedEntriesAsync(name, tenantId) > 0);
 
-        (await SagaStateAsync(name, tenantId)).ShouldBe("Completed");
         (await TenantCreatedEntriesAsync(name, tenantId)).ShouldBe(1L);
     }
 
@@ -346,9 +332,9 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldBe(
             [
                 new HandlerRun(typeof(MemberInvitedEvent), typeof(RecordMemberInvitedHandler)),
-                new HandlerRun(typeof(OpenMemberSignUpCommand), typeof(OpenMemberSignUpHandler)),
+                new HandlerRun(typeof(OpenSignUpCommand), typeof(OpenSignUpHandler)),
                 new HandlerRun(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
-                new HandlerRun(typeof(MemberInvitationReadyEvent), typeof(SendMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)),
             ],
             ignoreOrder: true);
         var email = worker.Email.Sent.ShouldHaveSingleItem();
@@ -383,9 +369,9 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldBe(
             [
                 new HandlerRun(typeof(OwnerInvitedEvent), typeof(RecordOwnerInvitedHandler)),
-                new HandlerRun(typeof(OpenMemberSignUpCommand), typeof(OpenMemberSignUpHandler)),
+                new HandlerRun(typeof(OpenSignUpCommand), typeof(OpenSignUpHandler)),
                 new HandlerRun(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
-                new HandlerRun(typeof(MemberInvitationReadyEvent), typeof(SendMemberInvitationEmailHandler)),
+                new HandlerRun(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)),
             ],
             ignoreOrder: true);
         worker.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("grace@navy.test");
@@ -614,7 +600,4 @@ public sealed class HostRoleTests(Database database)
 
         return externalId;
     }
-
-    private Task<string?> SagaStateAsync(string databaseName, Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'", databaseName);
 }

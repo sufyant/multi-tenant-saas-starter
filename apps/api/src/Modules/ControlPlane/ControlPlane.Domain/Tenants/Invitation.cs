@@ -106,7 +106,7 @@ internal sealed class Invitation : ITenantEntity
     public static Result CheckEmail(string invitedEmail, IEnumerable<EmailAddress> verifiedEmails) =>
         verifiedEmails.Any(email => email.Value == invitedEmail) ? Result.Success() : EmailMismatch;
 
-    /// <summary>Cancels a pending invitation, as when nobody could be told of it. A used or cancelled one stays as it is.</summary>
+    /// <summary>Cancels a pending invitation, as a replacement or a closure does. A used or cancelled one stays as it is.</summary>
     public StateChange Cancel()
     {
         if (Status != InvitationStatus.Pending)

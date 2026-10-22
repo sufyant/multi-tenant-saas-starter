@@ -52,7 +52,7 @@ public sealed class InvitationTests
         invitation.Status.ShouldBe(InvitationStatus.Cancelled);
     }
 
-    // A compensation may arrive twice.
+    // A cancellation may come twice.
     [Fact]
     public void CancelInvitation_AlreadyCancelled_ChangesNothing()
     {

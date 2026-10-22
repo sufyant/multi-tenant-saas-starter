@@ -12,8 +12,6 @@ internal sealed class Tenant
 
     public const int SlugMaxLength = 63;
 
-    public const int CancellationReasonMaxLength = 50;
-
     public const int SuspensionReasonMaxLength = 500;
 
     /// <summary>The window of a tenant's daily limit of invitations (K2): the invitations it sent in the 24 hours before now.</summary>
@@ -35,7 +33,7 @@ internal sealed class Tenant
         Id = id;
         Name = name;
         Slug = slug;
-        Status = TenantStatus.Provisioning;
+        Status = TenantStatus.Active;
         CreatedAt = createdAt;
     }
 
@@ -52,16 +50,13 @@ internal sealed class Tenant
     /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
-    /// <summary>Why the tenant creation cancelled the tenant: a fixed code, never the text of an exception.</summary>
-    public string? CancellationReason { get; private set; }
-
     /// <summary>Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a suspension.</summary>
     public string? SuspensionReason { get; private set; }
 
     /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed.</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
 
-    /// <summary>The name is stored without the spaces around it.</summary>
+    /// <summary>A new tenant is active at once (section 6, "Tenant creation process"). The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
@@ -100,28 +95,10 @@ internal sealed class Tenant
             ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
             : Result.Success();
 
-    /// <summary>Ends the tenant's creation. Only a provisioning tenant becomes active.</summary>
-    public StateChange Activate() => Leave(TenantStatus.Active);
-
-    /// <summary>
-    /// Compensates a tenant creation that did not reach the activation. Only a provisioning tenant is cancelled: an active one stays
-    /// active, and a cancelled one keeps its first reason.
-    /// </summary>
-    public StateChange Cancel(string reason)
-    {
-        if (Leave(TenantStatus.Cancelled) == StateChange.Unchanged)
-        {
-            return StateChange.Unchanged;
-        }
-
-        CancellationReason = reason;
-        return StateChange.Changed;
-    }
-
     /// <summary>
     /// Suspends an active tenant for the reason, kept without the spaces around it: its members are refused at the tenant door until it
-    /// is reactivated. Returns whether the status changed; a suspended tenant stays suspended and keeps its first reason. A tenant whose
-    /// creation has not passed its pivot, or never will, or a closed one, is rejected. The caller checked the reason's length.
+    /// is reactivated. Returns whether the status changed; a suspended tenant stays suspended and keeps its first reason. A closed tenant is
+    /// rejected. The caller checked the reason's length.
     /// </summary>
     public Result<StateChange> Suspend(string reason)
     {
@@ -136,7 +113,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// Gives a suspended tenant back to its members and forgets the reason. Returns whether the status changed; an active tenant stays
-    /// active. A tenant whose creation has not passed its pivot, or never will, or a closed one, is rejected.
+    /// active. A closed tenant is rejected.
     /// </summary>
     public Result<StateChange> Reactivate()
     {
@@ -179,8 +156,7 @@ internal sealed class Tenant
     /// Closes an active or a suspended tenant at this moment: its members are refused at the tenant door, its data stays, and the reopen
     /// period counts from now (K4). A suspension's reason stays until a reopening. The closure cancels every pending invitation of the
     /// tenant, expired ones included, so no invitation stays pending on a closed tenant (K6h); the caller read them under the tenant's
-    /// lock. A closed tenant stays closed, keeps its first moment and cancels nothing. A tenant whose creation has not passed its pivot,
-    /// or never will, is rejected.
+    /// lock. A closed tenant stays closed, keeps its first moment and cancels nothing.
     /// </summary>
     public Result<Closed> Close(DateTimeOffset now, IReadOnlyList<Invitation> pending)
     {
@@ -365,14 +341,6 @@ internal sealed class Tenant
     public Result<StateChange> Revoke(Invitation? invitation) =>
         invitation is not null && invitation.TenantId == Id ? invitation.Revoke() : Invitation.NotFound;
 
-    /// <summary>
-    /// Compensates a tenant creation that did not reach the activation (<see cref="Cancel"/>). An active or a suspended tenant is past the
-    /// pivot and is never cancelled: none, so the compensation changes nothing and reports nothing, and the saga's cancellation timeout
-    /// leaves the tenant creation to a person. Any other tenant answers whether it changed; a cancelled one keeps its first reason.
-    /// </summary>
-    public StateChange? CancelCreation(string reason) =>
-        Status is TenantStatus.Active or TenantStatus.Suspended ? null : Cancel(reason);
-
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
 
@@ -475,17 +443,6 @@ internal sealed class Tenant
         }
 
         Status = to;
-        return StateChange.Changed;
-    }
-
-    private StateChange Leave(TenantStatus status)
-    {
-        if (Status != TenantStatus.Provisioning)
-        {
-            return StateChange.Unchanged;
-        }
-
-        Status = status;
         return StateChange.Changed;
     }
 }

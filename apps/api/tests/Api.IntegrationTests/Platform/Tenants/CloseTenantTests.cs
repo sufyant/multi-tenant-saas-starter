@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -68,20 +68,6 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await ClosedAtOfAsync(again)).ShouldBe(closedAt);
         (await AuditEntryCountAsync(tenant.Id)).ShouldBe(2);
-    }
-
-    [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
-    public async Task CloseTenant_ProvisioningOrCancelled_IsAConflictAndChangesNothing(string status)
-    {
-        var tenant = await _testData.AddTenantAsync(status: status);
-
-        var response = await (await SystemAdminAsync()).CloseTenantAsync(tenant.Id);
-
-        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await CodeOfAsync(response)).ShouldBe("tenant.not_active");
-        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
     }
 
     // K2: closing cancels every pending invitation, expired or not, in the same transaction; a used or a cancelled one stays as it is.

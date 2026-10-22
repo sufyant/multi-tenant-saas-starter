@@ -2,15 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
-using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Tenants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
@@ -20,8 +17,8 @@ using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform.Tenants;
 
-// A system admin creates a tenant through the system door, and the tenant creation saga runs through the outbox, from the first step to
-// the Owner's invitation email, or to its compensation. TenantCreationTests follows what the saga does with its own record.
+// A system admin creates a tenant through the system door: one transaction writes the active tenant and its Owner's invitation, and the
+// sign-up, the email and the audit entries follow through the outbox (section 6, "Tenant creation process").
 public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -85,7 +82,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         var tenantId = await IdOfCreatedAsync(created);
         var invitationId = await InvitationIdAsync(tenantId);
-        messages.Sent.SingleMessage<OpenMemberSignUpCommand>().ShouldSatisfyAllConditions(
+        messages.Sent.SingleMessage<OpenSignUpCommand>().ShouldSatisfyAllConditions(
             signUp => signUp.TenantId.ShouldBe(tenantId),
             signUp => signUp.InvitationId.ShouldBe(invitationId),
             signUp => signUp.Email.ShouldBe(owner));
@@ -187,7 +184,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);
-        tenant.GetProperty("status").GetString().ShouldBe("provisioning");
+        tenant.GetProperty("status").GetString().ShouldBe("active");
         (await database.ScalarAsync<string>($"SELECT name FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe("Acme Ltd");
     }
 
@@ -415,8 +412,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var again = await admin.CreateTenantAsync(body, key);
 
         again.Headers.GetValues("Idempotent-Replayed").ShouldBe(["true"]);
-        (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("provisioning");
-        (await CountAsync($"SELECT count(*) FROM api.idempotency_keys WHERE key = '{key}' AND result::text LIKE '%Provisioning%'")).ShouldBe(1);
+        (await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("active");
+        (await CountAsync($"SELECT count(*) FROM api.idempotency_keys WHERE key = '{key}' AND result::text LIKE '%Active%'")).ShouldBe(1);
     }
 
     [Fact]
@@ -486,7 +483,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateTenant_EveryStepSucceeds_ActivatesTheTenantInvitesTheOwnerOnceAndRecordsIt()
+    public async Task CreateTenant_EveryMessageSucceeds_InvitesTheOwnerOnceAndRecordsIt()
     {
         var admin = await _testData.AddSystemAdminAsync();
         var owner = Email();
@@ -500,11 +497,10 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         _api.Email.Sent.Where(email => email.To == owner).ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{invitationId}");
         (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{await _testData.UserIdOfAsync(admin)}|Tenant|{tenantId}|Acme Ltd");
         (await _audit.TenantLogAsync(tenantId)).ShouldBe($"{tenantId}:tenant.created|Platform|-|Tenant|{tenantId}|Acme Ltd");
-        (await SagaStateAsync(tenantId)).ShouldBe("Completed");
         await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
-    // Step 3: the owner has no account, so Clerk creates its invitation once, and the email carries its link, which leads to our accept
+    // The owner has no account, so Clerk creates its invitation once, and the email carries its link, which leads to our accept
     // link.
     [Fact]
     public async Task CreateTenant_OwnerWithoutAnAccount_CreatesOneClerkInvitationAndEmailsItsLink()
@@ -517,99 +513,11 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var tenantId = await IdOfCreatedAsync(created);
         var signUp = _api.Identity.SignUps.Where(signUp => signUp.Email == owner).ShouldHaveSingleItem();
         signUp.AcceptLink.GetLeftPart(UriPartial.Path).ShouldBe(ApiFactory.AcceptUrl);
-        signUp.ExpiresAt.ShouldBe(await database.ScalarAsSuperuserAsync<DateTime>($"SELECT expires_at FROM control_plane.invitations WHERE tenant_id = '{tenantId}'"));
+        // The sign-up carries the invitation's expiry as the creation made it; PostgreSQL keeps it to the microsecond.
+        signUp.ExpiresAt.ShouldBe(
+            await database.ScalarAsSuperuserAsync<DateTime>($"SELECT expires_at FROM control_plane.invitations WHERE tenant_id = '{tenantId}'"),
+            TimeSpan.FromMicroseconds(1));
         _api.Email.LinkSentTo(owner).ShouldBe(FakeIdentityProvider.ClerkLink(signUp.InvitationId, signUp.AcceptLink));
-    }
-
-    // Section 6, step 1: the tenant, the owner's invitation and the saga record are written in one transaction.
-    [Fact]
-    public async Task CreateTenant_TheSagaCannotBeWritten_WritesNoTenantAndNoInvitation()
-    {
-        var admin = await _testData.AddSystemAdminAsync();
-        var slug = Slug();
-        var owner = Email();
-        await database.RefuseAsync("tenant_creation_sagas", "INSERT", $"NEW.tenant_id IN (SELECT id FROM control_plane.tenants WHERE slug = '{slug}')");
-
-        var created = await _api.TrackMessagesAsync(() => CreateTenantAsync(admin, slug, owner));
-
-        created.Sent.AllMessages().ShouldBeEmpty();
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE email = '{owner}'")).ShouldBe(0);
-    }
-
-    // The activation is refused by the database, as a real failure would be; the step is retried, then compensated.
-    [Fact]
-    public async Task CreateTenant_TheActivationKeepsFailing_CancelsTheTenantAndItsInvitation()
-    {
-        var admin = await _testData.AddSystemAdminAsync();
-        var slug = Slug();
-        var owner = Email();
-        await database.RefuseAsync("tenants", "UPDATE", $"NEW.slug = '{slug}' AND NEW.status = 'Active'");
-
-        HttpResponseMessage created = null!;
-        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, owner));
-
-        var tenantId = await IdOfCreatedAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<ActivateTenantCommand>().ShouldNotBeNull();
-        (await TenantStatusAsync(tenantId)).ShouldBe("Cancelled");
-        (await database.ScalarAsSuperuserAsync<string>($"SELECT cancellation_reason FROM control_plane.tenants WHERE id = '{tenantId}'"))
-            .ShouldBe("activation_failed");
-        _api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record =>
-            record.Id.Name == "TenantCancelled"
-            && record.Message.Contains(tenantId.ToString(), StringComparison.Ordinal)
-            && record.Message.Contains("activation_failed", StringComparison.Ordinal));
-        (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
-        (await SagaStateAsync(tenantId)).ShouldBe("Cancelled");
-        _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
-        (await _audit.TenantLogAsync(tenantId)).ShouldBeNull();
-        (await _audit.PlatformLogAsync(tenantId)).ShouldBeNull();
-        await _summaries.ShouldMatchTheRowsAsync(tenantId);
-    }
-
-    // After the pivot nothing is undone: the tenant stays active, the invitation nobody received is cancelled, and a person is told.
-    [Fact]
-    public async Task CreateTenant_TheEmailKeepsFailing_LeavesTheTenantActiveCancelsTheInvitationAndRaisesTheAlarm()
-    {
-        var admin = await _testData.AddSystemAdminAsync();
-        _api.Email.IsDown = true;
-        using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_creation.needs_attention");
-
-        HttpResponseMessage created = null!;
-        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), Email()));
-
-        var tenantId = await IdOfCreatedAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<OwnerInvitationReadyEvent>().ShouldNotBeNull();
-        (await TenantStatusAsync(tenantId)).ShouldBe("Active");
-        (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
-        (await SagaStateAsync(tenantId)).ShouldBe("NeedsAttention");
-        _api.Services.GetFakeLogCollector().GetSnapshot().ShouldContain(record =>
-            record.Level == LogLevel.Error
-            && record.Id.Name == "TenantCreationNeedsAttention"
-            && record.Message.Contains(tenantId.ToString(), StringComparison.Ordinal));
-        alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
-        await _summaries.ShouldMatchTheRowsAsync(tenantId);
-    }
-
-    // Clerk that stays down ends step 3 as an email that never goes out: the tenant stays active, the invitation nobody can use is
-    // cancelled, no email carries a link that leads nowhere, and a person is told.
-    [Fact]
-    public async Task CreateTenant_ClerkKeepsFailing_LeavesTheTenantActiveCancelsTheInvitationSendsNoEmailAndRaisesTheAlarm()
-    {
-        var admin = await _testData.AddSystemAdminAsync();
-        var owner = Email();
-        _api.Identity.IsDown = true;
-        using var alarms = new MetricCollector<long>(_api.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), "Modules.ControlPlane", "tenant_creation.needs_attention");
-
-        HttpResponseMessage created = null!;
-        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), owner));
-
-        var tenantId = await IdOfCreatedAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<OpenOwnerSignUpCommand>().ShouldNotBeNull();
-        (await TenantStatusAsync(tenantId)).ShouldBe("Active");
-        (await InvitationStatusAsync(tenantId)).ShouldBe("Cancelled");
-        (await SagaStateAsync(tenantId)).ShouldBe("NeedsAttention");
-        _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
-        alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
     }
 
     // Section 6: the tenant, its summary, the Owner's invitation and the outgoing messages are written in one transaction, so a failure
@@ -643,7 +551,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), Email()));
 
         var tenantId = await IdOfCreatedAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<MemberInvitationReadyEvent>().TenantId.ShouldBe(tenantId);
+        messages.MovedToErrorQueue.SingleMessage<InvitationReadyEvent>().TenantId.ShouldBe(tenantId);
         (await TenantStatusAsync(tenantId)).ShouldBe("Active");
         (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
         await _summaries.ShouldMatchTheRowsAsync(tenantId);
@@ -662,7 +570,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), owner));
 
         var tenantId = await IdOfCreatedAsync(created);
-        messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUpCommand>().TenantId.ShouldBe(tenantId);
+        messages.MovedToErrorQueue.SingleMessage<OpenSignUpCommand>().TenantId.ShouldBe(tenantId);
         (await TenantStatusAsync(tenantId)).ShouldBe("Active");
         (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
@@ -726,9 +634,6 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     private Task<string?> InvitationStatusAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
-
-    private Task<string?> SagaStateAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}'");
 
     private async Task<string> CreateTenantWithOwnerAsync(string ownerEmail, string language = "en")
     {

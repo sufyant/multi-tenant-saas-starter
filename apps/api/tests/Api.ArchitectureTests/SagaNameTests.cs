@@ -4,7 +4,8 @@ using Wolverine;
 namespace Api.ArchitectureTests;
 
 // N2: a saga says what it is. Its class name ends with Saga and its table name ends with _sagas, so a reader tells the saga record
-// from the business data it drives.
+// from the business data it drives. The template has no saga yet (SagaMessageTests); the first, the tenant purge of step r7, is held to
+// both.
 public sealed class SagaNameTests
 {
     [Fact]
@@ -17,7 +18,6 @@ public sealed class SagaNameTests
 
         var misnamed = sagas.Where(saga => !saga.Name.EndsWith("Saga", StringComparison.Ordinal)).Select(saga => saga.FullName);
 
-        sagas.ShouldNotBeEmpty();
         misnamed.ShouldBeEmpty();
     }
 
@@ -30,7 +30,6 @@ public sealed class SagaNameTests
 
         var misnamed = tables.Where(table => !table.EndsWith("_sagas", StringComparison.Ordinal));
 
-        tables.ShouldNotBeEmpty();
         misnamed.ShouldBeEmpty();
     }
 

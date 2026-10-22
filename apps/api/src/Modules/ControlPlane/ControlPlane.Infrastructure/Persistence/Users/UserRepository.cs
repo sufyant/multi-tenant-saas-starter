@@ -75,10 +75,7 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
                 from membership in controlPlane.Memberships
                 join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
                 orderby tenant.Id
-                select new UserMembership(
-                    tenant.Id,
-                    membership.RoleId == BuiltInRoles.Owner.Id
-                    && (tenant.Status == TenantStatus.Active || tenant.Status == TenantStatus.Suspended || tenant.Status == TenantStatus.Closed)))
+                select new UserMembership(tenant.Id, membership.RoleId == BuiltInRoles.Owner.Id))
             .ToListAsync(cancellationToken);
     }
 

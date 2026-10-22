@@ -3,6 +3,7 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -88,7 +89,7 @@ public sealed class TenantRepositoryTests(Database database)
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             await tenants.FindTenantForUpdateAsync(Cancellation);
-            tenants.Add(OwnerInvitation(tenant, inviter));
+            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter));
             await tenants.SaveChangesAsync(Cancellation);
         });
 
@@ -106,7 +107,7 @@ public sealed class TenantRepositoryTests(Database database)
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
-            tenants.Add(OwnerInvitation(tenant, inviter));
+            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter));
             await tenants.SaveAsync(locked, Cancellation);
         });
 

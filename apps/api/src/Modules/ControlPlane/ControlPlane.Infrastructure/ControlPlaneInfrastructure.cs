@@ -2,7 +2,6 @@ using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
-using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
@@ -28,23 +27,6 @@ namespace ControlPlane.Infrastructure;
 /// </summary>
 public static class ControlPlaneInfrastructure
 {
-    /// <summary>The key of the wait for the invitation email after the tenant's activation.</summary>
-    public const string InvitationEmailTimeoutKey = $"{TenantCreationOptions.Section}:{nameof(TenantCreationOptions.InvitationEmailTimeout)}";
-
-    /// <summary>The key of the pauses before each new try of a call to the identity provider.</summary>
-    public const string IdentityProviderRetryDelaysKey = $"{IdentityProviderOptions.Section}:{nameof(IdentityProviderOptions.RetryDelays)}";
-
-    /// <summary>
-    /// The wait for the invitation email, as configured. The host checks it against the retries of both calls before the email
-    /// (section 6, "Tenant creation process").
-    /// </summary>
-    public static TimeSpan InvitationEmailTimeout(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<TenantCreationOptions>>().Value.InvitationEmailTimeout;
-
-    /// <summary>The pauses before each new try of a call to the identity provider, as configured or by default.</summary>
-    public static IReadOnlyList<TimeSpan> IdentityProviderRetryDelays(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<IdentityProviderOptions>>().Value.Delays;
-
     public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
         services.AddDbContextWithWolverineIntegration<ControlPlaneDbContext>(
@@ -84,15 +66,6 @@ public static class ControlPlaneInfrastructure
             .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantOptions.Section}:ReopenPeriod must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantOptions>>().Value);
-
-        services.AddOptions<TenantCreationOptions>()
-            .BindConfiguration(TenantCreationOptions.Section)
-            .Validate(settings => settings.ActivationTimeout > TimeSpan.Zero, $"{TenantCreationOptions.Section}:ActivationTimeout must be positive.")
-            .Validate(settings => settings.InvitationEmailTimeout > TimeSpan.Zero, $"{TenantCreationOptions.Section}:InvitationEmailTimeout must be positive.")
-            .Validate(settings => settings.CancellationTimeout > TimeSpan.Zero, $"{TenantCreationOptions.Section}:CancellationTimeout must be positive.")
-            .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantCreationOptions>>().Value);
-        services.AddSingleton<TenantCreationAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it
         // resolves it from the message's scope. It reaches no DbContext.

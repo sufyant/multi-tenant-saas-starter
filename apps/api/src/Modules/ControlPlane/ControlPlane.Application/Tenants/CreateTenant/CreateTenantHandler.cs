@@ -1,29 +1,27 @@
 using ControlPlane.Application.Invitations;
-using ControlPlane.Application.Tenants.ActivateTenant;
-using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Users;
-using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
 using Wolverine;
-using Wolverine.Persistence;
 
 namespace ControlPlane.Application.Tenants.CreateTenant;
 
-// Step 1 of the tenant creation saga, in one transaction: the tenant as provisioning, its first owner's invitation, the saga's record
-// (section 6). The host also saves the command result in this transaction (I4). The invitation's secret is born here; only its hash is
-// stored, and the accept link that carries it goes on in the activation's message. Rejections come first (W7); a taken slug is found by
-// the insert itself, which writes nothing then.
+// One transaction writes the active tenant, its summary and its first Owner's invitation, and sends the identity provider's sign-up and
+// the audit event through the outbox (section 6, "Tenant creation process"). The host also saves the command result in this transaction
+// (I4). The invitation takes the path of InviteOwner: the same rule (Tenant.Invite, with the platform as inviter, M1), then the sign-up
+// and the email. Rejections come first (W7); a taken slug is found by the insert itself, which writes nothing then.
 public static class CreateTenantHandler
 {
-    public static async Task<(Result<TenantView>, Insert<TenantCreationSaga>?, OutgoingMessages)> HandleAsync(
+    public static async Task<(Result<TenantView>, OutgoingMessages)> HandleAsync(
         CreateTenantCommand command,
         ITenantRepository tenants,
         IUserRepository users,
         InvitationOptions invitations,
-        TenantCreationOptions tenantCreation,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -31,46 +29,40 @@ public static class CreateTenantHandler
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var now = time.GetUtcNow();
-        var tenant = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);
-        if (!tenant.IsSuccess)
+        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);
+        if (!created.IsSuccess)
         {
-            return (tenant.Error, null, []);
+            return (created.Error, []);
         }
 
-        if (!await tenants.TryAddAsync(tenant.Value, cancellationToken))
+        if (!await tenants.TryAddAsync(created.Value, cancellationToken))
         {
-            return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, []);
+            return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), []);
         }
 
-        var secret = InvitationSecret.Generate();
-        var invitation = Invitation.Create(
-            Guid.CreateVersion7(now),
-            tenant.Value.Id,
-            EmailAddress.Create(command.OwnerEmail),
-            BuiltInRoles.Owner,
-            actor.Id,
-            now,
-            invitations.Lifetime,
-            secret,
-            command.Language ?? actor.Language);
-        tenants.Add(invitation);
-
-        // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to save it.
-        var added = await tenants.FindTenantForUpdateAsync(cancellationToken)
+        // The tenant was inserted by SQL, so it is read back, locked, to invite its Owner and save its summary under the lock (K6a, R12).
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant was added in this transaction.");
-        await tenants.SaveAsync(added, cancellationToken);
+        var email = EmailAddress.Create(command.OwnerEmail);
+        var secret = InvitationSecret.Generate();
+        var invited = tenant.Invite(
+            Inviter.Platform(actor.Id, actor.Language),
+            new NewInvitation(Guid.CreateVersion7(now), email, BuiltInRoles.Owner, command.Language, secret, now, invitations.Lifetime),
+            await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
+            invitations.DailyLimitPerTenant);
+        if (!invited.IsSuccess)
+        {
+            throw new InvalidOperationException($"A new tenant has no Owner and no invitation: {invited.Error.Code}.");
+        }
 
-        (TenantCreationSaga saga, ActivateTenantCommand activate, ActivationTimedOut timeout) = TenantCreationSaga.Begin(
-            tenant.Value.Id,
-            invitation.Id,
-            invitations.AcceptLink(new InvitationCode(tenant.Value.Id, secret)),
-            tenantCreation.Timeouts);
+        var invitation = invited.Value.Invitation;
+        await tenants.AddInvitationAsync(tenant, invited.Value, cancellationToken);
 
-        // A saga that is only being started gives its messages no saga id of their own; this one needs it, so that its fault finds
-        // the saga.
         return (
-            TenantView.Of(tenant.Value),
-            Storage.Insert(saga),
-            [activate.WithDeliveryOptions(new DeliveryOptions { SagaId = saga.Id.ToString() }), timeout]);
+            TenantView.Of(tenant),
+            [
+                new TenantActivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id),
+                OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
+            ]);
     }
 }

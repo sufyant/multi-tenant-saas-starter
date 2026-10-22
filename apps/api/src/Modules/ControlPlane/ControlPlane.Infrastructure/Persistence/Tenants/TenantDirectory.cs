@@ -21,7 +21,7 @@ internal sealed class TenantDirectory(ControlPlaneDbContext controlPlane) : ITen
             .Where(tenant => tenant.Id == tenantId)
             .Select(tenant => (TenantStatus?)tenant.Status)
             .SingleOrDefaultAsync(cancellationToken);
-        if (status is not (TenantStatus.Active or TenantStatus.Suspended or TenantStatus.Closed))
+        if (status is null)
         {
             return Errors.TenantNotFound;
         }

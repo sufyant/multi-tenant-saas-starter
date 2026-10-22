@@ -32,10 +32,8 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
-    [InlineData("Provisioning", "provisioning")]
     [InlineData("Active", "active")]
     [InlineData("Suspended", "suspended")]
-    [InlineData("Cancelled", "cancelled")]
     [InlineData("Closed", "closed")]
     public async Task GetTenant_ATenantInAnyStatus_ReturnsItWithItsStatus(string stored, string answered)
     {

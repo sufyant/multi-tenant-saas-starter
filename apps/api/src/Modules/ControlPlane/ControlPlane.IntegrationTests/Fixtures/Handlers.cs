@@ -1,24 +1,17 @@
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Invitations.AcceptInvitation;
-using ControlPlane.Application.Invitations.CancelInvitation;
 using ControlPlane.Application.Invitations.ExpireSignUp;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
-using ControlPlane.Application.Tenants.ActivateTenant;
-using ControlPlane.Application.Tenants.CancelTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
-using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
-using ControlPlane.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using SharedKernel;
 using Wolverine;
-using Wolverine.Persistence;
 
 namespace ControlPlane.IntegrationTests.Fixtures;
 
@@ -27,8 +20,7 @@ internal static class Handlers
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    // Tenant creation runs inside the tenant it creates, whose id the endpoint chooses. The saga it starts is inserted in the same
-    // transaction, as Wolverine inserts a returned Insert<T>.
+    // Tenant creation runs inside the tenant it creates, whose id the endpoint chooses, in one transaction.
     public static Task<CreatedTenant> CreateTenantAsync(
         IServiceProvider services,
         Guid tenantId,
@@ -37,46 +29,16 @@ internal static class Handlers
         string ownerEmail) =>
         InTenant.RunAsync(services, tenantId, async scope =>
         {
-            var (result, saga, messages) = await CreateTenantHandler.HandleAsync(
+            var (result, messages) = await CreateTenantHandler.HandleAsync(
                 new CreateTenantCommand(actorId, "Acme Ltd", slug, ownerEmail, null),
                 scope.GetRequiredService<ITenantRepository>(),
                 scope.GetRequiredService<IUserRepository>(),
                 scope.GetRequiredService<InvitationOptions>(),
-                scope.GetRequiredService<TenantCreationOptions>(),
                 scope.GetRequiredService<TimeProvider>(),
                 Cancellation);
-            if (saga is not null)
-            {
-                scope.GetRequiredService<ControlPlaneDbContext>().Add(saga.Entity);
-            }
 
-            return new CreatedTenant(
-                result, saga, messages.OfType<DeliveryMessage<ActivateTenantCommand>>().SingleOrDefault(), messages.OfType<ActivationTimedOut>().SingleOrDefault());
+            return new CreatedTenant(result, messages.OfType<TenantActivatedEvent>().SingleOrDefault(), messages.OfType<OpenSignUpCommand>().SingleOrDefault());
         });
-
-    public static async Task<(ActivateTenantReply? Completed, TenantActivatedEvent? Activated, OpenOwnerSignUpCommand? SignUp)> ActivateAsync(IServiceProvider services, Guid tenantId, ActivateTenantCommand step)
-    {
-        var messages = await InTenant.RunAsync(services, tenantId, scope => ActivateTenantHandler.HandleAsync(
-            step,
-            scope.GetRequiredService<ITenantRepository>(),
-            scope.GetRequiredService<TimeProvider>(),
-            Cancellation));
-        return (
-            messages.OfType<ActivateTenantReply>().SingleOrDefault(),
-            messages.OfType<TenantActivatedEvent>().SingleOrDefault(),
-            messages.OfType<OpenOwnerSignUpCommand>().SingleOrDefault());
-    }
-
-    public static async Task<CancelTenantReply?> CancelTenantAsync(IServiceProvider services, Guid tenantId, CancelTenantCommand step) =>
-        (await InTenant.RunAsync(services, tenantId, scope => CancelTenantHandler.HandleAsync(
-            step,
-            scope.GetRequiredService<ITenantRepository>(),
-            scope.GetRequiredService<ILogger<TenantCreationSaga>>(),
-            Cancellation))).OfType<CancelTenantReply>().SingleOrDefault();
-
-    public static async Task<WithdrawSignUpCommand?> CancelInvitationAsync(IServiceProvider services, Guid tenantId, CancelInvitationCommand step) =>
-        (await InTenant.RunAsync(services, tenantId, scope => CancelInvitationHandler.HandleAsync(step, scope.GetRequiredService<ITenantRepository>(), Cancellation)))
-            .OfType<WithdrawSignUpCommand>().SingleOrDefault();
 
     // The identity provider's answer for an invitation's sign-up, recorded in the invitation's tenant.
     public static Task<OutgoingMessages> RecordSignUpAsync(IServiceProvider services, Guid tenantId, RecordSignUpCommand opened) =>
@@ -93,27 +55,15 @@ internal static class Handlers
             scope.GetRequiredService<TimeProvider>(),
             Cancellation))).OfType<WithdrawSignUpCommand>().SingleOrDefault();
 
-    // A tenant whose creation has started, by a new user: its id and the id of the Owner's invitation that the activation names.
-    public static async Task<(Guid TenantId, Guid InvitationId)> StartTenantCreationAsync(IServiceProvider services)
-    {
-        var actor = await TestData.AddUserAsync(services);
-        var tenantId = Guid.CreateVersion7();
-        var started = await CreateTenantAsync(services, tenantId, actor.ExternalId, Unique.Slug(), Unique.Email());
-
-        return (tenantId, started.Activate.ShouldNotBeNull().Message.InvitationId);
-    }
-
-    // A tenant created up to its pivot, the way the saga drives it: started and activated. Returns what the owner's sign-up is opened
-    // from.
-    public static async Task<(Guid TenantId, string Slug, OpenOwnerSignUpCommand SignUp)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
+    // A tenant a new user created, with its Owner's invitation pending. Returns what the owner's sign-up is opened from.
+    public static async Task<(Guid TenantId, string Slug, OpenSignUpCommand SignUp)> CreateActiveTenantAsync(IServiceProvider services, string ownerEmail)
     {
         var admin = await TestData.AddUserAsync(services);
         var tenantId = Guid.CreateVersion7();
         var slug = Unique.Slug();
-        var started = await CreateTenantAsync(services, tenantId, admin.ExternalId, slug, ownerEmail);
-        var (_, _, signUp) = await ActivateAsync(services, tenantId, started.Activate.ShouldNotBeNull().Message);
+        var created = await CreateTenantAsync(services, tenantId, admin.ExternalId, slug, ownerEmail);
 
-        return (tenantId, slug, signUp.ShouldNotBeNull());
+        return (tenantId, slug, created.SignUp.ShouldNotBeNull());
     }
 
     // Accepting starts outside any tenant: the invitation code names the tenant, the identity provider is asked for the user's
@@ -149,9 +99,5 @@ internal static class Handlers
 
     public static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
 
-    public sealed record CreatedTenant(
-        Result<TenantView> Result,
-        Insert<TenantCreationSaga>? Saga,
-        DeliveryMessage<ActivateTenantCommand>? Activate,
-        ActivationTimedOut? Timeout);
+    public sealed record CreatedTenant(Result<TenantView> Result, TenantActivatedEvent? Created, OpenSignUpCommand? SignUp);
 }
