@@ -49,18 +49,20 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     }
 
     // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner holds the tenant pool, an Admin all of it but
-    // the Owners' own permission (K1), a Member reads the members and the tenant.
+    // the Owners' own permission (K1) and the management of roles, a Member reads the members and the tenant.
     [Theory]
     [InlineData("Owner", new[]
     {
         Permissions.TenantAuditRead, Permissions.TenantInvitationsCreate, Permissions.TenantInvitationsDelete, Permissions.TenantInvitationsRead,
         Permissions.TenantMembersDelete, Permissions.TenantMembersRead, Permissions.TenantMembersUpdate, Permissions.TenantOwnersManage,
-        Permissions.TenantProfileRead,
+        Permissions.TenantProfileRead, Permissions.TenantRolesCreate, Permissions.TenantRolesDelete, Permissions.TenantRolesRead,
+        Permissions.TenantRolesUpdate,
     })]
     [InlineData("Admin", new[]
     {
         Permissions.TenantAuditRead, Permissions.TenantInvitationsCreate, Permissions.TenantInvitationsDelete, Permissions.TenantInvitationsRead,
         Permissions.TenantMembersDelete, Permissions.TenantMembersRead, Permissions.TenantMembersUpdate, Permissions.TenantProfileRead,
+        Permissions.TenantRolesRead,
     })]
     [InlineData("Member", new[] { Permissions.TenantMembersRead, Permissions.TenantProfileRead })]
     public async Task GetMyTenant_AMemberOfEveryBuiltInRole_ReturnsTheRolesPermissionsSorted(string role, string[] permissions)

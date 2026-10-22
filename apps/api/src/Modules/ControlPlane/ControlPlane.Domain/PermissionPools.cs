@@ -56,6 +56,14 @@ internal static class PermissionPools
 
     public const string TenantAuditRead = "tenant.audit.read";
 
+    public const string TenantRolesRead = "tenant.roles.read";
+
+    public const string TenantRolesCreate = "tenant.roles.create";
+
+    public const string TenantRolesUpdate = "tenant.roles.update";
+
+    public const string TenantRolesDelete = "tenant.roles.delete";
+
     public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,
         TenantMembersRead,
@@ -66,7 +74,11 @@ internal static class PermissionPools
         TenantInvitationsCreate,
         TenantInvitationsRead,
         TenantInvitationsDelete,
-        TenantAuditRead);
+        TenantAuditRead,
+        TenantRolesRead,
+        TenantRolesCreate,
+        TenantRolesUpdate,
+        TenantRolesDelete);
 
     /// <summary>
     /// The permissions of the tenant pool that only the Owner role holds (K1): giving the Owner role, changing or removing an Owner, and
