@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using Api.Hosting;
 using Api.Routing;
 using Audit.Api;
 using Audit.Infrastructure;
@@ -24,7 +25,7 @@ using Wolverine.Tracking;
 namespace Api.IntegrationTests.Fixtures;
 
 // Runs the host's real pipeline on a test server against the test database, with the test endpoints mapped where module endpoints go.
-// By default the host has the modules' handlers, as Program composes them, and loads the committed handler code (section 9, rule 11).
+// By default the host has the modules' handlers in Program's order and loads the committed handler code (section 9, rule 11).
 // A host with the test handlers has chains the committed code does not hold, so it generates its handler code at runtime.
 internal sealed class PipelineHost : IAsyncDisposable
 {
@@ -80,11 +81,16 @@ internal sealed class PipelineHost : IAsyncDisposable
         else
         {
             builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
-            builder.Services.AddAuditInfrastructure();
         }
 
         builder.Services.AddControlPlaneInfrastructure();
         builder.Services.AddNotificationsInfrastructure();
+        if (!testHandlers)
+        {
+            builder.Services.AddAuditInfrastructure();
+            builder.Services.AddInvitationEmailWait();
+        }
+
         builder.Services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
             (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
             TenancyServiceCollectionExtensions.MessageSchema);
