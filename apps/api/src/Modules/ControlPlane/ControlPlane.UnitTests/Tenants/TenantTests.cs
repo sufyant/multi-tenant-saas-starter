@@ -26,6 +26,8 @@ public sealed class TenantTests
 
     private static readonly Inviter Platform = Inviter.Platform(InviterId, Language.Tr);
 
+    private static readonly AcceptanceFacts NewPerson = new(UserDeleted: false, IsSystemAdmin: false, IsMember: false);
+
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
     public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
@@ -959,10 +961,131 @@ public sealed class TenantTests
         result.IsSuccess.ShouldBeTrue();
     }
 
+    [Fact]
+    public void AcceptInvitation_APendingInvitation_IsFound()
+    {
+        var found = Active().CheckInvitationFound(PendingTo("ada@example.com", BuiltInRoles.Member));
+
+        found.IsSuccess.ShouldBeTrue();
+    }
+
+    // K2: a cancelled invitation answers as one that does not exist, as a revoked one does.
+    [Fact]
+    public void AcceptInvitation_ACancelledInvitation_IsNotFound()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        invitation.Cancel();
+
+        var found = Active().CheckInvitationFound(invitation);
+
+        found.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
+        found.Error.Type.ShouldBe(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public void AcceptInvitation_TheInvitedPerson_JoinsWithTheInvitationsRoleAndUsesItUp()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Admin);
+        var userId = Guid.NewGuid();
+
+        var membership = Active().Accept(invitation, NewPerson, Verified("ada@example.com"), userId, Now);
+
+        membership.Value.TenantId.ShouldBe(Id);
+        membership.Value.UserId.ShouldBe(userId);
+        membership.Value.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
+        membership.Value.JoinedAt.ShouldBe(Now);
+        invitation.Status.ShouldBe(InvitationStatus.Accepted);
+        invitation.AcceptedBy.ShouldBe(userId);
+    }
+
+    // Section 6, "Tenant lifecycle": the order of the answers. Each case also fails every check after it.
+    [Fact]
+    public void AcceptInvitation_ADeletedUser_IsForbiddenFirstAndChangesNothing()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, new AcceptanceFacts(true, true, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserDeleted);
+        membership.Error.Type.ShouldBe(ErrorType.Forbidden);
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void AcceptInvitation_ASystemAdmin_IsUnprocessableBeforeTheMembership()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, new AcceptanceFacts(false, true, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin);
+        membership.Error.Type.ShouldBe(ErrorType.Unprocessable);
+    }
+
+    [Fact]
+    public void AcceptInvitation_AMember_IsAConflictBeforeTheInvitationsChecks()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, new AcceptanceFacts(false, false, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberExists);
+        membership.Error.Type.ShouldBe(ErrorType.Conflict);
+    }
+
+    // The invitation's own checks come before the tenant's status, so a stranger with the link learns nothing of a suspension (T3).
+    [Fact]
+    public void AcceptInvitation_AnotherAddressInASuspendedTenant_IsTheInvitationsAnswer()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var allowed = Suspended().CheckAcceptance(invitation, NewPerson, Verified("grace@example.com"), Now);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
+    }
+
+    [Fact]
+    public void AcceptInvitation_ExpiredInASuspendedTenant_IsExpired()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var allowed = Suspended().CheckAcceptance(invitation, NewPerson, Verified("ada@example.com"), Now + Lifetime);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationExpired);
+    }
+
+    // The invitation stays pending, so it can be accepted once the tenant is reactivated.
+    [Fact]
+    public void AcceptInvitation_TheInvitedPersonInASuspendedTenant_IsAConflictAndKeepsTheInvitationPending()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, NewPerson, Verified("ada@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSuspended);
+        membership.Error.Type.ShouldBe(ErrorType.Conflict);
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void AcceptInvitation_TheInvitedPerson_IsAllowedByTheCheck()
+    {
+        var allowed = Active().CheckAcceptance(PendingTo("ada@example.com", BuiltInRoles.Member), NewPerson, Verified("ada@example.com"), Now);
+
+        allowed.IsSuccess.ShouldBeTrue();
+    }
+
     private static Tenant Active()
     {
         var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
         tenant.Activate();
+        return tenant;
+    }
+
+    private static Tenant Suspended()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason);
         return tenant;
     }
 
@@ -990,6 +1113,8 @@ public sealed class TenantTests
 
     private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
 
+    private static IReadOnlyList<EmailAddress> Verified(string email) => EmailAddress.AllOf([email]);
+
     private static Inviter MemberOf(string role) => Inviter.Member(InviterId, Language.Tr, RoleOf(role));
 
     private static NewInvitation Request(string email, Role role, Language? language = Language.En) =>
@@ -999,7 +1124,7 @@ public sealed class TenantTests
         new(owners, member, sent, pending ?? []);
 
     private static Invitation PendingTo(string email, Role role) =>
-        Invitation.Create(Guid.NewGuid(), Id, EmailAddress.Create(email), role, InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
+        Invitation.Create(Guid.NewGuid(), Id, EmailAddress.Create(email), role, InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
 
     private static Membership Membership(string role) => new(Id, Guid.NewGuid(), RoleOf(role).Id, DateTimeOffset.UnixEpoch);
 }

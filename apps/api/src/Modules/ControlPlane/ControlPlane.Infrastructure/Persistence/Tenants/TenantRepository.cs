@@ -2,6 +2,7 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.Tenants;
@@ -44,6 +45,15 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
         new(await ((ITenantRepository)this).FindMembershipAsync(userId, cancellationToken), await CountOwnersAsync(cancellationToken));
+
+    // The system admin list belongs to no tenant (R6); row level security keeps the membership to the active tenant.
+    async Task<AcceptanceFacts> ITenantRepository.FindAcceptanceFactsAsync(User? user, CancellationToken cancellationToken) =>
+        user is null
+            ? new AcceptanceFacts(UserDeleted: false, IsSystemAdmin: false, IsMember: false)
+            : new AcceptanceFacts(
+                user.DeletedAt is not null,
+                await controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == user.Id, cancellationToken),
+                await ((ITenantRepository)this).FindMembershipAsync(user.Id, cancellationToken) is not null);
 
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);

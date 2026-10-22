@@ -1,5 +1,6 @@
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.Users;
 
 namespace ControlPlane.Application.Tenants;
 
@@ -28,6 +29,13 @@ public interface ITenantRepository
     /// takes first, so the facts stay true until the transaction ends (K6j). The check before a user's deletion reads them without it.
     /// </summary>
     internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// What an acceptance by the user needs to know (<see cref="AcceptanceFacts"/>): whether they are deleted, whether they are a system
+    /// admin, and whether they are a member of the active tenant. A person who is not a user yet has none of these. The caller holds the
+    /// tenant's lock and the user's (K6f).
+    /// </summary>
+    internal Task<AcceptanceFacts> FindAcceptanceFactsAsync(User? user, CancellationToken cancellationToken);
 
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);

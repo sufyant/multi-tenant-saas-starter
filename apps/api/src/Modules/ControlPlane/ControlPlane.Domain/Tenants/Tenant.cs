@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
 
@@ -291,6 +292,62 @@ internal sealed class Tenant
         }
 
         return facts.Target;
+    }
+
+    /// <summary>
+    /// Whether the invitation a code found can be accepted at all: a cancelled one answers as an invitation that does not exist, as a
+    /// revoked one does (K2). It comes before the user's lock (K6f), so an acceptance with such a code locks no user.
+    /// </summary>
+    public Result CheckInvitationFound(Invitation invitation) =>
+        invitation.TenantId == Id && invitation.Status != InvitationStatus.Cancelled ? Result.Success() : Invitation.NotFound;
+
+    /// <summary>
+    /// Whether the person may accept the invitation now, in the order of section 6, "Tenant lifecycle": a deleted user never joins (A8),
+    /// a system admin never joins (T5), a member does not join twice, then the invitation's own checks, and only then a suspended tenant,
+    /// so only the invited person with a live invitation learns that it is suspended (T3). It changes nothing, so a caller can check
+    /// more after it and still refuse without a change; <see cref="Accept"/> asks it again.
+    /// </summary>
+    public Result CheckAcceptance(Invitation invitation, AcceptanceFacts facts, IEnumerable<EmailAddress> verifiedEmails, DateTimeOffset now)
+    {
+        if (facts.UserDeleted)
+        {
+            return Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
+        }
+
+        if (facts.IsSystemAdmin)
+        {
+            return Error.Unprocessable(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin, "A system admin cannot join a tenant.");
+        }
+
+        if (facts.IsMember)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.MemberExists, "You are already a member of this tenant.");
+        }
+
+        var allowed = invitation.CheckAcceptance(verifiedEmails, now);
+        if (!allowed.IsSuccess)
+        {
+            return allowed;
+        }
+
+        return Status == TenantStatus.Suspended ? Error.Conflict(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended.") : Result.Success();
+    }
+
+    /// <summary>
+    /// The user accepts the invitation, after the checks of <see cref="CheckAcceptance"/>: the invitation is used up, and the user joins
+    /// with its role at this moment. Returns the new membership, which the caller adds with what follows from it (R13). The caller holds
+    /// the tenant's lock, then the invitation's, then the user's (K6f).
+    /// </summary>
+    public Result<Membership> Accept(Invitation invitation, AcceptanceFacts facts, IEnumerable<EmailAddress> verifiedEmails, Guid userId, DateTimeOffset now)
+    {
+        var allowed = CheckAcceptance(invitation, facts, verifiedEmails, now);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        var accepted = invitation.Accept(verifiedEmails, userId, now);
+        return accepted.IsSuccess ? new Membership(Id, userId, invitation.RoleId, now) : accepted.Error;
     }
 
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
