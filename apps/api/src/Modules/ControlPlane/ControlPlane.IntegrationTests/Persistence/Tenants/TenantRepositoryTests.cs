@@ -28,7 +28,7 @@ public sealed class TenantRepositoryTests(Database database)
         members.ShouldBe([member.Id]);
     }
 
-    // B8: one repository method writes the membership, the tenant's summary and the user's count (R13).
+    // One repository method writes the membership, the tenant's summary and the user's count (R13).
     [Fact]
     public async Task AddMembership_InATenant_BelongsToThatTenantAndIsCountedAndSummarized()
     {

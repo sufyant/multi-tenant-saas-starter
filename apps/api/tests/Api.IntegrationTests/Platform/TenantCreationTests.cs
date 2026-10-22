@@ -80,8 +80,8 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         (await SagaStateAsync(tenantId)).ShouldBe("Completed");
     }
 
-    // W6, spike T9: the activation and the email's report reach the saga at the same moment, and both read its record before either
-    // writes. The report writes first and completes the tenant creation. The activation's write then fails on the version check, and its
+    // W6, the spike's T09_concurrent_saga_updates_hit_the_version_check_and_retry_without_lost_update: the activation and the email's
+    // report reach the saga at the same moment, and both read its record before either writes. The report writes first and completes the tenant creation. The activation's write then fails on the version check, and its
     // retry finds the tenant creation completed. Without the check, the activation would put the saga back to waiting for an email that
     // was already sent.
     [Fact]

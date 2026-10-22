@@ -6,7 +6,7 @@ namespace ControlPlane.Domain;
 /// The permissions of the permission list in their two pools. Tenant roles choose from the tenant pool only; system admins hold the
 /// platform pool (A4). The names are declared once, here. Contracts does not reference Domain (section 2), so
 /// <c>apps/api/scripts/generate-permissions.mjs</c> writes the permission list, <c>ControlPlane.Contracts/Permissions.g.cs</c>, from these
-/// constants (B18).
+/// constants (D1).
 /// </summary>
 internal static class PermissionPools
 {

@@ -14,7 +14,7 @@ const providers: { id: Provider; logo: string }[] = [
 ];
 
 /**
- * Google and Microsoft, before the email code (the D5 boards). Each logo keeps its owner's colours, as the providers' brand rules
+ * Google and Microsoft, before the email code (the design system's boards). Each logo keeps its owner's colours, as the providers' brand rules
  * ask, so it is an image of the app (`public/brands/`), not a token. The label names the provider; the logo is decoration.
  */
 export function ProviderButtons({

@@ -38,12 +38,12 @@ internal sealed class ApiFactory(
 
     public static readonly IReadOnlyDictionary<string, string?> ShortRetries = new Dictionary<string, string?>
     {
-        ["Notifications:InvitationEmailRetryDelays:0"] = "00:00:00.010",
-        ["Notifications:InvitationEmailRetryDelays:1"] = "00:00:00.020",
-        ["Notifications:InvitationEmailRetryDelays:2"] = "00:00:00.040",
-        ["ControlPlane:Clerk:RetryDelays:0"] = "00:00:00.010",
-        ["ControlPlane:Clerk:RetryDelays:1"] = "00:00:00.020",
-        ["ControlPlane:Clerk:RetryDelays:2"] = "00:00:00.040",
+        ["Notifications:InvitationEmails:RetryDelays:0"] = "00:00:00.010",
+        ["Notifications:InvitationEmails:RetryDelays:1"] = "00:00:00.020",
+        ["Notifications:InvitationEmails:RetryDelays:2"] = "00:00:00.040",
+        ["ControlPlane:IdentityProvider:RetryDelays:0"] = "00:00:00.010",
+        ["ControlPlane:IdentityProvider:RetryDelays:1"] = "00:00:00.020",
+        ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:00:00.040",
     };
 
     // How long a test waits for the messages it caused. Wolverine's default of 5 s is shorter than a retry policy's pauses under load.

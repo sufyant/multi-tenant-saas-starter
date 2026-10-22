@@ -25,8 +25,8 @@ internal sealed class PipelineHost : IAsyncDisposable
 {
     private static readonly Dictionary<string, string?> DefaultSettings = new()
     {
-        ["RateLimiting:PermitLimit"] = "1000",
-        ["RateLimiting:Window"] = "00:01:00",
+        ["Host:RateLimiting:PermitLimit"] = "1000",
+        ["Host:RateLimiting:Window"] = "00:01:00",
         ["Host:Role"] = "all",
         ["ControlPlane:Invitations:AcceptUrl"] = ApiFactory.AcceptUrl,
         ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",

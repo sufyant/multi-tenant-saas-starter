@@ -29,6 +29,8 @@ internal static class MessageStorage
 
     public static void Configure(WolverineOptions options, NpgsqlDataSource dataSource, HostRole? role)
     {
+        // A dead letter expires (W13). The dead letter table then has a column for the expiry, so the migration step needs it too.
+        options.Durability.DeadLetterQueueExpirationEnabled = true;
         var storage = options.PersistMessagesWithPostgresql(dataSource, Schema).OverrideAutoCreateResources(AutoCreate.None);
         options.AutoBuildMessageStorageOnStartup = AutoCreate.None;
         options.Policies.UseDurableLocalQueues();

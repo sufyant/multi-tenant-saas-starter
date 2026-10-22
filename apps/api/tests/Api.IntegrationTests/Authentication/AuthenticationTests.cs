@@ -98,6 +98,27 @@ public sealed class AuthenticationTests : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
+    // A10: an impersonation session's token names the person who acts in an act claim (RFC 8693, section 4.1).
+    [Fact]
+    public async Task Authenticate_TokenWithAnActor_IsUnauthorized()
+    {
+        var actor = new Dictionary<string, object> { ["act"] = new Dictionary<string, object> { ["sub"] = "user_support" } };
+
+        var response = await WhoAmIAsync(TestTokens.For("user_ada", extraClaims: actor));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Authenticate_TheSameTokenWithoutTheActor_IsAccepted()
+    {
+        var noActor = new Dictionary<string, object>();
+
+        var response = await WhoAmIAsync(TestTokens.For("user_ada", extraClaims: noActor));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
     [Fact]
     public async Task Authenticate_TokenIssuedToAnUnknownParty_IsUnauthorized()
     {

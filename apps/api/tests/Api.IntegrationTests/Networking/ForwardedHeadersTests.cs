@@ -53,7 +53,7 @@ public sealed class ForwardedHeadersTests
 
     private static Task<PipelineHost> StartAsync(Dictionary<string, string?> settings)
     {
-        settings["RateLimiting:PermitLimit"] = "1";
+        settings["Host:RateLimiting:PermitLimit"] = "1";
         return PipelineHost.StartAsync(settings);
     }
 

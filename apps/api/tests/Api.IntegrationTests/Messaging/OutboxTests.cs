@@ -48,7 +48,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
         (await StoredCountAsync(value)).ShouldBe(0);
     }
 
-    // Spike T10b.
+    // W7, the spike's T10b_validate_stops_the_handler_before_any_change.
     [Fact]
     public async Task InvokeForTenant_ValidateStops_NothingIsWrittenOrSent()
     {

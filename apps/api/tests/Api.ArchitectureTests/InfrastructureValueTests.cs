@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Api.ArchitectureTests;
 
-// Audit B15: railway.ts and the deploy scripts read the management port and the health path from .railway/api.json, and the
+// D1: railway.ts and the deploy scripts read the management port and the health path from .railway/api.json, and the
 // Dockerfile exposes the port. The host owns both values, so a copy that drifted would fail only at the deploy's health check.
 // The web apps reach the API on its public port, which the image owns (ASPNETCORE_HTTP_PORTS of its base image), so the
 // Dockerfile exposes that port too.

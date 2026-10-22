@@ -483,8 +483,8 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "tenant.reactivated")).ShouldBe(1L);
     }
 
-    // Spike T8 in the production layout (O3, W4): each handler of an event runs in a worker, in its own transaction. The one that
-    // throws goes to the dead letter queue; the other commits its row once.
+    // The spike's T08_separated_handlers_commit_independently in the production layout (O3, W4): each handler of an event runs in a
+    // worker, in its own transaction. The one that throws goes to the dead letter queue; the other commits its row once.
     [Fact]
     public async Task PublishAnEventWithTwoHandlers_OnAWebAndAWorkerHost_OneThrowsTheOtherCommitsOnceInTheWorker()
     {

@@ -2,7 +2,7 @@ namespace SharedKernel;
 
 /// <summary>
 /// The pauses of a retry that grows, for a call to a service that may be down for a while, such as the identity provider or the email
-/// service (B7). A pause shorter than <see cref="LongestInlinePause"/> is waited out where the handler runs; a longer one is a scheduled
+/// service (W11). A pause shorter than <see cref="LongestInlinePause"/> is waited out where the handler runs; a longer one is a scheduled
 /// retry, so the message holds no worker meanwhile. Each module wires the two lists into Wolverine for its own messages, and keeps its
 /// own defaults.
 /// </summary>

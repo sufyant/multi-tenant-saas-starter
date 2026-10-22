@@ -43,6 +43,7 @@ internal static class ApiPipeline
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddIdempotency();
         builder.Services.AddUnknownMessageOptions();
+        builder.Services.AddDeadLetterOptions();
 
         builder.AddObservability();
         builder.AddAccess();
@@ -184,6 +185,9 @@ internal static class ApiPipeline
             // result (W6, S8). Wolverine does not retry this by itself.
             options.OnException<SagaConcurrencyException>().RetryTimes(3);
             options.OnAnyException().ContinueWith(new QueuedRetries());
+
+            // A dead letter expires after its retention (W13).
+            DeadLetterRetention.Configure(options, builder.Configuration);
 
             // A node without a handler for a message puts it back for a node that has one, a bounded number of times (W12).
             options.Services.AddSingleton<IMissingHandler, UnknownMessages>();

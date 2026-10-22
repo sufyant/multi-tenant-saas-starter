@@ -62,6 +62,13 @@ internal static class ClerkAuthentication
             return Task.CompletedTask;
         }
 
+        // A10: an impersonation session names the person who acts in an act claim (RFC 8693, section 4.1). Support access is deferred.
+        if (token.TryGetClaim("act", out _))
+        {
+            context.Fail("An impersonation session token.");
+            return Task.CompletedTask;
+        }
+
         // A claim of this name inside the token vouches for nothing, for example one added through a custom session claim; only
         // the reading of fva below may set it.
         foreach (var identity in context.Principal?.Identities ?? [])
