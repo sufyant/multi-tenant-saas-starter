@@ -345,3 +345,45 @@ export const reactivateUser = async (userId: string, options?: Parameters<typeof
 
 
 
+export const getGrantSystemAdminUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/platform/users/${userId}/system-admin`
+}
+
+export const grantSystemAdmin = async (userId: string, options?: Parameters<typeof apiFetch>[1]): Promise<UserResponse> => {
+
+  return apiFetch<UserResponse>(getGrantSystemAdminUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export const getRevokeSystemAdminUrl = (userId: string,) => {
+
+
+
+
+  return `/v1/platform/users/${userId}/system-admin`
+}
+
+export const revokeSystemAdmin = async (userId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getRevokeSystemAdminUrl(userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+

@@ -28,17 +28,19 @@ import type {
 } from '../endpoints.schemas.gen';
 
 
-export const getListUsersResponseMock = (overrideResponse: Partial<Extract<ListPageOfUserResponse, object>> = {}): ListPageOfUserResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
+export const getListUsersResponseMock = (overrideResponse: Partial<Extract<ListPageOfUserResponse, object>> = {}): ListPageOfUserResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
 
 export const getGetUserResponseUserNameResponseMock = (overrideResponse: Partial<UserNameResponse> = {}): UserNameResponse => ({...{firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, ...overrideResponse});
 
-export const getGetUserResponseMock = (overrideResponse: Partial<Extract<UserDetailResponse, object>> = {}): UserDetailResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', suspendedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), suspendedBy: faker.helpers.arrayElement([null,{...getGetUserResponseUserNameResponseMock()},]), memberships: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), tenantName: faker.string.alpha({length: {min: 10, max: 20}}), tenantSlug: faker.string.alpha({length: {min: 10, max: 20}}), tenantStatus: faker.helpers.arrayElement(Object.values(UserMembershipResponseTenantStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastOwner: faker.datatype.boolean()})), ...overrideResponse})
+export const getGetUserResponseMock = (overrideResponse: Partial<Extract<UserDetailResponse, object>> = {}): UserDetailResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', suspendedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), suspendedBy: faker.helpers.arrayElement([null,{...getGetUserResponseUserNameResponseMock()},]), memberships: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), tenantName: faker.string.alpha({length: {min: 10, max: 20}}), tenantSlug: faker.string.alpha({length: {min: 10, max: 20}}), tenantStatus: faker.helpers.arrayElement(Object.values(UserMembershipResponseTenantStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastOwner: faker.datatype.boolean()})), ...overrideResponse})
 
-export const getRenameUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getRenameUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getSuspendUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getSuspendUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getReactivateUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getReactivateUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getGrantSystemAdminResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
 export const getListUsersMockHandler = (overrideResponse?: ListPageOfUserResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfUserResponse> | ListPageOfUserResponse), options?: RequestHandlerOptions) => {
@@ -110,11 +112,35 @@ export const getReactivateUserMockHandler = (overrideResponse?: UserResponse | (
       })
   }, options)
 }
+
+export const getGrantSystemAdminMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/platform/users/:userId/system-admin', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGrantSystemAdminResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRevokeSystemAdminMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('*/v1/platform/users/:userId/system-admin', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
 export const getPlatformUsersMock = () => [
   getListUsersMockHandler(),
   getGetUserMockHandler(),
   getRenameUserMockHandler(),
   getDeleteUserMockHandler(),
   getSuspendUserMockHandler(),
-  getReactivateUserMockHandler()
+  getReactivateUserMockHandler(),
+  getGrantSystemAdminMockHandler(),
+  getRevokeSystemAdminMockHandler()
 ]
