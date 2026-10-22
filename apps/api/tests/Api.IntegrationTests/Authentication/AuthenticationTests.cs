@@ -5,7 +5,6 @@ using System.Text.Json;
 namespace Api.IntegrationTests.Authentication;
 
 // Clerk only authenticates: the host accepts its session tokens and nothing else.
-[RuntimeHandlerCode]
 public sealed class AuthenticationTests : IAsyncLifetime
 {
     private PipelineHost _host = null!;
