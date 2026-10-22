@@ -4,7 +4,6 @@ import {
   ListMembersSort,
   type ListPageOfMemberResponse,
   type MemberResponse,
-  MemberRole,
   Permission,
 } from "@repo/api-client";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
@@ -13,7 +12,9 @@ import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { isOwner } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { useRoleName } from "@/shared/use-role-name";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { initialsOf, nameOf } from "./person";
 import { RemoveMemberDialog } from "./remove-member-dialog";
@@ -49,19 +50,17 @@ export function MembersTable({
   onPageChange: (page: number) => void;
 }) {
   const t = useTranslations();
+  const roleName = useRoleName();
   const can = useCan();
   const { detail } = useTenant();
   const [changing, setChanging] = useState<MemberResponse | null>(null);
   const [removing, setRemoving] = useState<MemberResponse | null>(null);
-  const viewerIsOwner = detail.role.builtIn === MemberRole.Owner;
+  const viewerIsOwner = isOwner(detail.role);
   const canChange = can(Permission.TenantMembersUpdate);
   const canRemove = can(Permission.TenantMembersDelete);
   const nameText = (member: MemberResponse) =>
     nameOf(member) ?? t("members.deletedUser");
-  const roleText = (member: MemberResponse) =>
-    member.role.builtIn
-      ? t(`shell.roles.${member.role.builtIn}`)
-      : member.role.name;
+  const roleText = (member: MemberResponse) => roleName(member.role);
 
   const name = (member: MemberResponse) => (
     <span className="flex items-center gap-2">
@@ -126,8 +125,7 @@ export function MembersTable({
 
   const itemsFor = (member: MemberResponse): RowMenuItem[] => {
     const self = member.userId === meId;
-    const ownerOutOfReach =
-      !viewerIsOwner && member.role.builtIn === MemberRole.Owner;
+    const ownerOutOfReach = !viewerIsOwner && isOwner(member.role);
     const items: RowMenuItem[] = [];
     if (canChange)
       items.push({

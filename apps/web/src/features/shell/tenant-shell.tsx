@@ -15,6 +15,7 @@ import type { ReactNode } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useTenant } from "@/shared/tenant-context";
+import { useRoleName } from "@/shared/use-role-name";
 
 const initialsOf = (...names: (string | null)[]) =>
   names
@@ -35,6 +36,7 @@ export function TenantShell({
   children: ReactNode;
 }) {
   const t = useTranslations();
+  const roleName = useRoleName();
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
@@ -61,9 +63,7 @@ export function TenantShell({
       )
       .map((segment) => ({ label: t(sections[segment]) })),
   ];
-  const role = detail.role.builtIn
-    ? t(`shell.roles.${detail.role.builtIn}`)
-    : detail.role.name;
+  const role = roleName(detail.role);
 
   return (
     <>

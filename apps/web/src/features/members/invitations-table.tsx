@@ -7,7 +7,6 @@ import {
   inviteMember,
   ListInvitationsSort,
   type ListPageOfInvitationResponse,
-  MemberRole,
   Permission,
 } from "@repo/api-client";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
@@ -18,8 +17,10 @@ import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { isOwner } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
+import { useRoleName } from "@/shared/use-role-name";
 import {
   daysLeft,
   type InvitationStatus,
@@ -66,6 +67,7 @@ export function InvitationsTable({
   onPageChange: (page: number) => void;
 }) {
   const t = useTranslations();
+  const roleName = useRoleName();
   const can = useCan();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
@@ -73,7 +75,7 @@ export function InvitationsTable({
   const [revoking, setRevoking] = useState<InvitationResponse | null>(null);
   const now = new Date();
   const locale = t("locale.format");
-  const viewerIsOwner = detail.role.builtIn === MemberRole.Owner;
+  const viewerIsOwner = isOwner(detail.role);
   const canInvite = can(Permission.TenantInvitationsCreate);
   const canRevoke = can(Permission.TenantInvitationsDelete);
 
@@ -97,9 +99,7 @@ export function InvitationsTable({
   const statusOf = (invitation: InvitationResponse) =>
     invitationStatus(invitation, now);
   const roleText = (invitation: InvitationResponse) =>
-    invitation.role.builtIn
-      ? t(`shell.roles.${invitation.role.builtIn}`)
-      : invitation.role.name;
+    roleName(invitation.role);
 
   const columns: TableColumn<InvitationResponse>[] = [
     {
@@ -153,18 +153,17 @@ export function InvitationsTable({
 
   const itemsFor = (invitation: InvitationResponse): RowMenuItem[] => {
     const expired = statusOf(invitation) === InvitationResponseState.Expired;
-    const role = invitation.role.builtIn;
     const items: RowMenuItem[] = [];
-    if (canInvite && role)
+    if (canInvite)
       items.push({
         label: t("members.inviteAgain"),
-        disabled: role === MemberRole.Owner && !viewerIsOwner,
+        disabled: isOwner(invitation.role) && !viewerIsOwner,
         reason: t("members.inviteRoleHintAdmin"),
         onSelect: () =>
           inviteAgain.mutate(
             {
               email: invitation.email,
-              role,
+              roleId: invitation.role.id,
               language: invitation.language,
             },
             {

@@ -1,13 +1,14 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   type AuditDetailsResponse,
+  type AuditRoleResponse,
   declaredResponseHeaders,
   findOperation,
   Language,
-  MemberRole,
-  type RoleResponse,
   schemas,
 } from "./index";
+
+const memberRoleId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e30";
 
 describe("schemas", () => {
   it("RenameTenantBody_NameOfTheLimit_IsAccepted", () => {
@@ -25,7 +26,7 @@ describe("schemas", () => {
   it("InviteMemberBody_NullLanguage_IsAccepted", () => {
     const invite = {
       email: "ayse@northwind.example",
-      role: MemberRole.Member,
+      roleId: memberRoleId,
       language: null,
     };
 
@@ -35,7 +36,7 @@ describe("schemas", () => {
   it("InviteMemberBody_ListedLanguage_IsAccepted", () => {
     const invite = {
       email: "ayse@northwind.example",
-      role: MemberRole.Member,
+      roleId: memberRoleId,
       language: "tr",
     };
 
@@ -45,7 +46,7 @@ describe("schemas", () => {
   it("InviteMemberBody_UnlistedLanguage_IsRefused", () => {
     const invite = {
       email: "ayse@northwind.example",
-      role: MemberRole.Member,
+      roleId: memberRoleId,
       language: "de",
     };
 
@@ -68,20 +69,16 @@ describe("types", () => {
       { operation: "tenant.renamed" }
     >;
 
-    expectTypeOf<RoleChanged["newRole"]>().toEqualTypeOf<RoleResponse>();
+    expectTypeOf<RoleChanged["newRole"]>().toEqualTypeOf<AuditRoleResponse>();
     expectTypeOf<Renamed["newName"]>().toEqualTypeOf<string>();
     expectTypeOf<Renamed>().not.toHaveProperty("newRole");
-    expectTypeOf(newRoleOf).returns.toEqualTypeOf<RoleResponse | null>();
+    expectTypeOf(newRoleOf).returns.toEqualTypeOf<AuditRoleResponse | null>();
   });
 });
 
 describe("enums", () => {
   it("Language_AtRunTime_ListsTheDocumentsValuesInOrder", () => {
     expect(Object.values(Language)).toEqual(["en", "tr", "ar"]);
-  });
-
-  it("MemberRole_AtRunTime_ListsTheDocumentsValuesInOrder", () => {
-    expect(Object.values(MemberRole)).toEqual(["owner", "admin", "member"]);
   });
 });
 

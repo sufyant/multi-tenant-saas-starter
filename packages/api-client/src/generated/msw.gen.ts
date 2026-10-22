@@ -11,4 +11,5 @@ export * from "./platform-users/platform-users.msw.gen";
 export * from "./tenant-auditlogs/tenant-auditlogs.msw.gen";
 export * from "./tenant-invitations/tenant-invitations.msw.gen";
 export * from "./tenant-members/tenant-members.msw.gen";
+export * from "./tenant-roles/tenant-roles.msw.gen";
 export * from "./tenant-tenants/tenant-tenants.msw.gen";

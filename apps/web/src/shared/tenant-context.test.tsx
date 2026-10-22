@@ -1,7 +1,6 @@
 import {
   ErrorCode,
   getListMembersQueryOptions,
-  MemberRole,
   type MyTenantResponse,
   MyTenantResponseStatus,
   Permission,
@@ -26,7 +25,7 @@ import {
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../test/render";
-import { problem } from "../../test/tenant";
+import { problem, roleOf } from "../../test/tenant";
 import { TenantProvider, useCan, useTenant } from "./tenant-context";
 
 vi.mock("@clerk/nextjs", () => ({
@@ -45,7 +44,7 @@ const northwind: MyTenantResponse = {
   name: "Northwind Traders",
   slug: "northwind",
   status: "active",
-  role: { builtIn: "member", name: "member" },
+  role: roleOf.member,
 };
 
 function Probe() {
@@ -69,7 +68,7 @@ const atlas: MyTenantResponse = {
   name: "Atlas Logistics",
   slug: "atlas-logistics",
   status: MyTenantResponseStatus.Suspended,
-  role: { builtIn: MemberRole.Admin, name: MemberRole.Admin },
+  role: roleOf.admin,
 };
 
 const kestrel: MyTenantResponse = {
@@ -77,7 +76,7 @@ const kestrel: MyTenantResponse = {
   name: "Kestrel Labs",
   slug: "kestrel",
   status: MyTenantResponseStatus.Closed,
-  role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+  role: roleOf.member,
 };
 
 /** ListMyTenants: Northwind is active at the first read and suspended at every later one. */

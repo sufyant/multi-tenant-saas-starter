@@ -2,7 +2,6 @@ import {
   AuditActorResponseKind,
   AuditOperation,
   ErrorCode,
-  MemberRole,
 } from "@repo/api-client";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -18,6 +17,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import { auditLogAnswer, detailsOf, entry } from "../../../test/activity";
 import {
   meOf,
@@ -90,7 +90,7 @@ const days = async () => {
 };
 
 /** The tenant's answers for a viewer of the role, whose time zone is the one given. The first handler that matches answers. */
-const answer = (role: MemberRole, timeZone = "Europe/Dublin") => [
+const answer = (role: BuiltInRole, timeZone = "Europe/Dublin") => [
   http.get("*/v1/me", () => HttpResponse.json({ ...meOf(role), timeZone })),
   ...tenantAnswers(role),
 ];
@@ -131,7 +131,7 @@ const failsOnce = () => {
 describe("ActivityPage", () => {
   it("ActivityPage_Owner_GroupsTheEntriesByDayNewestFirst", async () => {
     server.use(
-      ...answer(MemberRole.Owner),
+      ...answer(BuiltInRole.Owner),
       auditLogAnswer({
         "": {
           items: [invited, joined, reactivated, revokedByDeleted, created],
@@ -166,7 +166,7 @@ describe("ActivityPage", () => {
 
   it("ActivityPage_Entry_ShowsItsLocalTime", async () => {
     server.use(
-      ...answer(MemberRole.Owner),
+      ...answer(BuiltInRole.Owner),
       auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
     );
 
@@ -187,7 +187,7 @@ describe("ActivityPage", () => {
     "ActivityPage_MidnightIn%s_PutsTheEntriesOnTwoDays",
     async (timeZone, after, before) => {
       server.use(
-        ...answer(MemberRole.Owner, timeZone),
+        ...answer(BuiltInRole.Owner, timeZone),
         auditLogAnswer({
           "": {
             items: [
@@ -215,7 +215,7 @@ describe("ActivityPage", () => {
   it("ActivityPage_ShowOlderActivity_AppendsTheNextPageAndDisappearsAtTheEnd", async () => {
     const cursors: (string | null)[] = [];
     server.use(
-      ...answer(MemberRole.Admin),
+      ...answer(BuiltInRole.Admin),
       auditLogAnswer(
         {
           "": { items: [invited, joined], nextCursor: "page-2" },
@@ -244,7 +244,7 @@ describe("ActivityPage", () => {
 
   it("ActivityPage_LastPage_ShowsNoOlderButton", async () => {
     server.use(
-      ...answer(MemberRole.Owner),
+      ...answer(BuiltInRole.Owner),
       auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
     );
 
@@ -258,7 +258,7 @@ describe("ActivityPage", () => {
 
   it("ActivityPage_CursorNoLongerValid_StartsFromTheNewestAndSaysSo", async () => {
     const cursors: (string | null)[] = [];
-    server.use(...answer(MemberRole.Owner), refusesEveryCursor(cursors));
+    server.use(...answer(BuiltInRole.Owner), refusesEveryCursor(cursors));
     renderInTenant(<ActivityPage />, { url });
 
     await userEvent.click(
@@ -276,7 +276,7 @@ describe("ActivityPage", () => {
 
   it("ActivityPage_NoEntries_SaysNoActivityYet", async () => {
     server.use(
-      ...answer(MemberRole.Owner),
+      ...answer(BuiltInRole.Owner),
       auditLogAnswer({ "": { items: [], nextCursor: null } }),
     );
 
@@ -288,7 +288,7 @@ describe("ActivityPage", () => {
   });
 
   it("ActivityPage_ListFails_ShowsTheReferenceAndTryAgainReadsAgain", async () => {
-    server.use(...answer(MemberRole.Owner), failsOnce());
+    server.use(...answer(BuiltInRole.Owner), failsOnce());
     renderInTenant(<ActivityPage />, { url });
 
     expect(
@@ -307,7 +307,7 @@ describe("ActivityPage", () => {
   it("ActivityPage_Member_SaysPermissionDeniedAndCallsNothing", async () => {
     const cursors: (string | null)[] = [];
     server.use(
-      ...answer(MemberRole.Member),
+      ...answer(BuiltInRole.Member),
       auditLogAnswer({ "": { items: [], nextCursor: null } }, cursors),
     );
 
@@ -326,7 +326,7 @@ describe("ActivityPage", () => {
 
   it("ActivityPage_InTurkish_SaysTodayInTurkish", async () => {
     server.use(
-      ...answer(MemberRole.Owner),
+      ...answer(BuiltInRole.Owner),
       auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
     );
 
@@ -341,7 +341,7 @@ describe("ActivityPage", () => {
   });
 
   it("ActivityPage_OlderPageFails_SaysSoAndKeepsTheEntries", async () => {
-    server.use(...answer(MemberRole.Owner), refusesEveryCursor([], 500));
+    server.use(...answer(BuiltInRole.Owner), refusesEveryCursor([], 500));
     renderInTenant(<ActivityPage />, { url });
 
     await userEvent.click(
@@ -359,7 +359,7 @@ describe("ActivityPage", () => {
   it("ActivityPage_OlderPageSignedOut_GoesToSignIn", async () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });
-    server.use(...answer(MemberRole.Owner), refusesEveryCursor([], 401));
+    server.use(...answer(BuiltInRole.Owner), refusesEveryCursor([], 401));
     renderInTenant(<ActivityPage />, { url });
 
     await userEvent.click(

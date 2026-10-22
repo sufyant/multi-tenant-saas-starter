@@ -8,4 +8,5 @@ export * from './platform-users/platform-users.zod.gen';
 export * from './tenant-auditlogs/tenant-auditlogs.zod.gen';
 export * from './tenant-invitations/tenant-invitations.zod.gen';
 export * from './tenant-members/tenant-members.zod.gen';
+export * from './tenant-roles/tenant-roles.zod.gen';
 export * from './tenant-tenants/tenant-tenants.zod.gen';

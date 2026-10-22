@@ -56,25 +56,16 @@ export const MemberInvitedDetailsResponseOperation = {
 } as const;
 
 /**
- * A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an
- * invitation gives, and the role a member is given.
+ * A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The
+ * role may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the
+ * maintainer's decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because
+ * every role was then.
  */
-export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
-
-
-export const MemberRole = {
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-} as const;
-
-/**
- * A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers
- * `{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.
- */
-export interface RoleResponse {
-  builtIn: null | MemberRole;
+export interface AuditRoleResponse {
+  /** @nullable */
+  id: string | null;
   name: string;
+  builtIn: boolean;
 }
 
 /**
@@ -82,7 +73,7 @@ export interface RoleResponse {
  */
 export interface MemberInvitedDetailsResponse {
   operation: MemberInvitedDetailsResponseOperation;
-  role: RoleResponse;
+  role: AuditRoleResponse;
   /** @nullable */
   replacedInvitationId: string | null;
 }
@@ -99,7 +90,7 @@ export const MemberRemovedDetailsResponseOperation = {
  */
 export interface MemberRemovedDetailsResponse {
   operation: MemberRemovedDetailsResponseOperation;
-  role: RoleResponse;
+  role: AuditRoleResponse;
 }
 
 export type MemberRoleChangedDetailsResponseOperation = typeof MemberRoleChangedDetailsResponseOperation[keyof typeof MemberRoleChangedDetailsResponseOperation];
@@ -114,8 +105,77 @@ export const MemberRoleChangedDetailsResponseOperation = {
  */
 export interface MemberRoleChangedDetailsResponse {
   operation: MemberRoleChangedDetailsResponseOperation;
-  oldRole: RoleResponse;
-  newRole: RoleResponse;
+  oldRole: AuditRoleResponse;
+  newRole: AuditRoleResponse;
+}
+
+export type RoleCreatedDetailsResponseOperation = typeof RoleCreatedDetailsResponseOperation[keyof typeof RoleCreatedDetailsResponseOperation];
+
+
+export const RoleCreatedDetailsResponseOperation = {
+  RoleCreated: 'role.created',
+} as const;
+
+/**
+ * A name of the permission list. Every endpoint checks its own permission.
+ */
+export type Permission = typeof Permission[keyof typeof Permission];
+
+
+export const Permission = {
+  PlatformAuditRead: 'platform.audit.read',
+  PlatformTenantsClose: 'platform.tenants.close',
+  PlatformTenantsCreate: 'platform.tenants.create',
+  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsReactivate: 'platform.tenants.reactivate',
+  PlatformTenantsRead: 'platform.tenants.read',
+  PlatformTenantsReopen: 'platform.tenants.reopen',
+  PlatformTenantsSuspend: 'platform.tenants.suspend',
+  PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformUsersDelete: 'platform.users.delete',
+  PlatformUsersReactivate: 'platform.users.reactivate',
+  PlatformUsersRead: 'platform.users.read',
+  PlatformUsersSuspend: 'platform.users.suspend',
+  PlatformUsersUpdate: 'platform.users.update',
+  TenantAuditRead: 'tenant.audit.read',
+  TenantInvitationsCreate: 'tenant.invitations.create',
+  TenantInvitationsDelete: 'tenant.invitations.delete',
+  TenantInvitationsRead: 'tenant.invitations.read',
+  TenantMembersDelete: 'tenant.members.delete',
+  TenantMembersRead: 'tenant.members.read',
+  TenantMembersUpdate: 'tenant.members.update',
+  TenantOwnersManage: 'tenant.owners.manage',
+  TenantProfileRead: 'tenant.profile.read',
+  TenantRolesCreate: 'tenant.roles.create',
+  TenantRolesDelete: 'tenant.roles.delete',
+  TenantRolesRead: 'tenant.roles.read',
+  TenantRolesUpdate: 'tenant.roles.update',
+} as const;
+
+/**
+ * The details of `role.created`: the names of the new role's permissions, in ordinal order.
+ */
+export interface RoleCreatedDetailsResponse {
+  operation: RoleCreatedDetailsResponseOperation;
+  permissions: Permission[];
+}
+
+export type RoleUpdatedDetailsResponseOperation = typeof RoleUpdatedDetailsResponseOperation[keyof typeof RoleUpdatedDetailsResponseOperation];
+
+
+export const RoleUpdatedDetailsResponseOperation = {
+  RoleUpdated: 'role.updated',
+} as const;
+
+/**
+ * The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order.
+ */
+export interface RoleUpdatedDetailsResponse {
+  operation: RoleUpdatedDetailsResponseOperation;
+  oldName: string;
+  newName: string;
+  permissionsAdded: string[];
+  permissionsRemoved: string[];
 }
 
 export type TenantOwnerInvitedDetailsResponseOperation = typeof TenantOwnerInvitedDetailsResponseOperation[keyof typeof TenantOwnerInvitedDetailsResponseOperation];
@@ -170,7 +230,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -184,6 +244,9 @@ export const AuditOperation = {
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  RoleCreated: 'role.created',
+  RoleDeleted: 'role.deleted',
+  RoleUpdated: 'role.updated',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
@@ -208,11 +271,12 @@ export const AuditTargetResponseKind = {
   Tenant: 'tenant',
   User: 'user',
   Invitation: 'invitation',
+  Role: 'role',
 } as const;
 
 /**
- * What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
- * has no name. `deleted` is set for a user only.
+ * What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an
+ * invitation, which has no name. `deleted` is set for a user only.
  */
 export interface AuditTargetResponse {
   kind: AuditTargetResponseKind;
@@ -238,11 +302,11 @@ export interface AuditEntryResponse {
 }
 
 /**
- * The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum's
- * first value.
+ * The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to
+ * an empty id.
  */
 export interface ChangeMemberRoleRequest {
-  role: MemberRole;
+  roleId: string;
 }
 
 /**
@@ -268,6 +332,15 @@ export interface ChangePreferencesRequest {
      * @nullable
      */
   timeZone: string | null;
+}
+
+/**
+ * The name of the custom role, and the names of its permissions, from the tenant pool.
+ */
+export interface CreateRoleRequest {
+  /** @maxLength 100 */
+  name: string;
+  permissions: Permission[];
 }
 
 /**
@@ -332,6 +405,17 @@ export const ErrorCode = {
   RequestTooLarge: 'request.too_large',
   RequestUnsupportedMediaType: 'request.unsupported_media_type',
   RequestValidationFailed: 'request.validation_failed',
+  RoleBuiltIn: 'role.built_in',
+  RoleEscalation: 'role.escalation',
+  RoleInUse: 'role.in_use',
+  RoleLimitReached: 'role.limit_reached',
+  RoleNameInvalid: 'role.name_invalid',
+  RoleNameTaken: 'role.name_taken',
+  RoleNotFound: 'role.not_found',
+  RoleNotPermitted: 'role.not_permitted',
+  RolePermissionInvalid: 'role.permission_invalid',
+  RolePermissionOwnerOnly: 'role.permission_owner_only',
+  RolePermissionsRequired: 'role.permissions_required',
   RouteMethodNotAllowed: 'route.method_not_allowed',
   RouteNotFound: 'route.not_found',
   ServerError: 'server.error',
@@ -400,6 +484,17 @@ export interface InviterNameResponse {
 }
 
 /**
+ * A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in
+ * role answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).
+ * A request gives a role by its id.
+ */
+export interface RoleResponse {
+  id: string;
+  name: string;
+  builtIn: boolean;
+}
+
+/**
  * The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
  * (revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says
  * which of its values it can hold.
@@ -416,13 +511,13 @@ export const InvitationResponseState = {
 
 /**
  * What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation
- * gives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
+ * gives (null for a finished invitation whose custom role was deleted), when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
  * `cancelled`. Only a caller with the invited address gets it.
  */
 export interface InvitationPreviewResponse {
   tenantName: string;
   inviterName: InviterNameResponse;
-  role: RoleResponse;
+  role: null | RoleResponse;
   expiresAt: string;
   state: InvitationResponseState;
 }
@@ -459,13 +554,13 @@ export interface InvitationResponse {
 }
 
 /**
- * The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the
- * inviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value.
+ * The address to invite, the id of the tenant's role the invitation gives, and the language of the invitation's email: without one,
+ * the inviter's own. The role is required: a request without one is refused, so it never falls back to an empty id.
  */
 export interface InviteMemberRequest {
   /** @maxLength 320 */
   email: string;
-  role: MemberRole;
+  roleId: string;
   language?: null | Language;
 }
 
@@ -537,6 +632,24 @@ export interface MyTenantResponse {
 
 export interface ListPageOfMyTenantResponse {
   items: MyTenantResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+/**
+ * A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role's
+ * permissions, in ordinal order.
+ */
+export interface RoleDetailResponse {
+  id: string;
+  name: string;
+  builtIn: boolean;
+  permissions: Permission[];
+}
+
+export interface ListPageOfRoleDetailResponse {
+  items: RoleDetailResponse[];
   page: number;
   pageSize: number;
   total: number;
@@ -651,38 +764,6 @@ export interface MeResponse {
   /** @nullable */
   timeZone: string | null;
 }
-
-/**
- * A name of the permission list. Every endpoint checks its own permission.
- */
-export type Permission = typeof Permission[keyof typeof Permission];
-
-
-export const Permission = {
-  PlatformAuditRead: 'platform.audit.read',
-  PlatformTenantsClose: 'platform.tenants.close',
-  PlatformTenantsCreate: 'platform.tenants.create',
-  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
-  PlatformTenantsReactivate: 'platform.tenants.reactivate',
-  PlatformTenantsRead: 'platform.tenants.read',
-  PlatformTenantsReopen: 'platform.tenants.reopen',
-  PlatformTenantsSuspend: 'platform.tenants.suspend',
-  PlatformTenantsUpdate: 'platform.tenants.update',
-  PlatformUsersDelete: 'platform.users.delete',
-  PlatformUsersReactivate: 'platform.users.reactivate',
-  PlatformUsersRead: 'platform.users.read',
-  PlatformUsersSuspend: 'platform.users.suspend',
-  PlatformUsersUpdate: 'platform.users.update',
-  TenantAuditRead: 'tenant.audit.read',
-  TenantInvitationsCreate: 'tenant.invitations.create',
-  TenantInvitationsDelete: 'tenant.invitations.delete',
-  TenantInvitationsRead: 'tenant.invitations.read',
-  TenantMembersDelete: 'tenant.members.delete',
-  TenantMembersRead: 'tenant.members.read',
-  TenantMembersUpdate: 'tenant.members.update',
-  TenantOwnersManage: 'tenant.owners.manage',
-  TenantProfileRead: 'tenant.profile.read',
-} as const;
 
 /**
  * The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
@@ -813,6 +894,15 @@ export interface TenantResponse {
   suspensionReason: string | null;
   /** @nullable */
   closedAt: string | null;
+}
+
+/**
+ * The name the custom role takes, and exactly the permissions it holds afterwards, from the tenant pool.
+ */
+export interface UpdateRoleRequest {
+  /** @maxLength 100 */
+  name: string;
+  permissions: Permission[];
 }
 
 /**
@@ -965,7 +1055,7 @@ sort?: ListMembersSort;
  * @maxLength 100
  */
 q?: string;
-role?: MemberRole;
+roleId?: string;
 };
 
 export type ListMembersSort = typeof ListMembersSort[keyof typeof ListMembersSort];
@@ -1005,7 +1095,7 @@ sort?: ListInvitationsSort;
  * @maxLength 100
  */
 q?: string;
-role?: MemberRole;
+roleId?: string;
 };
 
 export type ListInvitationsSort = typeof ListInvitationsSort[keyof typeof ListInvitationsSort];
@@ -1017,6 +1107,41 @@ export const ListInvitationsSort = {
   Email: 'email',
   EmailDescending: '-email',
 } as const;
+
+export type ListRolesParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+sort?: ListRolesSort;
+/**
+ * The search. The API trims it before it counts its length.
+ * @maxLength 100
+ */
+q?: string;
+};
+
+export type ListRolesSort = typeof ListRolesSort[keyof typeof ListRolesSort];
+
+
+export const ListRolesSort = {
+  Name: 'name',
+  NameDescending: '-name',
+} as const;
+
+export type CreateRoleHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
 
 export type ListAuditEntriesParams = {
 cursor?: string;

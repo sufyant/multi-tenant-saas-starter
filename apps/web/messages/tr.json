@@ -251,6 +251,11 @@
         "removed": "<actor></actor>, <target></target> adlı üyeyi ({role}) kuruluştan çıkardı.",
         "role_changed": "<actor></actor>, <target></target> adlı üyenin rolünü {oldRole} rolünden {newRole} rolüne değiştirdi."
       },
+      "role": {
+        "created": "<actor></actor>, <target></target> rolünü oluşturdu.",
+        "deleted": "<actor></actor>, <target></target> rolünü sildi.",
+        "updated": "<actor></actor>, <target></target> rolünü değiştirdi."
+      },
       "tenant": {
         "closed": "<actor></actor> bu kuruluşu kapattı.",
         "created": "<actor></actor> bu kuruluşu oluşturdu.",

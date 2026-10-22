@@ -251,6 +251,11 @@
         "removed": "<actor></actor> removed <target></target> ({role}) from the organisation.",
         "role_changed": "<actor></actor> changed the role of <target></target> from {oldRole} to {newRole}."
       },
+      "role": {
+        "created": "<actor></actor> created the role <target></target>.",
+        "deleted": "<actor></actor> deleted the role <target></target>.",
+        "updated": "<actor></actor> changed the role <target></target>."
+      },
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",
         "created": "<actor></actor> created this organisation.",

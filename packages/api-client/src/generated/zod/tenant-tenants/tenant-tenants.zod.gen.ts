@@ -21,13 +21,10 @@ export const GetMyTenantResponse = zod.object({
   Closed: 'closed',
 }).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
   PlatformTenantsClose: 'platform.tenants.close',
@@ -52,6 +49,10 @@ export const GetMyTenantResponse = zod.object({
   TenantMembersUpdate: 'tenant.members.update',
   TenantOwnersManage: 'tenant.owners.manage',
   TenantProfileRead: 'tenant.profile.read',
+  TenantRolesCreate: 'tenant.roles.create',
+  TenantRolesDelete: 'tenant.roles.delete',
+  TenantRolesRead: 'tenant.roles.read',
+  TenantRolesUpdate: 'tenant.roles.update',
 }).describe('A name of the permission list. Every endpoint checks its own permission.')),
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself.')
