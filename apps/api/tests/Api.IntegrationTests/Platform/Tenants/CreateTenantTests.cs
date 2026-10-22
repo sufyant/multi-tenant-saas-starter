@@ -86,7 +86,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
             signUp => signUp.TenantId.ShouldBe(tenantId),
             signUp => signUp.InvitationId.ShouldBe(invitationId),
             signUp => signUp.Email.ShouldBe(owner));
-        messages.Sent.SingleMessage<TenantActivatedEvent>().TenantId.ShouldBe(tenantId);
+        messages.Sent.SingleMessage<TenantCreatedEvent>().TenantId.ShouldBe(tenantId);
     }
 
     // Settings › General shows when the tenant was created: the moment of the request, by the module's clock.

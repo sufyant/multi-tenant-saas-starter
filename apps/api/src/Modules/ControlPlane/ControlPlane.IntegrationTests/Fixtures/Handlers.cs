@@ -37,7 +37,7 @@ internal static class Handlers
                 scope.GetRequiredService<TimeProvider>(),
                 Cancellation);
 
-            return new CreatedTenant(result, messages.OfType<TenantActivatedEvent>().SingleOrDefault(), messages.OfType<OpenSignUpCommand>().SingleOrDefault());
+            return new CreatedTenant(result, messages.OfType<TenantCreatedEvent>().SingleOrDefault(), messages.OfType<OpenSignUpCommand>().SingleOrDefault());
         });
 
     // The identity provider's answer for an invitation's sign-up, recorded in the invitation's tenant.
@@ -99,5 +99,5 @@ internal static class Handlers
 
     public static string SecretOf(string code) => code[(code.IndexOf('.', StringComparison.Ordinal) + 1)..];
 
-    public sealed record CreatedTenant(Result<TenantView> Result, TenantActivatedEvent? Created, OpenSignUpCommand? SignUp);
+    public sealed record CreatedTenant(Result<TenantView> Result, TenantCreatedEvent? Created, OpenSignUpCommand? SignUp);
 }

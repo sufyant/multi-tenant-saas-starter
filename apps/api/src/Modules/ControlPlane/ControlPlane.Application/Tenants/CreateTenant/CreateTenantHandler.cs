@@ -61,7 +61,7 @@ public static class CreateTenantHandler
         return (
             TenantView.Of(tenant),
             [
-                new TenantActivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id),
+                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id),
                 OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
             ]);
     }

@@ -60,7 +60,7 @@ public sealed class HostRoleTests(Database database)
     // The handlers of every message the tenant creation sends, as section 6 lists them.
     private static readonly HandlerRun[] HandlersAfterTheCreation =
     [
-        new(typeof(TenantActivatedEvent), typeof(RecordTenantCreatedHandler)),
+        new(typeof(TenantCreatedEvent), typeof(RecordTenantCreatedHandler)),
         new(typeof(OpenSignUpCommand), typeof(OpenSignUpHandler)),
         new(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
         new(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)),

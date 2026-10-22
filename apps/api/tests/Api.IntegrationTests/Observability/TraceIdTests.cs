@@ -22,7 +22,7 @@ public sealed class TraceIdTests(Database database)
     private static readonly string[] TenantCreationHandlers =
     [
         NameOf(typeof(CreateTenantCommand)),
-        NameOf(typeof(TenantActivatedEvent)),
+        NameOf(typeof(TenantCreatedEvent)),
         NameOf(typeof(OpenSignUpCommand)),
         NameOf(typeof(RecordSignUpCommand)),
         NameOf(typeof(InvitationReadyEvent)),
