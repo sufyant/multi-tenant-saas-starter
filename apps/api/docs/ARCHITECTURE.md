@@ -200,6 +200,7 @@ Authorization runs once, in ASP.NET Core, before the endpoint sends the message.
 
 - Wolverine opens and closes the transaction. We set the rule: each handler runs in its own transaction.
 - A handler that calls an external service uses no DbContext, so no transaction is open during the call. It returns its result as a message, or nothing. A step that returns nothing is heard by the saga only when it fails, through its fault. Source: Nygard, Chapter 5 (Integration Points).
+- A handler returns the messages it sends in one `OutgoingMessages`, Wolverine's list of cascading messages: `(Result, OutgoingMessages)` or `(Result<T>, OutgoingMessages)` for a handler with a result, `OutgoingMessages` alone for one without. An early return is `(error, [])`. No handler returns a tuple of messages, so no early return lists a null for each message. A tuple holds other return values beside it: `CreateTenant` returns the saga to insert (`Insert<TenantCreationSaga>`). `HandlerMessageTests` fails for a tuple that holds more than one message. `CommandAuditTests` reads the messages that a handler builds into its `OutgoingMessages` from its source (K3). Source: Wolverine, "Cascading Messages" (the maintainer's decision in step r2b).
 - A domain event is handled inside the module and in the same transaction. An integration event leaves the module through the outbox. Source: Vernon, Chapter 8.
 - HTTP endpoints are plain ASP.NET minimal APIs. The tool's own endpoint model (Wolverine.Http) is not used.
 

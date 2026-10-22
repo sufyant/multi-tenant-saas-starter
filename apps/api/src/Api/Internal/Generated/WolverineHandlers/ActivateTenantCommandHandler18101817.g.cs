@@ -44,19 +44,11 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantHandler.HandleAsync(activateTenantCommand, tenantRepository, _timeProvider, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Tenants.ActivateTenant.ActivateTenantHandler.HandleAsync(activateTenantCommand, tenantRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
-
-                
-                // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
-
-                
-                // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

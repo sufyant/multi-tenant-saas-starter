@@ -2,6 +2,7 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Users.RemoveUserMembership;
 
@@ -11,7 +12,7 @@ namespace ControlPlane.Application.Users.RemoveUserMembership;
 // changes nothing. Rejections come first (W7).
 public static class RemoveUserMembershipHandler
 {
-    public static async Task<(Result, UserMembershipRemovedEvent?)> HandleAsync(
+    public static async Task<(Result, OutgoingMessages)> HandleAsync(
         RemoveUserMembershipCommand command,
         ITenantRepository tenants,
         TimeProvider time,
@@ -22,18 +23,18 @@ public static class RemoveUserMembershipHandler
         var removed = tenant.RemoveForUserDeletion(await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
         if (!removed.IsSuccess)
         {
-            return (removed.Error, null);
+            return (removed.Error, []);
         }
 
         if (removed.Value is not { } membership)
         {
-            return (Result.Success(), null);
+            return (Result.Success(), []);
         }
 
         await tenants.RemoveMembershipAsync(tenant, membership, cancellationToken);
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId).Name;
-        return (Result.Success(), new UserMembershipRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, command.UserId, role));
+        return (Result.Success(), [new UserMembershipRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, command.UserId, role)]);
     }
 }

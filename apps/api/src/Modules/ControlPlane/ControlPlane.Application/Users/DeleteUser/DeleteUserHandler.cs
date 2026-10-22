@@ -2,6 +2,7 @@ using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Users.DeleteUser;
 
@@ -11,7 +12,7 @@ namespace ControlPlane.Application.Users.DeleteUser;
 // first (W7).
 public static class DeleteUserHandler
 {
-    public static async Task<(Result, UserDeletedEvent?, DeleteIdentityAccountCommand?)> HandleAsync(
+    public static async Task<(Result, OutgoingMessages)> HandleAsync(
         DeleteUserCommand command,
         IUserRepository users,
         TimeProvider time,
@@ -19,17 +20,17 @@ public static class DeleteUserHandler
     {
         if (await users.FindUserForUpdateAsync(command.UserId, cancellationToken) is not { } user)
         {
-            return (Errors.UserNotFound, null, null);
+            return (Errors.UserNotFound, []);
         }
 
         if (await users.IsSystemAdminAsync(user.Id, cancellationToken))
         {
-            return (Errors.UserIsSystemAdmin, null, null);
+            return (Errors.UserIsSystemAdmin, []);
         }
 
         if ((await users.ListMembershipsAsync(user.Id, cancellationToken)).Count > 0)
         {
-            return (Error.Conflict(ControlPlaneErrorCodes.UserHasMemberships, "The user joined a tenant while the deletion ran; delete them again."), null, null);
+            return (Error.Conflict(ControlPlaneErrorCodes.UserHasMemberships, "The user joined a tenant while the deletion ran; delete them again."), []);
         }
 
         var now = time.GetUtcNow();
@@ -38,9 +39,12 @@ public static class DeleteUserHandler
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
 
-        return (
-            Result.Success(),
-            deleted == StateChange.Changed ? new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, actor) : null,
-            new DeleteIdentityAccountCommand(user.ExternalId));
+        OutgoingMessages messages = [new DeleteIdentityAccountCommand(user.ExternalId)];
+        if (deleted == StateChange.Changed)
+        {
+            messages.Insert(0, new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, actor));
+        }
+
+        return (Result.Success(), messages);
     }
 }

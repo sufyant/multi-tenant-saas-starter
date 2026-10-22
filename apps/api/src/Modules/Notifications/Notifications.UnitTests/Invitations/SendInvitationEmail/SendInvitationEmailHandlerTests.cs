@@ -105,11 +105,11 @@ public sealed class SendInvitationEmailHandlerTests
     private static OwnerInvitationReadyEvent OwnerReady(Language language, TimeSpan lifetime) =>
         new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "owner@acme.test", "Acme Ltd", Link, language, lifetime);
 
-    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReadyEvent ready) =>
-        SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);
+    private async Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReadyEvent ready) =>
+        (await SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation)).OfType<SendInvitationEmailReply>().Single();
 
-    private Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReadyEvent ready) =>
-        SendInvitationEmailHandler.HandleAsync(ready, _channel, new FakeTimeProvider(DateTimeOffset.UnixEpoch), Cancellation);
+    private async Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReadyEvent ready) =>
+        (await SendInvitationEmailHandler.HandleAsync(ready, _channel, new FakeTimeProvider(DateTimeOffset.UnixEpoch), Cancellation)).OfType<SendInvitationEmailReply>().Single();
 
     // The email channel, as a system we do not own, at our port.
     private sealed class RecordingEmailChannel : IEmailChannel

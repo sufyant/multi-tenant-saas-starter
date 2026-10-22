@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
+using Wolverine;
 
 namespace ControlPlane.Application.Invitations.ExpireSignUp;
 
@@ -9,7 +10,7 @@ namespace ControlPlane.Application.Invitations.ExpireSignUp;
 // (Invitation.SignUpToWithdrawAt).
 public static class ExpireSignUpHandler
 {
-    public static async Task<WithdrawSignUpCommand?> HandleAsync(
+    public static async Task<OutgoingMessages> HandleAsync(
         ExpireSignUpCommand expire,
         ITenantRepository tenants,
         TimeProvider time,
@@ -18,6 +19,6 @@ public static class ExpireSignUpHandler
         _ = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation's sign-up runs in the tenant of the invitation.");
         var invitation = await tenants.FindInvitationForUpdateAsync(expire.InvitationId, cancellationToken);
-        return invitation?.SignUpToWithdrawAt(time.GetUtcNow()) is { } signUp ? new WithdrawSignUpCommand(signUp) : null;
+        return invitation?.SignUpToWithdrawAt(time.GetUtcNow()) is { } signUp ? [new WithdrawSignUpCommand(signUp)] : [];
     }
 }

@@ -3,6 +3,7 @@ using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Members.ChangeMemberRole;
 
@@ -11,7 +12,7 @@ namespace ControlPlane.Application.Members.ChangeMemberRole;
 // other and never leave the tenant without an Owner. The rules are the tenant's (M1, Tenant.ChangeRole). Rejections come first (W7).
 public static class ChangeMemberRoleHandler
 {
-    public static async Task<(Result<MemberView>, MemberRoleChangedEvent?)> HandleAsync(
+    public static async Task<(Result<MemberView>, OutgoingMessages)> HandleAsync(
         ChangeMemberRoleCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -21,7 +22,7 @@ public static class ChangeMemberRoleHandler
         var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
         if (!start.IsSuccess)
         {
-            return (start.Error, null);
+            return (start.Error, []);
         }
 
         var (tenant, actor, actorMembership) = start.Value;
@@ -30,7 +31,7 @@ public static class ChangeMemberRoleHandler
         var changed = tenant.ChangeRole(actorMembership, role, await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
         if (!changed.IsSuccess)
         {
-            return (changed.Error, null);
+            return (changed.Error, []);
         }
 
         var (target, oldRole, change) = changed.Value;
@@ -39,12 +40,12 @@ public static class ChangeMemberRoleHandler
         var member = new MemberView(user.Id, user.Email, user.FirstName, user.LastName, RoleView.Of(role), user.Deleted, target.JoinedAt);
         if (change == StateChange.Unchanged)
         {
-            return (member, null);
+            return (member, []);
         }
 
         await tenants.SaveAsync(tenant, cancellationToken);
 
         var now = time.GetUtcNow();
-        return (member, new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, oldRole.Name, role.Name));
+        return (member, [new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, oldRole.Name, role.Name)]);
     }
 }

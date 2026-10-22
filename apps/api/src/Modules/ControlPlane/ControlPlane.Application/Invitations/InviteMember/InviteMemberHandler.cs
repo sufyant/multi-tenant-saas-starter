@@ -7,6 +7,7 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Invitations.InviteMember;
 
@@ -17,7 +18,7 @@ namespace ControlPlane.Application.Invitations.InviteMember;
 // sign-up, after the commit. A replaced invitation's sign-up is withdrawn.
 public static class InviteMemberHandler
 {
-    public static async Task<(Result<InvitationView>, MemberInvitedEvent?, OpenMemberSignUpCommand?, WithdrawSignUpCommand?)> HandleAsync(
+    public static async Task<(Result<InvitationView>, OutgoingMessages)> HandleAsync(
         InviteMemberCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -28,7 +29,7 @@ public static class InviteMemberHandler
         var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
         if (!start.IsSuccess)
         {
-            return (start.Error, null, null, null);
+            return (start.Error, []);
         }
 
         var (tenant, actor, actorMembership) = start.Value;
@@ -45,7 +46,7 @@ public static class InviteMemberHandler
             invitations.DailyLimitPerTenant);
         if (!invited.IsSuccess)
         {
-            return (invited.Error, null, null, null);
+            return (invited.Error, []);
         }
 
         var (invitation, replaced) = invited.Value;
@@ -53,15 +54,17 @@ public static class InviteMemberHandler
 
         return (
             InvitationView.Of(invitation, UserNameView.Of(actor), now),
-            new MemberInvitedEvent(
-                Guid.CreateVersion7(now),
-                now,
-                tenant.Id,
-                invitation.Id,
-                actor.Id,
-                role.Name,
-                replaced.SingleOrDefault()?.Id),
-            OpenMemberSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
-            WithdrawSignUpCommand.For(replaced).SingleOrDefault());
+            [
+                new MemberInvitedEvent(
+                    Guid.CreateVersion7(now),
+                    now,
+                    tenant.Id,
+                    invitation.Id,
+                    actor.Id,
+                    role.Name,
+                    replaced.SingleOrDefault()?.Id),
+                OpenMemberSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
+                .. WithdrawSignUpCommand.For(replaced),
+            ]);
     }
 }

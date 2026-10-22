@@ -8,6 +8,7 @@ using ControlPlane.Domain.Users;
 using FluentValidation;
 using FluentValidation.Results;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Invitations.AcceptInvitation;
 
@@ -15,7 +16,7 @@ namespace ControlPlane.Application.Invitations.AcceptInvitation;
 // because a business rule spans them: the user's creation or count follows the membership (R13). Rejections come first (W7).
 public static class AcceptInvitationHandler
 {
-    public static async Task<(Result<MyTenantView>, MemberJoinedEvent?)> HandleAsync(
+    public static async Task<(Result<MyTenantView>, OutgoingMessages)> HandleAsync(
         AcceptInvitationCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -28,13 +29,13 @@ public static class AcceptInvitationHandler
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
             || await tenants.FindInvitationForUpdateAsync(InvitationSecret.Hash(command.Secret), cancellationToken) is not { } invitation)
         {
-            return (Errors.InvitationNotFound, null);
+            return (Errors.InvitationNotFound, []);
         }
 
         var found = tenant.CheckInvitationFound(invitation);
         if (!found.IsSuccess)
         {
-            return (found.Error, null);
+            return (found.Error, []);
         }
 
         var now = time.GetUtcNow();
@@ -53,7 +54,7 @@ public static class AcceptInvitationHandler
         var allowed = tenant.CheckAcceptance(invitation, facts, verifiedEmails, now);
         if (!allowed.IsSuccess)
         {
-            return (allowed.Error, null);
+            return (allowed.Error, []);
         }
 
         // A person who is not a user yet gives their names, as a validator would refuse them: a 400 that names each missing field. It
@@ -67,7 +68,7 @@ public static class AcceptInvitationHandler
         var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {
-            return (accepted.Error, null);
+            return (accepted.Error, []);
         }
 
         if (existing is null)
@@ -79,7 +80,7 @@ public static class AcceptInvitationHandler
         await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
         return (
             MyTenantView.Of(tenant, BuiltInRoles.All.Single(role => role.Id == membership.RoleId)),
-            new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id));
+            [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id)]);
     }
 
     private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>

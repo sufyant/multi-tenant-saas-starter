@@ -3,6 +3,7 @@ using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Members.RemoveMember;
 
@@ -11,7 +12,7 @@ namespace ControlPlane.Application.Members.RemoveMember;
 // come first (W7). The tenant door reads the membership on every request (T7), so the removed member's next request is not let in.
 public static class RemoveMemberHandler
 {
-    public static async Task<(Result, MemberRemovedEvent?)> HandleAsync(
+    public static async Task<(Result, OutgoingMessages)> HandleAsync(
         RemoveMemberCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -21,7 +22,7 @@ public static class RemoveMemberHandler
         var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
         if (!start.IsSuccess)
         {
-            return (start.Error, null);
+            return (start.Error, []);
         }
 
         var (tenant, actor, actorMembership) = start.Value;
@@ -29,7 +30,7 @@ public static class RemoveMemberHandler
         var removed = tenant.Remove(actorMembership, await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
         if (!removed.IsSuccess)
         {
-            return (removed, null);
+            return (removed, []);
         }
 
         var target = removed.Value;
@@ -37,6 +38,6 @@ public static class RemoveMemberHandler
 
         var now = time.GetUtcNow();
         var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
-        return (Result.Success(), new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name));
+        return (Result.Success(), [new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name)]);
     }
 }

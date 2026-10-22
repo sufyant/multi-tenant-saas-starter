@@ -12,7 +12,7 @@ namespace ControlPlane.Application.Tenants.CloseTenant;
 // them are withdrawn after the commit. Rejections come first (W7).
 public static class CloseTenantHandler
 {
-    public static async Task<(Result<TenantView>, TenantClosedEvent?, OutgoingMessages)> HandleAsync(
+    public static async Task<(Result<TenantView>, OutgoingMessages)> HandleAsync(
         CloseTenantCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -21,14 +21,14 @@ public static class CloseTenantHandler
     {
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
         {
-            return (Errors.TenantNotFound, null, []);
+            return (Errors.TenantNotFound, []);
         }
 
         var now = time.GetUtcNow();
         var closed = tenant.Close(now, await tenants.FindPendingInvitationsAsync(cancellationToken));
         if (!closed.IsSuccess || closed.Value.Change == StateChange.Unchanged)
         {
-            return (closed.Map(_ => TenantView.Of(tenant)), null, []);
+            return (closed.Map(_ => TenantView.Of(tenant)), []);
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
@@ -37,7 +37,6 @@ public static class CloseTenantHandler
 
         return (
             TenantView.Of(tenant),
-            new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name),
-            [.. WithdrawSignUpCommand.For(closed.Value.Cancelled)]);
+            [new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name), .. WithdrawSignUpCommand.For(closed.Value.Cancelled)]);
     }
 }

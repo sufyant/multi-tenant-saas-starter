@@ -1,9 +1,11 @@
 using System.Reflection;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Users.DeleteUser;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.DependencyInjection;
+using Wolverine;
 using Wolverine.Runtime.Handlers;
 using Solution = Api.ArchitectureTests.Fixtures.Solution;
 
@@ -11,7 +13,8 @@ namespace Api.ArchitectureTests;
 
 // K3: every command publishes, through the outbox, an event that Audit handles. A command is a message that an endpoint sends: a message type with a handler that a module's Api or Infrastructure project creates, other than a query (List..., Get...).
 // A handler publishes the messages it returns, so the test follows the types each handler returns, through the handlers of those
-// types (the first step of a saga, for one), until it reaches a message that an Audit handler handles. Read from Wolverine's own
+// types (the first step of a saga, for one), until it reaches a message that an Audit handler handles. A handler that returns
+// OutgoingMessages names the types of its messages in its source: the test reads them there. Read from Wolverine's own
 // handler graph of the application composed as a worker, and from the module sources.
 public sealed class CommandAuditTests : IAsyncLifetime
 {
@@ -57,7 +60,7 @@ public sealed class CommandAuditTests : IAsyncLifetime
         var waiting = new Queue<Type>([command]);
         while (waiting.TryDequeue(out var message))
         {
-            var published = handlers[message].SelectMany(method => TypesIn(method.ReturnType)).Where(handlers.ContainsKey).ToList();
+            var published = handlers[message].SelectMany(method => PublishedBy(method, handlers)).Where(handlers.ContainsKey).ToList();
             if (published.Any(type => handlers[type].Any(method => method.DeclaringType!.Assembly.GetName().Name == Audit)))
             {
                 return true;
@@ -67,6 +70,36 @@ public sealed class CommandAuditTests : IAsyncLifetime
         }
 
         return false;
+    }
+
+    // The types a handler returns and, when it returns OutgoingMessages, the message types its source names as it builds them: a type it
+    // creates (new X(...)), declares (X x, (X x, Y y) = ...) or builds through a static method (X.For(...)).
+    private static List<Type> PublishedBy(MethodInfo method, Dictionary<Type, MethodInfo[]> handlers)
+    {
+        var returned = TypesIn(method.ReturnType).ToList();
+        if (!returned.Contains(typeof(OutgoingMessages)))
+        {
+            return returned;
+        }
+
+        var named = NamedInSourceOf(method.DeclaringType!).ToHashSet(StringComparer.Ordinal);
+        return [.. returned, .. handlers.Keys.Where(message => !message.IsGenericType && named.Contains(message.Name))];
+    }
+
+    private static IEnumerable<string> NamedInSourceOf(Type handler)
+    {
+        var file = Solution.SourceFilesOf(handler.Assembly.GetName().Name!)
+            .Single(path => Path.GetFileNameWithoutExtension(path) == handler.Name);
+        var nodes = CSharpSyntaxTree.ParseText(File.ReadAllText(file)).GetRoot().DescendantNodes().ToList();
+        IEnumerable<SyntaxNode> building =
+        [
+            .. nodes.OfType<ObjectCreationExpressionSyntax>().Select(creation => creation.Type),
+            .. nodes.OfType<DeclarationExpressionSyntax>().Select(declaration => declaration.Type),
+            .. nodes.OfType<VariableDeclarationSyntax>().Select(declaration => declaration.Type),
+            .. nodes.OfType<MemberAccessExpressionSyntax>().Select(access => access.Expression).OfType<IdentifierNameSyntax>(),
+        ];
+
+        return building.SelectMany(node => node.DescendantNodesAndSelf().OfType<SimpleNameSyntax>()).Select(name => name.Identifier.Text);
     }
 
     // A type and every type argument in it: Task<(Result<T>, TenantSuspendedEvent?)> gives TenantSuspendedEvent, among others.

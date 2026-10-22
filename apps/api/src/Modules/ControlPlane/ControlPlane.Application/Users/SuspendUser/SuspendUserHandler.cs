@@ -1,5 +1,6 @@
 using ControlPlane.Contracts.Users;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Users.SuspendUser;
 
@@ -8,7 +9,7 @@ namespace ControlPlane.Application.Users.SuspendUser;
 // first (W7).
 public static class SuspendUserHandler
 {
-    public static async Task<(Result<UserView>, UserSuspendedEvent?)> HandleAsync(
+    public static async Task<(Result<UserView>, OutgoingMessages)> HandleAsync(
         SuspendUserCommand command,
         IUserRepository users,
         TimeProvider time,
@@ -16,12 +17,12 @@ public static class SuspendUserHandler
     {
         if (await users.FindUserForUpdateAsync(command.UserId, cancellationToken) is not { } user)
         {
-            return (Errors.UserNotFound, null);
+            return (Errors.UserNotFound, []);
         }
 
         if (await users.IsSystemAdminAsync(user.Id, cancellationToken))
         {
-            return (Errors.UserIsSystemAdmin, null);
+            return (Errors.UserIsSystemAdmin, []);
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
@@ -29,10 +30,10 @@ public static class SuspendUserHandler
         var now = time.GetUtcNow();
         if (user.Suspend(now, actor) == StateChange.Unchanged)
         {
-            return (UserView.Of(user, isSystemAdmin: false), null);
+            return (UserView.Of(user, isSystemAdmin: false), []);
         }
 
         await users.SaveChangesAsync(cancellationToken);
-        return (UserView.Of(user, isSystemAdmin: false), new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, actor));
+        return (UserView.Of(user, isSystemAdmin: false), [new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

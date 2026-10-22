@@ -1,6 +1,7 @@
 using ControlPlane.Contracts.Invitations;
 using Notifications.Application.Email;
 using Notifications.Contracts.Invitations;
+using Wolverine;
 
 namespace Notifications.Application.Invitations.SendInvitationEmail;
 
@@ -9,7 +10,7 @@ namespace Notifications.Application.Invitations.SendInvitationEmail;
 // settings, and once they are spent the event goes to the dead letter queue.
 public static class SendInvitationEmailHandler
 {
-    public static async Task<SendInvitationEmailReply> HandleAsync(
+    public static async Task<OutgoingMessages> HandleAsync(
         OwnerInvitationReadyEvent ready,
         IEmailChannel channel,
         TimeProvider time,
@@ -20,6 +21,6 @@ public static class SendInvitationEmailHandler
             cancellationToken);
 
         var now = time.GetUtcNow();
-        return new SendInvitationEmailReply(Guid.CreateVersion7(now), now, ready.TenantId, ready.InvitationId);
+        return [new SendInvitationEmailReply(Guid.CreateVersion7(now), now, ready.TenantId, ready.InvitationId)];
     }
 }

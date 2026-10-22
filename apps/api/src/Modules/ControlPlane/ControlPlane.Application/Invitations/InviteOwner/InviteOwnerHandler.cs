@@ -19,7 +19,7 @@ namespace ControlPlane.Application.Invitations.InviteOwner;
 // creation answer its saga, which has ended (S13).
 public static class InviteOwnerHandler
 {
-    public static async Task<(Result<InvitationView>, OwnerInvitedEvent?, OpenMemberSignUpCommand?, OutgoingMessages)> HandleAsync(
+    public static async Task<(Result<InvitationView>, OutgoingMessages)> HandleAsync(
         InviteOwnerCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -29,7 +29,7 @@ public static class InviteOwnerHandler
     {
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
         {
-            return (Errors.TenantNotFound, null, null, []);
+            return (Errors.TenantNotFound, []);
         }
 
         var actor = await users.FindProfileAsync(command.ActorId, cancellationToken)
@@ -45,7 +45,7 @@ public static class InviteOwnerHandler
             invitations.DailyLimitPerTenant);
         if (!invited.IsSuccess)
         {
-            return (invited.Error, null, null, []);
+            return (invited.Error, []);
         }
 
         var (invitation, replaced) = invited.Value;
@@ -53,8 +53,10 @@ public static class InviteOwnerHandler
 
         return (
             InvitationView.Of(invitation, UserNameView.Of(actor), now),
-            new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
-            OpenMemberSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
-            [.. WithdrawSignUpCommand.For(replaced)]);
+            [
+                new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
+                OpenMemberSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
+                .. WithdrawSignUpCommand.For(replaced),
+            ]);
     }
 }

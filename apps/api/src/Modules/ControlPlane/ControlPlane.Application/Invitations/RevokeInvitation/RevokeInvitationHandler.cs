@@ -3,6 +3,7 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Invitations;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Invitations.RevokeInvitation;
 
@@ -12,7 +13,7 @@ namespace ControlPlane.Application.Invitations.RevokeInvitation;
 // Rejections come first (W7).
 public static class RevokeInvitationHandler
 {
-    public static async Task<(Result, InvitationRevokedEvent?, WithdrawSignUpCommand?)> HandleAsync(
+    public static async Task<(Result, OutgoingMessages)> HandleAsync(
         RevokeInvitationCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -22,7 +23,7 @@ public static class RevokeInvitationHandler
         var start = await TenantActor.LockAsync(tenants, users, command.ActorId, cancellationToken);
         if (!start.IsSuccess)
         {
-            return (start.Error, null, null);
+            return (start.Error, []);
         }
 
         var (tenant, actor, _) = start.Value;
@@ -31,7 +32,7 @@ public static class RevokeInvitationHandler
         var revoked = tenant.Revoke(invitation);
         if (!revoked.IsSuccess || revoked.Value == StateChange.Unchanged)
         {
-            return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
+            return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), []);
         }
 
         await tenants.SaveAsync(tenant, cancellationToken);
@@ -39,7 +40,6 @@ public static class RevokeInvitationHandler
         var now = time.GetUtcNow();
         return (
             Result.Success(),
-            new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation!.Id, actor.Id),
-            WithdrawSignUpCommand.For([invitation]).SingleOrDefault());
+            [new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation!.Id, actor.Id), .. WithdrawSignUpCommand.For([invitation])]);
     }
 }
