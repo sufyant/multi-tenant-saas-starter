@@ -10,10 +10,10 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { problemOf } from "@/shared/problem";
 import { useTenant } from "@/shared/tenant-context";
-import { problemOf } from "./problem";
+import { useFailureText } from "@/shared/use-failure-text";
 import { afterRefusal, refreshInvitations } from "./refresh";
-import { useFailureText } from "./use-failure-text";
 
 /**
  * Revoke a pending invitation, or cancel an expired one (the RevokeInvitation board, decision 3 of step 21c). Both call

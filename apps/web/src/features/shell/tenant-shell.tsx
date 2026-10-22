@@ -46,8 +46,10 @@ export function TenantShell({
   const base = `/${tenant.slug}`;
   const sections = {
     settings: "shell.settings",
-    preferences: "shell.preferences",
+    general: "settings.general",
     members: "shell.members",
+    activity: "settings.activity",
+    preferences: "shell.preferences",
   } as const;
   const crumbs = [
     { label: tenant.name },
@@ -78,7 +80,8 @@ export function TenantShell({
             id: "settings",
             label: t("shell.settings"),
             icon: SettingsIcon,
-            href: `${base}/settings/preferences`,
+            // General: the first SubNav item that every role can read (F5).
+            href: `${base}/settings/general`,
             placement: "bottom",
           },
         ]}

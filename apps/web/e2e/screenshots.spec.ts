@@ -1,8 +1,16 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, test } from "@playwright/test";
-import { Language, MemberRole } from "@repo/api-client";
+import { expect, type Page, test } from "@playwright/test";
+import { Language, MemberRole, MyTenantResponseStatus } from "@repo/api-client";
+import { localeCookie } from "@repo/ui/lib/locale";
 import { railCookieName } from "@repo/ui/lib/rail-state";
-import { mockApi, mockMembers, northwind } from "./api";
+import {
+  me,
+  mockApi,
+  mockAuditLog,
+  mockMembers,
+  mockTenantStatus,
+  northwind,
+} from "./api";
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/web/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
@@ -168,6 +176,85 @@ for (const shot of shots) {
     await mockMembers(page, { role: shot.role, language: shot.language });
 
     await page.goto(`${members}${shot.query}`);
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
+    await page.screenshot({
+      path: `${folder}/${shot.file}.png`,
+      fullPage: true,
+    });
+  });
+}
+
+// The pages of step 21d, in each language, both themes and the three widths.
+const settings = `/${northwind.slug}/settings`;
+const sizes = {
+  desktop: { width: 1440, height: 900 },
+  tablet: { width: 834, height: 1112 },
+  phone: { width: 390, height: 844 },
+};
+const variants = [
+  { language: Language.En, scheme: "light", size: "desktop" },
+  { language: Language.Tr, scheme: "dark", size: "tablet" },
+  { language: Language.Ar, scheme: "light", size: "phone" },
+  { language: Language.Ar, scheme: "dark", size: "desktop" },
+] as const;
+
+/** The viewer of the role reads the tenant log, in the language. */
+const viewer = (language: Language, role: MemberRole) => async (page: Page) => {
+  await mockAuditLog(page, { role });
+  await page.route("**/api/v1/me", (route) =>
+    route.fulfill({ json: me(language) }),
+  );
+};
+
+const pages = variants.flatMap(({ language, scheme, size }) =>
+  [
+    ["general", `${settings}/general`, viewer(language, MemberRole.Owner)],
+    ["activity", `${settings}/activity`, viewer(language, MemberRole.Owner)],
+    [
+      "activity-member",
+      `${settings}/activity`,
+      viewer(language, MemberRole.Member),
+    ],
+    [
+      "preferences",
+      `${settings}/preferences`,
+      (page: Page) => mockApi(page, language),
+    ],
+    ["overview", `/${northwind.slug}`, (page: Page) => mockApi(page, language)],
+    [
+      "suspended",
+      `/${northwind.slug}`,
+      (page: Page) => mockTenantStatus(page, MyTenantResponseStatus.Suspended),
+    ],
+    [
+      "closed",
+      `/${northwind.slug}`,
+      (page: Page) => mockTenantStatus(page, MyTenantResponseStatus.Closed),
+    ],
+  ].map(([name, path, mock]) => ({
+    file: `${name}-${language}-${scheme}-${size}`,
+    path: path as string,
+    language,
+    scheme,
+    size,
+    mock: mock as (page: Page) => Promise<void>,
+  })),
+);
+
+for (const shot of pages) {
+  test(`Screenshot_${shot.file}`, async ({ page, context, baseURL }) => {
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme });
+    await page.setViewportSize(sizes[shot.size]);
+    // The language's cookie (F13), so the first render is already in it. The blocked pages read no GetMe.
+    await context.addCookies([
+      { name: localeCookie, value: shot.language, url: baseURL },
+    ]);
+    await shot.mock(page);
+
+    await page.goto(shot.path);
     await page.getByRole("heading", { level: 1 }).waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 

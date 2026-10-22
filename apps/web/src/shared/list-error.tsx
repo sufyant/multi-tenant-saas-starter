@@ -5,8 +5,8 @@ import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { formatUtc } from "@repo/ui/lib/format-date-time";
 import { useTranslations } from "next-intl";
-import { ProblemScreen } from "@/shared/problem-screen";
 import { problemOf, referenceOf } from "./problem";
+import { ProblemScreen } from "./problem-screen";
 
 /**
  * A list that could not load (the ListStates board): what failed, the message of the API's code (F4), the reference that helps

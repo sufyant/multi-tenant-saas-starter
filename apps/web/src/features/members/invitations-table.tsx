@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { useFailureText } from "@/shared/use-failure-text";
 import {
   daysLeft,
   type InvitationStatus,
@@ -28,7 +29,6 @@ import { nameOf } from "./person";
 import { afterRefusal, refreshInvitations } from "./refresh";
 import { RevokeInvitationDialog } from "./revoke-invitation-dialog";
 import { sortFrom, sortOf } from "./table-sort";
-import { useFailureText } from "./use-failure-text";
 
 const sorts = {
   email: {

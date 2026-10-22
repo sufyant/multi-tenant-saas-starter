@@ -67,6 +67,17 @@ const shell = () => (
 );
 
 describe("TenantShell", () => {
+  it("TenantShell_RailSettings_OpensGeneral", async () => {
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    const rail = await screen.findByRole("navigation", { name: "Main" });
+    expect(
+      within(rail).getByRole("link", { name: "Settings" }),
+    ).toHaveAttribute("href", "/northwind/settings/general");
+  });
+
   it("TenantShell_Breadcrumb_StartsWithTheOrganisation", async () => {
     server.use(...answers(1));
 

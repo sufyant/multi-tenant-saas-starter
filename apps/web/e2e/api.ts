@@ -1,5 +1,11 @@
 import type { Page } from "@playwright/test";
 import {
+  AuditActorResponseKind,
+  type AuditEntryResponse,
+  AuditOperation,
+  AuditTargetResponseKind,
+  type ChangePreferencesRequest,
+  type CursorPageOfAuditEntryResponse,
   ErrorCode,
   type InvitationPreviewResponse,
   type InvitationResponse,
@@ -10,6 +16,7 @@ import {
   MemberRole,
   type MeResponse,
   type MyTenantResponse,
+  type MyTenantResponseStatus,
   Permission,
 } from "@repo/api-client";
 
@@ -284,4 +291,115 @@ export async function mockMembers(
   await page.route(`**/api/v1/tenants/${northwind.id}/invitations/*`, (route) =>
     route.fulfill({ status: 204 }),
   );
+}
+
+/** ListMyTenants gives Northwind the status, and the viewer the role there. */
+export async function mockTenantStatus(
+  page: Page,
+  status: MyTenantResponseStatus,
+  { role = MemberRole.Admin }: { role?: MemberRole } = {},
+): Promise<void> {
+  await mockApi(page);
+  await page.route("**/api/v1/me/tenants*", (route) =>
+    route.fulfill({
+      json: {
+        items: [{ ...northwind, status, role: { builtIn: role, name: role } }],
+        page: 1,
+        pageSize: 100,
+        total: 1,
+      },
+    }),
+  );
+}
+
+const auditEntry = (
+  id: string,
+  occurredAt: string,
+  operation: AuditOperation,
+  actor: string | null,
+): AuditEntryResponse => ({
+  id,
+  occurredAt,
+  operation,
+  details: null,
+  actor: actor
+    ? {
+        kind: AuditActorResponseKind.User,
+        userId: me(Language.En).id,
+        displayName: actor,
+        deleted: false,
+      }
+    : {
+        kind: AuditActorResponseKind.Platform,
+        userId: null,
+        displayName: null,
+        deleted: null,
+      },
+  target: {
+    kind: AuditTargetResponseKind.User,
+    id: "0198f0a2-0000-7000-8000-000000000007",
+    name: "Khalid Al-Harbi",
+    deleted: false,
+  },
+});
+
+/** The two pages of the tenant log: the first ends with a cursor, the second with none. */
+export const auditPages: Record<string, CursorPageOfAuditEntryResponse> = {
+  "": {
+    items: [
+      auditEntry(
+        "0198f0a2-0000-7000-8000-0000000000e1",
+        "2026-10-16T08:40:00Z",
+        AuditOperation.MemberJoined,
+        "Ayşe Yılmaz",
+      ),
+      auditEntry(
+        "0198f0a2-0000-7000-8000-0000000000e2",
+        "2026-10-15T16:20:00Z",
+        AuditOperation.TenantReactivated,
+        null,
+      ),
+    ],
+    nextCursor: "page-2",
+  },
+  "page-2": {
+    items: [
+      auditEntry(
+        "0198f0a2-0000-7000-8000-0000000000e3",
+        "2026-01-05T09:00:00Z",
+        AuditOperation.TenantCreated,
+        "Ayşe Yılmaz",
+      ),
+    ],
+    nextCursor: null,
+  },
+};
+
+/** ListAuditEntries answers the page of the request's cursor. */
+export async function mockAuditLog(
+  page: Page,
+  { role = MemberRole.Owner }: { role?: MemberRole } = {},
+): Promise<void> {
+  await mockMembers(page, { role });
+  await page.route(`**/api/v1/tenants/${northwind.id}/audit-log*`, (route) =>
+    route.fulfill({
+      json: auditPages[
+        new URL(route.request().url()).searchParams.get("cursor") ?? ""
+      ],
+    }),
+  );
+}
+
+/** ChangePreferences answers the body back, as the API does, and records it. */
+export async function mockPreferences(
+  page: Page,
+  language: Language,
+  bodies: ChangePreferencesRequest[] = [],
+): Promise<void> {
+  await mockApi(page, language);
+  await page.route("**/api/v1/me/preferences", (route) => {
+    const body = route.request().postDataJSON() as ChangePreferencesRequest;
+    bodies.push(body);
+    return route.fulfill({ json: body });
+  });
 }

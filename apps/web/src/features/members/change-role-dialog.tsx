@@ -12,12 +12,12 @@ import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { problemOf } from "@/shared/problem";
 import { useTenant } from "@/shared/tenant-context";
+import { useFailureText } from "@/shared/use-failure-text";
 import { nameOf } from "./person";
-import { problemOf } from "./problem";
 import { afterRefusal, refreshMembers, refreshTenant } from "./refresh";
 import { RoleChoice, rolesFor } from "./role-choice";
-import { useFailureText } from "./use-failure-text";
 
 /**
  * Change a member's role (the ChangeRole board): the three roles, Owner only for an Owner (K1). The API decides; each refusal shows

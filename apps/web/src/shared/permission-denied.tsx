@@ -23,6 +23,7 @@ export function PermissionDenied({ page }: { page: string }) {
       description={t("permissionDenied.text", {
         organisation: tenant.name,
         role,
+        page,
       })}
       action={
         <Button render={<Link href={`/${tenant.slug}`} />} nativeButton={false}>
