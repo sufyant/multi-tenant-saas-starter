@@ -1,4 +1,5 @@
 using ControlPlane.Domain;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -11,11 +12,19 @@ public sealed class TenantTests
 {
     private const string Reason = "Unpaid invoices";
 
+    private const int DailyLimit = 50;
+
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
 
     private static readonly DateTimeOffset Now = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
 
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
+
+    private static readonly Guid InviterId = new("0199a8f0-0000-7000-8000-000000000002");
+
+    private static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
+
+    private static readonly Inviter Platform = Inviter.Platform(InviterId, Language.Tr);
 
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
@@ -517,20 +526,25 @@ public sealed class TenantTests
     }
 
     [Fact]
-    public void InviteOwner_AnActiveTenantWithoutAnOwner_IsAllowed()
+    public void InviteOwner_AnActiveTenantWithoutAnOwner_CreatesAPendingOwnerInvitation()
     {
-        var allowed = Active().CheckOwnerInvitation(owners: 0);
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0), DailyLimit);
 
-        allowed.IsSuccess.ShouldBeTrue();
+        invited.Value.Invitation.Email.ShouldBe("ada@example.com");
+        invited.Value.Invitation.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
+        invited.Value.Invitation.TenantId.ShouldBe(Id);
+        invited.Value.Invitation.InvitedBy.ShouldBe(InviterId);
+        invited.Value.Invitation.Status.ShouldBe(InvitationStatus.Pending);
+        invited.Value.Replaced.ShouldBeEmpty();
     }
 
     [Fact]
     public void InviteOwner_ATenantWithAnOwner_IsAConflict()
     {
-        var allowed = Active().CheckOwnerInvitation(owners: 1);
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 1), DailyLimit);
 
-        allowed.Error.Type.ShouldBe(ErrorType.Conflict);
-        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantHasOwner);
+        invited.Error.Type.ShouldBe(ErrorType.Conflict);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantHasOwner);
     }
 
     [Theory]
@@ -540,9 +554,129 @@ public sealed class TenantTests
     [InlineData("Closed")]
     public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
     {
-        var allowed = InStatus(status).CheckOwnerInvitation(owners: 0);
+        var invited = InStatus(status).Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0), DailyLimit);
 
-        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+    }
+
+    // Nobody else invites into a tenant without an Owner, so every pending invitation is the platform's, and the new one replaces it,
+    // also to another address.
+    [Fact]
+    public void InviteOwner_PendingInvitationsToOtherAddresses_CancelsEachOne()
+    {
+        var first = PendingTo("grace@example.com", BuiltInRoles.Owner);
+        var second = PendingTo("ada@example.com", BuiltInRoles.Owner);
+
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0, pending: [first, second]), DailyLimit);
+
+        invited.Value.Replaced.ShouldBe([first, second]);
+        first.Status.ShouldBe(InvitationStatus.Cancelled);
+        second.Status.ShouldBe(InvitationStatus.Cancelled);
+    }
+
+    // The daily limit is a member's; the platform's Owner invitation and a member's address are no rules of the platform.
+    [Fact]
+    public void InviteOwner_PastTheDailyLimit_IsAllowed()
+    {
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0, sent: DailyLimit), DailyLimit);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void InviteOwner_WithoutALanguage_TakesTheSystemAdmins()
+    {
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner, language: null), Facts(owners: 0), DailyLimit);
+
+        invited.Value.Invitation.Language.ShouldBe(Language.Tr);
+    }
+
+    [Theory]
+    [InlineData("Owner", "Owner")]
+    [InlineData("Owner", "Admin")]
+    [InlineData("Owner", "Member")]
+    [InlineData("Admin", "Admin")]
+    [InlineData("Admin", "Member")]
+    public void InviteMember_ARoleTheInviterMayGive_CreatesAPendingInvitationWithTheRole(string inviter, string role)
+    {
+        var invited = Active().Invite(MemberOf(inviter), Request("ada@example.com", RoleOf(role)), Facts(owners: 1), DailyLimit);
+
+        invited.Value.Invitation.RoleId.ShouldBe(RoleOf(role).Id);
+        invited.Value.Invitation.Status.ShouldBe(InvitationStatus.Pending);
+        invited.Value.Invitation.ExpiresAt.ShouldBe(Now + Lifetime);
+    }
+
+    // The role rule comes first, so an Admin learns nothing about the address.
+    [Fact]
+    public void InviteMember_AnAdminForTheOwnerRoleToAMembersAddress_IsForbiddenAndCancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var invited = Active().Invite(
+            MemberOf("Admin"), Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 1, member: true, pending: [pending]), DailyLimit);
+
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    // The address comes before the limit.
+    [Fact]
+    public void InviteMember_AMembersAddressAtTheDailyLimit_IsAConflict()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, member: true, sent: DailyLimit), DailyLimit);
+
+        invited.Error.Type.ShouldBe(ErrorType.Conflict);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberExists);
+    }
+
+    [Fact]
+    public void InviteMember_AtTheDailyLimit_IsTooManyRequestsAndCancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, sent: DailyLimit, pending: [pending]), DailyLimit);
+
+        invited.Error.Type.ShouldBe(ErrorType.TooManyRequests);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationDailyLimitReached);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void InviteMember_OneBelowTheDailyLimit_IsAllowed()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, sent: DailyLimit - 1), DailyLimit);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    // K2: the new invitation replaces a pending one to the same address, and only that one.
+    [Fact]
+    public void InviteMember_APendingInvitationToTheAddress_CancelsItAndKeepsTheOthers()
+    {
+        var same = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var other = PendingTo("grace@example.com", BuiltInRoles.Member);
+
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Admin), Facts(owners: 1, pending: [same, other]), DailyLimit);
+
+        invited.Value.Replaced.ShouldBe([same]);
+        same.Status.ShouldBe(InvitationStatus.Cancelled);
+        other.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void InviteMember_WithALanguage_KeepsIt()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member, Language.Ar), Facts(owners: 1), DailyLimit);
+
+        invited.Value.Invitation.Language.ShouldBe(Language.Ar);
+    }
+
+    [Fact]
+    public void InviteMember_WithoutALanguage_TakesTheInviters()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member, language: null), Facts(owners: 1), DailyLimit);
+
+        invited.Value.Invitation.Language.ShouldBe(Language.Tr);
     }
 
     [Theory]
@@ -744,6 +878,17 @@ public sealed class TenantTests
     }
 
     private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
+
+    private static Inviter MemberOf(string role) => Inviter.Member(InviterId, Language.Tr, RoleOf(role));
+
+    private static NewInvitation Request(string email, Role role, Language? language = Language.En) =>
+        new(Guid.NewGuid(), EmailAddress.Create(email), role, language, InvitationSecret.Generate(), Now, Lifetime);
+
+    private static InvitationFacts Facts(int owners, bool member = false, int sent = 0, IReadOnlyList<Invitation>? pending = null) =>
+        new(owners, member, sent, pending ?? []);
+
+    private static Invitation PendingTo(string email, Role role) =>
+        Invitation.Create(Guid.NewGuid(), Id, EmailAddress.Create(email), role, InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
 
     private static Membership Membership(string role) => new(Id, Guid.NewGuid(), RoleOf(role).Id, DateTimeOffset.UnixEpoch);
 }

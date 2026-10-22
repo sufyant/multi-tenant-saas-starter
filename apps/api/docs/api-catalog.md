@@ -209,7 +209,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A tenant has no Owner only when its first Owner never accepted (K1). The platform then invites an Owner: `InviteOwner`, `POST /v1/platform/tenants/{tenantId}/invitations`.
 - At most one platform Owner invitation is pending at a time; the one `CreateTenant` sends counts. A new one replaces the pending one, also for another email: the old one becomes `Cancelled`, and its link answers 404 `invitation.not_found`, as a revoked one (K2). Accepting cancels nothing.
 - `InviteOwner` locks the tenant row and counts the Owners under the lock (K6). A tenant that is not active answers 409 `tenant.not_active`; one with an Owner 409 `tenant.has_owner`. An acceptance locks the same row first, so it runs before, and the invitation is refused, or after, and finds its invitation cancelled: never two pending, never a cancelled link that joins.
-- The rule is the tenant's (`Tenant.CheckOwnerInvitation`, M1).
+- The rule is the tenant's (`Tenant.Invite`, M1).
 - Each record is the platform's action: `tenant.owner_invited`, in both logs, with the tenant as the target (K3).
 - The summary of K10 shows the invitation on the platform's screens while the tenant has no Owner.
 

@@ -15,6 +15,9 @@ internal sealed class Tenant
 
     public const int SuspensionReasonMaxLength = 500;
 
+    /// <summary>The window of a tenant's daily limit of invitations (K2): the invitations it sent in the 24 hours before now.</summary>
+    public static readonly TimeSpan InvitationLimitWindow = TimeSpan.FromHours(24);
+
     private static readonly Error OwnerRequiresOwner =
         Error.Forbidden(ControlPlaneErrorCodes.MemberOwnerRequiresOwner, "Only an Owner can give or take the Owner role, or remove an Owner.");
 
@@ -266,11 +269,76 @@ internal sealed class Tenant
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
 
     /// <summary>
-    /// Whether the platform may invite an Owner now: only into an active tenant that has no Owner. A tenant has no Owner only while its
-    /// first Owner has not accepted, because the last Owner always stays (K1). The caller holds the tenant's lock and counts the Owners
-    /// under it (K6j), so an acceptance runs before or after. It changes nothing.
+    /// Invites someone into the tenant under the rules of the inviter (K1, K2), and replaces the pending invitations the new one ends. A
+    /// member gives only a role they may give, never to a member's address, and within the tenant's daily limit; the new invitation
+    /// replaces a pending one to the same address. The platform invites an Owner only into an active tenant without one; nobody else
+    /// invites there, so the new invitation replaces every pending one, also to another address. The caller holds the tenant's lock and
+    /// read the facts under it (K6i, K6j). Every rejection comes before the change. The new invitation keeps the request's language, else
+    /// the inviter's (K8).
     /// </summary>
-    public Result CheckOwnerInvitation(int owners)
+    public Result<Invited> Invite(Inviter inviter, NewInvitation request, InvitationFacts facts, int dailyLimit)
+    {
+        var allowed = inviter.MemberRole is { } inviterRole
+            ? CheckMemberInvitation(inviterRole, request.Role, facts, dailyLimit)
+            : CheckOwnerInvitation(facts.Owners);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        IReadOnlyList<Invitation> replaced = inviter.MemberRole is null
+            ? facts.Pending
+            : [.. facts.Pending.Where(pending => pending.Email == request.Email.Value)];
+        foreach (var pending in replaced)
+        {
+            pending.Cancel();
+        }
+
+        var invitation = Invitation.Create(
+            request.Id,
+            Id,
+            request.Email,
+            request.Role,
+            inviter.UserId,
+            request.Now,
+            request.Lifetime,
+            request.Secret,
+            request.Language ?? inviter.Language);
+        return new Invited(invitation, replaced);
+    }
+
+    private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
+
+    // A member's invitation: the role rule first, then a member's address, then the daily limit (section 6, "Member invitation").
+    private static Result CheckMemberInvitation(Role inviter, Role role, InvitationFacts facts, int dailyLimit)
+    {
+        var allowed = Invitation.CheckInviter(inviter, role);
+        if (!allowed.IsSuccess)
+        {
+            return allowed;
+        }
+
+        if (facts.AddressIsMember)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant.");
+        }
+
+        return facts.SentInWindow >= dailyLimit
+            ? Error.TooManyRequests(ControlPlaneErrorCodes.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours.")
+            : Result.Success();
+    }
+
+    private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
+
+    private static bool IsUrlSafe(string slug) =>
+        slug.Length is >= SlugMinLength and <= SlugMaxLength
+        && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
+        && slug[0] != '-'
+        && slug[^1] != '-'
+        && !slug.Contains("--", StringComparison.Ordinal);
+
+    // A tenant has no Owner only while its first Owner has not accepted, because the last Owner always stays (K1).
+    private Result CheckOwnerInvitation(int owners)
     {
         if (Status != TenantStatus.Active)
         {
@@ -281,17 +349,6 @@ internal sealed class Tenant
             ? Error.Conflict(ControlPlaneErrorCodes.TenantHasOwner, "The tenant has an Owner; its Owners invite people.")
             : Result.Success();
     }
-
-    private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
-
-    private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
-
-    private static bool IsUrlSafe(string slug) =>
-        slug.Length is >= SlugMinLength and <= SlugMaxLength
-        && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
-        && slug[0] != '-'
-        && slug[^1] != '-'
-        && !slug.Contains("--", StringComparison.Ordinal);
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {

@@ -46,28 +46,23 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     Task<int> ITenantRepository.CountOwnersAsync(CancellationToken cancellationToken) =>
         Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
 
-    // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level
-    // security keeps to the tenant. Both addresses are in their one form, so plain equality compares them.
-    Task<bool> ITenantRepository.IsMemberEmailAsync(EmailAddress email, CancellationToken cancellationToken)
-    {
-        _ = controlPlane.ActiveTenant;
-        return controlPlane.Database.SqlQuery<int>(
-                $"""
-                SELECT 1 AS "Value" FROM control_plane.memberships
-                JOIN control_plane.users ON users.id = memberships.user_id
-                WHERE users.email = {email.Value}
-                """)
-            .AnyAsync(cancellationToken);
-    }
-
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
 
-    // The same comparison as the partial unique index, which serves the query (K2): the stored form, pending only. Row level security
-    // adds the tenant.
-    Task<Invitation?> ITenantRepository.FindPendingInvitationAsync(EmailAddress email, CancellationToken cancellationToken) =>
-        controlPlane.TenantInvitations.SingleOrDefaultAsync(
-            invitation => invitation.Email == email.Value && invitation.Status == InvitationStatus.Pending, cancellationToken);
+    // The pending invitations come in the same comparison as the partial unique index, which serves the query (K2): the stored form,
+    // pending only. While the tenant has no Owner, every pending one comes, because the platform's Owner invitation replaces them all.
+    // Row level security adds the tenant to every query.
+    async Task<InvitationFacts> ITenantRepository.FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        var owners = await ((ITenantRepository)this).CountOwnersAsync(cancellationToken);
+        return new InvitationFacts(
+            owners,
+            await IsMemberEmailAsync(email, cancellationToken),
+            await ((ITenantRepository)this).CountInvitationsSinceAsync(since, cancellationToken),
+            await controlPlane.TenantInvitations
+                .Where(invitation => invitation.Status == InvitationStatus.Pending && (owners == 0 || invitation.Email == email.Value))
+                .ToListAsync(cancellationToken));
+    }
 
     // Row level security keeps the invitations to the active tenant; the query names no tenant.
     async Task<IReadOnlyList<Invitation>> ITenantRepository.FindPendingInvitationsAsync(CancellationToken cancellationToken) =>
@@ -124,6 +119,17 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     void ITenantRepository.Add(Invitation invitation) => controlPlane.Invitations.Add(invitation);
 
+    async Task ITenantRepository.AddInvitationAsync(Tenant tenant, Invited invited, CancellationToken cancellationToken)
+    {
+        if (invited.Replaced.Count > 0)
+        {
+            await controlPlane.SaveChangesAsync(cancellationToken);
+        }
+
+        controlPlane.Invitations.Add(invited.Invitation);
+        await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
     // The count is changed in the database after the save, so a user the transaction adds has its row. The database adds the change to
@@ -135,6 +141,20 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.Database.ExecuteSqlAsync(
             $"UPDATE control_plane.users SET membership_count = membership_count + {change} WHERE id = {userId}",
             cancellationToken);
+    }
+
+    // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level
+    // security keeps to the tenant. Both addresses are in their one form, so plain equality compares them.
+    private Task<bool> IsMemberEmailAsync(EmailAddress email, CancellationToken cancellationToken)
+    {
+        _ = controlPlane.ActiveTenant;
+        return controlPlane.Database.SqlQuery<int>(
+                $"""
+                SELECT 1 AS "Value" FROM control_plane.memberships
+                JOIN control_plane.users ON users.id = memberships.user_id
+                WHERE users.email = {email.Value}
+                """)
+            .AnyAsync(cancellationToken);
     }
 
     // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
