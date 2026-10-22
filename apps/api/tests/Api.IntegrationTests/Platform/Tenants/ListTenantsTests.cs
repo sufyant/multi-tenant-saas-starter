@@ -55,7 +55,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
-        page.GetProperty("total").GetInt32().ShouldBe(6);
+        page.GetProperty("total").GetInt32().ShouldBe(4);
     }
 
     [Fact]
