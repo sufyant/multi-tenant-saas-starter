@@ -27,6 +27,10 @@ internal static class BuiltInRoles
 
     public static IReadOnlyList<Role> All { get; } = [Owner, Admin, Member];
 
+    /// <summary>The built-in roles whose permissions hold the permission.</summary>
+    public static IReadOnlyList<BuiltInRole> Holding(string permission) =>
+        [.. Enum.GetValues<BuiltInRole>().Where(role => PermissionsOf(role).Contains(permission))];
+
     public static IReadOnlySet<string> PermissionsOf(BuiltInRole role) => role switch
     {
         BuiltInRole.Owner => OwnerPermissions,

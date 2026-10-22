@@ -1,4 +1,5 @@
 using ControlPlane.Application.Users;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -70,12 +71,14 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
 
     async Task<IReadOnlyList<UserMembership>> IUserRepository.ListMembershipsAsync(Guid userId, CancellationToken cancellationToken)
     {
+        // An Owner is a member whose role holds the Owners' permission (A1, K1).
+        var ownerRoles = controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage));
         await controlPlane.DeclareUserAsync(userId, cancellationToken);
         return await (
                 from membership in controlPlane.Memberships
                 join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
                 orderby tenant.Id
-                select new UserMembership(tenant.Id, membership.RoleId == BuiltInRoles.Owner.Id))
+                select new UserMembership(tenant.Id, ownerRoles.Any(role => role.Id == membership.RoleId)))
             .ToListAsync(cancellationToken);
     }
 

@@ -1,4 +1,5 @@
 using ControlPlane.Application.Tenants;
+using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -42,8 +43,14 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     Task<Membership?> ITenantRepository.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
 
+    async Task<TenantRoles> ITenantRepository.FindRolesAsync(CancellationToken cancellationToken) =>
+        new(await controlPlane.Roles.AsNoTracking().ToListAsync(cancellationToken));
+
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
-        new(await ((ITenantRepository)this).FindMembershipAsync(userId, cancellationToken), await CountOwnersAsync(cancellationToken));
+        new(
+            await ((ITenantRepository)this).FindMembershipAsync(userId, cancellationToken),
+            await CountOwnersAsync(cancellationToken),
+            await ((ITenantRepository)this).FindRolesAsync(cancellationToken));
 
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
@@ -125,9 +132,12 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
-    // Row level security keeps the count to the active tenant. It joins no user, so a deleted user's Owner membership counts too.
+    // The members whose role holds the Owners' permission (A1, K1). Row level security keeps the count to the active tenant. It joins no
+    // user, so a deleted user's Owner membership counts too.
     private Task<int> CountOwnersAsync(CancellationToken cancellationToken) =>
-        Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
+        Memberships
+            .Join(controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage)), membership => membership.RoleId, role => role.Id, (membership, _) => membership)
+            .CountAsync(cancellationToken);
 
     // The count is changed in the database after the save, so a user the transaction adds has its row. The database adds the change to
     // the stored count, so the statement reads and writes the row under its own lock: two transactions of two tenants that count for one
@@ -154,18 +164,19 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             .AnyAsync(cancellationToken);
     }
 
-    // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
-    // which is the only time the summary keeps it.
+    // Row level security keeps every count to the active tenant. An Owner is a member whose role holds the Owners' permission, and an
+    // Owner invitation gives such a role (A1, K1). The latest Owner invitation is read only when the tenant has no Owner, which is the only
+    // time the summary keeps it.
     private async Task<(int Members, int Owners, Invitation? LatestOwnerInvitation)> ReadSummaryAsync(CancellationToken cancellationToken)
     {
-        var owners = await Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
+        var owners = await CountOwnersAsync(cancellationToken);
 
         return (
             await Memberships.CountAsync(cancellationToken),
             owners,
             owners == 0
                 ? await controlPlane.TenantInvitations
-                    .Where(invitation => invitation.RoleId == BuiltInRoles.Owner.Id)
+                    .Join(controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage)), invitation => invitation.RoleId, role => role.Id, (invitation, _) => invitation)
                     .OrderByDescending(invitation => invitation.CreatedAt)
                     .ThenByDescending(invitation => invitation.Id)
                     .AsNoTracking()

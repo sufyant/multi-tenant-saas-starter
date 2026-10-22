@@ -51,7 +51,7 @@ public static class InviteOwnerHandler
         await tenants.AddInvitationAsync(tenant, invited.Value, cancellationToken);
 
         return (
-            InvitationView.Of(invitation, UserNameView.Of(actor), now),
+            InvitationView.Of(invitation, BuiltInRoles.Owner, UserNameView.Of(actor), now),
             [
                 new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
                 OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),

@@ -36,8 +36,9 @@ public static class InviteMemberHandler
 
         var now = time.GetUtcNow();
         var email = EmailAddress.Create(command.Email);
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
-        var inviter = Inviter.Member(actor.Id, actor.Language, BuiltInRoles.All.Single(builtIn => builtIn.Id == actorMembership.RoleId));
+        var roles = await tenants.FindRolesAsync(cancellationToken);
+        var role = roles.BuiltIn(Enum.Parse<BuiltInRole>(command.Role));
+        var inviter = Inviter.Member(actor.Id, actor.Language, roles.Of(actorMembership.RoleId));
         var secret = InvitationSecret.Generate();
         var invited = tenant.Invite(
             inviter,
@@ -53,7 +54,7 @@ public static class InviteMemberHandler
         await tenants.AddInvitationAsync(tenant, invited.Value, cancellationToken);
 
         return (
-            InvitationView.Of(invitation, UserNameView.Of(actor), now),
+            InvitationView.Of(invitation, role, UserNameView.Of(actor), now),
             [
                 new MemberInvitedEvent(
                     Guid.CreateVersion7(now),

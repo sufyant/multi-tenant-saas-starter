@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 namespace ControlPlane.Domain.Roles;
 
 /// <summary>
@@ -26,6 +28,16 @@ internal sealed class Role
     public static Role CreateBuiltIn(Guid id, BuiltInRole role) => new(id, NameOf(role), role);
 
     /// <summary>
+    /// The roles that hold the permission, for a query that counts or finds members by what their role may do (A1): the built-in roles
+    /// whose permissions in code hold it.
+    /// </summary>
+    public static Expression<Func<Role, bool>> Holding(string permission)
+    {
+        var holders = BuiltInRoles.Holding(permission);
+        return role => holders.Contains(role.BuiltIn);
+    }
+
+    /// <summary>
     /// The name of a built-in role outside the domain: in requests, responses, events and audit details, in lower case, as every other
     /// enum of the API (api-catalog, K5). It is the one place a built-in role becomes text.
     /// </summary>
@@ -36,4 +48,7 @@ internal sealed class Role
         BuiltInRole.Member => "member",
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Every built-in role has a name."),
     };
+
+    /// <summary>Whether the role holds the permission. A rule asks this, never which role it is (A1).</summary>
+    public bool Holds(string permission) => Permissions.Contains(permission);
 }

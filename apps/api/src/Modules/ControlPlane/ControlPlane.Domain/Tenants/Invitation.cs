@@ -90,11 +90,11 @@ internal sealed class Invitation : ITenantEntity
         new(id, tenantId, email.Value, role.Id, invitedBy, now, now + lifetime, InvitationSecret.Hash(secret), language);
 
     /// <summary>
-    /// Whether a member of the inviter's role may invite someone with the role (K1): only an Owner gives the Owner role. It changes
-    /// nothing, so a caller checks it before any change.
+    /// Whether a member of the inviter's role may invite someone with the role (K1): only a member whose role holds
+    /// <c>tenant.owners.manage</c> gives a role that holds it (A1). It changes nothing, so a caller checks it before any change.
     /// </summary>
     public static Result CheckInviter(Role inviter, Role role) =>
-        role.BuiltIn == BuiltInRole.Owner && inviter.BuiltIn != BuiltInRole.Owner
+        role.Holds(PermissionPools.TenantOwnersManage) && !inviter.Holds(PermissionPools.TenantOwnersManage)
             ? Error.Forbidden(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner, "Only an Owner can invite an Owner.")
             : Result.Success();
 

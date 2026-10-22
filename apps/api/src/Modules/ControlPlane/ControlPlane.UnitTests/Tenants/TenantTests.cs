@@ -30,6 +30,9 @@ public sealed class TenantTests
 
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
+    // The tenant's roles, which say what each membership's role may do (A1).
+    private static readonly TenantRoles Roles = new(BuiltInRoles.All);
+
     public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
 
     // Settings › General shows when the tenant was created.
@@ -626,7 +629,7 @@ public sealed class TenantTests
     {
         var changed = Membership(target);
 
-        var result = Active().ChangeRole(Membership(actor), RoleOf(role), new MemberFacts(changed, 2));
+        var result = Active().ChangeRole(Membership(actor), RoleOf(role), new MemberFacts(changed, 2, Roles));
 
         result.Value.Change.ShouldBe(StateChange.Changed);
         changed.RoleId.ShouldBe(RoleOf(role).Id);
@@ -641,7 +644,7 @@ public sealed class TenantTests
     {
         var changed = Membership(target);
 
-        var result = Active().ChangeRole(Membership("Admin"), RoleOf(role), new MemberFacts(changed, 2));
+        var result = Active().ChangeRole(Membership("Admin"), RoleOf(role), new MemberFacts(changed, 2, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -655,7 +658,7 @@ public sealed class TenantTests
     {
         var changed = Membership("Owner");
 
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(changed, 1));
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(changed, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -668,7 +671,7 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 2));
+        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 2, Roles));
 
         result.Value.Change.ShouldBe(StateChange.Changed);
         self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
@@ -679,7 +682,7 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 1));
+        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         self.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
@@ -691,7 +694,7 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Member, new MemberFacts(self, 1));
+        var result = Active().ChangeRole(self, BuiltInRoles.Member, new MemberFacts(self, 1, Roles));
 
         result.Value.Change.ShouldBe(StateChange.Changed);
     }
@@ -701,7 +704,7 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Owner, new MemberFacts(self, 1));
+        var result = Active().ChangeRole(self, BuiltInRoles.Owner, new MemberFacts(self, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
@@ -714,7 +717,7 @@ public sealed class TenantTests
     [InlineData("Member", 1)]
     public void ChangeMemberRole_TheRoleTheMemberHas_ChangesNothing(string role, int owners)
     {
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(Membership(role), owners));
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(Membership(role), owners, Roles));
 
         result.Value.Change.ShouldBe(StateChange.Unchanged);
     }
@@ -723,7 +726,7 @@ public sealed class TenantTests
     [Fact]
     public void ChangeMemberRole_AnAdminOnTheLastOwner_IsForbiddenFirst()
     {
-        var result = Active().ChangeRole(Membership("Admin"), BuiltInRoles.Member, new MemberFacts(Membership("Owner"), 1));
+        var result = Active().ChangeRole(Membership("Admin"), BuiltInRoles.Member, new MemberFacts(Membership("Owner"), 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
     }
@@ -736,7 +739,7 @@ public sealed class TenantTests
     [InlineData("Admin", "Member")]
     public void RemoveMember_AMemberTheActorMayRemove_IsAllowed(string actor, string target)
     {
-        var result = Active().Remove(Membership(actor), new MemberFacts(Membership(target), 2));
+        var result = Active().Remove(Membership(actor), new MemberFacts(Membership(target), 2, Roles));
 
         result.IsSuccess.ShouldBeTrue();
     }
@@ -748,7 +751,7 @@ public sealed class TenantTests
     {
         var self = Membership(role);
 
-        var result = Active().Remove(self, new MemberFacts(self, 2));
+        var result = Active().Remove(self, new MemberFacts(self, 2, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberCannotRemoveSelf);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -757,7 +760,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveMember_AnAdminRemovesAnOwner_IsForbidden()
     {
-        var result = Active().Remove(Membership("Admin"), new MemberFacts(Membership("Owner"), 2));
+        var result = Active().Remove(Membership("Admin"), new MemberFacts(Membership("Owner"), 2, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -767,7 +770,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveMember_TheLastOwner_IsAConflict()
     {
-        var result = Active().Remove(Membership("Owner"), new MemberFacts(Membership("Owner"), 1));
+        var result = Active().Remove(Membership("Owner"), new MemberFacts(Membership("Owner"), 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -779,7 +782,7 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().Remove(self, new MemberFacts(self, 1));
+        var result = Active().Remove(self, new MemberFacts(self, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberCannotRemoveSelf);
     }
@@ -789,7 +792,7 @@ public sealed class TenantTests
     {
         var target = Membership("Admin");
 
-        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(target, 1));
+        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(target, 1, Roles));
 
         result.Value.Member.ShouldBeSameAs(target);
         result.Value.OldRole.ShouldBe(BuiltInRoles.Admin);
@@ -799,7 +802,7 @@ public sealed class TenantTests
     [Fact]
     public void ChangeMemberRole_NoTargetMembership_IsNotFound()
     {
-        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(null, 1));
+        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(null, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
         result.Error.Type.ShouldBe(ErrorType.NotFound);
@@ -810,7 +813,7 @@ public sealed class TenantTests
     {
         var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), BuiltInRoles.Member.Id, DateTimeOffset.UnixEpoch);
 
-        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Admin, new MemberFacts(other, 1));
+        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Admin, new MemberFacts(other, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
         other.RoleId.ShouldBe(BuiltInRoles.Member.Id);
@@ -821,7 +824,7 @@ public sealed class TenantTests
     {
         var target = Membership("Member");
 
-        var result = Active().Remove(Membership("Admin"), new MemberFacts(target, 1));
+        var result = Active().Remove(Membership("Admin"), new MemberFacts(target, 1, Roles));
 
         result.Value.ShouldBeSameAs(target);
     }
@@ -829,7 +832,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveMember_NoTargetMembership_IsNotFound()
     {
-        var result = Active().Remove(Membership("Owner"), new MemberFacts(null, 1));
+        var result = Active().Remove(Membership("Owner"), new MemberFacts(null, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
@@ -839,7 +842,7 @@ public sealed class TenantTests
     {
         var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), BuiltInRoles.Member.Id, DateTimeOffset.UnixEpoch);
 
-        var result = Active().Remove(Membership("Owner"), new MemberFacts(other, 1));
+        var result = Active().Remove(Membership("Owner"), new MemberFacts(other, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
@@ -848,7 +851,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveUserMembership_TheLastOwner_IsAConflictThatNamesTheTenant()
     {
-        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -863,7 +866,7 @@ public sealed class TenantTests
     {
         var membership = Membership(role);
 
-        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners, Roles));
 
         result.Value.ShouldBeSameAs(membership);
     }
@@ -871,7 +874,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveUserMembership_AUserWhoIsNoLongerAMember_AnswersNone()
     {
-        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1, Roles));
 
         result.Value.ShouldBeNull();
     }
@@ -882,7 +885,7 @@ public sealed class TenantTests
     [InlineData("Admin", 1, true)]
     public void DeleteUser_TheCheckOfAMembership_RefusesOnlyTheLastOwner(string role, int owners, bool allowed)
     {
-        var result = Tenant.CheckUserDeletion(new MemberFacts(Membership(role), owners));
+        var result = Tenant.CheckUserDeletion(new MemberFacts(Membership(role), owners, Roles));
 
         result.IsSuccess.ShouldBe(allowed);
     }
@@ -890,7 +893,7 @@ public sealed class TenantTests
     [Fact]
     public void DeleteUser_TheCheckOfATenantTheUserIsNotAMemberOf_IsAllowed()
     {
-        var result = Tenant.CheckUserDeletion(new MemberFacts(null, 0));
+        var result = Tenant.CheckUserDeletion(new MemberFacts(null, 0, Roles));
 
         result.IsSuccess.ShouldBeTrue();
     }

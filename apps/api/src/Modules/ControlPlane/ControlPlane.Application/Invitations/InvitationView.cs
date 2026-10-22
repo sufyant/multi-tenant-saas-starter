@@ -22,10 +22,10 @@ public sealed record InvitationView(
     string State,
     Language Language)
 {
-    internal static InvitationView Of(Invitation invitation, UserNameView inviterName, DateTimeOffset now) => new(
+    internal static InvitationView Of(Invitation invitation, Role role, UserNameView inviterName, DateTimeOffset now) => new(
         invitation.Id,
         invitation.Email,
-        RoleView.Of(BuiltInRoles.All.Single(role => role.Id == invitation.RoleId)),
+        RoleView.Of(role),
         invitation.InvitedBy,
         inviterName,
         invitation.CreatedAt,

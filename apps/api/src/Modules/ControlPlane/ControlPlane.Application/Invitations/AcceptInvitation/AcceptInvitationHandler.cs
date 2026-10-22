@@ -2,7 +2,6 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.EmailAddresses;
-using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using FluentValidation;
@@ -83,8 +82,9 @@ public static class AcceptInvitationHandler
 
         var membership = accepted.Value;
         await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
+        var roles = await tenants.FindRolesAsync(cancellationToken);
         return (
-            MyTenantView.Of(tenant, BuiltInRoles.All.Single(role => role.Id == membership.RoleId)),
+            MyTenantView.Of(tenant, roles.Of(membership.RoleId)),
             [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id)]);
     }
 
