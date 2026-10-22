@@ -22,8 +22,8 @@ internal static class TestTokens
 
     public static Dictionary<string, string?> Settings => new()
     {
-        ["Authentication:Clerk:Issuer"] = Issuer,
-        ["Authentication:Clerk:AuthorizedParties:0"] = AuthorizedParty,
+        ["Host:Authentication:Issuer"] = Issuer,
+        ["Host:Authentication:AuthorizedParties:0"] = AuthorizedParty,
     };
 
     // Configured rather than post-configured, so the handler uses this configuration instead of fetching Clerk's metadata.

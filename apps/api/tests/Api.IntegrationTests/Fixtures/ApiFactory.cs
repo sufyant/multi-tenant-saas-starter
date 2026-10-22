@@ -136,11 +136,11 @@ internal sealed class ApiFactory(
             ["ControlPlane:Invitations:AcceptUrl"] = AcceptUrl,
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
             ["ControlPlane:SystemAdmins:RootEmails:0"] = RootEmail,
-            ["Authentication:Clerk:Issuer"] = TestTokens.Issuer,
+            ["Host:Authentication:Issuer"] = TestTokens.Issuer,
         };
         foreach (var (party, index) in (authorizedParties ?? [TestTokens.AuthorizedParty]).Select((party, index) => (party, index)))
         {
-            configuration[$"Authentication:Clerk:AuthorizedParties:{index}"] = party;
+            configuration[$"Host:Authentication:AuthorizedParties:{index}"] = party;
         }
 
         foreach (var (key, value) in ShortRetries.Concat(ports?.Settings ?? new Dictionary<string, string?>()).Concat(settings ?? new Dictionary<string, string?>()))

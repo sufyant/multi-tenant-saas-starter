@@ -24,6 +24,23 @@ public sealed class ConfigurationSectionTests
         sections.Where(section => !section.StartsWith($"{module}:", StringComparison.Ordinal)).ShouldBeEmpty();
     }
 
+    // Rule 9: the host's keys go under Host, and a framework's own section keeps the framework's name. A vendor's name is no framework:
+    // the host's OpenID Connect settings sit under Host:Authentication.
+    [Fact]
+    public void BindConfiguration_InTheHostAndTheSharedProjects_IsUnderHostOrAFrameworkSection()
+    {
+        string[] frameworkSections = ["ConnectionStrings"];
+
+        var sections = new[] { Solution.SharedKernel, Solution.Tenancy, Solution.Host }
+            .SelectMany(project => Solution.Load(project).GetTypes())
+            .SelectMany(type => type.GetFields(Declared))
+            .Where(field => field is { IsLiteral: true, Name: "Section" })
+            .Select(field => (string)field.GetRawConstantValue()!);
+
+        sections.Where(section => section != "Host" && !section.StartsWith("Host:", StringComparison.Ordinal) && !frameworkSections.Contains(section))
+            .ShouldBeEmpty();
+    }
+
     // Rule 6: each options class has a section of its own, so a vendor's name stays in a section of that vendor's settings only.
     [Fact]
     public void BindConfiguration_EachSection_IsNamedByOneClass()

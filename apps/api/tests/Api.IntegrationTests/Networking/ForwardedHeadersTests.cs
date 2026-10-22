@@ -20,7 +20,7 @@ public sealed class ForwardedHeadersTests
     [Fact]
     public async Task ForwardAddress_FromATrustedProxy_IsTheClientAddress()
     {
-        await using var host = await StartAsync(new Dictionary<string, string?> { ["ForwardedHeaders:KnownProxies:0"] = "10.0.0.1" });
+        await using var host = await StartAsync(new Dictionary<string, string?> { ["Host:ForwardedHeaders:KnownProxies:0"] = "10.0.0.1" });
         await GetAsync(host, from: "10.0.0.1", forwardedFor: "203.0.113.1");
 
         var second = await GetAsync(host, from: "10.0.0.1", forwardedFor: "203.0.113.2");
@@ -31,7 +31,7 @@ public sealed class ForwardedHeadersTests
     [Fact]
     public async Task ForwardAddress_FromATrustedNetwork_IsTheClientAddress()
     {
-        await using var host = await StartAsync(new Dictionary<string, string?> { ["ForwardedHeaders:KnownNetworks:0"] = "10.0.0.0/8" });
+        await using var host = await StartAsync(new Dictionary<string, string?> { ["Host:ForwardedHeaders:KnownNetworks:0"] = "10.0.0.0/8" });
         await GetAsync(host, from: "10.1.2.3", forwardedFor: "203.0.113.1");
 
         var second = await GetAsync(host, from: "10.1.2.3", forwardedFor: "203.0.113.2");
@@ -42,7 +42,7 @@ public sealed class ForwardedHeadersTests
     [Fact]
     public async Task ForwardAddress_FromAnUntrustedSender_IsIgnored()
     {
-        await using var host = await StartAsync(new Dictionary<string, string?> { ["ForwardedHeaders:KnownProxies:0"] = "10.0.0.1" });
+        await using var host = await StartAsync(new Dictionary<string, string?> { ["Host:ForwardedHeaders:KnownProxies:0"] = "10.0.0.1" });
         await GetAsync(host, from: "198.51.100.1", forwardedFor: "203.0.113.1");
 
         var second = await GetAsync(host, from: "198.51.100.1", forwardedFor: "203.0.113.2");

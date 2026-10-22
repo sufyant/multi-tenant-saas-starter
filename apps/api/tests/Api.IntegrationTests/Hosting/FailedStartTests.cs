@@ -44,7 +44,7 @@ public sealed class FailedStartTests
         ["DOTNET_ENVIRONMENT"] = "Development",
         ["Host__Role"] = role,
         ["ConnectionStrings__Database"] = ApiProcess.HostThatDoesNotAnswer,
-        ["Authentication__Clerk__Issuer"] = TestTokens.Issuer,
+        ["Host__Authentication__Issuer"] = TestTokens.Issuer,
         ["ControlPlane__Clerk__SecretKey"] = "sk_test_unused",
         ["ControlPlane__Invitations__AcceptUrl"] = ApiFactory.AcceptUrl,
         ["ControlPlane__SystemAdmins__RootEmails__0"] = ApiFactory.RootEmail,

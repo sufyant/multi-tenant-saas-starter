@@ -48,7 +48,7 @@ internal static class TrustedProxies
 
     private sealed class TrustedProxyOptions
     {
-        public const string Section = "ForwardedHeaders";
+        public const string Section = "Host:ForwardedHeaders";
 
         public string[] KnownProxies { get; set; } = [];
 

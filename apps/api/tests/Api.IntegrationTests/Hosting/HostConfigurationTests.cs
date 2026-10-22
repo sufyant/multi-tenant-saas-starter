@@ -23,11 +23,11 @@ public sealed class HostConfigurationTests(Database database)
     {
         { Environments.Development, ["Host:Role"] },
         { Environments.Development, ["ConnectionStrings:Database"] },
-        { Environments.Development, ["Authentication:Clerk:Issuer"] },
+        { Environments.Development, ["Host:Authentication:Issuer"] },
         { Environments.Development, ["ControlPlane:Clerk:SecretKey"] },
         { Environments.Development, ["ControlPlane:Invitations:AcceptUrl"] },
         { Environments.Development, ["ControlPlane:SystemAdmins:RootEmails:0"] },
-        { Environments.Production, ["Authentication:Clerk:AuthorizedParties:0"] },
+        { Environments.Production, ["Host:Authentication:AuthorizedParties:0"] },
         { Environments.Production, ["Notifications:Resend:ApiKey"] },
         { Environments.Production, ["Notifications:Resend:From"] },
     };
@@ -123,6 +123,7 @@ public sealed class HostConfigurationTests(Database database)
     // an unknown key, so the old name alone is no error of its own: the new key is missing, and the start names it.
     [Theory]
     [InlineData("ControlPlane:FirstSystemAdminEmail", "ControlPlane:SystemAdmins:RootEmails:0", "root@app.test")]
+    [InlineData("Authentication:Clerk:Issuer", "Host:Authentication:Issuer", "https://clerk.app.test")]
     public async Task StartApplication_WithAnOldKeyInPlaceOfItsNewKey_FailsNamingTheNewKey(string oldKey, string newKey, string value)
     {
         await using var api = new ApiFactory(
