@@ -2116,6 +2116,237 @@
         }
       }
     },
+    "/v1/platform/users/{userId}/system-admin": {
+      "post": {
+        "tags": [
+          "Platform/Users"
+        ],
+        "operationId": "GrantSystemAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform/Users"
+        ],
+        "operationId": "RevokeSystemAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/audit-log": {
       "get": {
         "tags": [
@@ -4903,6 +5134,7 @@
           "role.deleted",
           "role.updated",
           "system_admin.granted",
+          "system_admin.revoked",
           "tenant.closed",
           "tenant.created",
           "tenant.owner_invited",
@@ -4928,6 +5160,7 @@
           "RoleDeleted",
           "RoleUpdated",
           "SystemAdminGranted",
+          "SystemAdminRevoked",
           "TenantClosed",
           "TenantCreated",
           "TenantOwnerInvited",
@@ -5172,7 +5405,10 @@
           "route.method_not_allowed",
           "route.not_found",
           "server.error",
+          "system_admin.cannot_revoke_self",
           "system_admin.exists",
+          "system_admin.not_found",
+          "system_admin.root",
           "tenant.closed",
           "tenant.has_owner",
           "tenant.name_invalid",
@@ -5240,7 +5476,10 @@
           "RouteMethodNotAllowed",
           "RouteNotFound",
           "ServerError",
+          "SystemAdminCannotRevokeSelf",
           "SystemAdminExists",
+          "SystemAdminNotFound",
+          "SystemAdminRoot",
           "TenantClosed",
           "TenantHasOwner",
           "TenantNameInvalid",
@@ -5966,6 +6205,8 @@
       "Permission": {
         "enum": [
           "platform.audit.read",
+          "platform.system_admins.create",
+          "platform.system_admins.delete",
           "platform.tenants.close",
           "platform.tenants.create",
           "platform.tenants.invite_owner",
@@ -5997,6 +6238,8 @@
         "description": "A name of the permission list. Every endpoint checks its own permission.",
         "x-enumNames": [
           "PlatformAuditRead",
+          "PlatformSystemAdminsCreate",
+          "PlatformSystemAdminsDelete",
           "PlatformTenantsClose",
           "PlatformTenantsCreate",
           "PlatformTenantsInviteOwner",

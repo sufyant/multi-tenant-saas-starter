@@ -4,6 +4,8 @@ using ControlPlane.Api.Statuses;
 using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Application;
+using ControlPlane.Application.SystemAdmins.GrantSystemAdmin;
+using ControlPlane.Application.SystemAdmins.RevokeSystemAdmin;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Application.Users.GetLastOwnership;
@@ -34,6 +36,8 @@ public static class UserEndpoints
         platform.MapPost("/users/{userId:guid}/reactivate", ReactivateUser).RequireAuthorization(Permissions.PlatformUsersReactivate);
         platform.MapPatch("/users/{userId:guid}", RenameUser).RequireAuthorization(Permissions.PlatformUsersUpdate);
         platform.MapDelete("/users/{userId:guid}", DeleteUser).RequireAuthorization(Permissions.PlatformUsersDelete);
+        platform.MapPost("/users/{userId:guid}/system-admin", GrantSystemAdmin).RequireAuthorization(Permissions.PlatformSystemAdminsCreate);
+        platform.MapDelete("/users/{userId:guid}/system-admin", RevokeSystemAdmin).RequireAuthorization(Permissions.PlatformSystemAdminsDelete);
     }
 
     private static async Task<Result<ListPage<UserResponse>>> ListUsers(
@@ -122,6 +126,14 @@ public static class UserEndpoints
 
         return await bus.InvokeAsync<Result>(new DeleteUserCommand(user.Id(), userId), cancellationToken);
     }
+
+    // A grant is no state to set again: a second one answers 409 (section 6, "Root system admins"), so it takes no idempotency key (I1).
+    private static async Task<Result<UserResponse>> GrantSystemAdmin(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        (await bus.InvokeAsync<Result<UserView>>(new GrantSystemAdminCommand(user.Id(), userId), cancellationToken)).Map(ToResponse);
+
+    // A DELETE takes no idempotency key (I1). The user stays a user, with every membership.
+    private static async Task<Result> RevokeSystemAdmin(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        await bus.InvokeAsync<Result>(new RevokeSystemAdminCommand(user.Id(), userId), cancellationToken);
 
     private static UserResponse ToResponse(UserView user) => new(
         user.Id,

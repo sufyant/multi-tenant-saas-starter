@@ -43,6 +43,7 @@ public static class AuditDetailsTypes
         [AuditOperations.RoleDeleted] = null,
         [AuditOperations.RoleUpdated] = typeof(RoleUpdatedDetails),
         [AuditOperations.SystemAdminGranted] = null,
+        [AuditOperations.SystemAdminRevoked] = null,
         [AuditOperations.TenantClosed] = null,
         [AuditOperations.TenantCreated] = null,
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),

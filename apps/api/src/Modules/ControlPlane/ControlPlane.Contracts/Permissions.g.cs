@@ -35,6 +35,10 @@ public static class Permissions
 
     public const string PlatformUsersDelete = "platform.users.delete";
 
+    public const string PlatformSystemAdminsCreate = "platform.system_admins.create";
+
+    public const string PlatformSystemAdminsDelete = "platform.system_admins.delete";
+
     public const string PlatformAuditRead = "platform.audit.read";
 
     public const string TenantMembersRead = "tenant.members.read";

@@ -37,4 +37,20 @@ internal sealed class SystemAdmin(Guid userId, DateTimeOffset grantedAt)
 
         return new SystemAdmin(user.Id, now);
     }
+
+    /// <summary>
+    /// Whether a system admin may take this grant away. A root system admin keeps it while the configuration's list names them, and
+    /// nobody locks themself out by a click. Revoking deletes no user and leaves every membership.
+    /// </summary>
+    public Result CheckRevoke(Guid actorId, bool isRoot)
+    {
+        if (isRoot)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.SystemAdminRoot, "A root system admin cannot be revoked.");
+        }
+
+        return actorId == UserId
+            ? Error.Conflict(ControlPlaneErrorCodes.SystemAdminCannotRevokeSelf, "A system admin cannot revoke themself.")
+            : Result.Success();
+    }
 }
