@@ -37,9 +37,12 @@ public sealed class DeleteUserTests(Database database)
         await using var scope = database.Services.CreateAsyncScope();
         var controlPlane = scope.ServiceProvider.GetRequiredService<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>();
         await using var transaction = await controlPlane.Database.BeginTransactionAsync(Cancellation);
-        var returned = await DeleteUserHandler.HandleAsync(
+        var (result, messages) = await DeleteUserHandler.HandleAsync(
             command, scope.ServiceProvider.GetRequiredService<IUserRepository>(), scope.ServiceProvider.GetRequiredService<TimeProvider>(), Cancellation);
         await transaction.CommitAsync(Cancellation);
-        return returned;
+        return (
+            result,
+            messages.OfType<ControlPlane.Contracts.Users.UserDeletedEvent>().SingleOrDefault(),
+            messages.OfType<DeleteIdentityAccountCommand>().SingleOrDefault());
     }
 }

@@ -56,7 +56,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Invitations.InviteMember.InviteMemberCommand>(_validatorOfInviteMemberCommand, _failureActionOfInviteMemberCommand, inviteMemberCommand).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3, var outgoing4) = await ControlPlane.Application.Invitations.InviteMember.InviteMemberHandler.HandleAsync(inviteMemberCommand, tenantRepository, userRepository, _invitationOptions, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Invitations.InviteMember.InviteMemberHandler.HandleAsync(inviteMemberCommand, tenantRepository, userRepository, _invitationOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -65,14 +65,6 @@ namespace Internal.Generated.WolverineHandlers
                 
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
-
-                
-                // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
-
-                
-                // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing4).ConfigureAwait(false);
 
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Invitations.InvitationView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 

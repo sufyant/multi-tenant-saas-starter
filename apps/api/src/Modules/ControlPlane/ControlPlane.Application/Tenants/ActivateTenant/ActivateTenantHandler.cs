@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations.OpenOwnerSignUp;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
+using Wolverine;
 using Wolverine.ErrorHandling;
 using Wolverine.Runtime.Handlers;
 
@@ -14,7 +15,7 @@ public static class ActivateTenantHandler
     // The pivot. The tenant is locked, so a repeated activation finds it active and announces nothing again. The tenant was created
     // by the system admin who invited its first owner. The saga hears of it through a reply of its own (S13). Step 3 starts here: the
     // identity provider lets the owner sign up, then Notifications sends the email.
-    public static async Task<(ActivateTenantReply?, TenantActivatedEvent?, OpenOwnerSignUpCommand?)> HandleAsync(
+    public static async Task<OutgoingMessages> HandleAsync(
         ActivateTenantCommand step,
         ITenantRepository tenants,
         TimeProvider time,
@@ -24,7 +25,7 @@ public static class ActivateTenantHandler
             ?? throw new InvalidOperationException("A tenant is activated after its creation added it.");
         if (tenant.Activate() == StateChange.Unchanged)
         {
-            return (null, null, null);
+            return [];
         }
 
         var invitation = await tenants.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken)
@@ -32,9 +33,11 @@ public static class ActivateTenantHandler
         var now = time.GetUtcNow();
         await tenants.SaveChangesAsync(cancellationToken);
 
-        return (
+        return
+        [
             new ActivateTenantReply(tenant.Id),
             new TenantActivatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.InvitedBy),
-            new OpenOwnerSignUpCommand(tenant.Id, invitation.Id, invitation.Email, tenant.Name, step.AcceptLink, invitation.ExpiresAt));
+            new OpenOwnerSignUpCommand(tenant.Id, invitation.Id, invitation.Email, tenant.Name, step.AcceptLink, invitation.ExpiresAt),
+        ];
     }
 }

@@ -1,7 +1,7 @@
 using ControlPlane.Application.Tenants.TenantCreation;
-using ControlPlane.Domain.Tenants;
 using Microsoft.Extensions.Logging;
 using SharedKernel;
+using Wolverine;
 using Wolverine.ErrorHandling;
 using Wolverine.Runtime.Handlers;
 
@@ -12,8 +12,9 @@ public static partial class CancelTenantHandler
     public static void Configure(HandlerChain chain) => chain.OnAnyException().RetryTimes(3);
 
     // An active or suspended tenant is past the pivot and is never cancelled: the compensation changes nothing and reports nothing, and
-    // the saga's cancellation timeout leaves the tenant creation to a person. A cancelled tenant keeps its first reason.
-    public static async Task<CancelTenantReply?> HandleAsync(
+    // the saga's cancellation timeout leaves the tenant creation to a person (Tenant.CancelCreation). A cancelled tenant keeps its first
+    // reason.
+    public static async Task<OutgoingMessages> HandleAsync(
         CancelTenantCommand step,
         ITenantRepository tenants,
         ILogger<TenantCreationSaga> logger,
@@ -21,19 +22,19 @@ public static partial class CancelTenantHandler
     {
         var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("A tenant is cancelled after its creation added it.");
-        if (tenant.Status is TenantStatus.Active or TenantStatus.Suspended)
+        if (tenant.CancelCreation(step.Reason) is not { } cancelled)
         {
-            return null;
+            return [];
         }
 
-        if (tenant.Cancel(step.Reason) == StateChange.Changed)
+        if (cancelled == StateChange.Changed)
         {
             LogCancelled(logger, step.TenantId, step.Reason);
         }
 
         (await tenants.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken))?.Cancel();
         await tenants.SaveAsync(tenant, cancellationToken);
-        return new CancelTenantReply(step.TenantId);
+        return [new CancelTenantReply(step.TenantId)];
     }
 
     [LoggerMessage(EventName = "TenantCancelled", Level = LogLevel.Warning, Message = "Tenant {TenantId} is cancelled: {Reason}")]

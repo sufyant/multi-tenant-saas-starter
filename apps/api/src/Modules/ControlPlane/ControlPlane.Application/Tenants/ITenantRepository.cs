@@ -23,25 +23,22 @@ public interface ITenantRepository
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// How many memberships of the active tenant hold the Owner role, a deleted user's included. The caller holds the tenant's lock, which
-    /// every change to a membership takes first, so the count stays true until the transaction ends (K6j).
+    /// What a change to the user's membership needs to know of the active tenant (<see cref="MemberFacts"/>): the membership, and how many
+    /// memberships hold the Owner role, a deleted user's included. The caller holds the tenant's lock, which every change to a membership
+    /// takes first, so the facts stay true until the transaction ends (K6j). The check before a user's deletion reads them without it.
     /// </summary>
-    internal Task<int> CountOwnersAsync(CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Whether a member of the active tenant has this email address, in our copy of their profile, compared in its one form.
-    /// The search starts from the tenant's memberships, never from the users.
-    /// </summary>
-    internal Task<bool> IsMemberEmailAsync(EmailAddress email, CancellationToken cancellationToken);
+    internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The active tenant's pending invitation to this email address, compared in its one form; null when it has none. The caller holds the
-    /// tenant's lock, which every change to an invitation takes first (K6a).
+    /// What an invitation to this address needs to know of the active tenant (<see cref="Tenant.Invite"/>): its Owners, whether a member
+    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, and every
+    /// pending invitation, expired ones included. The caller holds the tenant's lock, which every change to a membership or an invitation
+    /// takes first, so the facts stay true until the transaction ends (K6i, K6j).
     /// </summary>
-    internal Task<Invitation?> FindPendingInvitationAsync(EmailAddress email, CancellationToken cancellationToken);
+    internal Task<InvitationFacts> FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
     /// Every pending invitation of the active tenant, expired ones included. The caller holds the tenant's lock, which every change to an
@@ -84,6 +81,12 @@ public interface ITenantRepository
     internal Task<bool> TryAddAsync(Tenant tenant, CancellationToken cancellationToken);
 
     internal void Add(Invitation invitation);
+
+    /// <summary>
+    /// Saves what <see cref="Tenant.Invite"/> did, as <see cref="SaveAsync"/> saves it: the replaced invitations first, so the partial
+    /// unique index never sees two pending invitations to one address (K2), then the new one, with the tenant's summary.
+    /// </summary>
+    internal Task AddInvitationAsync(Tenant tenant, Invited invited, CancellationToken cancellationToken);
 
     /// <summary>Saves the transaction's changes without the summary: a change to the tenant itself, or a step before <see cref="SaveAsync"/>.</summary>
     internal Task SaveChangesAsync(CancellationToken cancellationToken);

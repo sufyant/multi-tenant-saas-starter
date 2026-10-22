@@ -1,5 +1,6 @@
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations.RecordSignUp;
+using Wolverine;
 
 namespace ControlPlane.Application.Invitations.OpenOwnerSignUp;
 
@@ -9,10 +10,13 @@ namespace ControlPlane.Application.Invitations.OpenOwnerSignUp;
 // out, and our invitation stays as it is.
 public static class OpenOwnerSignUpHandler
 {
-    public static async Task<RecordSignUpCommand> HandleAsync(OpenOwnerSignUpCommand open, IIdentityProvider identity, CancellationToken cancellationToken)
+    public static async Task<OutgoingMessages> HandleAsync(OpenOwnerSignUpCommand open, IIdentityProvider identity, CancellationToken cancellationToken)
     {
         var signUp = await identity.OpenSignUpAsync(open.Email, open.AcceptLink, open.ExpiresAt, cancellationToken);
-        return new RecordSignUpCommand(
-            open.TenantId, open.InvitationId, open.Email, open.TenantName, signUp.Link, signUp.InvitationId, open.ExpiresAt, ForFirstOwner: true);
+        return
+        [
+            new RecordSignUpCommand(
+                open.TenantId, open.InvitationId, open.Email, open.TenantName, signUp.Link, signUp.InvitationId, open.ExpiresAt, ForFirstOwner: true),
+        ];
     }
 }

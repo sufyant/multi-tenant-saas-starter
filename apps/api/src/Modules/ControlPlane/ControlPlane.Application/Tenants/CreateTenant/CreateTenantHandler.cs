@@ -18,7 +18,7 @@ namespace ControlPlane.Application.Tenants.CreateTenant;
 // the insert itself, which writes nothing then.
 public static class CreateTenantHandler
 {
-    public static async Task<(Result<TenantView>, Insert<TenantCreationSaga>?, DeliveryMessage<ActivateTenantCommand>?, ActivationTimedOut?)> HandleAsync(
+    public static async Task<(Result<TenantView>, Insert<TenantCreationSaga>?, OutgoingMessages)> HandleAsync(
         CreateTenantCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -34,12 +34,12 @@ public static class CreateTenantHandler
         var tenant = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);
         if (!tenant.IsSuccess)
         {
-            return (tenant.Error, null, null, null);
+            return (tenant.Error, null, []);
         }
 
         if (!await tenants.TryAddAsync(tenant.Value, cancellationToken))
         {
-            return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, null, null);
+            return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), null, []);
         }
 
         var secret = InvitationSecret.Generate();
@@ -60,7 +60,7 @@ public static class CreateTenantHandler
             ?? throw new InvalidOperationException("The tenant was added in this transaction.");
         await tenants.SaveAsync(added, cancellationToken);
 
-        var (saga, activate, timeout) = TenantCreationSaga.Begin(
+        (TenantCreationSaga saga, ActivateTenantCommand activate, ActivationTimedOut timeout) = TenantCreationSaga.Begin(
             tenant.Value.Id,
             invitation.Id,
             invitations.AcceptLink(new InvitationCode(tenant.Value.Id, secret)),
@@ -71,7 +71,6 @@ public static class CreateTenantHandler
         return (
             TenantView.Of(tenant.Value),
             Storage.Insert(saga),
-            activate.WithDeliveryOptions(new DeliveryOptions { SagaId = saga.Id.ToString() }),
-            timeout);
+            [activate.WithDeliveryOptions(new DeliveryOptions { SagaId = saga.Id.ToString() }), timeout]);
     }
 }

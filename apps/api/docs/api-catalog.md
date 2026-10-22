@@ -90,7 +90,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The Owner count includes every Owner membership. A system admin's deletion of a user removes the user's memberships first, and refuses the last Owner of an active, suspended or closed tenant, also when the user becomes it while the deletion runs (A8). So no deleted user is an Owner.
 - Setting the role a member already has answers 200 and publishes nothing, so it writes no audit entry (I1).
 - A removed member loses access at once: the tenant door reads the membership on every request (T7). No cache is added.
-- These rules live in Domain, on the tenant (`Tenant.ChangeMemberRole`, `Tenant.CheckRemoval`), because "at least one Owner" is the tenant's rule (M1). A permission says who passes the door; a Domain rule says what can happen to an Owner.
+- These rules live in Domain, on the tenant (`Tenant.ChangeRole`, `Tenant.Remove`), because "at least one Owner" is the tenant's rule (M1). A permission says who passes the door; a Domain rule says what can happen to an Owner.
 - Every command that changes the tenant, a membership or an invitation locks the tenant row first (K6).
 
 ### K2. Invitations
@@ -180,7 +180,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K6. Concurrency
 
-- Every handler that changes data, a saga step included, first locks the root row of the aggregate it changes (`SELECT … FOR UPDATE`). Updating a tenant locks that tenant's row; updating an invoice locks that invoice's row, never the tenant's.
+- Every handler that changes data, a saga step included, first locks the root row of each aggregate it changes (`SELECT … FOR UPDATE`); a transaction changes more than one aggregate only as ARCHITECTURE.md, M2, allows. Updating a tenant locks that tenant's row; updating an invoice locks that invoice's row, never the tenant's.
 - In ControlPlane, memberships and invitations belong to the tenant aggregate, and "at least one Owner" is the tenant's rule. So a change to them locks the tenant row.
 - A rule that only keeps a value unique uses a database constraint (a unique index), not a lock.
 - Locks are taken in one order: the aggregate root first. A lock lives only inside one transaction, never across two HTTP requests.
@@ -209,7 +209,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A tenant has no Owner only when its first Owner never accepted (K1). The platform then invites an Owner: `InviteOwner`, `POST /v1/platform/tenants/{tenantId}/invitations`.
 - At most one platform Owner invitation is pending at a time; the one `CreateTenant` sends counts. A new one replaces the pending one, also for another email: the old one becomes `Cancelled`, and its link answers 404 `invitation.not_found`, as a revoked one (K2). Accepting cancels nothing.
 - `InviteOwner` locks the tenant row and counts the Owners under the lock (K6). A tenant that is not active answers 409 `tenant.not_active`; one with an Owner 409 `tenant.has_owner`. An acceptance locks the same row first, so it runs before, and the invitation is refused, or after, and finds its invitation cancelled: never two pending, never a cancelled link that joins.
-- The rule is the tenant's (`Tenant.CheckOwnerInvitation`, M1).
+- The rule is the tenant's (`Tenant.Invite`, M1).
 - Each record is the platform's action: `tenant.owner_invited`, in both logs, with the tenant as the target (K3).
 - The summary of K10 shows the invitation on the platform's screens while the tenant has no Owner.
 

@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using SharedKernel;
 
@@ -14,6 +15,9 @@ internal sealed class Tenant
     public const int CancellationReasonMaxLength = 50;
 
     public const int SuspensionReasonMaxLength = 500;
+
+    /// <summary>The window of a tenant's daily limit of invitations (K2): the invitations it sent in the 24 hours before now.</summary>
+    public static readonly TimeSpan InvitationLimitWindow = TimeSpan.FromHours(24);
 
     private static readonly Error OwnerRequiresOwner =
         Error.Forbidden(ControlPlaneErrorCodes.MemberOwnerRequiresOwner, "Only an Owner can give or take the Owner role, or remove an Owner.");
@@ -87,53 +91,12 @@ internal sealed class Tenant
     };
 
     /// <summary>
-    /// Gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the Owner
-    /// role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's lock
-    /// and counts the Owners under it (K6j). Returns whether the role changed: the role the member already has changes nothing (I1).
-    /// Every rejection comes before the change.
+    /// Whether a system admin's deletion of the user may take the target's membership away (K1): a tenant always has at least one Owner,
+    /// so the tenant's last Owner stays. A user who is not a member may go. It changes nothing, so the check before the deletion asks it
+    /// without a lock, and <see cref="RemoveForUserDeletion"/> asks it again under the lock.
     /// </summary>
-    public static Result<StateChange> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
-    {
-        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
-        if (givesOrTakesOwner && !IsOwner(actor))
-        {
-            return OwnerRequiresOwner;
-        }
-
-        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && owners <= 1)
-        {
-            return LastOwner;
-        }
-
-        return target.Assign(role);
-    }
-
-    /// <summary>
-    /// Whether the actor may remove the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner,
-    /// and the last Owner stays. The caller holds the tenant's lock and counts the Owners under it (K6j). It changes nothing, so the
-    /// caller removes the membership after it.
-    /// </summary>
-    public static Result CheckRemoval(Membership actor, Membership target, int owners)
-    {
-        if (actor.UserId == target.UserId)
-        {
-            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
-        }
-
-        if (IsOwner(target) && !IsOwner(actor))
-        {
-            return OwnerRequiresOwner;
-        }
-
-        return IsOwner(target) && owners <= 1 ? LastOwner : Result.Success();
-    }
-
-    /// <summary>
-    /// Whether a system admin's deletion of the user may take this membership away (K1): a tenant always has at least one Owner, so the
-    /// tenant's last Owner stays. It changes nothing, so a caller checks it before any change.
-    /// </summary>
-    public static Result CheckUserDeletion(Membership target, int owners) =>
-        IsOwner(target) && owners <= 1
+    public static Result CheckUserDeletion(MemberFacts facts) =>
+        facts.Target is { } target && IsOwner(target) && facts.Owners <= 1
             ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
             : Result.Success();
 
@@ -214,14 +177,16 @@ internal sealed class Tenant
 
     /// <summary>
     /// Closes an active or a suspended tenant at this moment: its members are refused at the tenant door, its data stays, and the reopen
-    /// period counts from now (K4). A suspension's reason stays until a reopening. Returns whether the status changed; a closed tenant
-    /// stays closed and keeps its first moment. A tenant whose creation has not passed its pivot, or never will, is rejected.
+    /// period counts from now (K4). A suspension's reason stays until a reopening. The closure cancels every pending invitation of the
+    /// tenant, expired ones included, so no invitation stays pending on a closed tenant (K6h); the caller read them under the tenant's
+    /// lock. A closed tenant stays closed, keeps its first moment and cancels nothing. A tenant whose creation has not passed its pivot,
+    /// or never will, is rejected.
     /// </summary>
-    public Result<StateChange> Close(DateTimeOffset now)
+    public Result<Closed> Close(DateTimeOffset now, IReadOnlyList<Invitation> pending)
     {
         if (Status == TenantStatus.Closed)
         {
-            return StateChange.Unchanged;
+            return new Closed(StateChange.Unchanged, []);
         }
 
         if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
@@ -231,7 +196,12 @@ internal sealed class Tenant
 
         Status = TenantStatus.Closed;
         ClosedAt = now;
-        return StateChange.Changed;
+        foreach (var invitation in pending)
+        {
+            invitation.Cancel();
+        }
+
+        return new Closed(StateChange.Changed, pending);
     }
 
     /// <summary>
@@ -262,15 +232,225 @@ internal sealed class Tenant
         return StateChange.Changed;
     }
 
+    /// <summary>
+    /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the
+    /// Owner role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's
+    /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). Every rejection comes before the
+    /// change.
+    /// </summary>
+    public Result<RoleChange> ChangeRole(Membership actor, Role role, MemberFacts facts)
+    {
+        if (MemberOf(facts) is not { } target)
+        {
+            return Membership.NotFound;
+        }
+
+        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
+        if (givesOrTakesOwner && !IsOwner(actor))
+        {
+            return OwnerRequiresOwner;
+        }
+
+        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && facts.Owners <= 1)
+        {
+            return LastOwner;
+        }
+
+        var oldRole = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
+        return new RoleChange(target, oldRole, target.Assign(role));
+    }
+
+    /// <summary>
+    /// The actor removes the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner, and the last
+    /// Owner stays. The caller holds the tenant's lock and read the facts under it (K6j). Returns the membership to remove; the caller
+    /// removes it, with what follows from it (R13).
+    /// </summary>
+    public Result<Membership> Remove(Membership actor, MemberFacts facts)
+    {
+        if (MemberOf(facts) is not { } target)
+        {
+            return Membership.NotFound;
+        }
+
+        if (actor.UserId == target.UserId)
+        {
+            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
+        }
+
+        if (IsOwner(target) && !IsOwner(actor))
+        {
+            return OwnerRequiresOwner;
+        }
+
+        return IsOwner(target) && facts.Owners <= 1 ? LastOwner : target;
+    }
+
+    /// <summary>
+    /// A system admin's deletion of the user takes the target's membership away (section 6, "User deletion"), under the rule of
+    /// <see cref="CheckUserDeletion"/>, asked again under the tenant's lock (K6l). A user who became the tenant's last Owner since the check
+    /// stays, and the error names this tenant. Returns the membership to remove, or none when the user is no longer a member.
+    /// </summary>
+    public Result<Membership?> RemoveForUserDeletion(MemberFacts facts)
+    {
+        var allowed = CheckUserDeletion(facts);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error with { TenantIds = [Id] };
+        }
+
+        return facts.Target;
+    }
+
+    /// <summary>
+    /// Whether the invitation a code found can be accepted at all: a cancelled one answers as an invitation that does not exist, as a
+    /// revoked one does (K2). It comes before the user's lock (K6f), so an acceptance with such a code locks no user.
+    /// </summary>
+    public Result CheckInvitationFound(Invitation invitation) =>
+        invitation.TenantId == Id && invitation.Status != InvitationStatus.Cancelled ? Result.Success() : Invitation.NotFound;
+
+    /// <summary>
+    /// Whether the person may accept the invitation now, in the order of section 6, "Tenant lifecycle": a deleted user never joins (A8),
+    /// a system admin never joins (T5), a member does not join twice, then the invitation's own checks, and only then a suspended tenant,
+    /// so only the invited person with a live invitation learns that it is suspended (T3). It changes nothing, so a caller can check
+    /// more after it and still refuse without a change; <see cref="Accept"/> asks it again.
+    /// </summary>
+    public Result CheckAcceptance(Invitation invitation, AcceptanceFacts facts, IEnumerable<EmailAddress> verifiedEmails, DateTimeOffset now)
+    {
+        if (facts.UserDeleted)
+        {
+            return Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
+        }
+
+        if (facts.IsSystemAdmin)
+        {
+            return Error.Unprocessable(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin, "A system admin cannot join a tenant.");
+        }
+
+        if (facts.IsMember)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.MemberExists, "You are already a member of this tenant.");
+        }
+
+        var allowed = invitation.CheckAcceptance(verifiedEmails, now);
+        if (!allowed.IsSuccess)
+        {
+            return allowed;
+        }
+
+        return Status == TenantStatus.Suspended ? Error.Conflict(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended.") : Result.Success();
+    }
+
+    /// <summary>
+    /// The user accepts the invitation, after the checks of <see cref="CheckAcceptance"/>: the invitation is used up, and the user joins
+    /// with its role at this moment. Returns the new membership, which the caller adds with what follows from it (R13). The caller holds
+    /// the tenant's lock, then the invitation's, then the user's (K6f).
+    /// </summary>
+    public Result<Membership> Accept(Invitation invitation, AcceptanceFacts facts, IEnumerable<EmailAddress> verifiedEmails, Guid userId, DateTimeOffset now)
+    {
+        var allowed = CheckAcceptance(invitation, facts, verifiedEmails, now);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        var accepted = invitation.Accept(verifiedEmails, userId, now);
+        return accepted.IsSuccess ? new Membership(Id, userId, invitation.RoleId, now) : accepted.Error;
+    }
+
+    /// <summary>
+    /// A member revokes the invitation, so its link stops working at once (K2): none, or another tenant's, is not found, and the
+    /// invitation's own rule decides the rest (<see cref="Invitation.Revoke"/>). The caller holds the tenant's lock, then the
+    /// invitation's (K6e).
+    /// </summary>
+    public Result<StateChange> Revoke(Invitation? invitation) =>
+        invitation is not null && invitation.TenantId == Id ? invitation.Revoke() : Invitation.NotFound;
+
+    /// <summary>
+    /// Compensates a tenant creation that did not reach the activation (<see cref="Cancel"/>). An active or a suspended tenant is past the
+    /// pivot and is never cancelled: none, so the compensation changes nothing and reports nothing, and the saga's cancellation timeout
+    /// leaves the tenant creation to a person. Any other tenant answers whether it changed; a cancelled one keeps its first reason.
+    /// </summary>
+    public StateChange? CancelCreation(string reason) =>
+        Status is TenantStatus.Active or TenantStatus.Suspended ? null : Cancel(reason);
+
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
 
     /// <summary>
-    /// Whether the platform may invite an Owner now: only into an active tenant that has no Owner. A tenant has no Owner only while its
-    /// first Owner has not accepted, because the last Owner always stays (K1). The caller holds the tenant's lock and counts the Owners
-    /// under it (K6j), so an acceptance runs before or after. It changes nothing.
+    /// Invites someone into the tenant under the rules of the inviter (K1, K2), and replaces the pending invitations the new one ends. A
+    /// member gives only a role they may give, never to a member's address, and within the tenant's daily limit; the new invitation
+    /// replaces a pending one to the same address. The platform invites an Owner only into an active tenant without one; nobody else
+    /// invites there, so the new invitation replaces every pending one, also to another address. The caller holds the tenant's lock and
+    /// read the facts under it (K6i, K6j). Every rejection comes before the change. The new invitation keeps the request's language, else
+    /// the inviter's (K8).
     /// </summary>
-    public Result CheckOwnerInvitation(int owners)
+    public Result<Invited> Invite(Inviter inviter, NewInvitation request, InvitationFacts facts, int dailyLimit)
+    {
+        var allowed = inviter.MemberRole is { } inviterRole
+            ? CheckMemberInvitation(inviterRole, request.Role, facts, dailyLimit)
+            : CheckOwnerInvitation(facts.Owners);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error;
+        }
+
+        IReadOnlyList<Invitation> replaced = inviter.MemberRole is null
+            ? facts.Pending
+            : [.. facts.Pending.Where(pending => pending.Email == request.Email.Value)];
+        foreach (var pending in replaced)
+        {
+            pending.Cancel();
+        }
+
+        var invitation = Invitation.Create(
+            request.Id,
+            Id,
+            request.Email,
+            request.Role,
+            inviter.UserId,
+            request.Now,
+            request.Lifetime,
+            request.Secret,
+            request.Language ?? inviter.Language);
+        return new Invited(invitation, replaced);
+    }
+
+    private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
+
+    // A member's invitation: the role rule first, then a member's address, then the daily limit (section 6, "Member invitation").
+    private static Result CheckMemberInvitation(Role inviter, Role role, InvitationFacts facts, int dailyLimit)
+    {
+        var allowed = Invitation.CheckInviter(inviter, role);
+        if (!allowed.IsSuccess)
+        {
+            return allowed;
+        }
+
+        if (facts.AddressIsMember)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant.");
+        }
+
+        return facts.SentInWindow >= dailyLimit
+            ? Error.TooManyRequests(ControlPlaneErrorCodes.InvitationDailyLimitReached, "The tenant has sent as many invitations as it may in 24 hours.")
+            : Result.Success();
+    }
+
+    private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
+
+    private static bool IsUrlSafe(string slug) =>
+        slug.Length is >= SlugMinLength and <= SlugMaxLength
+        && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
+        && slug[0] != '-'
+        && slug[^1] != '-'
+        && !slug.Contains("--", StringComparison.Ordinal);
+
+    // The target is a member of this tenant only. Row level security hides another tenant's memberships, so this guards the code, not a
+    // request.
+    private Membership? MemberOf(MemberFacts facts) => facts.Target?.TenantId == Id ? facts.Target : null;
+
+    // A tenant has no Owner only while its first Owner has not accepted, because the last Owner always stays (K1).
+    private Result CheckOwnerInvitation(int owners)
     {
         if (Status != TenantStatus.Active)
         {
@@ -281,17 +461,6 @@ internal sealed class Tenant
             ? Error.Conflict(ControlPlaneErrorCodes.TenantHasOwner, "The tenant has an Owner; its Owners invite people.")
             : Result.Success();
     }
-
-    private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
-
-    private static bool IsValidName(string trimmed) => trimmed.Length is >= 1 and <= NameMaxLength;
-
-    private static bool IsUrlSafe(string slug) =>
-        slug.Length is >= SlugMinLength and <= SlugMaxLength
-        && slug.All(character => character is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-')
-        && slug[0] != '-'
-        && slug[^1] != '-'
-        && !slug.Contains("--", StringComparison.Ordinal);
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {

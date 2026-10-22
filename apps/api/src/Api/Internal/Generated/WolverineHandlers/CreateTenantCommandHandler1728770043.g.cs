@@ -59,7 +59,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Tenants.CreateTenant.CreateTenantCommand>(_validatorOfCreateTenantCommand, _failureActionOfCreateTenantCommand, createTenantCommand).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2, var outgoing3, var outgoing4) = await ControlPlane.Application.Tenants.CreateTenant.CreateTenantHandler.HandleAsync(createTenantCommand, tenantRepository, userRepository, _invitationOptions, _tenantCreationOptions, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2, var outgoing3) = await ControlPlane.Application.Tenants.CreateTenant.CreateTenantHandler.HandleAsync(createTenantCommand, tenantRepository, userRepository, _invitationOptions, _tenantCreationOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -75,10 +75,6 @@ namespace Internal.Generated.WolverineHandlers
                 
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
-
-                
-                // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing4).ConfigureAwait(false);
 
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.TenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 

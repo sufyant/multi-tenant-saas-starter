@@ -1,4 +1,5 @@
 using ControlPlane.Domain;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -11,11 +12,21 @@ public sealed class TenantTests
 {
     private const string Reason = "Unpaid invoices";
 
+    private const int DailyLimit = 50;
+
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
 
     private static readonly DateTimeOffset Now = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
 
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
+
+    private static readonly Guid InviterId = new("0199a8f0-0000-7000-8000-000000000002");
+
+    private static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
+
+    private static readonly Inviter Platform = Inviter.Platform(InviterId, Language.Tr);
+
+    private static readonly AcceptanceFacts NewPerson = new(UserDeleted: false, IsSystemAdmin: false, IsMember: false);
 
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
@@ -367,9 +378,9 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var closed = tenant.Close(Now);
+        var closed = tenant.Close(Now, []);
 
-        closed.Value.ShouldBe(StateChange.Changed);
+        closed.Value.Change.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Closed);
         tenant.ClosedAt.ShouldBe(Now);
     }
@@ -381,7 +392,7 @@ public sealed class TenantTests
         var tenant = Active();
         tenant.Suspend(Reason);
 
-        tenant.Close(Now);
+        tenant.Close(Now, []);
 
         tenant.SuspensionReason.ShouldBe(Reason);
     }
@@ -392,9 +403,9 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var closed = tenant.Close(Now.AddDays(1));
+        var closed = tenant.Close(Now.AddDays(1), []);
 
-        closed.Value.ShouldBe(StateChange.Unchanged);
+        closed.Value.Change.ShouldBe(StateChange.Unchanged);
         tenant.ClosedAt.ShouldBe(Now);
     }
 
@@ -405,10 +416,129 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var closed = tenant.Close(Now);
+        var closed = tenant.Close(Now, []);
 
         closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
         tenant.ClosedAt.ShouldBeNull();
+    }
+
+    // K6h: the closure cancels every pending invitation, expired ones included, in the same change.
+    [Fact]
+    public void CloseTenant_WithPendingInvitations_CancelsEachOne()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var expired = Invitation.Create(
+            Guid.NewGuid(), Id, EmailAddress.Create("grace@example.com"), BuiltInRoles.Owner, InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var closed = Active().Close(Now, [pending, expired]);
+
+        closed.Value.Cancelled.ShouldBe([pending, expired]);
+        pending.Status.ShouldBe(InvitationStatus.Cancelled);
+        expired.Status.ShouldBe(InvitationStatus.Cancelled);
+    }
+
+    [Fact]
+    public void CloseTenant_ClosedWithAPendingInvitation_CancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var closed = Closed().Close(Now, [pending]);
+
+        closed.Value.Cancelled.ShouldBeEmpty();
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void CloseTenant_ProvisioningWithAPendingInvitation_IsRejectedAndCancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Owner);
+
+        var closed = InStatus("Provisioning").Close(Now, [pending]);
+
+        closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    public void CancelTenant_PastThePivot_ChangesNothingAndAnswersNone(string status)
+    {
+        var tenant = InStatus(status);
+
+        var cancelled = tenant.CancelCreation("activation_failed");
+
+        cancelled.ShouldBeNull();
+        tenant.Status.ShouldBe(Enum.Parse<TenantStatus>(status));
+    }
+
+    [Fact]
+    public void CancelTenant_Provisioning_IsCancelledWithTheReason()
+    {
+        var tenant = InStatus("Provisioning");
+
+        var cancelled = tenant.CancelCreation("activation_failed");
+
+        cancelled.ShouldBe(StateChange.Changed);
+        tenant.Status.ShouldBe(TenantStatus.Cancelled);
+        tenant.CancellationReason.ShouldBe("activation_failed");
+    }
+
+    // A closed tenant is past the pivot too, and stays closed; the compensation still reports, as before.
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Cancelled")]
+    public void CancelTenant_ClosedOrCancelled_ChangesNothing(string status)
+    {
+        var tenant = InStatus(status);
+
+        var cancelled = tenant.CancelCreation("identity_provider_failed");
+
+        cancelled.ShouldBe(StateChange.Unchanged);
+        tenant.Status.ShouldBe(Enum.Parse<TenantStatus>(status));
+    }
+
+    [Fact]
+    public void RevokeInvitation_APendingInvitation_CancelsIt()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var revoked = Active().Revoke(invitation);
+
+        revoked.Value.ShouldBe(StateChange.Changed);
+        invitation.Status.ShouldBe(InvitationStatus.Cancelled);
+    }
+
+    [Fact]
+    public void RevokeInvitation_NoInvitation_IsNotFound()
+    {
+        var revoked = Active().Revoke(null);
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
+        revoked.Error.Type.ShouldBe(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnotherTenantsInvitation_IsNotFoundAndStaysPending()
+    {
+        var other = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), BuiltInRoles.Member, InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var revoked = Active().Revoke(other);
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
+        other.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnAcceptedInvitation_IsAConflict()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        invitation.Accept(Verified("ada@example.com"), Guid.NewGuid(), Now);
+
+        var revoked = Active().Revoke(invitation);
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
     }
 
     // A closed tenant is past the pivot: a late compensation does not cancel it.
@@ -428,7 +558,7 @@ public sealed class TenantTests
     {
         var tenant = Active();
         tenant.Suspend(Reason);
-        tenant.Close(Now);
+        tenant.Close(Now, []);
 
         var reopened = tenant.Reopen(Now + ReopenPeriod - TimeSpan.FromSeconds(1), ReopenPeriod);
 
@@ -517,20 +647,25 @@ public sealed class TenantTests
     }
 
     [Fact]
-    public void InviteOwner_AnActiveTenantWithoutAnOwner_IsAllowed()
+    public void InviteOwner_AnActiveTenantWithoutAnOwner_CreatesAPendingOwnerInvitation()
     {
-        var allowed = Active().CheckOwnerInvitation(owners: 0);
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0), DailyLimit);
 
-        allowed.IsSuccess.ShouldBeTrue();
+        invited.Value.Invitation.Email.ShouldBe("ada@example.com");
+        invited.Value.Invitation.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
+        invited.Value.Invitation.TenantId.ShouldBe(Id);
+        invited.Value.Invitation.InvitedBy.ShouldBe(InviterId);
+        invited.Value.Invitation.Status.ShouldBe(InvitationStatus.Pending);
+        invited.Value.Replaced.ShouldBeEmpty();
     }
 
     [Fact]
     public void InviteOwner_ATenantWithAnOwner_IsAConflict()
     {
-        var allowed = Active().CheckOwnerInvitation(owners: 1);
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 1), DailyLimit);
 
-        allowed.Error.Type.ShouldBe(ErrorType.Conflict);
-        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantHasOwner);
+        invited.Error.Type.ShouldBe(ErrorType.Conflict);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantHasOwner);
     }
 
     [Theory]
@@ -540,9 +675,129 @@ public sealed class TenantTests
     [InlineData("Closed")]
     public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
     {
-        var allowed = InStatus(status).CheckOwnerInvitation(owners: 0);
+        var invited = InStatus(status).Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0), DailyLimit);
 
-        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+    }
+
+    // Nobody else invites into a tenant without an Owner, so every pending invitation is the platform's, and the new one replaces it,
+    // also to another address.
+    [Fact]
+    public void InviteOwner_PendingInvitationsToOtherAddresses_CancelsEachOne()
+    {
+        var first = PendingTo("grace@example.com", BuiltInRoles.Owner);
+        var second = PendingTo("ada@example.com", BuiltInRoles.Owner);
+
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0, pending: [first, second]), DailyLimit);
+
+        invited.Value.Replaced.ShouldBe([first, second]);
+        first.Status.ShouldBe(InvitationStatus.Cancelled);
+        second.Status.ShouldBe(InvitationStatus.Cancelled);
+    }
+
+    // The daily limit is a member's; the platform's Owner invitation and a member's address are no rules of the platform.
+    [Fact]
+    public void InviteOwner_PastTheDailyLimit_IsAllowed()
+    {
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0, sent: DailyLimit), DailyLimit);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void InviteOwner_WithoutALanguage_TakesTheSystemAdmins()
+    {
+        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner, language: null), Facts(owners: 0), DailyLimit);
+
+        invited.Value.Invitation.Language.ShouldBe(Language.Tr);
+    }
+
+    [Theory]
+    [InlineData("Owner", "Owner")]
+    [InlineData("Owner", "Admin")]
+    [InlineData("Owner", "Member")]
+    [InlineData("Admin", "Admin")]
+    [InlineData("Admin", "Member")]
+    public void InviteMember_ARoleTheInviterMayGive_CreatesAPendingInvitationWithTheRole(string inviter, string role)
+    {
+        var invited = Active().Invite(MemberOf(inviter), Request("ada@example.com", RoleOf(role)), Facts(owners: 1), DailyLimit);
+
+        invited.Value.Invitation.RoleId.ShouldBe(RoleOf(role).Id);
+        invited.Value.Invitation.Status.ShouldBe(InvitationStatus.Pending);
+        invited.Value.Invitation.ExpiresAt.ShouldBe(Now + Lifetime);
+    }
+
+    // The role rule comes first, so an Admin learns nothing about the address.
+    [Fact]
+    public void InviteMember_AnAdminForTheOwnerRoleToAMembersAddress_IsForbiddenAndCancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var invited = Active().Invite(
+            MemberOf("Admin"), Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 1, member: true, pending: [pending]), DailyLimit);
+
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    // The address comes before the limit.
+    [Fact]
+    public void InviteMember_AMembersAddressAtTheDailyLimit_IsAConflict()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, member: true, sent: DailyLimit), DailyLimit);
+
+        invited.Error.Type.ShouldBe(ErrorType.Conflict);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberExists);
+    }
+
+    [Fact]
+    public void InviteMember_AtTheDailyLimit_IsTooManyRequestsAndCancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, sent: DailyLimit, pending: [pending]), DailyLimit);
+
+        invited.Error.Type.ShouldBe(ErrorType.TooManyRequests);
+        invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationDailyLimitReached);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void InviteMember_OneBelowTheDailyLimit_IsAllowed()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, sent: DailyLimit - 1), DailyLimit);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    // K2: the new invitation replaces a pending one to the same address, and only that one.
+    [Fact]
+    public void InviteMember_APendingInvitationToTheAddress_CancelsItAndKeepsTheOthers()
+    {
+        var same = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var other = PendingTo("grace@example.com", BuiltInRoles.Member);
+
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Admin), Facts(owners: 1, pending: [same, other]), DailyLimit);
+
+        invited.Value.Replaced.ShouldBe([same]);
+        same.Status.ShouldBe(InvitationStatus.Cancelled);
+        other.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void InviteMember_WithALanguage_KeepsIt()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member, Language.Ar), Facts(owners: 1), DailyLimit);
+
+        invited.Value.Invitation.Language.ShouldBe(Language.Ar);
+    }
+
+    [Fact]
+    public void InviteMember_WithoutALanguage_TakesTheInviters()
+    {
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member, language: null), Facts(owners: 1), DailyLimit);
+
+        invited.Value.Invitation.Language.ShouldBe(Language.Tr);
     }
 
     [Theory]
@@ -556,9 +811,9 @@ public sealed class TenantTests
     {
         var changed = Membership(target);
 
-        var result = Tenant.ChangeMemberRole(Membership(actor), changed, RoleOf(role), owners: 2);
+        var result = Active().ChangeRole(Membership(actor), RoleOf(role), new MemberFacts(changed, 2));
 
-        result.Value.ShouldBe(StateChange.Changed);
+        result.Value.Change.ShouldBe(StateChange.Changed);
         changed.RoleId.ShouldBe(RoleOf(role).Id);
     }
 
@@ -571,7 +826,7 @@ public sealed class TenantTests
     {
         var changed = Membership(target);
 
-        var result = Tenant.ChangeMemberRole(Membership("Admin"), changed, RoleOf(role), owners: 2);
+        var result = Active().ChangeRole(Membership("Admin"), RoleOf(role), new MemberFacts(changed, 2));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -585,7 +840,7 @@ public sealed class TenantTests
     {
         var changed = Membership("Owner");
 
-        var result = Tenant.ChangeMemberRole(Membership("Owner"), changed, RoleOf(role), owners: 1);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(changed, 1));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -598,9 +853,9 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Tenant.ChangeMemberRole(self, self, BuiltInRoles.Admin, owners: 2);
+        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 2));
 
-        result.Value.ShouldBe(StateChange.Changed);
+        result.Value.Change.ShouldBe(StateChange.Changed);
         self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
     }
 
@@ -609,7 +864,7 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Tenant.ChangeMemberRole(self, self, BuiltInRoles.Admin, owners: 1);
+        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 1));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         self.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
@@ -621,9 +876,9 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Tenant.ChangeMemberRole(self, self, BuiltInRoles.Member, owners: 1);
+        var result = Active().ChangeRole(self, BuiltInRoles.Member, new MemberFacts(self, 1));
 
-        result.Value.ShouldBe(StateChange.Changed);
+        result.Value.Change.ShouldBe(StateChange.Changed);
     }
 
     [Fact]
@@ -631,7 +886,7 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Tenant.ChangeMemberRole(self, self, BuiltInRoles.Owner, owners: 1);
+        var result = Active().ChangeRole(self, BuiltInRoles.Owner, new MemberFacts(self, 1));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
@@ -644,16 +899,16 @@ public sealed class TenantTests
     [InlineData("Member", 1)]
     public void ChangeMemberRole_TheRoleTheMemberHas_ChangesNothing(string role, int owners)
     {
-        var result = Tenant.ChangeMemberRole(Membership("Owner"), Membership(role), RoleOf(role), owners);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(Membership(role), owners));
 
-        result.Value.ShouldBe(StateChange.Unchanged);
+        result.Value.Change.ShouldBe(StateChange.Unchanged);
     }
 
     // Section 6, "Member management": an Admin who acts on an Owner is refused before the Owner count is looked at.
     [Fact]
     public void ChangeMemberRole_AnAdminOnTheLastOwner_IsForbiddenFirst()
     {
-        var result = Tenant.ChangeMemberRole(Membership("Admin"), Membership("Owner"), BuiltInRoles.Member, owners: 1);
+        var result = Active().ChangeRole(Membership("Admin"), BuiltInRoles.Member, new MemberFacts(Membership("Owner"), 1));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
     }
@@ -666,7 +921,7 @@ public sealed class TenantTests
     [InlineData("Admin", "Member")]
     public void RemoveMember_AMemberTheActorMayRemove_IsAllowed(string actor, string target)
     {
-        var result = Tenant.CheckRemoval(Membership(actor), Membership(target), owners: 2);
+        var result = Active().Remove(Membership(actor), new MemberFacts(Membership(target), 2));
 
         result.IsSuccess.ShouldBeTrue();
     }
@@ -678,7 +933,7 @@ public sealed class TenantTests
     {
         var self = Membership(role);
 
-        var result = Tenant.CheckRemoval(self, self, owners: 2);
+        var result = Active().Remove(self, new MemberFacts(self, 2));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberCannotRemoveSelf);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -687,7 +942,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveMember_AnAdminRemovesAnOwner_IsForbidden()
     {
-        var result = Tenant.CheckRemoval(Membership("Admin"), Membership("Owner"), owners: 2);
+        var result = Active().Remove(Membership("Admin"), new MemberFacts(Membership("Owner"), 2));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -697,7 +952,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveMember_TheLastOwner_IsAConflict()
     {
-        var result = Tenant.CheckRemoval(Membership("Owner"), Membership("Owner"), owners: 1);
+        var result = Active().Remove(Membership("Owner"), new MemberFacts(Membership("Owner"), 1));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -709,9 +964,234 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Tenant.CheckRemoval(self, self, owners: 1);
+        var result = Active().Remove(self, new MemberFacts(self, 1));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberCannotRemoveSelf);
+    }
+
+    [Fact]
+    public void ChangeMemberRole_ARoleChange_AnswersTheMemberAndTheRoleTheyHad()
+    {
+        var target = Membership("Admin");
+
+        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(target, 1));
+
+        result.Value.Member.ShouldBeSameAs(target);
+        result.Value.OldRole.ShouldBe(BuiltInRoles.Admin);
+    }
+
+    // Row level security hides another tenant's members, so the target is not found.
+    [Fact]
+    public void ChangeMemberRole_NoTargetMembership_IsNotFound()
+    {
+        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(null, 1));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+        result.Error.Type.ShouldBe(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public void ChangeMemberRole_AMembershipOfAnotherTenant_IsNotFoundAndChangesNothing()
+    {
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), BuiltInRoles.Member.Id, DateTimeOffset.UnixEpoch);
+
+        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Admin, new MemberFacts(other, 1));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+        other.RoleId.ShouldBe(BuiltInRoles.Member.Id);
+    }
+
+    [Fact]
+    public void RemoveMember_AMemberTheActorMayRemove_AnswersTheMembershipToRemove()
+    {
+        var target = Membership("Member");
+
+        var result = Active().Remove(Membership("Admin"), new MemberFacts(target, 1));
+
+        result.Value.ShouldBeSameAs(target);
+    }
+
+    [Fact]
+    public void RemoveMember_NoTargetMembership_IsNotFound()
+    {
+        var result = Active().Remove(Membership("Owner"), new MemberFacts(null, 1));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+    }
+
+    [Fact]
+    public void RemoveMember_AMembershipOfAnotherTenant_IsNotFound()
+    {
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), BuiltInRoles.Member.Id, DateTimeOffset.UnixEpoch);
+
+        var result = Active().Remove(Membership("Owner"), new MemberFacts(other, 1));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+    }
+
+    // Section 6, "User deletion": the tenant's last Owner stays, and the error names the tenant.
+    [Fact]
+    public void RemoveUserMembership_TheLastOwner_IsAConflictThatNamesTheTenant()
+    {
+        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserLastOwner);
+        result.Error.Type.ShouldBe(ErrorType.Conflict);
+        result.Error.TenantIds.ShouldBe([Id]);
+    }
+
+    [Theory]
+    [InlineData("Owner", 2)]
+    [InlineData("Admin", 1)]
+    [InlineData("Member", 1)]
+    public void RemoveUserMembership_AMembershipThatMayGo_AnswersIt(string role, int owners)
+    {
+        var membership = Membership(role);
+
+        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners));
+
+        result.Value.ShouldBeSameAs(membership);
+    }
+
+    [Fact]
+    public void RemoveUserMembership_AUserWhoIsNoLongerAMember_AnswersNone()
+    {
+        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1));
+
+        result.Value.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData("Owner", 1, false)]
+    [InlineData("Owner", 2, true)]
+    [InlineData("Admin", 1, true)]
+    public void DeleteUser_TheCheckOfAMembership_RefusesOnlyTheLastOwner(string role, int owners, bool allowed)
+    {
+        var result = Tenant.CheckUserDeletion(new MemberFacts(Membership(role), owners));
+
+        result.IsSuccess.ShouldBe(allowed);
+    }
+
+    [Fact]
+    public void DeleteUser_TheCheckOfATenantTheUserIsNotAMemberOf_IsAllowed()
+    {
+        var result = Tenant.CheckUserDeletion(new MemberFacts(null, 0));
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void AcceptInvitation_APendingInvitation_IsFound()
+    {
+        var found = Active().CheckInvitationFound(PendingTo("ada@example.com", BuiltInRoles.Member));
+
+        found.IsSuccess.ShouldBeTrue();
+    }
+
+    // K2: a cancelled invitation answers as one that does not exist, as a revoked one does.
+    [Fact]
+    public void AcceptInvitation_ACancelledInvitation_IsNotFound()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        invitation.Cancel();
+
+        var found = Active().CheckInvitationFound(invitation);
+
+        found.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
+        found.Error.Type.ShouldBe(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public void AcceptInvitation_TheInvitedPerson_JoinsWithTheInvitationsRoleAndUsesItUp()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Admin);
+        var userId = Guid.NewGuid();
+
+        var membership = Active().Accept(invitation, NewPerson, Verified("ada@example.com"), userId, Now);
+
+        membership.Value.TenantId.ShouldBe(Id);
+        membership.Value.UserId.ShouldBe(userId);
+        membership.Value.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
+        membership.Value.JoinedAt.ShouldBe(Now);
+        invitation.Status.ShouldBe(InvitationStatus.Accepted);
+        invitation.AcceptedBy.ShouldBe(userId);
+    }
+
+    // Section 6, "Tenant lifecycle": the order of the answers. Each case also fails every check after it.
+    [Fact]
+    public void AcceptInvitation_ADeletedUser_IsForbiddenFirstAndChangesNothing()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, new AcceptanceFacts(true, true, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserDeleted);
+        membership.Error.Type.ShouldBe(ErrorType.Forbidden);
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void AcceptInvitation_ASystemAdmin_IsUnprocessableBeforeTheMembership()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, new AcceptanceFacts(false, true, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationSystemAdminCannotJoin);
+        membership.Error.Type.ShouldBe(ErrorType.Unprocessable);
+    }
+
+    [Fact]
+    public void AcceptInvitation_AMember_IsAConflictBeforeTheInvitationsChecks()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, new AcceptanceFacts(false, false, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberExists);
+        membership.Error.Type.ShouldBe(ErrorType.Conflict);
+    }
+
+    // The invitation's own checks come before the tenant's status, so a stranger with the link learns nothing of a suspension (T3).
+    [Fact]
+    public void AcceptInvitation_AnotherAddressInASuspendedTenant_IsTheInvitationsAnswer()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var allowed = Suspended().CheckAcceptance(invitation, NewPerson, Verified("grace@example.com"), Now);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
+    }
+
+    [Fact]
+    public void AcceptInvitation_ExpiredInASuspendedTenant_IsExpired()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var allowed = Suspended().CheckAcceptance(invitation, NewPerson, Verified("ada@example.com"), Now + Lifetime);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationExpired);
+    }
+
+    // The invitation stays pending, so it can be accepted once the tenant is reactivated.
+    [Fact]
+    public void AcceptInvitation_TheInvitedPersonInASuspendedTenant_IsAConflictAndKeepsTheInvitationPending()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var membership = Suspended().Accept(invitation, NewPerson, Verified("ada@example.com"), Guid.NewGuid(), Now);
+
+        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSuspended);
+        membership.Error.Type.ShouldBe(ErrorType.Conflict);
+        invitation.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void AcceptInvitation_TheInvitedPerson_IsAllowedByTheCheck()
+    {
+        var allowed = Active().CheckAcceptance(PendingTo("ada@example.com", BuiltInRoles.Member), NewPerson, Verified("ada@example.com"), Now);
+
+        allowed.IsSuccess.ShouldBeTrue();
     }
 
     private static Tenant Active()
@@ -721,10 +1201,17 @@ public sealed class TenantTests
         return tenant;
     }
 
+    private static Tenant Suspended()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason);
+        return tenant;
+    }
+
     private static Tenant Closed()
     {
         var tenant = Active();
-        tenant.Close(Now);
+        tenant.Close(Now, []);
         return tenant;
     }
 
@@ -737,13 +1224,26 @@ public sealed class TenantTests
             "Cancelled" => tenant.Cancel("activation_failed") is StateChange.Changed,
             "Active" => tenant.Activate() is StateChange.Changed,
             "Suspended" => tenant.Activate() is StateChange.Changed && tenant.Suspend(Reason).Value is StateChange.Changed,
-            "Closed" => tenant.Activate() is StateChange.Changed && tenant.Close(Now).Value is StateChange.Changed,
+            "Closed" => tenant.Activate() is StateChange.Changed && tenant.Close(Now, []).Value.Change is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;
     }
 
     private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
+
+    private static IReadOnlyList<EmailAddress> Verified(string email) => EmailAddress.AllOf([email]);
+
+    private static Inviter MemberOf(string role) => Inviter.Member(InviterId, Language.Tr, RoleOf(role));
+
+    private static NewInvitation Request(string email, Role role, Language? language = Language.En) =>
+        new(Guid.NewGuid(), EmailAddress.Create(email), role, language, InvitationSecret.Generate(), Now, Lifetime);
+
+    private static InvitationFacts Facts(int owners, bool member = false, int sent = 0, IReadOnlyList<Invitation>? pending = null) =>
+        new(owners, member, sent, pending ?? []);
+
+    private static Invitation PendingTo(string email, Role role) =>
+        Invitation.Create(Guid.NewGuid(), Id, EmailAddress.Create(email), role, InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
 
     private static Membership Membership(string role) => new(Id, Guid.NewGuid(), RoleOf(role).Id, DateTimeOffset.UnixEpoch);
 }

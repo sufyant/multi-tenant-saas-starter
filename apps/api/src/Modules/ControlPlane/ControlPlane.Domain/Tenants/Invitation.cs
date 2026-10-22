@@ -11,6 +11,9 @@ namespace ControlPlane.Domain.Tenants;
 /// </summary>
 internal sealed class Invitation : ITenantEntity
 {
+    /// <summary>No invitation answers the code or the id: none was found, or it is another tenant's, or it was cancelled (K2).</summary>
+    public static readonly Error NotFound = Error.NotFound(ControlPlaneErrorCodes.InvitationNotFound, "The invitation was not found.");
+
     // The body holds no address, not even part of one: the person learns only that theirs is not the invited one.
     private static readonly Error EmailMismatch =
         Error.Forbidden(ControlPlaneErrorCodes.InvitationEmailMismatch, "The invitation was sent to an email address you have not verified.");
@@ -146,6 +149,14 @@ internal sealed class Invitation : ITenantEntity
         SignUpInvitationId = signUpInvitationId;
         return SignUpDecision.Send;
     }
+
+    /// <summary>
+    /// The identity provider's invitation to withdraw at the end of the invitation's lifetime: an invitation still pending keeps it until
+    /// then. A revoked, replaced or cancelled one withdrew it when it ended, an accepted one no longer needs it, and before the expiry by
+    /// this clock nothing is withdrawn. None when nothing is withdrawn.
+    /// </summary>
+    public string? SignUpToWithdrawAt(DateTimeOffset now) =>
+        Status == InvitationStatus.Pending && now >= ExpiresAt ? SignUpInvitationId : null;
 
     /// <summary>
     /// Whether the invitation can be accepted now by someone with these verified email addresses: it is pending, it has not expired,
