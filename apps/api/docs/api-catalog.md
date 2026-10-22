@@ -92,6 +92,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - Setting the role a member already has answers 200 and publishes nothing, so it writes no audit entry (I1).
 - A removed member loses access at once: the tenant door reads the membership on every request (T7). No cache is added.
 - These rules live in Domain, on the tenant (`Tenant.ChangeRole`, `Tenant.Remove`), because "at least one Owner" is the tenant's rule (M1). A permission says who passes the door; a Domain rule says what can happen to an Owner.
+- Each rule of the Owners asks for the permission `tenant.owners.manage`, never for the Owner role (ARCHITECTURE.md, A1). Only the Owner role holds it. An Owner is a member whose role holds it, and "at least one Owner" is at least one such member. Each tenant has its own Owner, Admin and Member roles (A2).
 - Every command that changes the tenant, a membership or an invitation locks the tenant row first (K6).
 
 ### K2. Invitations
@@ -192,6 +193,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The new permission names are approved: `tenant.profile.read`, `tenant.invitations.*`, `tenant.members.update` and `tenant.members.delete`, `tenant.audit.read`, `platform.tenants.update`, `platform.tenants.close` and `platform.tenants.reopen`, `platform.users.update` and `platform.users.delete`, `platform.audit.read`, and `platform.tenants.invite_owner` (N6).
 - Step 20k renamed every `admin.*` permission to `platform.*`, with the audience (N5, the maintainer's decision). An architecture test fails for a permission that starts with `admin.` (`NamesAndPlacesTests`).
 - Each step adds to the code only the permissions it uses. Step 20c adds `tenant.profile.read`, for every built-in role. Step 20d adds `tenant.invitations.create`, `tenant.invitations.read` and `tenant.invitations.delete`, for the Owner and Admin roles only. Step 20e adds `tenant.members.update` and `tenant.members.delete`, for the Owner and Admin roles only. Step 20f adds `tenant.audit.read`, for the Owner and Admin roles only, and the platform's audit permission, for system admins. Step 20h adds the platform's `tenants.update`, `tenants.close` and `tenants.reopen`, for system admins. Step 20i adds the platform's `users.update` and `users.delete`, for system admins. Step 20k adds `platform.tenants.invite_owner`, for system admins.
+- Step r4a adds `tenant.owners.manage`, for the Owner role only. It is the one permission of `PermissionPools.OwnerOnly`, which a custom role never holds (A1, A3).
 
 ### K8. Language and time zone
 
