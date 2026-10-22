@@ -1,9 +1,6 @@
 using System.Net.Http.Headers;
 using Api.Hosting;
 using Api.Routing;
-using Audit.Api;
-using Audit.Infrastructure;
-using ControlPlane.Api;
 using ControlPlane.Application.Identity;
 using ControlPlane.Infrastructure;
 using JasperFx.CodeGeneration;
@@ -15,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Notifications.Api;
 using Notifications.Infrastructure;
 using Tenancy;
 using Wolverine;
@@ -25,7 +21,7 @@ using Wolverine.Tracking;
 namespace Api.IntegrationTests.Fixtures;
 
 // Runs the host's real pipeline on a test server against the test database, with the test endpoints mapped where module endpoints go.
-// By default the host has the modules' handlers in Program's order and loads the committed handler code (section 9, rule 11).
+// By default the host composes the modules as Program does (ModuleComposition) and loads the committed handler code (section 9, rule 11).
 // A host with the test handlers has chains the committed code does not hold, so it generates its handler code at runtime.
 internal sealed class PipelineHost : IAsyncDisposable
 {
@@ -75,20 +71,14 @@ internal sealed class PipelineHost : IAsyncDisposable
         if (testHandlers)
         {
             builder.AddApiPipeline(typeof(PipelineHost).Assembly);
+            builder.Services.AddControlPlaneInfrastructure();
+            builder.Services.AddNotificationsInfrastructure();
             builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
             builder.Services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
         }
         else
         {
-            builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
-        }
-
-        builder.Services.AddControlPlaneInfrastructure();
-        builder.Services.AddNotificationsInfrastructure();
-        if (!testHandlers)
-        {
-            builder.Services.AddAuditInfrastructure();
-            builder.Services.AddInvitationEmailWait();
+            builder.AddApiWithModules();
         }
 
         builder.Services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
