@@ -1,4 +1,5 @@
 using ControlPlane.Application.Tenants;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
@@ -46,15 +47,15 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
 
     // R6: the users table is not under row level security, so the query starts from the active tenant's memberships, which row level
-    // security keeps to the tenant. lower() on both sides compares the address without case, in the database's own rules.
-    Task<bool> ITenantRepository.IsMemberEmailAsync(string email, CancellationToken cancellationToken)
+    // security keeps to the tenant. Both addresses are in their one form, so plain equality compares them.
+    Task<bool> ITenantRepository.IsMemberEmailAsync(EmailAddress email, CancellationToken cancellationToken)
     {
         _ = controlPlane.ActiveTenant;
         return controlPlane.Database.SqlQuery<int>(
                 $"""
                 SELECT 1 AS "Value" FROM control_plane.memberships
                 JOIN control_plane.users ON users.id = memberships.user_id
-                WHERE lower(users.email) = lower({email})
+                WHERE users.email = {email.Value}
                 """)
             .AnyAsync(cancellationToken);
     }
@@ -62,16 +63,11 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
 
-    // The same comparison as the partial unique index, which serves the query (K2): lower(email), pending only. Row level security
+    // The same comparison as the partial unique index, which serves the query (K2): the stored form, pending only. Row level security
     // adds the tenant.
-    async Task<Invitation?> ITenantRepository.FindPendingInvitationAsync(string email, CancellationToken cancellationToken)
-    {
-        var found = await controlPlane.Invitations
-            .FromSql($"SELECT * FROM control_plane.invitations WHERE lower(email) = lower({email}) AND status = 'Pending'")
-            .ToListAsync(cancellationToken);
-
-        return found.SingleOrDefault();
-    }
+    Task<Invitation?> ITenantRepository.FindPendingInvitationAsync(EmailAddress email, CancellationToken cancellationToken) =>
+        controlPlane.TenantInvitations.SingleOrDefaultAsync(
+            invitation => invitation.Email == email.Value && invitation.Status == InvitationStatus.Pending, cancellationToken);
 
     // Row level security keeps the invitations to the active tenant; the query names no tenant.
     async Task<IReadOnlyList<Invitation>> ITenantRepository.FindPendingInvitationsAsync(CancellationToken cancellationToken) =>

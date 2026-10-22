@@ -223,6 +223,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), new[] { "gin_trgm_ops" });
 
+                    b.HasIndex(new[] { "TenantId", "Email" }, "ix_invitations_pending_email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_pending_email")
+                        .HasFilter("status = 'Pending'");
+
                     b.ToTable("invitations", "control_plane");
                 });
 

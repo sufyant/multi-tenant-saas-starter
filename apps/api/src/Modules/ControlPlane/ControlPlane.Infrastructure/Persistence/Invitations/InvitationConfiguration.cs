@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -11,12 +12,13 @@ internal sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitat
     public void Configure(EntityTypeBuilder<Invitation> invitation)
     {
         invitation.Property(i => i.Id).ValueGeneratedNever();
-        invitation.Property(i => i.Email).HasMaxLength(Invitation.EmailMaxLength);
+        invitation.Property(i => i.Email).HasMaxLength(EmailAddress.MaxLength);
         invitation.Property(i => i.SecretHash).HasMaxLength(64);
         invitation.Property(i => i.SignUpInvitationId).HasMaxLength(255);
         invitation.HasIndex(i => i.SecretHash).IsUnique();
-        // The partial unique index ix_invitations_pending_email keeps one pending invitation for each tenant and lower(email) (K2).
-        // It is on an expression, which EF Core does not model, so the migration AddInvitationIndexes creates it in SQL.
+        // K2: one pending invitation for each tenant and address. The address is stored in its one form (EmailAddress), so the index
+        // is on the stored value.
+        invitation.HasIndex(i => new { i.TenantId, i.Email }, "ix_invitations_pending_email").HasDatabaseName("ix_invitations_pending_email").IsUnique().HasFilter("status = 'Pending'");
         invitation.HasIndex(i => i.ExpiresAt);
         invitation.HasIndex(i => i.Email);
         invitation.HasIndex(i => i.Email, "ix_invitations_email_trgm").HasDatabaseName("ix_invitations_email_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");

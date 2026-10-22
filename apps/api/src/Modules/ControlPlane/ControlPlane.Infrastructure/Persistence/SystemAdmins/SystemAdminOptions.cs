@@ -1,5 +1,6 @@
 using System.Net.Mail;
 using ControlPlane.Application.Tenants.TenantCreation;
+using ControlPlane.Domain.EmailAddresses;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -27,6 +28,7 @@ internal sealed class SystemAdminOptions
             if (settings.NamesTheFirstSystemAdmin)
             {
                 return MailAddress.TryCreate(settings.FirstSystemAdminEmail, out var address) && address.Address == settings.FirstSystemAdminEmail
+                    && EmailAddress.TryCreate(settings.FirstSystemAdminEmail) is not null
                     ? ValidateOptionsResult.Success
                     : ValidateOptionsResult.Fail($"{Key} must be an email address.");
             }

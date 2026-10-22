@@ -95,16 +95,16 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K2. Invitations
 
-- A new invitation to an email with a pending invitation in the same tenant replaces it. The old link stops working at once. The emails are compared without case.
+- A new invitation to an email with a pending invitation in the same tenant replaces it. The old link stops working at once. The emails are compared in their one form: trimmed and in lower case (ARCHITECTURE.md, section 6, "Member invitation"). The API answers the address in that form.
 - A replaced or a revoked invitation becomes `Cancelled`. Accepting it answers 404 `invitation.not_found`. There is no other status.
 - A replacement is one command and one audit entry: `member.invited`, with the replaced invitation's id in its details. It writes no `invitation.revoked` entry (K3).
 - "Send again" is not an endpoint of its own.
 - An invitation lives `ControlPlane:Invitations:Lifetime`, at least one day. The email says how long the link works, in whole days.
 - An invitation keeps the language of its email (K8).
 - The platform's Owner invitation follows K9. A member never invites into a tenant without an Owner, because such a tenant has no member.
-- A tenant has at most one pending invitation to an email. A partial unique index on the tenant and `lower(email)` of pending invitations keeps it. The tenant row lock is the first guard; the index is the second (K6).
+- A tenant has at most one pending invitation to an email. A partial unique index on the tenant and the stored `email` of pending invitations keeps it. The tenant row lock is the first guard; the index is the second (K6).
 - Each tenant may create `ControlPlane:Invitations:DailyLimitPerTenant` invitations in a rolling window of `InviteMemberHandler.LimitWindow`. The window counts every invitation the tenant created in it, cancelled and replaced ones included, so a replacement does not get around it. Over the limit, `InviteMember` answers 429 `invitation.daily_limit_reached` (RFC 6585), without a `Retry-After` header. It may become a platform setting later.
-- An email that already belongs to a member, in ControlPlane and compared without case, answers 409 `member.exists`.
+- An email that already belongs to a member, in ControlPlane and compared in its one form, answers 409 `member.exists`.
 - The invitation email has the retries of the owner invitation email. After the last try the message goes to the dead letter queue. The invitation stays pending; the inviter can invite again, which replaces it.
 - Closing a tenant cancels its pending invitations, in the same transaction. Accepting one then answers 404 `invitation.not_found`, as a revoked one, also after a reopening. An invitation to a suspended tenant cannot be accepted (409).
 
@@ -174,7 +174,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 | `ListTenants` | name, slug | `status` | `name`, `slug` | tenants: trigram on name and slug; B-tree on name; the unique slug index |
 | `ListUsers` | email, first name, last name | `status` | `email`, `lastName` | users: trigram on email, first name and last name; B-tree on email and last name |
 | `ListMembers` | email, first name, last name | `role` | `role` (Owner, Admin, Member), `email`, `lastName` | the users indexes; memberships: the primary key and the B-tree on role id |
-| `ListInvitations` | email | `role` | `expiresAt`, `email` | invitations: trigram on email; B-tree on email and expires_at; the partial unique index on tenant and `lower(email)` of pending invitations |
+| `ListInvitations` | email | `role` | `expiresAt`, `email` | invitations: trigram on email; B-tree on email and expires_at; the partial unique index on tenant and `email` of pending invitations |
 
 - The member search starts from the active tenant's memberships, which row level security keeps to the tenant, and joins each member's user. It never starts from the users table, which is not under row level security (R6).
 
@@ -216,7 +216,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 ### K10. The tenant's summary
 
 - The platform's list reads across tenants, where row level security hides the memberships and the invitations (R1, R5). So each tenant has a summary in a row of its own, in `tenant_summaries`: how many members and Owners it has, and its latest Owner invitation (R12; the maintainer's decision in step 20k).
-- One place writes it: `ITenantRepository.SaveAsync`, from the tenant's own rows, after it saves the transaction's changes. Every command that changes a membership or an invitation saves through it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembershipCommand`, `CloseTenant`, `InviteOwner`, `RecordSignUpCommand`, and the saga's compensations `CancelTenantCommand` and `CancelInvitationCommand`. A transaction that saves such a change without it does not commit (ARCHITECTURE.md, R12). A test compares the summary with the rows after each of them, the race tests included (`TenantSummaries`).
+- One place writes it: `ITenantRepository.SaveAsync`, from the tenant's own rows, after it saves the transaction's changes. Every command that changes a membership or an invitation saves through it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembershipCommand`, `CloseTenant`, `InviteOwner`, and the saga's compensations `CancelTenantCommand` and `CancelInvitationCommand`. `RecordSignUpCommand` saves through it too, although the summary does not show what it changes. A transaction that saves such a change without it does not commit (ARCHITECTURE.md, R12). A test compares the summary with the rows after the commands of the platform and the tenant web, the race tests included (`TenantSummaries`); the saga's steps and `RecordSignUpCommand` have no such test.
 - The Owner invitation's email is personal data. The row keeps it only while the tenant has no Owner, and clears it when an Owner joins. The state `expired` comes from the expiry at the moment of a read, never from a stored value.
 - A membership keeps when its user joined (`joined_at`). `GetTenant` lists the Owners by it, then by the user id. The summary names no Owner (the maintainer's decision in step r2a).
 

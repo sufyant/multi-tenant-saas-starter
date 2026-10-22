@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,7 +18,7 @@ internal sealed class TenantSummaryConfiguration : IEntityTypeConfiguration<Tena
         summary.HasOne<Tenant>().WithOne().HasForeignKey<TenantSummary>(s => s.TenantId).OnDelete(DeleteBehavior.Restrict);
         summary.Property(s => s.MemberCount).HasDefaultValue(0);
         summary.Property(s => s.OwnerCount).HasDefaultValue(0);
-        summary.Property(s => s.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
+        summary.Property(s => s.OwnerInvitationEmail).HasMaxLength(EmailAddress.MaxLength);
         summary.Property(s => s.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
         summary.Property(s => s.OwnerInvitationLanguage).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
     }

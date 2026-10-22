@@ -1,4 +1,5 @@
 using ControlPlane.Application.Tenants;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -167,7 +168,7 @@ public sealed class TenantRepositoryTests(Database database)
         Invitation.Create(
             Guid.CreateVersion7(),
             tenant.Id,
-            "ada@example.com",
+            EmailAddress.Create("ada@example.com"),
             BuiltInRoles.Owner,
             inviter.Id,
             DateTimeOffset.UtcNow,

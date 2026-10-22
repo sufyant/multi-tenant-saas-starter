@@ -3,6 +3,7 @@ using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -43,7 +44,7 @@ public static class InviteMemberHandler
             return (allowed.Error, null, null, null);
         }
 
-        var email = command.Email.Trim();
+        var email = EmailAddress.Create(command.Email);
         if (await tenants.IsMemberEmailAsync(email, cancellationToken))
         {
             return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant."), null, null, null);

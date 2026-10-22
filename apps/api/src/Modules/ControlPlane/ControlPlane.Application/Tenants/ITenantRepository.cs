@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
 
 namespace ControlPlane.Application.Tenants;
@@ -28,19 +29,19 @@ public interface ITenantRepository
     internal Task<int> CountOwnersAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Whether a member of the active tenant has this email address, in our copy of their profile, compared without case.
+    /// Whether a member of the active tenant has this email address, in our copy of their profile, compared in its one form.
     /// The search starts from the tenant's memberships, never from the users.
     /// </summary>
-    internal Task<bool> IsMemberEmailAsync(string email, CancellationToken cancellationToken);
+    internal Task<bool> IsMemberEmailAsync(EmailAddress email, CancellationToken cancellationToken);
 
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The active tenant's pending invitation to this email address, compared without case; null when it has none. The caller holds the
+    /// The active tenant's pending invitation to this email address, compared in its one form; null when it has none. The caller holds the
     /// tenant's lock, which every change to an invitation takes first (K6a).
     /// </summary>
-    internal Task<Invitation?> FindPendingInvitationAsync(string email, CancellationToken cancellationToken);
+    internal Task<Invitation?> FindPendingInvitationAsync(EmailAddress email, CancellationToken cancellationToken);
 
     /// <summary>
     /// Every pending invitation of the active tenant, expired ones included. The caller holds the tenant's lock, which every change to an

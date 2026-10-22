@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -45,7 +46,7 @@ public static class CreateTenantHandler
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now),
             tenant.Value.Id,
-            command.OwnerEmail,
+            EmailAddress.Create(command.OwnerEmail),
             BuiltInRoles.Owner,
             actor.Id,
             now,
