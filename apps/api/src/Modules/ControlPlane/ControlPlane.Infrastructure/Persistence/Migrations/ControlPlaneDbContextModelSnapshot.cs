@@ -277,42 +277,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<int>("MemberCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("member_count");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
-
-                    b.Property<int>("OwnerCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("owner_count");
-
-                    b.Property<string>("OwnerInvitationEmail")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("owner_invitation_email");
-
-                    b.Property<DateTimeOffset?>("OwnerInvitationExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("owner_invitation_expires_at");
-
-                    b.Property<string>("OwnerInvitationLanguage")
-                        .HasMaxLength(35)
-                        .HasColumnType("character varying(35)")
-                        .HasColumnName("owner_invitation_language");
-
-                    b.Property<string>("OwnerInvitationStatus")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("owner_invitation_status");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -354,6 +323,49 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("tenants", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("MemberCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("member_count");
+
+                    b.Property<int>("OwnerCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("owner_count");
+
+                    b.Property<string>("OwnerInvitationEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("owner_invitation_email");
+
+                    b.Property<DateTimeOffset?>("OwnerInvitationExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("owner_invitation_expires_at");
+
+                    b.Property<string>("OwnerInvitationLanguage")
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)")
+                        .HasColumnName("owner_invitation_language");
+
+                    b.Property<string>("OwnerInvitationStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("owner_invitation_status");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_tenant_summaries");
+
+                    b.ToTable("tenant_summaries", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -514,6 +526,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithOne()
+                        .HasForeignKey("ControlPlane.Domain.Tenants.TenantSummary", "TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_summaries_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>

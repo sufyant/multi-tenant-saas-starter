@@ -57,33 +57,6 @@ internal sealed class Tenant
     /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed.</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
 
-    /// <summary>
-    /// How many members the tenant has. With the other values of its summary, it is what the platform's tenant list reads across tenants,
-    /// where row level security hides the memberships (R12). Only <see cref="Summarize"/> writes the summary.
-    /// </summary>
-    public int MemberCount { get; private set; }
-
-    /// <summary>How many of the members hold the Owner role, a deleted user's included (K1).</summary>
-    public int OwnerCount { get; private set; }
-
-    /// <summary>
-    /// The address of the tenant's latest Owner invitation, only while the tenant has no Owner: it is a person's, so it is cleared once an
-    /// Owner joins (the maintainer's decision in step 20k).
-    /// </summary>
-    public string? OwnerInvitationEmail { get; private set; }
-
-    /// <summary>When the latest Owner invitation expires, while the tenant has no Owner.</summary>
-    public DateTimeOffset? OwnerInvitationExpiresAt { get; private set; }
-
-    /// <summary>
-    /// The status of the latest Owner invitation, while the tenant has no Owner: pending or cancelled. Whether a pending one has expired
-    /// is read from its expiry when it is asked (<see cref="OwnerInvitationStateAt"/>), never stored.
-    /// </summary>
-    public InvitationStatus? OwnerInvitationStatus { get; private set; }
-
-    /// <summary>The language the latest Owner invitation keeps for its email (K8), while the tenant has no Owner.</summary>
-    public Language? OwnerInvitationLanguage { get; private set; }
-
     /// <summary>The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
@@ -288,26 +261,6 @@ internal sealed class Tenant
         SuspensionReason = null;
         return StateChange.Changed;
     }
-
-    /// <summary>
-    /// Keeps the summary of the tenant's memberships and invitations, after a change to one of them, under the tenant's lock (K6k). It is
-    /// the one place that writes the summary. The latest Owner invitation stays only while the tenant has no Owner.
-    /// </summary>
-    public void Summarize(TenantSummary summary)
-    {
-        (MemberCount, OwnerCount) = (summary.Members, summary.Owners);
-        var invitation = summary.Owners == 0 ? summary.LatestOwnerInvitation : null;
-        (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage) =
-            (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language);
-    }
-
-    /// <summary>The state of the latest Owner invitation at this moment, while the tenant has no Owner; none otherwise.</summary>
-    public OwnerInvitationState? OwnerInvitationStateAt(DateTimeOffset now) => OwnerInvitationStatus switch
-    {
-        InvitationStatus.Pending => now >= OwnerInvitationExpiresAt ? OwnerInvitationState.Expired : OwnerInvitationState.Pending,
-        InvitationStatus.Cancelled => OwnerInvitationState.Cancelled,
-        _ => null,
-    };
 
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;

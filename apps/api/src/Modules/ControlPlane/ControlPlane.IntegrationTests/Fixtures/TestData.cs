@@ -29,7 +29,12 @@ internal static class TestData
             tenant.Close(DateTimeOffset.UtcNow);
         }
 
-        await SaveAsync(services, controlPlane => controlPlane.Tenants.Add(tenant));
+        // Every tenant has its summary from its creation on (R12).
+        await SaveAsync(services, controlPlane =>
+        {
+            controlPlane.Tenants.Add(tenant);
+            controlPlane.TenantSummaries.Add(new TenantSummary(tenant.Id));
+        });
         return tenant;
     }
 
@@ -68,15 +73,15 @@ internal static class TestData
     public static async Task<string?> OwnerInvitationEmailOfAsync(IServiceProvider services, Tenant tenant)
     {
         await using var scope = services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().Tenants
-            .Where(found => found.Id == tenant.Id).Select(found => found.OwnerInvitationEmail).SingleAsync(TestContext.Current.CancellationToken);
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
+            .Where(found => found.TenantId == tenant.Id).Select(found => found.OwnerInvitationEmail).SingleAsync(TestContext.Current.CancellationToken);
     }
 
     public static async Task<int> MemberCountOfAsync(IServiceProvider services, Tenant tenant)
     {
         await using var scope = services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().Tenants
-            .Where(found => found.Id == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
+            .Where(found => found.TenantId == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
     }
 
     private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)

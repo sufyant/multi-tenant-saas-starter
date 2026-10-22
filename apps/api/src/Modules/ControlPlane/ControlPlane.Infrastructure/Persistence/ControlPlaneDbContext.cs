@@ -19,7 +19,7 @@ using Wolverine;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, users, roles, system admins), and the memberships,
+/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, roles, system admins), and the memberships,
 /// invitations and tenant creation sagas, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
@@ -37,6 +37,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         tag => JsonSerializer.Deserialize<Language>($"\"{tag}\"", JsonSerializerOptions.Default));
 
     internal DbSet<Tenant> Tenants => Set<Tenant>();
+
+    internal DbSet<TenantSummary> TenantSummaries => Set<TenantSummary>();
 
     internal DbSet<User> Users => Set<User>();
 
@@ -107,6 +109,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.HasPostgresExtension("pg_trgm");
 
         modelBuilder.ApplyConfiguration(new TenantConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantSummaryConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new MembershipConfiguration());

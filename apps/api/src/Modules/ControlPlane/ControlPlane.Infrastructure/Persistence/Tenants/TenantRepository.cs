@@ -29,9 +29,11 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     // DbContext refuses to commit a change to a membership or an invitation that no summary followed (TenantSummaryInterceptor).
     async Task ITenantRepository.SaveAsync(Tenant tenant, CancellationToken cancellationToken)
     {
-        var locked = OfActiveTenant(tenant, tenant.Id);
+        var tenantId = OfActiveTenant(tenant, tenant.Id).Id;
         await controlPlane.SaveChangesAsync(cancellationToken);
-        locked.Summarize(await ReadSummaryAsync(cancellationToken));
+        var summary = await controlPlane.TenantSummaries.SingleAsync(found => found.TenantId == tenantId, cancellationToken);
+        var (members, owners, latestOwnerInvitation) = await ReadSummaryAsync(cancellationToken);
+        summary.Summarize(members, owners, latestOwnerInvitation);
         await controlPlane.SaveChangesAsync(cancellationToken);
         controlPlane.SummaryWritten();
     }
@@ -107,13 +109,17 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     }
 
     // An insert of a slug that another tenant creation has inserted but not yet committed waits for it, and is skipped if it commits.
+    // The tenant's summary is added with it, empty, so every tenant has one (R12).
     async Task<bool> ITenantRepository.TryAddAsync(Tenant tenant, CancellationToken cancellationToken)
     {
         var added = OfActiveTenant(tenant, tenant.Id);
         var inserted = await controlPlane.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO control_plane.tenants (id, name, slug, status, created_at)
-            VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
+            WITH tenant AS (
+                INSERT INTO control_plane.tenants (id, name, slug, status, created_at)
+                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
+                RETURNING id)
+            INSERT INTO control_plane.tenant_summaries (tenant_id) SELECT id FROM tenant
             """,
             cancellationToken);
 
@@ -137,11 +143,11 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
     // which is the only time the summary keeps it.
-    private async Task<TenantSummary> ReadSummaryAsync(CancellationToken cancellationToken)
+    private async Task<(int Members, int Owners, Invitation? LatestOwnerInvitation)> ReadSummaryAsync(CancellationToken cancellationToken)
     {
         var owners = await Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
 
-        return new TenantSummary(
+        return (
             await Memberships.CountAsync(cancellationToken),
             owners,
             owners == 0

@@ -23,22 +23,29 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     async Task<TenantView?> ITenantQueries.FindTenantAsync(CancellationToken cancellationToken) =>
         await FindAsync(cancellationToken) is { } tenant ? TenantView.Of(tenant) : null;
 
-    // Two queries, as before the views: the tenant with its summary (R12), then its Owners from its own rows.
+    // Two queries, as before the views: the tenant with its summary joined (R12), then its Owners from its own rows.
     async Task<TenantDetailView?> ITenantQueries.FindTenantDetailAsync(TimeSpan reopenPeriod, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        if (await FindAsync(cancellationToken) is not { } tenant)
+        var found = await (
+                from tenant in controlPlane.Tenants
+                where tenant.Id == controlPlane.ActiveTenant
+                join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
+                select new { Tenant = tenant, Summary = summary })
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        if (found is null)
         {
             return null;
         }
 
         var owners = await ListOwnersAsync(cancellationToken);
         return new TenantDetailView(
-            TenantView.Of(tenant),
-            tenant.ReopenableUntil(reopenPeriod),
-            tenant.MemberCount,
-            tenant.OwnerCount,
+            TenantView.Of(found.Tenant),
+            found.Tenant.ReopenableUntil(reopenPeriod),
+            found.Summary.MemberCount,
+            found.Summary.OwnerCount,
             [.. owners.Select(TenantOwnerView.Of)],
-            OwnerInvitationView.Of(tenant, now));
+            OwnerInvitationView.Of(found.Summary, now));
     }
 
     // The tenant, the person and their membership, in three queries; row level security keeps the membership to the active tenant.
@@ -55,8 +62,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
     }
 
-    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant. The summary is on the tenant row
-    // (R12), so the page is one query, with no query for each tenant.
+    // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. The page joins
+    // each tenant's summary (R12): one query, with no query for each tenant.
     async Task<ListPage<TenantListItemView>> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         TenantStatus? status,
@@ -78,13 +85,17 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         }
 
         var total = await tenants.CountAsync(cancellationToken);
+        var rows =
+            from tenant in tenants
+            join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
+            select new { Tenant = tenant, Summary = summary };
         var sorted = list.Sort switch
         {
-            ListTenantsSort.Slug => tenants.OrderBy(tenant => tenant.Slug, list.Descending),
-            _ => tenants.OrderBy(tenant => tenant.Name, list.Descending),
+            ListTenantsSort.Slug => rows.OrderBy(row => row.Tenant.Slug, list.Descending),
+            _ => rows.OrderBy(row => row.Tenant.Name, list.Descending),
         };
         var page = await sorted
-            .ThenBy(tenant => tenant.Id)
+            .ThenBy(row => row.Tenant.Id)
             .Skip(list.Paging.Skip)
             .Take(list.Paging.PageSize)
             .AsNoTracking()
@@ -92,12 +103,12 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
         return ListPage.Of(
             [
-                .. page.Select(tenant => new TenantListItemView(
-                    TenantView.Of(tenant),
-                    tenant.ReopenableUntil(reopenPeriod),
-                    tenant.MemberCount,
-                    tenant.OwnerCount,
-                    OwnerInvitationView.Of(tenant, now))),
+                .. page.Select(row => new TenantListItemView(
+                    TenantView.Of(row.Tenant),
+                    row.Tenant.ReopenableUntil(reopenPeriod),
+                    row.Summary.MemberCount,
+                    row.Summary.OwnerCount,
+                    OwnerInvitationView.Of(row.Summary, now))),
             ],
             list.Paging,
             total);

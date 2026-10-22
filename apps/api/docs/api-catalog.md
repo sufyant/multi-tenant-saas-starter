@@ -49,7 +49,7 @@ A member of the tenant. Each endpoint names a permission. To a non-member the te
 A system admin with a second factor (A6). Every action writes to the platform audit log. The provider's app is "Platform" on screen, because "Admin" is a role in the tenant web (the maintainer's decision in step 20k). The person keeps the name "system admin".
 
 - `ListTenants` and `GetTenant` read the tenant's summary (R12), which every command that changes a membership or an invitation writes under the tenant's lock: `memberCount`, `ownerCount`, and, while `ownerCount` is 0, `ownerInvitation`, the latest Owner invitation, `{ email, expiresAt, state, language }`, with `language` null, or that of an earlier invitation, only for a summary that the previous version wrote during a deploy (ARCHITECTURE.md, section 13), with `state` `pending`, `expired` (read from `expiresAt` at the moment of the request) or `cancelled`, never `accepted`; null when there is none, and null when `ownerCount` is more than 0. `reopenableUntil` is `closedAt` plus `ControlPlane:Tenants:ReopenPeriod` for a closed tenant, else null.
-- A list item names no Owner; it counts them in `ownerCount` (the maintainer's decision D4). `GetTenant` answers `owners`, every Owner in the order they joined. The page is one query; the total is a second query, as for every list. No query runs for each tenant.
+- A list item names no Owner; it counts them in `ownerCount` (the maintainer's decision in step r2a). `GetTenant` answers `owners`, every Owner in the order they joined. The page is one query; the total is a second query, as for every list. No query runs for each tenant.
 
 | Status | Method | Path | operationId | Access | Audit | Notification | External | Step |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -215,10 +215,10 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 
 ### K10. The tenant's summary
 
-- The platform's list reads across tenants, where row level security hides the memberships and the invitations (R1, R5). So the tenant row keeps a summary: how many members and Owners it has, and its latest Owner invitation (R12; the maintainer's decision in step 20k).
+- The platform's list reads across tenants, where row level security hides the memberships and the invitations (R1, R5). So each tenant has a summary in a row of its own, in `tenant_summaries`: how many members and Owners it has, and its latest Owner invitation (R12; the maintainer's decision in step 20k).
 - One place writes it: `ITenantRepository.SaveAsync`, from the tenant's own rows, after it saves the transaction's changes. Every command that changes a membership or an invitation saves through it under the tenant's lock (K6): `CreateTenant`, `AcceptInvitation`, `InviteMember`, `RevokeInvitation`, `ChangeMemberRole`, `RemoveMember`, `RemoveUserMembershipCommand`, `CloseTenant`, `InviteOwner`, `RecordSignUpCommand`, and the saga's compensations `CancelTenantCommand` and `CancelInvitationCommand`. A transaction that saves such a change without it does not commit (ARCHITECTURE.md, R12). A test compares the summary with the rows after each of them, the race tests included (`TenantSummaries`).
 - The Owner invitation's email is personal data. The row keeps it only while the tenant has no Owner, and clears it when an Owner joins. The state `expired` comes from the expiry at the moment of a read, never from a stored value.
-- A membership keeps when its user joined (`joined_at`). `GetTenant` lists the Owners by it, then by the user id. The summary names no Owner (the maintainer's decision D4).
+- A membership keeps when its user joined (`joined_at`). `GetTenant` lists the Owners by it, then by the user id. The summary names no Owner (the maintainer's decision in step r2a).
 
 ### K11. The user's membership count
 

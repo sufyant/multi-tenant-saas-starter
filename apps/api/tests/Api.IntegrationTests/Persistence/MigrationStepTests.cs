@@ -10,6 +10,13 @@ namespace Api.IntegrationTests.Persistence;
 public sealed class MigrationStepTests(Database database)
 {
     private const string ControlPlaneExists = "SELECT to_regclass('control_plane.tenants') IS NOT NULL";
+
+    private const string SummaryColumnsOfTenants =
+        """
+        SELECT count(*) FROM information_schema.columns
+        WHERE table_schema = 'control_plane' AND table_name = 'tenants' AND (column_name LIKE '%_count' OR column_name LIKE 'owner_invitation_%')
+        """;
+
     private const string MessageStorageExists = "SELECT to_regclass('wolverine.wolverine_incoming_envelopes') IS NOT NULL";
 
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
@@ -83,7 +90,7 @@ public sealed class MigrationStepTests(Database database)
         var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddOwnerInvitationLanguage");
         var testData = new TestData(database, name);
         var summaries = new TenantSummaries(database, name);
-        var tenant = await testData.AddTenantAsync();
+        var tenant = await testData.AddTenantRowAsync();
         var invitation = await testData.AddInvitationAsync(tenant.Id, role: "Owner", language: "ar");
         await database.ScalarAsSuperuserAsync<object>(
             $"""
@@ -98,6 +105,38 @@ public sealed class MigrationStepTests(Database database)
         exitCode.ShouldBe(0, output);
         (await summaries.StoredAsync(tenant.Id)).ShouldEndWith("|ar");
         await summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // R12: the migration that moves the summary to its own table copies every tenant's summary, then drops the old columns. A tenant with
+    // members and one without an Owner, whose summary keeps its Owner invitation, both keep what their summary said.
+    [Fact]
+    public async Task Migrate_TenantsWithTheirSummaries_MovesEachSummaryToItsOwnTable()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("MoveTenantSummary");
+        var testData = new TestData(database, name);
+        var summaries = new TenantSummaries(database, name);
+        var owned = await testData.AddTenantRowAsync();
+        await testData.AddMemberAsync(owned.Id, role: "Owner");
+        await testData.AddMemberAsync(owned.Id);
+        var invited = await testData.AddTenantRowAsync();
+        var invitation = await testData.AddInvitationAsync(invited.Id, role: "Owner", language: "tr");
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenants SET member_count = 2, owner_count = 1 WHERE id = '{owned.Id}';
+            UPDATE control_plane.tenants AS tenant SET owner_invitation_email = invitation.email, owner_invitation_expires_at = invitation.expires_at,
+                owner_invitation_status = invitation.status, owner_invitation_language = invitation.language
+            FROM control_plane.invitations AS invitation WHERE tenant.id = '{invited.Id}' AND invitation.id = '{invitation}'
+            """,
+            name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await summaries.StoredAsync(owned.Id)).ShouldBe("2|1|-|-|-|-");
+        await summaries.ShouldMatchTheRowsAsync(owned.Id);
+        (await summaries.StoredAsync(invited.Id)).ShouldEndWith("|Pending|tr");
+        await summaries.ShouldMatchTheRowsAsync(invited.Id);
+        (await database.ScalarAsSuperuserAsync<long>(SummaryColumnsOfTenants, name)).ShouldBe(0);
     }
 
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.

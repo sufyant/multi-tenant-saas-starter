@@ -253,7 +253,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var tenants = new PlatformTenants(database, _api);
         var without = await tenants.CreateAsync(admin, Email(), name: $"{_marker} Alpha");
         await tenants.CreateAsync(admin, Email(), name: $"{_marker} Bravo");
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET owner_invitation_language = NULL WHERE id = '{without}'");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{without}'");
 
         var response = await admin.GetAsync($"/v1/platform/tenants?q={_marker}", Cancellation);
 
