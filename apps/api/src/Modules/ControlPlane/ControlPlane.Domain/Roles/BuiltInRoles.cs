@@ -10,8 +10,8 @@ internal static class BuiltInRoles
 {
     private static readonly FrozenSet<string> OwnerPermissions = PermissionPools.TenantPool.ToFrozenSet(StringComparer.Ordinal);
 
-    // Admins hold what owners hold: the tenant pool has no permission that is the owners' alone.
-    private static readonly FrozenSet<string> AdminPermissions = OwnerPermissions;
+    // Admins hold what owners hold, but the permissions that are the owners' alone (K1).
+    private static readonly FrozenSet<string> AdminPermissions = PermissionPools.TenantPool.Except(PermissionPools.OwnerOnly).ToFrozenSet(StringComparer.Ordinal);
 
     // Members get the permissions of the capabilities that modules add for them.
     private static readonly FrozenSet<string> MemberPermissions = FrozenSet.Create(

@@ -5226,6 +5226,7 @@
           "tenant.members.delete",
           "tenant.members.read",
           "tenant.members.update",
+          "tenant.owners.manage",
           "tenant.profile.read"
         ],
         "type": "string",
@@ -5252,6 +5253,7 @@
           "TenantMembersDelete",
           "TenantMembersRead",
           "TenantMembersUpdate",
+          "TenantOwnersManage",
           "TenantProfileRead"
         ]
       },

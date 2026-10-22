@@ -50,6 +50,7 @@ export const GetMyTenantResponse = zod.object({
   TenantMembersDelete: 'tenant.members.delete',
   TenantMembersRead: 'tenant.members.read',
   TenantMembersUpdate: 'tenant.members.update',
+  TenantOwnersManage: 'tenant.owners.manage',
   TenantProfileRead: 'tenant.profile.read',
 }).describe('A name of the permission list. Every endpoint checks its own permission.')),
   "createdAt": zod.iso.datetime({"offset":true})

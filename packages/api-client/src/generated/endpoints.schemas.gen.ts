@@ -680,6 +680,7 @@ export const Permission = {
   TenantMembersDelete: 'tenant.members.delete',
   TenantMembersRead: 'tenant.members.read',
   TenantMembersUpdate: 'tenant.members.update',
+  TenantOwnersManage: 'tenant.owners.manage',
   TenantProfileRead: 'tenant.profile.read',
 } as const;
 

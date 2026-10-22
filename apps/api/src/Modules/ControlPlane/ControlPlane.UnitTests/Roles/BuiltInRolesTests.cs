@@ -69,4 +69,24 @@ public sealed class BuiltInRolesTests
 
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
+
+    // Giving the Owner role, changing or removing an Owner and inviting an Owner are the Owners' alone (K1).
+    [Fact]
+    public void ManageOwners_OnlyTheOwner_HoldsThePermission()
+    {
+        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains("tenant.owners.manage")).Select(role => role.BuiltIn);
+
+        holders.ShouldBe([BuiltInRole.Owner]);
+    }
+
+    // A custom role chooses from the tenant pool, but never a permission that only the Owner role holds (A3).
+    [Fact]
+    public void ListOwnerOnlyPermissions_TheTenantPool_HoldsThemAndOnlyTheOwnerHoldsThem()
+    {
+        var ownerOnly = PermissionPools.OwnerOnly;
+
+        ownerOnly.ShouldBe(["tenant.owners.manage"]);
+        ownerOnly.ShouldBeSubsetOf(PermissionPools.TenantPool);
+        BuiltInRoles.All.Where(role => role.Permissions.Overlaps(ownerOnly)).Select(role => role.BuiltIn).ShouldBe([BuiltInRole.Owner]);
+    }
 }
