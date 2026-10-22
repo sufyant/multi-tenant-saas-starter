@@ -7,14 +7,13 @@ internal static class TablesWithoutTenant
     // Every module's migration history, which sits in the module's own schema.
     public const string MigrationHistory = "__ef_migrations_history";
 
-    // ControlPlane's data above tenants, the tenants' summaries, which the platform reads across tenants as it reads the tenants (R12),
+    // ControlPlane's data above tenants (the roles belong to a tenant, A2), the tenants' summaries, which the platform reads across tenants as it reads the tenants (R12),
     // the platform's audit log, and the host's idempotency keys.
     public static readonly IReadOnlySet<string> Tables = new HashSet<string>(StringComparer.Ordinal)
     {
         "control_plane.tenants",
         "control_plane.tenant_summaries",
         "control_plane.users",
-        "control_plane.roles",
         "control_plane.system_admins",
         "api.idempotency_keys",
         "audit.platform_entries",

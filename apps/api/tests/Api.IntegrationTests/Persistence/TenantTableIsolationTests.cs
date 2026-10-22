@@ -82,6 +82,23 @@ public sealed class TenantTableIsolationTests(Database database)
         (await database.ScalarAsSuperuserAsync<long>(CountRowsOf(table, other))).ShouldBe(0);
     }
 
+    // A2: a membership and an invitation name a role of their own tenant. A foreign key check bypasses row level security (PostgreSQL
+    // documentation, 5.9, "Row Security Policies"), so the composite foreign key on the tenant and the role refuses another tenant's role
+    // (Citus documentation, "Multi-tenant applications").
+    [Theory]
+    [InlineData("control_plane.memberships")]
+    [InlineData("control_plane.invitations")]
+    public async Task InsertIntoTenantTable_ARoleOfAnotherTenant_IsRefused(string table)
+    {
+        var (tenant, other) = await TwoTenantsAsync();
+        var role = await database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.roles WHERE tenant_id = '{other}' AND built_in = 'Member'");
+
+        var insert = () => database.ExecuteInTenantAsync(tenant, TenantTables.InsertRowWithRole(table, tenant, role));
+
+        (await insert.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.ForeignKeyViolation);
+        (await database.ScalarAsSuperuserAsync<long>(CountRowsOf(table, tenant))).ShouldBe(0);
+    }
+
     // The owner runs the migrations; forced row level security binds it like the application.
     [Theory]
     [MemberData(nameof(Tables))]
@@ -95,7 +112,7 @@ public sealed class TenantTableIsolationTests(Database database)
         seen.ShouldBe(0);
     }
 
-    private static string CountRowsOf(string table, Guid tenantId) => $"SELECT count(*) FROM {table} WHERE tenant_id = '{tenantId}'";
+    private static string CountRowsOf(string table, Guid tenantId) => TenantTables.CountRowsOf(table, tenantId);
 
     // ControlPlane's rows refer to their tenant, so both tenants exist.
     private async Task<(Guid Tenant, Guid Other)> TwoTenantsAsync() =>

@@ -20,10 +20,10 @@ internal sealed class TenantSummaries(Database database, string databaseName = D
             $"""
             WITH owner AS (SELECT id FROM control_plane.roles WHERE built_in = 'Owner'),
                 members AS (SELECT * FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
-                owners AS (SELECT * FROM members WHERE role_id = (SELECT id FROM owner)),
+                owners AS (SELECT * FROM members WHERE role_id IN (SELECT id FROM owner)),
                 latest AS (
                     SELECT * FROM control_plane.invitations
-                    WHERE tenant_id = '{tenantId}' AND role_id = (SELECT id FROM owner) AND NOT EXISTS (SELECT FROM owners)
+                    WHERE tenant_id = '{tenantId}' AND role_id IN (SELECT id FROM owner) AND NOT EXISTS (SELECT FROM owners)
                     ORDER BY created_at DESC, id DESC LIMIT 1)
             SELECT concat_ws('|', (SELECT count(*) FROM members), (SELECT count(*) FROM owners),
                 coalesce((SELECT email FROM latest), '-'), coalesce((SELECT expires_at::text FROM latest), '-'),
