@@ -378,9 +378,9 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var closed = tenant.Close(Now);
+        var closed = tenant.Close(Now, []);
 
-        closed.Value.ShouldBe(StateChange.Changed);
+        closed.Value.Change.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Closed);
         tenant.ClosedAt.ShouldBe(Now);
     }
@@ -392,7 +392,7 @@ public sealed class TenantTests
         var tenant = Active();
         tenant.Suspend(Reason);
 
-        tenant.Close(Now);
+        tenant.Close(Now, []);
 
         tenant.SuspensionReason.ShouldBe(Reason);
     }
@@ -403,9 +403,9 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var closed = tenant.Close(Now.AddDays(1));
+        var closed = tenant.Close(Now.AddDays(1), []);
 
-        closed.Value.ShouldBe(StateChange.Unchanged);
+        closed.Value.Change.ShouldBe(StateChange.Unchanged);
         tenant.ClosedAt.ShouldBe(Now);
     }
 
@@ -416,10 +416,129 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var closed = tenant.Close(Now);
+        var closed = tenant.Close(Now, []);
 
         closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
         tenant.ClosedAt.ShouldBeNull();
+    }
+
+    // K6h: the closure cancels every pending invitation, expired ones included, in the same change.
+    [Fact]
+    public void CloseTenant_WithPendingInvitations_CancelsEachOne()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var expired = Invitation.Create(
+            Guid.NewGuid(), Id, EmailAddress.Create("grace@example.com"), BuiltInRoles.Owner, InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var closed = Active().Close(Now, [pending, expired]);
+
+        closed.Value.Cancelled.ShouldBe([pending, expired]);
+        pending.Status.ShouldBe(InvitationStatus.Cancelled);
+        expired.Status.ShouldBe(InvitationStatus.Cancelled);
+    }
+
+    [Fact]
+    public void CloseTenant_ClosedWithAPendingInvitation_CancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var closed = Closed().Close(Now, [pending]);
+
+        closed.Value.Cancelled.ShouldBeEmpty();
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void CloseTenant_ProvisioningWithAPendingInvitation_IsRejectedAndCancelsNothing()
+    {
+        var pending = PendingTo("ada@example.com", BuiltInRoles.Owner);
+
+        var closed = InStatus("Provisioning").Close(Now, [pending]);
+
+        closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        pending.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    public void CancelTenant_PastThePivot_ChangesNothingAndAnswersNone(string status)
+    {
+        var tenant = InStatus(status);
+
+        var cancelled = tenant.CancelCreation("activation_failed");
+
+        cancelled.ShouldBeNull();
+        tenant.Status.ShouldBe(Enum.Parse<TenantStatus>(status));
+    }
+
+    [Fact]
+    public void CancelTenant_Provisioning_IsCancelledWithTheReason()
+    {
+        var tenant = InStatus("Provisioning");
+
+        var cancelled = tenant.CancelCreation("activation_failed");
+
+        cancelled.ShouldBe(StateChange.Changed);
+        tenant.Status.ShouldBe(TenantStatus.Cancelled);
+        tenant.CancellationReason.ShouldBe("activation_failed");
+    }
+
+    // A closed tenant is past the pivot too, and stays closed; the compensation still reports, as before.
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Cancelled")]
+    public void CancelTenant_ClosedOrCancelled_ChangesNothing(string status)
+    {
+        var tenant = InStatus(status);
+
+        var cancelled = tenant.CancelCreation("identity_provider_failed");
+
+        cancelled.ShouldBe(StateChange.Unchanged);
+        tenant.Status.ShouldBe(Enum.Parse<TenantStatus>(status));
+    }
+
+    [Fact]
+    public void RevokeInvitation_APendingInvitation_CancelsIt()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+
+        var revoked = Active().Revoke(invitation);
+
+        revoked.Value.ShouldBe(StateChange.Changed);
+        invitation.Status.ShouldBe(InvitationStatus.Cancelled);
+    }
+
+    [Fact]
+    public void RevokeInvitation_NoInvitation_IsNotFound()
+    {
+        var revoked = Active().Revoke(null);
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
+        revoked.Error.Type.ShouldBe(ErrorType.NotFound);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnotherTenantsInvitation_IsNotFoundAndStaysPending()
+    {
+        var other = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), BuiltInRoles.Member, InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var revoked = Active().Revoke(other);
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotFound);
+        other.Status.ShouldBe(InvitationStatus.Pending);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnAcceptedInvitation_IsAConflict()
+    {
+        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        invitation.Accept(Verified("ada@example.com"), Guid.NewGuid(), Now);
+
+        var revoked = Active().Revoke(invitation);
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
     }
 
     // A closed tenant is past the pivot: a late compensation does not cancel it.
@@ -439,7 +558,7 @@ public sealed class TenantTests
     {
         var tenant = Active();
         tenant.Suspend(Reason);
-        tenant.Close(Now);
+        tenant.Close(Now, []);
 
         var reopened = tenant.Reopen(Now + ReopenPeriod - TimeSpan.FromSeconds(1), ReopenPeriod);
 
@@ -1092,7 +1211,7 @@ public sealed class TenantTests
     private static Tenant Closed()
     {
         var tenant = Active();
-        tenant.Close(Now);
+        tenant.Close(Now, []);
         return tenant;
     }
 
@@ -1105,7 +1224,7 @@ public sealed class TenantTests
             "Cancelled" => tenant.Cancel("activation_failed") is StateChange.Changed,
             "Active" => tenant.Activate() is StateChange.Changed,
             "Suspended" => tenant.Activate() is StateChange.Changed && tenant.Suspend(Reason).Value is StateChange.Changed,
-            "Closed" => tenant.Activate() is StateChange.Changed && tenant.Close(Now).Value is StateChange.Changed,
+            "Closed" => tenant.Activate() is StateChange.Changed && tenant.Close(Now, []).Value.Change is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;

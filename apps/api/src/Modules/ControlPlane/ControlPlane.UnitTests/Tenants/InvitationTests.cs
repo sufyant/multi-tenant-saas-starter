@@ -305,6 +305,46 @@ public sealed class InvitationTests
         invitation.CheckEmail(EmailAddress.AllOf(["other@example.com", " ada@example.com "])).IsSuccess.ShouldBeTrue();
     }
 
+    // At the end of its lifetime a pending invitation withdraws the identity provider's invitation.
+    [Fact]
+    public void ExpireSignUp_APendingInvitationAtItsExpiry_WithdrawsTheProviderInvitation()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime).ShouldBe("inv_1");
+    }
+
+    // The module's clock decides: a message that arrives early withdraws nothing.
+    [Fact]
+    public void ExpireSignUp_BeforeTheExpiry_WithdrawsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime - TimeSpan.FromSeconds(1)).ShouldBeNull();
+    }
+
+    // A cancelled invitation withdrew it when it ended.
+    [Fact]
+    public void ExpireSignUp_ACancelledInvitation_WithdrawsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp("inv_1");
+        invitation.Cancel();
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime).ShouldBeNull();
+    }
+
+    [Fact]
+    public void ExpireSignUp_AnAddressWithAnAccount_WithdrawsNothing()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.RecordSignUp(null);
+
+        invitation.SignUpToWithdrawAt(Now + Lifetime).ShouldBeNull();
+    }
+
     // K1: only an Owner gives the Owner role, so only an Owner invites an Owner.
     [Fact]
     public void InviteMember_AnAdminForTheOwnerRole_IsForbidden()

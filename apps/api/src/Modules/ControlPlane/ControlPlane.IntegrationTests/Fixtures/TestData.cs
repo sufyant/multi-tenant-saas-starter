@@ -26,7 +26,7 @@ internal static class TestData
 
         if (status == TenantStatus.Closed)
         {
-            tenant.Close(DateTimeOffset.UtcNow);
+            tenant.Close(DateTimeOffset.UtcNow, []);
         }
 
         // Every tenant has its summary from its creation on (R12).

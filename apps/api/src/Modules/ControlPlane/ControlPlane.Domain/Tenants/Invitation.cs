@@ -151,6 +151,14 @@ internal sealed class Invitation : ITenantEntity
     }
 
     /// <summary>
+    /// The identity provider's invitation to withdraw at the end of the invitation's lifetime: an invitation still pending keeps it until
+    /// then. A revoked, replaced or cancelled one withdrew it when it ended, an accepted one no longer needs it, and before the expiry by
+    /// this clock nothing is withdrawn. None when nothing is withdrawn.
+    /// </summary>
+    public string? SignUpToWithdrawAt(DateTimeOffset now) =>
+        Status == InvitationStatus.Pending && now >= ExpiresAt ? SignUpInvitationId : null;
+
+    /// <summary>
     /// Whether the invitation can be accepted now by someone with these verified email addresses: it is pending, it has not expired,
     /// and one of the addresses is the invited one. It changes nothing, so a caller can check more after it and still refuse
     /// without a change.

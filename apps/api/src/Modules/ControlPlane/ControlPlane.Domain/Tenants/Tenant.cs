@@ -177,14 +177,16 @@ internal sealed class Tenant
 
     /// <summary>
     /// Closes an active or a suspended tenant at this moment: its members are refused at the tenant door, its data stays, and the reopen
-    /// period counts from now (K4). A suspension's reason stays until a reopening. Returns whether the status changed; a closed tenant
-    /// stays closed and keeps its first moment. A tenant whose creation has not passed its pivot, or never will, is rejected.
+    /// period counts from now (K4). A suspension's reason stays until a reopening. The closure cancels every pending invitation of the
+    /// tenant, expired ones included, so no invitation stays pending on a closed tenant (K6h); the caller read them under the tenant's
+    /// lock. A closed tenant stays closed, keeps its first moment and cancels nothing. A tenant whose creation has not passed its pivot,
+    /// or never will, is rejected.
     /// </summary>
-    public Result<StateChange> Close(DateTimeOffset now)
+    public Result<Closed> Close(DateTimeOffset now, IReadOnlyList<Invitation> pending)
     {
         if (Status == TenantStatus.Closed)
         {
-            return StateChange.Unchanged;
+            return new Closed(StateChange.Unchanged, []);
         }
 
         if (Status is not (TenantStatus.Active or TenantStatus.Suspended))
@@ -194,7 +196,12 @@ internal sealed class Tenant
 
         Status = TenantStatus.Closed;
         ClosedAt = now;
-        return StateChange.Changed;
+        foreach (var invitation in pending)
+        {
+            invitation.Cancel();
+        }
+
+        return new Closed(StateChange.Changed, pending);
     }
 
     /// <summary>
@@ -349,6 +356,22 @@ internal sealed class Tenant
         var accepted = invitation.Accept(verifiedEmails, userId, now);
         return accepted.IsSuccess ? new Membership(Id, userId, invitation.RoleId, now) : accepted.Error;
     }
+
+    /// <summary>
+    /// A member revokes the invitation, so its link stops working at once (K2): none, or another tenant's, is not found, and the
+    /// invitation's own rule decides the rest (<see cref="Invitation.Revoke"/>). The caller holds the tenant's lock, then the
+    /// invitation's (K6e).
+    /// </summary>
+    public Result<StateChange> Revoke(Invitation? invitation) =>
+        invitation is not null && invitation.TenantId == Id ? invitation.Revoke() : Invitation.NotFound;
+
+    /// <summary>
+    /// Compensates a tenant creation that did not reach the activation (<see cref="Cancel"/>). An active or a suspended tenant is past the
+    /// pivot and is never cancelled: none, so the compensation changes nothing and reports nothing, and the saga's cancellation timeout
+    /// leaves the tenant creation to a person. Any other tenant answers whether it changed; a cancelled one keeps its first reason.
+    /// </summary>
+    public StateChange? CancelCreation(string reason) =>
+        Status is TenantStatus.Active or TenantStatus.Suspended ? null : Cancel(reason);
 
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;

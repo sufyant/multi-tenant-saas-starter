@@ -8,7 +8,8 @@ namespace ControlPlane.Application.Invitations.RevokeInvitation;
 
 // The command sets a state (I1): an invitation already cancelled answers as it is, and nothing is announced again. K6: the tenant row
 // is locked first; a revoker who is no longer a member finds no tenant (T3), and a tenant that is no longer active is refused; then the
-// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. Rejections come first (W7).
+// invitation is locked. Row level security hides another tenant's invitation, so its id is not found. The rule is the tenant's (M1, Tenant.Revoke).
+// Rejections come first (W7).
 public static class RevokeInvitationHandler
 {
     public static async Task<(Result, InvitationRevokedEvent?, WithdrawSignUpCommand?)> HandleAsync(
@@ -26,12 +27,8 @@ public static class RevokeInvitationHandler
 
         var (tenant, actor, _) = start.Value;
 
-        if (await tenants.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken) is not { } invitation)
-        {
-            return (Errors.InvitationNotFound, null, null);
-        }
-
-        var revoked = invitation.Revoke();
+        var invitation = await tenants.FindInvitationForUpdateAsync(command.InvitationId, cancellationToken);
+        var revoked = tenant.Revoke(invitation);
         if (!revoked.IsSuccess || revoked.Value == StateChange.Unchanged)
         {
             return (revoked.IsSuccess ? Result.Success() : Result.Failure(revoked.Error), null, null);
@@ -42,7 +39,7 @@ public static class RevokeInvitationHandler
         var now = time.GetUtcNow();
         return (
             Result.Success(),
-            new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation.Id, actor.Id),
-            invitation.SignUpInvitationId is { } signUp ? new WithdrawSignUpCommand(signUp) : null);
+            new InvitationRevokedEvent(Guid.CreateVersion7(now), now, tenant.Id, invitation!.Id, actor.Id),
+            WithdrawSignUpCommand.For([invitation]).SingleOrDefault());
     }
 }
