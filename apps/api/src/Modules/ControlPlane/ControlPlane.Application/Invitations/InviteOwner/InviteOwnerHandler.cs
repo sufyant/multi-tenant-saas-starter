@@ -1,4 +1,4 @@
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
@@ -15,8 +15,7 @@ namespace ControlPlane.Application.Invitations.InviteOwner;
 // acceptance locks the same row first, so it runs before, and the tenant has its Owner, or after, and finds its invitation cancelled.
 // The rules are the tenant's (M1, Tenant.Invite): the platform invites an Owner only into an active tenant without one, and the new
 // invitation replaces every pending one (the maintainer's decision in step 20k). Rejections come first (W7). The invitation then takes
-// the path of a member's: the identity provider's sign-up, then the email (OpenMemberSignUpCommand). The owner's messages of the tenant
-// creation answer its saga, which has ended (S13).
+// the path of every invitation: the identity provider's sign-up, then the email (OpenSignUpCommand). Tenant creation takes the same path.
 public static class InviteOwnerHandler
 {
     public static async Task<(Result<InvitationView>, OutgoingMessages)> HandleAsync(
@@ -55,7 +54,7 @@ public static class InviteOwnerHandler
             InvitationView.Of(invitation, UserNameView.Of(actor), now),
             [
                 new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
-                OpenMemberSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
+                OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
                 .. WithdrawSignUpCommand.For(replaced),
             ]);
     }

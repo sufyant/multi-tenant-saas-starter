@@ -1,5 +1,4 @@
 using System.Text.Json;
-using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
@@ -20,7 +19,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
 /// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, roles, system admins), and the memberships,
-/// invitations and tenant creation sagas, which belong to a tenant and are under row level security.
+/// invitations, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
@@ -49,8 +48,6 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     internal DbSet<Invitation> Invitations => Set<Invitation>();
 
     internal DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
-
-    internal DbSet<TenantCreationSaga> TenantCreationSagas => Set<TenantCreationSaga>();
 
     /// <summary>
     /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
@@ -114,7 +111,6 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new MembershipConfiguration());
         modelBuilder.ApplyConfiguration(new InvitationConfiguration());
-        modelBuilder.ApplyConfiguration(new TenantCreationSagaConfiguration());
         modelBuilder.ApplyConfiguration(new SystemAdminConfiguration());
     }
 

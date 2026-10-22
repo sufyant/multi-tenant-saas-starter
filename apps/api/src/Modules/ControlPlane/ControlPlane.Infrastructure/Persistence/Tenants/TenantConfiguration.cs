@@ -16,7 +16,6 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         tenant.HasIndex(t => t.Name, "ix_tenants_name_trgm").HasDatabaseName("ix_tenants_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
         tenant.HasIndex(t => t.Slug, "ix_tenants_slug_trgm").HasDatabaseName("ix_tenants_slug_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
         tenant.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
-        tenant.Property(t => t.CancellationReason).HasMaxLength(Tenant.CancellationReasonMaxLength);
         tenant.Property(t => t.SuspensionReason).HasMaxLength(Tenant.SuspensionReasonMaxLength);
     }
 }

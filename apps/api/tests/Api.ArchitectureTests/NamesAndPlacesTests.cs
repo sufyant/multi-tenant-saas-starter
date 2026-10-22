@@ -155,7 +155,7 @@ public sealed partial class NamesAndPlacesTests
     }
 
     // N9: in a module's integration test project, each test of a use case sits in the one class of that use case, {UseCase}Tests, in the
-    // folder of its resource in Application (Tenants/ActivateTenantTests). A class named by a class of the module, such as
+    // folder of its resource in Application (Invitations/RecordSignUpTests). A class named by a class of the module, such as
     // TenantRepositoryTests, tests that class.
     [Theory]
     [MemberData(nameof(ModuleIntegrationTestProjects))]

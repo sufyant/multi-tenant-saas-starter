@@ -132,7 +132,6 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             from membership in controlPlane.Memberships
             join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
             join role in controlPlane.Roles on membership.RoleId equals role.Id
-            where tenant.Status == TenantStatus.Active || tenant.Status == TenantStatus.Suspended || tenant.Status == TenantStatus.Closed
             select new { Tenant = tenant, Role = role };
         if (list.Search is { } search)
         {

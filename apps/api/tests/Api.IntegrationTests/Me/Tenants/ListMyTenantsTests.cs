@@ -94,22 +94,6 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         Tenants(page).ShouldBe([(earlier.Id, "Same Ltd", earlier.Slug), (later.Id, "Same Ltd", later.Slug)]);
     }
 
-    [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
-    public async Task ListMyTenants_ATenantProvisioningOrCancelled_IsNotListed(string status)
-    {
-        var active = await _testData.AddTenantAsync(name: "Active Ltd");
-        var hidden = await _testData.AddTenantAsync(status: status, name: "Hidden Ltd");
-        var user = await _testData.AddMemberAsync(active.Id);
-        await _testData.AddMemberAsync(hidden.Id, user);
-
-        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
-
-        Tenants(page).ShouldBe([(active.Id, "Active Ltd", active.Slug)]);
-        page.GetProperty("total").GetInt32().ShouldBe(1);
-    }
-
     // The member of a suspended tenant still sees it, with its status, so a client can tell them why they cannot enter it.
     [Fact]
     public async Task ListMyTenants_ASuspendedTenant_IsListedWithItsStatus()

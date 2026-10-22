@@ -1,4 +1,4 @@
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
@@ -63,7 +63,7 @@ public static class InviteMemberHandler
                     actor.Id,
                     role.Name,
                     replaced.SingleOrDefault()?.Id),
-                OpenMemberSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
+                OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
                 .. WithdrawSignUpCommand.For(replaced),
             ]);
     }

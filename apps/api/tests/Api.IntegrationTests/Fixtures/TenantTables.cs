@@ -30,9 +30,6 @@ internal static class TenantTables
                 INSERT INTO control_plane.memberships (tenant_id, user_id, role_id, joined_at)
                 SELECT '{tenant}', member.id, roles.id, now() FROM member, control_plane.roles WHERE roles.built_in = 'Member'
                 """),
-        ["control_plane.tenant_creation_sagas"] = new(
-            ApplicationMayUpdate: true,
-            tenant => $"INSERT INTO control_plane.tenant_creation_sagas (id, tenant_id, state, invitation_id, invitation_email_timeout, cancellation_timeout, version) VALUES (gen_random_uuid(), '{tenant}', 'Activating', gen_random_uuid(), interval '2 hours', interval '10 minutes', 0)"),
         ["probes.probes"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO probes.probes (id, value, tenant_id) VALUES (gen_random_uuid(), 'isolation', '{tenant}')"),

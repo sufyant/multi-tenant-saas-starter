@@ -112,8 +112,6 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return inserted == 1;
     }
 
-    void ITenantRepository.Add(Invitation invitation) => controlPlane.Invitations.Add(invitation);
-
     async Task ITenantRepository.AddInvitationAsync(Tenant tenant, Invited invited, CancellationToken cancellationToken)
     {
         if (invited.Replaced.Count > 0)

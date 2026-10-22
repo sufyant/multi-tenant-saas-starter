@@ -92,7 +92,7 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(() => CreateTenantForOwnerAsync(api, email));
 
         var attempts = messages.ExecutionStarted.RecordsInOrder()
-            .Where(record => record.Message is OwnerInvitationReadyEvent)
+            .Where(record => record.Message is InvitationReadyEvent)
             .Select(record => record.SessionTime)
             .ToArray();
         attempts.Length.ShouldBe(3);
@@ -132,7 +132,7 @@ public sealed class InvitationDeliveryTests(Database database)
         await StopAndDrainAsync(api);
 
         api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe(next);
-        messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReadyEvent { Email: var email } && email == refused)
+        messages.Requeued.Envelopes().Where(envelope => envelope.Message is InvitationReadyEvent { Email: var email } && email == refused)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
 
@@ -167,7 +167,7 @@ public sealed class InvitationDeliveryTests(Database database)
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
 
-        messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReadyEvent { Email: var email } && email == refused)
+        messages.Requeued.Envelopes().Where(envelope => envelope.Message is InvitationReadyEvent { Email: var email } && email == refused)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
 
@@ -233,7 +233,7 @@ public sealed class InvitationDeliveryTests(Database database)
 
         public void Record(EnvelopeRecord record)
         {
-            if (record.Message is OwnerInvitationReadyEvent ready)
+            if (record.Message is InvitationReadyEvent ready)
             {
                 _sent |= record.MessageEventType == MessageEventType.MessageSucceeded && ready.Email == sent;
                 _rescheduled |= record.MessageEventType == MessageEventType.Requeued && ready.Email == rescheduled;

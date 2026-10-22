@@ -54,18 +54,6 @@ public sealed class TenantDirectoryTests(Database database)
     }
 
     [Fact]
-    public async Task ResolveTenant_MemberOfAProvisioningTenant_IsRefusedAsATenantThatDoesNotExist()
-    {
-        var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Provisioning);
-        var user = await TestData.AddUserAsync(database.Services);
-        await TestData.AddMemberAsync(database.Services, tenant, user);
-
-        var membership = await FindMembershipAsync(tenant.Id, user.ExternalId);
-
-        membership.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotFound);
-    }
-
-    [Fact]
     public async Task ResolveTenant_MemberOfASuspendedTenant_IsRefusedBecauseTheTenantIsSuspended()
     {
         var tenant = await TestData.AddTenantAsync(database.Services, TenantStatus.Suspended);

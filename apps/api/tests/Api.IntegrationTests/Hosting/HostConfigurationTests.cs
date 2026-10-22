@@ -13,9 +13,6 @@ namespace Api.IntegrationTests.Hosting;
 public sealed class HostConfigurationTests(Database database)
 {
     // The factory's short retries left out, so each module's default retries apply.
-    private static readonly Dictionary<string, string?> DefaultRetries =
-        ApiFactory.ShortRetries.ToDictionary(setting => setting.Key, _ => (string?)null);
-
     private static readonly Dictionary<string, string?> Complete = new()
     {
         ["Notifications:Resend:ApiKey"] = "re_test_key",
@@ -46,9 +43,6 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:Invitations:Lifetime", "23:59:59" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
         { "ControlPlane:IdentityProvider:RetryDelays:0", "00:00:00" },
-        { "ControlPlane:ActivationTimeout", "00:00:00" },
-        { "ControlPlane:InvitationEmailTimeout", "-00:00:01" },
-        { "ControlPlane:CancellationTimeout", "00:00:00" },
         { "ControlPlane:Tenants:ReopenPeriod", "00:00:00" },
         { "Host:RateLimiting:InvitationAccept:PermitLimit", "0" },
         { "Host:RateLimiting:InvitationAccept:Window", "00:00:00" },
@@ -125,63 +119,6 @@ public sealed class HostConfigurationTests(Database database)
         var start = () => api.CreateClient();
 
         start.ShouldThrow<Exception>().Message.ShouldContain("Host:ManagementPort");
-    }
-
-    // Section 7, configuration rule 5. The factory's short retries are left out, so the defaults apply.
-    [Fact]
-    public async Task StartApplication_DefaultInvitationEmailTimeoutAndRetries_Starts()
-    {
-        await using var api = new ApiFactory(database.ApplicationConnectionString, settings: DefaultRetries);
-
-        var start = () => api.CreateClient();
-
-        start.ShouldNotThrow();
-    }
-
-    [Fact]
-    public async Task StartApplication_InvitationEmailTimeoutEqualsTheRetries_FailsNamingTheKeys()
-    {
-        await using var api = new ApiFactory(
-            database.ApplicationConnectionString,
-            settings: new Dictionary<string, string?>
-            {
-                ["ControlPlane:IdentityProvider:RetryDelays:0"] = "00:01:00",
-                ["ControlPlane:IdentityProvider:RetryDelays:1"] = "00:02:00",
-                ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:03:00",
-                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:04:00",
-                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:05:00",
-                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:06:00",
-                ["ControlPlane:InvitationEmailTimeout"] = "00:21:00",
-            });
-
-        var start = () => api.CreateClient();
-
-        var message = start.ShouldThrow<Exception>().Message;
-        message.ShouldContain("ControlPlane:InvitationEmailTimeout (00:21:00)");
-        message.ShouldContain("ControlPlane:IdentityProvider:RetryDelays (00:01:00, 00:02:00, 00:03:00)");
-        message.ShouldContain("Notifications:InvitationEmails:RetryDelays (00:04:00, 00:05:00, 00:06:00)");
-    }
-
-    // The default timeout is two hours. A last email pause of 1:40 brings the retries to 2:07:20.
-    [Fact]
-    public async Task StartApplication_EmailRetryDelayRaisedPastTheInvitationEmailTimeout_FailsNamingTheKeys()
-    {
-        await using var api = new ApiFactory(
-            database.ApplicationConnectionString,
-            settings: new Dictionary<string, string?>(DefaultRetries)
-            {
-                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:00:10",
-                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:01:00",
-                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:05:00",
-                ["Notifications:InvitationEmails:RetryDelays:3"] = "01:40:00",
-            });
-
-        var start = () => api.CreateClient();
-
-        var message = start.ShouldThrow<Exception>().Message;
-        message.ShouldContain("ControlPlane:InvitationEmailTimeout (02:00:00)");
-        message.ShouldContain("ControlPlane:IdentityProvider:RetryDelays");
-        message.ShouldContain("Notifications:InvitationEmails:RetryDelays (00:00:10, 00:01:00, 00:05:00, 01:40:00)");
     }
 
     // Section 6: once the system admin list has a system admin, the first system admin's setting has no effect.

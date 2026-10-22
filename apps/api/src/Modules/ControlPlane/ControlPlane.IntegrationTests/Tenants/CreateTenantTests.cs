@@ -1,11 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
-using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
-using ControlPlane.Application.Tenants.CancelTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
-using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
 using ControlPlane.Domain;
 using ControlPlane.Infrastructure.Persistence;
@@ -18,40 +14,56 @@ using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 
 namespace ControlPlane.IntegrationTests.Tenants;
 
-// CreateTenantCommand, the first step of the tenant creation saga, run the way Wolverine runs it: it writes the tenant, the Owner's
-// invitation and the saga's record in the new tenant's transaction. The slug's unique index decides between two creations at once.
+// CreateTenantCommand, run the way Wolverine runs it: one transaction in the new tenant writes the active tenant, its summary and the
+// Owner's invitation, and returns the audit event and the identity provider's sign-up for the outbox. The slug's unique index decides
+// between two creations at once.
 public sealed class CreateTenantTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task CreateTenant_NewTenant_WritesTheTenantTheOwnersInvitationAndTheSaga()
+    public async Task CreateTenant_NewTenant_WritesAnActiveTenantAndThePendingOwnerInvitation()
     {
         var admin = await TestData.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
         var slug = Unique.Slug();
         var owner = Unique.Email();
 
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, slug, owner);
+        var created = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, slug, owner);
 
-        started.Result.Value.ShouldBe(new TenantView(tenantId, "Acme Ltd", slug, "Provisioning", null, null));
-        var activate = started.Activate.ShouldNotBeNull().Message;
-        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
-        activate.ShouldSatisfyAllConditions(
-            step => step.TenantId.ShouldBe(tenantId),
-            step => step.InvitationId.ShouldBe(invitationId),
-            step => step.AcceptLink.GetLeftPart(UriPartial.Path).ShouldBe(Database.AcceptUrl),
-            step => Handlers.TenantIdOf(Handlers.CodeOf(step.AcceptLink)).ShouldBe(tenantId));
-        started.Timeout.ShouldBe(new ActivationTimedOut(tenantId, TimeSpan.FromMinutes(10)));
-        (await StatusOfAsync(tenantId)).ShouldBe("Provisioning");
-        (await ScalarAsync<string>($"SELECT state FROM control_plane.tenant_creation_sagas WHERE id = '{tenantId}' AND tenant_id = '{tenantId}'"))
-            .ShouldBe("Activating");
+        created.Result.Value.ShouldBe(new TenantView(tenantId, "Acme Ltd", slug, "Active", null, null));
+        (await StatusOfAsync(tenantId)).ShouldBe("Active");
         (await ScalarAsync<long>(
             $"""
             SELECT count(*) FROM control_plane.invitations JOIN control_plane.roles ON roles.id = invitations.role_id
-            WHERE invitations.id = '{invitationId}' AND invitations.email = '{owner}' AND invitations.status = 'Pending'
+            WHERE invitations.tenant_id = '{tenantId}' AND invitations.email = '{owner}' AND invitations.status = 'Pending'
               AND roles.built_in = 'Owner' AND invitations.invited_by = '{admin.Id}'
             """)).ShouldBe(1);
+        (await ScalarAsync<string>($"SELECT owner_invitation_email FROM control_plane.tenant_summaries WHERE tenant_id = '{tenantId}'")).ShouldBe(owner);
+    }
+
+    // The creation sends the owner's sign-up, with the accept link that carries the invitation's code, and the event Audit records.
+    [Fact]
+    public async Task CreateTenant_NewTenant_SendsTheSignUpAndTheCreationEvent()
+    {
+        var admin = await TestData.AddUserAsync(database.Services);
+        var tenantId = Guid.CreateVersion7();
+        var owner = Unique.Email();
+
+        var created = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), owner);
+
+        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
+        created.SignUp.ShouldNotBeNull().ShouldSatisfyAllConditions(
+            signUp => signUp.TenantId.ShouldBe(tenantId),
+            signUp => signUp.InvitationId.ShouldBe(invitationId),
+            signUp => signUp.Email.ShouldBe(owner),
+            signUp => signUp.TenantName.ShouldBe("Acme Ltd"),
+            signUp => signUp.AcceptLink.GetLeftPart(UriPartial.Path).ShouldBe(Database.AcceptUrl),
+            signUp => Handlers.TenantIdOf(Handlers.CodeOf(signUp.AcceptLink)).ShouldBe(tenantId));
+        created.Created.ShouldNotBeNull().ShouldSatisfyAllConditions(
+            announced => announced.TenantId.ShouldBe(tenantId),
+            announced => announced.Name.ShouldBe("Acme Ltd"),
+            announced => announced.CreatedBy.ShouldBe(admin.Id));
     }
 
     // The secret is born with the invitation and travels only in the accept link; ControlPlane keeps its SHA-256 hash.
@@ -61,39 +73,25 @@ public sealed class CreateTenantTests(Database database)
         var admin = await TestData.AddUserAsync(database.Services);
         var tenantId = Guid.CreateVersion7();
 
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
+        var created = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
 
-        var secret = Handlers.SecretOf(Handlers.CodeOf(started.Activate.ShouldNotBeNull().Message.AcceptLink));
+        var secret = Handlers.SecretOf(Handlers.CodeOf(created.SignUp.ShouldNotBeNull().AcceptLink));
         (await ScalarAsync<string>($"SELECT secret_hash FROM control_plane.invitations WHERE tenant_id = '{tenantId}'")).ShouldBe(Sha256(secret));
     }
 
-    // The steps it starts carry the saga's id on their envelopes, so the fault of one that fails for good finds the saga.
     [Fact]
-    public async Task CreateTenant_NewTenant_SendsTheActivationWithTheSagaId()
-    {
-        var admin = await TestData.AddUserAsync(database.Services);
-        var tenantId = Guid.CreateVersion7();
-
-        var started = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
-
-        started.Activate.ShouldNotBeNull().Options.SagaId.ShouldBe(tenantId.ToString());
-    }
-
-    [Fact]
-    public async Task CreateTenant_SlugTaken_IsRefusedAndStartsNothing()
+    public async Task CreateTenant_SlugTaken_IsRefusedAndSendsNothing()
     {
         var admin = await TestData.AddUserAsync(database.Services);
         var existing = await TestData.AddTenantAsync(database.Services);
 
-        var started = await Handlers.CreateTenantAsync(database.Services, Guid.CreateVersion7(), admin.ExternalId, existing.Slug, Unique.Email());
+        var created = await Handlers.CreateTenantAsync(database.Services, Guid.CreateVersion7(), admin.ExternalId, existing.Slug, Unique.Email());
 
-        started.Result.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugTaken);
-        started.Saga.ShouldBeNull();
-        started.Activate.ShouldBeNull();
-        started.Timeout.ShouldBeNull();
+        created.Result.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugTaken);
+        created.Created.ShouldBeNull();
+        created.SignUp.ShouldBeNull();
     }
 
-    // Both find the slug free, and the slug's unique index lets only one of them have it: the other is a conflict, not a failure.
     [Fact]
     public async Task CreateTenant_TwoWithOneSlugAtOnce_CreatesOneTenantAndRefusesTheOther()
     {
@@ -113,8 +111,6 @@ public sealed class CreateTenantTests(Database database)
         (await ScalarAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(1);
     }
 
-    private static Uri AcceptLink() => new($"{Database.AcceptUrl}?code={Guid.CreateVersion7()}.secret");
-
     // The transaction Wolverine would begin for the tenant creation, and the database session it runs in.
     private static async Task<(IDbContextTransaction Transaction, int ProcessId)> BeginAsync(AsyncServiceScope scope, Guid tenantId)
     {
@@ -129,7 +125,6 @@ public sealed class CreateTenantTests(Database database)
             scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
             scope.ServiceProvider.GetRequiredService<IUserRepository>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
-            scope.ServiceProvider.GetRequiredService<TenantCreationOptions>(),
             TimeProvider.System,
             Cancellation)).Item1;
 

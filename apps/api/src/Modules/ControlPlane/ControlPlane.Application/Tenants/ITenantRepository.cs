@@ -15,7 +15,7 @@ public interface ITenantRepository
     internal Guid TenantId { get; }
 
     /// <summary>
-    /// The active tenant, locked for the rest of the transaction, so the steps of its creation, every change of its status or name, and
+    /// The active tenant, locked for the rest of the transaction, so its creation, every change of its status or name, and
     /// every change to its memberships and invitations run one at a time (K6a). Null when no tenant has the active tenant's id.
     /// </summary>
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
@@ -79,8 +79,6 @@ public interface ITenantRepository
     /// decides, also between two tenant creations at the same moment, and nothing else about the other tenant is revealed.
     /// </summary>
     internal Task<bool> TryAddAsync(Tenant tenant, CancellationToken cancellationToken);
-
-    internal void Add(Invitation invitation);
 
     /// <summary>
     /// Saves what <see cref="Tenant.Invite"/> did, as <see cref="SaveAsync"/> saves it: the replaced invitations first, so the partial

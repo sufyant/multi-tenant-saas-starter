@@ -18,7 +18,6 @@ internal static class ModuleComposition
         builder.Services.AddControlPlaneInfrastructure();
         builder.Services.AddNotificationsInfrastructure();
         builder.Services.AddAuditInfrastructure();
-        builder.Services.AddInvitationEmailWait();
 
         return role;
     }

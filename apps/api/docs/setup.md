@@ -95,9 +95,8 @@ The instance config has no key for these. The maintainer does them by hand:
 
 The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --instance <dev or prod> --email <address>` in the linked checkout. The account has no password: the admin signs in with an email code and then enrolls an authenticator app. Until that account exists, nobody passes the system door: every `/v1/platform/...` request answers 403, and the system admin list stays empty. The account's first request with a verified second factor writes the user, with the configured address and no names, and the grant (section 6). A system admin then gives them their names (`PATCH /v1/platform/users/{userId}`).
 
-## 3. Email and tenant creation timing
+## 3. Email
 
-- `ControlPlane:InvitationEmailTimeout` must be longer than the `ControlPlane:IdentityProvider:RetryDelays` and the `Notifications:InvitationEmails:RetryDelays` together: step 3 lets the owner sign up with Clerk, then sends the email. A shorter wait gives up on a call that is still being tried, cancels the invitation and raises the alarm. The host checks the rule on start (`Api/Hosting/InvitationEmailWait.cs`). If the rule fails, the host does not start, and the error names the three keys and their values.
 - Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
 
 ## 4. Container platform

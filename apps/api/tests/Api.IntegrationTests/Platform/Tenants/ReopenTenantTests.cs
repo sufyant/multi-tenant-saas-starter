@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -119,12 +119,10 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
         (await AuditEntryCountAsync(tenant.Id)).ShouldBe(0);
     }
 
-    [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
-    [InlineData("Suspended")]
-    public async Task ReopenTenant_NeitherClosedNorActive_IsAConflictAndChangesNothing(string status)
+    [Fact]
+    public async Task ReopenTenant_Suspended_IsAConflictAndChangesNothing()
     {
+        const string status = "Suspended";
         var tenant = await _testData.AddTenantAsync(status: status);
 
         var response = await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id);

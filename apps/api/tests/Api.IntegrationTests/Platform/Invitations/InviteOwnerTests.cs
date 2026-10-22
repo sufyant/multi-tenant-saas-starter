@@ -115,9 +115,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("Provisioning")]
     [InlineData("Suspended")]
-    [InlineData("Cancelled")]
     [InlineData("Closed")]
     public async Task InviteOwner_ATenantThatIsNotActive_IsAConflictAndInvitesNobody(string status)
     {

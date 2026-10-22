@@ -54,22 +54,19 @@ public sealed class TwoWorkerTests(Database database)
     }
 
     [Fact]
-    public async Task CreateTenant_WorkerDiesWhileTheSagaWaitsForTheEmail_TheOtherWorkerCompletesIt()
+    public async Task CreateTenant_WorkerDiesWhileItSendsTheEmail_TheOtherWorkerSendsIt()
     {
         await using var workers = await TwoWorkers.StartAsync(database);
         var admin = workers.Web.CreateClient(await workers.AddSystemAdminAsync(), secondFactor: true);
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
-        var tenantId = await TwoWorkers.IdOfAsync(created);
         var dead = await workers.Hold.HeldInAsync();
-        await workers.WaitForSagaStateAsync(tenantId, "SendingInvitation");
         await workers.CrashAsync(dead);
-        await workers.WaitForSagaStateAsync(tenantId, "Completed");
+        await Waiting.UntilAsync(() => workers.Email.Sent.Count > 0);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await workers.SagaStateAsync(tenantId)).ShouldBe("Completed");
         workers.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
-        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)));
-        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)));
     }
 }

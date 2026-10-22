@@ -14,11 +14,6 @@ internal static class TestData
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
         var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), DateTimeOffset.UtcNow).Value;
-        if (status is TenantStatus.Active or TenantStatus.Suspended or TenantStatus.Closed)
-        {
-            tenant.Activate();
-        }
-
         if (status == TenantStatus.Suspended)
         {
             tenant.Suspend("Unpaid invoices");

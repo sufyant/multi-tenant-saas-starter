@@ -24,7 +24,7 @@ Run from `apps/api/`.
 
 These were decided with the maintainer, with their sources. Do not reopen one, and do not propose to, unless the maintainer asks or you have new information. Then say what the new information is.
 
-- The tenant creation saga is a permanent part of the template. Do not replace it with events or plain handlers. (Section 6; rules S1 to S13 in section 3)
+- Tenant creation is one transaction, not a saga: its first write and its pivot are both writes in ControlPlane's own database, and only retryable steps follow. It takes the path of `InviteOwner`. The template's reference use of a saga is the tenant purge (step r7). (The maintainer's decision D1 in step r3; section 6, "Tenant creation process"; rules S1 to S13 in section 3)
 - The tenant id is in the API path and is proven by membership. It never comes from the token, the body, the query or a header. (T1, T2, Deviations)
 - The identity provider only authenticates. Tenants, roles and permissions live in our tables. (T6, A1 to A6)
 - The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. ControlPlane owns the names; the provider keeps none, and no webhook flows back. (A7, A8; section 6, "Invitation sign-up"; the maintainer's decisions in step 20i)

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Contracts.Invitations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -526,7 +526,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
-        var invited = new MemberInvitationReadyEvent(
+        var invited = new InvitationReadyEvent(
             Guid.CreateVersion7(),
             _time.GetUtcNow(),
             Guid.NewGuid(),
@@ -643,7 +643,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => invited = await owner.InviteMemberAsync(tenantId, email));
 
         var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUpCommand>().InvitationId.ShouldBe(invitationId);
+        messages.MovedToErrorQueue.SingleMessage<OpenSignUpCommand>().InvitationId.ShouldBe(invitationId);
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == email);
         (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
     }

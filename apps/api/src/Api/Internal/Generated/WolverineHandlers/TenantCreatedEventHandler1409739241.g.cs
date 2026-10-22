@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantActivatedEventHandler623975288
+    // START: TenantCreatedEventHandler1409739241
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantActivatedEventHandler623975288 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class TenantCreatedEventHandler1409739241 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public TenantActivatedEventHandler623975288(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public TenantCreatedEventHandler1409739241(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var tenantActivatedEvent = (ControlPlane.Contracts.Tenants.TenantActivatedEvent)context.Envelope.Message;
+            var tenantCreatedEvent = (ControlPlane.Contracts.Tenants.TenantCreatedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -41,7 +41,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantCreated.RecordTenantCreatedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Tenants.RecordTenantCreated.RecordTenantCreatedHandler.HandleAsync(tenantActivatedEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Tenants.RecordTenantCreated.RecordTenantCreatedHandler.HandleAsync(tenantCreatedEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantActivatedEventHandler623975288
+    // END: TenantCreatedEventHandler1409739241
     
     
 }
