@@ -122,7 +122,7 @@ curl -X POST http://127.0.0.1:5080/v1/platform/tenants \
   -d '{"name":"Acme","slug":"acme","ownerEmail":"owner@acme.test"}'
 ```
 
-The answer is `201` with the tenant in `Provisioning`. Within seconds the worker takes the tenant creation to its end, and the worker's log shows the invitation email. For an owner without an account, the link is Clerk's invitation link:
+The answer is `201` with the tenant `active` and its Owner invitation pending. Within seconds the worker lets the Owner sign up with Clerk and sends the email, and the worker's log shows the invitation email. For an owner without an account, the link is Clerk's invitation link:
 
 ```text
 Email to owner@acme.test is not sent in Development: You are invited to Acme
