@@ -32,16 +32,16 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read", "tenant.invitations.read");
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read", "tenant.members.read", "tenant.invitations.read");
 
         var updated = await _api.WaitingForMessagesAsync(() =>
-            _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, " Finance ", ["tenant.members.read", "tenant.audit.read"]));
+            _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, " Finance ", ["tenant.profile.read", "tenant.members.read", "tenant.audit.read"]));
 
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await updated.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (body.GetProperty("id").GetGuid(), body.GetProperty("name").GetString(), body.GetProperty("builtIn").GetBoolean()).ShouldBe((roleId, "Finance", false));
-        body.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.audit.read", "tenant.members.read"]);
-        (await PermissionsOfAsync(roleId)).ShouldBe("tenant.audit.read, tenant.members.read");
+        body.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.audit.read", "tenant.members.read", "tenant.profile.read"]);
+        (await PermissionsOfAsync(roleId)).ShouldBe("tenant.audit.read, tenant.members.read, tenant.profile.read");
         (await _audit.TenantLogAsync(roleId)).ShouldBe($"{tenant.Id}:role.updated|User|{await _testData.UserIdOfAsync(owner)}|Role|{roleId}|Finance");
         (await _audit.TenantDetailsAsync(roleId))
             .ShouldBe("""{"newName": "Finance", "oldName": "Billing", "permissionsAdded": ["tenant.audit.read"], "permissionsRemoved": ["tenant.invitations.read"]}""");
@@ -52,9 +52,9 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read", "tenant.members.read");
 
-        var updated = await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Billing", ["tenant.members.read"]));
+        var updated = await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Billing", ["tenant.profile.read", "tenant.members.read"]));
 
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await _audit.TenantLogAsync(roleId)).ShouldBeNull();
@@ -67,7 +67,7 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
         var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
 
-        var updated = await _api.CreateClient(admin).UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.members.read"]);
+        var updated = await _api.CreateClient(admin).UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.profile.read", "tenant.members.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await NameOfAsync(roleId)).ShouldBe("Billing");
@@ -84,7 +84,7 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var roleId = await _testData.RoleIdOfAsync(tenant.Id, builtIn);
 
-        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Renamed", ["tenant.members.read"]);
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Renamed", ["tenant.profile.read", "tenant.members.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(updated)).ShouldBe("role.built_in");
@@ -100,7 +100,7 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         var other = await _testData.AddTenantAsync();
         var roleId = await _testData.AddCustomRoleAsync(other.Id, "Billing", "tenant.members.read");
 
-        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.members.read"]);
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.profile.read", "tenant.members.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(updated)).ShouldBe("role.not_found");
@@ -114,7 +114,7 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
 
-        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Admin", ["tenant.members.read"]);
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Admin", ["tenant.profile.read", "tenant.members.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(updated)).ShouldBe("role.name_taken");
@@ -128,7 +128,7 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
 
-        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "BILLING", ["tenant.members.read"]);
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "BILLING", ["tenant.profile.read", "tenant.members.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await NameOfAsync(roleId)).ShouldBe("BILLING");
@@ -143,7 +143,7 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
 
-        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Billing", ["tenant.members.read", permission]);
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Billing", ["tenant.profile.read", "tenant.members.read", permission]);
 
         updated.StatusCode.ShouldBe(status);
         (await CodeOfAsync(updated)).ShouldBe(code);
@@ -163,16 +163,33 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(updated)).ShouldBe("role.permissions_required");
     }
 
+    // Finding 7 of step r4b: every custom role reads its tenant, and a role that gives a role reads the roles it gives.
+    [Theory]
+    [InlineData(new[] { "tenant.members.read" }, "role.profile_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.invitations.create" }, "role.roles_read_required")]
+    public async Task UpdateRole_WithoutAPermissionItsOthersNeed_IsABadRequestAndChangesNothing(string[] permissions, string code)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read", "tenant.members.read");
+
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Billing", permissions);
+
+        updated.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await CodeOfAsync(updated)).ShouldBe(code);
+        (await PermissionsOfAsync(roleId)).ShouldBe("tenant.members.read, tenant.profile.read");
+    }
+
     // Decision 2 of step r4b, before: an actor never changes a role that holds a permission their own role does not hold.
     [Fact]
     public async Task UpdateRole_ARoleStrongerThanTheActorsBefore_IsForbiddenAsAnEscalation()
     {
         var tenant = await _testData.AddTenantAsync();
-        var keeper = await _testData.AddCustomRoleAsync(tenant.Id, "Role keeper", "tenant.roles.update", "tenant.members.read");
+        var keeper = await _testData.AddCustomRoleAsync(tenant.Id, "Role keeper", "tenant.roles.update", "tenant.members.read", "tenant.profile.read");
         var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, keeper);
         var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Auditor", "tenant.members.read", "tenant.audit.read");
 
-        var updated = await _api.CreateClient(actor).UpdateRoleAsync(tenant.Id, roleId, "Auditor", ["tenant.members.read"]);
+        var updated = await _api.CreateClient(actor).UpdateRoleAsync(tenant.Id, roleId, "Auditor", ["tenant.profile.read", "tenant.members.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(updated)).ShouldBe("role.escalation");
@@ -184,11 +201,11 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
     public async Task UpdateRole_APermissionTheActorsRoleDoesNotHold_IsForbiddenAsAnEscalation()
     {
         var tenant = await _testData.AddTenantAsync();
-        var keeper = await _testData.AddCustomRoleAsync(tenant.Id, "Role keeper", "tenant.roles.update", "tenant.members.read");
+        var keeper = await _testData.AddCustomRoleAsync(tenant.Id, "Role keeper", "tenant.roles.update", "tenant.members.read", "tenant.profile.read");
         var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, keeper);
         var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Reader", "tenant.members.read");
 
-        var updated = await _api.CreateClient(actor).UpdateRoleAsync(tenant.Id, roleId, "Reader", ["tenant.members.read", "tenant.audit.read"]);
+        var updated = await _api.CreateClient(actor).UpdateRoleAsync(tenant.Id, roleId, "Reader", ["tenant.profile.read", "tenant.members.read", "tenant.audit.read"]);
 
         updated.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(updated)).ShouldBe("role.escalation");

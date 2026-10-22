@@ -55,6 +55,58 @@ public sealed class RoleTests
         allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
     }
 
+    // Finding 7 of step r4b: every role reads its tenant, so a custom role holds tenant.profile.read.
+    [Fact]
+    public void CheckRequiredPermissions_NoProfileRead_IsInvalid()
+    {
+        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantMembersRead]);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleProfileReadRequired);
+        allowed.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    // Finding 7 of step r4b: a role that gives a role reads the roles it gives.
+    [Theory]
+    [InlineData(PermissionPools.TenantInvitationsCreate)]
+    [InlineData(PermissionPools.TenantMembersUpdate)]
+    public void CheckRequiredPermissions_APermissionThatGivesARoleWithoutRolesRead_IsInvalid(string gives)
+    {
+        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead, gives]);
+
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleRolesReadRequired);
+        allowed.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    [Theory]
+    [InlineData(PermissionPools.TenantInvitationsCreate)]
+    [InlineData(PermissionPools.TenantMembersUpdate)]
+    public void CheckRequiredPermissions_APermissionThatGivesARoleWithRolesRead_IsAllowed(string gives)
+    {
+        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead, PermissionPools.TenantRolesRead, gives]);
+
+        allowed.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CheckRequiredPermissions_ProfileReadAlone_IsAllowed()
+    {
+        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead]);
+
+        allowed.IsSuccess.ShouldBeTrue();
+    }
+
+    // The built-in roles keep the same rule, so a custom role asks nothing a built-in role does not hold.
+    [Theory]
+    [InlineData("Owner")]
+    [InlineData("Admin")]
+    [InlineData("Member")]
+    public void CheckRequiredPermissions_ABuiltInRole_IsAllowed(string builtIn)
+    {
+        var allowed = Role.CheckRequiredPermissions(BuiltInRoles.PermissionsOf(Enum.Parse<BuiltInRole>(builtIn)));
+
+        allowed.IsSuccess.ShouldBeTrue();
+    }
+
     [Fact]
     public void HoldPermission_ACustomRole_HoldsItsRowsAndNothingElse()
     {

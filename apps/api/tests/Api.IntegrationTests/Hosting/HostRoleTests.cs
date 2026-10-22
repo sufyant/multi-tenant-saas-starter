@@ -445,9 +445,9 @@ public sealed class HostRoleTests(Database database)
         var tenant = await testData.AddTenantAsync();
         var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
 
-        var created = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.members.read"]);
+        var created = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.profile.read", "tenant.members.read"]);
         var roleId = (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetGuid();
-        var updated = await owner.UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.members.read", "tenant.audit.read"]);
+        var updated = await owner.UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.profile.read", "tenant.members.read", "tenant.audit.read"]);
         var deleted = await owner.DeleteRoleAsync(tenant.Id, roleId);
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "role.deleted") > 0
             && await AuditEntriesAsync(name, tenant.Id, "role.created") > 0

@@ -39,17 +39,17 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
         var created = await _api.WaitingForMessagesAsync(() =>
-            _api.CreateClient(owner).CreateRoleAsync(tenant.Id, "  Billing  ", ["tenant.members.read", "tenant.audit.read", "tenant.members.read"]));
+            _api.CreateClient(owner).CreateRoleAsync(tenant.Id, "  Billing  ", ["tenant.profile.read", "tenant.members.read", "tenant.audit.read", "tenant.members.read"]));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         created.Headers.Location.ShouldBeNull();
         var body = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         var roleId = body.GetProperty("id").GetGuid();
         (body.GetProperty("name").GetString(), body.GetProperty("builtIn").GetBoolean()).ShouldBe(("Billing", false));
-        body.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.audit.read", "tenant.members.read"]);
-        (await PermissionsOfAsync(roleId)).ShouldBe("tenant.audit.read, tenant.members.read");
+        body.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.audit.read", "tenant.members.read", "tenant.profile.read"]);
+        (await PermissionsOfAsync(roleId)).ShouldBe("tenant.audit.read, tenant.members.read, tenant.profile.read");
         (await _audit.TenantLogAsync(roleId)).ShouldBe($"{tenant.Id}:role.created|User|{await _testData.UserIdOfAsync(owner)}|Role|{roleId}|Billing");
-        (await _audit.TenantDetailsAsync(roleId)).ShouldBe("""{"permissions": ["tenant.audit.read", "tenant.members.read"]}""");
+        (await _audit.TenantDetailsAsync(roleId)).ShouldBe("""{"permissions": ["tenant.audit.read", "tenant.members.read", "tenant.profile.read"]}""");
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
         var key = Guid.NewGuid().ToString();
 
-        var first = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.members.read"], key);
-        var second = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.members.read"], key);
+        var first = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.profile.read", "tenant.members.read"], key);
+        var second = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.profile.read", "tenant.members.read"], key);
 
         second.StatusCode.ShouldBe(HttpStatusCode.Created);
         second.Headers.GetValues("Idempotent-Replayed").ShouldBe(["true"]);
@@ -77,7 +77,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var tenant = await _testData.AddTenantAsync();
         var actor = await _testData.AddMemberAsync(tenant.Id, role: role);
 
-        var created = await _api.CreateClient(actor).CreateRoleAsync(tenant.Id, "Billing", ["tenant.members.read"]);
+        var created = await _api.CreateClient(actor).CreateRoleAsync(tenant.Id, "Billing", ["tenant.profile.read", "tenant.members.read"]);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CustomRolesOfAsync(tenant.Id)).ShouldBe(0);
@@ -104,7 +104,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var keeper = await _testData.AddCustomRoleAsync(tenant.Id, "Role keeper", "tenant.roles.create", "tenant.members.read", "tenant.profile.read");
         var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, keeper);
 
-        var created = await _api.CreateClient(actor).CreateRoleAsync(tenant.Id, "Auditor", ["tenant.members.read", "tenant.audit.read"]);
+        var created = await _api.CreateClient(actor).CreateRoleAsync(tenant.Id, "Auditor", ["tenant.profile.read", "tenant.members.read", "tenant.audit.read"]);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await CodeOfAsync(created)).ShouldBe("role.escalation");
@@ -119,7 +119,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
     {
         var (tenantId, owner) = await OwnerAsync();
 
-        var created = await owner.CreateRoleAsync(tenantId, name, ["tenant.members.read"]);
+        var created = await owner.CreateRoleAsync(tenantId, name, ["tenant.profile.read", "tenant.members.read"]);
 
         created.StatusCode.ShouldBe(status);
         (await CodeOfAsync(created)).ShouldBe(code);
@@ -130,7 +130,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
     {
         var (tenantId, owner) = await OwnerAsync();
 
-        var created = await owner.CreateRoleAsync(tenantId, new string('r', 101), ["tenant.members.read"]);
+        var created = await owner.CreateRoleAsync(tenantId, new string('r', 101), ["tenant.profile.read", "tenant.members.read"]);
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(created)).ShouldBe("request.validation_failed");
@@ -146,7 +146,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var (tenantId, owner) = await OwnerAsync();
         await _testData.AddCustomRoleAsync(tenantId, "BILLING", "tenant.members.read");
 
-        var created = await owner.CreateRoleAsync(tenantId, name, ["tenant.members.read"]);
+        var created = await owner.CreateRoleAsync(tenantId, name, ["tenant.profile.read", "tenant.members.read"]);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(created)).ShouldBe("role.name_taken");
@@ -160,7 +160,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var other = await _testData.AddTenantAsync();
         await _testData.AddCustomRoleAsync(other.Id, "Billing", "tenant.members.read");
 
-        var created = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.members.read"]);
+        var created = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read", "tenant.members.read"]);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
@@ -173,7 +173,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
     {
         var (tenantId, owner) = await OwnerAsync();
 
-        var created = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.members.read", permission]);
+        var created = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read", "tenant.members.read", permission]);
 
         created.StatusCode.ShouldBe(status);
         (await CodeOfAsync(created)).ShouldBe(code);
@@ -189,6 +189,22 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
 
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(created)).ShouldBe("role.permissions_required");
+    }
+
+    // Finding 7 of step r4b: every custom role reads its tenant, and a role that gives a role reads the roles it gives.
+    [Theory]
+    [InlineData(new[] { "tenant.members.read" }, "role.profile_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.invitations.create" }, "role.roles_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.members.update" }, "role.roles_read_required")]
+    public async Task CreateRole_WithoutAPermissionItsOthersNeed_IsABadRequest(string[] permissions, string code)
+    {
+        var (tenantId, owner) = await OwnerAsync();
+
+        var created = await owner.CreateRoleAsync(tenantId, "Recruiter", permissions);
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await CodeOfAsync(created)).ShouldBe(code);
+        (await CustomRolesOfAsync(tenantId)).ShouldBe(0);
     }
 
     // A permission that is null is a validation problem, never a fault.
@@ -217,8 +233,8 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
 
         var answers = await database.OneAfterTheOtherAsync(
             tenantId,
-            () => owner.CreateRoleAsync(tenantId, "Second", ["tenant.members.read"]),
-            () => owner.CreateRoleAsync(tenantId, "Third", ["tenant.members.read"]));
+            () => owner.CreateRoleAsync(tenantId, "Second", ["tenant.profile.read", "tenant.members.read"]),
+            () => owner.CreateRoleAsync(tenantId, "Third", ["tenant.profile.read", "tenant.members.read"]));
 
         answers.Select(answer => answer.StatusCode).ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict]);
         (await CustomRolesOfAsync(tenantId)).ShouldBe(Limit);
@@ -232,8 +248,8 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
 
         var answers = await database.OneAfterTheOtherAsync(
             tenantId,
-            () => owner.CreateRoleAsync(tenantId, "Billing", ["tenant.members.read"]),
-            () => owner.CreateRoleAsync(tenantId, "billing", ["tenant.members.read"]));
+            () => owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read", "tenant.members.read"]),
+            () => owner.CreateRoleAsync(tenantId, "billing", ["tenant.profile.read", "tenant.members.read"]));
 
         answers.Select(answer => answer.StatusCode).ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict]);
         (await CodeOfAsync(answers[1])).ShouldBe("role.name_taken");
@@ -245,10 +261,10 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
     public async Task CreateRole_AtTheLimit_IsAConflictAndCreatesNothing()
     {
         var (tenantId, owner) = await OwnerAsync();
-        (await owner.CreateRoleAsync(tenantId, "First", ["tenant.members.read"])).StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await owner.CreateRoleAsync(tenantId, "Second", ["tenant.members.read"])).StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await owner.CreateRoleAsync(tenantId, "First", ["tenant.profile.read", "tenant.members.read"])).StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await owner.CreateRoleAsync(tenantId, "Second", ["tenant.profile.read", "tenant.members.read"])).StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        var third = await owner.CreateRoleAsync(tenantId, "Third", ["tenant.members.read"]);
+        var third = await owner.CreateRoleAsync(tenantId, "Third", ["tenant.profile.read", "tenant.members.read"]);
 
         third.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(third)).ShouldBe("role.limit_reached");
@@ -273,14 +289,14 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
     {
         var (tenantId, owner) = await OwnerAsync();
 
-        await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.members.read"]);
+        await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read", "tenant.members.read"]);
 
         (await database.ScalarAsSuperuserAsync<long>(
             $"""
             SELECT count(*) FROM control_plane.role_permissions JOIN control_plane.roles ON roles.id = role_permissions.role_id
             WHERE role_permissions.tenant_id = '{tenantId}' AND roles.built_in IS NOT NULL
             """)).ShouldBe(0);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.role_permissions WHERE tenant_id = '{tenantId}'")).ShouldBe(1);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.role_permissions WHERE tenant_id = '{tenantId}'")).ShouldBe(2);
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

@@ -1037,12 +1037,12 @@ public sealed class TenantTests
     [Fact]
     public void CreateRole_ByAnOwner_CreatesACustomRoleWithItsTrimmedNameAndItsPermissions()
     {
-        var created = Active().CreateRole(RoleOf("Owner"), NewRole("  Billing  ", MembersRead, InvitationsRead), RoleFacts(), RoleLimit);
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("  Billing  ", ProfileRead, MembersRead, InvitationsRead), RoleFacts(), RoleLimit);
 
         created.Value.BuiltIn.ShouldBeNull();
         created.Value.TenantId.ShouldBe(Id);
         created.Value.Name.ShouldBe("Billing");
-        created.Value.Permissions.ShouldBe([MembersRead, InvitationsRead], ignoreOrder: true);
+        created.Value.Permissions.ShouldBe([ProfileRead, MembersRead, InvitationsRead], ignoreOrder: true);
     }
 
     [Fact]
@@ -1107,9 +1107,9 @@ public sealed class TenantTests
     [Fact]
     public void CreateRole_AnActorWhoHoldsExactlyItsPermissions_CreatesIt()
     {
-        var actor = Custom("Role keeper", PermissionPools.TenantRolesCreate, MembersRead);
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesCreate, ProfileRead, MembersRead);
 
-        var created = Active().CreateRole(actor, NewRole("Copy", PermissionPools.TenantRolesCreate, MembersRead), RoleFacts(), RoleLimit);
+        var created = Active().CreateRole(actor, NewRole("Copy", PermissionPools.TenantRolesCreate, ProfileRead, MembersRead), RoleFacts(), RoleLimit);
 
         created.IsSuccess.ShouldBeTrue();
     }
@@ -1117,9 +1117,9 @@ public sealed class TenantTests
     [Fact]
     public void CreateRole_APermissionTheActorDoesNotHold_IsAnEscalation()
     {
-        var actor = Custom("Role keeper", PermissionPools.TenantRolesCreate, MembersRead);
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesCreate, ProfileRead, MembersRead);
 
-        var created = Active().CreateRole(actor, NewRole("Stronger", MembersRead, InvitationsRead), RoleFacts(), RoleLimit);
+        var created = Active().CreateRole(actor, NewRole("Stronger", ProfileRead, MembersRead, InvitationsRead), RoleFacts(), RoleLimit);
 
         created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
         created.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -1129,7 +1129,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateRole_AtTheLimit_IsAConflict()
     {
-        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", MembersRead), RoleFacts(customRoles: RoleLimit), RoleLimit);
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", ProfileRead, MembersRead), RoleFacts(customRoles: RoleLimit), RoleLimit);
 
         created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleLimitReached);
         created.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -1138,7 +1138,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateRole_OnePlaceBelowTheLimit_CreatesIt()
     {
-        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", MembersRead), RoleFacts(customRoles: RoleLimit - 1), RoleLimit);
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", ProfileRead, MembersRead), RoleFacts(customRoles: RoleLimit - 1), RoleLimit);
 
         created.IsSuccess.ShouldBeTrue();
     }
@@ -1146,24 +1146,24 @@ public sealed class TenantTests
     [Fact]
     public void UpdateRole_ANewNameAndPermissions_ChangesThemAndAnswersWhatItAddedAndRemoved()
     {
-        var role = Custom("Billing", MembersRead, InvitationsRead);
+        var role = Custom("Billing", ProfileRead, MembersRead, InvitationsRead);
 
-        var updated = Active().UpdateRole(RoleOf("Owner"), " Finance ", [MembersRead, AuditRead], RoleFacts(role));
+        var updated = Active().UpdateRole(RoleOf("Owner"), " Finance ", [ProfileRead, MembersRead, AuditRead], RoleFacts(role));
 
         updated.Value.Change.ShouldBe(StateChange.Changed);
         updated.Value.OldName.ShouldBe("Billing");
         updated.Value.Added.ShouldBe([AuditRead]);
         updated.Value.Removed.ShouldBe([InvitationsRead]);
         role.Name.ShouldBe("Finance");
-        role.Permissions.ShouldBe([MembersRead, AuditRead], ignoreOrder: true);
+        role.Permissions.ShouldBe([ProfileRead, MembersRead, AuditRead], ignoreOrder: true);
     }
 
     [Fact]
     public void UpdateRole_TheNameAndPermissionsItHas_ChangesNothing()
     {
-        var role = Custom("Billing", MembersRead, InvitationsRead);
+        var role = Custom("Billing", ProfileRead, MembersRead, InvitationsRead);
 
-        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [InvitationsRead, MembersRead], RoleFacts(role));
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [InvitationsRead, MembersRead, ProfileRead], RoleFacts(role));
 
         updated.Value.Change.ShouldBe(StateChange.Unchanged);
         updated.Value.Added.ShouldBeEmpty();
@@ -1225,9 +1225,9 @@ public sealed class TenantTests
     [Fact]
     public void UpdateRole_AnActorWhoHoldsExactlyThePermissionsBeforeAndAfter_ChangesIt()
     {
-        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, MembersRead, InvitationsRead);
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, ProfileRead, MembersRead, InvitationsRead);
 
-        var updated = Active().UpdateRole(actor, "Billing", [MembersRead, InvitationsRead], RoleFacts(Custom("Billing", MembersRead, PermissionPools.TenantRolesUpdate)));
+        var updated = Active().UpdateRole(actor, "Billing", [ProfileRead, MembersRead, InvitationsRead], RoleFacts(Custom("Billing", ProfileRead, MembersRead, PermissionPools.TenantRolesUpdate)));
 
         updated.Value.Change.ShouldBe(StateChange.Changed);
     }
@@ -1236,24 +1236,68 @@ public sealed class TenantTests
     [Fact]
     public void UpdateRole_ARoleThatHoldsAPermissionTheActorDoesNot_IsAnEscalationAndChangesNothing()
     {
-        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, MembersRead);
-        var role = Custom("Billing", MembersRead, AuditRead);
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, ProfileRead, MembersRead);
+        var role = Custom("Billing", ProfileRead, MembersRead, AuditRead);
 
-        var updated = Active().UpdateRole(actor, "Billing", [MembersRead], RoleFacts(role));
+        var updated = Active().UpdateRole(actor, "Billing", [ProfileRead, MembersRead], RoleFacts(role));
 
         updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
-        role.Permissions.ShouldBe([MembersRead, AuditRead], ignoreOrder: true);
+        role.Permissions.ShouldBe([ProfileRead, MembersRead, AuditRead], ignoreOrder: true);
     }
 
     // After: an actor never gives a role a permission they do not hold themselves.
     [Fact]
     public void UpdateRole_APermissionTheActorDoesNotHold_IsAnEscalation()
     {
-        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, MembersRead);
+        var actor = Custom("Role keeper", PermissionPools.TenantRolesUpdate, ProfileRead, MembersRead);
 
-        var updated = Active().UpdateRole(actor, "Billing", [MembersRead, AuditRead], RoleFacts(Custom("Billing", MembersRead)));
+        var updated = Active().UpdateRole(actor, "Billing", [ProfileRead, MembersRead, AuditRead], RoleFacts(Custom("Billing", ProfileRead, MembersRead)));
 
         updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
+    }
+
+    // Finding 7 of step r4b: every custom role reads its tenant, and a role that gives a role reads the roles. The rule comes before the
+    // escalation rule, so even an Owner gets it.
+    [Fact]
+    public void CreateRole_NoProfileRead_IsInvalid()
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", MembersRead), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleProfileReadRequired);
+        created.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    [Theory]
+    [InlineData(InvitationsCreate)]
+    [InlineData(MembersUpdate)]
+    public void CreateRole_APermissionThatGivesARoleWithoutRolesRead_IsInvalid(string gives)
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Recruiter", ProfileRead, MembersRead, gives), RoleFacts(), RoleLimit);
+
+        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleRolesReadRequired);
+        created.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    [Fact]
+    public void UpdateRole_NoProfileRead_IsInvalidAndChangesNothing()
+    {
+        var role = Custom("Billing", ProfileRead, MembersRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [MembersRead], RoleFacts(role));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleProfileReadRequired);
+        role.Permissions.ShouldBe([ProfileRead, MembersRead], ignoreOrder: true);
+    }
+
+    [Fact]
+    public void UpdateRole_APermissionThatGivesARoleWithoutRolesRead_IsInvalidAndChangesNothing()
+    {
+        var role = Custom("Billing", ProfileRead, MembersRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [ProfileRead, MembersRead, MembersUpdate], RoleFacts(role));
+
+        updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleRolesReadRequired);
+        role.Permissions.ShouldBe([ProfileRead, MembersRead], ignoreOrder: true);
     }
 
     [Fact]

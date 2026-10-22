@@ -203,8 +203,8 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
     private static Task<HttpResponseMessage> Send(string command, HttpClient owner, Guid tenantId, Guid member, Guid invitation, Guid role) => command switch
     {
-        "CreateRole" => owner.CreateRoleAsync(tenantId, "Auditor", ["tenant.audit.read"]),
-        "UpdateRole" => owner.UpdateRoleAsync(tenantId, role, "Finance", ["tenant.audit.read"]),
+        "CreateRole" => owner.CreateRoleAsync(tenantId, "Auditor", ["tenant.profile.read", "tenant.audit.read"]),
+        "UpdateRole" => owner.UpdateRoleAsync(tenantId, role, "Finance", ["tenant.profile.read", "tenant.audit.read"]),
         "DeleteRole" => owner.DeleteRoleAsync(tenantId, role),
         "InviteMember" => owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com"),
         "RevokeInvitation" => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitation}", Cancellation),
