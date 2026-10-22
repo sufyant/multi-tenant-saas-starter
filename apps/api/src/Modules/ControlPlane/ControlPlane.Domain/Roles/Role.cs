@@ -20,6 +20,14 @@ internal sealed class Role : ITenantEntity
         ControlPlaneErrorCodes.RoleEscalation,
         "Your role does not hold every permission of the role you act on.");
 
+    private static readonly Error ProfileReadRequired = Error.Validation(
+        ControlPlaneErrorCodes.RoleProfileReadRequired,
+        "A role holds tenant.profile.read, because every member reads the tenant.");
+
+    private static readonly Error RolesReadRequired = Error.Validation(
+        ControlPlaneErrorCodes.RoleRolesReadRequired,
+        "A role that invites people or changes a member's role holds tenant.roles.read, because it reads the roles it gives.");
+
     private readonly List<RolePermission> _grants = [];
 
     private Role(Guid id, Guid tenantId, string name, BuiltInRole? builtIn)
@@ -90,6 +98,23 @@ internal sealed class Role : ITenantEntity
     /// </summary>
     public static Result CheckEscalation(Role actor, IEnumerable<string> permissions) =>
         permissions.All(actor.Holds) ? Result.Success() : Escalation;
+
+    /// <summary>
+    /// The permissions a custom role needs with the others it holds (the maintainer's decision on finding 7 in step r4b): every role
+    /// reads its tenant, so it holds <c>tenant.profile.read</c>, and a role that gives a role (<c>tenant.invitations.create</c>,
+    /// <c>tenant.members.update</c>) reads the roles it gives, so it holds <c>tenant.roles.read</c>. Every built-in role keeps the same
+    /// rule. Source: GitHub, "Custom repository roles" (every custom role starts from a base role).
+    /// </summary>
+    public static Result CheckRequiredPermissions(IReadOnlyCollection<string> permissions)
+    {
+        if (!permissions.Contains(PermissionPools.TenantProfileRead))
+        {
+            return ProfileReadRequired;
+        }
+
+        var givesARole = permissions.Contains(PermissionPools.TenantInvitationsCreate) || permissions.Contains(PermissionPools.TenantMembersUpdate);
+        return givesARole && !permissions.Contains(PermissionPools.TenantRolesRead) ? RolesReadRequired : Result.Success();
+    }
 
     /// <summary>Whether the role holds the permission. A rule asks this, never which role it is (A1).</summary>
     public bool Holds(string permission) => Permissions.Contains(permission);

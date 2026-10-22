@@ -416,6 +416,8 @@ export const ErrorCode = {
   RolePermissionInvalid: 'role.permission_invalid',
   RolePermissionOwnerOnly: 'role.permission_owner_only',
   RolePermissionsRequired: 'role.permissions_required',
+  RoleProfileReadRequired: 'role.profile_read_required',
+  RoleRolesReadRequired: 'role.roles_read_required',
   RouteMethodNotAllowed: 'route.method_not_allowed',
   RouteNotFound: 'route.not_found',
   ServerError: 'server.error',

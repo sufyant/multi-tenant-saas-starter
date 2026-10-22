@@ -593,9 +593,13 @@ internal sealed class Tenant
             return Error.Unprocessable(ControlPlaneErrorCodes.RolePermissionOwnerOnly, "A custom role never holds a permission that only the Owner role holds.");
         }
 
-        return permissions.Count == 0
-            ? Error.Validation(ControlPlaneErrorCodes.RolePermissionsRequired, "A role holds one permission at least.")
-            : Role.CheckEscalation(actor, permissions);
+        if (permissions.Count == 0)
+        {
+            return Error.Validation(ControlPlaneErrorCodes.RolePermissionsRequired, "A role holds one permission at least.");
+        }
+
+        var required = Role.CheckRequiredPermissions(permissions);
+        return required.IsSuccess ? Role.CheckEscalation(actor, permissions) : required;
     }
 
     // The role a change names: one of this tenant's roles, and a custom one. Row level security hides another tenant's roles, so the

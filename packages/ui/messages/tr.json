@@ -103,7 +103,9 @@
       "not_permitted": "Rolünüz rolleri bu şekilde değiştiremez.",
       "permission_invalid": "Bir rol yalnızca bir kuruluşun izinlerini taşıyabilir.",
       "permission_owner_only": "Özel bir rol, yalnızca Sahip rolünün taşıdığı bir izni taşıyamaz.",
-      "permissions_required": "En az bir izin seçin."
+      "permissions_required": "En az bir izin seçin.",
+      "profile_read_required": "Bir rol kuruluşun profilini okuyabilmelidir.",
+      "roles_read_required": "Kişi davet eden ya da rol değiştiren bir rol, rolleri okuyabilmelidir."
     },
     "route": {
       "method_not_allowed": "Bu işlem burada kullanılamaz.",
