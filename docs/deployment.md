@@ -377,6 +377,25 @@ Remove a shared variable from the API services without apply:
 
 Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way. The step that added the web apps removed `Host__Cors__AllowedOrigins__0` with its apply (section 13).
 
+Rename a configuration key of the API without apply. The API reads a key only by its new name, so the value must exist under the new name before the new version starts:
+
+1. In the pull request that renames the key, rename it in `sharedVariables` in `.railway/railway.ts`.
+2. Before the merge, in each environment, add a shared variable with the new name and the same value, and tick `api-web` and `api-worker` for it (steps 2 and 3 of "Add a shared variable"). The running version ignores it.
+3. Merge, and let the deploy finish in each environment. The version before it may still need the old name to start, also after a rollback (section 6).
+4. Then untick `api-web` and `api-worker` for the old shared variable and delete it (step 3 of "Remove a shared variable").
+
+Step r1 renamed these keys. Each one is optional and has a default, and no entry of `sharedVariables` names one, so no environment needs a step:
+
+| Old key | New key |
+| --- | --- |
+| `ControlPlane:Clerk:RetryDelays` | `ControlPlane:IdentityProvider:RetryDelays` |
+| `Api:IdempotencyKeyRetention` | `Host:Idempotency:KeyRetention` |
+| `RateLimiting:...` | `Host:RateLimiting:...` |
+| `Messaging:UnknownMessages:...` | `Host:Messaging:UnknownMessages:...` |
+| `Notifications:InvitationEmailRetryDelays` | `Notifications:InvitationEmails:RetryDelays` |
+
+`ControlPlane__Clerk__SecretKey` keeps its name. If an environment has a shared variable with an old name, no service references it, so the API never read it: delete it in the Railway dashboard.
+
 ## 8. Migrations and the running version
 
 `deploy.yml` runs the migration while the old version still serves. The new version starts after the migration. So every migration must work with the version before it. A migration that breaks the previous version breaks production during the deploy.

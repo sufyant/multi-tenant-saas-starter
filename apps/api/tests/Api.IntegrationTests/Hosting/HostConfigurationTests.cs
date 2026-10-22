@@ -45,7 +45,7 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
         { "ControlPlane:Invitations:Lifetime", "23:59:59" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
-        { "ControlPlane:Clerk:RetryDelays:0", "00:00:00" },
+        { "ControlPlane:IdentityProvider:RetryDelays:0", "00:00:00" },
         { "ControlPlane:ActivationTimeout", "00:00:00" },
         { "ControlPlane:InvitationEmailTimeout", "-00:00:01" },
         { "ControlPlane:CancellationTimeout", "00:00:00" },
@@ -145,9 +145,9 @@ public sealed class HostConfigurationTests(Database database)
             database.ApplicationConnectionString,
             settings: new Dictionary<string, string?>
             {
-                ["ControlPlane:Clerk:RetryDelays:0"] = "00:01:00",
-                ["ControlPlane:Clerk:RetryDelays:1"] = "00:02:00",
-                ["ControlPlane:Clerk:RetryDelays:2"] = "00:03:00",
+                ["ControlPlane:IdentityProvider:RetryDelays:0"] = "00:01:00",
+                ["ControlPlane:IdentityProvider:RetryDelays:1"] = "00:02:00",
+                ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:03:00",
                 ["Notifications:InvitationEmails:RetryDelays:0"] = "00:04:00",
                 ["Notifications:InvitationEmails:RetryDelays:1"] = "00:05:00",
                 ["Notifications:InvitationEmails:RetryDelays:2"] = "00:06:00",
@@ -158,7 +158,7 @@ public sealed class HostConfigurationTests(Database database)
 
         var message = start.ShouldThrow<Exception>().Message;
         message.ShouldContain("ControlPlane:InvitationEmailTimeout (00:21:00)");
-        message.ShouldContain("ControlPlane:Clerk:RetryDelays (00:01:00, 00:02:00, 00:03:00)");
+        message.ShouldContain("ControlPlane:IdentityProvider:RetryDelays (00:01:00, 00:02:00, 00:03:00)");
         message.ShouldContain("Notifications:InvitationEmails:RetryDelays (00:04:00, 00:05:00, 00:06:00)");
     }
 
@@ -180,7 +180,7 @@ public sealed class HostConfigurationTests(Database database)
 
         var message = start.ShouldThrow<Exception>().Message;
         message.ShouldContain("ControlPlane:InvitationEmailTimeout (02:00:00)");
-        message.ShouldContain("ControlPlane:Clerk:RetryDelays");
+        message.ShouldContain("ControlPlane:IdentityProvider:RetryDelays");
         message.ShouldContain("Notifications:InvitationEmails:RetryDelays (00:00:10, 00:01:00, 00:05:00, 01:40:00)");
     }
 
