@@ -6,6 +6,7 @@ using ControlPlane.Application.Invitations.OpenMemberSignUp;
 using ControlPlane.Application.Invitations.OpenOwnerSignUp;
 using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Contracts.Invitations;
+using ControlPlane.Contracts.Tenants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,19 +55,41 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // One transaction writes the tenant as active, with its Owner's invitation, so the answer is the tenant as it stays (section 6).
     [Fact]
-    public async Task CreateTenant_Valid_AnswersProvisioningAndBecomesActiveWithItsOwnerInvited()
+    public async Task CreateTenant_Valid_AnswersAnActiveTenantWithItsOwnerInvitationPending()
     {
-        var admin = await SystemAdminAsync();
-        var slug = Slug();
-        var owner = $"{Guid.NewGuid():N}@example.com";
+        var admin = await _testData.AddSystemAdminAsync();
+        var owner = Email();
 
-        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = owner }));
+        var created = await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), owner));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("status").GetString().ShouldBe("provisioning");
-        (await StatusOfAsync(slug)).ShouldBe("Active");
+        var tenant = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        var tenantId = tenant.GetProperty("id").GetGuid();
+        tenant.GetProperty("status").GetString().ShouldBe("active");
+        (await TenantStatusAsync(tenantId)).ShouldBe("Active");
+        (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
+    }
+
+    // The creation sends the identity provider's sign-up and the audit event itself, through the outbox, as InviteOwner does.
+    [Fact]
+    public async Task CreateTenant_Valid_SendsTheSignUpAndTheAuditEventFromTheCreation()
+    {
+        var admin = await _testData.AddSystemAdminAsync();
+        var owner = Email();
+
+        HttpResponseMessage created = null!;
+        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), owner));
+
+        var tenantId = await IdOfCreatedAsync(created);
+        var invitationId = await InvitationIdAsync(tenantId);
+        messages.Sent.SingleMessage<OpenMemberSignUpCommand>().ShouldSatisfyAllConditions(
+            signUp => signUp.TenantId.ShouldBe(tenantId),
+            signUp => signUp.InvitationId.ShouldBe(invitationId),
+            signUp => signUp.Email.ShouldBe(owner));
+        messages.Sent.SingleMessage<TenantActivatedEvent>().TenantId.ShouldBe(tenantId);
     }
 
     // Settings › General shows when the tenant was created: the moment of the request, by the module's clock.
@@ -587,6 +610,62 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await SagaStateAsync(tenantId)).ShouldBe("NeedsAttention");
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
         alarms.GetMeasurementSnapshot().ShouldHaveSingleItem().Value.ShouldBe(1);
+    }
+
+    // Section 6: the tenant, its summary, the Owner's invitation and the outgoing messages are written in one transaction, so a failure
+    // in it leaves nothing.
+    [Fact]
+    public async Task CreateTenant_TheInvitationCannotBeWritten_WritesNoTenantNoInvitationAndSendsNothing()
+    {
+        var admin = await _testData.AddSystemAdminAsync();
+        var slug = Slug();
+        var owner = Email();
+        await database.RefuseAsync("invitations", "INSERT", $"NEW.email = '{owner}'");
+
+        HttpResponseMessage created = null!;
+        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, owner));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+        messages.Sent.AllMessages().ShouldBeEmpty();
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE email = '{owner}'")).ShouldBe(0);
+    }
+
+    // After the commit nothing is undone: the email that never goes out leaves the tenant active and the invitation pending, as for
+    // InviteOwner. The platform invites again.
+    [Fact]
+    public async Task CreateTenant_TheEmailKeepsFailing_LeavesTheTenantActiveAndTheInvitationPending()
+    {
+        var admin = await _testData.AddSystemAdminAsync();
+        _api.Email.IsDown = true;
+
+        HttpResponseMessage created = null!;
+        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), Email()));
+
+        var tenantId = await IdOfCreatedAsync(created);
+        messages.MovedToErrorQueue.SingleMessage<MemberInvitationReadyEvent>().TenantId.ShouldBe(tenantId);
+        (await TenantStatusAsync(tenantId)).ShouldBe("Active");
+        (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
+    }
+
+    // The identity provider that stays down ends the same way: no email goes out, the tenant stays active, and the invitation stays
+    // pending, as for InviteOwner.
+    [Fact]
+    public async Task CreateTenant_TheIdentityProviderKeepsFailing_LeavesTheTenantActiveTheInvitationPendingAndSendsNoEmail()
+    {
+        var admin = await _testData.AddSystemAdminAsync();
+        var owner = Email();
+        _api.Identity.IsDown = true;
+
+        HttpResponseMessage created = null!;
+        var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, Slug(), owner));
+
+        var tenantId = await IdOfCreatedAsync(created);
+        messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUpCommand>().TenantId.ShouldBe(tenantId);
+        (await TenantStatusAsync(tenantId)).ShouldBe("Active");
+        (await InvitationStatusAsync(tenantId)).ShouldBe("Pending");
+        _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == owner);
     }
 
     // The secret travels in the accept link, inside the tenant creation's messages (see the deviations list); ControlPlane keeps only its
