@@ -43,8 +43,9 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     Task<Membership?> ITenantRepository.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
 
+    // Row level security keeps the roles to the active tenant; the query names no tenant.
     async Task<TenantRoles> ITenantRepository.FindRolesAsync(CancellationToken cancellationToken) =>
-        new(await controlPlane.Roles.AsNoTracking().ToListAsync(cancellationToken));
+        new(await controlPlane.TenantRoles.AsNoTracking().ToListAsync(cancellationToken));
 
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
         new(
@@ -102,8 +103,9 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     }
 
     // An insert of a slug that another tenant creation has inserted but not yet committed waits for it, and is skipped if it commits.
-    // The tenant's summary is added with it, empty, so every tenant has one (R12).
-    async Task<bool> ITenantRepository.TryAddAsync(Tenant tenant, CancellationToken cancellationToken)
+    // The tenant's summary is added with it, empty, so every tenant has one (R12). Its roles follow only when the tenant was added; row
+    // level security keeps them to the active tenant, which is the new one.
+    async Task<bool> ITenantRepository.TryAddAsync(Tenant tenant, IReadOnlyList<Role> roles, CancellationToken cancellationToken)
     {
         var added = OfActiveTenant(tenant, tenant.Id);
         var inserted = await controlPlane.Database.ExecuteSqlAsync(
@@ -115,8 +117,14 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             INSERT INTO control_plane.tenant_summaries (tenant_id) SELECT id FROM tenant
             """,
             cancellationToken);
+        if (inserted != 1)
+        {
+            return false;
+        }
 
-        return inserted == 1;
+        controlPlane.Roles.AddRange(roles.Select(role => OfActiveTenant(role, role.TenantId)));
+        await controlPlane.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     async Task ITenantRepository.AddInvitationAsync(Tenant tenant, Invited invited, CancellationToken cancellationToken)

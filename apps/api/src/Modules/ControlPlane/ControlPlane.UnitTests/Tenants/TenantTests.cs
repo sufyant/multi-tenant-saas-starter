@@ -16,6 +16,9 @@ public sealed class TenantTests
 
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
 
+    // The tenant's roles, which say what each membership's role may do (A1). Each tenant has its own (A2).
+    private static readonly TenantRoles Roles = new([.. Enum.GetValues<BuiltInRole>().Select(builtIn => Role.CreateBuiltIn(Guid.NewGuid(), Id, builtIn))]);
+
     private static readonly DateTimeOffset Now = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
 
     private static readonly TimeSpan ReopenPeriod = TimeSpan.FromDays(30);
@@ -30,8 +33,6 @@ public sealed class TenantTests
 
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
-    // The tenant's roles, which say what each membership's role may do (A1).
-    private static readonly TenantRoles Roles = new(BuiltInRoles.All);
 
     public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
 
@@ -311,9 +312,9 @@ public sealed class TenantTests
     [Fact]
     public void CloseTenant_WithPendingInvitations_CancelsEachOne()
     {
-        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
         var expired = Invitation.Create(
-            Guid.NewGuid(), Id, EmailAddress.Create("grace@example.com"), BuiltInRoles.Owner, InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
+            Guid.NewGuid(), Id, EmailAddress.Create("grace@example.com"), RoleOf("Owner"), InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
 
         var closed = Active().Close(Now, [pending, expired]);
 
@@ -325,7 +326,7 @@ public sealed class TenantTests
     [Fact]
     public void CloseTenant_ClosedWithAPendingInvitation_CancelsNothing()
     {
-        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
 
         var closed = Closed().Close(Now, [pending]);
 
@@ -336,7 +337,7 @@ public sealed class TenantTests
     [Fact]
     public void RevokeInvitation_APendingInvitation_CancelsIt()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var revoked = Active().Revoke(invitation);
 
@@ -357,7 +358,7 @@ public sealed class TenantTests
     public void RevokeInvitation_AnotherTenantsInvitation_IsNotFoundAndStaysPending()
     {
         var other = Invitation.Create(
-            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), BuiltInRoles.Member, InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
 
         var revoked = Active().Revoke(other);
 
@@ -368,7 +369,7 @@ public sealed class TenantTests
     [Fact]
     public void RevokeInvitation_AnAcceptedInvitation_IsAConflict()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
         invitation.Accept(Verified("ada@example.com"), Guid.NewGuid(), Now);
 
         var revoked = Active().Revoke(invitation);
@@ -469,10 +470,10 @@ public sealed class TenantTests
     [Fact]
     public void InviteOwner_AnActiveTenantWithoutAnOwner_CreatesAPendingOwnerInvitation()
     {
-        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0), DailyLimit);
+        var invited = Active().Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 0), DailyLimit);
 
         invited.Value.Invitation.Email.ShouldBe("ada@example.com");
-        invited.Value.Invitation.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
+        invited.Value.Invitation.RoleId.ShouldBe(RoleOf("Owner").Id);
         invited.Value.Invitation.TenantId.ShouldBe(Id);
         invited.Value.Invitation.InvitedBy.ShouldBe(InviterId);
         invited.Value.Invitation.Status.ShouldBe(InvitationStatus.Pending);
@@ -482,7 +483,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteOwner_ATenantWithAnOwner_IsAConflict()
     {
-        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 1), DailyLimit);
+        var invited = Active().Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 1), DailyLimit);
 
         invited.Error.Type.ShouldBe(ErrorType.Conflict);
         invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantHasOwner);
@@ -493,7 +494,7 @@ public sealed class TenantTests
     [InlineData("Closed")]
     public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
     {
-        var invited = InStatus(status).Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0), DailyLimit);
+        var invited = InStatus(status).Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 0), DailyLimit);
 
         invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
     }
@@ -503,10 +504,10 @@ public sealed class TenantTests
     [Fact]
     public void InviteOwner_PendingInvitationsToOtherAddresses_CancelsEachOne()
     {
-        var first = PendingTo("grace@example.com", BuiltInRoles.Owner);
-        var second = PendingTo("ada@example.com", BuiltInRoles.Owner);
+        var first = PendingTo("grace@example.com", RoleOf("Owner"));
+        var second = PendingTo("ada@example.com", RoleOf("Owner"));
 
-        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0, pending: [first, second]), DailyLimit);
+        var invited = Active().Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 0, pending: [first, second]), DailyLimit);
 
         invited.Value.Replaced.ShouldBe([first, second]);
         first.Status.ShouldBe(InvitationStatus.Cancelled);
@@ -517,7 +518,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteOwner_PastTheDailyLimit_IsAllowed()
     {
-        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 0, sent: DailyLimit), DailyLimit);
+        var invited = Active().Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 0, sent: DailyLimit), DailyLimit);
 
         invited.IsSuccess.ShouldBeTrue();
     }
@@ -525,7 +526,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteOwner_WithoutALanguage_TakesTheSystemAdmins()
     {
-        var invited = Active().Invite(Platform, Request("ada@example.com", BuiltInRoles.Owner, language: null), Facts(owners: 0), DailyLimit);
+        var invited = Active().Invite(Platform, Request("ada@example.com", RoleOf("Owner"), language: null), Facts(owners: 0), DailyLimit);
 
         invited.Value.Invitation.Language.ShouldBe(Language.Tr);
     }
@@ -549,10 +550,10 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_AnAdminForTheOwnerRoleToAMembersAddress_IsForbiddenAndCancelsNothing()
     {
-        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
 
         var invited = Active().Invite(
-            MemberOf("Admin"), Request("ada@example.com", BuiltInRoles.Owner), Facts(owners: 1, member: true, pending: [pending]), DailyLimit);
+            MemberOf("Admin"), Request("ada@example.com", RoleOf("Owner")), Facts(owners: 1, member: true, pending: [pending]), DailyLimit);
 
         invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner);
         pending.Status.ShouldBe(InvitationStatus.Pending);
@@ -562,7 +563,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_AMembersAddressAtTheDailyLimit_IsAConflict()
     {
-        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, member: true, sent: DailyLimit), DailyLimit);
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Member")), Facts(owners: 1, member: true, sent: DailyLimit), DailyLimit);
 
         invited.Error.Type.ShouldBe(ErrorType.Conflict);
         invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberExists);
@@ -571,9 +572,9 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_AtTheDailyLimit_IsTooManyRequestsAndCancelsNothing()
     {
-        var pending = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
 
-        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, sent: DailyLimit, pending: [pending]), DailyLimit);
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Member")), Facts(owners: 1, sent: DailyLimit, pending: [pending]), DailyLimit);
 
         invited.Error.Type.ShouldBe(ErrorType.TooManyRequests);
         invited.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationDailyLimitReached);
@@ -583,7 +584,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_OneBelowTheDailyLimit_IsAllowed()
     {
-        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member), Facts(owners: 1, sent: DailyLimit - 1), DailyLimit);
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Member")), Facts(owners: 1, sent: DailyLimit - 1), DailyLimit);
 
         invited.IsSuccess.ShouldBeTrue();
     }
@@ -592,10 +593,10 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_APendingInvitationToTheAddress_CancelsItAndKeepsTheOthers()
     {
-        var same = PendingTo("ada@example.com", BuiltInRoles.Member);
-        var other = PendingTo("grace@example.com", BuiltInRoles.Member);
+        var same = PendingTo("ada@example.com", RoleOf("Member"));
+        var other = PendingTo("grace@example.com", RoleOf("Member"));
 
-        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Admin), Facts(owners: 1, pending: [same, other]), DailyLimit);
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Admin")), Facts(owners: 1, pending: [same, other]), DailyLimit);
 
         invited.Value.Replaced.ShouldBe([same]);
         same.Status.ShouldBe(InvitationStatus.Cancelled);
@@ -605,7 +606,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_WithALanguage_KeepsIt()
     {
-        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member, Language.Ar), Facts(owners: 1), DailyLimit);
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Member"), Language.Ar), Facts(owners: 1), DailyLimit);
 
         invited.Value.Invitation.Language.ShouldBe(Language.Ar);
     }
@@ -613,7 +614,7 @@ public sealed class TenantTests
     [Fact]
     public void InviteMember_WithoutALanguage_TakesTheInviters()
     {
-        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", BuiltInRoles.Member, language: null), Facts(owners: 1), DailyLimit);
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Member"), language: null), Facts(owners: 1), DailyLimit);
 
         invited.Value.Invitation.Language.ShouldBe(Language.Tr);
     }
@@ -662,7 +663,7 @@ public sealed class TenantTests
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
-        changed.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
+        changed.RoleId.ShouldBe(RoleOf("Owner").Id);
     }
 
     // K1: an Owner steps down when another Owner exists, and cannot as the last one.
@@ -671,10 +672,10 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 2, Roles));
+        var result = Active().ChangeRole(self, RoleOf("Admin"), new MemberFacts(self, 2, Roles));
 
         result.Value.Change.ShouldBe(StateChange.Changed);
-        self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
+        self.RoleId.ShouldBe(RoleOf("Admin").Id);
     }
 
     [Fact]
@@ -682,10 +683,10 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Admin, new MemberFacts(self, 1, Roles));
+        var result = Active().ChangeRole(self, RoleOf("Admin"), new MemberFacts(self, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
-        self.RoleId.ShouldBe(BuiltInRoles.Owner.Id);
+        self.RoleId.ShouldBe(RoleOf("Owner").Id);
     }
 
     // K1: an Admin may become a Member, and cannot make themselves an Owner.
@@ -694,7 +695,7 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Member, new MemberFacts(self, 1, Roles));
+        var result = Active().ChangeRole(self, RoleOf("Member"), new MemberFacts(self, 1, Roles));
 
         result.Value.Change.ShouldBe(StateChange.Changed);
     }
@@ -704,10 +705,10 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Active().ChangeRole(self, BuiltInRoles.Owner, new MemberFacts(self, 1, Roles));
+        var result = Active().ChangeRole(self, RoleOf("Owner"), new MemberFacts(self, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
-        self.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
+        self.RoleId.ShouldBe(RoleOf("Admin").Id);
     }
 
     // K1 and I1: the role the member already has changes nothing. The last Owner keeps the Owner role, which is no loss.
@@ -726,7 +727,7 @@ public sealed class TenantTests
     [Fact]
     public void ChangeMemberRole_AnAdminOnTheLastOwner_IsForbiddenFirst()
     {
-        var result = Active().ChangeRole(Membership("Admin"), BuiltInRoles.Member, new MemberFacts(Membership("Owner"), 1, Roles));
+        var result = Active().ChangeRole(Membership("Admin"), RoleOf("Member"), new MemberFacts(Membership("Owner"), 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
     }
@@ -792,17 +793,17 @@ public sealed class TenantTests
     {
         var target = Membership("Admin");
 
-        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(target, 1, Roles));
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(target, 1, Roles));
 
         result.Value.Member.ShouldBeSameAs(target);
-        result.Value.OldRole.ShouldBe(BuiltInRoles.Admin);
+        result.Value.OldRole.ShouldBe(RoleOf("Admin"));
     }
 
     // Row level security hides another tenant's members, so the target is not found.
     [Fact]
     public void ChangeMemberRole_NoTargetMembership_IsNotFound()
     {
-        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Member, new MemberFacts(null, 1, Roles));
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(null, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
         result.Error.Type.ShouldBe(ErrorType.NotFound);
@@ -811,12 +812,12 @@ public sealed class TenantTests
     [Fact]
     public void ChangeMemberRole_AMembershipOfAnotherTenant_IsNotFoundAndChangesNothing()
     {
-        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), BuiltInRoles.Member.Id, DateTimeOffset.UnixEpoch);
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
 
-        var result = Active().ChangeRole(Membership("Owner"), BuiltInRoles.Admin, new MemberFacts(other, 1, Roles));
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Admin"), new MemberFacts(other, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
-        other.RoleId.ShouldBe(BuiltInRoles.Member.Id);
+        other.RoleId.ShouldBe(RoleOf("Member").Id);
     }
 
     [Fact]
@@ -840,7 +841,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveMember_AMembershipOfAnotherTenant_IsNotFound()
     {
-        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), BuiltInRoles.Member.Id, DateTimeOffset.UnixEpoch);
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
 
         var result = Active().Remove(Membership("Owner"), new MemberFacts(other, 1, Roles));
 
@@ -901,7 +902,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_APendingInvitation_IsFound()
     {
-        var found = Active().CheckInvitationFound(PendingTo("ada@example.com", BuiltInRoles.Member));
+        var found = Active().CheckInvitationFound(PendingTo("ada@example.com", RoleOf("Member")));
 
         found.IsSuccess.ShouldBeTrue();
     }
@@ -910,7 +911,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_ACancelledInvitation_IsNotFound()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
         invitation.Cancel();
 
         var found = Active().CheckInvitationFound(invitation);
@@ -922,14 +923,14 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_TheInvitedPerson_JoinsWithTheInvitationsRoleAndUsesItUp()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Admin);
+        var invitation = PendingTo("ada@example.com", RoleOf("Admin"));
         var userId = Guid.NewGuid();
 
         var membership = Active().Accept(invitation, NewPerson, Verified("ada@example.com"), userId, Now);
 
         membership.Value.TenantId.ShouldBe(Id);
         membership.Value.UserId.ShouldBe(userId);
-        membership.Value.RoleId.ShouldBe(BuiltInRoles.Admin.Id);
+        membership.Value.RoleId.ShouldBe(RoleOf("Admin").Id);
         membership.Value.JoinedAt.ShouldBe(Now);
         invitation.Status.ShouldBe(InvitationStatus.Accepted);
         invitation.AcceptedBy.ShouldBe(userId);
@@ -939,7 +940,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_ADeletedUser_IsForbiddenFirstAndChangesNothing()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var membership = Suspended().Accept(invitation, new AcceptanceFacts(true, true, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
 
@@ -951,7 +952,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_ASystemAdmin_IsUnprocessableBeforeTheMembership()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var membership = Suspended().Accept(invitation, new AcceptanceFacts(false, true, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
 
@@ -962,7 +963,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_AMember_IsAConflictBeforeTheInvitationsChecks()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var membership = Suspended().Accept(invitation, new AcceptanceFacts(false, false, true), Verified("grace@example.com"), Guid.NewGuid(), Now);
 
@@ -974,7 +975,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_AnotherAddressInASuspendedTenant_IsTheInvitationsAnswer()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var allowed = Suspended().CheckAcceptance(invitation, NewPerson, Verified("grace@example.com"), Now);
 
@@ -984,7 +985,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_ExpiredInASuspendedTenant_IsExpired()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var allowed = Suspended().CheckAcceptance(invitation, NewPerson, Verified("ada@example.com"), Now + Lifetime);
 
@@ -995,7 +996,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_TheInvitedPersonInASuspendedTenant_IsAConflictAndKeepsTheInvitationPending()
     {
-        var invitation = PendingTo("ada@example.com", BuiltInRoles.Member);
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
 
         var membership = Suspended().Accept(invitation, NewPerson, Verified("ada@example.com"), Guid.NewGuid(), Now);
 
@@ -1007,7 +1008,7 @@ public sealed class TenantTests
     [Fact]
     public void AcceptInvitation_TheInvitedPerson_IsAllowedByTheCheck()
     {
-        var allowed = Active().CheckAcceptance(PendingTo("ada@example.com", BuiltInRoles.Member), NewPerson, Verified("ada@example.com"), Now);
+        var allowed = Active().CheckAcceptance(PendingTo("ada@example.com", RoleOf("Member")), NewPerson, Verified("ada@example.com"), Now);
 
         allowed.IsSuccess.ShouldBeTrue();
     }
@@ -1041,7 +1042,7 @@ public sealed class TenantTests
         return tenant;
     }
 
-    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
+    private static Role RoleOf(string role) => Roles.BuiltIn(Enum.Parse<BuiltInRole>(role));
 
     private static IReadOnlyList<EmailAddress> Verified(string email) => EmailAddress.AllOf([email]);
 

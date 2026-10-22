@@ -42,7 +42,7 @@ public sealed class TenantRepositoryTests(Database database)
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
-            await tenants.AddMembershipAsync(locked, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            await tenants.AddMembershipAsync(locked, user.Id, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Member).Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
@@ -61,7 +61,7 @@ public sealed class TenantRepositoryTests(Database database)
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
-            await tenants.AddMembershipAsync((await tenants.FindTenantForUpdateAsync(Cancellation))!, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            await tenants.AddMembershipAsync((await tenants.FindTenantForUpdateAsync(Cancellation))!, user.Id, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Member).Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
@@ -89,7 +89,7 @@ public sealed class TenantRepositoryTests(Database database)
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             await tenants.FindTenantForUpdateAsync(Cancellation);
-            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter));
+            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Owner)));
             await tenants.SaveChangesAsync(Cancellation);
         });
 
@@ -107,7 +107,7 @@ public sealed class TenantRepositoryTests(Database database)
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
-            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter));
+            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Owner)));
             await tenants.SaveAsync(locked, Cancellation);
         });
 
@@ -160,17 +160,17 @@ public sealed class TenantRepositoryTests(Database database)
         var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), DateTimeOffset.UtcNow).Value;
 
         var add = () => InTenant.ReadAsync(database.Services, Guid.CreateVersion7(), scope =>
-            scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, Cancellation));
+            scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, [], Cancellation));
 
         await add.ShouldThrowAsync<InvalidOperationException>();
     }
 
-    private static Invitation OwnerInvitation(Tenant tenant, User inviter) =>
+    private static Invitation OwnerInvitation(Tenant tenant, User inviter, Role owner) =>
         Invitation.Create(
             Guid.CreateVersion7(),
             tenant.Id,
             EmailAddress.Create("ada@example.com"),
-            BuiltInRoles.Owner,
+            owner,
             inviter.Id,
             DateTimeOffset.UtcNow,
             TimeSpan.FromDays(7),

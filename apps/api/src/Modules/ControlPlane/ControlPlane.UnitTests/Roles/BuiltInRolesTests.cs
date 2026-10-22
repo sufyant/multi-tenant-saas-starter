@@ -9,7 +9,7 @@ public sealed class BuiltInRolesTests
     [Fact]
     public void NameBuiltInRoles_EveryRole_IsItsLowerCaseName()
     {
-        var names = BuiltInRoles.All.Select(role => role.Name);
+        var names = Enum.GetValues<BuiltInRole>().Select(Role.NameOf);
 
         names.ShouldBe(["owner", "admin", "member"]);
     }
@@ -17,7 +17,7 @@ public sealed class BuiltInRolesTests
     [Fact]
     public void GrantBuiltInRoles_EveryRole_HoldsNoSystemPermission()
     {
-        var platformPermissions = BuiltInRoles.All.SelectMany(role => role.Permissions).Intersect(PermissionPools.PlatformPool);
+        var platformPermissions = Enum.GetValues<BuiltInRole>().SelectMany(BuiltInRoles.PermissionsOf).Intersect(PermissionPools.PlatformPool);
 
         platformPermissions.ShouldBeEmpty();
     }
@@ -25,17 +25,17 @@ public sealed class BuiltInRolesTests
     [Fact]
     public void ReadMembers_EveryBuiltInRole_HoldsThePermission()
     {
-        var roles = BuiltInRoles.All;
+        var roles = Enum.GetValues<BuiltInRole>();
 
-        roles.ShouldAllBe(role => role.Permissions.Contains("tenant.members.read"));
+        roles.ShouldAllBe(role => BuiltInRoles.PermissionsOf(role).Contains("tenant.members.read"));
     }
 
     [Fact]
     public void ReadTenantProfile_EveryBuiltInRole_HoldsThePermission()
     {
-        var roles = BuiltInRoles.All;
+        var roles = Enum.GetValues<BuiltInRole>();
 
-        roles.ShouldAllBe(role => role.Permissions.Contains("tenant.profile.read"));
+        roles.ShouldAllBe(role => BuiltInRoles.PermissionsOf(role).Contains("tenant.profile.read"));
     }
 
     // The invitations are the Owners' and the Admins' work (K1); a Member holds none of their permissions.
@@ -45,7 +45,7 @@ public sealed class BuiltInRolesTests
     [InlineData("tenant.invitations.delete")]
     public void ManageInvitations_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot(string permission)
     {
-        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains(permission)).Select(role => role.BuiltIn);
+        var holders = Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Contains(permission));
 
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
@@ -56,7 +56,7 @@ public sealed class BuiltInRolesTests
     [InlineData("tenant.members.delete")]
     public void ManageMembers_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot(string permission)
     {
-        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains(permission)).Select(role => role.BuiltIn);
+        var holders = Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Contains(permission));
 
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
@@ -65,7 +65,7 @@ public sealed class BuiltInRolesTests
     [Fact]
     public void ReadAuditLog_OwnerAndAdmin_HoldThePermissionAndAMemberDoesNot()
     {
-        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains("tenant.audit.read")).Select(role => role.BuiltIn);
+        var holders = Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Contains("tenant.audit.read"));
 
         holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.Admin]);
     }
@@ -74,7 +74,7 @@ public sealed class BuiltInRolesTests
     [Fact]
     public void ManageOwners_OnlyTheOwner_HoldsThePermission()
     {
-        var holders = BuiltInRoles.All.Where(role => role.Permissions.Contains("tenant.owners.manage")).Select(role => role.BuiltIn);
+        var holders = Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Contains("tenant.owners.manage"));
 
         holders.ShouldBe([BuiltInRole.Owner]);
     }
@@ -87,6 +87,6 @@ public sealed class BuiltInRolesTests
 
         ownerOnly.ShouldBe(["tenant.owners.manage"]);
         ownerOnly.ShouldBeSubsetOf(PermissionPools.TenantPool);
-        BuiltInRoles.All.Where(role => role.Permissions.Overlaps(ownerOnly)).Select(role => role.BuiltIn).ShouldBe([BuiltInRole.Owner]);
+        Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Overlaps(ownerOnly)).ShouldBe([BuiltInRole.Owner]);
     }
 }

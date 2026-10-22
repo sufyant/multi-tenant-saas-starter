@@ -83,10 +83,11 @@ public interface ITenantRepository
     internal Task RemoveMembershipAsync(Tenant tenant, Membership membership, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Adds the active tenant itself, which its creation adds, unless another tenant has its slug. The slug's unique index
-    /// decides, also between two tenant creations at the same moment, and nothing else about the other tenant is revealed.
+    /// Adds the active tenant itself, which its creation adds, with its summary (R12) and its built-in roles (A2), unless another tenant
+    /// has its slug. The slug's unique index decides, also between two tenant creations at the same moment, and nothing else about the
+    /// other tenant is revealed. The roles are saved at once, so the creation's next steps find them.
     /// </summary>
-    internal Task<bool> TryAddAsync(Tenant tenant, CancellationToken cancellationToken);
+    internal Task<bool> TryAddAsync(Tenant tenant, IReadOnlyList<Role> roles, CancellationToken cancellationToken);
 
     /// <summary>
     /// Saves what <see cref="Tenant.Invite"/> did, as <see cref="SaveAsync"/> saves it: the replaced invitations first, so the partial

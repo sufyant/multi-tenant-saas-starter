@@ -1,31 +1,39 @@
 using System.Linq.Expressions;
+using SharedKernel;
 
 namespace ControlPlane.Domain.Roles;
 
 /// <summary>
-/// A set of permissions a membership is assigned. Roles are built in: they belong to no tenant and their permissions come
-/// from code.
+/// A set of permissions a membership is assigned. Each tenant has its own roles (A2): its creation writes its Owner, Admin and Member
+/// roles, whose permissions come from code (<see cref="BuiltInRoles"/>). A custom role, which has no built-in kind, comes later (A3).
 /// </summary>
-internal sealed class Role
+internal sealed class Role : ITenantEntity
 {
     public const int NameMaxLength = 100;
 
-    private Role(Guid id, string name, BuiltInRole builtIn)
+    private Role(Guid id, Guid tenantId, string name, BuiltInRole? builtIn)
     {
         Id = id;
+        TenantId = tenantId;
         Name = name;
         BuiltIn = builtIn;
     }
 
     public Guid Id { get; private init; }
 
+    public Guid TenantId { get; private init; }
+
     public string Name { get; private init; }
 
-    public BuiltInRole BuiltIn { get; private init; }
+    /// <summary>The kind of a built-in role. A tenant has one role of each kind; a custom role will have none (A3).</summary>
+    public BuiltInRole? BuiltIn { get; private init; }
 
-    public IReadOnlySet<string> Permissions => BuiltInRoles.PermissionsOf(BuiltIn);
+    public IReadOnlySet<string> Permissions => BuiltIn is { } builtIn
+        ? BuiltInRoles.PermissionsOf(builtIn)
+        : throw new InvalidOperationException("Every role is built in until custom roles come (A3).");
 
-    public static Role CreateBuiltIn(Guid id, BuiltInRole role) => new(id, NameOf(role), role);
+    /// <summary>The tenant's role of the built-in kind, which its creation writes (A2).</summary>
+    public static Role CreateBuiltIn(Guid id, Guid tenantId, BuiltInRole role) => new(id, tenantId, NameOf(role), role);
 
     /// <summary>
     /// The roles that hold the permission, for a query that counts or finds members by what their role may do (A1): the built-in roles
@@ -33,7 +41,7 @@ internal sealed class Role
     /// </summary>
     public static Expression<Func<Role, bool>> Holding(string permission)
     {
-        var holders = BuiltInRoles.Holding(permission);
+        BuiltInRole?[] holders = [.. BuiltInRoles.Holding(permission).Select(role => (BuiltInRole?)role)];
         return role => holders.Contains(role.BuiltIn);
     }
 
