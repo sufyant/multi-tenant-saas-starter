@@ -44,12 +44,10 @@ export const CreateTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -72,10 +70,8 @@ export const ListTenantsQueryParams = zod.object({
 }).optional(),
   "q": zod.string().max(listTenantsQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
 }).optional()
 })
@@ -86,12 +82,10 @@ export const ListTenantsResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
@@ -127,12 +121,10 @@ export const GetTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
@@ -178,12 +170,10 @@ export const RenameTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -205,12 +195,10 @@ export const SuspendTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -224,12 +212,10 @@ export const ReactivateTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -243,12 +229,10 @@ export const CloseTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -262,12 +246,10 @@ export const ReopenTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')

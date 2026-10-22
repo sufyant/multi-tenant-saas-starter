@@ -543,16 +543,14 @@ export interface ListPageOfMyTenantResponse {
 }
 
 /**
- * The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.
+ * The status of a tenant: active from its creation, suspended or closed (K4).
  */
 export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof TenantResponseStatus];
 
 
 export const TenantResponseStatus = {
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
 } as const;
 
