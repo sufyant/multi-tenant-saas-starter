@@ -9,7 +9,6 @@ namespace ControlPlane.Application.Members;
 /// </summary>
 public sealed record RoleView(string BuiltIn, string Name)
 {
-    internal static RoleView Of(Role role) => new(role.BuiltIn.ToString(), role.Name);
-
-    internal static RoleView Of(BuiltInRole role) => Of(BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == role));
+    internal static RoleView Of(Role role) =>
+        new(role.BuiltIn?.ToString() ?? throw new InvalidOperationException("Every role is built in until custom roles come (A3)."), role.Name);
 }

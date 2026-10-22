@@ -44,6 +44,8 @@ internal static class PermissionPools
 
     public const string TenantMembersDelete = "tenant.members.delete";
 
+    public const string TenantOwnersManage = "tenant.owners.manage";
+
     public const string TenantProfileRead = "tenant.profile.read";
 
     public const string TenantInvitationsCreate = "tenant.invitations.create";
@@ -59,11 +61,18 @@ internal static class PermissionPools
         TenantMembersRead,
         TenantMembersUpdate,
         TenantMembersDelete,
+        TenantOwnersManage,
         TenantProfileRead,
         TenantInvitationsCreate,
         TenantInvitationsRead,
         TenantInvitationsDelete,
         TenantAuditRead);
+
+    /// <summary>
+    /// The permissions of the tenant pool that only the Owner role holds (K1): giving the Owner role, changing or removing an Owner, and
+    /// inviting an Owner (K1). A custom role never holds one (A3).
+    /// </summary>
+    public static IReadOnlySet<string> OwnerOnly { get; } = FrozenSet.Create(StringComparer.Ordinal, TenantOwnersManage);
 
     public static IReadOnlySet<string> PlatformPool { get; } = FrozenSet.Create(
         StringComparer.Ordinal,

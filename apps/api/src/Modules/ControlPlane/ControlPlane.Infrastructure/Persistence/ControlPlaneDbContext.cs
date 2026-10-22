@@ -18,8 +18,8 @@ using Wolverine;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, roles, system admins), and the memberships,
-/// invitations, which belong to a tenant and are under row level security.
+/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, system admins), and the roles,
+/// memberships and invitations, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
@@ -71,6 +71,16 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     /// transaction then does not commit (<see cref="TenantSummaryInterceptor"/>): <see cref="TenantRepository"/> writes the summary.
     /// </summary>
     internal bool SummaryOwed { get; private set; }
+
+    /// <summary>The active tenant's roles. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
+    internal IQueryable<Role> TenantRoles
+    {
+        get
+        {
+            _ = ActiveTenant;
+            return Roles;
+        }
+    }
 
     /// <summary>The active tenant's invitations. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
     internal IQueryable<Invitation> TenantInvitations

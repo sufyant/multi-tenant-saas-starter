@@ -15,7 +15,7 @@ internal sealed class TenantSummary(Guid tenantId)
     /// <summary>How many members the tenant has.</summary>
     public int MemberCount { get; private set; }
 
-    /// <summary>How many of the members hold the Owner role, a deleted user's included (K1).</summary>
+    /// <summary>How many of the members have a role that holds <c>tenant.owners.manage</c>, a deleted user's included (A1, K1).</summary>
     public int OwnerCount { get; private set; }
 
     /// <summary>

@@ -36,7 +36,7 @@ public sealed class InvitationTests
     [Fact]
     public void CreateInvitation_InArabic_KeepsTheLanguage()
     {
-        var invitation = Invitation.Create(Id, TenantId, EmailAddress.Create("ada@example.com"), BuiltInRoles.Member, ActorId, Now, Lifetime, Token, Language.Ar);
+        var invitation = Invitation.Create(Id, TenantId, EmailAddress.Create("ada@example.com"), RoleOf("Member"), ActorId, Now, Lifetime, Token, Language.Ar);
 
         invitation.Language.ShouldBe(Language.Ar);
     }
@@ -349,7 +349,7 @@ public sealed class InvitationTests
     [Fact]
     public void InviteMember_AnAdminForTheOwnerRole_IsForbidden()
     {
-        var allowed = Invitation.CheckInviter(BuiltInRoles.Admin, BuiltInRoles.Owner);
+        var allowed = Invitation.CheckInviter(RoleOf("Admin"), RoleOf("Owner"));
 
         allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationOwnerRequiresOwner);
         allowed.Error.Type.ShouldBe(SharedKernel.ErrorType.Forbidden);
@@ -368,8 +368,8 @@ public sealed class InvitationTests
         allowed.IsSuccess.ShouldBeTrue();
     }
 
-    private static Role RoleOf(string role) => BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn.ToString() == role);
+    private static Role RoleOf(string role) => Role.CreateBuiltIn(Guid.NewGuid(), TenantId, Enum.Parse<BuiltInRole>(role));
 
     private static Invitation Invite(string email) =>
-        Invitation.Create(Id, TenantId, EmailAddress.Create(email), BuiltInRoles.Member, ActorId, Now, Lifetime, Token, Language.En);
+        Invitation.Create(Id, TenantId, EmailAddress.Create(email), RoleOf("Member"), ActorId, Now, Lifetime, Token, Language.En);
 }

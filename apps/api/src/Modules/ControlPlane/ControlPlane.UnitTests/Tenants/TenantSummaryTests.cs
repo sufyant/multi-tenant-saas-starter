@@ -63,5 +63,5 @@ public sealed class TenantSummaryTests
     }
 
     private static Invitation OwnerInvitation() =>
-        Invitation.Create(Guid.CreateVersion7(), TenantId, EmailAddress.Create("ada@example.com"), BuiltInRoles.Owner, Guid.CreateVersion7(), Now, TimeSpan.FromDays(7), "secret", Language.En);
+        Invitation.Create(Guid.CreateVersion7(), TenantId, EmailAddress.Create("ada@example.com"), Role.CreateBuiltIn(Guid.CreateVersion7(), TenantId, BuiltInRole.Owner), Guid.CreateVersion7(), Now, TimeSpan.FromDays(7), "secret", Language.En);
 }

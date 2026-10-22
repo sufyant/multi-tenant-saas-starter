@@ -1,7 +1,6 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
-using ControlPlane.Domain.Roles;
 using SharedKernel;
 using Wolverine;
 
@@ -27,7 +26,8 @@ public static class RemoveMemberHandler
 
         var (tenant, actor, actorMembership) = start.Value;
 
-        var removed = tenant.Remove(actorMembership, await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
+        var facts = await tenants.FindMemberFactsAsync(command.UserId, cancellationToken);
+        var removed = tenant.Remove(actorMembership, facts);
         if (!removed.IsSuccess)
         {
             return (removed, []);
@@ -37,7 +37,7 @@ public static class RemoveMemberHandler
         await tenants.RemoveMembershipAsync(tenant, target, cancellationToken);
 
         var now = time.GetUtcNow();
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
+        var role = facts.Roles.Of(target.RoleId);
         return (Result.Success(), [new MemberRemovedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, role.Name)]);
     }
 }

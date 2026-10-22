@@ -43,6 +43,8 @@ public static class Permissions
 
     public const string TenantMembersDelete = "tenant.members.delete";
 
+    public const string TenantOwnersManage = "tenant.owners.manage";
+
     public const string TenantProfileRead = "tenant.profile.read";
 
     public const string TenantInvitationsCreate = "tenant.invitations.create";

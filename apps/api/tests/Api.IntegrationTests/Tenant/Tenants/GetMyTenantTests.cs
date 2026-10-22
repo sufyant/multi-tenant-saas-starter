@@ -48,13 +48,14 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt"], ignoreOrder: true);
     }
 
-    // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner and an Admin hold the tenant pool, a Member
-    // reads the members and the tenant.
+    // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner holds the tenant pool, an Admin all of it but
+    // the Owners' own permission (K1), a Member reads the members and the tenant.
     [Theory]
     [InlineData("Owner", new[]
     {
         Permissions.TenantAuditRead, Permissions.TenantInvitationsCreate, Permissions.TenantInvitationsDelete, Permissions.TenantInvitationsRead,
-        Permissions.TenantMembersDelete, Permissions.TenantMembersRead, Permissions.TenantMembersUpdate, Permissions.TenantProfileRead,
+        Permissions.TenantMembersDelete, Permissions.TenantMembersRead, Permissions.TenantMembersUpdate, Permissions.TenantOwnersManage,
+        Permissions.TenantProfileRead,
     })]
     [InlineData("Admin", new[]
     {

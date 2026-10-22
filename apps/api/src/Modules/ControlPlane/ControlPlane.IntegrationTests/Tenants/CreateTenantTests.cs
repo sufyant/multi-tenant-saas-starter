@@ -14,8 +14,8 @@ using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 
 namespace ControlPlane.IntegrationTests.Tenants;
 
-// CreateTenantCommand, run the way Wolverine runs it: one transaction in the new tenant writes the active tenant, its summary and the
-// Owner's invitation, and returns the audit event and the identity provider's sign-up for the outbox. The slug's unique index decides
+// CreateTenantCommand, run the way Wolverine runs it: one transaction in the new tenant writes the active tenant, its summary, its roles
+// and the Owner's invitation, and returns the audit event and the identity provider's sign-up for the outbox. The slug's unique index decides
 // between two creations at once.
 public sealed class CreateTenantTests(Database database)
 {
@@ -40,6 +40,27 @@ public sealed class CreateTenantTests(Database database)
               AND roles.built_in = 'Owner' AND invitations.invited_by = '{admin.Id}'
             """)).ShouldBe(1);
         (await ScalarAsync<string>($"SELECT owner_invitation_email FROM control_plane.tenant_summaries WHERE tenant_id = '{tenantId}'")).ShouldBe(owner);
+    }
+
+    // A2: the creation writes the tenant's own Owner, Admin and Member roles in its transaction, and invites the Owner with its own
+    // tenant's Owner role.
+    [Fact]
+    public async Task CreateTenant_NewTenant_WritesItsOwnRolesAndInvitesWithItsOwnOwnerRole()
+    {
+        var admin = await TestData.AddUserAsync(database.Services);
+        var tenantId = Guid.CreateVersion7();
+
+        await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, Unique.Slug(), Unique.Email());
+
+        (await ScalarAsync<string>(
+            $"SELECT string_agg(format('%s|%s', built_in, name), ', ' ORDER BY built_in) FROM control_plane.roles WHERE tenant_id = '{tenantId}'"))
+            .ShouldBe("Admin|admin, Member|member, Owner|owner");
+        (await ScalarAsync<string>(
+            $"""
+            SELECT roles.built_in FROM control_plane.invitations
+            JOIN control_plane.roles ON roles.tenant_id = invitations.tenant_id AND roles.id = invitations.role_id
+            WHERE invitations.tenant_id = '{tenantId}'
+            """)).ShouldBe("Owner");
     }
 
     // The creation sends the owner's sign-up, with the accept link that carries the invitation's code, and the event Audit records.

@@ -31,7 +31,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("BuiltIn")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("built_in");
@@ -42,29 +41,29 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
                     b.HasKey("Id")
                         .HasName("pk_roles");
 
-                    b.ToTable("roles", "control_plane");
+                    b.HasAlternateKey("TenantId", "Id")
+                        .HasName("ak_roles_tenant_id_id");
 
-                    b.HasData(
-                        new
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_roles_tenant_id");
+
+                    b.HasIndex("TenantId", "BuiltIn")
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_tenant_id_built_in")
+                        .HasFilter("built_in IS NOT NULL");
+
+                    b.ToTable("roles", "control_plane", t =>
                         {
-                            Id = new Guid("00000000-0000-7000-8000-000000000001"),
-                            BuiltIn = "Owner",
-                            Name = "owner"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-7000-8000-000000000002"),
-                            BuiltIn = "Admin",
-                            Name = "admin"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-7000-8000-000000000003"),
-                            BuiltIn = "Member",
-                            Name = "member"
+                            t.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member')");
                         });
                 });
 
@@ -163,15 +162,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("InvitedBy")
                         .HasDatabaseName("ix_invitations_invited_by");
 
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_invitations_role_id");
-
                     b.HasIndex("SecretHash")
                         .IsUnique()
                         .HasDatabaseName("ix_invitations_secret_hash");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_invitations_tenant_id");
+
+                    b.HasIndex("TenantId", "RoleId")
+                        .HasDatabaseName("ix_invitations_tenant_id_role_id");
 
                     b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm")
                         .HasDatabaseName("ix_invitations_email_trgm");
@@ -210,11 +209,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("TenantId", "UserId")
                         .HasName("pk_memberships");
 
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_memberships_role_id");
-
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_memberships_user_id");
+
+                    b.HasIndex("TenantId", "RoleId")
+                        .HasDatabaseName("ix_memberships_tenant_id_role_id");
 
                     b.ToTable("memberships", "control_plane");
                 });
@@ -420,6 +419,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("users", "control_plane");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_roles_tenants_tenant_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
@@ -445,30 +454,24 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_invitations_users_invited_by");
 
-                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_invitations_roles_role_id");
-
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_invitations_tenants_tenant_id");
+
+                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_invitations_roles_tenant_id_role_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Membership", b =>
                 {
-                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_memberships_roles_role_id");
-
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -482,6 +485,14 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+
+                    b.HasOne("ControlPlane.Domain.Roles.Role", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_memberships_roles_tenant_id_role_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>

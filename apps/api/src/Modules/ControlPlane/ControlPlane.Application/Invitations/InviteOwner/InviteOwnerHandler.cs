@@ -37,9 +37,10 @@ public static class InviteOwnerHandler
         var now = time.GetUtcNow();
         var email = EmailAddress.Create(command.Email);
         var secret = InvitationSecret.Generate();
+        var owner = (await tenants.FindRolesAsync(cancellationToken)).BuiltIn(BuiltInRole.Owner);
         var invited = tenant.Invite(
             Inviter.Platform(actor.Id, actor.Language),
-            new NewInvitation(Guid.CreateVersion7(now), email, BuiltInRoles.Owner, command.Language, secret, now, invitations.Lifetime),
+            new NewInvitation(Guid.CreateVersion7(now), email, owner, command.Language, secret, now, invitations.Lifetime),
             await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
             invitations.DailyLimitPerTenant);
         if (!invited.IsSuccess)
@@ -51,7 +52,7 @@ public static class InviteOwnerHandler
         await tenants.AddInvitationAsync(tenant, invited.Value, cancellationToken);
 
         return (
-            InvitationView.Of(invitation, UserNameView.Of(actor), now),
+            InvitationView.Of(invitation, owner, UserNameView.Of(actor), now),
             [
                 new OwnerInvitedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, invitation.Id, actor.Id, replaced.SingleOrDefault()?.Id),
                 OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),

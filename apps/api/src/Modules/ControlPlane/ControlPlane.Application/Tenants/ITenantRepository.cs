@@ -1,4 +1,5 @@
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 
 namespace ControlPlane.Application.Tenants;
@@ -23,8 +24,14 @@ public interface ITenantRepository
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// What a change to the user's membership needs to know of the active tenant (<see cref="MemberFacts"/>): the membership, and how many
-    /// memberships hold the Owner role, a deleted user's included. The caller holds the tenant's lock, which every change to a membership
+    /// The active tenant's roles, read without tracking: a command finds a membership's or an invitation's role, or the built-in role it
+    /// assigns, and a rule asks what the role may do (A1). A command never changes a role.
+    /// </summary>
+    internal Task<TenantRoles> FindRolesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// What a change to the user's membership needs to know of the active tenant (<see cref="MemberFacts"/>): the membership, how many
+    /// memberships have a role that holds <c>tenant.owners.manage</c>, a deleted user's included, and the tenant's roles. The caller holds the tenant's lock, which every change to a membership
     /// takes first, so the facts stay true until the transaction ends (K6j). The check before a user's deletion reads them without it.
     /// </summary>
     internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
@@ -33,7 +40,8 @@ public interface ITenantRepository
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
-    /// What an invitation to this address needs to know of the active tenant (<see cref="Tenant.Invite"/>): its Owners, whether a member
+    /// What an invitation to this address needs to know of the active tenant (<see cref="Tenant.Invite"/>): how many members have a role
+    /// that holds <c>tenant.owners.manage</c>, whether a member
     /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, and every
     /// pending invitation, expired ones included. The caller holds the tenant's lock, which every change to a membership or an invitation
     /// takes first, so the facts stay true until the transaction ends (K6i, K6j).
@@ -75,10 +83,11 @@ public interface ITenantRepository
     internal Task RemoveMembershipAsync(Tenant tenant, Membership membership, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Adds the active tenant itself, which its creation adds, unless another tenant has its slug. The slug's unique index
-    /// decides, also between two tenant creations at the same moment, and nothing else about the other tenant is revealed.
+    /// Adds the active tenant itself, which its creation adds, with its summary (R12) and its built-in roles (A2), unless another tenant
+    /// has its slug. The slug's unique index decides, also between two tenant creations at the same moment, and nothing else about the
+    /// other tenant is revealed. The roles are saved at once, so the creation's next steps find them.
     /// </summary>
-    internal Task<bool> TryAddAsync(Tenant tenant, CancellationToken cancellationToken);
+    internal Task<bool> TryAddAsync(Tenant tenant, IReadOnlyList<Role> roles, CancellationToken cancellationToken);
 
     /// <summary>
     /// Saves what <see cref="Tenant.Invite"/> did, as <see cref="SaveAsync"/> saves it: the replaced invitations first, so the partial

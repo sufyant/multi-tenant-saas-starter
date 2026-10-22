@@ -91,7 +91,7 @@ internal sealed class Tenant
     /// without a lock, and <see cref="RemoveForUserDeletion"/> asks it again under the lock.
     /// </summary>
     public static Result CheckUserDeletion(MemberFacts facts) =>
-        facts.Target is { } target && IsOwner(target) && facts.Owners <= 1
+        facts.Target is { } target && ManagesOwners(facts.Roles.Of(target.RoleId)) && facts.Owners <= 1
             ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
             : Result.Success();
 
@@ -209,8 +209,9 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the
-    /// Owner role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's
+    /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's, asked as the permission
+    /// <c>tenant.owners.manage</c> (A1): only a member whose role holds it gives or takes a role that holds it, and the last member whose
+    /// role holds it keeps it. A member may change their own role under the same rules. The caller holds the tenant's
     /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). Every rejection comes before the
     /// change.
     /// </summary>
@@ -221,24 +222,24 @@ internal sealed class Tenant
             return Membership.NotFound;
         }
 
-        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
-        if (givesOrTakesOwner && !IsOwner(actor))
+        var oldRole = facts.Roles.Of(target.RoleId);
+        var givesOrTakesOwner = ManagesOwners(role) || ManagesOwners(oldRole);
+        if (givesOrTakesOwner && !ManagesOwners(facts.Roles.Of(actor.RoleId)))
         {
             return OwnerRequiresOwner;
         }
 
-        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && facts.Owners <= 1)
+        if (ManagesOwners(oldRole) && !ManagesOwners(role) && facts.Owners <= 1)
         {
             return LastOwner;
         }
 
-        var oldRole = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
         return new RoleChange(target, oldRole, target.Assign(role));
     }
 
     /// <summary>
-    /// The actor removes the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner, and the last
-    /// Owner stays. The caller holds the tenant's lock and read the facts under it (K6j). Returns the membership to remove; the caller
+    /// The actor removes the target member, under the rules of K1: nobody removes themselves, only a member whose role holds
+    /// <c>tenant.owners.manage</c> removes a member whose role holds it, and the last such member stays (A1). The caller holds the tenant's lock and read the facts under it (K6j). Returns the membership to remove; the caller
     /// removes it, with what follows from it (R13).
     /// </summary>
     public Result<Membership> Remove(Membership actor, MemberFacts facts)
@@ -253,12 +254,13 @@ internal sealed class Tenant
             return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
         }
 
-        if (IsOwner(target) && !IsOwner(actor))
+        var targetManagesOwners = ManagesOwners(facts.Roles.Of(target.RoleId));
+        if (targetManagesOwners && !ManagesOwners(facts.Roles.Of(actor.RoleId)))
         {
             return OwnerRequiresOwner;
         }
 
-        return IsOwner(target) && facts.Owners <= 1 ? LastOwner : target;
+        return targetManagesOwners && facts.Owners <= 1 ? LastOwner : target;
     }
 
     /// <summary>
@@ -383,7 +385,8 @@ internal sealed class Tenant
         return new Invited(invitation, replaced);
     }
 
-    private static bool IsOwner(Membership membership) => membership.RoleId == BuiltInRoles.Owner.Id;
+    // A1: an Owner rule asks for the Owners' permission, never for the Owner role.
+    private static bool ManagesOwners(Role role) => role.Holds(PermissionPools.TenantOwnersManage);
 
     // A member's invitation: the role rule first, then a member's address, then the daily limit (section 6, "Member invitation").
     private static Result CheckMemberInvitation(Role inviter, Role role, InvitationFacts facts, int dailyLimit)

@@ -25,7 +25,8 @@ internal sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitat
         invitation.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
         invitation.Property(i => i.Language).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
         invitation.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId);
-        invitation.HasOne<Role>().WithMany().HasForeignKey(i => i.RoleId).OnDelete(DeleteBehavior.Cascade);
+        // A2: a role of the invitation's own tenant, as a membership's.
+        invitation.HasOne<Role>().WithMany().HasForeignKey(i => new { i.TenantId, i.RoleId }).HasPrincipalKey(r => new { r.TenantId, r.Id }).OnDelete(DeleteBehavior.Restrict);
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedBy).OnDelete(DeleteBehavior.Restrict);
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.AcceptedBy).OnDelete(DeleteBehavior.Restrict);
     }

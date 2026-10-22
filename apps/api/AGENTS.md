@@ -41,7 +41,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - Wolverine commits a handler that returns a failed `Result`. Reject before any change. (W7)
 - Handler, saga, message and DbContext types are public, because Wolverine generates code in another assembly. (W9)
 - A scheduled retry on a message with several handlers can run in a web host. Use inline retries there. (W5, `ScheduledRetryTests`)
-- The tenant is declared per transaction with `set_config(..., true)`. A transaction declares one tenant or one user, never both, and never a second tenant; a migration that fills derived data is the one exception (R4).
+- The tenant is declared per transaction with `set_config(..., true)`. A transaction declares one tenant or one user, never both, and never a second tenant; a migration that fills derived data, or moves rows to their own tenant's rows, is the one exception (R4).
 - A model change without a migration fails `PendingModelChangesTests`. Run `dotnet ef migrations add`.
 - A package update changes no document unless it adds or removes a package, or changes a license. `LicenseTests` fails then.
 - Health endpoints answer only on the management port (`Host:ManagementPort`, 8081). A `curl` to 8080 gets 404. (Section 8, `ManagementPortTests`)

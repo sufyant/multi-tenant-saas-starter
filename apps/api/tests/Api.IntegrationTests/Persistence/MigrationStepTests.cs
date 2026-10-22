@@ -199,6 +199,43 @@ public sealed class MigrationStepTests(Database database)
             name)).ShouldBe(0);
     }
 
+    // A2: the migration that gives each tenant its roles writes every tenant's Owner, Admin and Member rows, moves each membership and
+    // invitation to its own tenant's role of the same kind, and removes the roles of no tenant. The composite foreign key then refuses a
+    // role of another tenant, also to the superuser, whom row level security does not hold (Citus documentation, "Multi-tenant
+    // applications").
+    [Fact]
+    public async Task Migrate_TwoTenantsWithMembersAndInvitations_KeepEveryRoleAsARoleOfTheirOwnTenant()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("GiveEachTenantItsRoles");
+        var testData = new TestData(database, name);
+        var first = await testData.AddTenantAsync();
+        var second = await testData.AddTenantAsync();
+        await testData.AddMemberAsync(first.Id, role: "Owner");
+        await testData.AddMemberAsync(first.Id, role: "Admin");
+        await testData.AddInvitationAsync(first.Id, role: "Member");
+        await testData.AddMemberAsync(second.Id, role: "Member");
+        await testData.AddInvitationAsync(second.Id, role: "Owner");
+        await testData.AddInvitationAsync(second.Id, role: "Admin");
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await RolesOfAsync(first.Id, name)).ShouldBe("Admin|admin, Member|member, Owner|owner");
+        (await RolesOfAsync(second.Id, name)).ShouldBe("Admin|admin, Member|member, Owner|owner");
+        (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.roles", name)).ShouldBe(6);
+        (await RolesOfOwnTenantAsync("memberships", first.Id, name)).ShouldBe("Admin, Owner");
+        (await RolesOfOwnTenantAsync("invitations", first.Id, name)).ShouldBe("Member");
+        (await RolesOfOwnTenantAsync("memberships", second.Id, name)).ShouldBe("Member");
+        (await RolesOfOwnTenantAsync("invitations", second.Id, name)).ShouldBe("Admin, Owner");
+        var crossing = () => database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.memberships SET role_id = (SELECT id FROM control_plane.roles WHERE tenant_id = '{second.Id}' AND built_in = 'Owner')
+            WHERE tenant_id = '{first.Id}'
+            """,
+            name);
+        (await crossing.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.ForeignKeyViolation);
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()
@@ -286,6 +323,22 @@ public sealed class MigrationStepTests(Database database)
 
         crossing.ShouldBeEmpty();
     }
+
+    // The roles of the tenant, by their kind and their name.
+    private Task<string?> RolesOfAsync(Guid tenantId, string databaseName) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(format('%s|%s', built_in, name), ', ' ORDER BY built_in) FROM control_plane.roles WHERE tenant_id = '{tenantId}'",
+            databaseName);
+
+    // The kinds of the roles that the table's rows of the tenant name, joined only to a role of the same tenant.
+    private Task<string?> RolesOfOwnTenantAsync(string table, Guid tenantId, string databaseName) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(roles.built_in, ', ' ORDER BY roles.built_in) FROM control_plane.{table}
+            JOIN control_plane.roles ON roles.tenant_id = {table}.tenant_id AND roles.id = {table}.role_id
+            WHERE {table}.tenant_id = '{tenantId}'
+            """,
+            databaseName);
 
     private Task<string?> OwnerOfAsync(string schema, string table, string databaseName) =>
         database.ScalarAsync<string>(

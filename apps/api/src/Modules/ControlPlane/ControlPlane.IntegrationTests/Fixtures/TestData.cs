@@ -24,11 +24,18 @@ internal static class TestData
             tenant.Close(DateTimeOffset.UtcNow, []);
         }
 
-        // Every tenant has its summary from its creation on (R12).
+        // Every tenant has its summary (R12) and its own built-in roles (A2) from its creation on. The roles belong to the tenant, so
+        // they are written with it declared.
         await SaveAsync(services, controlPlane =>
         {
             controlPlane.Tenants.Add(tenant);
             controlPlane.TenantSummaries.Add(new TenantSummary(tenant.Id));
+        });
+        await InTenant.RunAsync(services, tenant.Id, scope =>
+        {
+            scope.GetRequiredService<ControlPlaneDbContext>().Roles.AddRange(
+                Enum.GetValues<BuiltInRole>().Select(builtIn => Role.CreateBuiltIn(Guid.CreateVersion7(), tenant.Id, builtIn)));
+            return Task.CompletedTask;
         });
         return tenant;
     }
@@ -41,16 +48,17 @@ internal static class TestData
     }
 
     // The user's membership count and the tenant's summary follow, as the commands keep them: through the repository (K6k, R13).
-    public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, Role? role = null) =>
+    public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, BuiltInRole role = BuiltInRole.Member) =>
         InTenant.RunAsync(services, tenant.Id, async scope =>
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             var locked = await tenants.FindTenantForUpdateAsync(TestContext.Current.CancellationToken)
                 ?? throw new InvalidOperationException("A member joins a tenant that exists.");
-            await tenants.AddMembershipAsync(locked, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken);
+            var roleId = (await tenants.FindRolesAsync(TestContext.Current.CancellationToken)).BuiltIn(role).Id;
+            await tenants.AddMembershipAsync(locked, user.Id, roleId, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken);
         });
 
-    public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, Role role)
+    public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, BuiltInRole role)
     {
         var user = await AddUserAsync(services);
         await AddMemberAsync(services, tenant, user, role);

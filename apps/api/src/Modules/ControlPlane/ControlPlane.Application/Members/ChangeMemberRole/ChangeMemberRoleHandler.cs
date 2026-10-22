@@ -27,8 +27,9 @@ public static class ChangeMemberRoleHandler
 
         var (tenant, actor, actorMembership) = start.Value;
 
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.BuiltIn == Enum.Parse<BuiltInRole>(command.Role));
-        var changed = tenant.ChangeRole(actorMembership, role, await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
+        var facts = await tenants.FindMemberFactsAsync(command.UserId, cancellationToken);
+        var role = facts.Roles.BuiltIn(Enum.Parse<BuiltInRole>(command.Role));
+        var changed = tenant.ChangeRole(actorMembership, role, facts);
         if (!changed.IsSuccess)
         {
             return (changed.Error, []);

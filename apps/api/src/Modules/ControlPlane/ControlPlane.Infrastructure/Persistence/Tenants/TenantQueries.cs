@@ -3,6 +3,7 @@ using ControlPlane.Application.Tenants.GetMyTenant;
 using ControlPlane.Application.Tenants.GetTenant;
 using ControlPlane.Application.Tenants.ListMyTenants;
 using ControlPlane.Application.Tenants.ListTenants;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -48,17 +49,22 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             OwnerInvitationView.Of(found.Summary, now));
     }
 
-    // The tenant, the person and their membership, in three queries; row level security keeps the membership to the active tenant.
+    // The tenant, the person and their membership's role, in three queries; row level security keeps the membership to the active tenant.
     async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, CancellationToken cancellationToken)
     {
         if (await FindAsync(cancellationToken) is not { } tenant
             || await controlPlane.Users.AsNoTracking().SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken) is not { } user
-            || await controlPlane.TenantMemberships.AsNoTracking().SingleOrDefaultAsync(membership => membership.UserId == user.Id, cancellationToken) is not { } membership)
+            || await (
+                    from membership in controlPlane.TenantMemberships
+                    where membership.UserId == user.Id
+                    join found in controlPlane.Roles on membership.RoleId equals found.Id
+                    select found)
+                .AsNoTracking()
+                .SingleOrDefaultAsync(cancellationToken) is not { } role)
         {
             return null;
         }
 
-        var role = BuiltInRoles.All.Single(builtIn => builtIn.Id == membership.RoleId);
         return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
     }
 
@@ -154,10 +160,11 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     }
 
     // Row level security keeps the memberships to the active tenant; the users table is not under it (R6), so the query starts from them.
+    // An Owner is a member whose role holds the Owners' permission (A1, K1).
     private async Task<IReadOnlyList<User>> ListOwnersAsync(CancellationToken cancellationToken) =>
         await (
                 from membership in controlPlane.TenantMemberships
-                where membership.RoleId == BuiltInRoles.Owner.Id
+                join role in controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage)) on membership.RoleId equals role.Id
                 join user in controlPlane.Users on membership.UserId equals user.Id
                 orderby membership.JoinedAt, membership.UserId
                 select user)

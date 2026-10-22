@@ -11,7 +11,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.Tenants.CreateTenant;
 
-// One transaction writes the active tenant, its summary and its first Owner's invitation, and sends the identity provider's sign-up and
+// One transaction writes the active tenant, its summary, its roles and its first Owner's invitation, and sends the identity provider's sign-up and
 // the audit event through the outbox (section 6, "Tenant creation process"). The host also saves the command result in this transaction
 // (I4). The invitation takes the path of InviteOwner: the same rule (Tenant.Invite, with the platform as inviter, M1), then the sign-up
 // and the email. Rejections come first (W7); a taken slug is found by the insert itself, which writes nothing then.
@@ -35,7 +35,9 @@ public static class CreateTenantHandler
             return (created.Error, []);
         }
 
-        if (!await tenants.TryAddAsync(created.Value, cancellationToken))
+        // A2: a tenant has its own built-in roles from its creation on, written in its transaction.
+        IReadOnlyList<Role> roles = [.. Enum.GetValues<BuiltInRole>().Select(builtIn => Role.CreateBuiltIn(Guid.CreateVersion7(now), created.Value.Id, builtIn))];
+        if (!await tenants.TryAddAsync(created.Value, roles, cancellationToken))
         {
             return (Error.Conflict(ControlPlaneErrorCodes.TenantSlugTaken, "Another tenant already has this slug."), []);
         }
@@ -47,7 +49,7 @@ public static class CreateTenantHandler
         var secret = InvitationSecret.Generate();
         var invited = tenant.Invite(
             Inviter.Platform(actor.Id, actor.Language),
-            new NewInvitation(Guid.CreateVersion7(now), email, BuiltInRoles.Owner, command.Language, secret, now, invitations.Lifetime),
+            new NewInvitation(Guid.CreateVersion7(now), email, new TenantRoles(roles).BuiltIn(BuiltInRole.Owner), command.Language, secret, now, invitations.Lifetime),
             await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
             invitations.DailyLimitPerTenant);
         if (!invited.IsSuccess)

@@ -25,10 +25,10 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             from membership in controlPlane.TenantMemberships
             join memberRole in controlPlane.Roles on membership.RoleId equals memberRole.Id
             join user in controlPlane.Users on membership.UserId equals user.Id
-            select new { membership.UserId, user.Email, user.FirstName, user.LastName, memberRole.BuiltIn, Deleted = user.DeletedAt != null, membership.JoinedAt };
+            select new { membership.UserId, user.Email, user.FirstName, user.LastName, Role = memberRole, Deleted = user.DeletedAt != null, membership.JoinedAt };
         if (role is { } wanted)
         {
-            members = members.Where(member => member.BuiltIn == wanted);
+            members = members.Where(member => member.Role.BuiltIn == wanted);
         }
 
         if (list.Search is { } search)
@@ -47,17 +47,18 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             ListMembersSort.Email => members.OrderBy(member => member.Email == null).ThenBy(member => member.Email, list.Descending),
             ListMembersSort.LastName => members.OrderBy(member => member.LastName == null).ThenBy(member => member.LastName, list.Descending),
             _ => members.OrderBy(
-                member => member.BuiltIn == BuiltInRole.Owner ? 0 : member.BuiltIn == BuiltInRole.Admin ? 1 : 2,
+                member => member.Role.BuiltIn == BuiltInRole.Owner ? 0 : member.Role.BuiltIn == BuiltInRole.Admin ? 1 : 2,
                 list.Descending),
         };
         var page = await sorted
             .ThenBy(member => member.UserId)
             .Skip(list.Paging.Skip)
             .Take(list.Paging.PageSize)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         return ListPage.Of(
-            [.. page.Select(member => new MemberView(member.UserId, member.Email, member.FirstName, member.LastName, RoleView.Of(member.BuiltIn), member.Deleted, member.JoinedAt))],
+            [.. page.Select(member => new MemberView(member.UserId, member.Email, member.FirstName, member.LastName, RoleView.Of(member.Role), member.Deleted, member.JoinedAt))],
             list.Paging,
             total);
     }
