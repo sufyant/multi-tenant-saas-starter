@@ -36,7 +36,6 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return new TenantSummary(
             await Memberships.CountAsync(cancellationToken),
             ownerCount,
-            await owners.OrderBy(owner => owner.JoinedAt).ThenBy(owner => owner.UserId).Select(owner => (Guid?)owner.UserId).FirstOrDefaultAsync(cancellationToken),
             ownerCount == 0
                 ? await controlPlane.TenantInvitations
                     .Where(invitation => invitation.RoleId == BuiltInRoles.Owner.Id)

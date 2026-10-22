@@ -277,10 +277,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid?>("FirstOwnerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("first_owner_id");
-
                     b.Property<int>("MemberCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -337,9 +333,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_tenants");
-
-                    b.HasIndex("FirstOwnerId")
-                        .HasDatabaseName("ix_tenants_first_owner_id");
 
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_tenants_name");
@@ -521,15 +514,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
-                });
-
-            modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
-                {
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("FirstOwnerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_tenants_users_first_owner_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>

@@ -5499,7 +5499,6 @@
           "reopenableUntil",
           "memberCount",
           "ownerCount",
-          "firstOwner",
           "ownerInvitation"
         ],
         "type": "object",
@@ -5545,16 +5544,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "firstOwner": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/TenantOwnerResponse"
-              }
-            ]
-          },
           "ownerInvitation": {
             "oneOf": [
               {
@@ -5566,7 +5555,7 @@
             ]
           }
         },
-        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply."
+        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply."
       },
       "TenantOwnerInvitedDetailsResponse": {
         "required": [

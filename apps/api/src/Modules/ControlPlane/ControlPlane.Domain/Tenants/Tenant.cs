@@ -66,9 +66,6 @@ internal sealed class Tenant
     /// <summary>How many of the members hold the Owner role, a deleted user's included (K1).</summary>
     public int OwnerCount { get; private set; }
 
-    /// <summary>The user id of the Owner who joined first. None while the tenant has no Owner.</summary>
-    public Guid? FirstOwnerId { get; private set; }
-
     /// <summary>
     /// The address of the tenant's latest Owner invitation, only while the tenant has no Owner: it is a person's, so it is cleared once an
     /// Owner joins (the maintainer's decision in step 20k).
@@ -298,7 +295,7 @@ internal sealed class Tenant
     /// </summary>
     public void Summarize(TenantSummary summary)
     {
-        (MemberCount, OwnerCount, FirstOwnerId) = (summary.Members, summary.Owners, summary.FirstOwnerId);
+        (MemberCount, OwnerCount) = (summary.Members, summary.Owners);
         var invitation = summary.Owners == 0 ? summary.LatestOwnerInvitation : null;
         (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage) =
             (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language);

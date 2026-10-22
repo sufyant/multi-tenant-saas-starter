@@ -20,7 +20,7 @@ public interface ITenantRepository
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// The active tenant's summary: its members, its Owners, the Owner who joined first, and its latest Owner invitation. It saves the
+    /// The active tenant's summary: its members, its Owners, and its latest Owner invitation. It saves the
     /// pending changes first, so it reads the memberships and invitations as the transaction leaves them. The caller holds the tenant's
     /// lock (K6k).
     /// </summary>

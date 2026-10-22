@@ -63,8 +63,7 @@ internal sealed class TestData(Database database, string databaseName = Database
                 WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'Owner')
             UPDATE control_plane.tenants SET
                 member_count = (SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
-                owner_count = (SELECT count(*) FROM owners),
-                first_owner_id = (SELECT user_id FROM owners ORDER BY joined_at, user_id LIMIT 1)
+                owner_count = (SELECT count(*) FROM owners)
             WHERE id = '{tenantId}'
             """,
             databaseName);

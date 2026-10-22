@@ -55,9 +55,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
     }
 
-    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant. Its summary names the first Owner,
-    // and the users table is not under row level security either (R6): one query joins each tenant's first Owner, so the page is one round
-    // trip, with no query for each tenant.
+    // The tenants table belongs to no tenant, so the list needs no active tenant and sees every tenant. The summary is on the tenant row
+    // (R12), so the page is one query, with no query for each tenant.
     async Task<ListPage<TenantListItemView>> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         TenantStatus? status,
@@ -79,18 +78,13 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         }
 
         var total = await tenants.CountAsync(cancellationToken);
-        var rows =
-            from tenant in tenants
-            join user in controlPlane.Users on tenant.FirstOwnerId equals user.Id into owners
-            from owner in owners.DefaultIfEmpty()
-            select new { Tenant = tenant, Owner = owner };
         var sorted = list.Sort switch
         {
-            ListTenantsSort.Slug => rows.OrderBy(row => row.Tenant.Slug, list.Descending),
-            _ => rows.OrderBy(row => row.Tenant.Name, list.Descending),
+            ListTenantsSort.Slug => tenants.OrderBy(tenant => tenant.Slug, list.Descending),
+            _ => tenants.OrderBy(tenant => tenant.Name, list.Descending),
         };
         var page = await sorted
-            .ThenBy(row => row.Tenant.Id)
+            .ThenBy(tenant => tenant.Id)
             .Skip(list.Paging.Skip)
             .Take(list.Paging.PageSize)
             .AsNoTracking()
@@ -98,13 +92,12 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
         return ListPage.Of(
             [
-                .. page.Select(row => new TenantListItemView(
-                    TenantView.Of(row.Tenant),
-                    row.Tenant.ReopenableUntil(reopenPeriod),
-                    row.Tenant.MemberCount,
-                    row.Tenant.OwnerCount,
-                    row.Owner is { } owner ? TenantOwnerView.Of(owner) : null,
-                    OwnerInvitationView.Of(row.Tenant, now))),
+                .. page.Select(tenant => new TenantListItemView(
+                    TenantView.Of(tenant),
+                    tenant.ReopenableUntil(reopenPeriod),
+                    tenant.MemberCount,
+                    tenant.OwnerCount,
+                    OwnerInvitationView.Of(tenant, now))),
             ],
             list.Paging,
             total);
