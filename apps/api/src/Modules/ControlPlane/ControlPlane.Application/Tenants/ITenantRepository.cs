@@ -1,6 +1,5 @@
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
 
 namespace ControlPlane.Application.Tenants;
 
@@ -30,20 +29,13 @@ public interface ITenantRepository
     /// </summary>
     internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// What an acceptance by the user needs to know (<see cref="AcceptanceFacts"/>): whether they are deleted, whether they are a system
-    /// admin, and whether they are a member of the active tenant. A person who is not a user yet has none of these. The caller holds the
-    /// tenant's lock and the user's (K6f).
-    /// </summary>
-    internal Task<AcceptanceFacts> FindAcceptanceFactsAsync(User? user, CancellationToken cancellationToken);
-
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
     /// What an invitation to this address needs to know of the active tenant (<see cref="Tenant.Invite"/>): its Owners, whether a member
-    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, and the
-    /// pending invitations a new one may replace. The caller holds the tenant's lock, which every change to a membership or an invitation
+    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, and every
+    /// pending invitation, expired ones included. The caller holds the tenant's lock, which every change to a membership or an invitation
     /// takes first, so the facts stay true until the transaction ends (K6i, K6j).
     /// </summary>
     internal Task<InvitationFacts> FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken);

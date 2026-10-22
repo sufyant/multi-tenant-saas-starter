@@ -2,7 +2,6 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.Tenants;
@@ -46,31 +45,18 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
         new(await ((ITenantRepository)this).FindMembershipAsync(userId, cancellationToken), await CountOwnersAsync(cancellationToken));
 
-    // The system admin list belongs to no tenant (R6); row level security keeps the membership to the active tenant.
-    async Task<AcceptanceFacts> ITenantRepository.FindAcceptanceFactsAsync(User? user, CancellationToken cancellationToken) =>
-        user is null
-            ? new AcceptanceFacts(UserDeleted: false, IsSystemAdmin: false, IsMember: false)
-            : new AcceptanceFacts(
-                user.DeletedAt is not null,
-                await controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == user.Id, cancellationToken),
-                await ((ITenantRepository)this).FindMembershipAsync(user.Id, cancellationToken) is not null);
-
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
 
-    // The pending invitations come in the same comparison as the partial unique index, which serves the query (K2): the stored form,
-    // pending only. While the tenant has no Owner, every pending one comes, because the platform's Owner invitation replaces them all.
-    // Row level security adds the tenant to every query.
+    // Every pending invitation comes, expired ones included; Tenant.Invite decides which of them the new one replaces. Row level
+    // security adds the tenant to every query.
     async Task<InvitationFacts> ITenantRepository.FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken)
     {
-        var owners = await CountOwnersAsync(cancellationToken);
         return new InvitationFacts(
-            owners,
+            await CountOwnersAsync(cancellationToken),
             await IsMemberEmailAsync(email, cancellationToken),
             await ((ITenantRepository)this).CountInvitationsSinceAsync(since, cancellationToken),
-            await controlPlane.TenantInvitations
-                .Where(invitation => invitation.Status == InvitationStatus.Pending && (owners == 0 || invitation.Email == email.Value))
-                .ToListAsync(cancellationToken));
+            await ((ITenantRepository)this).FindPendingInvitationsAsync(cancellationToken));
     }
 
     // Row level security keeps the invitations to the active tenant; the query names no tenant.

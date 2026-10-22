@@ -47,7 +47,12 @@ public static class AcceptInvitationHandler
         // that both wait to update would deadlock. Two acceptances of a person who is not a user yet run one after the other too
         // (K6f), so the second finds the first one's user and goes on as for a known user.
         var existing = await users.FindUserForNoKeyUpdateAsync(command.ActorId, cancellationToken);
-        var facts = await tenants.FindAcceptanceFactsAsync(existing, cancellationToken);
+        var facts = existing is null
+            ? AcceptanceFacts.None
+            : new AcceptanceFacts(
+                existing.DeletedAt is not null,
+                await users.IsSystemAdminAsync(existing.Id, cancellationToken),
+                await tenants.FindMembershipAsync(existing.Id, cancellationToken) is not null);
 
         // The identity provider's addresses enter here, in their one form (EmailAddress).
         var verifiedEmails = EmailAddress.AllOf(command.VerifiedEmails);
