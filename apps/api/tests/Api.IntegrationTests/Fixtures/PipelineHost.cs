@@ -1,5 +1,8 @@
 using System.Net.Http.Headers;
 using Api.Routing;
+using Audit.Api;
+using Audit.Infrastructure;
+using ControlPlane.Api;
 using ControlPlane.Application.Identity;
 using ControlPlane.Infrastructure;
 using JasperFx.CodeGeneration;
@@ -11,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Notifications.Api;
 using Notifications.Infrastructure;
 using Tenancy;
 using Wolverine;
@@ -19,8 +23,9 @@ using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// Runs the host's real pipeline on a test server against the test database, with the test endpoints and handlers mapped
-// where module endpoints go. The test handlers are not in the committed handler code, so the host generates it at runtime.
+// Runs the host's real pipeline on a test server against the test database, with the test endpoints mapped where module endpoints go.
+// By default the host has the modules' handlers, as Program composes them, and loads the committed handler code (section 9, rule 11).
+// A host with the test handlers has chains the committed code does not hold, so it generates its handler code at runtime.
 internal sealed class PipelineHost : IAsyncDisposable
 {
     private static readonly Dictionary<string, string?> DefaultSettings = new()
@@ -45,7 +50,8 @@ internal sealed class PipelineHost : IAsyncDisposable
 
     public static async Task<PipelineHost> StartAsync(
         IReadOnlyDictionary<string, string?>? settings = null,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        bool testHandlers = false)
     {
         var database = await TestContext.Current.GetFixture<Database>()
             ?? throw new InvalidOperationException("The database fixture is not available.");
@@ -65,15 +71,24 @@ internal sealed class PipelineHost : IAsyncDisposable
             ["ConnectionStrings:Messaging"] = Database.ForHost(builder.Configuration.GetConnectionString("Messaging"), nameof(PipelineHost)),
         });
 
-        builder.AddApiPipeline(typeof(PipelineHost).Assembly);
+        if (testHandlers)
+        {
+            builder.AddApiPipeline(typeof(PipelineHost).Assembly);
+            builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
+            builder.Services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
+        }
+        else
+        {
+            builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
+            builder.Services.AddAuditInfrastructure();
+        }
+
         builder.Services.AddControlPlaneInfrastructure();
         builder.Services.AddNotificationsInfrastructure();
         builder.Services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
             (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
             TenancyServiceCollectionExtensions.MessageSchema);
         builder.Services.AddModuleMigrations<ProbeDbContext>(ProbeDbContext.Schema);
-        builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
-        builder.Services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
         builder.Services.TrustTestKey();
         builder.Services.AddSingleton<IdempotencyGate>();
         builder.Services.AddSingleton<RetryAttempts>();
@@ -94,6 +109,15 @@ internal sealed class PipelineHost : IAsyncDisposable
         TestEndpoints.MapTenant(v1.MapTenant());
         TestEndpoints.MapPlatform(platform);
         await app.StartAsync(TestContext.Current.CancellationToken);
+        try
+        {
+            RuntimeHandlerCode.AssertTheCommittedCodeHoldsEveryFrame(app.Services);
+        }
+        catch (InvalidOperationException)
+        {
+            await app.DisposeAsync();
+            throw;
+        }
 
         return new PipelineHost(app);
     }

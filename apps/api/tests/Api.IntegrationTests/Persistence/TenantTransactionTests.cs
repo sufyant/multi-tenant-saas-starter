@@ -19,7 +19,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
+    public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync(testHandlers: true);
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 
@@ -143,7 +143,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         {
             ["ConnectionStrings:Database"] = new NpgsqlConnectionStringBuilder(database.ApplicationConnectionString) { MaxPoolSize = 1 }.ConnectionString,
             ["ConnectionStrings:Messaging"] = database.ApplicationConnectionString,
-        });
+        }, testHandlers: true);
         var bus = host.Host.MessageBus();
 
         var seenByA = await bus.InvokeForTenantAsync<TenantObservation>(tenantA.ToString(), new ObserveTenant(), Cancellation);

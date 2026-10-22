@@ -17,7 +17,7 @@ public sealed class IdempotencyBoundaryTests(Database database)
     [Fact]
     public async Task RunCommand_AbandonedExpiredClaim_RunsAgainAndSavesTheResult()
     {
-        await using var host = await PipelineHost.StartAsync();
+        await using var host = await PipelineHost.StartAsync(testHandlers: true);
         var client = host.CreateClient("user_abandoned");
         var key = Guid.NewGuid().ToString();
         client.DefaultRequestHeaders.Add("Idempotency-Key", key);
@@ -47,7 +47,7 @@ public sealed class IdempotencyBoundaryTests(Database database)
     public async Task RunCommand_LeaseExpiresWhileTheHandlerRuns_RemainsConflictUntilTheTransactionEnds()
     {
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
-        await using var host = await PipelineHost.StartAsync(configureServices: services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(clock)));
+        await using var host = await PipelineHost.StartAsync(configureServices: services => services.Replace(ServiceDescriptor.Singleton<TimeProvider>(clock)), testHandlers: true);
         var client = host.CreateClient("user_expired");
         var key = Guid.NewGuid().ToString();
         client.DefaultRequestHeaders.Add("Idempotency-Key", key);
@@ -77,7 +77,7 @@ public sealed class IdempotencyBoundaryTests(Database database)
     [Fact]
     public async Task RunCommand_FinishedRequest_ReplaysTheBodyStatusAndLocation()
     {
-        await using var host = await PipelineHost.StartAsync();
+        await using var host = await PipelineHost.StartAsync(testHandlers: true);
         var client = host.CreateClient("user_replay");
         client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString());
         var body = new RecordIdempotentProbe(Guid.NewGuid().ToString());
@@ -98,7 +98,7 @@ public sealed class IdempotencyBoundaryTests(Database database)
     [InlineData("PUT", "/v1/idempotency/first")]
     public async Task RunCommand_KeyReusedWithAnotherRouteOrMethod_IsUnprocessable(string method, string path)
     {
-        await using var host = await PipelineHost.StartAsync();
+        await using var host = await PipelineHost.StartAsync(testHandlers: true);
         var client = host.CreateClient("user_route");
         client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString());
         var body = new RecordIdempotentProbe(Guid.NewGuid().ToString());
@@ -114,7 +114,7 @@ public sealed class IdempotencyBoundaryTests(Database database)
     [Fact]
     public async Task RunCommand_FirstRequestIsRunning_AnswersConflictWithoutWaiting()
     {
-        await using var host = await PipelineHost.StartAsync();
+        await using var host = await PipelineHost.StartAsync(testHandlers: true);
         var client = host.CreateClient("user_busy");
         client.DefaultRequestHeaders.Add("Idempotency-Key", Guid.NewGuid().ToString());
         var body = new RecordIdempotentProbe(Guid.NewGuid().ToString());
@@ -147,7 +147,7 @@ public sealed class IdempotencyBoundaryTests(Database database)
     [InlineData("/v1/idempotency-unavailable/first", HttpStatusCode.ServiceUnavailable)]
     public async Task RunCommand_ExceptionOrServerFailure_ReleasesTheClaimAndRollsBackTheBusinessWrite(string path, HttpStatusCode expected)
     {
-        await using var host = await PipelineHost.StartAsync();
+        await using var host = await PipelineHost.StartAsync(testHandlers: true);
         var client = host.CreateClient("user_failure");
         var key = Guid.NewGuid().ToString();
         client.DefaultRequestHeaders.Add("Idempotency-Key", key);

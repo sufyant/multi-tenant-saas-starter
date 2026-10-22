@@ -14,7 +14,7 @@ public sealed class OutboxTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
+    public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync(testHandlers: true);
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 

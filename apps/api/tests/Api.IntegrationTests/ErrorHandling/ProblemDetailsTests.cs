@@ -14,7 +14,7 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _host = await PipelineHost.StartAsync();
+        _host = await PipelineHost.StartAsync(testHandlers: true);
         _client = _host.CreateClient();
     }
 
