@@ -191,6 +191,55 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(created)).ShouldBe("role.permissions_required");
     }
 
+    // A permission that is null is a validation problem, never a fault.
+    [Fact]
+    public async Task CreateRole_ANullPermission_IsAValidationProblem()
+    {
+        var (tenantId, owner) = await OwnerAsync();
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/tenants/{tenantId}/roles")
+        {
+            Content = new StringContent("""{ "name": "Billing", "permissions": ["tenant.members.read", null] }""", System.Text.Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        var created = await owner.SendAsync(request, Cancellation);
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await CodeOfAsync(created)).ShouldBe("request.validation_failed");
+    }
+
+    // K6: the tenant's lock orders two creations at once, so the second sees the first and neither passes the limit.
+    [Fact]
+    public async Task CreateRole_TwoAtOnceWithOnePlaceLeft_NeverPassTheLimit()
+    {
+        var (tenantId, owner) = await OwnerAsync();
+        await _testData.AddCustomRoleAsync(tenantId, "First", "tenant.members.read");
+
+        var answers = await database.OneAfterTheOtherAsync(
+            tenantId,
+            () => owner.CreateRoleAsync(tenantId, "Second", ["tenant.members.read"]),
+            () => owner.CreateRoleAsync(tenantId, "Third", ["tenant.members.read"]));
+
+        answers.Select(answer => answer.StatusCode).ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict]);
+        (await CustomRolesOfAsync(tenantId)).ShouldBe(Limit);
+    }
+
+    // K6: the second of two creations with one name sees the first under the tenant's lock and answers the name's conflict, never 500.
+    [Fact]
+    public async Task CreateRole_TwoAtOnceWithTheSameName_CreateOne()
+    {
+        var (tenantId, owner) = await OwnerAsync();
+
+        var answers = await database.OneAfterTheOtherAsync(
+            tenantId,
+            () => owner.CreateRoleAsync(tenantId, "Billing", ["tenant.members.read"]),
+            () => owner.CreateRoleAsync(tenantId, "billing", ["tenant.members.read"]));
+
+        answers.Select(answer => answer.StatusCode).ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict]);
+        (await CodeOfAsync(answers[1])).ShouldBe("role.name_taken");
+        (await CustomRolesOfAsync(tenantId)).ShouldBe(1);
+    }
+
     // Decision 3 of step r4b: the limit counts custom roles only, and a role at the limit is refused (OWASP API4).
     [Fact]
     public async Task CreateRole_AtTheLimit_IsAConflictAndCreatesNothing()

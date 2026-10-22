@@ -97,7 +97,7 @@
       "escalation": "Rolünüz bu rolün tüm izinlerine sahip değil.",
       "in_use": "Bir üye ya da bekleyen bir davet bu role sahip. Önce onlara başka bir rol verin.",
       "limit_reached": "Bu kuruluş en fazla sayıda özel role sahip. Önce bir rolü silin.",
-      "name_invalid": "1 ile 100 karakter arasında bir rol adı girin.",
+      "name_invalid": "Bir rol adı girin.",
       "name_taken": "Bu kuruluşta bu adla bir rol zaten var. Başka bir ad seçin.",
       "not_found": "Bu rol artık kuruluşta değil.",
       "not_permitted": "Rolünüz rolleri bu şekilde değiştiremez.",

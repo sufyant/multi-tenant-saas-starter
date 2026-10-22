@@ -261,6 +261,27 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         other.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    // Step r4b: a finished invitation loses its role when its custom role is deleted; the preview answers it without one.
+    [Fact]
+    public async Task GetInvitationPreview_AFinishedInvitationWhoseRoleWasDeleted_AnswersItWithoutARole()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+        var secret = Guid.NewGuid().ToString("N");
+        var email = $"{Guid.NewGuid():N}@example.com";
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Cancelled", expiresAt: Later, secret: secret, roleId: roleId);
+        var invitee = $"user_{Guid.NewGuid():N}";
+        _api.Identity.AddAccount(invitee, email);
+        await database.ExecuteInTenantAsync(tenant.Id, $"DELETE FROM control_plane.roles WHERE id = '{roleId}'");
+
+        var preview = await PreviewAsync(invitee, TestData.InvitationCodeOf(tenant.Id, secret));
+
+        preview.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await preview.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        body.GetProperty("role").ValueKind.ShouldBe(JsonValueKind.Null);
+        body.GetProperty("state").GetString().ShouldBe("cancelled");
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

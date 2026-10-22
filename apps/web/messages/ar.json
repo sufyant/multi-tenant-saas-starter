@@ -203,6 +203,7 @@
     "inviteEmailPlaceholder": "name@company.com",
     "inviteRoleHintOwner": "يمكن للمالكين منح دور المالك أيضًا.",
     "inviteRoleHintAdmin": "لا يدعو المالك إلا مالك.",
+    "revokeOwnerHint": "لا يلغي دعوة المالك إلا مالك.",
     "inviteLanguage": "لغة البريد",
     "inviteLanguageHint": "تستخدم رسالة الدعوة وشاشاته الأولى هذه اللغة. يمكنه تغييرها لاحقًا.",
     "languageSearch": "ابحث عن لغة",

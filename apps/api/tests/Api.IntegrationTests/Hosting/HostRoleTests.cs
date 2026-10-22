@@ -6,6 +6,9 @@ using Audit.Application.Invitations.RecordOwnerInvited;
 using Audit.Application.Members.RecordMemberInvited;
 using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
+using Audit.Application.Roles.RecordRoleCreated;
+using Audit.Application.Roles.RecordRoleDeleted;
+using Audit.Application.Roles.RecordRoleUpdated;
 using Audit.Application.Tenants.RecordTenantClosed;
 using Audit.Application.Tenants.RecordTenantCreated;
 using Audit.Application.Tenants.RecordTenantReactivated;
@@ -24,6 +27,9 @@ using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.RevokeInvitation;
 using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.RemoveMember;
+using ControlPlane.Application.Roles.CreateRole;
+using ControlPlane.Application.Roles.DeleteRole;
+using ControlPlane.Application.Roles.UpdateRole;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
@@ -39,15 +45,16 @@ using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
+using ControlPlane.Contracts.Roles;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
 using Tenancy;
-using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Util;
+using Wolverine;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -423,6 +430,45 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRoleCommand), typeof(ChangeMemberRoleHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChangedEvent), typeof(RecordMemberRoleChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+    }
+
+    // O3: each change to a custom role is announced from the web host, and its Audit handler runs in the worker, once (step r4b).
+    [Fact]
+    public async Task DeleteRole_AfterACreationAndAnUpdateOnAWebAndAWorkerHost_WritesOneAuditEntryEachInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
+
+        var created = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.members.read"]);
+        var roleId = (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetGuid();
+        var updated = await owner.UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.members.read", "tenant.audit.read"]);
+        var deleted = await owner.DeleteRoleAsync(tenant.Id, roleId);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "role.deleted") > 0
+            && await AuditEntriesAsync(name, tenant.Id, "role.created") > 0
+            && await AuditEntriesAsync(name, tenant.Id, "role.updated") > 0);
+
+        (created.StatusCode, updated.StatusCode, deleted.StatusCode).ShouldBe((HttpStatusCode.Created, HttpStatusCode.OK, HttpStatusCode.NoContent));
+        runs.In("web").ShouldBe(
+        [
+            new HandlerRun(typeof(CreateRoleCommand), typeof(CreateRoleHandler)),
+            new HandlerRun(typeof(UpdateRoleCommand), typeof(UpdateRoleHandler)),
+            new HandlerRun(typeof(DeleteRoleCommand), typeof(DeleteRoleHandler)),
+        ]);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(RoleCreatedEvent), typeof(RecordRoleCreatedHandler)),
+                new HandlerRun(typeof(RoleUpdatedEvent), typeof(RecordRoleUpdatedHandler)),
+                new HandlerRun(typeof(RoleDeletedEvent), typeof(RecordRoleDeletedHandler)),
+            ],
+            ignoreOrder: true);
+        (await AuditEntriesAsync(name, tenant.Id, "role.created"), await AuditEntriesAsync(name, tenant.Id, "role.updated"), await AuditEntriesAsync(name, tenant.Id, "role.deleted"))
+            .ShouldBe((1L, 1L, 1L));
     }
 
     // O3: a removal is announced from the web host, and its Audit handler runs in the worker, once.

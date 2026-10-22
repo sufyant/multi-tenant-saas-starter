@@ -183,6 +183,9 @@ export function InvitationsTable({
       items.push({
         label: expired ? t("members.cancelInvitation") : t("members.revoke"),
         tone: "destructive",
+        // The API's escalation rule (step r4b): nobody revokes an invitation to a role stronger than their own.
+        disabled: isOwner(invitation.role) && !viewerIsOwner,
+        reason: t("members.revokeOwnerHint"),
         onSelect: () => setRevoking(invitation),
       });
     return items;

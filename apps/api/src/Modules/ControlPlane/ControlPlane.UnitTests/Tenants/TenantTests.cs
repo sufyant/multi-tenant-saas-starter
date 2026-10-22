@@ -1421,6 +1421,31 @@ public sealed class TenantTests
         revoked.Value.ShouldBe(StateChange.Changed);
     }
 
+    // I1: a cancelled invitation of a stronger role answers as it is, and an accepted one as not pending; neither gives a role any more.
+    [Fact]
+    public void RevokeInvitation_ACancelledInvitationOfAStrongerRole_ChangesNothing()
+    {
+        var actorRole = Custom("Recruiter", InvitationsDelete, MembersRead, ProfileRead);
+        var invitation = PendingTo("ada@example.com", RoleOf("Admin"));
+        invitation.Cancel();
+
+        var revoked = Active().Revoke(actorRole, invitation, RolesWith(actorRole));
+
+        revoked.Value.ShouldBe(StateChange.Unchanged);
+    }
+
+    [Fact]
+    public void RevokeInvitation_AnAcceptedInvitationOfAStrongerRole_IsNotPending()
+    {
+        var actorRole = Custom("Recruiter", InvitationsDelete, MembersRead, ProfileRead);
+        var invitation = PendingTo("ada@example.com", RoleOf("Admin"));
+        invitation.Accept(Verified("ada@example.com"), Guid.NewGuid(), Now);
+
+        var revoked = Active().Revoke(actorRole, invitation, RolesWith(actorRole));
+
+        revoked.Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationNotPending);
+    }
+
     [Fact]
     public void RevokeInvitation_AnInvitationOfARoleWithAPermissionTheActorDoesNotHold_IsAnEscalationAndStaysPending()
     {

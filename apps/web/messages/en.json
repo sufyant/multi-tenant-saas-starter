@@ -203,6 +203,7 @@
     "inviteEmailPlaceholder": "name@company.com",
     "inviteRoleHintOwner": "Owners can also give the Owner role.",
     "inviteRoleHintAdmin": "Only an Owner can invite an Owner.",
+    "revokeOwnerHint": "Only an Owner can revoke an Owner's invitation.",
     "inviteLanguage": "Email language",
     "inviteLanguageHint": "The invitation email and their first screens use this language. They can change it later.",
     "languageSearch": "Search languages",

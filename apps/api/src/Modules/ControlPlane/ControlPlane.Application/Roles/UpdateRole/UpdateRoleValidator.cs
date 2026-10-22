@@ -15,5 +15,6 @@ public sealed class UpdateRoleValidator : AbstractValidator<UpdateRoleCommand>
             .NotNull().WithErrorCode(nameof(FieldErrorCode.Required))
             .MaximumTrimmedLength(Role.NameMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
         RuleFor(command => command.Permissions).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
+        RuleForEach(command => command.Permissions).NotNull().WithErrorCode(nameof(FieldErrorCode.Required));
     }
 }

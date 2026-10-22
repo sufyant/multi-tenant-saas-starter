@@ -360,7 +360,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// A member of the actor's role revokes the invitation, so its link stops working at once (K2): none, or another tenant's, is not
-    /// found; the actor's role holds every permission of the role the invitation gives (<see cref="Role.CheckEscalation"/>); and the
+    /// found; the actor's role holds every permission of the role a pending invitation gives (<see cref="Role.CheckEscalation"/>); and the
     /// invitation's own rule decides the rest (<see cref="Invitation.Revoke"/>). The caller holds the tenant's lock, then the
     /// invitation's (K6e).
     /// </summary>
@@ -371,8 +371,10 @@ internal sealed class Tenant
             return Invitation.NotFound;
         }
 
-        // A finished invitation whose role was deleted gives no role, so nobody acts on a role through it.
-        var escalation = invitation.RoleId is { } roleId ? Role.CheckEscalation(actor, roles.Of(roleId).Permissions) : Result.Success();
+        // Only a pending invitation still gives its role; a cancelled or an accepted one keeps its own answer (I1).
+        var escalation = invitation.Status == InvitationStatus.Pending && invitation.RoleId is { } roleId
+            ? Role.CheckEscalation(actor, roles.Of(roleId).Permissions)
+            : Result.Success();
         return escalation.IsSuccess ? invitation.Revoke() : escalation.Error;
     }
 

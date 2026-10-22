@@ -97,7 +97,7 @@
       "escalation": "Your role does not hold every permission of this role.",
       "in_use": "A member or a pending invitation has this role. Give them another role first.",
       "limit_reached": "This organisation has as many custom roles as it may have. Delete a role first.",
-      "name_invalid": "Enter a role name of 1 to 100 characters.",
+      "name_invalid": "Enter a role name.",
       "name_taken": "This organisation already has a role with this name. Choose another name.",
       "not_found": "This role is no longer in the organisation.",
       "not_permitted": "Your role cannot change roles this way.",
