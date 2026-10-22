@@ -90,7 +90,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - The Owner count includes every Owner membership. A system admin's deletion of a user removes the user's memberships first, and refuses the last Owner of an active, suspended or closed tenant, also when the user becomes it while the deletion runs (A8). So no deleted user is an Owner.
 - Setting the role a member already has answers 200 and publishes nothing, so it writes no audit entry (I1).
 - A removed member loses access at once: the tenant door reads the membership on every request (T7). No cache is added.
-- These rules live in Domain, on the tenant (`Tenant.ChangeMemberRole`, `Tenant.CheckRemoval`), because "at least one Owner" is the tenant's rule (M1). A permission says who passes the door; a Domain rule says what can happen to an Owner.
+- These rules live in Domain, on the tenant (`Tenant.ChangeRole`, `Tenant.Remove`), because "at least one Owner" is the tenant's rule (M1). A permission says who passes the door; a Domain rule says what can happen to an Owner.
 - Every command that changes the tenant, a membership or an invitation locks the tenant row first (K6).
 
 ### K2. Invitations

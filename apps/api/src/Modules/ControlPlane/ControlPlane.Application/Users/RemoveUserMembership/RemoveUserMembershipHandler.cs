@@ -1,14 +1,14 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.Roles;
-using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
 namespace ControlPlane.Application.Users.RemoveUserMembership;
 
 // K6l: a membership belongs to the tenant aggregate, so the tenant row is locked first; under the lock the Owners are counted again, as
-// every change to a membership counts them (K1). A user who became the tenant's last Owner since the check stays, and the deletion
-// stops before it erases anything (A8). A user who is no longer a member changes nothing. Rejections come first (W7).
+// every change to a membership counts them (K1). The rule is the tenant's (M1, Tenant.RemoveForUserDeletion): a user who became the
+// tenant's last Owner since the check stays, and the deletion stops before it erases anything (A8). A user who is no longer a member
+// changes nothing. Rejections come first (W7).
 public static class RemoveUserMembershipHandler
 {
     public static async Task<(Result, UserMembershipRemovedEvent?)> HandleAsync(
@@ -19,15 +19,15 @@ public static class RemoveUserMembershipHandler
     {
         var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("A user leaves a tenant they are a member of.");
-        if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } membership)
+        var removed = tenant.RemoveForUserDeletion(await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
+        if (!removed.IsSuccess)
         {
-            return (Result.Success(), null);
+            return (removed.Error, null);
         }
 
-        var allowed = Tenant.CheckUserDeletion(membership, await tenants.CountOwnersAsync(cancellationToken));
-        if (!allowed.IsSuccess)
+        if (removed.Value is not { } membership)
         {
-            return (allowed.Error with { TenantIds = [tenant.Id] }, null);
+            return (Result.Success(), null);
         }
 
         await tenants.RemoveMembershipAsync(tenant, membership, cancellationToken);

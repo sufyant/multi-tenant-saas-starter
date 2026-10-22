@@ -42,9 +42,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     Task<Membership?> ITenantRepository.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
         Memberships.SingleOrDefaultAsync(membership => membership.UserId == userId, cancellationToken);
 
-    // Row level security keeps the count to the active tenant. It joins no user, so a deleted user's Owner membership counts too.
-    Task<int> ITenantRepository.CountOwnersAsync(CancellationToken cancellationToken) =>
-        Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
+    async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
+        new(await ((ITenantRepository)this).FindMembershipAsync(userId, cancellationToken), await CountOwnersAsync(cancellationToken));
 
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
@@ -54,7 +53,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     // Row level security adds the tenant to every query.
     async Task<InvitationFacts> ITenantRepository.FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken)
     {
-        var owners = await ((ITenantRepository)this).CountOwnersAsync(cancellationToken);
+        var owners = await CountOwnersAsync(cancellationToken);
         return new InvitationFacts(
             owners,
             await IsMemberEmailAsync(email, cancellationToken),
@@ -131,6 +130,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
+
+    // Row level security keeps the count to the active tenant. It joins no user, so a deleted user's Owner membership counts too.
+    private Task<int> CountOwnersAsync(CancellationToken cancellationToken) =>
+        Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
 
     // The count is changed in the database after the save, so a user the transaction adds has its row. The database adds the change to
     // the stored count, so the statement reads and writes the row under its own lock: two transactions of two tenants that count for one

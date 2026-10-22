@@ -90,53 +90,12 @@ internal sealed class Tenant
     };
 
     /// <summary>
-    /// Gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the Owner
-    /// role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's lock
-    /// and counts the Owners under it (K6j). Returns whether the role changed: the role the member already has changes nothing (I1).
-    /// Every rejection comes before the change.
+    /// Whether a system admin's deletion of the user may take the target's membership away (K1): a tenant always has at least one Owner,
+    /// so the tenant's last Owner stays. A user who is not a member may go. It changes nothing, so the check before the deletion asks it
+    /// without a lock, and <see cref="RemoveForUserDeletion"/> asks it again under the lock.
     /// </summary>
-    public static Result<StateChange> ChangeMemberRole(Membership actor, Membership target, Role role, int owners)
-    {
-        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
-        if (givesOrTakesOwner && !IsOwner(actor))
-        {
-            return OwnerRequiresOwner;
-        }
-
-        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && owners <= 1)
-        {
-            return LastOwner;
-        }
-
-        return target.Assign(role);
-    }
-
-    /// <summary>
-    /// Whether the actor may remove the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner,
-    /// and the last Owner stays. The caller holds the tenant's lock and counts the Owners under it (K6j). It changes nothing, so the
-    /// caller removes the membership after it.
-    /// </summary>
-    public static Result CheckRemoval(Membership actor, Membership target, int owners)
-    {
-        if (actor.UserId == target.UserId)
-        {
-            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
-        }
-
-        if (IsOwner(target) && !IsOwner(actor))
-        {
-            return OwnerRequiresOwner;
-        }
-
-        return IsOwner(target) && owners <= 1 ? LastOwner : Result.Success();
-    }
-
-    /// <summary>
-    /// Whether a system admin's deletion of the user may take this membership away (K1): a tenant always has at least one Owner, so the
-    /// tenant's last Owner stays. It changes nothing, so a caller checks it before any change.
-    /// </summary>
-    public static Result CheckUserDeletion(Membership target, int owners) =>
-        IsOwner(target) && owners <= 1
+    public static Result CheckUserDeletion(MemberFacts facts) =>
+        facts.Target is { } target && IsOwner(target) && facts.Owners <= 1
             ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
             : Result.Success();
 
@@ -265,6 +224,75 @@ internal sealed class Tenant
         return StateChange.Changed;
     }
 
+    /// <summary>
+    /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's: only an Owner gives or takes the
+    /// Owner role, and the last Owner keeps it. A member may change their own role under the same rules. The caller holds the tenant's
+    /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). Every rejection comes before the
+    /// change.
+    /// </summary>
+    public Result<RoleChange> ChangeRole(Membership actor, Role role, MemberFacts facts)
+    {
+        if (MemberOf(facts) is not { } target)
+        {
+            return Membership.NotFound;
+        }
+
+        var givesOrTakesOwner = role.BuiltIn == BuiltInRole.Owner || IsOwner(target);
+        if (givesOrTakesOwner && !IsOwner(actor))
+        {
+            return OwnerRequiresOwner;
+        }
+
+        if (IsOwner(target) && role.BuiltIn != BuiltInRole.Owner && facts.Owners <= 1)
+        {
+            return LastOwner;
+        }
+
+        var oldRole = BuiltInRoles.All.Single(builtIn => builtIn.Id == target.RoleId);
+        return new RoleChange(target, oldRole, target.Assign(role));
+    }
+
+    /// <summary>
+    /// The actor removes the target member, under the rules of K1: nobody removes themselves, only an Owner removes an Owner, and the last
+    /// Owner stays. The caller holds the tenant's lock and read the facts under it (K6j). Returns the membership to remove; the caller
+    /// removes it, with what follows from it (R13).
+    /// </summary>
+    public Result<Membership> Remove(Membership actor, MemberFacts facts)
+    {
+        if (MemberOf(facts) is not { } target)
+        {
+            return Membership.NotFound;
+        }
+
+        if (actor.UserId == target.UserId)
+        {
+            return Error.Forbidden(ControlPlaneErrorCodes.MemberCannotRemoveSelf, "A member cannot remove themselves; another Owner or Admin removes them.");
+        }
+
+        if (IsOwner(target) && !IsOwner(actor))
+        {
+            return OwnerRequiresOwner;
+        }
+
+        return IsOwner(target) && facts.Owners <= 1 ? LastOwner : target;
+    }
+
+    /// <summary>
+    /// A system admin's deletion of the user takes the target's membership away (section 6, "User deletion"), under the rule of
+    /// <see cref="CheckUserDeletion"/>, asked again under the tenant's lock (K6l). A user who became the tenant's last Owner since the check
+    /// stays, and the error names this tenant. Returns the membership to remove, or none when the user is no longer a member.
+    /// </summary>
+    public Result<Membership?> RemoveForUserDeletion(MemberFacts facts)
+    {
+        var allowed = CheckUserDeletion(facts);
+        if (!allowed.IsSuccess)
+        {
+            return allowed.Error with { TenantIds = [Id] };
+        }
+
+        return facts.Target;
+    }
+
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
 
@@ -336,6 +364,10 @@ internal sealed class Tenant
         && slug[0] != '-'
         && slug[^1] != '-'
         && !slug.Contains("--", StringComparison.Ordinal);
+
+    // The target is a member of this tenant only. Row level security hides another tenant's memberships, so this guards the code, not a
+    // request.
+    private Membership? MemberOf(MemberFacts facts) => facts.Target?.TenantId == Id ? facts.Target : null;
 
     // A tenant has no Owner only while its first Owner has not accepted, because the last Owner always stays (K1).
     private Result CheckOwnerInvitation(int owners)

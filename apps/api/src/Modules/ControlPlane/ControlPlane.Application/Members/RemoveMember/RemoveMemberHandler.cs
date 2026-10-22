@@ -2,15 +2,13 @@ using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain.Roles;
-using ControlPlane.Domain.Tenants;
 using SharedKernel;
 
 namespace ControlPlane.Application.Members.RemoveMember;
 
-// K6: the tenant row is locked first; then the actor's and the target's memberships are read and the Owners counted under the lock, so
-// two removals at once run one after the other and never leave the tenant without an Owner. The rules are the tenant's (M1,
-// Tenant.CheckRemoval). Rejections come first (W7). The tenant door reads the membership on every request (T7), so the removed member's
-// next request is not let in.
+// K6: the tenant row is locked first; then the target's membership is read and the Owners counted under the lock, so two removals at
+// once run one after the other and never leave the tenant without an Owner. The rules are the tenant's (M1, Tenant.Remove). Rejections
+// come first (W7). The tenant door reads the membership on every request (T7), so the removed member's next request is not let in.
 public static class RemoveMemberHandler
 {
     public static async Task<(Result, MemberRemovedEvent?)> HandleAsync(
@@ -28,17 +26,13 @@ public static class RemoveMemberHandler
 
         var (tenant, actor, actorMembership) = start.Value;
 
-        if (await tenants.FindMembershipAsync(command.UserId, cancellationToken) is not { } target)
+        var removed = tenant.Remove(actorMembership, await tenants.FindMemberFactsAsync(command.UserId, cancellationToken));
+        if (!removed.IsSuccess)
         {
-            return (Errors.MemberNotFound, null);
+            return (removed, null);
         }
 
-        var allowed = Tenant.CheckRemoval(actorMembership, target, await tenants.CountOwnersAsync(cancellationToken));
-        if (!allowed.IsSuccess)
-        {
-            return (allowed, null);
-        }
-
+        var target = removed.Value;
         await tenants.RemoveMembershipAsync(tenant, target, cancellationToken);
 
         var now = time.GetUtcNow();
