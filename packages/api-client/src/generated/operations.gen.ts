@@ -144,8 +144,11 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/system-admin",
     "tag": "Platform/Users",
-    "requestHeaders": [],
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
     "responseHeaders": [
+      "Idempotent-Replayed",
       "Retry-After"
     ]
   },

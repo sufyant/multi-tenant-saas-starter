@@ -172,8 +172,21 @@ export const ReactivateUserResponse = zod.object({
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user.')
 
+/**
+ * Answers 201 with the user and without Location: the API has no GET for one grant, so the request's target URI identifies it (RFC 9110, section 15.3.2).
+ */
 export const GrantSystemAdminParams = zod.object({
   "userId": zod.uuid()
+})
+
+export const grantSystemAdminHeaderIdempotencyKeyMax = 255;
+
+
+export const grantSystemAdminHeaderIdempotencyKeyRegExp = new RegExp('^[!-~]+$');
+
+
+export const GrantSystemAdminHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(grantSystemAdminHeaderIdempotencyKeyMax).regex(grantSystemAdminHeaderIdempotencyKeyRegExp)
 })
 
 export const GrantSystemAdminResponse = zod.object({

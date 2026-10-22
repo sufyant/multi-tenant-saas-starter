@@ -1042,6 +1042,15 @@ export const ListUsersSort = {
   LastNameDescending: '-lastName',
 } as const;
 
+export type GrantSystemAdminHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
+
 export type ListPlatformAuditEntriesParams = {
 cursor?: string;
 /**

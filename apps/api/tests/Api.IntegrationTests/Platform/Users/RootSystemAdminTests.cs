@@ -100,6 +100,23 @@ public sealed class RootSystemAdminTests(Database database)
         (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(root.ToLowerInvariant(), "Ada", "Lovelace", Deleted: false, "en", null));
     }
 
+    // Root is read from the stored address (SystemDoor.IsRoot). A known user whose stored address is another one is no root, even with a
+    // listed address verified, so the door grants them nothing: a revocation could not keep out a system admin the door grants again.
+    [Fact]
+    public async Task VisitTheSystemDoor_AKnownUserWhoseStoredAddressIsNotListed_DoesNotBecomeASystemAdmin()
+    {
+        var root = RootEmail();
+        var stored = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: stored);
+        await using var api = WithRoots(root);
+        api.Identity.AddAccount(user, stored, root);
+
+        var response = await api.WaitingForMessagesAsync(() => api.CreateClient(user, secondFactor: true).GetAsync("/v1/platform/users", Cancellation));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await IsSystemAdminAsync(user)).ShouldBeFalse();
+    }
+
     // A suspended user is not let in through the list: a system admin reactivates them first, as a grant by a system admin requires.
     [Fact]
     public async Task VisitTheSystemDoor_ASuspendedListedUser_DoesNotBecomeASystemAdmin()

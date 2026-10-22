@@ -120,7 +120,7 @@ export const getGrantSystemAdminMockHandler = (overrideResponse?: UserResponse |
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getGrantSystemAdminResponseMock(),
-      { status: 200
+      { status: 201
       })
   }, options)
 }
