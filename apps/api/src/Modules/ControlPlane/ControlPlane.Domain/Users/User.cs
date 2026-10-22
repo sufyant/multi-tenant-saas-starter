@@ -41,7 +41,10 @@ internal sealed class User(Guid id, string externalId)
 
     public string? LastName { get; private set; }
 
-    /// <summary>The language the web speaks to the user. A new user starts with their invitation's; the first system admin with English.</summary>
+    /// <summary>
+    /// The language the web speaks to the user. A new user starts with their invitation's; a root system admin whom the system door lets in
+    /// first starts with English.
+    /// </summary>
     public Language Language { get; private set; }
 
     /// <summary>The IANA name of the user's time zone, such as <c>Europe/Dublin</c>; null when it is not set.</summary>
@@ -57,7 +60,7 @@ internal sealed class User(Guid id, string externalId)
     public Guid? SuspendedBy { get; private set; }
 
     /// <summary>
-    /// When the person became a user: when they accepted their first invitation, or when the first system admin was written.
+    /// When the person became a user: when they accepted their first invitation, or when the system door let them in as a root system admin.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
@@ -86,6 +89,19 @@ internal sealed class User(Guid id, string externalId)
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Language = language,
+            CreatedAt = now,
+        };
+
+    /// <summary>
+    /// A root system admin who is not a user yet enters through the system door, at this moment: the listed address, which the identity
+    /// provider verified, no names, as the identity provider keeps none, and English, as no invitation chose a language. A system admin
+    /// gives them their names (A7).
+    /// </summary>
+    public static User EnterAsRootSystemAdmin(Guid id, string externalId, EmailAddress email, DateTimeOffset now) =>
+        new(id, externalId)
+        {
+            Email = email.Value,
+            Language = Language.En,
             CreatedAt = now,
         };
 

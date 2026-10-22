@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations.GetInvitationPreview;
 using ControlPlane.Application.Members;
+using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.GetMe;
 using ControlPlane.Application.Users.GetUser;
@@ -19,7 +20,7 @@ namespace ControlPlane.Infrastructure.Persistence.Users;
 /// tenant, so the transaction declares none; it declares the user only to read the user's own memberships (R11).
 /// </summary>
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
-public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueries
+public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminOptions systemAdmins) : IUserQueries
 {
     async Task<MeView?> IUserQueries.FindMeAsync(string externalUserId, CancellationToken cancellationToken)
     {
@@ -43,7 +44,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
         var suspendedBy = user.SuspendedBy is { } suspenderId ? await FindAsync(suspenderId, cancellationToken) : null;
         var isSystemAdmin = await IsSystemAdminAsync(user.Id, cancellationToken);
         return new UserDetailView(
-            UserView.Of(user, isSystemAdmin),
+            UserView.Of(user, isSystemAdmin, systemAdmins),
             user.SuspendedAt,
             suspendedBy is null ? null : UserNameView.Of(suspendedBy),
             await ListMembershipsAsync(user.Id, cancellationToken));
@@ -92,7 +93,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.IsSystemAdmin))], list.Paging, total);
+        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.IsSystemAdmin, systemAdmins))], list.Paging, total);
     }
 
     private Task<User?> FindAsync(Guid userId, CancellationToken cancellationToken) =>

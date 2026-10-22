@@ -88,7 +88,7 @@ docker run --rm --network api-image \
   echo "ConnectionStrings__Database=Host=api-db;Port=5432;Database=app;Username=api_application;Password=$application_password"
   echo "Authentication__Clerk__Issuer=https://clerk.example.invalid"
   echo "Authentication__Clerk__AuthorizedParties__0=https://app.example.invalid"
-  echo "ControlPlane__FirstSystemAdminEmail=admin@example.invalid"
+  echo "ControlPlane__SystemAdmins__RootEmails__0=admin@example.invalid"
   echo "ControlPlane__Clerk__SecretKey=sk_test_fake_not_a_secret"
   echo "ControlPlane__Clerk__BackendApiUrl=https://clerk.example.invalid/v1/"
   echo "ControlPlane__Invitations__AcceptUrl=https://app.example.invalid/invitations/accept"

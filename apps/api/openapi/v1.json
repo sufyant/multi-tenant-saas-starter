@@ -4902,6 +4902,7 @@
           "role.created",
           "role.deleted",
           "role.updated",
+          "system_admin.granted",
           "tenant.closed",
           "tenant.created",
           "tenant.owner_invited",
@@ -4926,6 +4927,7 @@
           "RoleCreated",
           "RoleDeleted",
           "RoleUpdated",
+          "SystemAdminGranted",
           "TenantClosed",
           "TenantCreated",
           "TenantOwnerInvited",
@@ -5170,6 +5172,7 @@
           "route.method_not_allowed",
           "route.not_found",
           "server.error",
+          "system_admin.exists",
           "tenant.closed",
           "tenant.has_owner",
           "tenant.name_invalid",
@@ -5237,6 +5240,7 @@
           "RouteMethodNotAllowed",
           "RouteNotFound",
           "ServerError",
+          "SystemAdminExists",
           "TenantClosed",
           "TenantHasOwner",
           "TenantNameInvalid",
@@ -6604,6 +6608,7 @@
           "lastName",
           "status",
           "isSystemAdmin",
+          "isRootSystemAdmin",
           "membershipCount",
           "createdAt",
           "suspendedAt",
@@ -6638,6 +6643,9 @@
             "$ref": "#/components/schemas/UserResponseStatus"
           },
           "isSystemAdmin": {
+            "type": "boolean"
+          },
+          "isRootSystemAdmin": {
             "type": "boolean"
           },
           "membershipCount": {
@@ -6760,6 +6768,7 @@
           "lastName",
           "status",
           "isSystemAdmin",
+          "isRootSystemAdmin",
           "membershipCount",
           "createdAt"
         ],
@@ -6793,6 +6802,9 @@
           "isSystemAdmin": {
             "type": "boolean"
           },
+          "isRootSystemAdmin": {
+            "type": "boolean"
+          },
           "membershipCount": {
             "type": "integer",
             "format": "int32"
@@ -6802,7 +6814,7 @@
             "format": "date-time"
           }
         },
-        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many tenants they are a member of, and when they became a user."
+        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user."
       },
       "UserResponseStatus": {
         "enum": [

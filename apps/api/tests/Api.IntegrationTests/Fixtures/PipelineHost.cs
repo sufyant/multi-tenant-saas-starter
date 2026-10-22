@@ -32,7 +32,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         ["Host:Role"] = "all",
         ["ControlPlane:Invitations:AcceptUrl"] = ApiFactory.AcceptUrl,
         ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
-        ["ControlPlane:FirstSystemAdminEmail"] = ApiFactory.FirstSystemAdminEmail,
+        ["ControlPlane:SystemAdmins:RootEmails:0"] = ApiFactory.RootEmail,
     };
 
     private readonly WebApplication _app;

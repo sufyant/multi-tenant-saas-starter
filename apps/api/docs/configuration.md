@@ -28,7 +28,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Authentication:Clerk:AuthorizedParties` | Required outside Development. **Development:** may be empty | none | The origins of the clients allowed to use the API (the tokens' `azp`): item 0 is the web app's origin, item 1 the platform app's, which runs on an origin of its own. With none, a token issued to any origin is accepted |
 | `ForwardedHeaders:KnownProxies` | Optional | none | IP addresses of trusted reverse proxies. With no proxy and no network, forwarded headers are not read |
 | `ForwardedHeaders:KnownNetworks` | Optional | none | Trusted proxy networks in CIDR notation |
-| `ControlPlane:FirstSystemAdminEmail` | Required while the system admin list is empty | none | The verified email address of the first system admin, who is granted on their first request to `/v1/platform/...` |
+| `ControlPlane:SystemAdmins:RootEmails` | Required: at least one item | none | The email addresses of the root system admins (`ARCHITECTURE.md`, section 6, "Root system admins"). Each item is an email address. A person whose verified address is in the list becomes a system admin at their first request to `/v1/platform/...` with a second factor. No system admin can revoke a root system admin. An address taken out of the list lifts that protection at the next start; the person stays a system admin until another system admin revokes them |
 | `ControlPlane:Clerk:SecretKey` | Required | none | The identity provider's Backend API secret key |
 | `ControlPlane:Clerk:BackendApiUrl` | Optional | `https://api.clerk.com/v1/` | The identity provider's Backend API URL, ending in `/` |
 | `ControlPlane:Clerk:Timeout` | Optional | `00:00:10` | How long a Backend API call may take |

@@ -56,7 +56,7 @@ const sharedVariables = [
   "Authentication__Clerk__Issuer",
   "Authentication__Clerk__AuthorizedParties__0",
   "Authentication__Clerk__AuthorizedParties__1",
-  "ControlPlane__FirstSystemAdminEmail",
+  "ControlPlane__SystemAdmins__RootEmails__0",
   "ControlPlane__Clerk__SecretKey",
   "ControlPlane__Invitations__AcceptUrl",
   "Notifications__Resend__ApiKey",

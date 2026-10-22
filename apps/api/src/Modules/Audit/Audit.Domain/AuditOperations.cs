@@ -22,6 +22,8 @@ public static class AuditOperations
 
     public const string RoleUpdated = "role.updated";
 
+    public const string SystemAdminGranted = "system_admin.granted";
+
     public const string TenantClosed = "tenant.closed";
 
     public const string TenantCreated = "tenant.created";

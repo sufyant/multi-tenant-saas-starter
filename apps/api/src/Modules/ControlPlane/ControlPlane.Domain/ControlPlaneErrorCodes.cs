@@ -59,6 +59,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode RoleRolesReadRequired = ErrorCode.Declare("role.roles_read_required");
 
+    public static readonly ErrorCode SystemAdminExists = ErrorCode.Declare("system_admin.exists");
+
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
 
     public static readonly ErrorCode TenantHasOwner = ErrorCode.Declare("tenant.has_owner");

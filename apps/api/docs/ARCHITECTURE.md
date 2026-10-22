@@ -685,6 +685,7 @@ K3 keeps the id it has in api-catalog. Its Audit column, the operation list, is 
 | `SuspendUser` | `UserSuspendedEvent` | `RecordUserSuspendedHandler` | platform | `user.suspended` | the system admin |
 | `ReactivateUser` | `UserReactivatedEvent` | `RecordUserReactivatedHandler` | platform | `user.reactivated` | the system admin |
 | `RenameUser` | `UserRenamedEvent`, only when a name changed | `RecordUserRenamedHandler` | platform | `user.renamed` | the system admin |
+| `GrantRootSystemAdminCommand`, from the system door | `SystemAdminGrantedEvent`, only for a new grant | `RecordSystemAdminGrantedHandler` | platform | `system_admin.granted`; the target is the user, by id | `Platform` |
 | `InviteOwner` | `OwnerInvitedEvent` | `RecordOwnerInvitedHandler` | platform and tenant | `tenant.owner_invited`; the target is the tenant, with its name; details `TenantOwnerInvitedDetails` | as `CreateTenant` |
 | `RemoveUserMembershipCommand` | `UserMembershipRemovedEvent` | `RecordUserMembershipRemovedHandler` | tenant | `member.removed`; the target is the user, by id; details `MemberRemovedDetails` | `Platform` |
 | `DeleteUser` | `UserDeletedEvent`, only for the first deletion | `RecordUserDeletedHandler` | platform | `user.deleted` | the system admin |

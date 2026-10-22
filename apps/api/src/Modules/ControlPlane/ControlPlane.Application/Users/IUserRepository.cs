@@ -1,3 +1,4 @@
+using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Users;
 
 namespace ControlPlane.Application.Users;
@@ -38,6 +39,16 @@ public interface IUserRepository
 
     /// <summary>Whether the user is on the system admin list. The system admin list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The user's grant on the system admin list, locked for the rest of the transaction, to revoke it; none when the user is no system
+    /// admin.
+    /// </summary>
+    internal Task<SystemAdmin?> FindSystemAdminForUpdateAsync(Guid userId, CancellationToken cancellationToken);
+
+    internal void AddSystemAdmin(SystemAdmin systemAdmin);
+
+    internal void RemoveSystemAdmin(SystemAdmin systemAdmin);
 
     /// <summary>
     /// The user's memberships in every tenant, by tenant id. It declares the user in the transaction (R11), so the own_memberships policy

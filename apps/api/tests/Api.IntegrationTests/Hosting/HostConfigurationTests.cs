@@ -1,4 +1,3 @@
-using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -8,8 +7,8 @@ namespace Api.IntegrationTests.Hosting;
 
 // Section 7, configuration rule 2: every setting is checked while the application starts. A required setting that is missing, or
 // a value that is wrong, stops the start, and the error names the setting's full key. Each case without a required setting runs on a
-// database of its own whose system admin list is empty, so the first system admin's setting is required there too. A case on the shared
-// database gives the first system admin's setting, so the check reads no system admin list there.
+// database of its own. The check of the root system admins reads no database: the list is required in every environment, whatever
+// the system admin list holds (section 6, "Root system admins").
 public sealed class HostConfigurationTests(Database database)
 {
     // The factory's short retries left out, so each module's default retries apply.
@@ -27,18 +26,16 @@ public sealed class HostConfigurationTests(Database database)
         { Environments.Development, ["Authentication:Clerk:Issuer"] },
         { Environments.Development, ["ControlPlane:Clerk:SecretKey"] },
         { Environments.Development, ["ControlPlane:Invitations:AcceptUrl"] },
-        { Environments.Development, ["ControlPlane:FirstSystemAdminEmail"] },
+        { Environments.Development, ["ControlPlane:SystemAdmins:RootEmails:0"] },
         { Environments.Production, ["Authentication:Clerk:AuthorizedParties:0"] },
         { Environments.Production, ["Notifications:Resend:ApiKey"] },
         { Environments.Production, ["Notifications:Resend:From"] },
-
-        // S1: without a connection, the first system admin's check cannot read the system admin list; the start names the connection.
-        { Environments.Development, ["ConnectionStrings:Database", "ControlPlane:FirstSystemAdminEmail"] },
     };
 
     public static TheoryData<string, string> WrongSettings => new()
     {
-        { "ControlPlane:FirstSystemAdminEmail", "not an email" },
+        { "ControlPlane:SystemAdmins:RootEmails:0", "not an email" },
+        { "ControlPlane:SystemAdmins:RootEmails:0", "" },
         { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
         { "ControlPlane:Invitations:Lifetime", "23:59:59" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
@@ -100,13 +97,13 @@ public sealed class HostConfigurationTests(Database database)
         var disposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await using var api = new ApiFactory(
             database.ApplicationConnectionString,
-            settings: new Dictionary<string, string?> { ["ControlPlane:FirstSystemAdminEmail"] = "not an email" },
+            settings: new Dictionary<string, string?> { ["ControlPlane:SystemAdmins:RootEmails:0"] = "not an email" },
             configureServices: services => services.AddHostedService(_ => new SignalWhenDisposed(disposed)),
             beforeStart: () => Task.WhenAny(disposed.Task, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)));
 
         var start = () => api.CreateClient();
 
-        start.ShouldThrow<Exception>().Message.ShouldContain("ControlPlane:FirstSystemAdminEmail");
+        start.ShouldThrow<Exception>().Message.ShouldContain("ControlPlane:SystemAdmins:RootEmails");
     }
 
     // Section 8: the health endpoints have a port of their own, apart from the API's.
@@ -122,25 +119,19 @@ public sealed class HostConfigurationTests(Database database)
         start.ShouldThrow<Exception>().Message.ShouldContain("Host:ManagementPort");
     }
 
-    // Section 6: once the system admin list has a system admin, the first system admin's setting has no effect.
-    [Fact]
-    public async Task StartApplication_WithoutTheFirstSystemAdminEmailOnceTheSystemAdminListHasAnAdmin_Starts()
+    // A renamed key is read only by its new name (docs/deployment.md, section 7, "Rename a configuration key"). Section 7 has no rule for
+    // an unknown key, so the old name alone is no error of its own: the new key is missing, and the start names it.
+    [Theory]
+    [InlineData("ControlPlane:FirstSystemAdminEmail", "ControlPlane:SystemAdmins:RootEmails:0", "root@app.test")]
+    public async Task StartApplication_WithAnOldKeyInPlaceOfItsNewKey_FailsNamingTheNewKey(string oldKey, string newKey, string value)
     {
-        var name = await database.CreateMigratedDatabaseAsync();
-        await database.ScalarAsync<object>(
-            $"""
-            INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', 'user_system_admin', 'en');
-            INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = 'user_system_admin';
-            """,
-            database: name);
         await using var api = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application, name),
-            settings: new Dictionary<string, string?> { ["ControlPlane:FirstSystemAdminEmail"] = null },
-            ports: HostPorts.Free());
+            database.ApplicationConnectionString,
+            settings: new Dictionary<string, string?> { [oldKey] = value, [newKey] = null });
 
-        var ready = await api.ManagementClient().GetAsync("/health/ready", TestContext.Current.CancellationToken);
+        var start = () => api.CreateClient();
 
-        ready.StatusCode.ShouldBe(HttpStatusCode.OK);
+        start.ShouldThrow<Exception>().Message.ShouldContain(newKey.TrimEnd(':', '0'));
     }
 
     // Twelve-Factor IX: the host waits this long for its work to finish when it is asked to stop.

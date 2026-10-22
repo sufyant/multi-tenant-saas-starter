@@ -130,6 +130,7 @@ public static class UserEndpoints
         user.LastName,
         ResponseStatus.OfUser(user.Status),
         user.IsSystemAdmin,
+        user.IsRootSystemAdmin,
         user.MembershipCount,
         user.CreatedAt);
 
@@ -140,6 +141,7 @@ public static class UserEndpoints
         user.User.LastName,
         ResponseStatus.OfUser(user.User.Status),
         user.User.IsSystemAdmin,
+        user.User.IsRootSystemAdmin,
         user.User.MembershipCount,
         user.User.CreatedAt,
         user.SuspendedAt,
