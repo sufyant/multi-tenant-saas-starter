@@ -223,6 +223,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_invitations_email_trgm"), new[] { "gin_trgm_ops" });
 
+                    b.HasIndex(new[] { "TenantId", "Email" }, "ix_invitations_pending_email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_pending_email")
+                        .HasFilter("status = 'Pending'");
+
                     b.ToTable("invitations", "control_plane");
                 });
 
@@ -277,21 +282,65 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid?>("FirstOwnerId")
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("character varying(63)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("SuspensionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("suspension_reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tenants");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_tenants_name");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tenants_slug");
+
+                    b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
+                        .HasDatabaseName("ix_tenants_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm")
+                        .HasDatabaseName("ix_tenants_slug_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("tenants", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
+                {
+                    b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
-                        .HasColumnName("first_owner_id");
+                        .HasColumnName("tenant_id");
 
                     b.Property<int>("MemberCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("member_count");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
 
                     b.Property<int>("OwnerCount")
                         .ValueGeneratedOnAdd()
@@ -318,49 +367,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("owner_invitation_status");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(63)
-                        .HasColumnType("character varying(63)")
-                        .HasColumnName("slug");
+                    b.HasKey("TenantId")
+                        .HasName("pk_tenant_summaries");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("SuspensionReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("suspension_reason");
-
-                    b.HasKey("Id")
-                        .HasName("pk_tenants");
-
-                    b.HasIndex("FirstOwnerId")
-                        .HasDatabaseName("ix_tenants_first_owner_id");
-
-                    b.HasIndex("Name")
-                        .HasDatabaseName("ix_tenants_name");
-
-                    b.HasIndex("Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ix_tenants_slug");
-
-                    b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
-                        .HasDatabaseName("ix_tenants_name_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm")
-                        .HasDatabaseName("ix_tenants_slug_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.ToTable("tenants", "control_plane");
+                    b.ToTable("tenant_summaries", "control_plane");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -523,13 +533,14 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_memberships_users_user_id");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
                 {
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("FirstOwnerId")
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithOne()
+                        .HasForeignKey("ControlPlane.Domain.Tenants.TenantSummary", "TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_tenants_users_first_owner_id");
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_summaries_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>

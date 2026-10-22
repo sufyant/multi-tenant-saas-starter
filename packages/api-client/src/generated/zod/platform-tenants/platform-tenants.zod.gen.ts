@@ -97,12 +97,6 @@ export const ListTenantsResponse = zod.object({
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
   "memberCount": zod.int(),
   "ownerCount": zod.int(),
-  "firstOwner": zod.union([zod.null(),zod.object({
-  "userId": zod.uuid(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
-  "email": zod.string().nullable()
-}).describe('An Owner of a tenant: the user\'s id, names and address.')]),
   "ownerInvitation": zod.union([zod.null(),zod.object({
   "email": zod.string(),
   "expiresAt": zod.iso.datetime({"offset":true}),
@@ -118,7 +112,7 @@ export const ListTenantsResponse = zod.object({
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.')]).describe('A language the web speaks, by its BCP 47 language tag.')
 }).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier\ninvitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of\nARCHITECTURE.md).')])
-}).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.')),
+}).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()

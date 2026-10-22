@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using ControlPlane.Domain.EmailAddresses;
 using SharedKernel;
 
 namespace ControlPlane.Domain.Users;
@@ -33,6 +34,7 @@ internal sealed class User(Guid id, string externalId)
 
     public string ExternalId { get; private init; } = externalId;
 
+    /// <summary>The user's address, in its one form (<see cref="EmailAddress"/>); none once the user is deleted.</summary>
     public string? Email { get; private set; }
 
     public string? FirstName { get; private set; }
@@ -77,10 +79,10 @@ internal sealed class User(Guid id, string externalId)
     /// verified, and the names they typed, without the spaces around them. They have no membership yet: ControlPlane adds the membership of
     /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>
-    public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language, DateTimeOffset now) =>
+    public static User Join(Guid id, string externalId, EmailAddress email, string firstName, string lastName, Language language, DateTimeOffset now) =>
         new(id, externalId)
         {
-            Email = email,
+            Email = email.Value,
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Language = language,

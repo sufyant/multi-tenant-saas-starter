@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using System.Text.RegularExpressions;
 using ControlPlane.Application.Validation;
 using ControlPlane.Domain.Tenants;
@@ -25,7 +26,7 @@ public sealed partial class CreateTenantValidator : AbstractValidator<CreateTena
         RuleFor(command => command.OwnerEmail)
             .NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required))
             .EmailAddress().WithErrorCode(nameof(FieldErrorCode.EmailInvalid))
-            .MaximumLength(Invitation.EmailMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
+            .MaximumLength(EmailAddress.MaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 
     // Parts of lowercase ASCII letters and digits, joined by single hyphens. The OpenAPI document writes it as the slug's pattern, so

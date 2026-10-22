@@ -5,7 +5,7 @@ using SharedKernel;
 
 namespace ControlPlane.UnitTests.Tenants;
 
-// The rules of the Tenant aggregate (M1): its creation, status and name, its Owner invitation and summary, and the Owner rules of a
+// The rules of the Tenant aggregate (M1): its creation, status and name, its Owner invitation, and the Owner rules of a
 // role change and a removal (K1). Each check is pure up to the change, so a rejection changes nothing.
 public sealed class TenantTests
 {
@@ -497,59 +497,6 @@ public sealed class TenantTests
         allowed.Error.Code.ToString().ShouldBe(code);
     }
 
-    // R12: the summary says what the tenant's rows say. The latest Owner invitation stays only while the tenant has no Owner: its address
-    // is a person's (the maintainer's decision in step 20k).
-    [Fact]
-    public void SummarizeTenant_WithoutAnOwner_KeepsTheCountsAndTheLatestOwnerInvitation()
-    {
-        var tenant = Active();
-        var invitation = OwnerInvitation();
-
-        tenant.Summarize(new TenantSummary(0, 0, null, invitation));
-
-        (tenant.MemberCount, tenant.OwnerCount, tenant.FirstOwnerId).ShouldBe((0, 0, null));
-        (tenant.OwnerInvitationEmail, tenant.OwnerInvitationExpiresAt, tenant.OwnerInvitationStatus)
-            .ShouldBe(("ada@example.com", Now.AddDays(7), InvitationStatus.Pending));
-    }
-
-    [Fact]
-    public void SummarizeTenant_AnOwnerJoined_KeepsTheFirstOwnerAndClearsTheOwnerInvitation()
-    {
-        var tenant = Active();
-        tenant.Summarize(new TenantSummary(0, 0, null, OwnerInvitation()));
-        var owner = Guid.CreateVersion7();
-
-        tenant.Summarize(new TenantSummary(3, 2, owner, OwnerInvitation()));
-
-        (tenant.MemberCount, tenant.OwnerCount, tenant.FirstOwnerId).ShouldBe((3, 2, owner));
-        (tenant.OwnerInvitationEmail, tenant.OwnerInvitationExpiresAt, tenant.OwnerInvitationStatus).ShouldBe((null, null, null));
-        tenant.OwnerInvitationStateAt(Now).ShouldBeNull();
-    }
-
-    // "Expired" is read from the expiry at the moment it is asked, never stored.
-    [Theory]
-    [InlineData(0, "Pending")]
-    [InlineData(7, "Expired")]
-    [InlineData(8, "Expired")]
-    public void ReadOwnerInvitationState_APendingInvitation_IsExpiredFromItsExpiryOn(int days, string state)
-    {
-        var tenant = Active();
-        tenant.Summarize(new TenantSummary(0, 0, null, OwnerInvitation()));
-
-        tenant.OwnerInvitationStateAt(Now.AddDays(days)).ShouldBe(Enum.Parse<OwnerInvitationState>(state));
-    }
-
-    [Fact]
-    public void ReadOwnerInvitationState_ACancelledInvitation_IsCancelled()
-    {
-        var tenant = Active();
-        var invitation = OwnerInvitation();
-        invitation.Cancel();
-        tenant.Summarize(new TenantSummary(0, 0, null, invitation));
-
-        tenant.OwnerInvitationStateAt(Now).ShouldBe(OwnerInvitationState.Cancelled);
-    }
-
     [Fact]
     public void ReadReopenableUntil_AClosedTenant_IsItsClosurePlusThePeriod()
     {
@@ -766,9 +713,6 @@ public sealed class TenantTests
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberCannotRemoveSelf);
     }
-
-    private static Invitation OwnerInvitation() =>
-        Invitation.Create(Guid.CreateVersion7(), Id, "ada@example.com", BuiltInRoles.Owner, Guid.CreateVersion7(), Now, TimeSpan.FromDays(7), "secret", Language.En);
 
     private static Tenant Active()
     {

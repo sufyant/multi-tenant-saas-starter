@@ -557,19 +557,6 @@ export const TenantResponseStatus = {
 } as const;
 
 /**
- * An Owner of a tenant: the user's id, names and address.
- */
-export interface TenantOwnerResponse {
-  userId: string;
-  /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
-  /** @nullable */
-  email: string | null;
-}
-
-/**
  * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
  * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
  * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
@@ -587,7 +574,7 @@ export interface OwnerInvitationResponse {
 
 /**
  * A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners
- * counted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+ * counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
  */
 export interface TenantListItemResponse {
   id: string;
@@ -602,7 +589,6 @@ export interface TenantListItemResponse {
   reopenableUntil: string | null;
   memberCount: number;
   ownerCount: number;
-  firstOwner: null | TenantOwnerResponse;
   ownerInvitation: null | OwnerInvitationResponse;
 }
 
@@ -780,6 +766,19 @@ export interface RenameUserRequest {
 export interface SuspendTenantRequest {
   /** @maxLength 500 */
   reason: string;
+}
+
+/**
+ * An Owner of a tenant: the user's id, names and address.
+ */
+export interface TenantOwnerResponse {
+  userId: string;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  email: string | null;
 }
 
 /**

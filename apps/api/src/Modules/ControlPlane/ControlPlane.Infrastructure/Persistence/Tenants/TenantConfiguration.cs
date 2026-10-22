@@ -1,5 +1,4 @@
 using ControlPlane.Domain.Tenants;
-using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,15 +18,5 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         tenant.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
         tenant.Property(t => t.CancellationReason).HasMaxLength(Tenant.CancellationReasonMaxLength);
         tenant.Property(t => t.SuspensionReason).HasMaxLength(Tenant.SuspensionReasonMaxLength);
-
-        // R12: the summary the platform's tenant list reads across tenants, where row level security hides the memberships and the
-        // invitations. Tenant.Summarize writes it under the tenant's lock. TenantRepository inserts a new tenant with SQL, without the
-        // summary, which the defaults make empty.
-        tenant.Property(t => t.MemberCount).HasDefaultValue(0);
-        tenant.Property(t => t.OwnerCount).HasDefaultValue(0);
-        tenant.HasOne<User>().WithMany().HasForeignKey(t => t.FirstOwnerId).OnDelete(DeleteBehavior.Restrict);
-        tenant.Property(t => t.OwnerInvitationEmail).HasMaxLength(Invitation.EmailMaxLength);
-        tenant.Property(t => t.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
-        tenant.Property(t => t.OwnerInvitationLanguage).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
     }
 }

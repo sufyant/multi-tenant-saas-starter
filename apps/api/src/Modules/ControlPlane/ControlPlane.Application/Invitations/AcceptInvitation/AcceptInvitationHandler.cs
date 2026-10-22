@@ -1,6 +1,7 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -56,7 +57,9 @@ public static class AcceptInvitationHandler
             return (Error.Conflict(ControlPlaneErrorCodes.MemberExists, "You are already a member of this tenant."), null);
         }
 
-        var allowed = invitation.CheckAcceptance(command.VerifiedEmails, now);
+        // The identity provider's addresses enter here, in their one form (EmailAddress).
+        var verifiedEmails = EmailAddress.AllOf(command.VerifiedEmails);
+        var allowed = invitation.CheckAcceptance(verifiedEmails, now);
         if (!allowed.IsSuccess)
         {
             return (allowed.Error, null);
@@ -76,8 +79,8 @@ public static class AcceptInvitationHandler
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitation.Email, command.FirstName!, command.LastName!, invitation.Language, now);
-        var accepted = invitation.Accept(command.VerifiedEmails, user.Id, now);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, EmailAddress.Create(invitation.Email), command.FirstName!, command.LastName!, invitation.Language, now);
+        var accepted = invitation.Accept(verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {
             return (accepted.Error, null);

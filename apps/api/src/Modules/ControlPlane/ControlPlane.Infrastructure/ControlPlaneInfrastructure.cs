@@ -48,7 +48,7 @@ public static class ControlPlaneInfrastructure
     public static IServiceCollection AddControlPlaneInfrastructure(this IServiceCollection services)
     {
         services.AddDbContextWithWolverineIntegration<ControlPlaneDbContext>(
-            (provider, options) => options.UseModuleDatabase(provider, ControlPlaneDbContext.Schema),
+            (provider, options) => options.UseModuleDatabase(provider, ControlPlaneDbContext.Schema).AddInterceptors(TenantSummaryInterceptor.Instance),
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();

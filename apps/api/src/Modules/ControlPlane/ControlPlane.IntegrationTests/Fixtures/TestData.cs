@@ -1,3 +1,4 @@
+using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -28,7 +29,12 @@ internal static class TestData
             tenant.Close(DateTimeOffset.UtcNow);
         }
 
-        await SaveAsync(services, controlPlane => controlPlane.Tenants.Add(tenant));
+        // Every tenant has its summary from its creation on (R12).
+        await SaveAsync(services, controlPlane =>
+        {
+            controlPlane.Tenants.Add(tenant);
+            controlPlane.TenantSummaries.Add(new TenantSummary(tenant.Id));
+        });
         return tenant;
     }
 
@@ -39,12 +45,14 @@ internal static class TestData
         return user;
     }
 
-    // The user's membership count follows, as the commands keep it.
+    // The user's membership count and the tenant's summary follow, as the commands keep them: through the repository (K6k, R13).
     public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, Role? role = null) =>
-        SaveInTenantAsync(services, tenant.Id, controlPlane =>
+        InTenant.RunAsync(services, tenant.Id, async scope =>
         {
-            controlPlane.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow));
-            controlPlane.Database.ExecuteSql($"UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE id = {user.Id}");
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = await tenants.FindTenantForUpdateAsync(TestContext.Current.CancellationToken)
+                ?? throw new InvalidOperationException("A member joins a tenant that exists.");
+            await tenants.AddMembershipAsync(locked, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken);
         });
 
     public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, Role role)
@@ -62,11 +70,18 @@ internal static class TestData
             .Where(found => found.Id == user.Id).Select(found => found.MembershipCount).SingleAsync(TestContext.Current.CancellationToken);
     }
 
+    public static async Task<string?> OwnerInvitationEmailOfAsync(IServiceProvider services, Tenant tenant)
+    {
+        await using var scope = services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
+            .Where(found => found.TenantId == tenant.Id).Select(found => found.OwnerInvitationEmail).SingleAsync(TestContext.Current.CancellationToken);
+    }
+
     public static async Task<int> MemberCountOfAsync(IServiceProvider services, Tenant tenant)
     {
         await using var scope = services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().Tenants
-            .Where(found => found.Id == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
+            .Where(found => found.TenantId == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
     }
 
     private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)
@@ -77,16 +92,6 @@ internal static class TestData
         await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    // A membership belongs to a tenant, so it is written in a transaction that declares its tenant.
-    private static async Task SaveInTenantAsync(IServiceProvider services, Guid tenantId, Action<ControlPlaneDbContext> change)
-    {
-        await using var scope = services.CreateAsyncScope();
-        var controlPlane = InTenant.ControlPlane(scope, tenantId);
-        await using var transaction = await controlPlane.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
-        change(controlPlane);
-        await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
-        await transaction.CommitAsync(TestContext.Current.CancellationToken);
-    }
 }
 
 // The tests share one database, so each one works with tenants, users and email addresses of its own. The values never matter,

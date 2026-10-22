@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Users;
 using SharedKernel;
 
@@ -49,7 +50,7 @@ public sealed class UserTests
     [Fact]
     public void JoinUser_NewPerson_IsCreatedAtTheMomentWithNoMembershipYet()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
 
         (user.CreatedAt, user.MembershipCount).ShouldBe((Now, 0));
     }
@@ -114,7 +115,7 @@ public sealed class UserTests
     [Fact]
     public void JoinUser_NamesWithSpaces_KeepsThemTrimmed()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "  Ada ", " Lovelace  ", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "  Ada ", " Lovelace  ", Language.En, Now);
 
         (user.Email, user.FirstName, user.LastName).ShouldBe(("ada@example.com", "Ada", "Lovelace"));
     }
@@ -122,7 +123,7 @@ public sealed class UserTests
     [Fact]
     public void RenameUser_AnotherName_IsAChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
 
         var changed = user.Rename("Ada", "King");
 
@@ -134,7 +135,7 @@ public sealed class UserTests
     [Fact]
     public void RenameUser_SameNamesWithSpaces_IsNoChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
 
         var changed = user.Rename(" Ada ", "Lovelace ");
 
@@ -145,7 +146,7 @@ public sealed class UserTests
     [Fact]
     public void RenameUser_Deleted_IsRefusedAndStaysErased()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
         user.Delete(Now);
 
         var renamed = user.Rename("Ada", "King");
@@ -170,7 +171,7 @@ public sealed class UserTests
     [Fact]
     public void JoinUser_ThroughATurkishInvitation_SpeaksTurkishWithNoTimeZone()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.Tr, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.Tr, Now);
 
         (user.Language, user.TimeZone).ShouldBe((Language.Tr, null));
     }
@@ -178,7 +179,7 @@ public sealed class UserTests
     [Fact]
     public void ChangePreferences_NewValues_IsAChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
 
         var changed = user.ChangePreferences(Language.Ar, "Asia/Dubai");
 
@@ -190,7 +191,7 @@ public sealed class UserTests
     [Fact]
     public void ChangePreferences_TheValuesTheUserHas_IsNoChange()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.Tr, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.Tr, Now);
         user.ChangePreferences(Language.Tr, "Europe/Istanbul");
 
         var changed = user.ChangePreferences(Language.Tr, "Europe/Istanbul");
@@ -202,7 +203,7 @@ public sealed class UserTests
     [Fact]
     public void ChangePreferences_NoTimeZone_ClearsIt()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
         user.ChangePreferences(Language.En, "Europe/Dublin");
 
         var changed = user.ChangePreferences(Language.En, null);
@@ -215,7 +216,7 @@ public sealed class UserTests
     [Fact]
     public void ChangePreferences_Deleted_IsForbiddenAndChangesNothing()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
         user.Delete(Now);
 
         var changed = user.ChangePreferences(Language.Tr, "Europe/Istanbul");
@@ -228,7 +229,7 @@ public sealed class UserTests
     [Fact]
     public void DeleteUser_WithATimeZone_ErasesIt()
     {
-        var user = User.Join(Guid.CreateVersion7(), "user_1", "ada@example.com", "Ada", "Lovelace", Language.En, Now);
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
         user.ChangePreferences(Language.En, "Europe/London");
 
         user.Delete(Now);

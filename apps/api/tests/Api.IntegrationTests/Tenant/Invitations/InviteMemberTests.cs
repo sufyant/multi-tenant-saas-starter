@@ -288,16 +288,51 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await _testData.InvitationStatusOfAsync(second)).ShouldBe("Pending");
     }
 
-    // K2, K6i: a unique index keeps one pending invitation for each tenant and address, in any case. The lock is the first guard; the
-    // index is the second.
+    // The address takes one form where it enters: trimmed, in lower case by the invariant culture (the maintainer's decision in step r2a).
+    // The invitation keeps it and answers it, and the two invitations are one pending invitation.
     [Fact]
-    public async Task StoreInvitation_ASecondPendingOneToTheSameEmailInAnotherCase_IsRefusedByTheIndex()
+    public async Task InviteMember_TheSameEmailInTwoCases_KeepsOnePendingInvitationInLowerCase()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var local = Guid.NewGuid().ToString("N");
+        await owner.InviteMemberAsync(tenant.Id, $"ali.{local}@example.com");
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, $"Ali.{local}@Example.com");
+
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("email").GetString().ShouldBe($"ali.{local}@example.com");
+        (await PendingInvitationsToAsync(tenant.Id, $"ali.{local}@example.com")).ShouldBe(1);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe(2);
+    }
+
+    // The Turkish dotted capital I: .NET's invariant lower case keeps it, where PostgreSQL's lower() makes it an "i". The address keeps
+    // .NET's form and the database compares it by plain equality, so both sides see the same address: "İpek" in two cases is one, and
+    // the database holds no "ipek".
+    [Fact]
+    public async Task InviteMember_AnAddressWithTheTurkishDottedCapitalI_IsTheSameAddressInDotNetAndInTheDatabase()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var local = Guid.NewGuid().ToString("N");
+        var first = await IdOfAsync(await owner.InviteMemberAsync(tenant.Id, $"İpek.{local}@Example.com"));
+
+        await owner.InviteMemberAsync(tenant.Id, $"İPEK.{local}@example.COM");
+
+        (await _testData.InvitationStatusOfAsync(first)).ShouldBe("Cancelled");
+        (await PendingInvitationsToAsync(tenant.Id, $"İpek.{local}@example.com")).ShouldBe(1);
+        (await PendingInvitationsToAsync(tenant.Id, $"ipek.{local}@example.com")).ShouldBe(0);
+    }
+
+    // K2, K6i: a unique index keeps one pending invitation for each tenant and address, in the one form it is stored in. The lock is the
+    // first guard; the index is the second.
+    [Fact]
+    public async Task StoreInvitation_ASecondPendingOneToTheSameEmail_IsRefusedByTheIndex()
     {
         var tenant = await _testData.AddTenantAsync();
         var local = Guid.NewGuid().ToString("N");
         await _testData.AddInvitationAsync(tenant.Id, $"ada.{local}@example.com");
 
-        var second = () => _testData.AddInvitationAsync(tenant.Id, $"ADA.{local}@example.com");
+        var second = () => _testData.AddInvitationAsync(tenant.Id, $"ada.{local}@example.com");
 
         (await second.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.UniqueViolation);
     }
@@ -347,16 +382,16 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
-    // Our copy of a member's address, compared without case.
+    // Our copy of a member's address, compared in its one form, so another case of it is the same address.
     [Fact]
     public async Task InviteMember_TheEmailOfAMember_IsAConflict()
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var local = Guid.NewGuid().ToString("N");
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"Grace.{local}@Navy.mil"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"grace.{local}@navy.mil"));
 
-        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"grace.{local}@navy.MIL");
+        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"Grace.{local}@Navy.MIL");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(invited)).ShouldBe("member.exists");
@@ -673,4 +708,9 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     private Task<long> PendingInvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'");
+
+    // The stored form compared by plain equality, as every query compares it.
+    private Task<long> PendingInvitationsToAsync(Guid tenantId, string email) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND email = '{email}' AND status = 'Pending'");
 }

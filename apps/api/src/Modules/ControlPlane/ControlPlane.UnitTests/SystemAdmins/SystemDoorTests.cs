@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.SystemAdmins;
 
@@ -35,7 +36,7 @@ public sealed class SystemDoorTests
     [Fact]
     public void BecomeFirstSystemAdmin_TheConfiguredEmailIsVerifiedWithASecondFactor_Qualifies()
     {
-        var qualifies = SystemDoor.IsFirstSystemAdmin("Admin@Example.com", secondFactorVerified: true, ["other@example.com", "admin@example.com"]);
+        var qualifies = SystemDoor.IsFirstSystemAdmin(EmailAddress.Create("Admin@Example.com"), secondFactorVerified: true, EmailAddress.AllOf(["other@example.com", "admin@example.com"]));
 
         qualifies.ShouldBeTrue();
     }
@@ -43,7 +44,7 @@ public sealed class SystemDoorTests
     [Fact]
     public void BecomeFirstSystemAdmin_WithoutASecondFactor_DoesNotQualify()
     {
-        var qualifies = SystemDoor.IsFirstSystemAdmin("admin@example.com", secondFactorVerified: false, ["admin@example.com"]);
+        var qualifies = SystemDoor.IsFirstSystemAdmin(EmailAddress.Create("admin@example.com"), secondFactorVerified: false, EmailAddress.AllOf(["admin@example.com"]));
 
         qualifies.ShouldBeFalse();
     }
@@ -51,7 +52,7 @@ public sealed class SystemDoorTests
     [Fact]
     public void BecomeFirstSystemAdmin_AnotherEmailIsVerified_DoesNotQualify()
     {
-        var qualifies = SystemDoor.IsFirstSystemAdmin("admin@example.com", secondFactorVerified: true, ["admin@example.org"]);
+        var qualifies = SystemDoor.IsFirstSystemAdmin(EmailAddress.Create("admin@example.com"), secondFactorVerified: true, EmailAddress.AllOf(["admin@example.org"]));
 
         qualifies.ShouldBeFalse();
     }

@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Application.Tenants.TenantCreation;
 using ControlPlane.Application.Users;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -45,7 +46,7 @@ public static class CreateTenantHandler
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now),
             tenant.Value.Id,
-            command.OwnerEmail,
+            EmailAddress.Create(command.OwnerEmail),
             BuiltInRoles.Owner,
             actor.Id,
             now,
@@ -54,10 +55,10 @@ public static class CreateTenantHandler
             command.Language ?? actor.Language);
         tenants.Add(invitation);
 
-        // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to change it.
+        // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to save it.
         var added = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant was added in this transaction.");
-        added.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
+        await tenants.SaveAsync(added, cancellationToken);
 
         var (saga, activate, timeout) = TenantCreationSaga.Begin(
             tenant.Value.Id,

@@ -3,6 +3,7 @@ using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Invitations;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -59,7 +60,7 @@ public static class InviteOwnerHandler
         var invitation = Invitation.Create(
             Guid.CreateVersion7(now),
             tenant.Id,
-            command.Email,
+            EmailAddress.Create(command.Email),
             BuiltInRoles.Owner,
             actor.Id,
             now,
@@ -67,8 +68,7 @@ public static class InviteOwnerHandler
             secret,
             command.Language ?? actor.Language);
         tenants.Add(invitation);
-        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
-        await tenants.SaveChangesAsync(cancellationToken);
+        await tenants.SaveAsync(tenant, cancellationToken);
 
         return (
             InvitationView.Of(invitation, UserNameView.Of(actor), now),

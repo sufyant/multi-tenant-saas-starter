@@ -19,8 +19,7 @@ public static class CancelInvitationHandler
             ?? throw new InvalidOperationException("An invitation is cancelled in the tenant its creation added.");
         var invitation = await tenants.FindInvitationForUpdateAsync(step.InvitationId, cancellationToken);
         var cancelled = invitation?.Cancel() == StateChange.Changed;
-        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
-        await tenants.SaveChangesAsync(cancellationToken);
+        await tenants.SaveAsync(tenant, cancellationToken);
         return cancelled && invitation!.SignUpInvitationId is { } signUp ? new WithdrawSignUpCommand(signUp) : null;
     }
 }

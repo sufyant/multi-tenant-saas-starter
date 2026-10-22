@@ -12,7 +12,24 @@ internal sealed class TestData(Database database, string databaseName = Database
     // The invitation code of a link: the tenant id, a dot and the secret (section 6).
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
+    // Every tenant has its summary from its creation on, empty until a command writes it (R12).
     public async Task<(Guid Id, string Slug)> AddTenantAsync(
+        string status = "Active",
+        string? slug = null,
+        string name = "Acme Ltd",
+        Guid? tenantId = null,
+        string? suspensionReason = null,
+        DateTimeOffset? closedAt = null,
+        DateTimeOffset? createdAt = null)
+    {
+        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt);
+        await database.ScalarAsync<object>($"INSERT INTO control_plane.tenant_summaries (tenant_id) VALUES ('{tenant.Id}')", database: databaseName);
+
+        return tenant;
+    }
+
+    // The tenant row alone, as before the summary had its own table: for a test of the migrations before MoveTenantSummary.
+    public async Task<(Guid Id, string Slug)> AddTenantRowAsync(
         string status = "Active",
         string? slug = null,
         string name = "Acme Ltd",
@@ -61,11 +78,10 @@ internal sealed class TestData(Database database, string databaseName = Database
             WITH owners AS (
                 SELECT memberships.* FROM control_plane.memberships JOIN control_plane.roles ON roles.id = memberships.role_id
                 WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'Owner')
-            UPDATE control_plane.tenants SET
+            UPDATE control_plane.tenant_summaries SET
                 member_count = (SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
-                owner_count = (SELECT count(*) FROM owners),
-                first_owner_id = (SELECT user_id FROM owners ORDER BY joined_at, user_id LIMIT 1)
-            WHERE id = '{tenantId}'
+                owner_count = (SELECT count(*) FROM owners)
+            WHERE tenant_id = '{tenantId}'
             """,
             databaseName);
 

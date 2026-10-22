@@ -108,9 +108,10 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
         var memberships = await (
                 from membership in controlPlane.Memberships
                 join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
+                join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
                 join role in controlPlane.Roles on membership.RoleId equals role.Id
                 orderby tenant.Name, tenant.Id
-                select new { tenant.Id, tenant.Name, tenant.Slug, tenant.Status, role.BuiltIn, membership.JoinedAt, tenant.OwnerCount })
+                select new { tenant.Id, tenant.Name, tenant.Slug, tenant.Status, role.BuiltIn, membership.JoinedAt, summary.OwnerCount })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 

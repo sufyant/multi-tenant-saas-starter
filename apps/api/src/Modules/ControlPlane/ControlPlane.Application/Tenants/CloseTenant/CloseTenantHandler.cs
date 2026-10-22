@@ -44,8 +44,7 @@ public static class CloseTenantHandler
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
-        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
-        await tenants.SaveChangesAsync(cancellationToken);
+        await tenants.SaveAsync(tenant, cancellationToken);
 
         return (TenantView.Of(tenant), new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name), withdrawals);
     }
