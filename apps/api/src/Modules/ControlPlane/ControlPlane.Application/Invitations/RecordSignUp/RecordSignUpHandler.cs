@@ -19,7 +19,7 @@ public static class RecordSignUpHandler
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        _ = await tenants.FindTenantForUpdateAsync(cancellationToken)
+        var tenant = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("An invitation's sign-up runs in the tenant of the invitation.");
         var invitation = await tenants.FindInvitationForUpdateAsync(opened.InvitationId, cancellationToken)
             ?? throw new InvalidOperationException("An invitation's sign-up follows the invitation.");
@@ -35,7 +35,7 @@ public static class RecordSignUpHandler
             return [];
         }
 
-        await tenants.SaveChangesAsync(cancellationToken);
+        await tenants.SaveAsync(tenant, cancellationToken);
 
         // The email speaks the invitation's language and says how long its link works.
         var now = time.GetUtcNow();

@@ -1,6 +1,7 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.Users;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -74,6 +75,44 @@ public sealed class TenantRepositoryTests(Database database)
         (await TestData.MemberCountOfAsync(database.Services, tenant)).ShouldBe(0);
     }
 
+    // K6k: a command that changes an invitation or a membership and saves it without the summary does not commit, so the summary
+    // never says less than the rows (R12).
+    [Fact]
+    public async Task CommitTransaction_AnInvitationSavedWithoutTheSummary_IsRefusedAndAddsNothing()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var inviter = await TestData.AddUserAsync(database.Services);
+
+        var commit = () => InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            await tenants.FindTenantForUpdateAsync(Cancellation);
+            tenants.Add(OwnerInvitation(tenant, inviter));
+            await tenants.SaveChangesAsync(Cancellation);
+        });
+
+        await commit.ShouldThrowAsync<InvalidOperationException>();
+        (await InvitationsOfAsync(tenant)).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task CommitTransaction_AnInvitationSavedWithTheSummary_CommitsAndSummarizes()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var inviter = await TestData.AddUserAsync(database.Services);
+
+        await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
+            tenants.Add(OwnerInvitation(tenant, inviter));
+            await tenants.SaveAsync(locked, Cancellation);
+        });
+
+        (await InvitationsOfAsync(tenant)).ShouldBe(1);
+        (await TestData.OwnerInvitationEmailOfAsync(database.Services, tenant)).ShouldBe("ada@example.com");
+    }
+
     [Fact]
     public async Task ReadMemberships_OutsideATenant_IsRefused()
     {
@@ -123,4 +162,20 @@ public sealed class TenantRepositoryTests(Database database)
 
         await add.ShouldThrowAsync<InvalidOperationException>();
     }
+
+    private static Invitation OwnerInvitation(Tenant tenant, User inviter) =>
+        Invitation.Create(
+            Guid.CreateVersion7(),
+            tenant.Id,
+            "ada@example.com",
+            BuiltInRoles.Owner,
+            inviter.Id,
+            DateTimeOffset.UtcNow,
+            TimeSpan.FromDays(7),
+            InvitationSecret.Generate(),
+            SharedKernel.Language.En);
+
+    private Task<int> InvitationsOfAsync(Tenant tenant) =>
+        InTenant.ReadAsync(database.Services, tenant.Id, scope =>
+            scope.GetRequiredService<ITenantRepository>().CountInvitationsSinceAsync(DateTimeOffset.MinValue, Cancellation));
 }

@@ -49,8 +49,7 @@ public static class ChangeMemberRoleHandler
             return (member, null);
         }
 
-        tenant.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
-        await tenants.SaveChangesAsync(cancellationToken);
+        await tenants.SaveAsync(tenant, cancellationToken);
 
         var now = time.GetUtcNow();
         return (member, new MemberRoleChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, target.UserId, actor.Id, oldRole.Name, role.Name));

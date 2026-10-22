@@ -25,25 +25,15 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return found.SingleOrDefault();
     }
 
-    // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
-    // which is the only time the summary keeps it.
-    async Task<TenantSummary> ITenantRepository.ReadSummaryAsync(CancellationToken cancellationToken)
+    // The changes are saved first, so the summary is read from the rows as the transaction leaves them, and then saved too. The
+    // DbContext refuses to commit a change to a membership or an invitation that no summary followed (TenantSummaryInterceptor).
+    async Task ITenantRepository.SaveAsync(Tenant tenant, CancellationToken cancellationToken)
     {
+        var locked = OfActiveTenant(tenant, tenant.Id);
         await controlPlane.SaveChangesAsync(cancellationToken);
-        var owners = Memberships.Where(membership => membership.RoleId == BuiltInRoles.Owner.Id);
-        var ownerCount = await owners.CountAsync(cancellationToken);
-
-        return new TenantSummary(
-            await Memberships.CountAsync(cancellationToken),
-            ownerCount,
-            ownerCount == 0
-                ? await controlPlane.TenantInvitations
-                    .Where(invitation => invitation.RoleId == BuiltInRoles.Owner.Id)
-                    .OrderByDescending(invitation => invitation.CreatedAt)
-                    .ThenByDescending(invitation => invitation.Id)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(cancellationToken)
-                : null);
+        locked.Summarize(await ReadSummaryAsync(cancellationToken));
+        await controlPlane.SaveChangesAsync(cancellationToken);
+        controlPlane.SummaryWritten();
     }
 
     Task<Membership?> ITenantRepository.FindMembershipAsync(Guid userId, CancellationToken cancellationToken) =>
@@ -103,7 +93,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return found.SingleOrDefault();
     }
 
-    // The one sequence of a membership's change (R13): the membership, the tenant's summary, the user's count, and the save.
+    // The one sequence of a membership's change (R13): the membership, the save with the tenant's summary, and the user's count.
     async Task ITenantRepository.AddMembershipAsync(Tenant tenant, Guid userId, Guid roleId, DateTimeOffset joinedAt, CancellationToken cancellationToken)
     {
         controlPlane.Memberships.Add(new Membership(controlPlane.ActiveTenant, userId, roleId, joinedAt));
@@ -134,17 +124,34 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
-    // The summary is read after the change is saved, so it counts the change, and the count is changed in the database after the save, so
-    // a user the transaction adds has its row. The database adds the change to the stored count, so the statement reads and writes the
-    // row under its own lock: two transactions of two tenants that count for one user run one after the other, and neither loses the
-    // other's change.
+    // The count is changed in the database after the save, so a user the transaction adds has its row. The database adds the change to
+    // the stored count, so the statement reads and writes the row under its own lock: two transactions of two tenants that count for one
+    // user run one after the other, and neither loses the other's change.
     private async Task FollowMembershipAsync(Tenant tenant, Guid userId, int change, CancellationToken cancellationToken)
     {
-        OfActiveTenant(tenant, tenant.Id).Summarize(await ((ITenantRepository)this).ReadSummaryAsync(cancellationToken));
-        await controlPlane.SaveChangesAsync(cancellationToken);
+        await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
         await controlPlane.Database.ExecuteSqlAsync(
             $"UPDATE control_plane.users SET membership_count = membership_count + {change} WHERE id = {userId}",
             cancellationToken);
+    }
+
+    // Row level security keeps every count to the active tenant. The latest Owner invitation is read only when the tenant has no Owner,
+    // which is the only time the summary keeps it.
+    private async Task<TenantSummary> ReadSummaryAsync(CancellationToken cancellationToken)
+    {
+        var owners = await Memberships.CountAsync(membership => membership.RoleId == BuiltInRoles.Owner.Id, cancellationToken);
+
+        return new TenantSummary(
+            await Memberships.CountAsync(cancellationToken),
+            owners,
+            owners == 0
+                ? await controlPlane.TenantInvitations
+                    .Where(invitation => invitation.RoleId == BuiltInRoles.Owner.Id)
+                    .OrderByDescending(invitation => invitation.CreatedAt)
+                    .ThenByDescending(invitation => invitation.Id)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(cancellationToken)
+                : null);
     }
 
     // The tenants table belongs to no tenant, so row level security does not stop a tenant from adding another one.

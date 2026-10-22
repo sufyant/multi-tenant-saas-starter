@@ -54,10 +54,10 @@ public static class CreateTenantHandler
             command.Language ?? actor.Language);
         tenants.Add(invitation);
 
-        // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to change it.
+        // R12: the new tenant's summary names its Owner invitation. The tenant was inserted by SQL, so it is read back, locked, to save it.
         var added = await tenants.FindTenantForUpdateAsync(cancellationToken)
             ?? throw new InvalidOperationException("The tenant was added in this transaction.");
-        added.Summarize(await tenants.ReadSummaryAsync(cancellationToken));
+        await tenants.SaveAsync(added, cancellationToken);
 
         var (saga, activate, timeout) = TenantCreationSaga.Begin(
             tenant.Value.Id,

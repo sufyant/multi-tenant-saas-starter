@@ -19,13 +19,6 @@ public interface ITenantRepository
     /// </summary>
     internal Task<Tenant?> FindTenantForUpdateAsync(CancellationToken cancellationToken);
 
-    /// <summary>
-    /// The active tenant's summary: its members, its Owners, and its latest Owner invitation. It saves the
-    /// pending changes first, so it reads the memberships and invitations as the transaction leaves them. The caller holds the tenant's
-    /// lock (K6k).
-    /// </summary>
-    internal Task<TenantSummary> ReadSummaryAsync(CancellationToken cancellationToken);
-
     internal Task<Membership?> FindMembershipAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
@@ -62,15 +55,24 @@ public interface ITenantRepository
     internal Task<Invitation?> FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Adds the user to the active tenant with the role, and keeps what follows from it (R13): the tenant's summary, and the user's count
-    /// of memberships, to which the database adds one, so two tenants' commands for one user never lose a change. Then it saves. The
-    /// caller holds the tenant's lock (K6k). A user the transaction adds is saved before the count, so it is counted too.
+    /// Saves the transaction's changes, then writes the tenant's summary from its memberships and invitations as the transaction leaves
+    /// them (R12). The tenant is the one <see cref="FindTenantForUpdateAsync"/> locked, so the summary is written under the tenant's lock,
+    /// in the command's transaction (K6k). Every command that changes a membership or an invitation ends with it: a transaction that
+    /// saved such a change and then no summary does not commit.
+    /// </summary>
+    internal Task SaveAsync(Tenant tenant, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds the user to the active tenant with the role, and keeps what follows from it (R13): the tenant's summary, saved as
+    /// <see cref="SaveAsync"/> saves it, and the user's count of memberships, to which the database adds one, so two tenants' commands
+    /// for one user never lose a change. The caller holds the tenant's lock (K6k). A user the transaction adds is saved before the count,
+    /// so it is counted too.
     /// </summary>
     internal Task AddMembershipAsync(Tenant tenant, Guid userId, Guid roleId, DateTimeOffset joinedAt, CancellationToken cancellationToken);
 
     /// <summary>
     /// Removes the membership from the active tenant, and keeps what follows from it as <see cref="AddMembershipAsync"/> does: the
-    /// tenant's summary, and the user's count, from which the database takes one. Then it saves. The caller holds the tenant's lock (K6k).
+    /// tenant's summary, and the user's count, from which the database takes one. The caller holds the tenant's lock (K6k).
     /// </summary>
     internal Task RemoveMembershipAsync(Tenant tenant, Membership membership, CancellationToken cancellationToken);
 
@@ -82,5 +84,6 @@ public interface ITenantRepository
 
     internal void Add(Invitation invitation);
 
+    /// <summary>Saves the transaction's changes without the summary: a change to the tenant itself, or a step before <see cref="SaveAsync"/>.</summary>
     internal Task SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -67,6 +67,12 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         }
     }
 
+    /// <summary>
+    /// Whether the transaction saved a change to a membership or an invitation after the tenant's summary was last written (K6k). The
+    /// transaction then does not commit (<see cref="TenantSummaryInterceptor"/>): <see cref="TenantRepository"/> writes the summary.
+    /// </summary>
+    internal bool SummaryOwed { get; private set; }
+
     /// <summary>The active tenant's invitations. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
     internal IQueryable<Invitation> TenantInvitations
     {
@@ -76,6 +82,21 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             return Invitations;
         }
     }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        OweSummary();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        OweSummary();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>The repository wrote the tenant's summary after the last change to a membership or an invitation.</summary>
+    internal void SummaryWritten() => SummaryOwed = false;
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -92,5 +113,15 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new InvitationConfiguration());
         modelBuilder.ApplyConfiguration(new TenantCreationSagaConfiguration());
         modelBuilder.ApplyConfiguration(new SystemAdminConfiguration());
+    }
+
+    // Only a change inside a transaction is owed: the transaction is what commits it (W1). Entries() detects the changes first.
+    private void OweSummary()
+    {
+        if (Database.CurrentTransaction is not null
+            && ChangeTracker.Entries().Any(entry => entry.Entity is Membership or Invitation && entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+        {
+            SummaryOwed = true;
+        }
     }
 }
