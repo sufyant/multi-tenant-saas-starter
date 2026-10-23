@@ -397,18 +397,23 @@ internal sealed class Tenant
             return (UserDeparture?)null;
         }
 
-        if (invitations.Any(invitation => invitation.TenantId != Id))
+        return new UserDeparture(membership, EraseUser(invitations));
+    }
+
+    /// <summary>
+    /// A system admin's or a purge's deletion of a user who left this tenant before (section 6, "User deletion"): the user's address goes
+    /// from the tenant's invitations of the user, by the rule of <see cref="RemoveForUserDeletion"/>, with no membership to remove (A8).
+    /// A pending one among them is cancelled first. Returns the invitations it cancelled; a second call cancels none. A deleted user is a
+    /// member of no tenant, so a membership is an error.
+    /// </summary>
+    public IReadOnlyList<Invitation> EraseFormerMember(Membership? membership, IReadOnlyList<Invitation> invitations)
+    {
+        if (membership is not null)
         {
-            throw new InvalidOperationException("A tenant erases only its own invitations.");
+            throw new InvalidOperationException("A deleted user is a member of no tenant.");
         }
 
-        var cancelled = invitations.Where(invitation => invitation.Cancel() == StateChange.Changed).ToList();
-        foreach (var invitation in invitations)
-        {
-            invitation.EraseEmail();
-        }
-
-        return new UserDeparture(membership, cancelled);
+        return EraseUser(invitations);
     }
 
     /// <summary>
@@ -741,6 +746,24 @@ internal sealed class Tenant
         return owners > 0
             ? Error.Conflict(ControlPlaneErrorCodes.TenantHasOwner, "The tenant has an Owner; its Owners invite people.")
             : Result.Success();
+    }
+
+    // The erasure of a deleted user's address that both kinds of departure share (A8). A pending invitation always has an address, so
+    // it is cancelled first, expired or not, as a closure cancels it (K6h). Returns the invitations it cancelled.
+    private List<Invitation> EraseUser(IReadOnlyList<Invitation> invitations)
+    {
+        if (invitations.Any(invitation => invitation.TenantId != Id))
+        {
+            throw new InvalidOperationException("A tenant erases only its own invitations.");
+        }
+
+        var cancelled = invitations.Where(invitation => invitation.Cancel() == StateChange.Changed).ToList();
+        foreach (var invitation in invitations)
+        {
+            invitation.EraseEmail();
+        }
+
+        return cancelled;
     }
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)

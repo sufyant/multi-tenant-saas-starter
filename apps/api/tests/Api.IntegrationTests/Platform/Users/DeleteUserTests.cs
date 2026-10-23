@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Application.Users.EraseFormerMember;
 using ControlPlane.Contracts.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Tenancy;
+using Wolverine;
 
 namespace Api.IntegrationTests.Platform.Users;
 
@@ -117,6 +119,29 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe("Accepted:-, Cancelled:-, Cancelled:-");
         _api.Identity.Withdrawn.ShouldBe([signUp]);
         (await _audit.TenantLogAsync(id)).ShouldBe($"{tenant.Id}:member.removed|Platform|-|User|{id}|-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // Any message may arrive twice. The second erasure in a tenant the user left finds nothing to cancel or erase, so it withdraws no
+    // sign-up again and leaves the rows and the summary as the first left them.
+    [Fact]
+    public async Task EraseFormerMember_Twice_ChangesNothingMoreAndWithdrawsTheSignUpOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        var command = new EraseFormerMemberCommand(await _testData.UserIdOfAsync(user), email);
+
+        await EraseAsync(tenant.Id, command);
+        var first = await InvitationsOfAsync(tenant.Id);
+        await EraseAsync(tenant.Id, command);
+
+        (first, await InvitationsOfAsync(tenant.Id)).ShouldBe(("Accepted:-, Cancelled:-", "Accepted:-, Cancelled:-"));
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -322,6 +347,15 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
         return (Guid.CreateVersion7(now), Guid.CreateVersion7(now.AddMilliseconds(1)));
     }
+
+    // The erasure in the tenant, as a deletion sends it, and every message it causes.
+    private Task<Guid> EraseAsync(Guid tenantId, EraseFormerMemberCommand command) =>
+        _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), command, Cancellation);
+            return tenantId;
+        });
 
     private Task<HttpResponseMessage> DeleteAsync(string admin, Guid userId) =>
         _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
