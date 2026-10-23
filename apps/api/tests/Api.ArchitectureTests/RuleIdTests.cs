@@ -5,6 +5,8 @@ namespace Api.ArchitectureTests;
 // Every rule id that a comment in code, tests or scripts cites is defined in a document (ARCHITECTURE.md: "Use the id when you refer to
 // a rule"). A document defines an id in the first cell of a table row (`| W13 |`) or in a heading (`### K2. Invitations`). An id that
 // no document defines, such as one from a review's own list, points a reader to nothing.
+// The flow files (docs/flows/) say what happens step by step and cite rules by id; they define none, because rules live in
+// ARCHITECTURE.md (section 6).
 public sealed partial class RuleIdTests
 {
     private static readonly string Repository = Path.GetFullPath(Path.Combine(Solution.Root, "..", ".."));
@@ -16,6 +18,7 @@ public sealed partial class RuleIdTests
         Path.Combine(Solution.Root, "docs", "api-catalog.md"),
         Path.Combine(Solution.Root, "docs", "configuration.md"),
         Path.Combine(Repository, "docs", "frontend", "ARCHITECTURE.md"),
+        .. FlowFiles(),
     ];
 
     // The code, tests and scripts of the repository. Generated files and build output cite nothing of their own.
@@ -40,6 +43,19 @@ public sealed partial class RuleIdTests
         defined.ShouldContain("W13");
         undefined.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void DefineRule_InAFlowFile_IsRefused()
+    {
+        var defined = FlowFiles()
+            .SelectMany(file => File.ReadLines(file).Select((line, index) => (file, number: index + 1, line)))
+            .SelectMany(line => DefinedId().Matches(line.line).Select(match => $"{Path.GetRelativePath(Repository, line.file)}:{line.number}: {match.Groups["id"].Value}"));
+
+        FlowFiles().ShouldNotBeEmpty();
+        defined.ShouldBeEmpty();
+    }
+
+    private static string[] FlowFiles() => Directory.GetFiles(Path.Combine(Solution.Root, "docs", "flows"), "*.md");
 
     private static IEnumerable<string> CodeFiles() =>
         Folders.Select(folder => Path.Combine(Repository, folder)).Where(Directory.Exists)
