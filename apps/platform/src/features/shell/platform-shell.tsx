@@ -35,9 +35,10 @@ const notAUserYet = (error: Error | null) =>
  * The platform's AppShell: the ink "Platform" label starts the top bar, and there is no organisation and no OrgMenu. A
  * signed-in user who is no system admin sees "You don't have access"; the API refuses them anyway.
  *
- * The first system admin is no user until their first request to the platform door with a verified second factor: the door
- * writes their user and their grant then (`SystemAdminDirectory`, `apps/api/docs/flows/system-admins.md`). So when GetMe answers 404, the shell asks
- * the door once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
+ * A root system admin has no grant until their first request to the platform door with a verified second factor: the door
+ * writes their grant then, and their user too when they are no user yet (`SystemAdminDirectory`,
+ * `apps/api/docs/flows/system-admins.md`). So when GetMe answers 404 or a user who is no system admin, the shell asks the door
+ * once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
  */
 export function PlatformShell({
   railExpanded,
@@ -53,21 +54,23 @@ export function PlatformShell({
   const { signOut } = useClerk();
   const { theme = "system", setTheme } = useTheme();
   const me = useQuery(getGetMeQueryOptions());
+  // One ask of the door per page load, then one more read of GetMe when it lets the person in (F42).
+  const [doorAsked, setDoorAsked] = useState(false);
+  const askTheDoor =
+    !doorAsked && (notAUserYet(me.error) || me.data?.isSystemAdmin === false);
   const door = useQuery(
     getListTenantsQueryOptions(
       { pageSize: 1 },
-      { query: { enabled: notAUserYet(me.error), retry: false } },
+      { query: { enabled: askTheDoor, retry: false } },
     ),
   );
-  // GetMe is read once more after the door let the person in. A 404 after that is final: "You don't have access".
-  const [askedAgain, setAskedAgain] = useState(false);
   const { refetch } = me;
   useEffect(() => {
-    if (door.isSuccess && !askedAgain)
-      void refetch().finally(() => setAskedAgain(true));
-  }, [door.isSuccess, askedAgain, refetch]);
-  if (notAUserYet(me.error) && !door.isError && !askedAgain)
-    return <Skeleton label={t("common.loading")} />;
+    if (doorAsked) return;
+    if (door.isError) setDoorAsked(true);
+    else if (door.isSuccess) void refetch().finally(() => setDoorAsked(true));
+  }, [door.isError, door.isSuccess, doorAsked, refetch]);
+  if (askTheDoor) return <Skeleton label={t("common.loading")} />;
   if (me.error) return <ProblemScreen error={me.error} />;
   if (!me.data) return <Skeleton label={t("common.loading")} />;
   if (!me.data.isSystemAdmin) return <NoAccess />;
