@@ -392,6 +392,7 @@ export const ErrorCode = {
   InvitationNotPending: 'invitation.not_pending',
   InvitationOwnerRequiresOwner: 'invitation.owner_requires_owner',
   InvitationSystemAdminCannotJoin: 'invitation.system_admin_cannot_join',
+  MemberAlreadyOwner: 'member.already_owner',
   MemberCannotRemoveSelf: 'member.cannot_remove_self',
   MemberExists: 'member.exists',
   MemberLastOwner: 'member.last_owner',

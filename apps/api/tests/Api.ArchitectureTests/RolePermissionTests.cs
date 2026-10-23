@@ -20,6 +20,9 @@ public sealed class RolePermissionTests
         Path.Combine("src", "Modules", "ControlPlane", "ControlPlane.Application", "Tenants", "CreateTenant", "CreateTenantHandler.cs"),
         Path.Combine("src", "Modules", "ControlPlane", "ControlPlane.Application", "Invitations", "InviteOwner", "InviteOwnerHandler.cs"),
 
+        // An assignment: the platform makes a member an Owner (M2, Owner recovery), by the tenant's rule.
+        Path.Combine("src", "Modules", "ControlPlane", "ControlPlane.Domain", "Tenants", "Tenant.cs"),
+
         // The member list's order by role shows the Owners, then the Admins, then the Members.
         Path.Combine("src", "Modules", "ControlPlane", "ControlPlane.Infrastructure", "Persistence", "Members", "MemberQueries.cs"),
     ];

@@ -67,6 +67,7 @@
       "system_admin_cannot_join": "Sistem yöneticisi bir kuruluşa katılamaz."
     },
     "member": {
+      "already_owner": "Bu üye zaten bir Sahip.",
       "cannot_remove_self": "Kendinizi çıkaramazsınız.",
       "exists": "Bu kişi zaten üye.",
       "last_owner": "Bir kuruluşun en az bir Sahibi olmalı.",

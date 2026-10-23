@@ -20,7 +20,7 @@ internal sealed class Membership(Guid tenantId, Guid userId, Guid roleId, DateTi
     /// <summary>When the user joined the tenant. The Owner who joined first is the one the platform's tenant list names.</summary>
     public DateTimeOffset JoinedAt { get; private init; } = joinedAt;
 
-    /// <summary>Gives the membership the role. Only <see cref="Tenant.ChangeRole"/> calls it, after the tenant's rules.</summary>
+    /// <summary>Gives the membership the role. Only <see cref="Tenant.ChangeRole"/> and <see cref="Tenant.MakeOwner"/> call it, after the tenant's rules.</summary>
     internal StateChange Assign(Role role)
     {
         if (RoleId == role.Id)

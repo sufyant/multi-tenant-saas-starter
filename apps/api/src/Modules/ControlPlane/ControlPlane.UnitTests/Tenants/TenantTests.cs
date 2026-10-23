@@ -3,6 +3,7 @@ using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.Users;
 using SharedKernel;
 
 namespace ControlPlane.UnitTests.Tenants;
@@ -865,6 +866,92 @@ public sealed class TenantTests
         var result = Active().Remove(Membership("Owner"), new MemberFacts(other, 1, Roles));
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+    }
+
+    // M2, Owner recovery: the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
+    [Theory]
+    [InlineData("Admin", 0)]
+    [InlineData("Member", 0)]
+    [InlineData("Admin", 1)]
+    [InlineData("Member", 2)]
+    public void MakeOwner_AMemberWithOrWithoutAnOwnerThere_GivesThemTheOwnerRole(string role, int owners)
+    {
+        var target = Membership(role);
+
+        var result = Active().MakeOwner(new MemberFacts(target, owners, Roles), UserStatus.Active);
+
+        (result.Value.Change, result.Value.Member, result.Value.OldRole).ShouldBe((StateChange.Changed, target, RoleOf(role)));
+        target.RoleId.ShouldBe(RoleOf("Owner").Id);
+    }
+
+    [Fact]
+    public void MakeOwner_AMemberOfACustomRole_GivesThemTheOwnerRole()
+    {
+        var billing = Custom("Billing", ProfileRead, MembersRead);
+        var target = Membership(billing);
+
+        var result = Active().MakeOwner(new MemberFacts(target, 0, RolesWith(billing)), UserStatus.Active);
+
+        result.Value.OldRole.ShouldBe(billing);
+        target.RoleId.ShouldBe(RoleOf("Owner").Id);
+    }
+
+    // The rule InviteOwner asks: only an active tenant gets an Owner from the platform. It comes first.
+    [Theory]
+    [InlineData("Suspended")]
+    [InlineData("Closed")]
+    public void MakeOwner_ATenantThatIsNotActive_IsAConflictAndChangesNothing(string status)
+    {
+        var target = Membership("Member");
+
+        var result = InStatus(status).MakeOwner(new MemberFacts(target, 0, Roles), UserStatus.Suspended);
+
+        (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.TenantNotActive, ErrorType.Conflict));
+        target.RoleId.ShouldBe(RoleOf("Member").Id);
+    }
+
+    // Row level security hides another tenant's members, so the target is not found; an id no user has is no member either.
+    [Fact]
+    public void MakeOwner_NoMembership_IsNotFound()
+    {
+        var result = Active().MakeOwner(new MemberFacts(null, 1, Roles), userStatus: null);
+
+        (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.MemberNotFound, ErrorType.NotFound));
+    }
+
+    [Fact]
+    public void MakeOwner_AMembershipOfAnotherTenant_IsNotFound()
+    {
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
+
+        var result = Active().MakeOwner(new MemberFacts(other, 1, Roles), UserStatus.Active);
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+    }
+
+    // A member whose role holds tenant.owners.manage is an Owner already (A1). It is no state to set again: the action makes an Owner.
+    [Fact]
+    public void MakeOwner_AnOwner_IsAConflict()
+    {
+        var target = Membership("Owner");
+
+        var result = Active().MakeOwner(new MemberFacts(target, 1, Roles), UserStatus.Suspended);
+
+        (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.MemberAlreadyOwner, ErrorType.Conflict));
+    }
+
+    // A suspended user is refused at the tenant door (A9), and a deleted one has no names (A8): neither can manage the tenant.
+    [Theory]
+    [InlineData("Suspended", "user.suspended")]
+    [InlineData("Deleted", "user.deleted")]
+    public void MakeOwner_AUserWhoIsNotActive_IsAConflictAndChangesNothing(string status, string code)
+    {
+        var target = Membership("Member");
+
+        var result = Active().MakeOwner(new MemberFacts(target, 0, Roles), Enum.Parse<UserStatus>(status));
+
+        (result.Error.Code.Value, result.Error.Type).ShouldBe((code, ErrorType.Conflict));
+        target.RoleId.ShouldBe(RoleOf("Member").Id);
     }
 
     // Section 6, "User deletion": the tenant's last Owner stays, and the error names the tenant.
