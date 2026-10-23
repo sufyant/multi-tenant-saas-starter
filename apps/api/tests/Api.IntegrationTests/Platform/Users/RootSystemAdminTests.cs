@@ -117,6 +117,38 @@ public sealed class RootSystemAdminTests(Database database)
         (await IsSystemAdminAsync(user)).ShouldBeFalse();
     }
 
+    // A known user's address is ControlPlane's own (A7), so the door reads it and asks the identity provider nothing: a member who is no
+    // system admin and comes with a second factor costs no call on each platform request.
+    [Fact]
+    public async Task VisitTheSystemDoor_AKnownUserWhoIsNotListed_AsksTheIdentityProviderNothing()
+    {
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com");
+        await using var api = WithRoots(RootEmail());
+        var reads = 0;
+        api.Identity.WhileReadingVerifiedEmails = () => Task.FromResult(Interlocked.Increment(ref reads));
+
+        var response = await api.CreateClient(user, secondFactor: true).GetAsync("/v1/platform/users", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        reads.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task VisitTheSystemDoor_AKnownListedUser_BecomesASystemAdminWithoutAskingTheIdentityProvider()
+    {
+        var root = RootEmail();
+        var user = await _testData.AddUserAsync(email: root.ToLowerInvariant());
+        await using var api = WithRoots(root);
+        var reads = 0;
+        api.Identity.WhileReadingVerifiedEmails = () => Task.FromResult(Interlocked.Increment(ref reads));
+
+        var response = await api.WaitingForMessagesAsync(() => api.CreateClient(user, secondFactor: true).GetAsync("/v1/platform/users", Cancellation));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await IsSystemAdminAsync(user)).ShouldBeTrue();
+        reads.ShouldBe(0);
+    }
+
     // A suspended user is not let in through the list: a system admin reactivates them first, as a grant by a system admin requires.
     [Fact]
     public async Task VisitTheSystemDoor_ASuspendedListedUser_DoesNotBecomeASystemAdmin()

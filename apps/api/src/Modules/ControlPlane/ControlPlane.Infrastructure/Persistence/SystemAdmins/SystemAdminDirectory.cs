@@ -9,8 +9,9 @@ using Wolverine;
 
 namespace ControlPlane.Infrastructure.Persistence.SystemAdmins;
 
-// Section 6, "Root system admins": a person who is no system admin and comes with a second factor is checked against the list. The
-// verified addresses come from the identity provider's server, as when an invitation is accepted, and the call runs before any
+// Section 6, "Root system admins": a person with a second factor who is no system admin is checked against the list. A known user's
+// address is ControlPlane's own (A7): the door compares it with the list, as SystemDoor.IsRoot does, and asks the identity provider
+// nothing. Only a person who is no user yet is checked by the addresses the identity provider verified, read from its server before any
 // transaction (section 3). A root system admin's grant is a command, so it is written in its own transaction with its audit event (O1).
 internal sealed class SystemAdminDirectory(
     ControlPlaneDbContext controlPlane,
@@ -23,18 +24,25 @@ internal sealed class SystemAdminDirectory(
         bool secondFactorVerified,
         CancellationToken cancellationToken)
     {
-        var isSystemAdmin = await IsSystemAdminAsync(externalUserId, cancellationToken);
-        if (!isSystemAdmin && secondFactorVerified)
+        var user = await controlPlane.Users
+            .Where(user => user.ExternalId == externalUserId)
+            .Select(user => new { user.Email, IsSystemAdmin = controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (user is { IsSystemAdmin: true } || !secondFactorVerified)
         {
-            var verifiedEmails = EmailAddress.AllOf(await identity.FindVerifiedEmailsAsync(externalUserId, cancellationToken));
-            if (SystemDoor.RootEmailOf(settings.Roots, secondFactorVerified, verifiedEmails) is { } rootEmail)
-            {
-                await bus.InvokeAsync(new GrantRootSystemAdminCommand(externalUserId, rootEmail.Value), cancellationToken);
-                isSystemAdmin = await IsSystemAdminAsync(externalUserId, cancellationToken);
-            }
+            return SystemDoor.PermissionsFor(user is { IsSystemAdmin: true }, secondFactorVerified);
         }
 
-        return SystemDoor.PermissionsFor(isSystemAdmin, secondFactorVerified);
+        var rootEmail = user is null
+            ? SystemDoor.RootEmailOf(settings.Roots, secondFactorVerified, EmailAddress.AllOf(await identity.FindVerifiedEmailsAsync(externalUserId, cancellationToken)))
+            : SystemDoor.IsRoot(user.Email, settings.Roots) ? EmailAddress.Create(user.Email!) : null;
+        if (rootEmail is null)
+        {
+            return null;
+        }
+
+        await bus.InvokeAsync(new GrantRootSystemAdminCommand(externalUserId, rootEmail.Value), cancellationToken);
+        return SystemDoor.PermissionsFor(await IsSystemAdminAsync(externalUserId, cancellationToken), secondFactorVerified);
     }
 
     private Task<bool> IsSystemAdminAsync(string externalUserId, CancellationToken cancellationToken) =>
