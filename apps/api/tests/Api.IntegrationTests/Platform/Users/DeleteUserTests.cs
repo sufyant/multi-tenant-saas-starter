@@ -150,6 +150,27 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(acme.Id);
     }
 
+    // Section 13: a user deleted before step r7c kept their address in a tenant they left before. A second deletion has no address of the
+    // user to send, so it erases by the invitation the user accepted: its address goes, and so does a pending one to that address.
+    [Fact]
+    public async Task DeleteUser_AgainAfterAnEarlierDeletionLeftATenantTheyLeftWithTheAddress_ErasesItThere()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        await _testData.AddInvitationAsync(tenant.Id, email);
+        await _testData.SummarizeAsync(tenant.Id);
+        await _testData.DeleteUserAsync(user);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
     // Any message may arrive twice. The second erasure in a tenant the user left finds nothing to cancel or erase, so it withdraws no
     // sign-up again and leaves the rows and the summary as the first left them.
     [Fact]
