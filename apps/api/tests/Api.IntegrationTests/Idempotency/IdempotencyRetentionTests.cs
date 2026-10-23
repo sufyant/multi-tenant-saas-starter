@@ -7,6 +7,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Api.IntegrationTests.Idempotency;
 
+[FixedClock("The tests with a fake clock run their worker on a database of their own.")]
 public sealed class IdempotencyRetentionTests(Database database)
 {
     [Fact]

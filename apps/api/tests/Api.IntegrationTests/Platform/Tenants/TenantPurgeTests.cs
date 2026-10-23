@@ -10,6 +10,7 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // Section 6, "Tenant purge": when a closed tenant's reopen period is over, the purge deletes every module's data of the tenant, keeps the
 // tenant row as its tombstone and the platform's log, writes tenant.purged there, and deletes the users it left without a tenant. Each
 // test runs on a database of its own: the purge schedules its timeout, and a host of another test would run it (section 9, rule 10).
+[FixedClock("Each test runs on a database of its own, so no host of another test runs what its clock schedules.")]
 public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 {
     private static readonly DateTimeOffset ClosedAt = new(2026, 9, 1, 9, 0, 0, TimeSpan.Zero);
