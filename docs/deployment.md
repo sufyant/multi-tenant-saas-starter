@@ -714,3 +714,68 @@ An invitation email does not need this step. The inviter can invite the same add
 3. **Wait for a worker.** A worker's durability agent moves each row with `replayable = true` back to the incoming messages and handles it again. It polls, so this takes a few seconds. The row then leaves `wolverine_dead_letters`. If the message fails its retries again, it comes back with a new expiry.
 
 Source: Wolverine, "Dead Letter Storage" (the `replayable` column and the durability agent's replay) and "Dead Letter Expiration". Hohpe and Woolf, *Enterprise Integration Patterns*, "Dead Letter Channel".
+
+## 15. Reset the staging database
+
+A pull request that squashes the migrations replaces each module's migrations with one initial migration. The staging database still has the old migrations in its history, so the `migrate` step of the new version fails there (section 6, "The database"). The reset removes everything the migrations created. The next delivery then creates it again from the initial migrations.
+
+Run it only when all of these are true:
+
+- No release exists yet. Production has no data to keep.
+- The environment is staging. Never run it on production.
+- A pull request that squashes the migrations waits for its merge, and its description asks for the reset.
+
+What the reset keeps: the roles `api_owner` and `api_application` with their passwords, the database `railway`, the extension `pg_trgm` and the identity provider's users. What it removes: the schemas `api`, `audit`, `control_plane` and `wolverine`, with every tenant, user row, invitation, audit entry, idempotency key and message in them, scheduled messages included.
+
+Use the values of staging only: its proxy domain and port (section 4, step 7) and its root certificate (section 4, step 9). The commands are the ones of production too, so check each value before you run them. Run them from the repository root.
+
+1. **Read the password of `api_owner` of staging.** It is in the password manager (section 4, step 2). `api_owner` owns the four schemas, so it can drop them, and it needs no superuser.
+
+   ```bash
+   printf 'Password of api_owner in staging: '; read -rs PGPASSWORD; echo
+   export PGPASSWORD
+   ```
+
+2. **List the schemas that `api_owner` owns.** Replace `<proxy domain>` and `<proxy port>` with the values of staging:
+
+   ```bash
+   docker run --rm -e PGPASSWORD \
+     -v "$HOME/<project>-keys/staging-database-root.crt:/root.crt:ro" \
+     postgres:18 psql "host=<proxy domain> port=<proxy port> dbname=railway user=api_owner sslmode=verify-ca sslrootcert=/root.crt" \
+     -At -c "select nspname from pg_namespace where nspowner = 'api_owner'::regrole order by nspname"
+   ```
+
+   The expected output is four lines: `api`, `audit`, `control_plane` and `wolverine`. If the output holds any other schema, or misses one, stop. Find the cause before the next step.
+
+3. **Drop the four schemas.** One transaction drops all four, or none: `ON_ERROR_STOP` stops `psql` at the first error, and the transaction then rolls back:
+
+   ```bash
+   docker run --rm -i -e PGPASSWORD \
+     -v "$HOME/<project>-keys/staging-database-root.crt:/root.crt:ro" \
+     postgres:18 psql "host=<proxy domain> port=<proxy port> dbname=railway user=api_owner sslmode=verify-ca sslrootcert=/root.crt" \
+     -v ON_ERROR_STOP=1 <<'SQL'
+   begin;
+   drop schema api, audit, control_plane, wolverine cascade;
+   commit;
+   SQL
+   ```
+
+   `psql` prints `NOTICE:  drop cascades to ... other objects`, the list of the tables, and then `COMMIT`.
+
+4. **Run the check of step 2 again.** It prints nothing.
+
+5. **Unset the password:**
+
+   ```bash
+   unset PGPASSWORD
+   ```
+
+6. **Merge the pull request at once.** The delivery to staging runs the `migrate` step, which creates the four schemas from the initial migrations, and then deploys the new version. Until then, staging answers errors: the running version has no tables.
+
+After the delivery, check:
+
+- The `migrate` step of the staging deploy logs one migration for each module: `Migrated the control_plane schema: 1 migrations applied`, the same for `audit` and `api`, and `Migration finished`.
+- The staging deploy of `deploy.yml` succeeds: Railway's health check passes for `api-web` and `api-worker`. The web apps load.
+- A person on `ControlPlane:SystemAdmins:RootEmails` signs in to the platform app with a second factor and becomes a system admin again: the door adds the user row (`apps/api/docs/ARCHITECTURE.md`, section 6, "Root system admins"). No other user row, tenant or invitation is left: create the test tenants again, and invite their members again.
+
+A rollback of staging to a version from before the squash does not work after the reset (section 6, "The database").
