@@ -717,7 +717,7 @@ Source: Wolverine, "Dead Letter Storage" (the `replayable` column and the durabi
 
 ## 15. Reset the staging database
 
-A pull request that squashes the migrations replaces each module's migrations with one initial migration. The staging database still has the old migrations in its history, so the `migrate` step of the new version fails there (section 6, "The database"). The reset removes everything the migrations created. The next delivery then creates it again from the initial migrations.
+A pull request that squashes the migrations replaces each module's migrations with one initial migration. The staging database still has the old migrations in its history, so the `migrate` step of the new version fails there: the history holds no initial migration, so EF Core runs it, and its first `CREATE TABLE` fails on a table that exists. The reset removes everything the migrations created. The next delivery then creates it again from the initial migrations.
 
 Run it only when all of these are true:
 
@@ -725,7 +725,7 @@ Run it only when all of these are true:
 - The environment is staging. Never run it on production.
 - A pull request that squashes the migrations waits for its merge, and its description asks for the reset.
 
-What the reset keeps: the roles `api_owner` and `api_application` with their passwords, the database `railway`, the extension `pg_trgm` and the identity provider's users. What it removes: the schemas `api`, `audit`, `control_plane` and `wolverine`, with every tenant, user row, invitation, audit entry, idempotency key and message in them, scheduled messages included.
+What the reset keeps: the roles `api_owner` and `api_application` with their passwords, the database `railway`, the extension `pg_trgm` and the identity provider's users. The identity provider also keeps the sign-up invitations of the pending invitations (`invitations.sign_up_invitation_id`); their links lead to an invitation that no longer exists, until each expires at the provider. What it removes: the schemas `api`, `audit`, `control_plane` and `wolverine`, with every tenant, user row, invitation, audit entry, idempotency key and message in them, scheduled messages included.
 
 Use the values of staging only: its proxy domain and port (section 4, step 7) and its root certificate (section 4, step 9). The commands are the ones of production too, so check each value before you run them. Run them from the repository root.
 
@@ -770,7 +770,7 @@ Use the values of staging only: its proxy domain and port (section 4, step 7) an
    unset PGPASSWORD
    ```
 
-6. **Merge the pull request at once.** The delivery to staging runs the `migrate` step, which creates the four schemas from the initial migrations, and then deploys the new version. Until then, staging answers errors: the running version has no tables.
+6. **Merge the pull request at once.** The delivery to staging runs the `migrate` step, which creates the four schemas from the initial migrations, and then deploys the new version. Until then, staging answers errors: the running version has no tables. If another pull request merges first, its delivery creates the old migrations again, and the squash's `migrate` step then fails: run steps 1 to 5 again, then merge.
 
 After the delivery, check:
 
