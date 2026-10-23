@@ -97,9 +97,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_roles_name");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_roles_tenant_id");
-
                     b.HasIndex("TenantId", "BuiltIn")
                         .IsUnique()
                         .HasDatabaseName("ix_roles_tenant_id_built_in")
@@ -237,9 +234,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("SecretHash")
                         .IsUnique()
                         .HasDatabaseName("ix_invitations_secret_hash");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_invitations_tenant_id");
 
                     b.HasIndex("TenantId", "RoleId")
                         .HasDatabaseName("ix_invitations_tenant_id_role_id");

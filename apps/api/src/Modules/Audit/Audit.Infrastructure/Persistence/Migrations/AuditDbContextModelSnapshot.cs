@@ -153,9 +153,6 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_entries");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_entries_tenant_id");
-
                     b.HasIndex("TenantId", "OccurredAt", "Id")
                         .HasDatabaseName("ix_entries_tenant_id_occurred_at_id");
 

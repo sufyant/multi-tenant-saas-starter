@@ -407,6 +407,41 @@ public sealed class MigrationStepTests(Database database)
             "email character varying(320), first_name character varying(100), last_name character varying(100)");
     }
 
+    // R1: the migration drops the index of the tenant column alone where a key or another index leads with it. The rows stay, and each
+    // table keeps the index that serves a read inside the tenant.
+    [Fact]
+    public async Task Migrate_RolesAndInvitations_KeepsThemAndOnlyTheIndexesThatLeadWithTheTenant()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("DropTheTenantIndexThatAnotherIndexCovers");
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        await testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read");
+        await testData.AddInvitationAsync(tenant.Id);
+        var before = await ControlPlaneRowsAsync(name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await ControlPlaneRowsAsync(name)).ShouldBe(before);
+        (await TenantIndexesAsync(name, "control_plane", "roles")).ShouldBe("ak_roles_tenant_id_id, ix_roles_tenant_id_built_in, ix_roles_tenant_id_lower_name");
+        (await TenantIndexesAsync(name, "control_plane", "invitations")).ShouldBe("ix_invitations_pending_email, ix_invitations_tenant_id_role_id");
+    }
+
+    // R1: the same for Audit. The tenant's log keeps the index of its cursor, which leads with the tenant.
+    [Fact]
+    public async Task Migrate_AuditEntries_KeepsThemAndOnlyTheIndexOfTheCursor()
+    {
+        var name = await database.CreateDatabaseBeforeAuditMigrationAsync("DropTheTenantIndexThatAnotherIndexCovers");
+        await AddAuditEntriesAsync(name);
+        var before = await AuditRowsAsync(name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await AuditRowsAsync(name)).ShouldBe(before);
+        (await TenantIndexesAsync(name, "audit", "entries")).ShouldBe("ix_entries_tenant_id_occurred_at_id");
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()
@@ -612,6 +647,17 @@ public sealed class MigrationStepTests(Database database)
                 ORDER BY array_position(ARRAY[{string.Join(", ", columns.Select(column => $"'{column}'"))}]::text[], column_name::text))
             FROM information_schema.columns
             WHERE table_schema = 'control_plane' AND table_name = '{table}' AND column_name IN ({string.Join(", ", columns.Select(column => $"'{column}'"))})
+            """,
+            databaseName);
+
+    // The table's indexes whose first column is the tenant, by name.
+    private Task<string?> TenantIndexesAsync(string databaseName, string schema, string table) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(index.relname, ', ' ORDER BY index.relname)
+            FROM pg_index JOIN pg_class AS index ON index.oid = pg_index.indexrelid
+            JOIN pg_attribute AS first ON first.attrelid = pg_index.indrelid AND first.attnum = pg_index.indkey[0]
+            WHERE pg_index.indrelid = '{schema}.{table}'::regclass AND first.attname = 'tenant_id'
             """,
             databaseName);
 
