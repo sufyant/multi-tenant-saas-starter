@@ -39,6 +39,7 @@ public static class AuditLogEndpoints
         RoleCreatedDetails created => new RoleCreatedDetailsResponse(created.Permissions),
         RoleUpdatedDetails updated => new RoleUpdatedDetailsResponse(updated.OldName, updated.NewName, updated.PermissionsAdded, updated.PermissionsRemoved),
         TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId),
+        TenantOwnerMadeDetails made => new TenantOwnerMadeDetailsResponse(made.UserId, RoleOf(made.OldRole, made.OldRoleId, made.OldRoleBuiltIn)),
         TenantRenamedDetails renamed => new TenantRenamedDetailsResponse(renamed.OldName, renamed.NewName),
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
         _ => throw new ArgumentOutOfRangeException(nameof(details), details.GetType().Name, "The response has no details of this type."),

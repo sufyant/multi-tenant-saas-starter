@@ -134,7 +134,7 @@ Clerk's invitation leads to our accept link, `https://app.localhost/invitations/
 
 ## 8. Accept the invitation
 
-As the owner, signed in with the invited email address verified. A person who is not a user yet gives their first and last name; ControlPlane keeps them, and Clerk keeps none (A7):
+As the owner, signed in with the invited email address verified. A person who is not a user yet gives their first and last name; ControlPlane keeps them, and the API sends Clerk none (A7):
 
 ```sh
 curl -X POST http://127.0.0.1:5080/v1/me/invitations/accept \

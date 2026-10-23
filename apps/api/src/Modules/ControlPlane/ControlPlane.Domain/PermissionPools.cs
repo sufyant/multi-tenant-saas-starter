@@ -26,6 +26,8 @@ internal static class PermissionPools
 
     public const string PlatformTenantsInviteOwner = "platform.tenants.invite_owner";
 
+    public const string PlatformTenantsMakeOwner = "platform.tenants.make_owner";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";
@@ -100,6 +102,7 @@ internal static class PermissionPools
         PlatformTenantsClose,
         PlatformTenantsReopen,
         PlatformTenantsInviteOwner,
+        PlatformTenantsMakeOwner,
         PlatformUsersRead,
         PlatformUsersSuspend,
         PlatformUsersReactivate,

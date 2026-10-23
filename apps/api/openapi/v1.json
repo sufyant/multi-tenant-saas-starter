@@ -1352,6 +1352,136 @@
         }
       }
     },
+    "/v1/platform/tenants/{tenantId}/owners": {
+      "post": {
+        "tags": [
+          "Platform/Members"
+        ],
+        "operationId": "MakeOwner",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeOwnerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMembershipResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/users": {
       "get": {
         "tags": [
@@ -4542,6 +4672,123 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "Me/Users"
+        ],
+        "operationId": "RenameMe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameMeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/me/preferences": {
@@ -5155,6 +5402,9 @@
             "$ref": "#/components/schemas/TenantOwnerInvitedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantOwnerMadeDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantRenamedDetailsResponse"
           },
           {
@@ -5171,6 +5421,7 @@
             "role.created": "#/components/schemas/RoleCreatedDetailsResponse",
             "role.updated": "#/components/schemas/RoleUpdatedDetailsResponse",
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
+            "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
           }
@@ -5232,6 +5483,7 @@
           "tenant.closed",
           "tenant.created",
           "tenant.owner_invited",
+          "tenant.owner_made",
           "tenant.reactivated",
           "tenant.renamed",
           "tenant.reopened",
@@ -5258,6 +5510,7 @@
           "TenantClosed",
           "TenantCreated",
           "TenantOwnerInvited",
+          "TenantOwnerMade",
           "TenantReactivated",
           "TenantRenamed",
           "TenantReopened",
@@ -5465,6 +5718,7 @@
           "invitation.not_pending",
           "invitation.owner_requires_owner",
           "invitation.system_admin_cannot_join",
+          "member.already_owner",
           "member.cannot_remove_self",
           "member.exists",
           "member.last_owner",
@@ -5536,6 +5790,7 @@
           "InvitationNotPending",
           "InvitationOwnerRequiresOwner",
           "InvitationSystemAdminCannotJoin",
+          "MemberAlreadyOwner",
           "MemberCannotRemoveSelf",
           "MemberExists",
           "MemberLastOwner",
@@ -6008,6 +6263,19 @@
           }
         }
       },
+      "MakeOwnerRequest": {
+        "required": [
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a\nrequest without one is refused, so it never falls back to an empty id."
+      },
       "MemberInvitedDetailsResponse": {
         "required": [
           "role",
@@ -6304,6 +6572,7 @@
           "platform.tenants.close",
           "platform.tenants.create",
           "platform.tenants.invite_owner",
+          "platform.tenants.make_owner",
           "platform.tenants.reactivate",
           "platform.tenants.read",
           "platform.tenants.reopen",
@@ -6337,6 +6606,7 @@
           "PlatformTenantsClose",
           "PlatformTenantsCreate",
           "PlatformTenantsInviteOwner",
+          "PlatformTenantsMakeOwner",
           "PlatformTenantsReactivate",
           "PlatformTenantsRead",
           "PlatformTenantsReopen",
@@ -6451,6 +6721,24 @@
             "description": "The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of."
           }
         }
+      },
+      "RenameMeRequest": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "lastName": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "description": "The signed-in user's own names, each within the API's limit. The API trims each name before it counts its length. Both are required,\nso a client that leaves one out never clears it."
       },
       "RenameTenantRequest": {
         "required": [
@@ -6782,6 +7070,32 @@
           }
         },
         "description": "The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any."
+      },
+      "TenantOwnerMadeDetailsResponse": {
+        "required": [
+          "userId",
+          "oldRole",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.owner_made"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantOwnerMade"
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "oldRole": {
+            "$ref": "#/components/schemas/AuditRoleResponse"
+          }
+        },
+        "description": "The details of `tenant.owner_made`: the member who became an Owner, and the role they had."
       },
       "TenantOwnerResponse": {
         "required": [
@@ -7197,6 +7511,9 @@
     },
     {
       "name": "Platform/Invitations"
+    },
+    {
+      "name": "Platform/Members"
     },
     {
       "name": "Platform/SystemAdmins"

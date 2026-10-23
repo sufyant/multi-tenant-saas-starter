@@ -67,6 +67,7 @@
       "system_admin_cannot_join": "A system admin cannot join an organisation."
     },
     "member": {
+      "already_owner": "This member is already an Owner.",
       "cannot_remove_self": "You cannot remove yourself.",
       "exists": "This person is already a member.",
       "last_owner": "An organisation needs at least one Owner.",

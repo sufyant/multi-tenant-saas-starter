@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Users;
 using SharedKernel;
 
 namespace ControlPlane.Domain.Tenants;
@@ -247,6 +248,41 @@ internal sealed class Tenant
         }
 
         return new RoleChange(target, oldRole, target.Assign(role));
+    }
+
+    /// <summary>
+    /// The platform makes the target member an Owner, whether or not the tenant has one (section 6, "Owner recovery"): the member's role
+    /// becomes the tenant's Owner role, which the caller found by its kind (A1), and any other Owner keeps theirs. The checks, in this order: the tenant is active, by
+    /// the rule of the platform's Owner invitation; the user is a member of the tenant; the member's role does not hold
+    /// <c>tenant.owners.manage</c> yet (A1); the user is neither suspended nor deleted. The escalation rule of step r4b does not apply:
+    /// the actor is the platform, not a member, and it holds no role of the tenant. The caller holds the tenant's lock and read the facts
+    /// under it (K6j); the user's status, none for an id no user has, it read without a lock of the user (K6a). Every rejection comes
+    /// before the change.
+    /// </summary>
+    public Result<RoleChange> MakeOwner(Role owner, MemberFacts facts, UserStatus? userStatus)
+    {
+        if (Status != TenantStatus.Active)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active tenant gets an Owner from the platform.");
+        }
+
+        if (MemberOf(facts) is not { } target)
+        {
+            return Membership.NotFound;
+        }
+
+        var oldRole = facts.Roles.Of(target.RoleId);
+        if (ManagesOwners(oldRole))
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.MemberAlreadyOwner, "The member is an Owner already.");
+        }
+
+        return userStatus switch
+        {
+            UserStatus.Suspended => Error.Conflict(ControlPlaneErrorCodes.UserSuspended, "The user is suspended."),
+            UserStatus.Deleted => Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted."),
+            _ => new RoleChange(target, oldRole, target.Assign(owner)),
+        };
     }
 
     /// <summary>

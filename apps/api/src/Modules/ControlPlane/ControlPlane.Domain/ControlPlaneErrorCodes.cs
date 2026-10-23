@@ -23,6 +23,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode InvitationSystemAdminCannotJoin = ErrorCode.Declare("invitation.system_admin_cannot_join");
 
+    public static readonly ErrorCode MemberAlreadyOwner = ErrorCode.Declare("member.already_owner");
+
     public static readonly ErrorCode MemberCannotRemoveSelf = ErrorCode.Declare("member.cannot_remove_self");
 
     public static readonly ErrorCode MemberExists = ErrorCode.Declare("member.exists");

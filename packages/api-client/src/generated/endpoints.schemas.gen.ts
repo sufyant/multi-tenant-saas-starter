@@ -129,6 +129,7 @@ export const Permission = {
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
   PlatformTenantsReactivate: 'platform.tenants.reactivate',
   PlatformTenantsRead: 'platform.tenants.read',
   PlatformTenantsReopen: 'platform.tenants.reopen',
@@ -197,6 +198,22 @@ export interface TenantOwnerInvitedDetailsResponse {
   replacedInvitationId: string | null;
 }
 
+export type TenantOwnerMadeDetailsResponseOperation = typeof TenantOwnerMadeDetailsResponseOperation[keyof typeof TenantOwnerMadeDetailsResponseOperation];
+
+
+export const TenantOwnerMadeDetailsResponseOperation = {
+  TenantOwnerMade: 'tenant.owner_made',
+} as const;
+
+/**
+ * The details of `tenant.owner_made`: the member who became an Owner, and the role they had.
+ */
+export interface TenantOwnerMadeDetailsResponse {
+  operation: TenantOwnerMadeDetailsResponseOperation;
+  userId: string;
+  oldRole: AuditRoleResponse;
+}
+
 export type TenantRenamedDetailsResponseOperation = typeof TenantRenamedDetailsResponseOperation[keyof typeof TenantRenamedDetailsResponseOperation];
 
 
@@ -232,7 +249,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -254,6 +271,7 @@ export const AuditOperation = {
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
+  TenantOwnerMade: 'tenant.owner_made',
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
@@ -391,6 +409,7 @@ export const ErrorCode = {
   InvitationNotPending: 'invitation.not_pending',
   InvitationOwnerRequiresOwner: 'invitation.owner_requires_owner',
   InvitationSystemAdminCannotJoin: 'invitation.system_admin_cannot_join',
+  MemberAlreadyOwner: 'member.already_owner',
   MemberCannotRemoveSelf: 'member.cannot_remove_self',
   MemberExists: 'member.exists',
   MemberLastOwner: 'member.last_owner',
@@ -760,6 +779,14 @@ export interface ListPageOfUserResponse {
 }
 
 /**
+ * The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a
+ * request without one is refused, so it never falls back to an empty id.
+ */
+export interface MakeOwnerRequest {
+  userId: string;
+}
+
+/**
  * The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and
  * their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
  */
@@ -831,6 +858,17 @@ export interface ProblemDetails {
      * @nullable
      */
   tenantIds?: string[] | null;
+}
+
+/**
+ * The signed-in user's own names, each within the API's limit. The API trims each name before it counts its length. Both are required,
+ * so a client that leaves one out never clears it.
+ */
+export interface RenameMeRequest {
+  /** @maxLength 100 */
+  firstName: string;
+  /** @maxLength 100 */
+  lastName: string;
 }
 
 /**
