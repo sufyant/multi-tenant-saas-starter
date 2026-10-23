@@ -58,12 +58,10 @@ export const MemberInvitedDetailsResponseOperation = {
 /**
  * A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The
  * role may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the
- * maintainer's decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because
- * every role was then.
+ * maintainer's decision in step r4b).
  */
 export interface AuditRoleResponse {
-  /** @nullable */
-  id: string | null;
+  id: string;
   name: string;
   builtIn: boolean;
 }
@@ -705,16 +703,13 @@ export const TenantResponseStatus = {
  * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
  * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
  * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
- * again can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier
- * invitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of
- * ARCHITECTURE.md).
+ * again can send it back.
  */
 export interface OwnerInvitationResponse {
   email: string;
   expiresAt: string;
   state: InvitationResponseState;
-  /** A language the web speaks, by its BCP 47 language tag. */
-  language: null | Language;
+  language: Language;
 }
 
 /**

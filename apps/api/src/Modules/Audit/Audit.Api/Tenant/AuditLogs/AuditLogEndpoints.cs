@@ -45,9 +45,8 @@ public static class AuditLogEndpoints
         _ => throw new ArgumentOutOfRangeException(nameof(details), details.GetType().Name, "The response has no details of this type."),
     };
 
-    // An entry keeps the role as it was at that moment (K3). An entry written before step r4b keeps the name only, and every role was
-    // built in then.
-    private static AuditRoleResponse RoleOf(string name, Guid? id, bool? builtIn) => new(id, name, builtIn ?? true);
+    // An entry keeps the role as it was at that moment (K3).
+    private static AuditRoleResponse RoleOf(string name, Guid id, bool builtIn) => new(id, name, builtIn);
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the log to it. K5's exception: a cursor,
     // newest first, and no total.

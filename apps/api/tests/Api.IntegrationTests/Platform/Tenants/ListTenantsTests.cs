@@ -266,25 +266,6 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         ]);
     }
 
-    // Deployment, section 8: the version before this one writes the summary without the language while the migration has already run.
-    // The page then answers that invitation without a language and the other one with its own, never an error (section 13).
-    [Fact]
-    public async Task ListTenants_ASummaryWithoutTheLanguage_AnswersThePageWithoutIt()
-    {
-        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(language: "tr"), secondFactor: true);
-        var tenants = new PlatformTenants(database, _api);
-        var without = await tenants.CreateAsync(admin, Email(), name: $"{_marker} Alpha");
-        await tenants.CreateAsync(admin, Email(), name: $"{_marker} Bravo");
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{without}'");
-
-        var response = await admin.GetAsync($"/v1/platform/tenants?q={_marker}", Cancellation);
-
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("ownerInvitation").GetProperty("language").ToString())
-            .ShouldBe(["", "tr"]);
-    }
-
     private static List<(Guid Id, string Name, string Slug, string Status)> Tenants(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => (

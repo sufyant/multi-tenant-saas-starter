@@ -17,7 +17,11 @@ import { BuiltInRole } from "@/shared/roles";
 
 // The tenant log's entries of the Activity board, and the answers of ListAuditEntries.
 
-const role = (name: BuiltInRole) => ({ id: null, name, builtIn: true });
+const role = (name: BuiltInRole) => ({
+  id: "0198f0a2-0000-7000-8000-0000000000f1",
+  name,
+  builtIn: true,
+});
 
 /** An entry of the tenant log: Ayşe acted on Khalid. */
 export const entry = (

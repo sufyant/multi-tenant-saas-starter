@@ -184,19 +184,18 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // K8: every invitation keeps the language of its email, so its answer always carries it, and a client that invites again can send it
-    // back. The Owner invitation of the tenant summary may be null until the migrations are squashed (deployment, section 8;
-    // ARCHITECTURE.md, section 13).
+    // back.
     [Theory]
-    [InlineData("InvitationResponse", false)]
-    [InlineData("OwnerInvitationResponse", true)]
-    public void BuildOpenApiDocument_LanguageOfAnInvitation_IsARequiredLanguage(string name, bool nullable)
+    [InlineData("InvitationResponse")]
+    [InlineData("OwnerInvitationResponse")]
+    public void BuildOpenApiDocument_LanguageOfAnInvitation_IsARequiredLanguage(string name)
     {
         var schema = Schemas().Single(schema => schema.Name == name).Value;
         var language = schema.GetProperty("properties").GetProperty("language");
 
         RequiredOf(schema).ShouldContain("language");
         ReferencesIn(language).ShouldBe([LanguageSchema]);
-        IsNullable(language).ShouldBe(nullable);
+        IsNullable(language).ShouldBeFalse();
     }
 
     // N11i and K5: the permission list is one enum in the document, so a generated client knows each name and a typo does not compile.
@@ -237,8 +236,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     // N7k and K5: every response field that holds a role is one of two schemas. A role of the tenant that a member, an invitation or a
     // tenant of the user holds is RoleResponse, { id, name, builtIn }, so a request gives it back by its id. A role in the details of an
-    // audit entry is AuditRoleResponse, the role as it was at that moment, whose id is null for an entry written before step r4b (the
-    // maintainer's decision in step r4b). A field holds a role when it is named role, or when its type is one of the two.
+    // audit entry is AuditRoleResponse, the role as it was at that moment (the maintainer's decision in step r4b). A field holds a role when it is named role, or when its type is one of the two.
     [Fact]
     public void BuildOpenApiDocument_EveryResponseFieldThatHoldsARole_RefersToOneOfTheTwoRoleSchemas()
     {
@@ -259,7 +257,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         IsNullable(role.GetProperty("properties").GetProperty("id")).ShouldBeFalse();
         var auditRole = SchemaAt(AuditRoleSchema);
         PropertiesOf(auditRole).Select(property => property.Name).ShouldBe(["id", "name", "builtIn"], ignoreOrder: true);
-        IsNullable(auditRole.GetProperty("properties").GetProperty("id")).ShouldBeTrue();
+        IsNullable(auditRole.GetProperty("properties").GetProperty("id")).ShouldBeFalse();
     }
 
     // N11j and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.

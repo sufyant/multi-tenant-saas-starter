@@ -150,8 +150,9 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(acme.Id);
     }
 
-    // Section 13: a user deleted before step r7c kept their address in a tenant they left before. A second deletion has no address of the
-    // user to send, so it erases by the invitation the user accepted: its address goes, and so does a pending one to that address.
+    // A deletion whose erasure in a tenant the user left did not run, such as a message in the dead letter queue, kept the address there.
+    // A second deletion has no address of the user to send, so it erases by the invitation the user accepted: its address goes, and so
+    // does a pending one to that address.
     [Fact]
     public async Task DeleteUser_AgainAfterAnEarlierDeletionLeftATenantTheyLeftWithTheAddress_ErasesItThere()
     {

@@ -8,8 +8,6 @@ namespace ControlPlane.Contracts.Tenants;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="ReactivatedBy">The user id of the system admin who reactivated the tenant.</param>
-/// <param name="TenantName">
-/// The tenant's name at that moment, for its audit entry. Null only in an event published before the name was added.
-/// </param>
+/// <param name="TenantName">The tenant's name at that moment, for its audit entry.</param>
 [MessageName("tenant-reactivated")]
-public sealed record TenantReactivatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReactivatedBy, string? TenantName);
+public sealed record TenantReactivatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid ReactivatedBy, string TenantName);

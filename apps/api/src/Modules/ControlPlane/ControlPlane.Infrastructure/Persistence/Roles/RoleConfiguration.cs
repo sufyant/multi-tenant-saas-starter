@@ -27,7 +27,7 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         // A3: a role's name is unique in its tenant without regard to case, built-in names included, so no custom role is called "Owner".
         // The command checks it with lower() under the tenant's lock; the unique index ix_roles_tenant_id_lower_name, on the tenant and
-        // lower(name), is the second guard (K6b). EF Core cannot model an index on an expression, so the migration AddRolePermissions
+        // lower(name), is the second guard (K6b). EF Core cannot model an index on an expression, so the initial migration
         // writes it in SQL, and the model does not hold it.
 
         // K5: the role list searches the name with a trigram index and sorts by it with a B-tree index.

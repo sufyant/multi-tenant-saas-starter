@@ -42,9 +42,9 @@ public sealed class RecordMemberRoleChangedTests(Database database)
             RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId))!).RootElement;
-        (details.GetProperty("oldRoleId").GetGuid(), details.GetProperty("oldRoleBuiltIn").GetBoolean()).ShouldBe((changed.OldRoleId!.Value, true));
+        (details.GetProperty("oldRoleId").GetGuid(), details.GetProperty("oldRoleBuiltIn").GetBoolean()).ShouldBe((changed.OldRoleId, true));
         (details.GetProperty("newRoleId").GetGuid(), details.GetProperty("newRole").GetString(), details.GetProperty("newRoleBuiltIn").GetBoolean())
-            .ShouldBe((changed.NewRoleId!.Value, "Billing", false));
+            .ShouldBe((changed.NewRoleId, "Billing", false));
     }
 
     // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.

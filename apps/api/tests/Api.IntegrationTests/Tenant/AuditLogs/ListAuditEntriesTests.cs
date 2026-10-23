@@ -193,25 +193,25 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     }
 
     // K3: the rows keep the JSON their handlers wrote, and a stored entry never changes. Each stored shape, as its handler writes it,
-    // answers the shape of its operation, with the operation as its discriminator. A role answers the one RoleResponse (N7k): a built-in
-    // role by its name, and any other name as a custom role, which comes later (A3).
+    // answers the shape of its operation, with the operation as its discriminator. A role answers AuditRoleResponse (N7k): its id, its
+    // name and whether it is built in, as the entry keeps them.
     [Theory]
     [InlineData(
         "member.invited",
-        """{"role":"admin","replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""",
-        """{"operation":"member.invited","role":{"id":null,"name":"admin","builtIn":true},"replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""")]
+        """{"role":"admin","replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001","roleId":"0199f7a0-0000-7000-8000-000000000006","roleBuiltIn":true}""",
+        """{"operation":"member.invited","role":{"id":"0199f7a0-0000-7000-8000-000000000006","name":"admin","builtIn":true},"replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""")]
     [InlineData(
         "member.invited",
-        """{"role":"member","replacedInvitationId":null}""",
-        """{"operation":"member.invited","role":{"id":null,"name":"member","builtIn":true},"replacedInvitationId":null}""")]
+        """{"role":"member","replacedInvitationId":null,"roleId":"0199f7a0-0000-7000-8000-000000000007","roleBuiltIn":true}""",
+        """{"operation":"member.invited","role":{"id":"0199f7a0-0000-7000-8000-000000000007","name":"member","builtIn":true},"replacedInvitationId":null}""")]
     [InlineData(
         "member.role_changed",
-        """{"oldRole":"owner","newRole":"admin"}""",
-        """{"operation":"member.role_changed","oldRole":{"id":null,"name":"owner","builtIn":true},"newRole":{"id":null,"name":"admin","builtIn":true}}""")]
+        """{"oldRole":"owner","newRole":"admin","oldRoleId":"0199f7a0-0000-7000-8000-000000000008","oldRoleBuiltIn":true,"newRoleId":"0199f7a0-0000-7000-8000-000000000009","newRoleBuiltIn":true}""",
+        """{"operation":"member.role_changed","oldRole":{"id":"0199f7a0-0000-7000-8000-000000000008","name":"owner","builtIn":true},"newRole":{"id":"0199f7a0-0000-7000-8000-000000000009","name":"admin","builtIn":true}}""")]
     [InlineData(
         "member.removed",
-        """{"role":"admin"}""",
-        """{"operation":"member.removed","role":{"id":null,"name":"admin","builtIn":true}}""")]
+        """{"role":"admin","roleId":"0199f7a0-0000-7000-8000-00000000000a","roleBuiltIn":true}""",
+        """{"operation":"member.removed","role":{"id":"0199f7a0-0000-7000-8000-00000000000a","name":"admin","builtIn":true}}""")]
     [InlineData(
         "member.removed",
         """{"role":"auditor","roleId":"0199f7a0-0000-7000-8000-000000000003","roleBuiltIn":false}""",
