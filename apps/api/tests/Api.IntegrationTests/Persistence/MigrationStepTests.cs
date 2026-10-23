@@ -341,6 +341,49 @@ public sealed class MigrationStepTests(Database database)
         ]);
     }
 
+    // R16: every foreign key restricts the deletion of a row in use, so each deletion is a step of the code, which the counts and the audit
+    // follow. Two keys keep their rule: a custom role's permissions go with the role, and a finished invitation loses its deleted role.
+    // The rows stay through the migration; a tenant or a user in use can no longer be deleted.
+    [Fact]
+    public async Task Migrate_RowsWithTheirParents_KeepsThemAndRestrictsEveryDeletionButTheTwoKept()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("MakeEachDeletionAStepOfTheCode");
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var member = await testData.AddMemberAsync(tenant.Id);
+        await testData.AddInvitationAsync(tenant.Id);
+        var role = await testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read");
+        var admin = await testData.AddSystemAdminAsync();
+        var before = await ControlPlaneRowsAsync(name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await ControlPlaneRowsAsync(name)).ShouldBe(before);
+        (await DeleteRulesAsync(name)).ShouldBe(
+            """
+            fk_invitations_roles_tenant_id_role_id: SET NULL (role_id)
+            fk_invitations_tenants_tenant_id: RESTRICT
+            fk_invitations_users_accepted_by: RESTRICT
+            fk_invitations_users_invited_by: RESTRICT
+            fk_memberships_roles_tenant_id_role_id: RESTRICT
+            fk_memberships_tenants_tenant_id: RESTRICT
+            fk_memberships_users_user_id: RESTRICT
+            fk_role_permissions_roles_tenant_id_role_id: CASCADE
+            fk_roles_tenants_tenant_id: RESTRICT
+            fk_system_admins_users_user_id: RESTRICT
+            fk_tenant_summaries_tenants_tenant_id: RESTRICT
+            fk_users_users_suspended_by: RESTRICT
+            """);
+        (await RefusingKeysAsync(
+            name,
+            $"DELETE FROM control_plane.tenants WHERE id = '{tenant.Id}'",
+            $"DELETE FROM control_plane.users WHERE external_id = '{member}'",
+            $"DELETE FROM control_plane.users WHERE external_id = '{admin}'",
+            $"DELETE FROM control_plane.roles WHERE id = '{role}'")).ShouldBe(
+            ["fk_tenant_summaries_tenants_tenant_id", "fk_memberships_users_user_id", "fk_system_admins_users_user_id", "deleted"]);
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()
@@ -480,6 +523,36 @@ public sealed class MigrationStepTests(Database database)
                 refusals.Add("stored");
             }
             catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.CheckViolation)
+            {
+                refusals.Add(exception.ConstraintName!);
+            }
+        }
+
+        return refusals;
+    }
+
+    // Each foreign key of ControlPlane with what a deletion of its parent row does, one key on each line.
+    private Task<string?> DeleteRulesAsync(string databaseName) =>
+        database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(conname || ': ' || substring(pg_get_constraintdef(oid) FROM 'ON DELETE (.*)$'), E'\n' ORDER BY conname)
+            FROM (SELECT conname, oid FROM pg_constraint WHERE contype = 'f' AND connamespace = 'control_plane'::regnamespace) AS keys
+            """,
+            databaseName);
+
+    // The foreign key that refuses each statement, or "deleted" for a statement the database takes. Each runs in a transaction it rolls
+    // back, so the rows stay as they were for the next. PostgreSQL checks the keys of a parent in the order of their names.
+    private async Task<List<string>> RefusingKeysAsync(string databaseName, params string[] statements)
+    {
+        var refusals = new List<string>();
+        foreach (var statement in statements)
+        {
+            try
+            {
+                await database.ScalarAsSuperuserAsync<object>($"BEGIN; {statement}; ROLLBACK;", databaseName);
+                refusals.Add("deleted");
+            }
+            catch (PostgresException exception) when (exception.SqlState is PostgresErrorCodes.RestrictViolation or PostgresErrorCodes.ForeignKeyViolation)
             {
                 refusals.Add(exception.ConstraintName!);
             }

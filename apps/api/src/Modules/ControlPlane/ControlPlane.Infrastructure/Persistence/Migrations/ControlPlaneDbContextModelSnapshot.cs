@@ -538,7 +538,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_roles_tenants_tenant_id");
                 });
@@ -559,7 +559,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithOne()
                         .HasForeignKey("ControlPlane.Domain.SystemAdmins.SystemAdmin", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_system_admins_users_user_id");
                 });
@@ -582,7 +582,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_invitations_tenants_tenant_id");
 
@@ -599,14 +599,14 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_tenants_tenant_id");
 
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
 
