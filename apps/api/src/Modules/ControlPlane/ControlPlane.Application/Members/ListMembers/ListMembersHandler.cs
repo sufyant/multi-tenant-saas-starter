@@ -1,4 +1,3 @@
-using ControlPlane.Domain.Roles;
 using SharedKernel;
 
 namespace ControlPlane.Application.Members.ListMembers;
@@ -9,5 +8,5 @@ public static class ListMembersHandler
         ListMembersQuery query,
         IMemberQueries members,
         CancellationToken cancellationToken) =>
-        await members.ListMembersAsync(query.List, query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null, cancellationToken);
+        await members.ListMembersAsync(query.List, query.RoleId, cancellationToken);
 }

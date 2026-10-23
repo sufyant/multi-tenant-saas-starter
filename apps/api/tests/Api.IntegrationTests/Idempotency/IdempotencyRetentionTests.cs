@@ -7,7 +7,6 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Api.IntegrationTests.Idempotency;
 
-[RuntimeHandlerCode]
 public sealed class IdempotencyRetentionTests(Database database)
 {
     [Fact]

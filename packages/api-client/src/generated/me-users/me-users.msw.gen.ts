@@ -27,6 +27,8 @@ import type {
 
 export const getGetMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
+export const getRenameMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
 export const getChangePreferencesResponseMock = (overrideResponse: Partial<Extract<PreferencesResponse, object>> = {}): PreferencesResponse => ({language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 
@@ -37,6 +39,18 @@ export const getGetMeMockHandler = (overrideResponse?: MeResponse | ((info: Para
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getGetMeResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRenameMeMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
+  return http.patch('*/v1/me', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRenameMeResponseMock(),
       { status: 200
       })
   }, options)
@@ -55,5 +69,6 @@ export const getChangePreferencesMockHandler = (overrideResponse?: PreferencesRe
 }
 export const getMeUsersMock = () => [
   getGetMeMockHandler(),
+  getRenameMeMockHandler(),
   getChangePreferencesMockHandler()
 ]

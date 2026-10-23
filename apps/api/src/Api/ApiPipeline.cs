@@ -177,12 +177,8 @@ internal static class ApiPipeline
             // Each message travels and is stored under its fixed name (W12).
             MessageNames.Register();
 
-            // A message that fails for good goes to the dead letter queue, and its fault is published for a flow that has to react,
-            // such as a saga's compensation. Faults are stored messages, so they carry only the exception's type.
-            options.PublishFaultEvents(includeExceptionMessage: false, includeStackTrace: false);
-
-            // Of two messages a saga handles at once, the second fails on the saga's version and is tried again on the first one's
-            // result (W6, S8). Wolverine does not retry this by itself.
+            // Of two messages the tenant purge handles at once, the second fails on the saga's version and is tried again on the first
+            // one's result (W6, S8). Wolverine does not retry this by itself.
             options.OnException<SagaConcurrencyException>().RetryTimes(3);
             options.OnAnyException().ContinueWith(new QueuedRetries());
 

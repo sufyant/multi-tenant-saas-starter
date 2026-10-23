@@ -3,6 +3,8 @@ using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Me.Users;
 using ControlPlane.Api.Platform.Invitations;
+using ControlPlane.Api.Platform.Members;
+using ControlPlane.Api.Platform.SystemAdmins;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.Users;
 using ControlPlane.Api.Tenant.Invitations;
@@ -10,6 +12,7 @@ using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Api.Tenant.Tenants;
 using ControlPlane.Application.Invitations.AcceptInvitation;
 using Microsoft.AspNetCore.Routing;
+using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api;
 
@@ -30,12 +33,15 @@ public static class ControlPlaneModule
     {
         TenantEndpoints.Map(platform);
         PlatformInvitationEndpoints.Map(platform);
+        PlatformMemberEndpoints.Map(platform);
         UserEndpoints.Map(platform);
+        SystemAdminEndpoints.Map(platform);
         MyProfileEndpoints.Map(me);
         MyTenantEndpoints.Map(me);
         MyInvitationEndpoints.Map(me);
         TenantProfileEndpoints.Map(tenant);
         MemberEndpoints.Map(tenant);
         InvitationEndpoints.Map(tenant);
+        RoleEndpoints.Map(tenant);
     }
 }

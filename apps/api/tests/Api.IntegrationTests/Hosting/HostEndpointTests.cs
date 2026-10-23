@@ -196,7 +196,7 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
 
         var start = () => api.CreateClient();
 
-        start.ShouldThrow<Exception>().Message.ShouldContain("Authentication:Clerk:AuthorizedParties");
+        start.ShouldThrow<Exception>().Message.ShouldContain("Host:Authentication:AuthorizedParties");
     }
 
     [Fact]

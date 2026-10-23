@@ -5,7 +5,6 @@ namespace Api.IntegrationTests.Hosting;
 
 // Endpoints return the Result of their command and the host maps it, so the document must describe what the client
 // actually receives, not the Result type.
-[RuntimeHandlerCode]
 public sealed class OpenApiDocumentTests : IAsyncLifetime
 {
     private PipelineHost _host = null!;

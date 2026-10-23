@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using Audit.Api.Tenant.AuditLogs;
 using Audit.Domain;
 using ControlPlane.Contracts;
-using ControlPlane.Contracts.Members;
 using FluentValidation;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Authorization;
@@ -38,7 +37,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     private const string RoleSchema = "#/components/schemas/RoleResponse";
 
-    private const string MemberRoleSchema = "#/components/schemas/MemberRole";
+    private const string AuditRoleSchema = "#/components/schemas/AuditRoleResponse";
 
     private const string EnumNames = "x-enumNames";
 
@@ -151,7 +150,6 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [InlineData("#/components/schemas/ErrorCode", "user.suspended", "UserSuspended")]
     [InlineData("#/components/schemas/Permission", "platform.tenants.invite_owner", "PlatformTenantsInviteOwner")]
     [InlineData("#/components/schemas/Language", "en", "En")]
-    [InlineData("#/components/schemas/MemberRole", "owner", "Owner")]
     [InlineData("#/paths/~1v1~1platform~1users/get/parameters/sort", "-email", "EmailDescending")]
     public void BuildOpenApiDocument_EnumValue_IsNamedFromItsParts(string schema, string value, string expected)
     {
@@ -160,15 +158,6 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         var name = NamesOf(found)[ValuesOf(found).IndexOf(value)];
 
         name.ShouldBe(expected);
-    }
-
-    // Step 20k: a built-in role is one lower-case word, as every other enum of the document.
-    [Fact]
-    public void BuildOpenApiDocument_MemberRole_ListsTheLowerCaseRoles()
-    {
-        var documented = EnumOf(Resolve(Schemas().Single(found => found.Name == "MemberRole").Value));
-
-        documented.ShouldBe("owner, admin, member");
     }
 
     // Decision 1 of step 20j: one list of languages, the schema Language, with the tags of the enum. Every field that holds a language
@@ -225,12 +214,14 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(string.Join(", ", listed));
     }
 
-    // N11i and K5: every response field that holds permission names is an array of the one schema Permission, so the web compares each
-    // name with the enum. A field is found by its name, as the response types keep the names as strings (MyTenantDetailResponse).
+    // N11i and K5: every request and response field that holds permission names is an array of the one schema Permission, so the web
+    // compares each name with the enum and sends only names of the list. A field is found by its name, as the types keep the names as
+    // strings (MyTenantDetailResponse, CreateRoleRequest).
     [Fact]
-    public void BuildOpenApiDocument_EveryResponseFieldNamedPermissions_IsAnArrayOfPermission()
+    public void BuildOpenApiDocument_EveryRequestAndResponseFieldNamedPermissions_IsAnArrayOfPermission()
     {
         var expected = ResponseTypes()
+            .Concat(RequestTypes())
             .Where(type => type.GetProperty("Permissions") is not null)
             .Select(type => $"{type.Name}.permissions");
 
@@ -244,30 +235,31 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         documented.ShouldBe(expected, ignoreOrder: true);
     }
 
-    // N7k and K5, the maintainer's decision in audit fix 04: every response field that holds a role is the one schema RoleResponse,
-    // { builtIn, name }. builtIn is the enum MemberRole, or null for a custom role later, so a client compares it with an enum value
-    // and never with a string it writes by hand. A field holds a role when it is named role, or when its type is RoleResponse, as the
-    // old and the new role of an audit entry's details are.
+    // N7k and K5: every response field that holds a role is one of two schemas. A role of the tenant that a member, an invitation or a
+    // tenant of the user holds is RoleResponse, { id, name, builtIn }, so a request gives it back by its id. A role in the details of an
+    // audit entry is AuditRoleResponse, the role as it was at that moment, whose id is null for an entry written before step r4b (the
+    // maintainer's decision in step r4b). A field holds a role when it is named role, or when its type is one of the two.
     [Fact]
-    public void BuildOpenApiDocument_EveryResponseFieldThatHoldsARole_RefersToTheOneRoleSchema()
+    public void BuildOpenApiDocument_EveryResponseFieldThatHoldsARole_RefersToOneOfTheTwoRoleSchemas()
     {
         var expected = ResponseTypes()
             .SelectMany(type => type.GetProperties()
-                .Where(property => property.Name == "Role" || property.PropertyType == typeof(RoleResponse))
-                .Select(property => $"{type.Name}.{JsonNamingPolicy.CamelCase.ConvertName(property.Name)} {RoleSchema}"));
+                .Where(property => property.Name == "Role" || property.PropertyType.Name is "RoleResponse" or nameof(AuditRoleResponse))
+                .Select(property => $"{type.Name}.{JsonNamingPolicy.CamelCase.ConvertName(property.Name)} {RoleSchemaOf(property.PropertyType)}"));
 
         var documented = ResponseSchemas()
             .SelectMany(schema => PropertiesOf(schema.Value)
-                .Where(property => property.Name == "role" || ReferencesIn(property.Value).Contains(RoleSchema))
+                .Where(property => property.Name == "role" || ReferencesIn(property.Value).Contains(RoleSchema) || ReferencesIn(property.Value).Contains(AuditRoleSchema))
                 .Select(property => $"{schema.Name}.{property.Name} {string.Join(", ", ReferencesIn(property.Value))}"));
 
         expected.ShouldNotBeEmpty();
         documented.ShouldBe(expected, ignoreOrder: true);
         var role = SchemaAt(RoleSchema);
-        PropertiesOf(role).Select(property => property.Name).ShouldBe(["builtIn", "name"], ignoreOrder: true);
-        ReferencesIn(role.GetProperty("properties").GetProperty("builtIn")).ShouldBe([MemberRoleSchema]);
-        IsNullable(role.GetProperty("properties").GetProperty("builtIn")).ShouldBeTrue();
-        EnumOf(SchemaAt(MemberRoleSchema)).ShouldBe(JsonValuesOf(typeof(MemberRole)));
+        PropertiesOf(role).Select(property => property.Name).ShouldBe(["id", "name", "builtIn"], ignoreOrder: true);
+        IsNullable(role.GetProperty("properties").GetProperty("id")).ShouldBeFalse();
+        var auditRole = SchemaAt(AuditRoleSchema);
+        PropertiesOf(auditRole).Select(property => property.Name).ShouldBe(["id", "name", "builtIn"], ignoreOrder: true);
+        IsNullable(auditRole.GetProperty("properties").GetProperty("id")).ShouldBeTrue();
     }
 
     // N11j and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.
@@ -646,6 +638,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             "AcceptInvitationRequest.firstName PredicateValidator",
             "AcceptInvitationRequest.lastName PredicateValidator",
             "ChangePreferencesRequest.timeZone RegularExpressionValidator",
+            "RenameMeRequest.firstName PredicateValidator",
+            "RenameMeRequest.lastName PredicateValidator",
             "RenameUserRequest.firstName PredicateValidator",
             "RenameUserRequest.lastName PredicateValidator",
             "SuspendTenantRequest.reason PredicateValidator",
@@ -835,6 +829,15 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             : [];
 
     // The response types of every module: those of its Api project, and those its Contracts shares with another module (N8).
+    // A role of the audit details is Audit's own schema; any other role is the one of ControlPlane (N7k).
+    private static string RoleSchemaOf(Type type) =>
+        (Nullable.GetUnderlyingType(type) ?? type) == typeof(AuditRoleResponse) ? AuditRoleSchema : RoleSchema;
+
+    private static IEnumerable<Type> RequestTypes() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes())
+            .Where(type => type.Name.EndsWith("Request", StringComparison.Ordinal));
+
     private static IEnumerable<Type> ResponseTypes() =>
         Solution.Modules
             .SelectMany(module => Solution.Load($"{module}.Api").GetExportedTypes().Concat(Solution.Load($"{module}.Contracts").GetExportedTypes()))

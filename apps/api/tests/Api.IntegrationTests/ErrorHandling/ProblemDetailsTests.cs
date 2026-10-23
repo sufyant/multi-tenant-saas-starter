@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.IntegrationTests.ErrorHandling;
 
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The test handlers of Greet, Acknowledge, Fail and Explode return each kind of Result and throw on demand; no module handler does.")]
 public sealed class ProblemDetailsTests : IAsyncLifetime
 {
     private PipelineHost _host = null!;
@@ -14,7 +14,7 @@ public sealed class ProblemDetailsTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _host = await PipelineHost.StartAsync();
+        _host = await PipelineHost.StartAsync(testHandlers: true);
         _client = _host.CreateClient();
     }
 

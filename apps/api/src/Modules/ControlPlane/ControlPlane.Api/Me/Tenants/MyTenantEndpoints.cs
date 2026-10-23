@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
+using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api.Me.Tenants;
 
@@ -19,7 +20,7 @@ public static class MyTenantEndpoints
     // Accepting an invitation answers the tenant it joined in the same shape (N7g: a response that two audiences answer stays in the
     // first one's file).
     internal static MyTenantResponse ToResponse(MyTenantView tenant) =>
-        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), MemberEndpoints.ToResponse(tenant.Role));
+        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), RoleEndpoints.ToResponse(tenant.Role));
 
     // T4: the user's own active and suspended tenants, read without a tenant.
     private static async Task<Result<ListPage<MyTenantResponse>>> ListMyTenants(

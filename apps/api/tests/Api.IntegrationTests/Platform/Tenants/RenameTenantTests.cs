@@ -119,13 +119,10 @@ public sealed class RenameTenantTests(Database database) : IAsyncLifetime
         problem.GetProperty("errors").GetProperty("name").EnumerateArray().Select(code => code.GetString()).ShouldBe(["required"]);
     }
 
-    [Theory]
-    [InlineData("Provisioning")]
-    [InlineData("Cancelled")]
-    [InlineData("Closed")]
-    public async Task RenameTenant_NeitherActiveNorSuspended_IsAConflictAndChangesNothing(string status)
+    [Fact]
+    public async Task RenameTenant_Closed_IsAConflictAndChangesNothing()
     {
-        var tenant = await _testData.AddTenantAsync(status: status, closedAt: DateTimeOffset.UtcNow);
+        var tenant = await _testData.AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow);
 
         var response = await (await SystemAdminAsync()).RenameTenantAsync(tenant.Id, "Globex Corp");
 

@@ -1,10 +1,9 @@
 using System.Text.Json.Serialization;
-using ControlPlane.Contracts.Members;
 
 namespace ControlPlane.Api.Tenant.Members;
 
 /// <summary>
-/// The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum's
-/// first value.
+/// The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to
+/// an empty id.
 /// </summary>
-public sealed record ChangeMemberRoleRequest([property: JsonRequired] MemberRole Role);
+public sealed record ChangeMemberRoleRequest([property: JsonRequired] Guid RoleId);

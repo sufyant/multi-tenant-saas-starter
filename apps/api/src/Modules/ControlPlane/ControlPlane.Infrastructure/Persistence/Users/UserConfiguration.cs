@@ -20,8 +20,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         user.Property(u => u.TimeZone).HasMaxLength(User.TimeZoneMaxLength);
         user.HasOne<User>().WithMany().HasForeignKey(u => u.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
 
-        // SystemAdminDirectory inserts the first system admin with SQL, without these columns: at the moment of the insert, with no
-        // membership (R13).
+        // The database's defaults: a row inserted without these columns is a user from the moment of the insert, with no membership
+        // (R13).
         user.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
         user.Property(u => u.MembershipCount).HasDefaultValue(0);
     }

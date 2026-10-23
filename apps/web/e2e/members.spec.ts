@@ -1,6 +1,7 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { Language, MemberRole } from "@repo/api-client";
+import { Language } from "@repo/api-client";
+import { BuiltInRole } from "../src/shared/roles";
 import { mockMembers, northwind } from "./api";
 import { expectAccessible } from "./axe";
 
@@ -38,7 +39,7 @@ test("Members_Owner_SeesTheListTheTabsAndInvite", async ({ page: browser }) => {
 });
 
 test("Members_Member_SeesAReadOnlyList", async ({ page: browser }) => {
-  await open(browser, { role: MemberRole.Member });
+  await open(browser, { role: BuiltInRole.Member });
 
   await expect(
     browser.getByRole("table", { name: "Members" }).getByText("John Byrne"),

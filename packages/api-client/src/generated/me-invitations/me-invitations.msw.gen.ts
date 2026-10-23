@@ -19,18 +19,20 @@ import type {
 import {
   InvitationResponseState,
   InviterNameResponseKind,
-  MemberRole,
   MyTenantResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
   InvitationPreviewResponse,
-  MyTenantResponse
+  MyTenantResponse,
+  RoleResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getAcceptInvitationResponseMock = (overrideResponse: Partial<Extract<MyTenantResponse, object>> = {}): MyTenantResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {builtIn: faker.helpers.arrayElement([null,faker.helpers.arrayElement(Object.values(MemberRole)),]), name: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
+export const getAcceptInvitationResponseMock = (overrideResponse: Partial<Extract<MyTenantResponse, object>> = {}): MyTenantResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, ...overrideResponse})
 
-export const getGetInvitationPreviewResponseMock = (overrideResponse: Partial<Extract<InvitationPreviewResponse, object>> = {}): InvitationPreviewResponse => ({tenantName: faker.string.alpha({length: {min: 10, max: 20}}), inviterName: {kind: faker.helpers.arrayElement(Object.values(InviterNameResponseKind)), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}, role: {builtIn: faker.helpers.arrayElement([null,faker.helpers.arrayElement(Object.values(MemberRole)),]), name: faker.string.alpha({length: {min: 10, max: 20}})}, expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), ...overrideResponse})
+export const getGetInvitationPreviewResponseRoleResponseMock = (overrideResponse: Partial<RoleResponse> = {}): RoleResponse => ({...{id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, ...overrideResponse});
+
+export const getGetInvitationPreviewResponseMock = (overrideResponse: Partial<Extract<InvitationPreviewResponse, object>> = {}): InvitationPreviewResponse => ({tenantName: faker.string.alpha({length: {min: 10, max: 20}}), inviterName: {kind: faker.helpers.arrayElement(Object.values(InviterNameResponseKind)), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}, role: faker.helpers.arrayElement([null,{...getGetInvitationPreviewResponseRoleResponseMock()},]), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), ...overrideResponse})
 
 
 export const getAcceptInvitationMockHandler = (overrideResponse?: MyTenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<MyTenantResponse> | MyTenantResponse), options?: RequestHandlerOptions) => {

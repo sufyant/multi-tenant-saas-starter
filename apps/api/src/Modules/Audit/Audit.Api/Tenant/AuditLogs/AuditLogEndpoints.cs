@@ -5,7 +5,7 @@ using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
 using Audit.Application.Tenants;
-using ControlPlane.Contracts.Members;
+using Audit.Application.Roles;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
@@ -31,18 +31,23 @@ public static class AuditLogEndpoints
     private static AuditDetailsResponse? DetailsOf(AuditDetails? details) => details switch
     {
         null => null,
-        MemberInvitedDetails invited => new MemberInvitedDetailsResponse(RoleOf(invited.Role), invited.ReplacedInvitationId),
-        MemberRemovedDetails removed => new MemberRemovedDetailsResponse(RoleOf(removed.Role)),
-        MemberRoleChangedDetails changed => new MemberRoleChangedDetailsResponse(RoleOf(changed.OldRole), RoleOf(changed.NewRole)),
+        MemberInvitedDetails invited => new MemberInvitedDetailsResponse(RoleOf(invited.Role, invited.RoleId, invited.RoleBuiltIn), invited.ReplacedInvitationId),
+        MemberRemovedDetails removed => new MemberRemovedDetailsResponse(RoleOf(removed.Role, removed.RoleId, removed.RoleBuiltIn)),
+        MemberRoleChangedDetails changed => new MemberRoleChangedDetailsResponse(
+            RoleOf(changed.OldRole, changed.OldRoleId, changed.OldRoleBuiltIn),
+            RoleOf(changed.NewRole, changed.NewRoleId, changed.NewRoleBuiltIn)),
+        RoleCreatedDetails created => new RoleCreatedDetailsResponse(created.Permissions),
+        RoleUpdatedDetails updated => new RoleUpdatedDetailsResponse(updated.OldName, updated.NewName, updated.PermissionsAdded, updated.PermissionsRemoved),
         TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId),
+        TenantOwnerMadeDetails made => new TenantOwnerMadeDetailsResponse(made.UserId, RoleOf(made.OldRole, made.OldRoleId, made.OldRoleBuiltIn)),
         TenantRenamedDetails renamed => new TenantRenamedDetailsResponse(renamed.OldName, renamed.NewName),
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
         _ => throw new ArgumentOutOfRangeException(nameof(details), details.GetType().Name, "The response has no details of this type."),
     };
 
-    // N7k: a role in a response is the one RoleResponse. An entry keeps the role's stored name (K3), which is a built-in role's JSON name;
-    // any other name is a custom role, which comes later (A3).
-    private static RoleResponse RoleOf(string name) => new(JsonEnum<MemberRole>.Find(name), name);
+    // An entry keeps the role as it was at that moment (K3). An entry written before step r4b keeps the name only, and every role was
+    // built in then.
+    private static AuditRoleResponse RoleOf(string name, Guid? id, bool? builtIn) => new(id, name, builtIn ?? true);
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the log to it. K5's exception: a cursor,
     // newest first, and no total.

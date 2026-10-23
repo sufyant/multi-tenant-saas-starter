@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain;
 using ControlPlane.Domain.SystemAdmins;
 
@@ -30,29 +31,42 @@ public sealed class SystemDoorTests
         permissions.ShouldBeNull();
     }
 
-    // Section 6: while the system admin list is empty, the person with the configured email address verified and a second factor becomes
-    // the first system admin.
+    // Section 6, "Root system admins": a person with a second factor and a verified address in the list becomes a system admin.
     [Fact]
-    public void BecomeFirstSystemAdmin_TheConfiguredEmailIsVerifiedWithASecondFactor_Qualifies()
+    public void BecomeRootSystemAdmin_AListedEmailIsVerifiedWithASecondFactor_AnswersThatEmail()
     {
-        var qualifies = SystemDoor.IsFirstSystemAdmin("Admin@Example.com", secondFactorVerified: true, ["other@example.com", "admin@example.com"]);
+        var root = SystemDoor.RootEmailOf(Roots("Admin@Example.com", "boss@example.com"), secondFactorVerified: true, EmailAddress.AllOf(["other@example.com", "admin@example.com"]));
 
-        qualifies.ShouldBeTrue();
+        root.ShouldBe(EmailAddress.Create("admin@example.com"));
     }
 
     [Fact]
-    public void BecomeFirstSystemAdmin_WithoutASecondFactor_DoesNotQualify()
+    public void BecomeRootSystemAdmin_WithoutASecondFactor_AnswersNone()
     {
-        var qualifies = SystemDoor.IsFirstSystemAdmin("admin@example.com", secondFactorVerified: false, ["admin@example.com"]);
+        var root = SystemDoor.RootEmailOf(Roots("admin@example.com"), secondFactorVerified: false, EmailAddress.AllOf(["admin@example.com"]));
 
-        qualifies.ShouldBeFalse();
+        root.ShouldBeNull();
     }
 
     [Fact]
-    public void BecomeFirstSystemAdmin_AnotherEmailIsVerified_DoesNotQualify()
+    public void BecomeRootSystemAdmin_NoListedEmailIsVerified_AnswersNone()
     {
-        var qualifies = SystemDoor.IsFirstSystemAdmin("admin@example.com", secondFactorVerified: true, ["admin@example.org"]);
+        var root = SystemDoor.RootEmailOf(Roots("admin@example.com"), secondFactorVerified: true, EmailAddress.AllOf(["admin@example.org"]));
 
-        qualifies.ShouldBeFalse();
+        root.ShouldBeNull();
     }
+
+    // Root is read from the list, by the user's address in its one form; nothing stores it.
+    [Theory]
+    [InlineData("admin@example.com", true)]
+    [InlineData("other@example.com", false)]
+    [InlineData(null, false)]
+    public void IsRoot_TheUsersEmailAndTheList_AnswersWhetherTheListNamesIt(string? email, bool isRoot)
+    {
+        var answer = SystemDoor.IsRoot(email, Roots("Admin@Example.com"));
+
+        answer.ShouldBe(isRoot);
+    }
+
+    private static IReadOnlyList<EmailAddress> Roots(params string[] emails) => EmailAddress.AllOf(emails);
 }

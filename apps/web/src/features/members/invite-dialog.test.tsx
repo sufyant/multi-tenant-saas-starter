@@ -3,7 +3,6 @@ import {
   type InvitationResponse,
   InvitationResponseState,
   Language,
-  MemberRole,
 } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -18,6 +17,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
   membersAnswer,
@@ -25,6 +25,7 @@ import {
   northwind,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
@@ -40,7 +41,7 @@ const day = 24 * 60 * 60 * 1000;
 const sent = (email: string): InvitationResponse => ({
   id: "0198f0a2-0000-7000-8000-0000000000a1",
   email,
-  role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+  role: roleOf.member,
   invitedBy: ayse.userId,
   invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
   language: Language.En,
@@ -84,7 +85,7 @@ describe("InviteDialog", () => {
   it("Invite_Success_SendsTheInvitationAndSaysHowLongItLasts", async () => {
     const calls: Call[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer(
         [() => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 })],
@@ -104,7 +105,7 @@ describe("InviteDialog", () => {
     expect(calls.map((call) => call.body)).toEqual([
       {
         email: "khalid@northwind.io",
-        role: MemberRole.Member,
+        roleId: roleOf.member.id,
         language: Language.En,
       },
     ]);
@@ -113,9 +114,12 @@ describe("InviteDialog", () => {
   it("Invite_TheViewersLanguage_IsTheDefaultEmailLanguage", async () => {
     server.use(
       http.get("*/v1/me", () =>
-        HttpResponse.json({ ...meOf(MemberRole.Owner), language: Language.Tr }),
+        HttpResponse.json({
+          ...meOf(BuiltInRole.Owner),
+          language: Language.Tr,
+        }),
       ),
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
     );
 
@@ -126,7 +130,7 @@ describe("InviteDialog", () => {
   });
 
   it("Invite_Admin_OffersNoOwnerAndSaysWhy", async () => {
-    server.use(...tenantAnswers(MemberRole.Admin), membersAnswer());
+    server.use(...tenantAnswers(BuiltInRole.Admin), membersAnswer());
 
     renderInTenant(<MembersPage />);
     const dialog = await openInvite();
@@ -145,7 +149,7 @@ describe("InviteDialog", () => {
 
   it("Invite_AlreadyAMember_SaysSoUnderTheEmail", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer([() => problem(409, ErrorCode.MemberExists)]),
     );
@@ -164,7 +168,7 @@ describe("InviteDialog", () => {
 
   it("Invite_ApiRefusesTheEmail_ShowsTheFieldError", async () => {
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer([
         () =>
@@ -196,7 +200,7 @@ describe("InviteDialog", () => {
   it("Invite_NoEmail_ShowsTheZodErrorAndSendsNothing", async () => {
     const calls: Call[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer([], calls),
     );
@@ -230,7 +234,7 @@ describe("InviteDialog", () => {
     "Invite_Refused%s_%s_ShowsTheBannerInTheDialog",
     async (status, code, title, text) => {
       server.use(
-        ...tenantAnswers(MemberRole.Owner),
+        ...tenantAnswers(BuiltInRole.Owner),
         membersAnswer(),
         inviteAnswer([() => problem(status, code)]),
       );
@@ -249,7 +253,7 @@ describe("InviteDialog", () => {
   it("IdempotencyKey_RetryAfterANetworkError_KeepsTheKey", async () => {
     const calls: Call[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer(
         [
@@ -274,7 +278,7 @@ describe("InviteDialog", () => {
   it("IdempotencyKey_AnEditAfterARefusal_GetsANewKey", async () => {
     const calls: Call[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer([() => problem(409, ErrorCode.MemberExists)], calls),
     );
@@ -294,7 +298,7 @@ describe("InviteDialog", () => {
   it("IdempotencyKey_AfterASuccess_TheNextInvitationGetsANewKey", async () => {
     const calls: Call[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer(
         [() => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 })],
@@ -324,7 +328,7 @@ describe("InviteDialog", () => {
       http.post(`*/v1/tenants/${northwind.id}/invitations`, async () => {
         await delay(200);
       }),
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer(
         [() => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 })],
@@ -346,7 +350,7 @@ describe("InviteDialog", () => {
   it("IdempotencyKey_SendAgainAfterARefusal_GetsANewKey", async () => {
     const calls: Call[] = [];
     server.use(
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer(
         [() => problem(429, ErrorCode.InvitationDailyLimitReached)],
@@ -371,13 +375,13 @@ describe("InviteDialog", () => {
     server.use(
       http.get("*/v1/me", () => {
         calls.push("GetMe");
-        return HttpResponse.json(meOf(MemberRole.Owner));
+        return HttpResponse.json(meOf(BuiltInRole.Owner));
       }),
       http.post(`*/v1/tenants/${northwind.id}/invitations`, () => {
         calls.push("InviteMember");
         return problem(403, ErrorCode.UserSuspended);
       }),
-      ...tenantAnswers(MemberRole.Owner),
+      ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
     );
 

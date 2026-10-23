@@ -1,4 +1,4 @@
-using ControlPlane.Contracts.Members;
+using ControlPlane.Api.Tenant.Roles;
 using SharedKernel;
 
 namespace ControlPlane.Api.Tenant.Invitations;

@@ -155,6 +155,29 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe("""{"operation":"tenant.suspended","reason":"Unpaid invoices"}""");
     }
 
+    // Owner recovery (section 6): the platform's log keeps tenant.owner_made, as RecordOwnerMadeHandler writes it, and answers its shape:
+    // the member's id and the role they had.
+    [Fact]
+    public async Task ListPlatformAuditEntries_AStoredOwnerMade_AnswersTheShapeOfTenantOwnerMade()
+    {
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = Guid.CreateVersion7();
+        await _audit.AddPlatformEntryAsync(
+            _start,
+            "User",
+            Guid.CreateVersion7(),
+            "Tenant",
+            tenant,
+            "tenant.owner_made",
+            "Acme Ltd",
+            """{"userId":"0199f7a0-0000-7000-8000-000000000001","oldRole":"member","oldRoleId":"0199f7a0-0000-7000-8000-000000000004","oldRoleBuiltIn":true}""");
+
+        var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
+
+        page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe(
+            """{"operation":"tenant.owner_made","userId":"0199f7a0-0000-7000-8000-000000000001","oldRole":{"id":"0199f7a0-0000-7000-8000-000000000004","name":"member","builtIn":true}}""");
+    }
+
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
     {

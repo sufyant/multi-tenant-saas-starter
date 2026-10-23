@@ -3,7 +3,6 @@ import {
   type InvitationPreviewResponse,
   InvitationResponseState,
   InviterNameResponseKind,
-  MemberRole,
 } from "@repo/api-client";
 import {
   getAcceptInvitationMockHandler,
@@ -25,6 +24,7 @@ import {
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../../test/render";
+import { roleOf } from "../../../test/tenant";
 import { AcceptInvitationPage } from "./accept-invitation-page";
 
 // Clerk is not ours, so the test fakes its hooks (Khorikov, Chapter 9). The API is faked at the network with the generated MSW
@@ -64,7 +64,7 @@ const pending: InvitationPreviewResponse = {
     lastName: "Yılmaz",
     deleted: false,
   },
-  role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+  role: roleOf.member,
   expiresAt: "2099-10-23T13:32:00Z",
   state: InvitationResponseState.Pending,
 };
@@ -118,7 +118,7 @@ describe("AcceptInvitationPage", () => {
           name: "Northwind Traders",
           slug: "northwind",
           status: "active",
-          role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+          role: roleOf.member,
         };
       }),
     );
@@ -151,7 +151,7 @@ describe("AcceptInvitationPage", () => {
           name: "Northwind Traders",
           slug: "northwind",
           status: "active",
-          role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+          role: roleOf.member,
         };
       }),
     );

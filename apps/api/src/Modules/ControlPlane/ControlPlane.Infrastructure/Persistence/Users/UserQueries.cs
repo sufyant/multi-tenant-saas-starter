@@ -1,9 +1,11 @@
 using ControlPlane.Application.Invitations.GetInvitationPreview;
 using ControlPlane.Application.Members;
+using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.GetMe;
 using ControlPlane.Application.Users.GetUser;
 using ControlPlane.Application.Users.ListUsers;
+using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -18,7 +20,7 @@ namespace ControlPlane.Infrastructure.Persistence.Users;
 /// tenant, so the transaction declares none; it declares the user only to read the user's own memberships (R11).
 /// </summary>
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
-public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueries
+public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminOptions systemAdmins) : IUserQueries
 {
     async Task<MeView?> IUserQueries.FindMeAsync(string externalUserId, CancellationToken cancellationToken)
     {
@@ -42,7 +44,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
         var suspendedBy = user.SuspendedBy is { } suspenderId ? await FindAsync(suspenderId, cancellationToken) : null;
         var isSystemAdmin = await IsSystemAdminAsync(user.Id, cancellationToken);
         return new UserDetailView(
-            UserView.Of(user, isSystemAdmin),
+            UserView.Of(user, isSystemAdmin, systemAdmins),
             user.SuspendedAt,
             suspendedBy is null ? null : UserNameView.Of(suspendedBy),
             await ListMembershipsAsync(user.Id, cancellationToken));
@@ -91,7 +93,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.IsSystemAdmin))], list.Paging, total);
+        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.IsSystemAdmin, systemAdmins))], list.Paging, total);
     }
 
     private Task<User?> FindAsync(Guid userId, CancellationToken cancellationToken) =>
@@ -101,16 +103,30 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
     // The tenants table is not under row level security (R6), so the one query joins each membership's tenant and role. The tenant's
-    // summary counts its Owners (R12): a user who holds the Owner role in a tenant with one Owner is its last Owner.
+    // summary counts its Owners (R12): a user whose role holds the Owners' permission (A1, K1) in a tenant with one Owner is its last Owner.
+    // The query asks it with Role.Holding, which reads no permission rows for an owner-only permission: the transaction declares the user,
+    // and row level security shows it no row of role_permissions (R11).
     private async Task<IReadOnlyList<UserMembershipView>> ListMembershipsAsync(Guid userId, CancellationToken cancellationToken)
     {
         await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        var ownerRoles = controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage));
         var memberships = await (
                 from membership in controlPlane.Memberships
                 join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
+                join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
                 join role in controlPlane.Roles on membership.RoleId equals role.Id
                 orderby tenant.Name, tenant.Id
-                select new { tenant.Id, tenant.Name, tenant.Slug, tenant.Status, role.BuiltIn, membership.JoinedAt, tenant.OwnerCount })
+                select new
+                {
+                    tenant.Id,
+                    tenant.Name,
+                    tenant.Slug,
+                    tenant.Status,
+                    Role = role,
+                    membership.JoinedAt,
+                    summary.OwnerCount,
+                    ManagesOwners = ownerRoles.Any(owner => owner.Id == role.Id),
+                })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -121,9 +137,9 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane) : IUserQueri
                 membership.Name,
                 membership.Slug,
                 membership.Status.ToString(),
-                RoleView.Of(membership.BuiltIn),
+                RoleView.Of(membership.Role),
                 membership.JoinedAt,
-                membership.BuiltIn == BuiltInRole.Owner && membership.OwnerCount == 1)),
+                membership.ManagesOwners && membership.OwnerCount == 1)),
         ];
     }
 }

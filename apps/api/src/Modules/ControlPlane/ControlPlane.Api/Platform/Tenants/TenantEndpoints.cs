@@ -130,7 +130,7 @@ public static class TenantEndpoints
         (await bus.InvokeForTenantAsync<Result<TenantView>>(tenantId.ToString(), new ReopenTenantCommand(user.Id()), cancellationToken)).Map(ToResponse);
 
     private static TenantResponse ToResponse(TenantView tenant) =>
-        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status), tenant.SuspensionReason, tenant.ClosedAt);
+        new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfTenant(tenant.Status), tenant.SuspensionReason, tenant.ClosedAt, tenant.PurgedAt);
 
     private static TenantListItemResponse ToResponse(TenantListItemView item) => new(
         item.Tenant.Id,
@@ -139,10 +139,10 @@ public static class TenantEndpoints
         ResponseStatus.OfTenant(item.Tenant.Status),
         item.Tenant.SuspensionReason,
         item.Tenant.ClosedAt,
+        item.Tenant.PurgedAt,
         item.ReopenableUntil,
         item.MemberCount,
         item.OwnerCount,
-        item.FirstOwner is { } owner ? ToResponse(owner) : null,
         item.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
 
     private static TenantDetailResponse ToResponse(TenantDetailView tenant) => new(
@@ -152,6 +152,7 @@ public static class TenantEndpoints
         ResponseStatus.OfTenant(tenant.Tenant.Status),
         tenant.Tenant.SuspensionReason,
         tenant.Tenant.ClosedAt,
+        tenant.Tenant.PurgedAt,
         tenant.ReopenableUntil,
         tenant.MemberCount,
         tenant.OwnerCount,

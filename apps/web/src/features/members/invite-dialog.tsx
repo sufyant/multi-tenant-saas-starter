@@ -7,7 +7,6 @@ import {
   getGetMeQueryOptions,
   inviteMember,
   Language,
-  MemberRole,
   ProblemDetailsError,
   schemas,
 } from "@repo/api-client";
@@ -23,18 +22,21 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { problemOf } from "@/shared/problem";
+import { BuiltInRole, builtInRoleOf, isOwner } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
+import { useRoleName } from "@/shared/use-role-name";
 import { daysLeft } from "./invitation-status";
 import { afterRefusal, refreshInvitations } from "./refresh";
-import { rolesFor } from "./role-choice";
+import { listRolesOptions, rolesFor } from "./role-choice";
 import { useIntentKey } from "./use-intent-key";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
 
 /**
- * Invite a member (the Invitations board): Email, Role, Email language, with the generated schema of InviteMember (F11). Owner
- * is in the list only for an Owner (K1). The language starts as the viewer's own (GetMe). One Idempotency-Key per intent (F48):
+ * Invite a member (the Invitations board): Email, Role, Email language, with the generated schema of InviteMember (F11). The
+ * roles are the tenant's (ListRoles), and Owner is in the list only for an Owner (K1). The role starts as Member, and the language
+ * as the viewer's own (GetMe). One Idempotency-Key per intent (F48):
  * a new key when the dialog opens and when the email, the role or the language changes; the same key for a retry.
  */
 export function InviteDialog({ onClose }: { onClose: () => void }) {
@@ -45,20 +47,30 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const { tenant, detail } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
   const { key, renew } = useIntentKey();
-  const viewerIsOwner = detail.role.builtIn === MemberRole.Owner;
-  const roles = rolesFor(viewerIsOwner);
+  const roleName = useRoleName();
+  const viewerIsOwner = isOwner(detail.role);
+  const tenantRoles = useQuery(listRolesOptions(tenant.id));
+  const roles = rolesFor(tenantRoles.data?.items ?? [], viewerIsOwner);
+  const memberRole = roles.find(
+    (role) => builtInRoleOf(role) === BuiltInRole.Member,
+  );
   const languages = Object.values(Language);
   const form = useForm<Invitation>({
     resolver: zodResolver(schemas.InviteMemberBody),
     defaultValues: {
       email: "",
-      role: MemberRole.Member,
+      roleId: "",
       language:
         me.data?.language ??
         languages.find((language) => language === locale) ??
         Language.En,
     },
   });
+  // The role list comes after the form opens: the role starts as Member once it is there.
+  useEffect(() => {
+    if (memberRole && !form.getValues("roleId"))
+      form.setValue("roleId", memberRole.id);
+  }, [form, memberRole]);
   // Another email, role or language is another intent: it gets a new key.
   useEffect(
     () => form.subscribe({ formState: { values: true }, callback: renew }),
@@ -177,14 +189,14 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         />
         <Combobox
           label={t("members.role")}
-          value={form.watch("role")}
+          value={form.watch("roleId")}
           options={roles.map((role) => ({
-            id: role,
-            label: t(`shell.roles.${role}`),
+            id: role.id,
+            label: roleName(role),
           }))}
           onValueChange={(id) => {
-            const role = roles.find((choice) => choice === id);
-            if (role) form.setValue("role", role);
+            const role = roles.find((choice) => choice.id === id);
+            if (role) form.setValue("roleId", role.id);
           }}
           hint={
             viewerIsOwner

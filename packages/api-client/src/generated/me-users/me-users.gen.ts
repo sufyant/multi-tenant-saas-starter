@@ -23,7 +23,8 @@ import type {
   ChangePreferencesRequest,
   MeResponse,
   PreferencesResponse,
-  ProblemDetails
+  ProblemDetails,
+  RenameMeRequest
 } from '../endpoints.schemas.gen';
 
 import { apiFetch } from '../../mutator';
@@ -140,6 +141,41 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 
 
 
+
+
+
+export const getRenameMeUrl = () => {
+
+
+
+
+  return `/v1/me`
+}
+
+export const renameMe = async (renameMeRequest: RenameMeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<MeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MeResponse>(getRenameMeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(renameMeRequest)
+  }
+);}
 
 
 

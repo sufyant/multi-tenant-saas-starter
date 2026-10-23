@@ -5,7 +5,7 @@ using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Contracts;
-using ControlPlane.Contracts.Members;
+using ControlPlane.Api.Tenant.Roles;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
@@ -23,17 +23,13 @@ public static class MemberEndpoints
         tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete);
     }
 
-    // Every response that holds a role answers it in this one shape (N7k). The built-in role keeps ControlPlane's name, as a request
-    // gives it (RoleNameTests).
-    internal static RoleResponse ToResponse(RoleView role) => new(Enum.Parse<MemberRole>(role.BuiltIn), role.Name);
-
     // The tenant comes from the route: the host has declared it, and row level security keeps the list to it.
     private static async Task<Result<ListPage<MemberResponse>>> ListMembers(
         int? page,
         int? pageSize,
         ListSort<ListMembersSort>? sort,
         string? q,
-        ListFilter<MemberRole>? role,
+        Guid? roleId,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -43,13 +39,7 @@ public static class MemberEndpoints
             return list.Error;
         }
 
-        var filter = ListFilter.Read(role, nameof(role));
-        if (!filter.IsSuccess)
-        {
-            return filter.Error;
-        }
-
-        var members = await bus.InvokeAsync<Result<ListPage<MemberView>>>(new ListMembersQuery(list.Value, filter.Value?.ToString()), cancellationToken);
+        var members = await bus.InvokeAsync<Result<ListPage<MemberView>>>(new ListMembersQuery(list.Value, roleId), cancellationToken);
         return members.Map(found => found.Map(ToResponse));
     }
 
@@ -61,7 +51,7 @@ public static class MemberEndpoints
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var changed = await bus.InvokeAsync<Result<MemberView>>(new ChangeMemberRoleCommand(user.Id(), userId, request.Role.ToString()), cancellationToken);
+        var changed = await bus.InvokeAsync<Result<MemberView>>(new ChangeMemberRoleCommand(user.Id(), userId, request.RoleId), cancellationToken);
         return changed.Map(ToResponse);
     }
 
@@ -70,5 +60,5 @@ public static class MemberEndpoints
         await bus.InvokeAsync<Result>(new RemoveMemberCommand(user.Id(), userId), cancellationToken);
 
     private static MemberResponse ToResponse(MemberView member) =>
-        new(member.UserId, member.Email, member.FirstName, member.LastName, ToResponse(member.Role), member.Deleted, member.JoinedAt);
+        new(member.UserId, member.Email, member.FirstName, member.LastName, RoleEndpoints.ToResponse(member.Role), member.Deleted, member.JoinedAt);
 }

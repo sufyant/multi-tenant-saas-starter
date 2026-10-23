@@ -33,16 +33,14 @@ export const ListMyTenantsResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
+  Purging: 'purging',
+}).describe('The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.'),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.')
-}).describe('A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user\'s there.')),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.')
+}).describe('A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended, closed or purging when its members cannot enter it. The role is the user\'s there.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()

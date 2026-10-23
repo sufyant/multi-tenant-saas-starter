@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging.Testing;
 
 namespace Api.IntegrationTests.Observability;
 
-[RuntimeHandlerCode]
 public sealed class RequestLoggingTests(Database database) : IAsyncLifetime
 {
     private const string RequestLogCategory = "Serilog.AspNetCore.RequestLoggingMiddleware";

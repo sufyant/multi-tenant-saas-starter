@@ -67,6 +67,7 @@
       "system_admin_cannot_join": "Sistem yöneticisi bir kuruluşa katılamaz."
     },
     "member": {
+      "already_owner": "Bu üye zaten bir Sahip.",
       "cannot_remove_self": "Kendinizi çıkaramazsınız.",
       "exists": "Bu kişi zaten üye.",
       "last_owner": "Bir kuruluşun en az bir Sahibi olmalı.",
@@ -92,12 +93,33 @@
       "unsupported_media_type": "İstek geçerli değil. Sayfayı yenileyip yeniden deneyin.",
       "validation_failed": "Bazı alanların düzeltilmesi gerekiyor. Kontrol edip yeniden deneyin."
     },
+    "role": {
+      "built_in": "Yerleşik bir rolün adı ve izinleri değişmez, rol silinemez.",
+      "escalation": "Rolünüz bu rolün tüm izinlerine sahip değil.",
+      "in_use": "Bir üye ya da bekleyen bir davet bu role sahip. Önce onlara başka bir rol verin.",
+      "limit_reached": "Bu kuruluş en fazla sayıda özel role sahip. Önce bir rolü silin.",
+      "name_invalid": "Bir rol adı girin.",
+      "name_taken": "Bu kuruluşta bu adla bir rol zaten var. Başka bir ad seçin.",
+      "not_found": "Bu rol artık kuruluşta değil.",
+      "not_permitted": "Rolünüz rolleri bu şekilde değiştiremez.",
+      "permission_invalid": "Bir rol yalnızca bir kuruluşun izinlerini taşıyabilir.",
+      "permission_owner_only": "Özel bir rol, yalnızca Sahip rolünün taşıdığı bir izni taşıyamaz.",
+      "permissions_required": "En az bir izin seçin.",
+      "profile_read_required": "Bir rol kuruluşun profilini okuyabilmelidir.",
+      "roles_read_required": "Kişi davet eden ya da bir üyenin rolünü değiştiren bir rol, rolleri okuyabilmelidir."
+    },
     "route": {
       "method_not_allowed": "Bu işlem burada kullanılamaz.",
       "not_found": "Bu sayfa yok."
     },
     "server": {
       "error": "Bizim tarafımızda bir sorun oluştu. Verileriniz güvende. Biraz sonra yeniden deneyin."
+    },
+    "system_admin": {
+      "cannot_revoke_self": "Kendi sistem yöneticisi erişiminizi geri alamazsınız.",
+      "exists": "Bu kullanıcı zaten bir sistem yöneticisi.",
+      "not_found": "Bu kullanıcı bir sistem yöneticisi değil.",
+      "root": "Kök sistem yöneticisinin erişimi geri alınamaz. Yapılandırma onu adlandırır."
     },
     "tenant": {
       "closed": "Bu kuruluş kapatıldı.",

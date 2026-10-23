@@ -34,7 +34,7 @@ Neon works too, because the API uses plain PostgreSQL. It is not the default, be
 
 The API needs these from an identity provider:
 
-- OpenID Connect discovery (`/.well-known/openid-configuration`) and its signing keys, served over HTTPS with a certificate the server trusts. The issuer URL is `Authentication:Clerk:Issuer`.
+- OpenID Connect discovery (`/.well-known/openid-configuration`) and its signing keys, served over HTTPS with a certificate the server trusts. The issuer URL is `Host:Authentication:Issuer`.
 - Session tokens that carry `sub` (the user) and `sid` (the session). A token without `sid` is refused (API2).
 - `fva` in the session token for the second factor: the minutes since the first and the second factor were verified, `-1` for never. The system door requires a verified second factor (A6).
 - Invite-only sign-up with email verification. Only an invitation of the identity provider lets a person sign up. The API asks for one when it invites an address that has no account (A7). The person signs up through its link and then accepts our invitation with the invited address verified.
@@ -44,12 +44,12 @@ The API needs these from an identity provider:
 On Clerk:
 
 - Use the session token. A JWT template's token carries no `sid`, so the API refuses it.
-- Enable the second factor. The first system admin enrolls a device before their first request to `/v1/platform/...`.
+- Enable the second factor. A root system admin enrolls a device before their first request to `/v1/platform/...`.
 - The sign-up mode is Restricted (`.clerk/`, below). Clerk sends no email: the API's invitation email carries Clerk's link.
 - Let an address sign up: the API first asks `GET users?email_address=<address>`. An address with an account needs no invitation: Clerk would refuse one, and the person signs in. For any other address the API calls `POST invitations` with `notify` false, `ignore_existing` true, `redirect_url` our accept link with our invitation code, and `expires_in_days` our invitation's lifetime in whole days, rounded up (1 to 365). `ignore_existing` lets two tenants invite the same person, and lets a new invitation replace one whose withdrawal has not run yet. The answer's `url` is the link in our email, and its `id` is kept on our invitation.
 - When the person opens the link, Clerk sends them to our accept link and adds `__clerk_ticket`. The web signs them up with the ticket (`signUp.ticket()`), which verifies the invited address. Clerk's own sign-up form shows Google and Microsoft only when the ticket leaves a requirement open; with no password and no names, the ticket alone completes the sign-up. The person then signs in with an email code, Google or Microsoft.
 - Withdraw: `POST invitations/{id}/revoke`. An invitation that is no longer pending answers 400, and an unknown one 404; the API takes both as done. Our invitation ends Clerk's when it is revoked, replaced or cancelled, when its tenant closes, and when its lifetime is over; an accepted one needs nothing.
-- Read the verified addresses: `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It reads no name: Clerk keeps none, and ControlPlane owns the names (A7).
+- Read the verified addresses: `GET users/{user id}`; the API reads the addresses whose verification status is `verified`. It reads no name: ControlPlane owns the names (A7). After a Google or Microsoft sign-in, Clerk may keep that provider's names on its side, and the API never reads them.
 - Delete a user: `DELETE users/{user id}`, after ControlPlane's deletion commits. A user already gone answers 404, which is done.
 - Each call has the time limit `ControlPlane:Clerk:Timeout` and the retries `ControlPlane:IdentityProvider:RetryDelays`.
 
@@ -79,7 +79,7 @@ The settings. The values are in `.clerk/config.json` only.
 | Email sign-in and verification | `auth_email.used_for_sign_in`, `auth_email.sign_in_strategies`, `auth_email.verify_at_sign_up`, `auth_email.verification_strategies` | A person signs in with an email code and verifies their address at sign-up. No magic link |
 | Password | `auth_password.enabled`, `auth_password.required` | No password: an email code, Google or Microsoft signs a person in |
 | Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | Google and Microsoft sign a person in. A new person still needs an invitation |
-| First and last name | `user_model.first_name`, `user_model.last_name` | Clerk keeps no names. The API keeps them |
+| First and last name | `user_model.first_name`, `user_model.last_name` | Clerk asks for no name. After a Google or Microsoft sign-in it may keep that provider's names on its side (A7). The API keeps the names it uses |
 | Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | The system door needs a verified second factor (`fva`). A backup code signs in a person who lost their device |
 | Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | Stops automated sign-up attempts |
 | User enumeration protection | `auth_attack_protection.enumeration_protection` | Sign-in never tells a visitor whether an address has an account or an invitation |
@@ -93,11 +93,10 @@ The instance config has no key for these. The maintainer does them by hand:
 - Webhooks: none. The API has no webhook endpoint. Remove any webhook endpoint in the Clerk dashboard, Configure, Webhooks.
 - `fva` in the session token: Clerk's session token version 2 carries it. Check it in the Clerk dashboard, Configure, Sessions, and do not remove it in "Customize session token".
 
-The first system admin: in Restricted mode nobody can sign up without an invitation. The maintainer creates the first system admin's account with the address in `ControlPlane:FirstSystemAdminEmail`, in the Clerk dashboard (Users, Create user) or with `clerk users create --instance <dev or prod> --email <address>` in the linked checkout. The account has no password: the admin signs in with an email code and then enrolls an authenticator app. Until that account exists, nobody passes the system door: every `/v1/platform/...` request answers 403, and the system admin list stays empty. The account's first request with a verified second factor writes the user, with the configured address and no names, and the grant (section 6). A system admin then gives them their names (`PATCH /v1/platform/users/{userId}`).
+Root system admins: `ControlPlane:SystemAdmins:RootEmails` lists their addresses (`ARCHITECTURE.md`, section 6, "Root system admins"). In Restricted mode nobody can sign up without an invitation. The maintainer creates the account of each listed address that has none, in the Clerk dashboard (Users, Create user) or with `clerk users create --instance <dev or prod> --email <address>` in the linked checkout. The account has no password: the admin signs in with an email code and then enrolls an authenticator app. Until one such account exists and nobody else is a system admin, nobody passes the system door: every `/v1/platform/...` request answers 403. The account's first request with a verified second factor writes the user, with the listed address and no names, and the grant. A system admin then gives them their names (`PATCH /v1/platform/users/{userId}`). A person who is a user already, for example a tenant member, keeps their user and gets only the grant. No system admin can revoke a root system admin. To lift that protection, take the address out of the list and deploy; a system admin can then revoke them (`DELETE /v1/platform/users/{userId}/system-admin`). The identity provider holds nothing about system admins.
 
-## 3. Email and tenant creation timing
+## 3. Email
 
-- `ControlPlane:InvitationEmailTimeout` must be longer than the `ControlPlane:IdentityProvider:RetryDelays` and the `Notifications:InvitationEmails:RetryDelays` together: step 3 lets the owner sign up with Clerk, then sends the email. A shorter wait gives up on a call that is still being tried, cancels the invitation and raises the alarm. The host checks the rule on start (`Api/Hosting/InvitationEmailWait.cs`). If the rule fails, the host does not start, and the error names the three keys and their values.
 - Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
 
 ## 4. Container platform

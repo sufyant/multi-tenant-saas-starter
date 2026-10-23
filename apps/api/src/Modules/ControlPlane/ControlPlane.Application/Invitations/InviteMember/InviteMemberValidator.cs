@@ -1,4 +1,4 @@
-using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.EmailAddresses;
 using FluentValidation;
 using SharedKernel;
 
@@ -12,6 +12,6 @@ public sealed class InviteMemberValidator : AbstractValidator<InviteMemberComman
         RuleFor(command => command.Email)
             .NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required))
             .EmailAddress().WithErrorCode(nameof(FieldErrorCode.EmailInvalid))
-            .MaximumLength(Invitation.EmailMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
+            .MaximumLength(EmailAddress.MaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong));
     }
 }

@@ -4,12 +4,8 @@ using Api.Hosting;
 using Api.Routing;
 using Api.Persistence;
 using Audit.Api;
-using Audit.Infrastructure;
 using ControlPlane.Api;
-using ControlPlane.Infrastructure;
 using JasperFx;
-using Notifications.Api;
-using Notifications.Infrastructure;
 
 // Main returns the exit code. An exception that left it would end the process through the runtime's abort, which never ends a
 // process that runs as PID 1 in an arm64 container. When a test host runs Main (WebApplicationFactory), the entry assembly is the
@@ -28,11 +24,7 @@ try
         builder.Configuration["ConnectionStrings:Database"] ??= "Host=localhost;Database=unused;Username=unused;Password=unused";
     }
 
-    var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
-    builder.Services.AddControlPlaneInfrastructure();
-    builder.Services.AddNotificationsInfrastructure();
-    builder.Services.AddAuditInfrastructure();
-    builder.Services.AddInvitationEmailWait();
+    var role = builder.AddApiWithModules();
 
     app = builder.Build();
 

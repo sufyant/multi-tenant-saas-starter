@@ -16,18 +16,15 @@ import type {
   RequestHandlerOptions
 } from 'msw';
 
-import {
-  MemberRole
-} from '../endpoints.schemas.gen';
 import type {
   ListPageOfMemberResponse,
   MemberResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getListMembersResponseMock = (overrideResponse: Partial<Extract<ListPageOfMemberResponse, object>> = {}): ListPageOfMemberResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), role: {builtIn: faker.helpers.arrayElement([null,faker.helpers.arrayElement(Object.values(MemberRole)),]), name: faker.string.alpha({length: {min: 10, max: 20}})}, deleted: faker.datatype.boolean(), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
+export const getListMembersResponseMock = (overrideResponse: Partial<Extract<ListPageOfMemberResponse, object>> = {}): ListPageOfMemberResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({userId: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, deleted: faker.datatype.boolean(), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
 
-export const getChangeMemberRoleResponseMock = (overrideResponse: Partial<Extract<MemberResponse, object>> = {}): MemberResponse => ({userId: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), role: {builtIn: faker.helpers.arrayElement([null,faker.helpers.arrayElement(Object.values(MemberRole)),]), name: faker.string.alpha({length: {min: 10, max: 20}})}, deleted: faker.datatype.boolean(), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getChangeMemberRoleResponseMock = (overrideResponse: Partial<Extract<MemberResponse, object>> = {}): MemberResponse => ({userId: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, deleted: faker.datatype.boolean(), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
 export const getListMembersMockHandler = (overrideResponse?: ListPageOfMemberResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfMemberResponse> | ListPageOfMemberResponse), options?: RequestHandlerOptions) => {

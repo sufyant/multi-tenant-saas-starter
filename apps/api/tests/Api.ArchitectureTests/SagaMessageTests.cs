@@ -1,6 +1,4 @@
-using ControlPlane.Application.Tenants.ActivateTenant;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Contracts.Invitations;
 using Wolverine;
 using Wolverine.Runtime.Handlers;
 
@@ -8,7 +6,8 @@ namespace Api.ArchitectureTests;
 
 // S13: a saga shares no message with another handler. It hears its steps through replies and faults sent to it, not through events
 // meant for other modules. Read from Wolverine's own handler graph of the application composed as a worker: the handlers of a
-// message type are its chain's own and those Wolverine separated onto endpoints of their own (W4).
+// message type are its chain's own and those Wolverine separated onto endpoints of their own (W4). The template's one saga is its
+// reference use, the tenant purge (section 6, "Tenant purge"); a product's saga is held to the same rules.
 public sealed class SagaMessageTests : IAsyncLifetime
 {
     private const string WhyNot =
@@ -30,9 +29,16 @@ public sealed class SagaMessageTests : IAsyncLifetime
             .Where(message => message.Value.Length > 1)
             .Select(message => $"{message.Key.Name} -> {string.Join(", ", message.Value.Select(handler => handler.Name))}");
 
-        sagaMessages.Select(message => message.Key).ShouldContain(typeof(SendInvitationEmailReply));
-        sagaMessages.Select(message => message.Key).ShouldContain(typeof(Fault<ActivateTenantCommand>));
         shared.ShouldBeEmpty(WhyNot);
+    }
+
+    // Tenant creation is one transaction (section 6). The template's one saga is the tenant purge; a product's saga adds itself here.
+    [Fact]
+    public void ReadTheHandlerGraph_Sagas_AreTheTenantPurgeOnly()
+    {
+        var sagas = HandlersByMessage().SelectMany(message => message.Value).Where(IsSaga).Distinct().Select(saga => saga.FullName);
+
+        sagas.ShouldBe(["ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga"]);
     }
 
     // N3: a saga hears only the replies to its steps, its own timeouts and Wolverine's faults; never a public event.
@@ -57,7 +63,6 @@ public sealed class SagaMessageTests : IAsyncLifetime
             .Where(message => message.Value.Any(handler => !IsSaga(handler)))
             .Select(message => $"{message.Key.Name} -> {string.Join(", ", message.Value.Select(handler => handler.Name))}");
 
-        replies.ShouldNotBeEmpty();
         heardElsewhere.ShouldBeEmpty("Only a saga handles a ...Reply (N3).");
     }
 

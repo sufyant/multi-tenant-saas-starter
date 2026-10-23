@@ -43,7 +43,7 @@ const tenant = {
   id: tenantId,
   name: "Atlas Logistics",
   slug: "atlas",
-  status: "provisioning",
+  status: "active",
   suspensionReason: null,
   closedAt: null,
 };

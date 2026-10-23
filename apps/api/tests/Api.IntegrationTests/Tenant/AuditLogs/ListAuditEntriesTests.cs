@@ -199,23 +199,35 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [InlineData(
         "member.invited",
         """{"role":"admin","replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""",
-        """{"operation":"member.invited","role":{"builtIn":"admin","name":"admin"},"replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""")]
+        """{"operation":"member.invited","role":{"id":null,"name":"admin","builtIn":true},"replacedInvitationId":"0199f7a0-0000-7000-8000-000000000001"}""")]
     [InlineData(
         "member.invited",
         """{"role":"member","replacedInvitationId":null}""",
-        """{"operation":"member.invited","role":{"builtIn":"member","name":"member"},"replacedInvitationId":null}""")]
+        """{"operation":"member.invited","role":{"id":null,"name":"member","builtIn":true},"replacedInvitationId":null}""")]
     [InlineData(
         "member.role_changed",
         """{"oldRole":"owner","newRole":"admin"}""",
-        """{"operation":"member.role_changed","oldRole":{"builtIn":"owner","name":"owner"},"newRole":{"builtIn":"admin","name":"admin"}}""")]
+        """{"operation":"member.role_changed","oldRole":{"id":null,"name":"owner","builtIn":true},"newRole":{"id":null,"name":"admin","builtIn":true}}""")]
     [InlineData(
         "member.removed",
         """{"role":"admin"}""",
-        """{"operation":"member.removed","role":{"builtIn":"admin","name":"admin"}}""")]
+        """{"operation":"member.removed","role":{"id":null,"name":"admin","builtIn":true}}""")]
     [InlineData(
         "member.removed",
-        """{"role":"auditor"}""",
-        """{"operation":"member.removed","role":{"builtIn":null,"name":"auditor"}}""")]
+        """{"role":"auditor","roleId":"0199f7a0-0000-7000-8000-000000000003","roleBuiltIn":false}""",
+        """{"operation":"member.removed","role":{"id":"0199f7a0-0000-7000-8000-000000000003","name":"auditor","builtIn":false}}""")]
+    [InlineData(
+        "member.role_changed",
+        """{"oldRole":"member","newRole":"Billing","oldRoleId":"0199f7a0-0000-7000-8000-000000000004","oldRoleBuiltIn":true,"newRoleId":"0199f7a0-0000-7000-8000-000000000005","newRoleBuiltIn":false}""",
+        """{"operation":"member.role_changed","oldRole":{"id":"0199f7a0-0000-7000-8000-000000000004","name":"member","builtIn":true},"newRole":{"id":"0199f7a0-0000-7000-8000-000000000005","name":"Billing","builtIn":false}}""")]
+    [InlineData(
+        "role.created",
+        """{"permissions":["tenant.audit.read","tenant.members.read"]}""",
+        """{"operation":"role.created","permissions":["tenant.audit.read","tenant.members.read"]}""")]
+    [InlineData(
+        "role.updated",
+        """{"oldName":"Billing","newName":"Finance","permissionsAdded":["tenant.audit.read"],"permissionsRemoved":[]}""",
+        """{"operation":"role.updated","oldName":"Billing","newName":"Finance","permissionsAdded":["tenant.audit.read"],"permissionsRemoved":[]}""")]
     [InlineData(
         "tenant.renamed",
         """{"oldName":"Acme","newName":"Acme Ltd"}""",

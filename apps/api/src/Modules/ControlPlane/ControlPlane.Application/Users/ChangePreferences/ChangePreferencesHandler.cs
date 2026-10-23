@@ -1,5 +1,6 @@
 using ControlPlane.Contracts.Users;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Users.ChangePreferences;
 
@@ -8,26 +9,26 @@ namespace ControlPlane.Application.Users.ChangePreferences;
 // first (W7).
 public static class ChangePreferencesHandler
 {
-    public static async Task<(Result<PreferencesView>, UserPreferencesChangedEvent?)> HandleAsync(
+    public static async Task<(Result<PreferencesView>, OutgoingMessages)> HandleAsync(
         ChangePreferencesCommand command,
         IUserRepository users,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
-        // A person becomes a user only through an invitation or as the first system admin, as GetMe answers.
+        // A person becomes a user only through an invitation or as a root system admin at the system door, as GetMe answers.
         if (await users.FindUserForUpdateAsync(command.ActorId, cancellationToken) is not { } user)
         {
-            return (Errors.UserNotFound, null);
+            return (Errors.UserNotFound, []);
         }
 
         var changed = user.ChangePreferences(command.Language, command.TimeZone);
         if (!changed.IsSuccess || changed.Value == StateChange.Unchanged)
         {
-            return (changed.Map(_ => new PreferencesView(user.Language, user.TimeZone)), null);
+            return (changed.Map(_ => new PreferencesView(user.Language, user.TimeZone)), []);
         }
 
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (new PreferencesView(user.Language, user.TimeZone), new UserPreferencesChangedEvent(Guid.CreateVersion7(now), now, user.Id));
+        return (new PreferencesView(user.Language, user.TimeZone), [new UserPreferencesChangedEvent(Guid.CreateVersion7(now), now, user.Id)]);
     }
 }
