@@ -52,7 +52,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
+            ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
             ignoreOrder: true);
         (found.GetProperty("id").GetGuid(), found.GetProperty("email").GetString(), found.GetProperty("firstName").GetString(), found.GetProperty("lastName").GetString())
             .ShouldBe((id, email, "Ada", "Lovelace"));
@@ -187,6 +187,25 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         forOne.ShouldBeGreaterThan(0);
     }
 
+    // Root is read from the list on each request: the same system admin is a root under one list and not under another, and nothing is
+    // written in between.
+    [Fact]
+    public async Task GetUser_TheSameSystemAdminUnderTwoLists_IsARootOnlyWhileListed()
+    {
+        var root = RootEmail();
+        var admin = await _testData.AddSystemAdminAsync(email: root.ToLowerInvariant());
+        var id = await _testData.UserIdOfAsync(admin);
+        var reader = await _testData.AddSystemAdminAsync();
+        await using var listed = WithRoots(root);
+        await using var unlisted = WithRoots(RootEmail());
+
+        var whileListed = await listed.CreateClient(reader, secondFactor: true).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+        var afterwards = await unlisted.CreateClient(reader, secondFactor: true).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+
+        (whileListed.GetProperty("isSystemAdmin").GetBoolean(), whileListed.GetProperty("isRootSystemAdmin").GetBoolean()).ShouldBe((true, true));
+        (afterwards.GetProperty("isSystemAdmin").GetBoolean(), afterwards.GetProperty("isRootSystemAdmin").GetBoolean()).ShouldBe((true, false));
+    }
+
     private static List<(Guid TenantId, string? Name, string? Slug, string? Status, string? Role, DateTimeOffset JoinedAt, bool LastOwner)> Memberships(JsonElement user) =>
     [
         .. user.GetProperty("memberships").EnumerateArray().Select(membership => (
@@ -198,6 +217,14 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             membership.GetProperty("joinedAt").GetDateTimeOffset(),
             membership.GetProperty("lastOwner").GetBoolean())),
     ];
+
+    // An address in mixed case, so the list and the stored address meet only in their one form.
+    private static string RootEmail() => $"Root.{Guid.NewGuid():N}@Example.com";
+
+    private ApiFactory WithRoots(params string[] roots) =>
+        new(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            settings: roots.Select((root, index) => KeyValuePair.Create($"ControlPlane:SystemAdmins:RootEmails:{index}", (string?)root)).ToDictionary());
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 

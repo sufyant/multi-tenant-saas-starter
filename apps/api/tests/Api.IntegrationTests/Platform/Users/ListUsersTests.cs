@@ -59,7 +59,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             (Guid.Parse($"f{random[1..]}"), null, null, null, "deleted", false),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(5);
@@ -298,6 +298,22 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         one.ShouldBeGreaterThan(0);
     }
 
+    // A listed address of a user who is no system admin makes no root: root describes a system admin.
+    [Fact]
+    public async Task ListUsers_AListedUserWhoIsNoSystemAdmin_IsNoRoot()
+    {
+        var root = RootEmail();
+        var user = await _testData.AddUserAsync(email: root.ToLowerInvariant());
+        await using var api = WithRoots(root);
+
+        var page = await api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
+            .GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={Uri.EscapeDataString(root.ToLowerInvariant())}", Cancellation);
+
+        var found = page.GetProperty("items").EnumerateArray().Single();
+        (found.GetProperty("id").GetGuid(), found.GetProperty("isSystemAdmin").GetBoolean(), found.GetProperty("isRootSystemAdmin").GetBoolean())
+            .ShouldBe((await _testData.UserIdOfAsync(user), false, false));
+    }
+
     private static List<(Guid Id, string? Email, string? FirstName, string? LastName, string Status, bool IsSystemAdmin)> Users(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => (
@@ -308,6 +324,14 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             item.GetProperty("status").GetString()!,
             item.GetProperty("isSystemAdmin").GetBoolean())),
     ];
+
+    // An address in mixed case, so the list and the stored address meet only in their one form.
+    private static string RootEmail() => $"Root.{Guid.NewGuid():N}@Example.com";
+
+    private ApiFactory WithRoots(params string[] roots) =>
+        new(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            settings: roots.Select((root, index) => KeyValuePair.Create($"ControlPlane:SystemAdmins:RootEmails:{index}", (string?)root)).ToDictionary());
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);

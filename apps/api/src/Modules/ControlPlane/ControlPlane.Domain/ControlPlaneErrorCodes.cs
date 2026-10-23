@@ -59,6 +59,14 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode RoleRolesReadRequired = ErrorCode.Declare("role.roles_read_required");
 
+    public static readonly ErrorCode SystemAdminCannotRevokeSelf = ErrorCode.Declare("system_admin.cannot_revoke_self");
+
+    public static readonly ErrorCode SystemAdminExists = ErrorCode.Declare("system_admin.exists");
+
+    public static readonly ErrorCode SystemAdminNotFound = ErrorCode.Declare("system_admin.not_found");
+
+    public static readonly ErrorCode SystemAdminRoot = ErrorCode.Declare("system_admin.root");
+
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
 
     public static readonly ErrorCode TenantHasOwner = ErrorCode.Declare("tenant.has_owner");

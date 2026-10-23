@@ -257,6 +257,10 @@
         "deleted": "<actor></actor>, <target></target> rolünü sildi.",
         "updated": "<actor></actor>, <target></target> rolünü değiştirdi."
       },
+      "system_admin": {
+        "granted": "<actor></actor>, <target></target> adlı kullanıcıyı sistem yöneticisi yaptı.",
+        "revoked": "<actor></actor>, <target></target> adlı kullanıcının sistem yöneticisi erişimini geri aldı."
+      },
       "tenant": {
         "closed": "<actor></actor> bu kuruluşu kapattı.",
         "created": "<actor></actor> bu kuruluşu oluşturdu.",

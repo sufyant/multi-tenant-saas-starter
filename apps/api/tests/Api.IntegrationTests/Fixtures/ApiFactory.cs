@@ -33,8 +33,9 @@ internal sealed class ApiFactory(
 {
     public const string AcceptUrl = "https://app.test/invitations/accept";
 
-    // No account of the fake identity provider has this address, so nobody becomes the first system admin by accident.
-    public const string FirstSystemAdminEmail = "first-admin@app.test";
+    // The one root system admin of the list. No account of the fake identity provider has this address, so nobody becomes a system
+    // admin by accident.
+    public const string RootEmail = "root-admin@app.test";
 
     public static readonly IReadOnlyDictionary<string, string?> ShortRetries = new Dictionary<string, string?>
     {
@@ -134,12 +135,12 @@ internal sealed class ApiFactory(
             ["ConnectionStrings:Migrations"] = migrationsConnectionString,
             ["ControlPlane:Invitations:AcceptUrl"] = AcceptUrl,
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
-            ["ControlPlane:FirstSystemAdminEmail"] = FirstSystemAdminEmail,
-            ["Authentication:Clerk:Issuer"] = TestTokens.Issuer,
+            ["ControlPlane:SystemAdmins:RootEmails:0"] = RootEmail,
+            ["Host:Authentication:Issuer"] = TestTokens.Issuer,
         };
         foreach (var (party, index) in (authorizedParties ?? [TestTokens.AuthorizedParty]).Select((party, index) => (party, index)))
         {
-            configuration[$"Authentication:Clerk:AuthorizedParties:{index}"] = party;
+            configuration[$"Host:Authentication:AuthorizedParties:{index}"] = party;
         }
 
         foreach (var (key, value) in ShortRetries.Concat(ports?.Settings ?? new Dictionary<string, string?>()).Concat(settings ?? new Dictionary<string, string?>()))

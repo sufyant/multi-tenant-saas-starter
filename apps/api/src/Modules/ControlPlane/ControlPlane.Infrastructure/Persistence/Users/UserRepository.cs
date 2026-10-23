@@ -1,6 +1,7 @@
 using ControlPlane.Application.Users;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -68,6 +69,19 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
 
     Task<bool> IUserRepository.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
+
+    async Task<SystemAdmin?> IUserRepository.FindSystemAdminForUpdateAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.SystemAdmins
+            .FromSql($"SELECT * FROM control_plane.system_admins WHERE user_id = {userId} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+
+        return found.SingleOrDefault();
+    }
+
+    void IUserRepository.AddSystemAdmin(SystemAdmin systemAdmin) => controlPlane.SystemAdmins.Add(systemAdmin);
+
+    void IUserRepository.RemoveSystemAdmin(SystemAdmin systemAdmin) => controlPlane.SystemAdmins.Remove(systemAdmin);
 
     async Task<IReadOnlyList<UserMembership>> IUserRepository.ListMembershipsAsync(Guid userId, CancellationToken cancellationToken)
     {

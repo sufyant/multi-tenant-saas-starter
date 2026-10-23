@@ -38,7 +38,7 @@ import web from "./web.json" with { type: "json" };
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
 // Host:Role (set per service below) and ConnectionStrings:Migrations (CI only, R3).
-// Authentication:Clerk:AuthorizedParties has two items:
+// Host:Authentication:AuthorizedParties has two items:
 // 0 is the web app's origin and 1 the platform app's, because the platform runs on an origin of its own and the API checks the
 // token's party. ConnectionStrings:Database
 // connects directly to the environment's PostgreSQL service, with no pooler, so Wolverine uses it
@@ -53,10 +53,10 @@ import web from "./web.json" with { type: "json" };
 // keys that configuration.md documents.
 const sharedVariables = [
   "ConnectionStrings__Database",
-  "Authentication__Clerk__Issuer",
-  "Authentication__Clerk__AuthorizedParties__0",
-  "Authentication__Clerk__AuthorizedParties__1",
-  "ControlPlane__FirstSystemAdminEmail",
+  "Host__Authentication__Issuer",
+  "Host__Authentication__AuthorizedParties__0",
+  "Host__Authentication__AuthorizedParties__1",
+  "ControlPlane__SystemAdmins__RootEmails__0",
   "ControlPlane__Clerk__SecretKey",
   "ControlPlane__Invitations__AcceptUrl",
   "Notifications__Resend__ApiKey",

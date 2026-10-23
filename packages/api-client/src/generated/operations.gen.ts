@@ -140,6 +140,19 @@ export const operations = [
     ]
   },
   {
+    "operationId": "GrantSystemAdmin",
+    "method": "POST",
+    "path": "/v1/platform/users/{userId}/system-admin",
+    "tag": "Platform/SystemAdmins",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "InviteMember",
     "method": "POST",
     "path": "/v1/tenants/{tenantId}/invitations",
@@ -310,6 +323,16 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/tenants/{tenantId}/invitations/{invitationId}",
     "tag": "Tenant/Invitations",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "RevokeSystemAdmin",
+    "method": "DELETE",
+    "path": "/v1/platform/users/{userId}/system-admin",
+    "tag": "Platform/SystemAdmins",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

@@ -30,6 +30,8 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
   RoleUpdated: 'role.updated',
+  SystemAdminGranted: 'system_admin.granted',
+  SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
@@ -82,6 +84,8 @@ export const ListPlatformAuditEntriesResponse = zod.object({
 }),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformSystemAdminsCreate: 'platform.system_admins.create',
+  PlatformSystemAdminsDelete: 'platform.system_admins.delete',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',

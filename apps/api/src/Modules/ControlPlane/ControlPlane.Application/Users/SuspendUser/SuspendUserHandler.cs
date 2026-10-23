@@ -1,3 +1,4 @@
+using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
 using Wolverine;
@@ -12,6 +13,7 @@ public static class SuspendUserHandler
     public static async Task<(Result<UserView>, OutgoingMessages)> HandleAsync(
         SuspendUserCommand command,
         IUserRepository users,
+        SystemAdminOptions systemAdmins,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -30,10 +32,10 @@ public static class SuspendUserHandler
         var now = time.GetUtcNow();
         if (user.Suspend(now, actor) == StateChange.Unchanged)
         {
-            return (UserView.Of(user, isSystemAdmin: false), []);
+            return (UserView.Of(user, isSystemAdmin: false, systemAdmins), []);
         }
 
         await users.SaveChangesAsync(cancellationToken);
-        return (UserView.Of(user, isSystemAdmin: false), [new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
+        return (UserView.Of(user, isSystemAdmin: false, systemAdmins), [new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

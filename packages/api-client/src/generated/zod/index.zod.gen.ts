@@ -3,6 +3,7 @@ export * from './me-tenants/me-tenants.zod.gen';
 export * from './me-users/me-users.zod.gen';
 export * from './platform-auditlogs/platform-auditlogs.zod.gen';
 export * from './platform-invitations/platform-invitations.zod.gen';
+export * from './platform-systemadmins/platform-systemadmins.zod.gen';
 export * from './platform-tenants/platform-tenants.zod.gen';
 export * from './platform-users/platform-users.zod.gen';
 export * from './tenant-auditlogs/tenant-auditlogs.zod.gen';

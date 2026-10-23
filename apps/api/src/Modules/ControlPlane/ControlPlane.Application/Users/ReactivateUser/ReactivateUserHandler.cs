@@ -1,3 +1,4 @@
+using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
 using Wolverine;
@@ -10,6 +11,7 @@ public static class ReactivateUserHandler
     public static async Task<(Result<UserView>, OutgoingMessages)> HandleAsync(
         ReactivateUserCommand command,
         IUserRepository users,
+        SystemAdminOptions systemAdmins,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -21,13 +23,13 @@ public static class ReactivateUserHandler
         var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
         if (user.Reactivate() == StateChange.Unchanged)
         {
-            return (UserView.Of(user, isSystemAdmin), []);
+            return (UserView.Of(user, isSystemAdmin, systemAdmins), []);
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (UserView.Of(user, isSystemAdmin), [new UserReactivatedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
+        return (UserView.Of(user, isSystemAdmin, systemAdmins), [new UserReactivatedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

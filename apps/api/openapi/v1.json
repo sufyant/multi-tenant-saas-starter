@@ -2116,6 +2116,331 @@
         }
       }
     },
+    "/v1/platform/users/{userId}/system-admin": {
+      "post": {
+        "tags": [
+          "Platform/SystemAdmins"
+        ],
+        "description": "Answers 201 with the user and without Location: the API has no GET for one grant, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
+        "operationId": "GrantSystemAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform/SystemAdmins"
+        ],
+        "operationId": "RevokeSystemAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/audit-log": {
       "get": {
         "tags": [
@@ -4902,6 +5227,8 @@
           "role.created",
           "role.deleted",
           "role.updated",
+          "system_admin.granted",
+          "system_admin.revoked",
           "tenant.closed",
           "tenant.created",
           "tenant.owner_invited",
@@ -4926,6 +5253,8 @@
           "RoleCreated",
           "RoleDeleted",
           "RoleUpdated",
+          "SystemAdminGranted",
+          "SystemAdminRevoked",
           "TenantClosed",
           "TenantCreated",
           "TenantOwnerInvited",
@@ -5170,6 +5499,10 @@
           "route.method_not_allowed",
           "route.not_found",
           "server.error",
+          "system_admin.cannot_revoke_self",
+          "system_admin.exists",
+          "system_admin.not_found",
+          "system_admin.root",
           "tenant.closed",
           "tenant.has_owner",
           "tenant.name_invalid",
@@ -5237,6 +5570,10 @@
           "RouteMethodNotAllowed",
           "RouteNotFound",
           "ServerError",
+          "SystemAdminCannotRevokeSelf",
+          "SystemAdminExists",
+          "SystemAdminNotFound",
+          "SystemAdminRoot",
           "TenantClosed",
           "TenantHasOwner",
           "TenantNameInvalid",
@@ -5962,6 +6299,8 @@
       "Permission": {
         "enum": [
           "platform.audit.read",
+          "platform.system_admins.create",
+          "platform.system_admins.delete",
           "platform.tenants.close",
           "platform.tenants.create",
           "platform.tenants.invite_owner",
@@ -5993,6 +6332,8 @@
         "description": "A name of the permission list. Every endpoint checks its own permission.",
         "x-enumNames": [
           "PlatformAuditRead",
+          "PlatformSystemAdminsCreate",
+          "PlatformSystemAdminsDelete",
           "PlatformTenantsClose",
           "PlatformTenantsCreate",
           "PlatformTenantsInviteOwner",
@@ -6604,6 +6945,7 @@
           "lastName",
           "status",
           "isSystemAdmin",
+          "isRootSystemAdmin",
           "membershipCount",
           "createdAt",
           "suspendedAt",
@@ -6638,6 +6980,9 @@
             "$ref": "#/components/schemas/UserResponseStatus"
           },
           "isSystemAdmin": {
+            "type": "boolean"
+          },
+          "isRootSystemAdmin": {
             "type": "boolean"
           },
           "membershipCount": {
@@ -6760,6 +7105,7 @@
           "lastName",
           "status",
           "isSystemAdmin",
+          "isRootSystemAdmin",
           "membershipCount",
           "createdAt"
         ],
@@ -6793,6 +7139,9 @@
           "isSystemAdmin": {
             "type": "boolean"
           },
+          "isRootSystemAdmin": {
+            "type": "boolean"
+          },
           "membershipCount": {
             "type": "integer",
             "format": "int32"
@@ -6802,7 +7151,7 @@
             "format": "date-time"
           }
         },
-        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many tenants they are a member of, and when they became a user."
+        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user."
       },
       "UserResponseStatus": {
         "enum": [
@@ -6848,6 +7197,9 @@
     },
     {
       "name": "Platform/Invitations"
+    },
+    {
+      "name": "Platform/SystemAdmins"
     },
     {
       "name": "Platform/Tenants"

@@ -124,6 +124,8 @@ export type Permission = typeof Permission[keyof typeof Permission];
 
 export const Permission = {
   PlatformAuditRead: 'platform.audit.read',
+  PlatformSystemAdminsCreate: 'platform.system_admins.create',
+  PlatformSystemAdminsDelete: 'platform.system_admins.delete',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
@@ -247,6 +249,8 @@ export const AuditOperation = {
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
   RoleUpdated: 'role.updated',
+  SystemAdminGranted: 'system_admin.granted',
+  SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
@@ -421,6 +425,10 @@ export const ErrorCode = {
   RouteMethodNotAllowed: 'route.method_not_allowed',
   RouteNotFound: 'route.not_found',
   ServerError: 'server.error',
+  SystemAdminCannotRevokeSelf: 'system_admin.cannot_revoke_self',
+  SystemAdminExists: 'system_admin.exists',
+  SystemAdminNotFound: 'system_admin.not_found',
+  SystemAdminRoot: 'system_admin.root',
   TenantClosed: 'tenant.closed',
   TenantHasOwner: 'tenant.has_owner',
   TenantNameInvalid: 'tenant.name_invalid',
@@ -726,7 +734,8 @@ export const UserResponseStatus = {
 
 /**
  * A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or
- * deleted), whether they are a system admin, how many tenants they are a member of, and when they became a user.
+ * deleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin
+ * can revoke, how many tenants they are a member of, and when they became a user.
  */
 export interface UserResponse {
   id: string;
@@ -738,6 +747,7 @@ export interface UserResponse {
   lastName: string | null;
   status: UserResponseStatus;
   isSystemAdmin: boolean;
+  isRootSystemAdmin: boolean;
   membershipCount: number;
   createdAt: string;
 }
@@ -947,6 +957,7 @@ export interface UserDetailResponse {
   lastName: string | null;
   status: UserResponseStatus;
   isSystemAdmin: boolean;
+  isRootSystemAdmin: boolean;
   membershipCount: number;
   createdAt: string;
   /** @nullable */
@@ -1030,6 +1041,15 @@ export const ListUsersSort = {
   LastName: 'lastName',
   LastNameDescending: '-lastName',
 } as const;
+
+export type GrantSystemAdminHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
 
 export type ListPlatformAuditEntriesParams = {
 cursor?: string;

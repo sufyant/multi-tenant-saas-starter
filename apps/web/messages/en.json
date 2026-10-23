@@ -257,6 +257,10 @@
         "deleted": "<actor></actor> deleted the role <target></target>.",
         "updated": "<actor></actor> changed the role <target></target>."
       },
+      "system_admin": {
+        "granted": "<actor></actor> made <target></target> a system admin.",
+        "revoked": "<actor></actor> revoked the system admin access of <target></target>."
+      },
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",
         "created": "<actor></actor> created this organisation.",

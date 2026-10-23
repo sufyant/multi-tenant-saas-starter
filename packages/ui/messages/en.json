@@ -114,6 +114,12 @@
     "server": {
       "error": "Something went wrong on our side. Your data is safe. Try again in a moment."
     },
+    "system_admin": {
+      "cannot_revoke_self": "You cannot revoke your own system admin access.",
+      "exists": "This user is a system admin already.",
+      "not_found": "This user is not a system admin.",
+      "root": "A root system admin cannot be revoked. The configuration names them."
+    },
     "tenant": {
       "closed": "This organisation is closed.",
       "has_owner": "This organisation already has an Owner.",

@@ -464,22 +464,22 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await IdOfAsync(bySecond)).ShouldNotBe(await IdOfAsync(byFirst));
     }
 
-    // A7: the first system admin's first visit writes their user with the configured address, which the identity provider
-    // verified, and no names: the identity provider keeps none, and a system admin gives them. No invitation chose their language, so
-    // they start with English (decision 6 of step 20j). Their system admin list is empty, so the test has a database of its own.
+    // A7: a root system admin's first visit writes their user with the listed address, which the identity provider verified, and no
+    // names: the identity provider keeps none, and a system admin gives them. No invitation chose their language, so they start with
+    // English (decision 6 of step 20j). The address is the test's own, so the test has a database of its own only to read the user there.
     [Fact]
-    public async Task CreateTenant_FirstSystemAdminsFirstVisit_StartsTheirUserWithTheConfiguredAddressNoNamesAndEnglish()
+    public async Task CreateTenant_RootSystemAdminsFirstVisit_StartsTheirUserWithTheListedAddressNoNamesAndEnglish()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
         var admin = $"user_{Guid.NewGuid():N}";
-        api.Identity.AddAccount(admin, ApiFactory.FirstSystemAdminEmail);
+        api.Identity.AddAccount(admin, ApiFactory.RootEmail);
 
         var created = await api.WaitingForMessagesAsync(
             () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _testData.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.FirstSystemAdminEmail, null, null, Deleted: false, "en", null));
+        (await _testData.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.RootEmail, null, null, Deleted: false, "en", null));
     }
 
     [Fact]

@@ -1,5 +1,5 @@
-using System.Net;
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
 using Audit.Application.Invitations.RecordInvitationRevoked;
 using Audit.Application.Invitations.RecordOwnerInvited;
@@ -9,6 +9,8 @@ using Audit.Application.Members.RecordMemberRoleChanged;
 using Audit.Application.Roles.RecordRoleCreated;
 using Audit.Application.Roles.RecordRoleDeleted;
 using Audit.Application.Roles.RecordRoleUpdated;
+using Audit.Application.SystemAdmins.RecordSystemAdminGranted;
+using Audit.Application.SystemAdmins.RecordSystemAdminRevoked;
 using Audit.Application.Tenants.RecordTenantClosed;
 using Audit.Application.Tenants.RecordTenantCreated;
 using Audit.Application.Tenants.RecordTenantReactivated;
@@ -30,6 +32,7 @@ using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Application.Roles.CreateRole;
 using ControlPlane.Application.Roles.DeleteRole;
 using ControlPlane.Application.Roles.UpdateRole;
+using ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
@@ -46,6 +49,7 @@ using ControlPlane.Application.Users.SuspendUser;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Roles;
+using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
@@ -248,6 +252,56 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(SuspendUserCommand), typeof(SuspendUserHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(UserSuspendedEvent), typeof(RecordUserSuspendedHandler))]);
         (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
+    }
+
+    // O3, K3: the system door lets a root system admin in from the web host, in the request, and the grant's Audit handler runs in the
+    // worker, once, and writes the platform's log by the platform.
+    [Fact]
+    public async Task VisitTheSystemDoor_ARootOnAWebAndAWorkerHost_GrantsInTheWebAndRecordsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var root = $"user_{Guid.NewGuid():N}";
+        web.Identity.AddAccount(root, ApiFactory.RootEmail);
+
+        var visit = await web.CreateClient(root, secondFactor: true).GetAsync("/v1/platform/users", Cancellation);
+        var userId = await new TestData(database, name).UserIdOfAsync(root);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "system_admin.granted") > 0);
+
+        visit.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldContain(new HandlerRun(typeof(GrantRootSystemAdminCommand), typeof(GrantRootSystemAdminHandler)));
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(SystemAdminGrantedEvent), typeof(RecordSystemAdminGrantedHandler))]);
+        (await PlatformEntriesAsync(name, userId, "system_admin.granted")).ShouldBe(1L);
+    }
+
+    // O3, K3: a grant and a revocation run in the web host, and their Audit handlers in the worker, once each.
+    [Fact]
+    public async Task GrantAndRevokeSystemAdmin_OnAWebAndAWorkerHost_WriteOnePlatformEntryEachInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var userId = await testData.UserIdOfAsync(await testData.AddUserAsync());
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+        var grant = new HttpRequestMessage(HttpMethod.Post, $"/v1/platform/users/{userId}/system-admin");
+        grant.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        var granted = await admin.SendAsync(grant, Cancellation);
+        var revoked = await admin.DeleteAsync($"/v1/platform/users/{userId}/system-admin", Cancellation);
+        await Waiting.UntilAsync(async () =>
+            await PlatformEntriesAsync(name, userId, "system_admin.granted") > 0 && await PlatformEntriesAsync(name, userId, "system_admin.revoked") > 0);
+
+        (granted.StatusCode, revoked.StatusCode).ShouldBe((HttpStatusCode.Created, HttpStatusCode.NoContent));
+        runs.In("worker").ShouldBe(
+            [new HandlerRun(typeof(SystemAdminGrantedEvent), typeof(RecordSystemAdminGrantedHandler)), new HandlerRun(typeof(SystemAdminRevokedEvent), typeof(RecordSystemAdminRevokedHandler))],
+            ignoreOrder: true);
+        (await PlatformEntriesAsync(name, userId, "system_admin.granted"), await PlatformEntriesAsync(name, userId, "system_admin.revoked")).ShouldBe((1L, 1L));
     }
 
     // O3, K3: a user's rename and deletion run in the web host, step by step for the deletion. Their Audit handlers run in the worker,
