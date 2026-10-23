@@ -24,8 +24,8 @@ internal sealed class TenantSummaryConfiguration : IEntityTypeConfiguration<Tena
         summary.Property(s => s.OwnerInvitationLanguage).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
 
         // R15: the counts, and the latest Owner invitation only while the tenant has no Owner. Its status and expiry are there together.
-        // The address may be gone from a finished invitation (A8), and the language from a row an older version wrote (section 13), so
-        // only those two are kept apart; a pending invitation always has its address.
+        // The address may be gone from a finished invitation (A8), so it is kept apart; a pending invitation always has its address. The
+        // language is kept apart too, as it was for the rows of an earlier version; the application always writes it (section 13).
         summary.ToTable(table => table.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count"));
         summary.ToTable(table => table.HasCheckConstraint(
             "ck_tenant_summaries_owner_invitation_status", CheckConstraints.OneOf<InvitationStatus>("owner_invitation_status")));

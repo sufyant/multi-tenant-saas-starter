@@ -184,19 +184,18 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // K8: every invitation keeps the language of its email, so its answer always carries it, and a client that invites again can send it
-    // back. The Owner invitation of the tenant summary may be null until the migrations are squashed (deployment, section 8;
-    // ARCHITECTURE.md, section 13).
+    // back.
     [Theory]
-    [InlineData("InvitationResponse", false)]
-    [InlineData("OwnerInvitationResponse", true)]
-    public void BuildOpenApiDocument_LanguageOfAnInvitation_IsARequiredLanguage(string name, bool nullable)
+    [InlineData("InvitationResponse")]
+    [InlineData("OwnerInvitationResponse")]
+    public void BuildOpenApiDocument_LanguageOfAnInvitation_IsARequiredLanguage(string name)
     {
         var schema = Schemas().Single(schema => schema.Name == name).Value;
         var language = schema.GetProperty("properties").GetProperty("language");
 
         RequiredOf(schema).ShouldContain("language");
         ReferencesIn(language).ShouldBe([LanguageSchema]);
-        IsNullable(language).ShouldBe(nullable);
+        IsNullable(language).ShouldBeFalse();
     }
 
     // N11i and K5: the permission list is one enum in the document, so a generated client knows each name and a typo does not compile.

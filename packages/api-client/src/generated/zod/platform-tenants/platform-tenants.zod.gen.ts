@@ -108,12 +108,12 @@ export const ListTenantsResponse = zod.object({
   Accepted: 'accepted',
   Cancelled: 'cancelled',
 }).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.'),
-  "language": zod.union([zod.null(),zod.enum({
+  "language": zod.enum({
   En: 'en',
   Tr: 'tr',
   Ar: 'ar',
-}).describe('A language the web speaks, by its BCP 47 language tag.')]).describe('A language the web speaks, by its BCP 47 language tag.')
-}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier\ninvitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of\nARCHITECTURE.md).')])
+}).describe('A language the web speaks, by its BCP 47 language tag.')
+}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back.')])
 }).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member\nand no Owner: its purge deleted its summary with its members (K4).')),
   "page": zod.int(),
   "pageSize": zod.int(),
@@ -156,12 +156,12 @@ export const GetTenantResponse = zod.object({
   Accepted: 'accepted',
   Cancelled: 'cancelled',
 }).describe('The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled\n(revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says\nwhich of its values it can hold.'),
-  "language": zod.union([zod.null(),zod.enum({
+  "language": zod.enum({
   En: 'en',
   Tr: 'tr',
   Ar: 'ar',
-}).describe('A language the web speaks, by its BCP 47 language tag.')]).describe('A language the web speaks, by its BCP 47 language tag.')
-}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier\ninvitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of\nARCHITECTURE.md).')])
+}).describe('A language the web speaks, by its BCP 47 language tag.')
+}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back.')])
 }).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first.')
 
 export const RenameTenantParams = zod.object({

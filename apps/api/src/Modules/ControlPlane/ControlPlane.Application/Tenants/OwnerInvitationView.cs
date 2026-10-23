@@ -5,14 +5,12 @@ namespace ControlPlane.Application.Tenants;
 
 /// <summary>
 /// The latest Owner invitation of a tenant that has no Owner: its address, its expiry, its state at the moment of the request,
-/// ControlPlane's name of it (<c>Pending</c>, <c>Expired</c>, <c>Cancelled</c>), and the language it keeps for its email (K8). The language
-/// is null or out of date in a summary that the previous version wrote during a deploy. It becomes required when the migrations are
-/// squashed into one initial migration before production (section 13 of ARCHITECTURE.md).
+/// ControlPlane's name of it (<c>Pending</c>, <c>Expired</c>, <c>Cancelled</c>), and the language it keeps for its email (K8).
 /// </summary>
-public sealed record OwnerInvitationView(string Email, DateTimeOffset ExpiresAt, string State, Language? Language)
+public sealed record OwnerInvitationView(string Email, DateTimeOffset ExpiresAt, string State, Language Language)
 {
     internal static OwnerInvitationView? Of(TenantSummary summary, DateTimeOffset now) =>
         summary.OwnerInvitationStateAt(now) is { } state
-            ? new(summary.OwnerInvitationEmail!, summary.OwnerInvitationExpiresAt!.Value, state.ToString(), summary.OwnerInvitationLanguage)
+            ? new(summary.OwnerInvitationEmail!, summary.OwnerInvitationExpiresAt!.Value, state.ToString(), summary.OwnerInvitationLanguage!.Value)
             : null;
 }
