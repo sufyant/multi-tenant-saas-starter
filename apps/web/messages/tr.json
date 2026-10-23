@@ -102,7 +102,12 @@
     "wrongEmailTitle": "Bu davet başka bir e-posta için",
     "wrongEmailText": "<email></email> olarak giriş yaptınız. Daveti alan e-postayla giriş yapın.",
     "switchAccount": "Hesap değiştir",
-    "backHome": "Ana sayfaya dön"
+    "backHome": "Ana sayfaya dön",
+    "systemAdminStatus": "Mümkün değil",
+    "systemAdminTitle": "Sistem yöneticileri bir kuruluşa katılamaz",
+    "systemAdminText": "Başka bir hesap kullanın.",
+    "tenantSuspendedTitle": "Bu kuruluş askıya alındı",
+    "tenantSuspendedText": "Yeniden etkin olduğunda katılabilirsiniz."
   },
   "settings": {
     "organisation": "Kuruluş",
@@ -297,5 +302,15 @@
     "closedText": "Bu kuruluş kapatıldı ve açılamaz. Verileriniz şimdilik korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
     "organisation": "Kuruluş",
     "chooseAnother": "Başka bir kuruluş seçin"
+  },
+  "account": {
+    "suspendedStatus": "Askıda",
+    "suspendedTitle": "Hesabınız askıya alındı",
+    "suspendedText": "Şu anda oturum açamazsınız. Destek ekibiyle iletişime geçin.",
+    "suspendedAction": "Oturumu kapat",
+    "deletedStatus": "Silindi",
+    "deletedTitle": "Bu hesap silindi",
+    "deletedText": "Başka bir e-postayla oturum açın.",
+    "deletedAction": "Başka bir e-posta kullan"
   }
 }

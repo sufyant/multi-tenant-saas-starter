@@ -102,7 +102,12 @@
     "wrongEmailTitle": "This invitation is for a different email",
     "wrongEmailText": "You’re signed in as <email></email>. Sign in with the email that received the invitation.",
     "switchAccount": "Switch account",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "systemAdminStatus": "Not possible",
+    "systemAdminTitle": "System admins can’t join an organisation",
+    "systemAdminText": "Use another account.",
+    "tenantSuspendedTitle": "This organisation is suspended",
+    "tenantSuspendedText": "You can join when it is active again."
   },
   "settings": {
     "organisation": "Organisation",
@@ -297,5 +302,15 @@
     "closedText": "This organisation was closed and cannot be opened. Your data is kept for now. Contact your organisation’s Owner if you need to know more.",
     "organisation": "Organisation",
     "chooseAnother": "Choose another organisation"
+  },
+  "account": {
+    "suspendedStatus": "Suspended",
+    "suspendedTitle": "Your account is suspended",
+    "suspendedText": "You cannot sign in right now. Contact support.",
+    "suspendedAction": "Sign out",
+    "deletedStatus": "Deleted",
+    "deletedTitle": "This account was deleted",
+    "deletedText": "Sign in with another email.",
+    "deletedAction": "Use another email"
   }
 }

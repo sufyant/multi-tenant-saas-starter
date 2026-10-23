@@ -102,7 +102,12 @@
     "wrongEmailTitle": "هذه الدعوة لبريد إلكتروني آخر",
     "wrongEmailText": "أنت مسجّل الدخول باسم <email></email>. سجّل الدخول بالبريد الذي وصلته الدعوة.",
     "switchAccount": "تبديل الحساب",
-    "backHome": "العودة إلى الصفحة الرئيسية"
+    "backHome": "العودة إلى الصفحة الرئيسية",
+    "systemAdminStatus": "غير ممكن",
+    "systemAdminTitle": "لا يمكن لمسؤولي النظام الانضمام إلى مؤسسة",
+    "systemAdminText": "استخدم حسابًا آخر.",
+    "tenantSuspendedTitle": "هذه المؤسسة موقوفة",
+    "tenantSuspendedText": "يمكنك الانضمام عندما تعود نشطة."
   },
   "settings": {
     "organisation": "المؤسسة",
@@ -297,5 +302,15 @@
     "closedText": "أُغلقت هذه المؤسسة ولا يمكن فتحها. بياناتك محفوظة حاليًا. تواصل مع مالك مؤسستك إذا احتجت إلى معرفة المزيد.",
     "organisation": "المؤسسة",
     "chooseAnother": "اختر مؤسسة أخرى"
+  },
+  "account": {
+    "suspendedStatus": "معلّق",
+    "suspendedTitle": "حسابك معلّق",
+    "suspendedText": "لا يمكنك تسجيل الدخول الآن. تواصل مع الدعم.",
+    "suspendedAction": "تسجيل الخروج",
+    "deletedStatus": "محذوف",
+    "deletedTitle": "حُذف هذا الحساب",
+    "deletedText": "سجّل الدخول ببريد إلكتروني آخر.",
+    "deletedAction": "استخدام بريد آخر"
   }
 }
