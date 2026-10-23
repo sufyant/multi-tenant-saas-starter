@@ -45,18 +45,19 @@ public sealed class DomainNameMapTests
         Map("OfTenant", status).ShouldNotBeNull();
     }
 
-    // A member sees an active, a suspended or a closed tenant (T4), every status a tenant has. A new Domain status fails here until each
-    // member map decides it.
+    // A member sees an active, a suspended, a closed or a purging tenant (T4); a purged tenant has no member (K4). A new Domain status
+    // fails here until each member map decides it.
     [Fact]
-    public void MapATenantStatus_EveryStatus_IsOneAMemberSees()
+    public void MapATenantStatus_EveryStatus_IsOneAMemberSeesOrPurged()
     {
-        TenantStatusNames.ShouldBe(["Active", "Suspended", "Closed"], ignoreOrder: true);
+        TenantStatusNames.ShouldBe(["Active", "Suspended", "Closed", "Purging", "Purged"], ignoreOrder: true);
     }
 
     [Theory]
     [InlineData("Active")]
     [InlineData("Suspended")]
     [InlineData("Closed")]
+    [InlineData("Purging")]
     public void MapATenantStatus_EveryStatusAMemberSees_HasAMemberResponseStatus(string status)
     {
         Map("OfMyTenant", status).ShouldNotBeNull();

@@ -145,6 +145,20 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
     }
 
+    // K4: a purged tenant keeps its slug in its tombstone, so no new tenant ever takes it; the unique index decides (K6b).
+    [Fact]
+    public async Task CreateTenant_APurgedTenantsSlug_IsAConflict()
+    {
+        var admin = await SystemAdminAsync();
+        var purged = await _testData.AddTenantRowAsync(status: "Purged");
+
+        var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = purged.Slug, ownerEmail = "owner@example.com" });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await created.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.slug_taken");
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{purged.Slug}'")).ShouldBe(1);
+    }
+
     [Fact]
     public async Task CreateTenant_SlugTaken_IsAConflict()
     {
@@ -180,7 +194,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         var tenant = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
+        tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt"], ignoreOrder: true);
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);

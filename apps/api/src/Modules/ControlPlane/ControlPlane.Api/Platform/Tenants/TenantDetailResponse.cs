@@ -8,6 +8,7 @@ public sealed record TenantDetailResponse(
     TenantResponseStatus Status,
     string? SuspensionReason,
     DateTimeOffset? ClosedAt,
+    DateTimeOffset? PurgedAt,
     DateTimeOffset? ReopenableUntil,
     int MemberCount,
     int OwnerCount,

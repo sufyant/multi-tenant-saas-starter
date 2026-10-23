@@ -22,7 +22,9 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     private readonly AuditEntries _audit = new(database);
 
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+    // The clock starts at the real now: a closure schedules its warning and its purge weeks after it, by Wolverine's clock, so neither
+    // comes during a run on the shared database (section 9, rule 10).
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
     private ApiFactory _api = null!;
 
@@ -130,6 +132,22 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(response)).ShouldBe("tenant.not_closed");
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
+    }
+
+    // The purge is the pivot (S5): once it has started, the tenant cannot come back, and a purged tenant is only a tombstone (K4).
+    [Theory]
+    [InlineData("Purging")]
+    [InlineData("Purged")]
+    public async Task ReopenTenant_PurgingOrPurged_IsAConflictAndChangesNothing(string status)
+    {
+        var tenant = await _testData.AddTenantAsync(status: status, closedAt: _time.GetUtcNow());
+
+        var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(response)).ShouldBe("tenant.not_closed");
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
+        (await AuditEntryCountAsync(tenant.Id)).ShouldBe(0);
     }
 
     public ValueTask InitializeAsync()

@@ -37,7 +37,8 @@
     "status": {
       "suspended": "Suspended",
       "closed": "Closed",
-      "active": "Active"
+      "active": "Active",
+      "purging": "Being deleted"
     }
   },
   "overview": {
@@ -266,6 +267,8 @@
         "created": "<actor></actor> created this organisation.",
         "owner_invited": "<actor></actor> invited someone as Owner.",
         "owner_made": "<actor></actor> made a member an Owner.",
+        "purge_warned": "<actor></actor> warned the Owners that this organisation will be deleted.",
+        "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",
         "renamed": "<actor></actor> renamed the organisation from <name>{oldName}</name> to <name>{newName}</name>.",
         "reopened": "<actor></actor> reopened this organisation.",

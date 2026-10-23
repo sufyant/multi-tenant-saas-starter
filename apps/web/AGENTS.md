@@ -13,7 +13,7 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 # The tenant web
 
 - The members of an organisation use this app. On screen a tenant is an "organisation".
-- Every signed-in route sits under `/[tenantSlug]/...` (F30). The tenant layout turns the slug into the tenant id through the cached `ListMyTenants` (`src/shared/tenant-context.tsx`: `TenantProvider`, `useTenant`, `useCan`), and every call of a tenant operation takes that id. A slug that is not in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell, never with a reason.
+- Every signed-in route sits under `/[tenantSlug]/...` (F30). The tenant layout turns the slug into the tenant id through the cached `ListMyTenants` (`src/shared/tenant-context.tsx`: `TenantProvider`, `useTenant`, `useCan`), and every call of a tenant operation takes that id. A slug that is not in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell, never with a reason; a purging one shows the closed one's.
 - `/` is "Choose an organisation". With one organisation it redirects to `/[tenantSlug]`.
 - The breadcrumb starts with the organisation name. It opens the OrgMenu when the user has more than one organisation.
 - What the user may do comes from `GetMyTenant.permissions` (F5).

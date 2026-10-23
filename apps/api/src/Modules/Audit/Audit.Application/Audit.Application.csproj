@@ -6,6 +6,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Audit.Domain\Audit.Domain.csproj" />
     <ProjectReference Include="..\Audit.Contracts\Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\ControlPlane\ControlPlane.Contracts\ControlPlane.Contracts.csproj" />

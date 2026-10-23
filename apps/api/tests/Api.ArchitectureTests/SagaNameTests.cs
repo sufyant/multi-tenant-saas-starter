@@ -4,8 +4,7 @@ using Wolverine;
 namespace Api.ArchitectureTests;
 
 // N2: a saga says what it is. Its class name ends with Saga and its table name ends with _sagas, so a reader tells the saga record
-// from the business data it drives. The template has no saga yet (SagaMessageTests); the first, the tenant purge of step r7, is held to
-// both.
+// from the business data it drives. The template's one saga, the tenant purge (SagaMessageTests), is held to both.
 public sealed class SagaNameTests
 {
     [Fact]

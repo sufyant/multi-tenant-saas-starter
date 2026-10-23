@@ -50,6 +50,8 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantCreated] = null,
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),
         [AuditOperations.TenantOwnerMade] = typeof(TenantOwnerMadeDetails),
+        [AuditOperations.TenantPurgeWarned] = null,
+        [AuditOperations.TenantPurged] = null,
         [AuditOperations.TenantReactivated] = null,
         [AuditOperations.TenantRenamed] = typeof(TenantRenamedDetails),
         [AuditOperations.TenantReopened] = null,

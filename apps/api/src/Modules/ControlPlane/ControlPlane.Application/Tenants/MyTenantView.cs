@@ -5,7 +5,7 @@ using ControlPlane.Domain.Tenants;
 namespace ControlPlane.Application.Tenants;
 
 /// <summary>
-/// A tenant as its members see it: active, or suspended or closed so that they cannot enter it, with the role the user holds there.
+/// A tenant as its members see it: active, or suspended, closed or purging so that they cannot enter it, with the role the user holds there.
 /// </summary>
 public sealed record MyTenantView(Guid Id, string Name, string Slug, string Status, RoleView Role)
 {

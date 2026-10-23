@@ -280,6 +280,7 @@ public sealed class TenantTests
 
     [Theory]
     [InlineData("Closed")]
+    [InlineData("Purging")]
     public void RenameTenant_NeitherActiveNorSuspended_IsRejected(string status)
     {
         var tenant = InStatus(status);
@@ -439,6 +440,7 @@ public sealed class TenantTests
 
     [Theory]
     [InlineData("Suspended")]
+    [InlineData("Purging")]
     public void ReopenTenant_NeitherClosedNorActive_IsRejected(string status)
     {
         var tenant = InStatus(status);
@@ -467,6 +469,147 @@ public sealed class TenantTests
 
         allowed.Error.Type.ShouldBe(ErrorType.Forbidden);
         allowed.Error.Code.ToString().ShouldBe(code);
+    }
+
+    // The purge's start and its end refuse a member as a closure does: the tenant door, and every tenant command under the lock (K4).
+    [Theory]
+    [InlineData("Purging")]
+    [InlineData("Purged")]
+    public void CheckMemberAccess_PurgingOrPurged_IsForbiddenAsClosed(string status)
+    {
+        var allowed = Tenant.CheckMemberAccess(Enum.Parse<TenantStatus>(status));
+
+        allowed.Error.Type.ShouldBe(ErrorType.Forbidden);
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantClosed);
+    }
+
+    // The pivot of the purge (S5): a tenant still closed at the closure the purge was scheduled for starts it, and can no longer be
+    // reopened.
+    [Fact]
+    public void StartTenantPurge_ClosedAtTheScheduledClosure_IsPurging()
+    {
+        var tenant = Closed();
+
+        var started = tenant.BeginPurge(Now);
+
+        started.ShouldBe(StateChange.Changed);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+        tenant.ClosedAt.ShouldBe(Now);
+    }
+
+    // PostgreSQL keeps a moment to the microsecond and .NET to 100 ns, so a closure read back from the database is the closure the
+    // message carries, less the ticks under a microsecond.
+    [Fact]
+    public void StartTenantPurge_TheScheduledClosureWithTicksUnderAMicrosecond_IsPurging()
+    {
+        var tenant = Closed();
+
+        var started = tenant.BeginPurge(Now + TimeSpan.FromTicks(7));
+
+        started.ShouldBe(StateChange.Changed);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+    }
+
+    // A tenant reopened and closed again carries a new closure: the first closure's purge does nothing, and its own purge comes later.
+    [Fact]
+    public void StartTenantPurge_ClosedAtAnotherMoment_ChangesNothing()
+    {
+        var tenant = Closed();
+
+        var started = tenant.BeginPurge(Now - TimeSpan.FromDays(1));
+
+        started.ShouldBe(StateChange.Unchanged);
+        tenant.Status.ShouldBe(TenantStatus.Closed);
+    }
+
+    // A tenant reopened before the purge is active again: the scheduled purge does nothing. A purge that has started changes nothing.
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    [InlineData("Purging")]
+    public void StartTenantPurge_NotClosed_ChangesNothing(string status)
+    {
+        var tenant = InStatus(status);
+
+        var started = tenant.BeginPurge(Now);
+
+        started.ShouldBe(StateChange.Unchanged);
+        tenant.Status.ToString().ShouldBe(status);
+    }
+
+    // K4: the tombstone keeps the id, the name, the slug, the status, the moment of the creation and the moment of the purge; the
+    // reason of a suspension and the moment of the closure go.
+    [Fact]
+    public void PurgeTenant_Purging_KeepsOnlyTheTombstone()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason);
+        tenant.Close(Now, []);
+        tenant.BeginPurge(Now);
+        var purgedAt = Now + TimeSpan.FromDays(30);
+
+        var purged = tenant.Purge(purgedAt);
+
+        purged.ShouldBe(StateChange.Changed);
+        (tenant.Id, tenant.Name, tenant.Slug, tenant.Status, tenant.CreatedAt, tenant.PurgedAt).ShouldBe((Id, "Acme Ltd", "acme", TenantStatus.Purged, CreatedAt, purgedAt));
+        (tenant.SuspensionReason, tenant.ClosedAt).ShouldBe((null, null));
+    }
+
+    // The purge's last step may run twice (S7): a tombstone stays as it is.
+    [Fact]
+    public void PurgeTenant_Purged_ChangesNothing()
+    {
+        var tenant = InStatus("Purged");
+
+        var purged = tenant.Purge(Now + TimeSpan.FromDays(1));
+
+        purged.ShouldBe(StateChange.Unchanged);
+        tenant.PurgedAt.ShouldBe(Now);
+    }
+
+    // Only the purge's pivot leads to its last step: a tenant whose purge has not started is a fault there, not an answer.
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Closed")]
+    public void PurgeTenant_PurgeNotStarted_Throws(string status)
+    {
+        var tenant = InStatus(status);
+
+        Should.Throw<InvalidOperationException>(() => tenant.Purge(Now));
+        tenant.Status.ToString().ShouldBe(status);
+    }
+
+    [Fact]
+    public void CloseTenant_Purging_IsRejected()
+    {
+        var tenant = InStatus("Purging");
+
+        var closed = tenant.Close(Now, []);
+
+        closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+    }
+
+    [Fact]
+    public void SuspendTenant_Purging_IsRejected()
+    {
+        var tenant = InStatus("Purging");
+
+        var suspended = tenant.Suspend(Reason);
+
+        suspended.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+    }
+
+    [Fact]
+    public void ReactivateTenant_Purging_IsRejected()
+    {
+        var tenant = InStatus("Purging");
+
+        var reactivated = tenant.Reactivate();
+
+        reactivated.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
     }
 
     [Fact]
@@ -512,6 +655,7 @@ public sealed class TenantTests
     [Theory]
     [InlineData("Suspended")]
     [InlineData("Closed")]
+    [InlineData("Purging")]
     public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
     {
         var invited = InStatus(status).Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 0), DailyLimit);
@@ -900,6 +1044,7 @@ public sealed class TenantTests
     [Theory]
     [InlineData("Suspended")]
     [InlineData("Closed")]
+    [InlineData("Purging")]
     public void MakeOwner_ATenantThatIsNotActive_IsAConflictAndChangesNothing(string status)
     {
         var target = Membership("Member");
@@ -1652,6 +1797,9 @@ public sealed class TenantTests
             "Active" => true,
             "Suspended" => tenant.Suspend(Reason).Value is StateChange.Changed,
             "Closed" => tenant.Close(Now, []).Value.Change is StateChange.Changed,
+            "Purging" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed,
+            "Purged" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed
+                && tenant.Purge(Now) is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;
