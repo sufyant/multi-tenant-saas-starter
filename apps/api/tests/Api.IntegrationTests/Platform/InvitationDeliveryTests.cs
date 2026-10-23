@@ -17,9 +17,7 @@ namespace Api.IntegrationTests.Platform;
 // Resend. It is sent from the event ControlPlane publishes once the tenant is active.
 public sealed class InvitationDeliveryTests(Database database)
 {
-    // Milliseconds a retry's pause can look short on the tracked session's clock (section 9, rule 13). Wolverine waits a pause with
-    // Task.Delay, whose timer counts on the system's coarse clock: on Linux one kernel tick, at most 10 ms, and under 1 ms on macOS.
-    // The timer can fire up to one tick early on the session's stopwatch, which also counts whole milliseconds: 1 ms more.
+    // Milliseconds a retry's pause can look short on the tracked session's clock: one tick of the coarse clock and 1 ms (section 9, rule 13).
     private const long PauseTolerance = 11;
 
     private static readonly Dictionary<string, string?> Resend = new()
