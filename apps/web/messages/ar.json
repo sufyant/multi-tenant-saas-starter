@@ -267,6 +267,7 @@
         "created": "<actor></actor> أنشأ هذه المؤسسة.",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
         "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
+        "purge_warned": "<actor></actor> نبّه المالكين إلى أن هذه المؤسسة ستُحذف.",
         "purged": "<actor></actor> حذف هذه المؤسسة وبياناتها.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",

@@ -195,6 +195,18 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
     }
 
+    // Row level security keeps the memberships and the roles to the active tenant; the users table is not under it (R6), so the query starts
+    // from the memberships. An Owner is a member whose role holds the Owners' permission (A1).
+    async Task<IReadOnlyList<OwnerAddress>> ITenantRepository.FindOwnerAddressesAsync(CancellationToken cancellationToken) =>
+        await (
+                from membership in Memberships
+                join role in controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage)) on membership.RoleId equals role.Id
+                join user in controlPlane.Users on membership.UserId equals user.Id
+                where user.Email != null
+                orderby user.Id
+                select new OwnerAddress(user.Id, user.Email!, user.Language))
+            .ToListAsync(cancellationToken);
+
     // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a
     // membership name a role (A2), a role's permissions go with it (A3), and the summary names the tenant (R12). The summary goes with the
     // tenant's data, so no change of a membership or an invitation owes one (K6k). Each user's count changes in the order of the user ids,

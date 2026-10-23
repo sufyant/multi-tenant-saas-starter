@@ -1,5 +1,7 @@
 using ControlPlane.Application.Tenants.StartTenantPurge;
+using ControlPlane.Application.Tenants.WarnTenantPurge;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Tenancy;
 using Wolverine;
 
@@ -11,6 +13,9 @@ namespace Api.IntegrationTests.Platform.Tenants;
 public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 {
     private static readonly DateTimeOffset ClosedAt = new(2026, 9, 1, 9, 0, 0, TimeSpan.Zero);
+
+    // The module's clock at the warning: the closure plus the reopen period, 30 days, less the warning's lead, 7 days.
+    private readonly FakeTimeProvider _time = new(ClosedAt + TimeSpan.FromDays(23));
 
     private string _databaseName = null!;
 
@@ -24,7 +29,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     {
         _databaseName = await database.CreateMigratedDatabaseAsync();
         _testData = new TestData(database, _databaseName);
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, _databaseName));
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, _databaseName), time: _time);
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
@@ -97,6 +102,85 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await PlatformEntriesAsync(tenant.Id, "tenant.purged")).ShouldBe(1L);
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
     }
+
+    // The warning reaches every member whose role holds tenant.owners.manage, each in their own language, with the moment of the purge:
+    // the closure plus the reopen period. A member who is no Owner gets none. The tenant's log records it, by the platform.
+    [Fact]
+    public async Task WarnTenantPurge_AClosedTenantAtItsClosure_EmailsEachOwnerInTheirLanguageAndRecordsItInTheTenantsLog()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+        var turkish = await _testData.AddUserAsync(email: "ayse@acme.test", language: "tr");
+        var arabic = await _testData.AddUserAsync(email: "layla@acme.test", language: "ar");
+        await _testData.AddMemberAsync(tenant.Id, turkish, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, arabic, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "member@acme.test"));
+
+        await WarnAsync(tenant.Id, ClosedAt);
+
+        var emails = _api.Email.Sent.Where(email => email.To.EndsWith("@acme.test", StringComparison.Ordinal)).OrderBy(email => email.To).ToList();
+        emails.Select(email => (email.To, email.Subject)).ShouldBe(
+        [
+            ("ayse@acme.test", "Acme Ltd adlı kuruluş 7 gün içinde silinecek"),
+            ("layla@acme.test", "سيتم حذف Acme Ltd خلال 7 أيام"),
+        ]);
+        emails.ShouldAllBe(email => email.Text.Contains("2026-10-01"));
+        (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
+    }
+
+    // A warning that arrives twice records one entry and sends each email under the same key (O4).
+    [Fact]
+    public async Task WarnTenantPurge_ArrivesTwice_RecordsOnceAndEmailsEachOwnerOnce()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "ada@acme.test"), role: "Owner");
+
+        await WarnAsync(tenant.Id, ClosedAt);
+        await WarnAsync(tenant.Id, ClosedAt);
+
+        _api.Email.Sent.Count(email => email.To == "ada@acme.test").ShouldBe(1);
+        (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
+    }
+
+    // A reopening cancels no scheduled message: the warning of a reopened tenant, or of an earlier closure, does nothing (K4).
+    [Theory]
+    [InlineData("Active", 0)]
+    [InlineData("Closed", 3)]
+    public async Task WarnTenantPurge_ReopenedOrClosedAgainAtAnotherMoment_EmailsNobodyAndRecordsNothing(string status, int daysEarlier)
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "ada@acme.test"), role: "Owner");
+        await _testData.SetTenantStatusAsync(tenant.Id, status);
+
+        await WarnAsync(tenant.Id, ClosedAt - TimeSpan.FromDays(daysEarlier));
+
+        _api.Email.Sent.ShouldNotContain(email => email.To == "ada@acme.test");
+        (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(0L);
+    }
+
+    [Fact]
+    public async Task PurgeTenant_ReopenedBeforeThePurge_DoesNothing()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+        await _testData.SetTenantStatusAsync(tenant.Id, "Active");
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Active");
+        (await SagaOfAsync(tenant.Id)).ShouldBeNull();
+    }
+
+    private Task<Guid> WarnAsync(Guid tenantId, DateTimeOffset closedAt) =>
+        _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), new WarnTenantPurgeCommand(tenantId, closedAt), Cancellation);
+            return tenantId;
+        });
+
+    private Task<long> TenantEntriesAsync(Guid tenantId, string operation) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", _databaseName);
 
     // The purge's start, as the closure scheduled it, and every message it causes.
     private Task<Guid> PurgeAsync(Guid tenantId, DateTimeOffset closedAt) =>

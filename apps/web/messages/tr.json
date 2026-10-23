@@ -267,6 +267,7 @@
         "created": "<actor></actor> bu kuruluşu oluşturdu.",
         "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
         "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
+        "purge_warned": "<actor></actor> Sahipleri bu kuruluşun silineceği konusunda uyardı.",
         "purged": "<actor></actor> bu kuruluşu ve verilerini sildi.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
         "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",

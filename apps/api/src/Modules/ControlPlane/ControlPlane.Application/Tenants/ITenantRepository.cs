@@ -128,6 +128,12 @@ public interface ITenantRepository
     internal Task AddInvitationAsync(Tenant tenant, Invited invited, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The Owners of the active tenant, the members whose role holds <c>tenant.owners.manage</c> (A1), who have an address: a deleted user
+    /// has none (A8). Each with the language the user keeps. Read under the tenant's lock, as values.
+    /// </summary>
+    internal Task<IReadOnlyList<OwnerAddress>> FindOwnerAddressesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// Deletes ControlPlane's data of the active tenant for its purge, in the order the keys need, and saves the tenant, which
     /// <see cref="Tenant.Purge"/> made its tombstone (section 6, "Tenant purge"): the invitations, then the memberships, each with the
     /// user's count of memberships (R13), then the roles with their permissions, then the tenant's summary (R12). The caller holds the
