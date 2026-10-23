@@ -11,10 +11,11 @@ namespace ControlPlane.Application.Invitations;
 /// deleted), the user who invited and their names as
 /// they are stored now, when it was created and expires, and its state at the moment it is read (<c>Pending</c>, <c>Expired</c>,
 /// <c>Accepted</c>, <c>Cancelled</c>; <see cref="Invitation.StateAt"/>), and the language it keeps for its email (K8). Inviting and the invitation list answer it.
+/// The address is none only for a finished invitation whose invited person was deleted (A8).
 /// </summary>
 public sealed record InvitationView(
     Guid Id,
-    string Email,
+    string? Email,
     RoleView? Role,
     Guid InvitedBy,
     UserNameView InvitedByName,

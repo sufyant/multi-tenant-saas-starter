@@ -36,11 +36,11 @@ public static class InvitationEndpoints
         tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete);
     }
 
-    // A pending invitation always has a role, and the API answers this shape for a pending invitation only. The platform answers its
+    // A pending invitation always has a role and an address, and the API answers this shape for a pending invitation only. The platform answers its
     // Owner invitation in the same shape (N7g: a response that two audiences answer stays in the first one's file).
     internal static InvitationResponse ToResponse(InvitationView invitation) => new(
         invitation.Id,
-        invitation.Email,
+        invitation.Email ?? throw new InvalidOperationException("A pending invitation always has an address."),
         RoleEndpoints.ToResponse(invitation.Role ?? throw new InvalidOperationException("A pending invitation always has a role.")),
         invitation.InvitedBy,
         ToResponse(invitation.InvitedByName),

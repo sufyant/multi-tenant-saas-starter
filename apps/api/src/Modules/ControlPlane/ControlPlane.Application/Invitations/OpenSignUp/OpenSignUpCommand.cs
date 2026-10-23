@@ -15,5 +15,5 @@ public sealed record OpenSignUpCommand(Guid TenantId, Guid InvitationId, string 
 {
     /// <summary>The sign-up of a new invitation of the tenant, with the accept link that carries the invitation's code.</summary>
     internal static OpenSignUpCommand For(Tenant tenant, Invitation invitation, Uri acceptLink) =>
-        new(tenant.Id, invitation.Id, invitation.Email, tenant.Name, acceptLink, invitation.ExpiresAt);
+        new(tenant.Id, invitation.Id, invitation.Email ?? throw new InvalidOperationException("A pending invitation always has an address."), tenant.Name, acceptLink, invitation.ExpiresAt);
 }

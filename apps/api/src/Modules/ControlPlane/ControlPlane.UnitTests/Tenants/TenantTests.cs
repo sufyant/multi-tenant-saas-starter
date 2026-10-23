@@ -958,7 +958,7 @@ public sealed class TenantTests
     [Fact]
     public void RemoveUserMembership_TheLastOwner_IsAConflictThatNamesTheTenant()
     {
-        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles), []);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -973,17 +973,56 @@ public sealed class TenantTests
     {
         var membership = Membership(role);
 
-        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners, Roles));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners, Roles), []);
 
-        result.Value.ShouldBeSameAs(membership);
+        result.Value!.Membership.ShouldBeSameAs(membership);
     }
 
     [Fact]
     public void RemoveUserMembership_AUserWhoIsNoLongerAMember_AnswersNone()
     {
-        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1, Roles));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1, Roles), []);
 
         result.Value.ShouldBeNull();
+    }
+
+    // A8: a pending invitation always has an address, so it is cancelled before its address goes.
+    [Fact]
+    public void RemoveUserMembership_InvitationsOfTheUser_CancelsThePendingOneAndErasesEveryAddress()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var removed = Active().RemoveForUserDeletion(new MemberFacts(Membership("Member"), 1, Roles), [pending, cancelled]);
+
+        removed.Value!.Cancelled.ShouldBe([pending]);
+        (pending.Status, pending.Email, cancelled.Status, cancelled.Email).ShouldBe((InvitationStatus.Cancelled, null, InvitationStatus.Cancelled, null));
+    }
+
+    // The last Owner stays, and so does every address of the tenant's invitations (W7).
+    [Fact]
+    public void RemoveUserMembership_TheLastOwner_ErasesNoAddress()
+    {
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var removed = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles), [cancelled]);
+
+        removed.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserLastOwner);
+        cancelled.Email.ShouldBe("ada@example.com");
+    }
+
+    [Fact]
+    public void RemoveUserMembership_AnInvitationOfAnotherTenant_IsNeverErased()
+    {
+        var invitation = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var erase = () => Active().RemoveForUserDeletion(new MemberFacts(Membership("Member"), 1, Roles), [invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        invitation.Email.ShouldBe("ada@example.com");
     }
 
     [Theory]

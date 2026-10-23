@@ -80,6 +80,12 @@ public interface ITenantRepository
     /// </summary>
     internal Task<IReadOnlyList<Invitation>> FindPendingInvitationsAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The active tenant's invitations that the user accepted, or that went to the address or to the address of an invitation the user
+    /// accepted, in every state. The caller holds the tenant's lock, which every change to an invitation takes first (K6a).
+    /// </summary>
+    internal Task<IReadOnlyList<Invitation>> FindInvitationsOfUserAsync(Guid userId, string? email, CancellationToken cancellationToken);
+
     /// <summary>The invitation with this secret hash, locked for the rest of the transaction so it is accepted only once.</summary>
     internal Task<Invitation?> FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken);
 

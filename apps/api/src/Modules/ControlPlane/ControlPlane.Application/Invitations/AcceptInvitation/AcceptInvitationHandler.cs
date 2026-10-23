@@ -68,7 +68,7 @@ public static class AcceptInvitationHandler
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, EmailAddress.Create(invitation.Email), command.FirstName!, command.LastName!, invitation.Language, now);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, EmailAddress.Create(invitation.Email ?? throw new InvalidOperationException("A pending invitation always has an address.")), command.FirstName!, command.LastName!, invitation.Language, now);
         var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {

@@ -282,6 +282,25 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         body.GetProperty("state").GetString().ShouldBe("cancelled");
     }
 
+    // A8: a user's deletion erases the address of a finished invitation. A person who has that address now, a new account of the deleted
+    // person included, is not the invited person: the preview refuses them as any stranger, and the body holds no address.
+    [Theory]
+    [InlineData("Accepted")]
+    [InlineData("Cancelled")]
+    public async Task GetInvitationPreview_AnInvitationWhoseAddressWasErased_IsForbiddenWithTheBodyAcceptingGives(string status)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var invitation = await InvitationAsync(tenant.Id, status: status);
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET email = NULL WHERE id = '{invitation.Id}'");
+
+        var preview = await PreviewAsync(invitation.Invitee, invitation.Code);
+
+        preview.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        var body = await ProblemBodies.WithoutTraceIdAsync(preview);
+        body.ShouldContain("\"code\":\"invitation.email_mismatch\"");
+        body.ShouldNotContain("@");
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

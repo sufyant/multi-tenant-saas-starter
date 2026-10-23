@@ -134,7 +134,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
@@ -217,6 +216,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("invitations", "control_plane", t =>
                         {
+                            t.HasCheckConstraint("ck_invitations_pending_has_email", "status <> 'Pending' OR email IS NOT NULL");
+
                             t.HasCheckConstraint("ck_invitations_pending_has_role", "status <> 'Pending' OR role_id IS NOT NULL");
                         });
                 });
