@@ -21,7 +21,7 @@ internal static class ModuleComposition
         builder.Services.AddAuditInfrastructure();
 
         // The modules that take part in the tenant purge, named to ControlPlane through its contract: the purge waits for a reply of
-        // each, and knows no module (section 6, "Tenant purge"). A module that handles PurgeTenantDataCommand is named here
+        // each, and knows no module (docs/flows/tenant-purge.md). A module that handles PurgeTenantDataCommand is named here
         // (TenantPurgeParticipantTests).
         builder.Services.AddSingleton(new TenantPurgeParticipant(AuditModule.TenantPurgeParticipant));
         builder.Services.AddSingleton(new TenantPurgeParticipant(NotificationsModule.TenantPurgeParticipant));

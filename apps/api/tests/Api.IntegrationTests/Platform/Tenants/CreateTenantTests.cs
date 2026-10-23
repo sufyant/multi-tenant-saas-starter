@@ -18,7 +18,7 @@ using Wolverine.Tracking;
 namespace Api.IntegrationTests.Platform.Tenants;
 
 // A system admin creates a tenant through the system door: one transaction writes the active tenant and its Owner's invitation, and the
-// sign-up, the email and the audit entries follow through the outbox (section 6, "Tenant creation process").
+// sign-up, the email and the audit entries follow through the outbox (docs/flows/tenant-creation.md).
 public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -52,7 +52,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    // One transaction writes the tenant as active, with its Owner's invitation, so the answer is the tenant as it stays (section 6).
+    // One transaction writes the tenant as active, with its Owner's invitation, so the answer is the tenant as it stays (docs/flows/tenant-creation.md).
     [Fact]
     public async Task CreateTenant_Valid_AnswersAnActiveTenantWithItsOwnerInvitationPending()
     {

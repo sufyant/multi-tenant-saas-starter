@@ -6,7 +6,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.Tenants.CompleteTenantPurge;
 
-// The tenant purge's last step, after every module replied (section 6, "Tenant purge"). Under the tenant's lock (K6a), ControlPlane
+// The tenant purge's last step, after every module replied (docs/flows/tenant-purge.md). Under the tenant's lock (K6a), ControlPlane
 // deletes its data of the tenant in the order the keys need and leaves the tombstone (ITenantRepository.PurgeAsync), in one transaction.
 // Then, after the commit, Audit writes tenant.purged in the platform's log, and the platform deletes each user the purge left without a
 // tenant. Both go without a tenant: the tenant's own log is gone, and a user's deletion declares the user (R4). A tenant already purged

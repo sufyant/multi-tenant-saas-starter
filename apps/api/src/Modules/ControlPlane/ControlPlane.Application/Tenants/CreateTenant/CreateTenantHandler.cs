@@ -12,7 +12,7 @@ using Wolverine;
 namespace ControlPlane.Application.Tenants.CreateTenant;
 
 // One transaction writes the active tenant, its summary, its roles and its first Owner's invitation, and sends the identity provider's sign-up and
-// the audit event through the outbox (section 6, "Tenant creation process"). The host also saves the command result in this transaction
+// the audit event through the outbox (docs/flows/tenant-creation.md). The host also saves the command result in this transaction
 // (I4). The invitation takes the path of InviteOwner: the same rule (Tenant.Invite, with the platform as inviter, M1), then the sign-up
 // and the email. Rejections come first (W7); a taken slug is found by the insert itself, which writes nothing then.
 public static class CreateTenantHandler

@@ -6,7 +6,7 @@ using Wolverine;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// The identity provider's sign-up of a member's invitation, driven through one test's host (section 6, "Invitation sign-up"): a tenant
+// The identity provider's sign-up of a member's invitation, driven through one test's host (docs/flows/invitations.md, section 1, "Invitation sign-up"): a tenant
 // with an Owner, an invitation to a person without an account with its email sent, the id of the Clerk invitation that ours records,
 // and the expiry of the invitation's lifetime. The use case classes that check a sign-up share it.
 internal sealed class SignUpInvitations(ApiFactory api, TestData testData, Database database)

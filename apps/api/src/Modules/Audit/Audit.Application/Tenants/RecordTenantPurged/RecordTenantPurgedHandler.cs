@@ -5,8 +5,8 @@ using ControlPlane.Contracts.Tenants;
 
 namespace Audit.Application.Tenants.RecordTenantPurged;
 
-// The audit entry of a tenant's purge, in the platform's log only: the purge deleted the tenant's own log first (section 6, "Tenant
-// purge"), and the platform keeps its entries about the tenant for its accountability (GDPR, Article 6(1)(f)). The platform acted (K3).
+// The audit entry of a tenant's purge, in the platform's log only: the purge deleted the tenant's own log first
+// (docs/flows/tenant-purge.md), and the platform keeps its entries about the tenant for its accountability (GDPR, Article 6(1)(f)). The platform acted (K3).
 // The event is handled in a transaction that declares nothing.
 public static class RecordTenantPurgedHandler
 {

@@ -5,7 +5,7 @@ namespace ControlPlane.Application.Users.EraseFormerMember;
 
 /// <summary>
 /// A step of a user's deletion, after the user's erasure: a tenant the user left before erases the user's address from its invitations
-/// (A8; section 6, "User deletion"). It runs in that tenant. The address is the user's, read before the erasure, or none when the user
+/// (A8; docs/flows/user-deletion.md). It runs in that tenant. The address is the user's, read before the erasure, or none when the user
 /// was already deleted.
 /// </summary>
 [MessageName("erase-former-member")]

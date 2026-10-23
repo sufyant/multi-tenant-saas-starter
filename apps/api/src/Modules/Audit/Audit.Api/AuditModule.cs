@@ -10,7 +10,7 @@ namespace Audit.Api;
 /// <summary>The module's API entry point. Its infrastructure is registered by <c>AuditInfrastructure</c>.</summary>
 public static class AuditModule
 {
-    /// <summary>The name Audit takes part in the tenant purge by, for the host to register (section 6, "Tenant purge").</summary>
+    /// <summary>The name Audit takes part in the tenant purge by, for the host to register (docs/flows/tenant-purge.md).</summary>
     public const string TenantPurgeParticipant = PurgeTenantDataHandler.Participant;
 
     /// <summary>The assembly with the module's handlers, for the host to give Wolverine.</summary>

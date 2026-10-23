@@ -15,8 +15,8 @@ using Wolverine;
 namespace Api.IntegrationTests.Tenant.Invitations;
 
 // POST /v1/tenants/{tenantId}/invitations: an Owner or an Admin invites someone to the tenant by email (K1, K2). After the invitation
-// commits, ControlPlane asks Clerk for the sign-up link of a person without an account, and Notifications then emails the link (section
-// 6, "Invitation sign-up"). The daily limit is 2 here, so a test reaches it with three invitations.
+// commits, ControlPlane asks Clerk for the sign-up link of a person without an account, and Notifications then emails the link
+// (docs/flows/invitations.md, section 1, "Invitation sign-up"). The daily limit is 2 here, so a test reaches it with three invitations.
 public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 {
     private const int DailyLimit = 2;

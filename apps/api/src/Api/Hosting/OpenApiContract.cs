@@ -601,7 +601,7 @@ internal static partial class OpenApiContract
             .SelectMany(schema => schema.Discriminator?.Mapping?.Values ?? [])
             .Select(reference => reference.Reference.Id!);
 
-    // The web shows an action only when the member's permissions hold its name (section 6, "What the screens read"). The names are one
+    // The web shows an action only when the member's permissions hold its name (docs/flows/what-the-screens-read.md). The names are one
     // enum in the document, every constant of the permission list (Permissions), so a generated client has a type for them. A response keeps
     // the names as strings, so each field that holds them, a field named permissions, refers to the enum. OpenApiContractTests checks both.
     private static Task DescribePermissions(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)

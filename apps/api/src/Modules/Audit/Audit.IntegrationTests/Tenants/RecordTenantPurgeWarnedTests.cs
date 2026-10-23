@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Audit.IntegrationTests.Tenants;
 
 // The Audit module records the warning of a tenant's purge in the tenant's own log, by the platform, when ControlPlane announces that
-// it warned the tenant's Owners (section 6, "Tenant purge"). The platform's log gets no entry: the purge itself is recorded there.
+// it warned the tenant's Owners (docs/flows/tenant-purge.md). The platform's log gets no entry: the purge itself is recorded there.
 public sealed class RecordTenantPurgeWarnedTests(Database database)
 {
     private static readonly DateTimeOffset OccurredAt = new(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);

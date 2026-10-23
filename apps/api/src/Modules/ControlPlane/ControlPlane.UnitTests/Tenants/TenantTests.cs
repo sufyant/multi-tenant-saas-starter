@@ -887,7 +887,7 @@ public sealed class TenantTests
         result.Value.Change.ShouldBe(StateChange.Unchanged);
     }
 
-    // Section 6, "Member management": an Admin who acts on an Owner is refused before the Owner count is looked at.
+    // docs/flows/member-management.md: an Admin who acts on an Owner is refused before the Owner count is looked at.
     [Fact]
     public void ChangeMemberRole_AnAdminOnTheLastOwner_IsForbiddenFirst()
     {
@@ -941,7 +941,7 @@ public sealed class TenantTests
         result.Error.Type.ShouldBe(ErrorType.Conflict);
     }
 
-    // Section 6, "Member management": removing yourself is refused before any other check, also for the last Owner.
+    // docs/flows/member-management.md: removing yourself is refused before any other check, also for the last Owner.
     [Fact]
     public void RemoveMember_TheLastOwnerThemselves_IsForbiddenFirst()
     {
@@ -1012,7 +1012,7 @@ public sealed class TenantTests
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
 
-    // Owner recovery (section 6): the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
+    // Owner recovery (docs/flows/owner-recovery.md): the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
     [Theory]
     [InlineData("Admin", 0)]
     [InlineData("Member", 0)]
@@ -1099,7 +1099,7 @@ public sealed class TenantTests
         target.RoleId.ShouldBe(RoleOf("Member").Id);
     }
 
-    // Section 6, "User deletion": the tenant's last Owner stays, and the error names the tenant.
+    // docs/flows/user-deletion.md: the tenant's last Owner stays, and the error names the tenant.
     [Fact]
     public void RemoveUserMembership_TheLastOwner_IsAConflictThatNamesTheTenant()
     {
@@ -1278,7 +1278,7 @@ public sealed class TenantTests
         invitation.AcceptedBy.ShouldBe(userId);
     }
 
-    // Section 6, "Tenant lifecycle": the order of the answers. Each case also fails every check after it.
+    // docs/flows/tenant-lifecycle.md: the order of the answers. Each case also fails every check after it.
     [Fact]
     public void AcceptInvitation_ADeletedUser_IsForbiddenFirstAndChangesNothing()
     {
