@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
+using Wolverine.Runtime;
 using Wolverine.Runtime.Handlers;
 
 namespace Api.IntegrationTests.Messaging;
@@ -21,5 +22,19 @@ public sealed class ExistingRetryPolicyTests(Database database)
 
         rule.Count().ShouldBe(3);
         rule.First().Describe().ShouldContain(firstAction);
+    }
+
+    // W6, S8: of two replies the tenant purge handles at once, the second fails on the saga's version, and is tried again three times,
+    // inline.
+    [Fact]
+    public async Task ReadRetryRules_ASagaChangedByTwoMessagesAtOnce_RetriesTheSecondThreeTimesFirst()
+    {
+        await using var api = new ApiFactory(database.ApplicationConnectionString);
+
+        var rule = api.Services.GetRequiredService<IWolverineRuntime>().Options.Policies.Failures
+            .Single(failure => failure.Match.Description.Contains(nameof(SagaConcurrencyException), StringComparison.Ordinal));
+
+        rule.Count().ShouldBe(3);
+        rule.First().Describe().ShouldContain("Retry");
     }
 }

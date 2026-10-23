@@ -177,6 +177,9 @@ internal static class ApiPipeline
             // Each message travels and is stored under its fixed name (W12).
             MessageNames.Register();
 
+            // Of two messages the tenant purge handles at once, the second fails on the saga's version and is tried again on the first
+            // one's result (W6, S8). Wolverine does not retry this by itself.
+            options.OnException<SagaConcurrencyException>().RetryTimes(3);
             options.OnAnyException().ContinueWith(new QueuedRetries());
 
             // A dead letter expires after its retention (W13).

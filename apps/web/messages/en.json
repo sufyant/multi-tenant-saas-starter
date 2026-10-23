@@ -267,6 +267,7 @@
         "created": "<actor></actor> created this organisation.",
         "owner_invited": "<actor></actor> invited someone as Owner.",
         "owner_made": "<actor></actor> made a member an Owner.",
+        "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",
         "renamed": "<actor></actor> renamed the organisation from <name>{oldName}</name> to <name>{newName}</name>.",
         "reopened": "<actor></actor> reopened this organisation.",

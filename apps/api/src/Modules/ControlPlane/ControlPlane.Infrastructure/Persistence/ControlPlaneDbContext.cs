@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
@@ -19,7 +20,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
 /// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, system admins), and the roles,
-/// their permissions, memberships and invitations, which belong to a tenant and are under row level security.
+/// their permissions, memberships, invitations and tenant purge sagas, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext> options, IMessageContext? messaging = null)
@@ -51,6 +52,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
 
     internal DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
 
+    internal DbSet<TenantPurgeSaga> TenantPurgeSagas => Set<TenantPurgeSaga>();
+
     /// <summary>
     /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
     /// fast without one.
@@ -81,6 +84,16 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         {
             _ = ActiveTenant;
             return Roles;
+        }
+    }
+
+    /// <summary>The active tenant's roles' permissions. Row level security keeps them to the tenant; the query adds no filter of its own.</summary>
+    internal IQueryable<RolePermission> TenantRolePermissions
+    {
+        get
+        {
+            _ = ActiveTenant;
+            return RolePermissions;
         }
     }
 
@@ -125,6 +138,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new MembershipConfiguration());
         modelBuilder.ApplyConfiguration(new InvitationConfiguration());
         modelBuilder.ApplyConfiguration(new SystemAdminConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantPurgeSagaConfiguration());
     }
 
     // Only a change inside a transaction is owed: the transaction is what commits it (W1). Entries() detects the changes first.

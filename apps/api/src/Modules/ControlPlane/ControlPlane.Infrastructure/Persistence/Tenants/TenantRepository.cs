@@ -195,6 +195,37 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
     }
 
+    // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a
+    // membership name a role (A2), a role's permissions go with it (A3), and the summary names the tenant (R12). The summary goes with the
+    // tenant's data, so no change of a membership or an invitation owes one (K6k). Each user's count changes in the order of the user ids,
+    // so two purges that share users take their rows in one order.
+    async Task<IReadOnlyList<Guid>> ITenantRepository.PurgeAsync(Tenant tenant, CancellationToken cancellationToken)
+    {
+        var purged = OfActiveTenant(tenant, tenant.Id);
+        var members = await Memberships.Select(membership => membership.UserId).Order().ToListAsync(cancellationToken);
+
+        await controlPlane.TenantInvitations.ExecuteDeleteAsync(cancellationToken);
+        await Memberships.ExecuteDeleteAsync(cancellationToken);
+        foreach (var userId in members)
+        {
+            await controlPlane.Database.ExecuteSqlAsync(
+                $"UPDATE control_plane.users SET membership_count = membership_count - 1 WHERE id = {userId}",
+                cancellationToken);
+        }
+
+        await controlPlane.TenantRolePermissions.ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.TenantRoles.ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.TenantSummaries.Where(summary => summary.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.SaveChangesAsync(cancellationToken);
+
+        return await controlPlane.Users
+            .Where(user => members.Contains(user.Id) && user.MembershipCount == 0 && user.DeletedAt == null)
+            .Where(user => !controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id))
+            .Select(user => user.Id)
+            .Order()
+            .ToListAsync(cancellationToken);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
     // The members whose role holds the Owners' permission (A1, K1). Row level security keeps the count to the active tenant. It joins no

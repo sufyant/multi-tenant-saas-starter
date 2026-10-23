@@ -5,6 +5,7 @@ using ControlPlane.Application.Roles;
 using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
@@ -83,8 +84,10 @@ public static class ControlPlaneInfrastructure
         services.AddOptions<TenantOptions>()
             .BindConfiguration(TenantOptions.Section)
             .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantOptions.Section}:ReopenPeriod must be positive.")
+            .Validate(settings => settings.PurgeTimeout > TimeSpan.Zero, $"{TenantOptions.Section}:PurgeTimeout must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantOptions>>().Value);
+        services.AddSingleton<TenantPurgeAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it
         // resolves it from the message's scope. It reaches no DbContext.

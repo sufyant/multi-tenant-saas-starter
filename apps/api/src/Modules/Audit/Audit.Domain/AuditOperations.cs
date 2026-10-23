@@ -36,6 +36,8 @@ public static class AuditOperations
 
     public const string TenantReactivated = "tenant.reactivated";
 
+    public const string TenantPurged = "tenant.purged";
+
     public const string TenantRenamed = "tenant.renamed";
 
     public const string TenantReopened = "tenant.reopened";

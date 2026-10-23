@@ -127,6 +127,15 @@ public interface ITenantRepository
     /// </summary>
     internal Task AddInvitationAsync(Tenant tenant, Invited invited, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Deletes ControlPlane's data of the active tenant for its purge, in the order the keys need, and saves the tenant, which
+    /// <see cref="Tenant.Purge"/> made its tombstone (section 6, "Tenant purge"): the invitations, then the memberships, each with the
+    /// user's count of memberships (R13), then the roles with their permissions, then the tenant's summary (R12). The caller holds the
+    /// tenant's lock (K6a); the counts are changed one user at a time, in the order of the user ids. Answers the former members whom the
+    /// purge left without a membership, who are neither deleted nor system admins: the users left without a tenant.
+    /// </summary>
+    internal Task<IReadOnlyList<Guid>> PurgeAsync(Tenant tenant, CancellationToken cancellationToken);
+
     /// <summary>Saves the transaction's changes without the summary: a change to the tenant itself, or a step before <see cref="SaveAsync"/>.</summary>
     internal Task SaveChangesAsync(CancellationToken cancellationToken);
 }

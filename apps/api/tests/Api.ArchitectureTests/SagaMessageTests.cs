@@ -6,8 +6,8 @@ namespace Api.ArchitectureTests;
 
 // S13: a saga shares no message with another handler. It hears its steps through replies and faults sent to it, not through events
 // meant for other modules. Read from Wolverine's own handler graph of the application composed as a worker: the handlers of a
-// message type are its chain's own and those Wolverine separated onto endpoints of their own (W4). The template has no saga yet: its
-// reference use is the tenant purge of step r7 (section 6, "Tenant creation process"). The rules hold for it when it comes.
+// message type are its chain's own and those Wolverine separated onto endpoints of their own (W4). The template's one saga is its
+// reference use, the tenant purge (section 6, "Tenant purge"); a product's saga is held to the same rules.
 public sealed class SagaMessageTests : IAsyncLifetime
 {
     private const string WhyNot =
@@ -32,13 +32,13 @@ public sealed class SagaMessageTests : IAsyncLifetime
         shared.ShouldBeEmpty(WhyNot);
     }
 
-    // Tenant creation is one transaction (section 6). The first saga, the tenant purge (step r7), changes this list.
+    // Tenant creation is one transaction (section 6). The template's one saga is the tenant purge; a product's saga adds itself here.
     [Fact]
-    public void ReadTheHandlerGraph_Sagas_AreNoneYet()
+    public void ReadTheHandlerGraph_Sagas_AreTheTenantPurgeOnly()
     {
-        var sagas = HandlersByMessage().SelectMany(message => message.Value).Where(IsSaga).Distinct();
+        var sagas = HandlersByMessage().SelectMany(message => message.Value).Where(IsSaga).Distinct().Select(saga => saga.FullName);
 
-        sagas.ShouldBeEmpty();
+        sagas.ShouldBe(["ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga"]);
     }
 
     // N3: a saga hears only the replies to its steps, its own timeouts and Wolverine's faults; never a public event.
