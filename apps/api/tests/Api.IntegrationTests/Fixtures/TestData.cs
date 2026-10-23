@@ -88,10 +88,12 @@ internal sealed class TestData(Database database, string databaseName = Database
         var id = tenantId ?? Guid.NewGuid();
         // Not from the id: two version 7 ids of one millisecond start with the same 13 digits, and so would their slugs.
         slug ??= $"tenant-{Guid.NewGuid():N}"[..20];
+        // A purged tenant is a tombstone with the moment of its purge (R15).
+        DateTimeOffset? purgedAt = status == "Purged" ? DateTimeOffset.UtcNow : null;
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at)
-            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)})
+            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at{Column("purged_at", purgedAt)})
+            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)}{Value(purgedAt)})
             """,
             database: databaseName);
 
@@ -173,14 +175,17 @@ internal sealed class TestData(Database database, string databaseName = Database
         return externalId;
     }
 
-    // Marks the user the way a system admin's deletion does: the email address and the names erased, the time of the deletion set.
+    // Marks the user the way a system admin's deletion does: the email address, the names and the time zone erased, the time of the
+    // deletion set.
     public Task DeleteUserAsync(string externalId) =>
         database.ScalarAsync<object>(
-            $"UPDATE control_plane.users SET email = NULL, first_name = NULL, last_name = NULL, deleted_at = now() WHERE external_id = '{externalId}'",
+            $"UPDATE control_plane.users SET email = NULL, first_name = NULL, last_name = NULL, time_zone = NULL, deleted_at = now() WHERE external_id = '{externalId}'",
             database: databaseName);
 
+    // A suspension names the system admin who suspended the user (R15). The user stands in for them: the key needs only a user.
     public Task SuspendUserAsync(string externalId) =>
-        database.ScalarAsync<object>($"UPDATE control_plane.users SET suspended_at = now() WHERE external_id = '{externalId}'", database: databaseName);
+        database.ScalarAsync<object>(
+            $"UPDATE control_plane.users SET suspended_at = now(), suspended_by = id WHERE external_id = '{externalId}'", database: databaseName);
 
     // A user's membership count as the user row keeps it (users.membership_count), and the user's memberships counted as the superuser,
     // whom row level security does not hold. After a command that adds or removes a membership, the two must be the same.
@@ -194,7 +199,7 @@ internal sealed class TestData(Database database, string databaseName = Database
 
     // An invitation of the tenant, with its tenant declared, from the inviter or a new one. Without a secret its token hash is new, so no
     // link names it; with one, the link's code is the tenant id and the secret (InvitationCodeOf). With an accepting user, it was accepted
-    // by them at the insert.
+    // by them at the insert. An accepted invitation always has the user who accepted it (R15): a new one, unless the test names them.
     public async Task<Guid> AddInvitationAsync(
         Guid tenantId,
         string? email = null,
@@ -210,6 +215,7 @@ internal sealed class TestData(Database database, string databaseName = Database
     {
         var invitationId = id ?? Guid.NewGuid();
         var inviter = await UserIdOfAsync(invitedBy ?? await AddUserAsync());
+        acceptedBy ??= status == "Accepted" ? await AddUserAsync() : null;
         var accepter = acceptedBy is null ? "NULL" : $"'{await UserIdOfAsync(acceptedBy)}'";
         var tokenHash = secret is null ? $"{Guid.NewGuid():N}{Guid.NewGuid():N}" : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
         await database.ExecuteInTenantAsync(

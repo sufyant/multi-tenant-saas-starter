@@ -83,7 +83,14 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     b.HasIndex("TargetKind", "TargetId", "OccurredAt", "Id")
                         .HasDatabaseName("ix_platform_entries_target_kind_target_id_occurred_at_id");
 
-                    b.ToTable("platform_entries", "audit");
+                    b.ToTable("platform_entries", "audit", t =>
+                        {
+                            t.HasCheckConstraint("ck_platform_entries_actor_kind", "actor_kind IN ('User', 'Platform')");
+
+                            t.HasCheckConstraint("ck_platform_entries_kind", "kind IN ('Command')");
+
+                            t.HasCheckConstraint("ck_platform_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role')");
+                        });
                 });
 
             modelBuilder.Entity("Audit.Domain.AuditEntries.TenantAuditEntry", b =>
@@ -152,7 +159,14 @@ namespace Audit.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "OccurredAt", "Id")
                         .HasDatabaseName("ix_entries_tenant_id_occurred_at_id");
 
-                    b.ToTable("entries", "audit");
+                    b.ToTable("entries", "audit", t =>
+                        {
+                            t.HasCheckConstraint("ck_entries_actor_kind", "actor_kind IN ('User', 'Platform')");
+
+                            t.HasCheckConstraint("ck_entries_kind", "kind IN ('Command')");
+
+                            t.HasCheckConstraint("ck_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role')");
+                        });
                 });
 #pragma warning restore 612, 618
         }

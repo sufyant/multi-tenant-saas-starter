@@ -55,5 +55,11 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
         entry.Property(e => e.TargetKind).HasConversion<string>().HasMaxLength(20);
         entry.Property(e => e.TargetName).HasMaxLength(AuditEntry.TargetNameMaxLength);
         entry.Property(e => e.Details).HasColumnType("jsonb");
+
+        // R15: an actor, a kind and a target of the kinds the code knows. The caller named the table first.
+        var table = entry.Metadata.GetTableName();
+        entry.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_actor_kind", CheckConstraints.OneOf<AuditActorKind>("actor_kind")));
+        entry.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_kind", CheckConstraints.OneOf<AuditEntryKind>("kind")));
+        entry.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_target_kind", CheckConstraints.OneOf<AuditTargetKind>("target_kind")));
     }
 }

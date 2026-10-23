@@ -28,6 +28,9 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     private ApiFactory _api = null!;
 
+    // A purging tenant keeps its closure; a purged tenant keeps none (R15).
+    public static TheoryData<string, TimeSpan?> PurgeStatuses => new() { { "Purging", TimeSpan.Zero }, { "Purged", null } };
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Theory]
@@ -136,11 +139,10 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     // The purge is the pivot (S5): once it has started, the tenant cannot come back, and a purged tenant is only a tombstone (K4).
     [Theory]
-    [InlineData("Purging")]
-    [InlineData("Purged")]
-    public async Task ReopenTenant_PurgingOrPurged_IsAConflictAndChangesNothing(string status)
+    [MemberData(nameof(PurgeStatuses))]
+    public async Task ReopenTenant_PurgingOrPurged_IsAConflictAndChangesNothing(string status, TimeSpan? closedFor)
     {
-        var tenant = await _testData.AddTenantAsync(status: status, closedAt: _time.GetUtcNow());
+        var tenant = await _testData.AddTenantAsync(status: status, closedAt: _time.GetUtcNow() - closedFor);
 
         var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id));
 

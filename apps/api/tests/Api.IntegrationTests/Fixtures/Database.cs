@@ -1,6 +1,7 @@
 using Api.Idempotency;
 using Api.Persistence;
 using Audit.Infrastructure;
+using Audit.Infrastructure.Persistence;
 using ControlPlane.Infrastructure;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -172,6 +173,19 @@ public sealed class Database : IAsyncLifetime
         var migrations = controlPlane.Database.GetMigrations().ToList();
         var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
         await controlPlane.GetService<IMigrator>().MigrateAsync(before);
+
+        return name;
+    }
+
+    // The same for Audit: a database set up the way a deployment is, then with Audit taken back to the migration before the named one.
+    public async Task<string> CreateDatabaseBeforeAuditMigrationAsync(string migration)
+    {
+        var name = await CreateMigratedDatabaseAsync();
+        await using var audit = new AuditDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<AuditDbContext>(AuditDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        var migrations = audit.Database.GetMigrations().ToList();
+        var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
+        await audit.GetService<IMigrator>().MigrateAsync(before);
 
         return name;
     }

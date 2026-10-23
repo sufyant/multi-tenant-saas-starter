@@ -59,7 +59,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_tenant_purge_sagas_tenant_id");
 
-                    b.ToTable("tenant_purge_sagas", "control_plane");
+                    b.ToTable("tenant_purge_sagas", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_tenant_purge_sagas_state", "state IN ('PurgingModules', 'Finishing', 'Completed')");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
@@ -254,9 +257,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("invitations", "control_plane", t =>
                         {
+                            t.HasCheckConstraint("ck_invitations_acceptance", "(accepted_at IS NULL) = (accepted_by IS NULL) AND (status = 'Accepted') = (accepted_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_invitations_language", "language IN ('en', 'tr', 'ar')");
+
                             t.HasCheckConstraint("ck_invitations_pending_has_email", "status <> 'Pending' OR email IS NOT NULL");
 
                             t.HasCheckConstraint("ck_invitations_pending_has_role", "status <> 'Pending' OR role_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_invitations_status", "status IN ('Pending', 'Accepted', 'Cancelled')");
                         });
                 });
 
@@ -355,7 +364,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Slug" }, "ix_tenants_slug_trgm"), new[] { "gin_trgm_ops" });
 
-                    b.ToTable("tenants", "control_plane");
+                    b.ToTable("tenants", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_tenants_purged_is_a_tombstone", "status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL)");
+
+                            t.HasCheckConstraint("ck_tenants_status", "status IN ('Active', 'Suspended', 'Closed', 'Purging', 'Purged')");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
@@ -398,7 +412,20 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasKey("TenantId")
                         .HasName("pk_tenant_summaries");
 
-                    b.ToTable("tenant_summaries", "control_plane");
+                    b.ToTable("tenant_summaries", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count");
+
+                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_language", "owner_invitation_language IN ('en', 'tr', 'ar')");
+
+                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_status", "owner_invitation_status IN ('Pending', 'Accepted', 'Cancelled')");
+
+                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_together", "(owner_invitation_status IS NULL) = (owner_invitation_expires_at IS NULL) AND (owner_invitation_status IS NOT NULL OR (owner_invitation_email IS NULL AND owner_invitation_language IS NULL))");
+
+                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_without_owner", "owner_count = 0 OR owner_invitation_status IS NULL");
+
+                            t.HasCheckConstraint("ck_tenant_summaries_pending_owner_invitation_has_email", "owner_invitation_status <> 'Pending' OR owner_invitation_email IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
@@ -494,7 +521,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm"), new[] { "gin_trgm_ops" });
 
-                    b.ToTable("users", "control_plane");
+                    b.ToTable("users", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_users_deleted_keeps_no_personal_data", "deleted_at IS NULL OR (email IS NULL AND first_name IS NULL AND last_name IS NULL AND time_zone IS NULL)");
+
+                            t.HasCheckConstraint("ck_users_language", "language IN ('en', 'tr', 'ar')");
+
+                            t.HasCheckConstraint("ck_users_membership_count", "membership_count >= 0");
+
+                            t.HasCheckConstraint("ck_users_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>

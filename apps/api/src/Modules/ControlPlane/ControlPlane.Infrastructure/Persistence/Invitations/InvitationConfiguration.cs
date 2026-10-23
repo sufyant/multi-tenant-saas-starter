@@ -4,6 +4,7 @@ using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Tenancy;
 
 namespace ControlPlane.Infrastructure.Persistence.Invitations;
 
@@ -34,6 +35,11 @@ internal sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitat
         // A8: a user's deletion erases the address of a finished invitation only. Pending is the stored status, expired or not: a CHECK
         // cannot read the clock, and an expired pending invitation is still the link the email sent.
         invitation.ToTable(table => table.HasCheckConstraint("ck_invitations_pending_has_email", "status <> 'Pending' OR email IS NOT NULL"));
+        // R15: a status and a language the code knows, and an accepted invitation, and only an accepted one, has its moment and its user.
+        invitation.ToTable(table => table.HasCheckConstraint("ck_invitations_status", CheckConstraints.OneOf<InvitationStatus>("status")));
+        invitation.ToTable(table => table.HasCheckConstraint("ck_invitations_language", CheckConstraints.OneOf("language", ControlPlaneDbContext.LanguageTags)));
+        invitation.ToTable(table => table.HasCheckConstraint(
+            "ck_invitations_acceptance", "(accepted_at IS NULL) = (accepted_by IS NULL) AND (status = 'Accepted') = (accepted_at IS NOT NULL)"));
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedBy).OnDelete(DeleteBehavior.Restrict);
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.AcceptedBy).OnDelete(DeleteBehavior.Restrict);
     }
