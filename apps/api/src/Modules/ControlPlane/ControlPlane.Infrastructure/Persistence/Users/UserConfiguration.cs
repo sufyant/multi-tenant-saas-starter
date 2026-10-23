@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -11,6 +12,10 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         user.Property(u => u.Id).ValueGeneratedNever();
         user.Property(u => u.ExternalId).HasMaxLength(255);
+        // R17: the lengths of the domain, as the invitations keep an address.
+        user.Property(u => u.Email).HasMaxLength(EmailAddress.MaxLength);
+        user.Property(u => u.FirstName).HasMaxLength(User.NameMaxLength);
+        user.Property(u => u.LastName).HasMaxLength(User.NameMaxLength);
         user.HasIndex(u => u.ExternalId).IsUnique();
         user.HasIndex(u => u.Email);
         user.HasIndex(u => u.LastName);

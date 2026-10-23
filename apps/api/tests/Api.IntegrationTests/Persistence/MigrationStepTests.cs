@@ -384,6 +384,29 @@ public sealed class MigrationStepTests(Database database)
             ["fk_tenant_summaries_tenants_tenant_id", "fk_memberships_users_user_id", "fk_system_admins_users_user_id", "deleted"]);
     }
 
+    // R17: a user's address and names have the lengths of the domain, as an invitation's address has. A user at each limit stays through
+    // the migration; one character more is refused.
+    [Fact]
+    public async Task Migrate_AUserAtEachLimit_KeepsThemAndRefusesOneCharacterMore()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("LimitTheLengthsOfAUsersAddressAndNames");
+        var testData = new TestData(database, name);
+        var user = await testData.AddUserAsync(email: $"{new string('a', 308)}@example.com", firstName: new string('F', 100), lastName: new string('L', 100));
+        var before = await ControlPlaneRowsAsync(name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await ControlPlaneRowsAsync(name)).ShouldBe(before);
+        (await RefusedForLengthAsync(
+            name,
+            $"UPDATE control_plane.users SET email = 'a' || email WHERE external_id = '{user}'",
+            $"UPDATE control_plane.users SET first_name = first_name || 'F' WHERE external_id = '{user}'",
+            $"UPDATE control_plane.users SET last_name = last_name || 'L' WHERE external_id = '{user}'")).ShouldBe(["refused", "refused", "refused"]);
+        (await ColumnTypesAsync(name, "users", "email", "first_name", "last_name")).ShouldBe(
+            "email character varying(320), first_name character varying(100), last_name character varying(100)");
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()
@@ -560,6 +583,37 @@ public sealed class MigrationStepTests(Database database)
 
         return refusals;
     }
+
+    // "refused" for each statement that the column's length refuses, "stored" for one the database takes; each is rolled back.
+    private async Task<List<string>> RefusedForLengthAsync(string databaseName, params string[] statements)
+    {
+        var refusals = new List<string>();
+        foreach (var statement in statements)
+        {
+            try
+            {
+                await database.ScalarAsSuperuserAsync<object>($"BEGIN; {statement}; ROLLBACK;", databaseName);
+                refusals.Add("stored");
+            }
+            catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.StringDataRightTruncation)
+            {
+                refusals.Add("refused");
+            }
+        }
+
+        return refusals;
+    }
+
+    // The columns of the ControlPlane table with their types, in the order named.
+    private Task<string?> ColumnTypesAsync(string databaseName, string table, params string[] columns) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(column_name || ' ' || data_type || coalesce('(' || character_maximum_length || ')', ''), ', '
+                ORDER BY array_position(ARRAY[{string.Join(", ", columns.Select(column => $"'{column}'"))}]::text[], column_name::text))
+            FROM information_schema.columns
+            WHERE table_schema = 'control_plane' AND table_name = '{table}' AND column_name IN ({string.Join(", ", columns.Select(column => $"'{column}'"))})
+            """,
+            databaseName);
 
     // The roles of the tenant, by their kind and their name.
     private Task<string?> RolesOfAsync(Guid tenantId, string databaseName) =>

@@ -445,7 +445,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("deleted_at");
 
                     b.Property<string>("Email")
-                        .HasColumnType("text")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
                         .HasColumnName("email");
 
                     b.Property<string>("ExternalId")
@@ -455,7 +456,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("external_id");
 
                     b.Property<string>("FirstName")
-                        .HasColumnType("text")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("first_name");
 
                     b.Property<string>("Language")
@@ -465,7 +467,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnName("language");
 
                     b.Property<string>("LastName")
-                        .HasColumnType("text")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
                     b.Property<int>("MembershipCount")
