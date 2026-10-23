@@ -132,6 +132,22 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
     }
 
+    // The purge is the pivot (S5): once it has started, the tenant cannot come back, and a purged tenant is only a tombstone (K4).
+    [Theory]
+    [InlineData("Purging")]
+    [InlineData("Purged")]
+    public async Task ReopenTenant_PurgingOrPurged_IsAConflictAndChangesNothing(string status)
+    {
+        var tenant = await _testData.AddTenantAsync(status: status, closedAt: _time.GetUtcNow());
+
+        var response = await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).ReopenTenantAsync(tenant.Id));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(response)).ShouldBe("tenant.not_closed");
+        (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(status);
+        (await AuditEntryCountAsync(tenant.Id)).ShouldBe(0);
+    }
+
     public ValueTask InitializeAsync()
     {
         _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time);

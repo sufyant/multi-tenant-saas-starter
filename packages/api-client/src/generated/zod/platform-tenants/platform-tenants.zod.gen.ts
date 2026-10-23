@@ -47,7 +47,9 @@ export const CreateTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -73,6 +75,8 @@ export const ListTenantsQueryParams = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
+  Purging: 'purging',
+  Purged: 'purged',
 }).optional()
 })
 
@@ -85,7 +89,9 @@ export const ListTenantsResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
@@ -124,7 +130,9 @@ export const GetTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
@@ -173,7 +181,9 @@ export const RenameTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -198,7 +208,9 @@ export const SuspendTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -215,7 +227,9 @@ export const ReactivateTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -232,7 +246,9 @@ export const CloseTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
@@ -249,7 +265,9 @@ export const ReopenTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant: active from its creation, suspended or closed (K4).'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')

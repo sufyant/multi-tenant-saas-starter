@@ -84,7 +84,8 @@ export const GetUserResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.'),
+  Purging: 'purging',
+}).describe('The status of a tenant a user is a member of: active, or suspended, closed or purging when its members cannot enter it. A purged tenant has no member.'),
   "role": zod.object({
   "id": zod.uuid(),
   "name": zod.string(),

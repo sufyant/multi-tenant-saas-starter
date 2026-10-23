@@ -70,6 +70,20 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         ]);
     }
 
+    // A membership of a tenant whose purge has started stays until the purge's last step, with the tenant's status (K4).
+    [Fact]
+    public async Task GetUser_AMemberOfAPurgingTenant_ShowsTheTenantPurging()
+    {
+        var user = await _testData.AddUserAsync();
+        var purging = await _testData.AddTenantAsync(name: "Echo Ltd", status: "Purging", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddMemberAsync(purging.Id, user);
+        await SummarizeAsync(purging.Id);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{await _testData.UserIdOfAsync(user)}", Cancellation);
+
+        found.GetProperty("memberships").EnumerateArray().Select(membership => membership.GetProperty("tenantStatus").GetString()).ShouldBe(["purging"]);
+    }
+
     [Fact]
     public async Task GetUser_AUserWithNoMembership_HasAnEmptyListAndNoSuspension()
     {

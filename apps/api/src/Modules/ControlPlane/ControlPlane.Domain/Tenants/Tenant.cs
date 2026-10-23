@@ -86,7 +86,7 @@ internal sealed class Tenant
     {
         TenantStatus.Active => Result.Success(),
         TenantStatus.Suspended => Error.Forbidden(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."),
-        TenantStatus.Closed => Error.Forbidden(ControlPlaneErrorCodes.TenantClosed, "The tenant is closed."),
+        TenantStatus.Closed or TenantStatus.Purging or TenantStatus.Purged => Error.Forbidden(ControlPlaneErrorCodes.TenantClosed, "The tenant is closed."),
         _ => NotActive,
     };
 
@@ -212,6 +212,30 @@ internal sealed class Tenant
         SuspensionReason = null;
         return StateChange.Changed;
     }
+
+    /// <summary>
+    /// Starts the purge of a tenant that is still closed at the closure the purge was scheduled for: the pivot of the purge (S5). From
+    /// now on the tenant cannot be reopened. A tenant that was reopened, closed again at another moment, or whose purge has started
+    /// changes nothing: the scheduled purge of an earlier closure does nothing (K4). The caller holds the tenant's lock.
+    /// </summary>
+    public StateChange BeginPurge(DateTimeOffset closedAt)
+    {
+        if (!IsClosedAt(closedAt))
+        {
+            return StateChange.Unchanged;
+        }
+
+        Status = TenantStatus.Purging;
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Whether the tenant is still closed at this closure, the one a message scheduled at the closure carries (K4). PostgreSQL keeps a
+    /// moment to the microsecond and .NET to 100 ns, so a closure read back from the database matches the closure the message carries
+    /// when they differ by less than a microsecond.
+    /// </summary>
+    public bool IsClosedAt(DateTimeOffset closedAt) =>
+        Status == TenantStatus.Closed && ClosedAt is { } at && (at - closedAt).Duration() < TimeSpan.FromMicroseconds(1);
 
     /// <summary>
     /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's, asked as the permission

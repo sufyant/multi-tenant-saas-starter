@@ -6515,20 +6515,22 @@
             "$ref": "#/components/schemas/RoleResponse"
           }
         },
-        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user's there."
+        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended, closed or purging when its members cannot enter it. The role is the user's there."
       },
       "MyTenantResponseStatus": {
         "enum": [
           "active",
           "suspended",
-          "closed"
+          "closed",
+          "purging"
         ],
         "type": "string",
-        "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.",
+        "description": "The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.",
         "x-enumNames": [
           "Active",
           "Suspended",
-          "Closed"
+          "Closed",
+          "Purging"
         ]
       },
       "OwnerInvitationResponse": {
@@ -7200,14 +7202,18 @@
         "enum": [
           "active",
           "suspended",
-          "closed"
+          "closed",
+          "purging",
+          "purged"
         ],
         "type": "string",
-        "description": "The status of a tenant: active from its creation, suspended or closed (K4).",
+        "description": "The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).",
         "x-enumNames": [
           "Active",
           "Suspended",
-          "Closed"
+          "Closed",
+          "Purging",
+          "Purged"
         ]
       },
       "TenantSuspendedDetailsResponse": {
@@ -7375,14 +7381,16 @@
         "enum": [
           "active",
           "suspended",
-          "closed"
+          "closed",
+          "purging"
         ],
         "type": "string",
-        "description": "The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.",
+        "description": "The status of a tenant a user is a member of: active, or suspended, closed or purging when its members cannot enter it. A purged tenant has no member.",
         "x-enumNames": [
           "Active",
           "Suspended",
-          "Closed"
+          "Closed",
+          "Purging"
         ]
       },
       "UserNameResponse": {

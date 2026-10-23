@@ -37,7 +37,8 @@
     "status": {
       "suspended": "Suspended",
       "closed": "Closed",
-      "active": "Active"
+      "active": "Active",
+      "purging": "Being deleted"
     }
   },
   "overview": {

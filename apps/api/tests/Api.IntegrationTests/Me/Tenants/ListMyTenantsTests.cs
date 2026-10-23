@@ -258,6 +258,20 @@ public sealed class ListMyTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
     }
 
+    // A member keeps a tenant whose purge has started until the purge's last step takes the membership away (K4).
+    [Fact]
+    public async Task ListMyTenants_MemberOfAPurgingTenant_ListsItAsPurging()
+    {
+        var tenant = await _testData.AddTenantAsync(name: "Purging Ltd", status: "Purging", closedAt: DateTimeOffset.UtcNow);
+        var member = await _testData.AddMemberAsync(tenant.Id);
+
+        var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
+
+        var listed = page.GetProperty("items").EnumerateArray()
+            .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("status").GetString()));
+        listed.ShouldBe([(tenant.Id, "purging")]);
+    }
+
     private static List<(Guid Id, string Name, string Slug)> Tenants(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray()

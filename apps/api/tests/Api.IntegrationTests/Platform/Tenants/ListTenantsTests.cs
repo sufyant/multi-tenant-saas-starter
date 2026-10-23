@@ -130,6 +130,22 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
+    // The purge's two statuses are filters of their own (K4).
+    [Theory]
+    [InlineData("purging", "Foxtrot")]
+    [InlineData("purged", "Golf")]
+    public async Task ListTenants_APurgeStatusFilter_ReturnsTheTenantsInThatStatusOnly(string status, string found)
+    {
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purging", name: $"{_marker} Foxtrot", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purged", name: $"{_marker} Golf");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
+
+        Names(page).ShouldBe([$"{_marker} {found}"]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
     [Theory]
     [InlineData("name", "Alpha, Bravo, Charlie")]
     [InlineData("-name", "Charlie, Bravo, Alpha")]

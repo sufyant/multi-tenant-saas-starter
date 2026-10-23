@@ -35,6 +35,8 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     [InlineData("Active", "active")]
     [InlineData("Suspended", "suspended")]
     [InlineData("Closed", "closed")]
+    [InlineData("Purging", "purging")]
+    [InlineData("Purged", "purged")]
     public async Task GetTenant_ATenantInAnyStatus_ReturnsItWithItsStatus(string stored, string answered)
     {
         var tenant = await _testData.AddTenantAsync(status: stored, name: "Admin View Ltd");

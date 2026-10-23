@@ -636,7 +636,7 @@ export interface ListPageOfMemberResponse {
 }
 
 /**
- * The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.
+ * The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.
  */
 export type MyTenantResponseStatus = typeof MyTenantResponseStatus[keyof typeof MyTenantResponseStatus];
 
@@ -645,11 +645,12 @@ export const MyTenantResponseStatus = {
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
+  Purging: 'purging',
 } as const;
 
 /**
  * A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
- * active, or suspended or closed when its members cannot enter it. The role is the user's there.
+ * active, or suspended, closed or purging when its members cannot enter it. The role is the user's there.
  */
 export interface MyTenantResponse {
   id: string;
@@ -685,7 +686,7 @@ export interface ListPageOfRoleDetailResponse {
 }
 
 /**
- * The status of a tenant: active from its creation, suspended or closed (K4).
+ * The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).
  */
 export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof TenantResponseStatus];
 
@@ -694,6 +695,8 @@ export const TenantResponseStatus = {
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
+  Purging: 'purging',
+  Purged: 'purged',
 } as const;
 
 /**
@@ -956,7 +959,7 @@ export interface UpdateRoleRequest {
 }
 
 /**
- * The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.
+ * The status of a tenant a user is a member of: active, or suspended, closed or purging when its members cannot enter it. A purged tenant has no member.
  */
 export type UserMembershipResponseTenantStatus = typeof UserMembershipResponseTenantStatus[keyof typeof UserMembershipResponseTenantStatus];
 
@@ -965,6 +968,7 @@ export const UserMembershipResponseTenantStatus = {
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
+  Purging: 'purging',
 } as const;
 
 /**
