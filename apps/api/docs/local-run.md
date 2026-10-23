@@ -139,7 +139,7 @@ As the owner, signed in with the invited email address verified. A person who is
 ```sh
 curl -X POST http://127.0.0.1:5080/v1/me/invitations/accept \
   -H "Authorization: Bearer <owner token>" -H "Content-Type: application/json" \
-  -d '{"code":"<tenantId>.<secret>","firstName":"Ada","lastName":"Lovelace"}'
+  -d '{"code":"<tenantId>.<secret>","firstName":"Ayşe","lastName":"Yılmaz"}'
 curl http://127.0.0.1:5080/v1/me/tenants -H "Authorization: Bearer <owner token>"
 curl http://127.0.0.1:5080/v1/tenants/<tenantId>/members -H "Authorization: Bearer <owner token>"
 ```
