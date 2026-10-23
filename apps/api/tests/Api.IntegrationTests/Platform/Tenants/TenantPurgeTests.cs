@@ -10,6 +10,7 @@ namespace Api.IntegrationTests.Platform.Tenants;
 // Section 6, "Tenant purge": when a closed tenant's reopen period is over, the purge deletes every module's data of the tenant, keeps the
 // tenant row as its tombstone and the platform's log, writes tenant.purged there, and deletes the users it left without a tenant. Each
 // test runs on a database of its own: the purge schedules its timeout, and a host of another test would run it (section 9, rule 10).
+[FixedClock("Each test runs on a database of its own, so no host of another test runs what its clock schedules.")]
 public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 {
     private static readonly DateTimeOffset ClosedAt = new(2026, 9, 1, 9, 0, 0, TimeSpan.Zero);
@@ -123,12 +124,13 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     }
 
     // The warning reaches every member whose role holds tenant.owners.manage, each in their own language, with the moment of the purge:
-    // the closure plus the reopen period. A member who is no Owner gets none. The tenant's log records it, by the platform.
+    // the closure plus the reopen period, in the Owner's own time zone, or in UTC without one. A member who is no Owner gets none. The
+    // tenant's log records it, by the platform.
     [Fact]
     public async Task WarnTenantPurge_AClosedTenantAtItsClosure_EmailsEachOwnerInTheirLanguageAndRecordsItInTheTenantsLog()
     {
         var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
-        var turkish = await _testData.AddUserAsync(email: "ayse@acme.test", language: "tr");
+        var turkish = await _testData.AddUserAsync(email: "ayse@acme.test", language: "tr", timeZone: "Europe/Istanbul");
         var arabic = await _testData.AddUserAsync(email: "layla@acme.test", language: "ar");
         await _testData.AddMemberAsync(tenant.Id, turkish, role: "Owner");
         await _testData.AddMemberAsync(tenant.Id, arabic, role: "Owner");
@@ -143,6 +145,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             ("layla@acme.test", "سيتم حذف Acme Ltd خلال 7 أيام"),
         ]);
         emails.ShouldAllBe(email => email.Text.Contains("2026-10-01"));
+        emails[0].Text.ShouldContain("Istanbul (UTC+3) saatiyle 12:00");
+        emails[1].Text.ShouldContain("الساعة 09:00 بالتوقيت العالمي (UTC)");
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
     }
@@ -159,6 +163,22 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 
         _api.Email.Sent.Count(email => email.To == "ada@acme.test").ShouldBe(1);
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
+    }
+
+    // R18: the audit logs are keyed by the moment and the id, so every copy of a warning carries the same moment: the moment the closure
+    // scheduled it, not the moment a copy runs. A copy that runs later still records no second entry.
+    [Fact]
+    public async Task WarnTenantPurge_ArrivesTwiceAtTwoMoments_RecordsOnceAtTheScheduledMoment()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+
+        await WarnAsync(tenant.Id, ClosedAt);
+        _time.Advance(TimeSpan.FromMinutes(5));
+        await WarnAsync(tenant.Id, ClosedAt);
+
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.US'), ', ') FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.purge_warned'",
+            _databaseName)).ShouldBe("2026-09-24 09:00:00.000000");
     }
 
     // A reopening cancels no scheduled message: the warning of a reopened tenant, or of an earlier closure, does nothing (K4).

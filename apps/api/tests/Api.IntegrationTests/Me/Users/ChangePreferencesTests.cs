@@ -7,8 +7,8 @@ using Tenancy;
 namespace Api.IntegrationTests.Me.Users;
 
 // PATCH /v1/me/preferences: the signed-in user sets their language and time zone, which follow them to every tenant and device. It sets
-// a state (I1): no idempotency key, and the values the user has change nothing. The API never interprets the time zone: it checks the
-// shape of the IANA name only, and keeps it.
+// a state (I1): no idempotency key, and the values the user has change nothing. The API checks the shape of the IANA name only, and
+// keeps it.
 public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
 {
     private const string Path = "/v1/me/preferences";
@@ -114,7 +114,8 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     }
 
     // The shape of an IANA name: parts of letters, digits, "_", "-" and "+", joined by "/" (IANA, "Theory and pragmatics of the tz code
-    // and data", "Names of timezones"). The API holds no time zone data, so it checks no more.
+    // and data", "Names of timezones"). The browser's time zone data, from which the web offers the list, can differ from the image's, so
+    // the API checks no more.
     [Theory]
     [InlineData("")]
     [InlineData(" ")]

@@ -39,7 +39,6 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
         {
             entry.ToTable("platform_entries");
             MapEntry(entry);
-            entry.HasIndex(e => new { e.OccurredAt, e.Id });
             // K5: the tenant filter of the platform's log reads the entries about one target, in the order of the log.
             entry.HasIndex(e => new { e.TargetKind, e.TargetId, e.OccurredAt, e.Id });
         });
@@ -48,6 +47,9 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
     private static void MapEntry<TEntry>(EntityTypeBuilder<TEntry> entry)
         where TEntry : AuditEntry
     {
+        // R18, K3: the key leads with the moment, so a later retention can partition each log by it. The key's index also serves the
+        // platform's cursor, which reads by the moment and the id.
+        entry.HasKey(e => new { e.OccurredAt, e.Id });
         entry.Property(e => e.Id).ValueGeneratedNever();
         entry.Property(e => e.ActorKind).HasConversion<string>().HasMaxLength(20);
         entry.Property(e => e.Kind).HasConversion<string>().HasMaxLength(20);
@@ -55,5 +57,11 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
         entry.Property(e => e.TargetKind).HasConversion<string>().HasMaxLength(20);
         entry.Property(e => e.TargetName).HasMaxLength(AuditEntry.TargetNameMaxLength);
         entry.Property(e => e.Details).HasColumnType("jsonb");
+
+        // R15: an actor, a kind and a target of the kinds the code knows. The caller named the table first.
+        var table = entry.Metadata.GetTableName();
+        entry.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_actor_kind", CheckConstraints.OneOf<AuditActorKind>("actor_kind")));
+        entry.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_kind", CheckConstraints.OneOf<AuditEntryKind>("kind")));
+        entry.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_target_kind", CheckConstraints.OneOf<AuditTargetKind>("target_kind")));
     }
 }

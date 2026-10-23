@@ -7,7 +7,8 @@ namespace Notifications.UnitTests.Tenants.SendTenantPurgeWarningEmail;
 
 // The Notifications module warns each Owner of a closed tenant before its purge, in the Owner's own language: the tenant will be deleted
 // with its data on a date, in a number of days (section 6, "Tenant purge"). It hears TenantPurgeWarningReadyEvent, which only it hears, so
-// the email's retries may be scheduled (W5). The image has no time zone data, so the date is in UTC (section 7).
+// the email's retries may be scheduled (W5). The moment is in the Owner's own time zone, named with its offset as the UI names it; without
+// a zone, or with one the image does not know, it is in UTC (section 7).
 public sealed class SendTenantPurgeWarningEmailHandlerTests
 {
     private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000801");
@@ -74,6 +75,32 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
         _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain("2026-11-22");
     }
 
+    // The moment in the Owner's zone, with the zone's city and its offset at that moment (F18 in the web app's architecture). The date is the
+    // zone's, so Honolulu's purge comes the day before.
+    [Theory]
+    [InlineData("Europe/Istanbul", Language.En, "on 2026-11-22 at 12:30 Istanbul (UTC+3).")]
+    [InlineData("Asia/Kolkata", Language.En, "on 2026-11-22 at 15:00 Kolkata (UTC+5:30).")]
+    [InlineData("America/Argentina/Buenos_Aires", Language.En, "on 2026-11-22 at 06:30 Buenos Aires (UTC-3).")]
+    [InlineData("Pacific/Honolulu", Language.En, "on 2026-11-21 at 23:30 Honolulu (UTC-10).")]
+    [InlineData("Europe/Istanbul", Language.Tr, "2026-11-22 tarihinde Istanbul (UTC+3) saatiyle 12:30 itibarıyla silinecek.")]
+    [InlineData("Europe/Istanbul", Language.Ar, "في 2026-11-22 الساعة 12:30 بتوقيت Istanbul (UTC+3).")]
+    public async Task SendTenantPurgeWarningEmail_AnOwnerWithATimeZone_WritesTheMomentInItWithTheZoneAndItsOffset(
+        string timeZone, Language language, string moment)
+    {
+        await SendAsync(Ready(language, SevenDays) with { TimeZone = timeZone });
+
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain(moment);
+    }
+
+    // A zone the image does not know, as an old name that a later release of the time zone data drops, writes the moment in UTC.
+    [Fact]
+    public async Task SendTenantPurgeWarningEmail_AnOwnerWithAnUnknownTimeZone_WritesTheMomentInUtc()
+    {
+        await SendAsync(Ready(Language.En, SevenDays) with { TimeZone = "Mars/Olympus_Mons" });
+
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain("on 2026-11-22 at 09:30 UTC.");
+    }
+
     // The days are the whole days nearest to the time left, at least one, with each language's plural forms (Unicode CLDR, "Language
     // Plural Rules"): the warning arrives a little after its moment, so 6 days and 23 hours is 7 days.
     [Theory]
@@ -115,7 +142,7 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
     }
 
     private static TenantPurgeWarningReadyEvent Ready(Language language, TimeSpan timeLeft) =>
-        new(Guid.CreateVersion7(), PurgesAt - timeLeft, TenantId, UserId, "ada@acme.test", "Acme Ltd", language, PurgesAt);
+        new(Guid.CreateVersion7(), PurgesAt - timeLeft, TenantId, UserId, "ada@acme.test", "Acme Ltd", language, PurgesAt, null);
 
     private Task SendAsync(TenantPurgeWarningReadyEvent ready) => SendTenantPurgeWarningEmailHandler.HandleAsync(ready, _channel, Cancellation);
 

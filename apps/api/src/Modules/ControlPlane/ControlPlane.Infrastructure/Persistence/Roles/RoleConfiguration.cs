@@ -13,10 +13,11 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         role.Property(r => r.Name).HasMaxLength(Role.NameMaxLength);
         role.Property(r => r.BuiltIn).HasConversion<string>().HasMaxLength(20);
         role.Ignore(r => r.Permissions);
-        role.HasOne<Tenant>().WithMany().HasForeignKey(r => r.TenantId);
+        role.HasOne<Tenant>().WithMany().HasForeignKey(r => r.TenantId).OnDelete(DeleteBehavior.Restrict);
 
-        // A3: a custom role's permissions are its rows of role_permissions, a part of the role, which go with it. The key names the tenant
-        // too, so a row never names another tenant's role: a foreign key check bypasses row level security (A2).
+        // A3: a custom role's permissions are its rows of role_permissions, a part of the role, which go with it: one of the two keys that
+        // do not restrict a deletion (R16). The key names the tenant too, so a row never names another tenant's role: a foreign key check
+        // bypasses row level security (A2).
         role.HasMany(r => r.Grants)
             .WithOne()
             .HasForeignKey(g => new { g.TenantId, g.RoleId })

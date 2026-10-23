@@ -11,6 +11,8 @@ namespace ControlPlane.Contracts.Tenants;
 /// <param name="OccurredAt">When the warning was sent; the time left until the purge counts from it.</param>
 /// <param name="UserId">The Owner, whose warning of this purge the email's idempotency key names.</param>
 /// <param name="PurgesAt">When the purge starts: the closure plus the reopen period.</param>
+/// <param name="TimeZone">The IANA name of the Owner's time zone, in which the email writes the moment; null when it is not set.</param>
 [MessageName("tenant-purge-warning-ready")]
 public sealed record TenantPurgeWarningReadyEvent(
-    Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, string Email, string TenantName, Language Language, DateTimeOffset PurgesAt);
+    Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid UserId, string Email, string TenantName, Language Language, DateTimeOffset PurgesAt,
+    string? TimeZone);

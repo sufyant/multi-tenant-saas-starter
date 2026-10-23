@@ -106,8 +106,8 @@ internal sealed class User(Guid id, string externalId)
         };
 
     /// <summary>
-    /// The user changes their own preferences, which follow them to every tenant and device. Changed when they changed. The API never
-    /// interprets the time zone: it keeps the IANA name the web chose, and null means the web uses the browser's. A deleted user is
+    /// The user changes their own preferences, which follow them to every tenant and device. Changed when they changed. The API keeps
+    /// the IANA name the web chose, and null means the web uses the browser's. Only the purge warning reads the zone (section 6). A deleted user is
     /// refused, as on every me endpoint (A9).
     /// </summary>
     public Result<StateChange> ChangePreferences(Language language, string? timeZone)

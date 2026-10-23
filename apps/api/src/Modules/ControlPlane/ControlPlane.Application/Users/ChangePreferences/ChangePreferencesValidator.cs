@@ -9,8 +9,8 @@ public sealed partial class ChangePreferencesValidator : AbstractValidator<Chang
 {
     public ChangePreferencesValidator()
     {
-        // The API holds no time zone data and never interprets a time zone (invariant globalization mode, section 7): it checks the
-        // shape of the name only. The web offers the list.
+        // The API checks the shape of the name only. The web offers the list from the browser's time zone data, which can be newer or
+        // older than the image's (section 7). The purge warning writes a zone the image does not know in UTC.
         RuleFor(command => command.TimeZone!)
             .Cascade(CascadeMode.Stop)
             .MaximumLength(User.TimeZoneMaxLength).WithErrorCode(nameof(FieldErrorCode.TooLong))

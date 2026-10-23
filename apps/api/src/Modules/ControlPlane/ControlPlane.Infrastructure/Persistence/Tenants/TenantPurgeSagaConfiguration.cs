@@ -1,6 +1,7 @@
 using ControlPlane.Application.Tenants.TenantPurge;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Tenancy;
 
 namespace ControlPlane.Infrastructure.Persistence.Tenants;
 
@@ -13,5 +14,6 @@ internal sealed class TenantPurgeSagaConfiguration : IEntityTypeConfiguration<Te
         saga.Property(o => o.Id).ValueGeneratedNever();
         saga.Property(o => o.State).HasConversion<string>().HasMaxLength(20);
         saga.Property(o => o.Version).IsConcurrencyToken();
+        saga.ToTable(table => table.HasCheckConstraint("ck_tenant_purge_sagas_state", CheckConstraints.OneOf<TenantPurgeSagaState>("state")));
     }
 }

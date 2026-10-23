@@ -61,8 +61,11 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
             var builder = modelBuilder.Entity(entity.ClrType);
             builder.Property<Guid>(TenantColumn.Property).HasDefaultValueSql(TenantColumn.CurrentTenantSql);
 
-            // A key that leads with the tenant column indexes it already.
-            if (entity.FindPrimaryKey()?.Properties[0].Name != TenantColumn.Property)
+            // A key or an index that leads with the tenant column indexes it already (R1). A partial index serves only its own rows.
+            var indexed = entity.GetKeys().Select(key => key.Properties[0])
+                .Concat(entity.GetIndexes().Where(index => index.GetFilter() is null).Select(index => index.Properties[0]))
+                .Any(property => property.Name == TenantColumn.Property);
+            if (!indexed)
             {
                 builder.HasIndex(TenantColumn.Property);
             }

@@ -25,6 +25,10 @@ namespace Audit.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Audit.Domain.AuditEntries.PlatformAuditEntry", b =>
                 {
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
@@ -48,10 +52,6 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kind");
-
-                    b.Property<DateTimeOffset>("OccurredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at");
 
                     b.Property<string>("Operation")
                         .IsRequired()
@@ -74,20 +74,28 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("target_name");
 
-                    b.HasKey("Id")
+                    b.HasKey("OccurredAt", "Id")
                         .HasName("pk_platform_entries");
-
-                    b.HasIndex("OccurredAt", "Id")
-                        .HasDatabaseName("ix_platform_entries_occurred_at_id");
 
                     b.HasIndex("TargetKind", "TargetId", "OccurredAt", "Id")
                         .HasDatabaseName("ix_platform_entries_target_kind_target_id_occurred_at_id");
 
-                    b.ToTable("platform_entries", "audit");
+                    b.ToTable("platform_entries", "audit", t =>
+                        {
+                            t.HasCheckConstraint("ck_platform_entries_actor_kind", "actor_kind IN ('User', 'Platform')");
+
+                            t.HasCheckConstraint("ck_platform_entries_kind", "kind IN ('Command')");
+
+                            t.HasCheckConstraint("ck_platform_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role')");
+                        });
                 });
 
             modelBuilder.Entity("Audit.Domain.AuditEntries.TenantAuditEntry", b =>
                 {
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
@@ -111,10 +119,6 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kind");
-
-                    b.Property<DateTimeOffset>("OccurredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at");
 
                     b.Property<string>("Operation")
                         .IsRequired()
@@ -143,16 +147,20 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasColumnName("tenant_id")
                         .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
 
-                    b.HasKey("Id")
+                    b.HasKey("OccurredAt", "Id")
                         .HasName("pk_entries");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_entries_tenant_id");
 
                     b.HasIndex("TenantId", "OccurredAt", "Id")
                         .HasDatabaseName("ix_entries_tenant_id_occurred_at_id");
 
-                    b.ToTable("entries", "audit");
+                    b.ToTable("entries", "audit", t =>
+                        {
+                            t.HasCheckConstraint("ck_entries_actor_kind", "actor_kind IN ('User', 'Platform')");
+
+                            t.HasCheckConstraint("ck_entries_kind", "kind IN ('Command')");
+
+                            t.HasCheckConstraint("ck_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role')");
+                        });
                 });
 #pragma warning restore 612, 618
         }

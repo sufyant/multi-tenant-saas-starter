@@ -36,6 +36,9 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         language => JsonSerializer.Serialize(language, JsonSerializerOptions.Default).Trim('"'),
         tag => JsonSerializer.Deserialize<Language>($"\"{tag}\"", JsonSerializerOptions.Default));
 
+    // R15: the tags a language column may hold, from the one list.
+    internal static readonly IReadOnlyList<string> LanguageTags = [.. Enum.GetValues<Language>().Select(language => (string)LanguageTag.ConvertToProvider(language)!)];
+
     internal DbSet<Tenant> Tenants => Set<Tenant>();
 
     internal DbSet<TenantSummary> TenantSummaries => Set<TenantSummary>();

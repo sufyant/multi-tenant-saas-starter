@@ -20,12 +20,16 @@ COPY src/ src/
 RUN dotnet publish src/Api/Api.csproj --configuration Release --no-restore --output /app \
     -p:UseAppHost=false -p:OpenApiGenerateDocuments=false
 
-# Chiseled: no shell, no package manager. It runs in invariant globalization mode, and the code needs no ICU or time zone data.
+# Chiseled: no shell, no package manager. It runs in invariant globalization mode, and the code needs no ICU.
 # 10.0.13 when pinned. Dependabot updates the digest, not this note.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:5165aeeb688df15e869a56a7584bb94bf16a14e0b3ba77b49fcdbe350f6b8020
 # The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
 USER 0:0
 WORKDIR /app
+# The time zone data, which the purge warning reads to write the moment in the Owner's zone (section 7). Only the data, not ICU:
+# TimeZoneInfo reads the zone files, and the image keeps invariant globalization. The pinned SDK digest is Ubuntu 24.04, as the runtime
+# is (the tag names no release), so a new digest of it brings the release's latest data.
+COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=build /app .
 
 # The base image's non-root user `app` (CIS Docker Benchmark 4.1).
