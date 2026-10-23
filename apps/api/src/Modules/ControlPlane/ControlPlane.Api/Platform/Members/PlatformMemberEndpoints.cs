@@ -11,7 +11,7 @@ using Wolverine;
 
 namespace ControlPlane.Api.Platform.Members;
 
-/// <summary>The members a system admin acts on: only to make one an Owner, for a tenant that nobody can manage (M2).</summary>
+/// <summary>The members a system admin acts on: only to make one an Owner, for a tenant that nobody can manage (section 6, "Owner recovery").</summary>
 public static class PlatformMemberEndpoints
 {
     public static void Map(RouteGroupBuilder platform)

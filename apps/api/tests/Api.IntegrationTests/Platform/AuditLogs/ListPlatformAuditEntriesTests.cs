@@ -155,6 +155,27 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe("""{"operation":"tenant.suspended","reason":"Unpaid invoices"}""");
     }
 
+    // Owner recovery (section 6): the platform's log keeps a member's new role, as RecordMemberRoleChangedHandler writes it, and answers
+    // the shape of member.role_changed, with the member as the target.
+    [Fact]
+    public async Task ListPlatformAuditEntries_AStoredRoleChangeOfThePlatform_AnswersTheShapeOfMemberRoleChanged()
+    {
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _audit.AddPlatformEntryAsync(
+            _start,
+            "User",
+            Guid.CreateVersion7(),
+            "User",
+            Guid.CreateVersion7(),
+            "member.role_changed",
+            details: """{"oldRole":"member","newRole":"owner","oldRoleId":"0199f7a0-0000-7000-8000-000000000004","oldRoleBuiltIn":true,"newRoleId":"0199f7a0-0000-7000-8000-000000000005","newRoleBuiltIn":true}""");
+
+        var page = await client.GetFromJsonAsync<JsonElement>("/v1/platform/audit-log?limit=1", Cancellation);
+
+        page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe(
+            """{"operation":"member.role_changed","oldRole":{"id":"0199f7a0-0000-7000-8000-000000000004","name":"member","builtIn":true},"newRole":{"id":"0199f7a0-0000-7000-8000-000000000005","name":"owner","builtIn":true}}""");
+    }
+
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
     {

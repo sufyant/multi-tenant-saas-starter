@@ -155,7 +155,7 @@ public sealed class UserTests
         (user.FirstName, user.LastName).ShouldBe((null, null));
     }
 
-    // S2: the user corrects their own names, trimmed, under the rule of a system admin's rename.
+    // A7: the user corrects their own names, trimmed, under the rule of a system admin's rename.
     [Fact]
     public void RenameMe_AnotherNameWithSpaces_IsAChangeAndKeepsItTrimmed()
     {

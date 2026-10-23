@@ -12,7 +12,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Members;
 
-// POST /v1/platform/tenants/{tenantId}/owners: Owner recovery (M2). The platform makes a member of a tenant an Owner, whether or not the
+// POST /v1/platform/tenants/{tenantId}/owners: Owner recovery (section 6). The platform makes a member of a tenant an Owner, whether or not the
 // tenant has one: the only Owner may have left the company and not answer. The old Owner stays, and the new Owner can remove them. The
 // request names the user by id, from the user's detail; the platform reads no member list of the tenant.
 public sealed class MakeOwnerTests(Database database) : IAsyncLifetime

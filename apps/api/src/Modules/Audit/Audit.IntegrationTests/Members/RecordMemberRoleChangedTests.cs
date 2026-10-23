@@ -47,7 +47,7 @@ public sealed class RecordMemberRoleChangedTests(Database database)
             .ShouldBe((changed.NewRoleId!.Value, "Billing", false));
     }
 
-    // M2, Owner recovery: the platform made the member an Owner. The platform's log names the system admin, and the tenant's own log only
+    // Owner recovery (section 6): the platform made the member an Owner. The platform's log names the system admin, and the tenant's own log only
     // the platform, both with the member as the target and the same details (K3).
     [Fact]
     public async Task RecordMemberRoleChanged_ByThePlatform_WritesBothEntriesAndTheTenantsNamesThePlatform()

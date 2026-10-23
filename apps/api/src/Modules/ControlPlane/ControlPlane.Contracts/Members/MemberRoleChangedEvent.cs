@@ -3,7 +3,7 @@ using SharedKernel;
 namespace ControlPlane.Contracts.Members;
 
 /// <summary>
-/// A member gave a member another role of the tenant, a member changed their own, or the platform made a member an Owner (M2, Owner
+/// A member gave a member another role of the tenant, a member changed their own, or the platform made a member an Owner (Owner
 /// recovery). Published through the outbox only when the role changed; a subscriber handles it in the tenant's transaction, as the
 /// tenant's id travels in the message's envelope.
 /// </summary>

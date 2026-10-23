@@ -7,7 +7,7 @@ using ControlPlane.Contracts.Members;
 namespace Audit.Application.Members.RecordMemberRoleChanged;
 
 // The audit entry of a member's new role, in the tenant's own log, under that tenant: the member who changed it acted, and the member
-// whose role changed is the target, by id (K3). The details hold the old and the new role. When the platform made the member an Owner (M2),
+// whose role changed is the target, by id (K3). The details hold the old and the new role. When the platform made the member an Owner,
 // the platform's log names the system admin, and the tenant's log says only that the platform acted, with the same target and details.
 public static class RecordMemberRoleChangedHandler
 {

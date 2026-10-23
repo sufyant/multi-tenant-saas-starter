@@ -868,7 +868,7 @@ public sealed class TenantTests
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
 
-    // M2, Owner recovery: the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
+    // Owner recovery (section 6): the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
     [Theory]
     [InlineData("Admin", 0)]
     [InlineData("Member", 0)]
@@ -878,7 +878,7 @@ public sealed class TenantTests
     {
         var target = Membership(role);
 
-        var result = Active().MakeOwner(new MemberFacts(target, owners, Roles), UserStatus.Active);
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, owners, Roles), UserStatus.Active);
 
         (result.Value.Change, result.Value.Member, result.Value.OldRole).ShouldBe((StateChange.Changed, target, RoleOf(role)));
         target.RoleId.ShouldBe(RoleOf("Owner").Id);
@@ -890,7 +890,7 @@ public sealed class TenantTests
         var billing = Custom("Billing", ProfileRead, MembersRead);
         var target = Membership(billing);
 
-        var result = Active().MakeOwner(new MemberFacts(target, 0, RolesWith(billing)), UserStatus.Active);
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, 0, RolesWith(billing)), UserStatus.Active);
 
         result.Value.OldRole.ShouldBe(billing);
         target.RoleId.ShouldBe(RoleOf("Owner").Id);
@@ -904,7 +904,7 @@ public sealed class TenantTests
     {
         var target = Membership("Member");
 
-        var result = InStatus(status).MakeOwner(new MemberFacts(target, 0, Roles), UserStatus.Suspended);
+        var result = InStatus(status).MakeOwner(RoleOf("Owner"), new MemberFacts(target, 0, Roles), UserStatus.Suspended);
 
         (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.TenantNotActive, ErrorType.Conflict));
         target.RoleId.ShouldBe(RoleOf("Member").Id);
@@ -914,7 +914,7 @@ public sealed class TenantTests
     [Fact]
     public void MakeOwner_NoMembership_IsNotFound()
     {
-        var result = Active().MakeOwner(new MemberFacts(null, 1, Roles), userStatus: null);
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(null, 1, Roles), userStatus: null);
 
         (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.MemberNotFound, ErrorType.NotFound));
     }
@@ -924,7 +924,7 @@ public sealed class TenantTests
     {
         var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
 
-        var result = Active().MakeOwner(new MemberFacts(other, 1, Roles), UserStatus.Active);
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(other, 1, Roles), UserStatus.Active);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
@@ -935,7 +935,7 @@ public sealed class TenantTests
     {
         var target = Membership("Owner");
 
-        var result = Active().MakeOwner(new MemberFacts(target, 1, Roles), UserStatus.Suspended);
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, 1, Roles), UserStatus.Suspended);
 
         (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.MemberAlreadyOwner, ErrorType.Conflict));
     }
@@ -948,7 +948,7 @@ public sealed class TenantTests
     {
         var target = Membership("Member");
 
-        var result = Active().MakeOwner(new MemberFacts(target, 0, Roles), Enum.Parse<UserStatus>(status));
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, 0, Roles), Enum.Parse<UserStatus>(status));
 
         (result.Error.Code.Value, result.Error.Type).ShouldBe((code, ErrorType.Conflict));
         target.RoleId.ShouldBe(RoleOf("Member").Id);
