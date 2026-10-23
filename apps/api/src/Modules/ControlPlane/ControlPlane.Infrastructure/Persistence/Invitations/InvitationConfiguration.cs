@@ -31,6 +31,9 @@ internal sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitat
         // rest. A pending invitation always has a role (ck_invitations_pending_has_role), and a role in use cannot be deleted (A3).
         invitation.HasOne<Role>().WithMany().HasForeignKey(i => new { i.TenantId, i.RoleId }).HasPrincipalKey(r => new { r.TenantId, r.Id }).OnDelete(DeleteBehavior.NoAction);
         invitation.ToTable(table => table.HasCheckConstraint("ck_invitations_pending_has_role", "status <> 'Pending' OR role_id IS NOT NULL"));
+        // A8: a user's deletion erases the address of a finished invitation only. Pending is the stored status, expired or not: a CHECK
+        // cannot read the clock, and an expired pending invitation is still the link the email sent.
+        invitation.ToTable(table => table.HasCheckConstraint("ck_invitations_pending_has_email", "status <> 'Pending' OR email IS NOT NULL"));
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedBy).OnDelete(DeleteBehavior.Restrict);
         invitation.HasOne<User>().WithMany().HasForeignKey(i => i.AcceptedBy).OnDelete(DeleteBehavior.Restrict);
     }
