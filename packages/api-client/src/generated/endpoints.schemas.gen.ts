@@ -762,6 +762,14 @@ export interface ListPageOfUserResponse {
 }
 
 /**
+ * The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a
+ * request without one is refused, so it never falls back to an empty id.
+ */
+export interface MakeOwnerRequest {
+  userId: string;
+}
+
+/**
  * The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and
  * their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
  */

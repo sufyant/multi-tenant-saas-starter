@@ -259,6 +259,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "MakeOwner",
+    "method": "POST",
+    "path": "/v1/platform/tenants/{tenantId}/owners",
+    "tag": "Platform/Members",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ReactivateTenant",
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/reactivate",
