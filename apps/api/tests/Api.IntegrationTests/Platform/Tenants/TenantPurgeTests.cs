@@ -124,12 +124,13 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     }
 
     // The warning reaches every member whose role holds tenant.owners.manage, each in their own language, with the moment of the purge:
-    // the closure plus the reopen period. A member who is no Owner gets none. The tenant's log records it, by the platform.
+    // the closure plus the reopen period, in the Owner's own time zone, or in UTC without one. A member who is no Owner gets none. The
+    // tenant's log records it, by the platform.
     [Fact]
     public async Task WarnTenantPurge_AClosedTenantAtItsClosure_EmailsEachOwnerInTheirLanguageAndRecordsItInTheTenantsLog()
     {
         var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
-        var turkish = await _testData.AddUserAsync(email: "ayse@acme.test", language: "tr");
+        var turkish = await _testData.AddUserAsync(email: "ayse@acme.test", language: "tr", timeZone: "Europe/Istanbul");
         var arabic = await _testData.AddUserAsync(email: "layla@acme.test", language: "ar");
         await _testData.AddMemberAsync(tenant.Id, turkish, role: "Owner");
         await _testData.AddMemberAsync(tenant.Id, arabic, role: "Owner");
@@ -144,6 +145,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             ("layla@acme.test", "سيتم حذف Acme Ltd خلال 7 أيام"),
         ]);
         emails.ShouldAllBe(email => email.Text.Contains("2026-10-01"));
+        emails[0].Text.ShouldContain("Istanbul (UTC+3) saatiyle 12:00");
+        emails[1].Text.ShouldContain("الساعة 09:00 بالتوقيت العالمي (UTC)");
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
     }

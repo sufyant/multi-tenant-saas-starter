@@ -204,7 +204,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
                 join user in controlPlane.Users on membership.UserId equals user.Id
                 where user.Email != null
                 orderby user.Id
-                select new OwnerAddress(user.Id, user.Email!, user.Language))
+                select new OwnerAddress(user.Id, user.Email!, user.Language, user.TimeZone))
             .ToListAsync(cancellationToken);
 
     // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a

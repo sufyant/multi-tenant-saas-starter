@@ -114,7 +114,8 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     }
 
     // The shape of an IANA name: parts of letters, digits, "_", "-" and "+", joined by "/" (IANA, "Theory and pragmatics of the tz code
-    // and data", "Names of timezones"). The API holds no time zone data, so it checks no more.
+    // and data", "Names of timezones"). The browser's time zone data, from which the web offers the list, can differ from the image's, so
+    // the API checks no more.
     [Theory]
     [InlineData("")]
     [InlineData(" ")]

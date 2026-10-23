@@ -31,7 +31,8 @@ public static class WarnTenantPurgeHandler
         [
             new TenantPurgeWarnedEvent(WarningId(tenant.Id, warn.ClosedAt), purgesAt - settings.PurgeWarningLead, tenant.Id, tenant.Name),
             .. owners.Select(owner =>
-                new TenantPurgeWarningReadyEvent(Guid.CreateVersion7(now), now, tenant.Id, owner.UserId, owner.Email, tenant.Name, owner.Language, purgesAt)),
+                new TenantPurgeWarningReadyEvent(
+                    Guid.CreateVersion7(now), now, tenant.Id, owner.UserId, owner.Email, tenant.Name, owner.Language, purgesAt, owner.TimeZone)),
         ];
     }
 
