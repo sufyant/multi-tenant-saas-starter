@@ -368,6 +368,30 @@ public sealed class InvitationTests
         allowed.IsSuccess.ShouldBeTrue();
     }
 
+    // A8: only a finished invitation loses its address; a pending one is still a link to a person.
+    [Fact]
+    public void EraseEmail_APendingInvitation_IsRefusedAndKeepsTheAddress()
+    {
+        var invitation = Invite("ada@example.com");
+
+        var erase = invitation.EraseEmail;
+
+        erase.ShouldThrow<InvalidOperationException>();
+        invitation.Email.ShouldBe("ada@example.com");
+    }
+
+    [Fact]
+    public void EraseEmail_AnAcceptedInvitation_HasNoAddressAndMatchesNoVerifiedAddress()
+    {
+        var invitation = Invite("ada@example.com");
+        invitation.Accept(EmailAddress.AllOf(["ada@example.com"]), AccepterId, Now);
+
+        invitation.EraseEmail();
+
+        invitation.Email.ShouldBeNull();
+        invitation.CheckEmail(EmailAddress.AllOf(["ada@example.com"])).Error.Code.ShouldBe(ControlPlaneErrorCodes.InvitationEmailMismatch);
+    }
+
     private static Role RoleOf(string role) => Role.CreateBuiltIn(Guid.NewGuid(), TenantId, Enum.Parse<BuiltInRole>(role));
 
     private static Invitation Invite(string email) =>

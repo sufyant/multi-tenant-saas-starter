@@ -17,7 +17,10 @@ public interface IUserRepository
     /// <summary>The profile of the user with this identity provider id, without a lock: the actor of a command.</summary>
     internal Task<UserProfile?> FindProfileAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>The profile of the user with this id, without a lock: the member whose view a command answers.</summary>
+    /// <summary>
+    /// The profile of the user with this id, without a lock: the member whose view a command answers, or the member whose address a
+    /// deletion erases from a tenant's invitations.
+    /// </summary>
     internal Task<UserProfile?> FindProfileAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>The status of the user with this id, without a lock, or none when no user has it: the member the platform makes an Owner.</summary>

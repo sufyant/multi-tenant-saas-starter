@@ -118,6 +118,16 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     async Task<IReadOnlyList<Invitation>> ITenantRepository.FindPendingInvitationsAsync(CancellationToken cancellationToken) =>
         await controlPlane.TenantInvitations.Where(invitation => invitation.Status == InvitationStatus.Pending).ToListAsync(cancellationToken);
 
+    // Row level security keeps the invitations to the active tenant; the query names no tenant. Every address is in its one form, so
+    // plain equality compares them.
+    async Task<IReadOnlyList<Invitation>> ITenantRepository.FindInvitationsOfUserAsync(Guid userId, string? email, CancellationToken cancellationToken)
+    {
+        var accepted = controlPlane.TenantInvitations.Where(invitation => invitation.AcceptedBy == userId).Select(invitation => invitation.Email);
+        return await controlPlane.TenantInvitations
+            .Where(invitation => invitation.AcceptedBy == userId || (email != null && invitation.Email == email) || accepted.Contains(invitation.Email))
+            .ToListAsync(cancellationToken);
+    }
+
     async Task<Invitation?> ITenantRepository.FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Invitations

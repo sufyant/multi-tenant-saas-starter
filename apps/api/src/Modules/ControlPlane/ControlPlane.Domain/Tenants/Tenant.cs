@@ -337,6 +337,28 @@ internal sealed class Tenant
     }
 
     /// <summary>
+    /// The user's deletion erases their address from the tenant's invitations that the user accepted or that went to one of their
+    /// addresses (A8). A pending one among them, expired or not, is cancelled first, as a closure cancels it (K6h), because a pending
+    /// invitation always has an address. Returns the invitations it cancelled. The caller holds the tenant's lock and removes the user's
+    /// membership in the same transaction (K6l).
+    /// </summary>
+    public IReadOnlyList<Invitation> EraseForUserDeletion(IReadOnlyList<Invitation> invitations)
+    {
+        if (invitations.Any(invitation => invitation.TenantId != Id))
+        {
+            throw new InvalidOperationException("A tenant erases only its own invitations.");
+        }
+
+        var cancelled = invitations.Where(invitation => invitation.Cancel() == StateChange.Changed).ToList();
+        foreach (var invitation in invitations)
+        {
+            invitation.EraseEmail();
+        }
+
+        return cancelled;
+    }
+
+    /// <summary>
     /// Whether the invitation a code found can be accepted at all: a cancelled one answers as an invitation that does not exist, as a
     /// revoked one does (K2). It comes before the user's lock (K6f), so an acceptance with such a code locks no user.
     /// </summary>

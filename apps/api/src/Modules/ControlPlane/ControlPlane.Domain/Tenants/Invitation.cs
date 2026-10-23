@@ -126,6 +126,20 @@ internal sealed class Invitation : ITenantEntity
     }
 
     /// <summary>
+    /// The invited person's deletion erases the address of a finished invitation (A8). A pending invitation keeps it, so its caller
+    /// cancels it first.
+    /// </summary>
+    public void EraseEmail()
+    {
+        if (Status == InvitationStatus.Pending)
+        {
+            throw new InvalidOperationException("A pending invitation keeps its address; cancel it first.");
+        }
+
+        Email = null;
+    }
+
+    /// <summary>
     /// A member revokes the invitation, so its link stops working at once (K2). A pending one, expired or not, is cancelled: Changed. A
     /// cancelled one stays as it is: Unchanged, as setting a state twice changes nothing (I1). A used one cannot be revoked.
     /// </summary>

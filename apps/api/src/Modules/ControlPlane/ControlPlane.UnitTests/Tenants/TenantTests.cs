@@ -986,6 +986,32 @@ public sealed class TenantTests
         result.Value.ShouldBeNull();
     }
 
+    // A8: a pending invitation always has an address, so it is cancelled before its address goes.
+    [Fact]
+    public void RemoveUserMembership_InvitationsOfTheUser_CancelsThePendingOneAndErasesEveryAddress()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var erased = Active().EraseForUserDeletion([pending, cancelled]);
+
+        erased.ShouldBe([pending]);
+        (pending.Status, pending.Email, cancelled.Status, cancelled.Email).ShouldBe((InvitationStatus.Cancelled, null, InvitationStatus.Cancelled, null));
+    }
+
+    [Fact]
+    public void RemoveUserMembership_AnInvitationOfAnotherTenant_IsNeverErased()
+    {
+        var invitation = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var erase = () => Active().EraseForUserDeletion([invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        invitation.Email.ShouldBe("ada@example.com");
+    }
+
     [Theory]
     [InlineData("Owner", 1, false)]
     [InlineData("Owner", 2, true)]
