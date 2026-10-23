@@ -26,6 +26,8 @@ internal static class PermissionPools
 
     public const string PlatformTenantsInviteOwner = "platform.tenants.invite_owner";
 
+    public const string PlatformTenantsMakeOwner = "platform.tenants.make_owner";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";
@@ -35,6 +37,10 @@ internal static class PermissionPools
     public const string PlatformUsersUpdate = "platform.users.update";
 
     public const string PlatformUsersDelete = "platform.users.delete";
+
+    public const string PlatformSystemAdminsCreate = "platform.system_admins.create";
+
+    public const string PlatformSystemAdminsDelete = "platform.system_admins.delete";
 
     public const string PlatformAuditRead = "platform.audit.read";
 
@@ -96,10 +102,13 @@ internal static class PermissionPools
         PlatformTenantsClose,
         PlatformTenantsReopen,
         PlatformTenantsInviteOwner,
+        PlatformTenantsMakeOwner,
         PlatformUsersRead,
         PlatformUsersSuspend,
         PlatformUsersReactivate,
         PlatformUsersUpdate,
         PlatformUsersDelete,
+        PlatformSystemAdminsCreate,
+        PlatformSystemAdminsDelete,
         PlatformAuditRead);
 }

@@ -21,7 +21,7 @@ internal sealed class Invitation : ITenantEntity
     private Invitation(
         Guid id,
         Guid tenantId,
-        string email,
+        string? email,
         Guid? roleId,
         Guid invitedBy,
         DateTimeOffset createdAt,
@@ -45,8 +45,11 @@ internal sealed class Invitation : ITenantEntity
 
     public Guid TenantId { get; private init; }
 
-    /// <summary>The invited address, in its one form (<see cref="EmailAddress"/>).</summary>
-    public string Email { get; private init; }
+    /// <summary>
+    /// The invited address, in its one form (<see cref="EmailAddress"/>). It is a historical fact and stays in every state, until the
+    /// invited person's deletion erases it from a finished invitation (A8). A pending invitation always has one (a CHECK).
+    /// </summary>
+    public string? Email { get; private set; }
 
     /// <summary>
     /// The role the invitation gives. A pending invitation always has one (a CHECK). A finished invitation keeps none once its custom role
@@ -107,7 +110,7 @@ internal sealed class Invitation : ITenantEntity
     /// preview asks it of the invitation it read, before it reads anything else, so a holder of the link without the invited address learns
     /// nothing more than the email told them; the acceptance asks it last, with the same error.
     /// </summary>
-    public static Result CheckEmail(string invitedEmail, IEnumerable<EmailAddress> verifiedEmails) =>
+    public static Result CheckEmail(string? invitedEmail, IEnumerable<EmailAddress> verifiedEmails) =>
         verifiedEmails.Any(email => email.Value == invitedEmail) ? Result.Success() : EmailMismatch;
 
     /// <summary>Cancels a pending invitation, as a replacement or a closure does. A used or cancelled one stays as it is.</summary>
@@ -120,6 +123,20 @@ internal sealed class Invitation : ITenantEntity
 
         Status = InvitationStatus.Cancelled;
         return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// The invited person's deletion erases the address of a finished invitation (A8). A pending invitation keeps it, so its caller
+    /// cancels it first.
+    /// </summary>
+    public void EraseEmail()
+    {
+        if (Status == InvitationStatus.Pending)
+        {
+            throw new InvalidOperationException("A pending invitation keeps its address; cancel it first.");
+        }
+
+        Email = null;
     }
 
     /// <summary>
@@ -182,7 +199,7 @@ internal sealed class Invitation : ITenantEntity
         return CheckEmail(verifiedEmails);
     }
 
-    /// <summary>Whether one of these verified email addresses is this invitation's address (<see cref="CheckEmail(string, IEnumerable{EmailAddress})"/>).</summary>
+    /// <summary>Whether one of these verified email addresses is this invitation's address (<see cref="CheckEmail(string?, IEnumerable{EmailAddress})"/>).</summary>
     public Result CheckEmail(IEnumerable<EmailAddress> verifiedEmails) => CheckEmail(Email, verifiedEmails);
 
     /// <summary>The state of the invitation at this moment: a pending invitation is expired from its expiry on.</summary>

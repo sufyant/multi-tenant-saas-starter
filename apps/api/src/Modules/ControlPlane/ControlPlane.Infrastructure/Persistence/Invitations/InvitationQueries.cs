@@ -34,7 +34,7 @@ public sealed class InvitationQueries(ControlPlaneDbContext controlPlane) : IInv
         if (list.Search is { } search)
         {
             var pattern = ListQueryExtensions.ContainsPattern(search);
-            invitations = invitations.Where(invitation => EF.Functions.ILike(invitation.Email, pattern, ListQueryExtensions.Escape));
+            invitations = invitations.Where(invitation => EF.Functions.ILike(invitation.Email!, pattern, ListQueryExtensions.Escape));
         }
 
         var total = await invitations.CountAsync(cancellationToken);

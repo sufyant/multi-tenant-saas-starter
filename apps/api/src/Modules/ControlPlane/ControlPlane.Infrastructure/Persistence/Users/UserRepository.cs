@@ -1,6 +1,7 @@
 using ControlPlane.Application.Users;
 using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,12 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
             .Where(user => user.Id == userId)
             .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
             .SingleOrDefaultAsync(cancellationToken);
+
+    async Task<UserStatus?> IUserRepository.FindStatusAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.Users.Where(user => user.Id == userId).Select(User.StatusOf).ToListAsync(cancellationToken);
+        return found is [var status] ? status : null;
+    }
 
     Task<bool> IUserRepository.UserExistsAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.Users.AnyAsync(user => user.Id == userId, cancellationToken);
@@ -69,6 +76,19 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
     Task<bool> IUserRepository.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
+    async Task<SystemAdmin?> IUserRepository.FindSystemAdminForUpdateAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var found = await controlPlane.SystemAdmins
+            .FromSql($"SELECT * FROM control_plane.system_admins WHERE user_id = {userId} FOR UPDATE")
+            .ToListAsync(cancellationToken);
+
+        return found.SingleOrDefault();
+    }
+
+    void IUserRepository.AddSystemAdmin(SystemAdmin systemAdmin) => controlPlane.SystemAdmins.Add(systemAdmin);
+
+    void IUserRepository.RemoveSystemAdmin(SystemAdmin systemAdmin) => controlPlane.SystemAdmins.Remove(systemAdmin);
+
     async Task<IReadOnlyList<UserMembership>> IUserRepository.ListMembershipsAsync(Guid userId, CancellationToken cancellationToken)
     {
         // An Owner is a member whose role holds the Owners' permission (A1, K1).
@@ -79,6 +99,17 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
                 join tenant in controlPlane.Tenants on membership.TenantId equals tenant.Id
                 orderby tenant.Id
                 select new UserMembership(tenant.Id, ownerRoles.Any(role => role.Id == membership.RoleId)))
+            .ToListAsync(cancellationToken);
+    }
+
+    async Task<IReadOnlyList<Guid>> IUserRepository.ListJoinedTenantsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        return await controlPlane.Invitations
+            .Where(invitation => invitation.AcceptedBy == userId)
+            .Select(invitation => invitation.TenantId)
+            .Distinct()
+            .Order()
             .ToListAsync(cancellationToken);
     }
 

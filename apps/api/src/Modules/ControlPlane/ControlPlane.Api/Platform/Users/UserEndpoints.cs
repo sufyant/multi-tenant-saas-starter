@@ -36,6 +36,28 @@ public static class UserEndpoints
         platform.MapDelete("/users/{userId:guid}", DeleteUser).RequireAuthorization(Permissions.PlatformUsersDelete);
     }
 
+    // GrantSystemAdmin answers the user too (SystemAdminEndpoints, N7g).
+    internal static UserResponse ToResponse(UserView user) => new(
+        user.Id,
+        user.Email,
+        user.FirstName,
+        user.LastName,
+        ResponseStatus.OfUser(user.Status),
+        user.IsSystemAdmin,
+        user.IsRootSystemAdmin,
+        user.MembershipCount,
+        user.CreatedAt);
+
+    // MakeOwner answers the membership too (PlatformMemberEndpoints, N7g).
+    internal static UserMembershipResponse ToResponse(UserMembershipView membership) => new(
+        membership.TenantId,
+        membership.TenantName,
+        membership.TenantSlug,
+        ResponseStatus.OfUserMembership(membership.TenantStatus),
+        RoleEndpoints.ToResponse(membership.Role),
+        membership.JoinedAt,
+        membership.LastOwner);
+
     private static async Task<Result<ListPage<UserResponse>>> ListUsers(
         int? page,
         int? pageSize,
@@ -123,16 +145,6 @@ public static class UserEndpoints
         return await bus.InvokeAsync<Result>(new DeleteUserCommand(user.Id(), userId), cancellationToken);
     }
 
-    private static UserResponse ToResponse(UserView user) => new(
-        user.Id,
-        user.Email,
-        user.FirstName,
-        user.LastName,
-        ResponseStatus.OfUser(user.Status),
-        user.IsSystemAdmin,
-        user.MembershipCount,
-        user.CreatedAt);
-
     private static UserDetailResponse ToResponse(UserDetailView user) => new(
         user.User.Id,
         user.User.Email,
@@ -140,18 +152,10 @@ public static class UserEndpoints
         user.User.LastName,
         ResponseStatus.OfUser(user.User.Status),
         user.User.IsSystemAdmin,
+        user.User.IsRootSystemAdmin,
         user.User.MembershipCount,
         user.User.CreatedAt,
         user.SuspendedAt,
         user.SuspendedBy is { } suspendedBy ? InvitationEndpoints.ToResponse(suspendedBy) : null,
         [.. user.Memberships.Select(ToResponse)]);
-
-    private static UserMembershipResponse ToResponse(UserMembershipView membership) => new(
-        membership.TenantId,
-        membership.TenantName,
-        membership.TenantSlug,
-        ResponseStatus.OfUserMembership(membership.TenantStatus),
-        RoleEndpoints.ToResponse(membership.Role),
-        membership.JoinedAt,
-        membership.LastOwner);
 }

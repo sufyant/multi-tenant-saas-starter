@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
+using ControlPlane.Domain.Users;
 using SharedKernel;
 
 namespace ControlPlane.Domain.Tenants;
@@ -54,11 +55,17 @@ internal sealed class Tenant
     /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
-    /// <summary>Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a suspension.</summary>
+    /// <summary>
+    /// Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a
+    /// suspension. It holds no personal data: the platform's audit log keeps it after the tenant's purge (A8).
+    /// </summary>
     public string? SuspensionReason { get; private set; }
 
-    /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed.</summary>
+    /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed or purging.</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
+
+    /// <summary>When the purge ended and left the tenant as its tombstone (K4). None unless purged.</summary>
+    public DateTimeOffset? PurgedAt { get; private set; }
 
     /// <summary>A new tenant is active at once (section 6, "Tenant creation process"). The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
@@ -85,7 +92,7 @@ internal sealed class Tenant
     {
         TenantStatus.Active => Result.Success(),
         TenantStatus.Suspended => Error.Forbidden(ControlPlaneErrorCodes.TenantSuspended, "The tenant is suspended."),
-        TenantStatus.Closed => Error.Forbidden(ControlPlaneErrorCodes.TenantClosed, "The tenant is closed."),
+        TenantStatus.Closed or TenantStatus.Purging or TenantStatus.Purged => Error.Forbidden(ControlPlaneErrorCodes.TenantClosed, "The tenant is closed."),
         _ => NotActive,
     };
 
@@ -213,6 +220,56 @@ internal sealed class Tenant
     }
 
     /// <summary>
+    /// Starts the purge of a tenant that is still closed at the closure the purge was scheduled for: the pivot of the purge (S5). From
+    /// now on the tenant cannot be reopened. A tenant that was reopened, closed again at another moment, or whose purge has started
+    /// changes nothing: the scheduled purge of an earlier closure does nothing (K4). The caller holds the tenant's lock.
+    /// </summary>
+    public StateChange BeginPurge(DateTimeOffset closedAt)
+    {
+        if (!IsClosedAt(closedAt))
+        {
+            return StateChange.Unchanged;
+        }
+
+        Status = TenantStatus.Purging;
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Ends the purge: the tenant row becomes its tombstone, which keeps the id, the name, the slug, the status, the moment of the creation
+    /// and the moment of the purge, so the platform still sees that the tenant existed and its slug is never given again. Every other
+    /// value goes: the reason of a suspension and the moment of the closure (K4). The last step of the purge may run twice (S7): a
+    /// tombstone changes nothing. Only a tenant whose purge has started gets here, so any other is a fault. The caller holds the
+    /// tenant's lock.
+    /// </summary>
+    public StateChange Purge(DateTimeOffset now)
+    {
+        if (Status == TenantStatus.Purged)
+        {
+            return StateChange.Unchanged;
+        }
+
+        if (Status != TenantStatus.Purging)
+        {
+            throw new InvalidOperationException("Only a tenant whose purge has started is purged.");
+        }
+
+        Status = TenantStatus.Purged;
+        PurgedAt = now;
+        SuspensionReason = null;
+        ClosedAt = null;
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Whether the tenant is still closed at this closure, the one a message scheduled at the closure carries (K4). PostgreSQL keeps a
+    /// moment to the microsecond and .NET to 100 ns, so a closure read back from the database matches the closure the message carries
+    /// when they differ by less than a microsecond.
+    /// </summary>
+    public bool IsClosedAt(DateTimeOffset closedAt) =>
+        Status == TenantStatus.Closed && ClosedAt is { } at && (at - closedAt).Duration() < TimeSpan.FromMicroseconds(1);
+
+    /// <summary>
     /// The actor gives the target member the role, under the Owner rules of K1, which are the tenant's, asked as the permission
     /// <c>tenant.owners.manage</c> (A1): only a member whose role holds it gives or takes a role that holds it, and the last member whose
     /// role holds it keeps it. The actor's role holds every permission of the member's role and of the new one (decision 2 of step r4b,
@@ -247,6 +304,41 @@ internal sealed class Tenant
         }
 
         return new RoleChange(target, oldRole, target.Assign(role));
+    }
+
+    /// <summary>
+    /// The platform makes the target member an Owner, whether or not the tenant has one (section 6, "Owner recovery"): the member's role
+    /// becomes the tenant's Owner role, which the caller found by its kind (A1), and any other Owner keeps theirs. The checks, in this order: the tenant is active, by
+    /// the rule of the platform's Owner invitation; the user is a member of the tenant; the member's role does not hold
+    /// <c>tenant.owners.manage</c> yet (A1); the user is neither suspended nor deleted. The escalation rule of step r4b does not apply:
+    /// the actor is the platform, not a member, and it holds no role of the tenant. The caller holds the tenant's lock and read the facts
+    /// under it (K6j); the user's status, none for an id no user has, it read without a lock of the user (K6a). Every rejection comes
+    /// before the change.
+    /// </summary>
+    public Result<RoleChange> MakeOwner(Role owner, MemberFacts facts, UserStatus? userStatus)
+    {
+        if (Status != TenantStatus.Active)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active tenant gets an Owner from the platform.");
+        }
+
+        if (MemberOf(facts) is not { } target)
+        {
+            return Membership.NotFound;
+        }
+
+        var oldRole = facts.Roles.Of(target.RoleId);
+        if (ManagesOwners(oldRole))
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.MemberAlreadyOwner, "The member is an Owner already.");
+        }
+
+        return userStatus switch
+        {
+            UserStatus.Suspended => Error.Conflict(ControlPlaneErrorCodes.UserSuspended, "The user is suspended."),
+            UserStatus.Deleted => Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted."),
+            _ => new RoleChange(target, oldRole, target.Assign(owner)),
+        };
     }
 
     /// <summary>
@@ -287,9 +379,12 @@ internal sealed class Tenant
     /// <summary>
     /// A system admin's deletion of the user takes the target's membership away (section 6, "User deletion"), under the rule of
     /// <see cref="CheckUserDeletion"/>, asked again under the tenant's lock (K6l). A user who became the tenant's last Owner since the check
-    /// stays, and the error names this tenant. Returns the membership to remove, or none when the user is no longer a member.
+    /// stays, and the error names this tenant. The user's address goes from the tenant's invitations of the user, those the user accepted
+    /// or that went to one of their addresses (A8). A pending one among them, expired or not, is cancelled first, as a closure cancels it
+    /// (K6h), because a pending invitation always has an address. Returns the membership to remove and the invitations it cancelled, or
+    /// none when the user is no longer a member; then, and on a refusal, nothing changes.
     /// </summary>
-    public Result<Membership?> RemoveForUserDeletion(MemberFacts facts)
+    public Result<UserDeparture?> RemoveForUserDeletion(MemberFacts facts, IReadOnlyList<Invitation> invitations)
     {
         var allowed = CheckUserDeletion(facts);
         if (!allowed.IsSuccess)
@@ -297,7 +392,28 @@ internal sealed class Tenant
             return allowed.Error with { TenantIds = [Id] };
         }
 
-        return facts.Target;
+        if (facts.Target is not { } membership)
+        {
+            return (UserDeparture?)null;
+        }
+
+        return new UserDeparture(membership, EraseUser(invitations));
+    }
+
+    /// <summary>
+    /// A system admin's or a purge's deletion of a user who left this tenant before (section 6, "User deletion"): the user's address goes
+    /// from the tenant's invitations of the user, by the rule of <see cref="RemoveForUserDeletion"/>, with no membership to remove (A8).
+    /// A pending one among them is cancelled first. Returns the invitations it cancelled; a second call cancels none. A deleted user is a
+    /// member of no tenant, so a membership is an error.
+    /// </summary>
+    public IReadOnlyList<Invitation> EraseFormerMember(Membership? membership, IReadOnlyList<Invitation> invitations)
+    {
+        if (membership is not null)
+        {
+            throw new InvalidOperationException("A deleted user is a member of no tenant.");
+        }
+
+        return EraseUser(invitations);
     }
 
     /// <summary>
@@ -630,6 +746,24 @@ internal sealed class Tenant
         return owners > 0
             ? Error.Conflict(ControlPlaneErrorCodes.TenantHasOwner, "The tenant has an Owner; its Owners invite people.")
             : Result.Success();
+    }
+
+    // The erasure of a deleted user's address that both kinds of departure share (A8). A pending invitation always has an address, so
+    // it is cancelled first, expired or not, as a closure cancels it (K6h). Returns the invitations it cancelled.
+    private List<Invitation> EraseUser(IReadOnlyList<Invitation> invitations)
+    {
+        if (invitations.Any(invitation => invitation.TenantId != Id))
+        {
+            throw new InvalidOperationException("A tenant erases only its own invitations.");
+        }
+
+        var cancelled = invitations.Where(invitation => invitation.Cancel() == StateChange.Changed).ToList();
+        foreach (var invitation in invitations)
+        {
+            invitation.EraseEmail();
+        }
+
+        return cancelled;
     }
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)

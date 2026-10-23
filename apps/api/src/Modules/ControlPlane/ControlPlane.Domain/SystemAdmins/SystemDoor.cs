@@ -10,10 +10,17 @@ internal static class SystemDoor
         isSystemAdmin && secondFactorVerified ? PermissionPools.PlatformPool : null;
 
     /// <summary>
-    /// Whether the person at the door is the first system admin the configuration names (section 6): one of the addresses the
-    /// identity provider has verified for them is that address, both in their one form, and the session verified a second factor. It
-    /// counts only while the system admin list is empty.
+    /// The root address of the person at the door, or none (section 6, "Root system admins"): one of the addresses the identity provider
+    /// has verified for them is in the configuration's list, both in their one form, and the session verified a second factor.
     /// </summary>
-    public static bool IsFirstSystemAdmin(EmailAddress firstSystemAdminEmail, bool secondFactorVerified, IEnumerable<EmailAddress> verifiedEmails) =>
-        secondFactorVerified && verifiedEmails.Contains(firstSystemAdminEmail);
+    public static EmailAddress? RootEmailOf(IEnumerable<EmailAddress> rootEmails, bool secondFactorVerified, IEnumerable<EmailAddress> verifiedEmails) =>
+        secondFactorVerified ? verifiedEmails.FirstOrDefault(rootEmails.Contains) : null;
+
+    /// <summary>
+    /// Whether the configuration's list names the user's address, in its one form. This is the one place that answers "is this system
+    /// admin a root": root is read from the list on each check and stored nowhere, so an address taken out of the list lifts the
+    /// protection at the next deploy.
+    /// </summary>
+    public static bool IsRoot(string? email, IEnumerable<EmailAddress> rootEmails) =>
+        EmailAddress.TryCreate(email) is { } address && rootEmails.Contains(address);
 }

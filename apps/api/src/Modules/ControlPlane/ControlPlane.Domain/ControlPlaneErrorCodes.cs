@@ -23,6 +23,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode InvitationSystemAdminCannotJoin = ErrorCode.Declare("invitation.system_admin_cannot_join");
 
+    public static readonly ErrorCode MemberAlreadyOwner = ErrorCode.Declare("member.already_owner");
+
     public static readonly ErrorCode MemberCannotRemoveSelf = ErrorCode.Declare("member.cannot_remove_self");
 
     public static readonly ErrorCode MemberExists = ErrorCode.Declare("member.exists");
@@ -58,6 +60,14 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode RoleProfileReadRequired = ErrorCode.Declare("role.profile_read_required");
 
     public static readonly ErrorCode RoleRolesReadRequired = ErrorCode.Declare("role.roles_read_required");
+
+    public static readonly ErrorCode SystemAdminCannotRevokeSelf = ErrorCode.Declare("system_admin.cannot_revoke_self");
+
+    public static readonly ErrorCode SystemAdminExists = ErrorCode.Declare("system_admin.exists");
+
+    public static readonly ErrorCode SystemAdminNotFound = ErrorCode.Declare("system_admin.not_found");
+
+    public static readonly ErrorCode SystemAdminRoot = ErrorCode.Declare("system_admin.root");
 
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
 

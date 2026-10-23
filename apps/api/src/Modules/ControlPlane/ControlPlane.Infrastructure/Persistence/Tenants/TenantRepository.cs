@@ -118,6 +118,16 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     async Task<IReadOnlyList<Invitation>> ITenantRepository.FindPendingInvitationsAsync(CancellationToken cancellationToken) =>
         await controlPlane.TenantInvitations.Where(invitation => invitation.Status == InvitationStatus.Pending).ToListAsync(cancellationToken);
 
+    // Row level security keeps the invitations to the active tenant; the query names no tenant. Every address is in its one form, so
+    // plain equality compares them.
+    async Task<IReadOnlyList<Invitation>> ITenantRepository.FindInvitationsOfUserAsync(Guid userId, string? email, CancellationToken cancellationToken)
+    {
+        var accepted = controlPlane.TenantInvitations.Where(invitation => invitation.AcceptedBy == userId).Select(invitation => invitation.Email);
+        return await controlPlane.TenantInvitations
+            .Where(invitation => invitation.AcceptedBy == userId || (email != null && invitation.Email == email) || accepted.Contains(invitation.Email))
+            .ToListAsync(cancellationToken);
+    }
+
     async Task<Invitation?> ITenantRepository.FindInvitationForUpdateAsync(string secretHash, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Invitations
@@ -183,6 +193,49 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
 
         controlPlane.Invitations.Add(invited.Invitation);
         await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
+    }
+
+    // Row level security keeps the memberships and the roles to the active tenant; the users table is not under it (R6), so the query starts
+    // from the memberships. An Owner is a member whose role holds the Owners' permission (A1).
+    async Task<IReadOnlyList<OwnerAddress>> ITenantRepository.FindOwnerAddressesAsync(CancellationToken cancellationToken) =>
+        await (
+                from membership in Memberships
+                join role in controlPlane.Roles.Where(Role.Holding(PermissionPools.TenantOwnersManage)) on membership.RoleId equals role.Id
+                join user in controlPlane.Users on membership.UserId equals user.Id
+                where user.Email != null
+                orderby user.Id
+                select new OwnerAddress(user.Id, user.Email!, user.Language))
+            .ToListAsync(cancellationToken);
+
+    // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a
+    // membership name a role (A2), a role's permissions go with it (A3), and the summary names the tenant (R12). The summary goes with the
+    // tenant's data, so no change of a membership or an invitation owes one (K6k). Each user's count changes in the order of the user ids,
+    // so two purges that share users take their rows in one order.
+    async Task<IReadOnlyList<Guid>> ITenantRepository.PurgeAsync(Tenant tenant, CancellationToken cancellationToken)
+    {
+        var purged = OfActiveTenant(tenant, tenant.Id);
+        var members = await Memberships.Select(membership => membership.UserId).Order().ToListAsync(cancellationToken);
+
+        await controlPlane.TenantInvitations.ExecuteDeleteAsync(cancellationToken);
+        await Memberships.ExecuteDeleteAsync(cancellationToken);
+        foreach (var userId in members)
+        {
+            await controlPlane.Database.ExecuteSqlAsync(
+                $"UPDATE control_plane.users SET membership_count = membership_count - 1 WHERE id = {userId}",
+                cancellationToken);
+        }
+
+        await controlPlane.TenantRolePermissions.ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.TenantRoles.ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.TenantSummaries.Where(summary => summary.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.SaveChangesAsync(cancellationToken);
+
+        return await controlPlane.Users
+            .Where(user => members.Contains(user.Id) && user.MembershipCount == 0 && user.DeletedAt == null)
+            .Where(user => !controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id))
+            .Select(user => user.Id)
+            .Order()
+            .ToListAsync(cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);

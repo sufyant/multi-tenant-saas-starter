@@ -6,6 +6,8 @@ export * from "./me-tenants/me-tenants.msw.gen";
 export * from "./me-users/me-users.msw.gen";
 export * from "./platform-auditlogs/platform-auditlogs.msw.gen";
 export * from "./platform-invitations/platform-invitations.msw.gen";
+export * from "./platform-members/platform-members.msw.gen";
+export * from "./platform-systemadmins/platform-systemadmins.msw.gen";
 export * from "./platform-tenants/platform-tenants.msw.gen";
 export * from "./platform-users/platform-users.msw.gen";
 export * from "./tenant-auditlogs/tenant-auditlogs.msw.gen";

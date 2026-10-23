@@ -1,12 +1,16 @@
+using System.Net.Mail;
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Roles;
+using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Invitations;
@@ -41,8 +45,15 @@ public static class ControlPlaneInfrastructure
         // DbContext and in its transaction (W1).
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
-        services.AddOptions<SystemAdminOptions>().BindConfiguration(SystemAdminOptions.Section).ValidateOnStart();
-        services.AddSingleton<IValidateOptions<SystemAdminOptions>, SystemAdminOptions.Validation>();
+
+        // Section 6, "Root system admins": the list must name at least one address, so the platform always has a way in. Each item is an
+        // address in the form the validators accept, and the same text as .NET reads it, so no item is left out of the list's one form.
+        services.AddOptions<SystemAdminOptions>()
+            .BindConfiguration(SystemAdminOptions.Section)
+            .Validate(settings => settings.RootEmails.Count > 0, $"{SystemAdminOptions.Section}:RootEmails must list the email address of at least one root system admin.")
+            .Validate(settings => settings.RootEmails.All(IsEmailAddress), $"{SystemAdminOptions.Section}:RootEmails must list only email addresses.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<SystemAdminOptions>>().Value);
 
         // Registered by type, so Wolverine builds them in its generated code on the handler's own DbContext, and sees that the
         // handler needs its transaction (W1).
@@ -73,8 +84,14 @@ public static class ControlPlaneInfrastructure
         services.AddOptions<TenantOptions>()
             .BindConfiguration(TenantOptions.Section)
             .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantOptions.Section}:ReopenPeriod must be positive.")
+            .Validate(settings => settings.PurgeWarningLead > TimeSpan.Zero, $"{TenantOptions.Section}:PurgeWarningLead must be positive.")
+            .Validate(
+                settings => settings.PurgeWarningLead < settings.ReopenPeriod,
+                $"{TenantOptions.Section}:PurgeWarningLead must be shorter than {TenantOptions.Section}:ReopenPeriod: the warning comes after the closure.")
+            .Validate(settings => settings.PurgeTimeout > TimeSpan.Zero, $"{TenantOptions.Section}:PurgeTimeout must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantOptions>>().Value);
+        services.AddSingleton<TenantPurgeAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it
         // resolves it from the message's scope. It reaches no DbContext.
@@ -101,4 +118,9 @@ public static class ControlPlaneInfrastructure
 
         return services;
     }
+
+    // An address that FluentValidation's EmailAddress accepts (EmailAddress.TryCreate), which .NET reads as the same text, so no
+    // display name or comment hides in it.
+    private static bool IsEmailAddress(string text) =>
+        MailAddress.TryCreate(text, out var address) && address.Address == text && EmailAddress.TryCreate(text) is not null;
 }

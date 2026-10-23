@@ -51,7 +51,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation"],
             ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
@@ -123,6 +123,36 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
         await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
         await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
+
+        Names(page).ShouldBe([$"{_marker} {found}"]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    // K4: a purged tenant has no summary, and the list still shows its tombstone, with nothing counted.
+    [Fact]
+    public async Task ListTenants_APurgedTenant_ListsItsTombstone()
+    {
+        var tenant = await _testData.AddTenantRowAsync(status: "Purged", name: $"{_marker} Hotel");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        var item = page.GetProperty("items").EnumerateArray().Single();
+        (item.GetProperty("id").GetGuid(), item.GetProperty("status").GetString(), item.GetProperty("memberCount").GetInt32(), item.GetProperty("ownerCount").GetInt32())
+            .ShouldBe((tenant.Id, "purged", 0, 0));
+        item.GetProperty("ownerInvitation").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+
+    [Theory]
+    [InlineData("purging", "Foxtrot")]
+    [InlineData("purged", "Golf")]
+    public async Task ListTenants_APurgeStatusFilter_ReturnsTheTenantsInThatStatusOnly(string status, string found)
+    {
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purging", name: $"{_marker} Foxtrot", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purged", name: $"{_marker} Golf");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status={status}", Cancellation);
 

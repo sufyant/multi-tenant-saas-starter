@@ -67,6 +67,7 @@
       "system_admin_cannot_join": "Sistem yöneticisi bir kuruluşa katılamaz."
     },
     "member": {
+      "already_owner": "Bu üye zaten bir Sahip.",
       "cannot_remove_self": "Kendinizi çıkaramazsınız.",
       "exists": "Bu kişi zaten üye.",
       "last_owner": "Bir kuruluşun en az bir Sahibi olmalı.",
@@ -113,6 +114,12 @@
     },
     "server": {
       "error": "Bizim tarafımızda bir sorun oluştu. Verileriniz güvende. Biraz sonra yeniden deneyin."
+    },
+    "system_admin": {
+      "cannot_revoke_self": "Kendi sistem yöneticisi erişiminizi geri alamazsınız.",
+      "exists": "Bu kullanıcı zaten bir sistem yöneticisi.",
+      "not_found": "Bu kullanıcı bir sistem yöneticisi değil.",
+      "root": "Kök sistem yöneticisinin erişimi geri alınamaz. Yapılandırma onu adlandırır."
     },
     "tenant": {
       "closed": "Bu kuruluş kapatıldı.",

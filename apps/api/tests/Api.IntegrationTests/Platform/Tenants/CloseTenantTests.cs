@@ -2,9 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ControlPlane.Application.Invitations.OpenSignUp;
+using ControlPlane.Application.Tenants.StartTenantPurge;
+using ControlPlane.Application.Tenants.WarnTenantPurge;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
+using Wolverine;
 using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform.Tenants;
@@ -21,7 +25,9 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
     private readonly AuditEntries _audit = new(database);
 
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+    // The clock starts at the real now: a closure schedules its warning and its purge weeks after it, by Wolverine's clock, so neither
+    // comes during a run on the shared database (section 9, rule 10).
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
     private ApiFactory _api = null!;
 
@@ -51,6 +57,50 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         (body.GetProperty("id").GetGuid(), body.GetProperty("status").GetString(), body.GetProperty("closedAt").GetDateTimeOffset())
             .ShouldBe((tenant.Id, "closed", _time.GetUtcNow()));
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
+    }
+
+    // K4: the closure schedules, in its transaction, the warning at the closure plus the reopen period less the warning's lead, and the
+    // purge's start at the closure plus the reopen period. Each carries the tenant and the closure.
+    [Fact]
+    public async Task CloseTenant_ATenant_SchedulesTheWarningAndThePurgeWithTheClosure()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var closedAt = _time.GetUtcNow();
+
+        var scheduled = await ScheduledByTheClosureAsync(tenant.Id, await SystemAdminAsync());
+
+        scheduled.ShouldBe(
+        [
+            (new WarnTenantPurgeCommand(tenant.Id, closedAt), closedAt + TimeSpan.FromDays(23)),
+            (new StartTenantPurgeCommand(tenant.Id, closedAt), closedAt + TimeSpan.FromDays(30)),
+        ],
+        ignoreOrder: true);
+    }
+
+    // K4: a reopening cancels no scheduled message. The first closure's warning and purge find the tenant closed at another moment and do
+    // nothing; the second closure schedules its own, and its warning reaches the Owner.
+    [Fact]
+    public async Task CloseTenant_ReopenedAndClosedAgain_SchedulesItsOwnAndTheFirstClosuresDoNothing()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@acme.test");
+        await _testData.AddMemberAsync(tenant.Id, owner, role: "Owner");
+        var admin = await SystemAdminAsync();
+        var first = await ScheduledByTheClosureAsync(tenant.Id, admin);
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant.Id));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        var second = await ScheduledByTheClosureAsync(tenant.Id, admin);
+
+        await DeliverAsync(tenant.Id, first.Select(message => message.Message));
+        var firstsWarnedNobody = (_api.Email.Sent.Count, await PurgeWarningsAsync(tenant.Id), await _testData.TenantStatusOfAsync(tenant.Id));
+        await DeliverAsync(tenant.Id, second.Select(message => message.Message).OfType<WarnTenantPurgeCommand>());
+
+        second.Select(message => message.Message).ShouldBe(
+            [new WarnTenantPurgeCommand(tenant.Id, _time.GetUtcNow()), new StartTenantPurgeCommand(tenant.Id, _time.GetUtcNow())], ignoreOrder: true);
+        firstsWarnedNobody.ShouldBe((0, 0L, "Closed"));
+        _api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe((await _testData.UserOfAsync(owner)).Email);
+        (await PurgeWarningsAsync(tenant.Id)).ShouldBe(1L);
     }
 
     // Closing sets a state (I1): a closed tenant answers as it is, keeps the moment of its first closure, and writes nothing again.
@@ -218,6 +268,30 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    // The messages the closure scheduled, with the moment each is scheduled for; Wolverine keeps them for later.
+    private async Task<List<(object Message, DateTimeOffset? At)>> ScheduledByTheClosureAsync(Guid tenantId, HttpClient admin)
+    {
+        var session = await _api.TrackMessagesAsync(() => admin.CloseTenantAsync(tenantId));
+        return [.. session.Scheduled.Envelopes().Select(envelope => (envelope.Message!, envelope.ScheduledTime))];
+    }
+
+    // Delivers the messages now, in the tenant, as Wolverine delivers a scheduled message when its moment comes.
+    private async Task DeliverAsync(Guid tenantId, IEnumerable<object> messages)
+    {
+        foreach (var message in messages)
+        {
+            await _api.WaitingForMessagesAsync(async () =>
+            {
+                using var scope = _api.Services.CreateScope();
+                await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), message, Cancellation);
+                return tenantId;
+            });
+        }
+    }
+
+    private Task<long> PurgeWarningsAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = 'tenant.purge_warned'");
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 

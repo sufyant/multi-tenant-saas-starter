@@ -1,16 +1,21 @@
-using System.Net;
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
 using Audit.Application.Invitations.RecordInvitationRevoked;
 using Audit.Application.Invitations.RecordOwnerInvited;
 using Audit.Application.Members.RecordMemberInvited;
 using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
+using Audit.Application.Members.RecordOwnerMade;
 using Audit.Application.Roles.RecordRoleCreated;
 using Audit.Application.Roles.RecordRoleDeleted;
 using Audit.Application.Roles.RecordRoleUpdated;
+using Audit.Application.SystemAdmins.RecordSystemAdminGranted;
+using Audit.Application.SystemAdmins.RecordSystemAdminRevoked;
 using Audit.Application.Tenants.RecordTenantClosed;
 using Audit.Application.Tenants.RecordTenantCreated;
+using Audit.Application.Tenants.RecordTenantPurged;
+using Audit.Application.Tenants.RecordTenantPurgeWarned;
 using Audit.Application.Tenants.RecordTenantReactivated;
 using Audit.Application.Tenants.RecordTenantRenamed;
 using Audit.Application.Tenants.RecordTenantReopened;
@@ -25,20 +30,29 @@ using ControlPlane.Application.Invitations.InviteOwner;
 using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.RevokeInvitation;
+using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Members.ChangeMemberRole;
+using ControlPlane.Application.Members.MakeOwner;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Application.Roles.CreateRole;
 using ControlPlane.Application.Roles.DeleteRole;
 using ControlPlane.Application.Roles.UpdateRole;
+using ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin;
 using ControlPlane.Application.Tenants.CloseTenant;
+using ControlPlane.Application.Tenants.CompleteTenantPurge;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
 using ControlPlane.Application.Tenants.RenameTenant;
 using ControlPlane.Application.Tenants.ReopenTenant;
+using ControlPlane.Application.Tenants.StartTenantPurge;
 using ControlPlane.Application.Tenants.SuspendTenant;
+using ControlPlane.Application.Tenants.TenantPurge;
+using ControlPlane.Application.Tenants.WarnTenantPurge;
 using ControlPlane.Application.Users.ChangePreferences;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
+using ControlPlane.Application.Users.DeleteUserWithoutTenant;
+using ControlPlane.Application.Users.EraseFormerMember;
 using ControlPlane.Application.Users.ListUserMemberships;
 using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
@@ -46,11 +60,13 @@ using ControlPlane.Application.Users.SuspendUser;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Roles;
+using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
+using Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
 using Tenancy;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Util;
@@ -74,6 +90,34 @@ public sealed class HostRoleTests(Database database)
     ];
 
     private static readonly HandlerRun Creation = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
+
+    // The handlers of every message a closure sends once its reopen period ends, as section 6, "Tenant purge", lists them: the warning,
+    // the purge's pivot, each module's purge and its reply to the saga, ControlPlane's last step and its reply, the platform's entry, and
+    // the deletion of the user left without a tenant.
+    private static readonly HandlerRun[] HandlersOfThePurge =
+    [
+        new(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler)),
+        new(typeof(WarnTenantPurgeCommand), typeof(WarnTenantPurgeHandler)),
+        new(typeof(TenantPurgeWarnedEvent), typeof(RecordTenantPurgeWarnedHandler)),
+        new(typeof(TenantPurgeWarningReadyEvent), typeof(SendTenantPurgeWarningEmailHandler)),
+        new(typeof(StartTenantPurgeCommand), typeof(StartTenantPurgeHandler)),
+        new(typeof(PurgeTenantDataCommand), typeof(Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
+        new(typeof(PurgeTenantDataCommand), typeof(Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
+        new(typeof(PurgeTenantDataReply), typeof(TenantPurgeSaga)),
+        new(typeof(CompleteTenantPurgeCommand), typeof(CompleteTenantPurgeHandler)),
+        new(typeof(CompleteTenantPurgeReply), typeof(TenantPurgeSaga)),
+        new(typeof(TenantPurgedEvent), typeof(RecordTenantPurgedHandler)),
+        new(typeof(DeleteUserWithoutTenantCommand), typeof(DeleteUserWithoutTenantHandler)),
+        new(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+        new(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+    ];
+
+    // A reopen period of seconds: the warning comes 2 s after the closure and the purge 10 s after it, by Wolverine's clock.
+    private static readonly Dictionary<string, string?> ShortReopenPeriod = new()
+    {
+        ["ControlPlane:Tenants:ReopenPeriod"] = "00:00:10",
+        ["ControlPlane:Tenants:PurgeWarningLead"] = "00:00:08",
+    };
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -183,6 +227,36 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
     }
 
+    // S13, W5: the template's saga in the production layout. The web host closes the tenant and, through the outbox, schedules the warning
+    // and the purge; a worker runs every step after them: the warning and its email, the purge's pivot, each module's purge, the saga,
+    // ControlPlane's last step, and the deletion of the Owner it left without a tenant.
+    [Fact]
+    public async Task CloseTenant_TheReopenPeriodEndsOnAWebAndAWorkerHost_WarnsAndPurgesInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: ShortReopenPeriod);
+        await using var worker = Host(name, "worker", runs, settings: ShortReopenPeriod);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddUserAsync(email: "owner@acme.test");
+        await testData.AddMemberAsync(tenant.Id, owner, role: "Owner");
+        var ownerId = await testData.UserIdOfAsync(owner);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var closed = await admin.CloseTenantAsync(tenant.Id);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, ownerId, "user.deleted") > 0 && worker.Identity.Deleted.Contains(owner));
+
+        closed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
+        runs.In("worker").Distinct().ShouldBe(HandlersOfThePurge, ignoreOrder: true);
+        worker.Email.Sent.Select(email => email.To).ShouldBe(["owner@acme.test"]);
+        (await testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Purged");
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.purged")).ShouldBe(1L);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}'", name)).ShouldBe(0L);
+    }
+
     // O3: a new name is announced from the web host, and its Audit handler runs in the worker, once, in both logs.
     [Fact]
     public async Task RenameTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInEachLogInTheWorker()
@@ -250,6 +324,56 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, userId, "user.suspended")).ShouldBe(1L);
     }
 
+    // O3, K3: the system door lets a root system admin in from the web host, in the request, and the grant's Audit handler runs in the
+    // worker, once, and writes the platform's log by the platform.
+    [Fact]
+    public async Task VisitTheSystemDoor_ARootOnAWebAndAWorkerHost_GrantsInTheWebAndRecordsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var root = $"user_{Guid.NewGuid():N}";
+        web.Identity.AddAccount(root, ApiFactory.RootEmail);
+
+        var visit = await web.CreateClient(root, secondFactor: true).GetAsync("/v1/platform/users", Cancellation);
+        var userId = await new TestData(database, name).UserIdOfAsync(root);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "system_admin.granted") > 0);
+
+        visit.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldContain(new HandlerRun(typeof(GrantRootSystemAdminCommand), typeof(GrantRootSystemAdminHandler)));
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(SystemAdminGrantedEvent), typeof(RecordSystemAdminGrantedHandler))]);
+        (await PlatformEntriesAsync(name, userId, "system_admin.granted")).ShouldBe(1L);
+    }
+
+    // O3, K3: a grant and a revocation run in the web host, and their Audit handlers in the worker, once each.
+    [Fact]
+    public async Task GrantAndRevokeSystemAdmin_OnAWebAndAWorkerHost_WriteOnePlatformEntryEachInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var userId = await testData.UserIdOfAsync(await testData.AddUserAsync());
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+        var grant = new HttpRequestMessage(HttpMethod.Post, $"/v1/platform/users/{userId}/system-admin");
+        grant.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        var granted = await admin.SendAsync(grant, Cancellation);
+        var revoked = await admin.DeleteAsync($"/v1/platform/users/{userId}/system-admin", Cancellation);
+        await Waiting.UntilAsync(async () =>
+            await PlatformEntriesAsync(name, userId, "system_admin.granted") > 0 && await PlatformEntriesAsync(name, userId, "system_admin.revoked") > 0);
+
+        (granted.StatusCode, revoked.StatusCode).ShouldBe((HttpStatusCode.Created, HttpStatusCode.NoContent));
+        runs.In("worker").ShouldBe(
+            [new HandlerRun(typeof(SystemAdminGrantedEvent), typeof(RecordSystemAdminGrantedHandler)), new HandlerRun(typeof(SystemAdminRevokedEvent), typeof(RecordSystemAdminRevokedHandler))],
+            ignoreOrder: true);
+        (await PlatformEntriesAsync(name, userId, "system_admin.granted"), await PlatformEntriesAsync(name, userId, "system_admin.revoked")).ShouldBe((1L, 1L));
+    }
+
     // O3, K3: a user's rename and deletion run in the web host, step by step for the deletion. Their Audit handlers run in the worker,
     // once each, and so does the identity provider's deletion, which has scheduled retries (W5).
     [Fact]
@@ -292,6 +416,87 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, userId, "user.renamed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, userId, "user.deleted")).ShouldBe(1L);
         (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
+    }
+
+    // A8: a user's deletion cancels a pending invitation to their address in a tenant they leave, in the web host. The identity provider's
+    // invitation behind it is withdrawn in the worker, once, as for a revocation.
+    [Fact]
+    public async Task DeleteUser_APendingInvitationToTheirAddressOnAWebAndAWorkerHost_WithdrawsItsSignUpOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(email: email));
+        var pending = await testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'", database: name);
+        var userId = await testData.UserIdOfAsync(user);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
+        await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && !worker.Identity.Withdrawn.IsEmpty
+            && await PlatformEntriesAsync(name, userId, "user.deleted") > 0 && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(UserMembershipRemovedEvent), typeof(RecordUserMembershipRemovedHandler)),
+                new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
+                new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+                new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Identity.Withdrawn.ShouldBe([signUp]);
+        web.Identity.Withdrawn.ShouldBeEmpty();
+    }
+
+    // A8: a user's deletion erases their address in a tenant they left before. The web host erases the user; the erasure in that tenant
+    // and the withdrawal of the sign-up it cancelled run in the worker, once each.
+    [Fact]
+    public async Task DeleteUser_AnInvitationAcceptedInATenantTheyLeftOnAWebAndAWorkerHost_ErasesItAndWithdrawsItsSignUpInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await testData.AddUserAsync(email: email);
+        await testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'", database: name);
+        var userId = await testData.UserIdOfAsync(user);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
+        await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && !worker.Identity.Withdrawn.IsEmpty
+            && await PlatformEntriesAsync(name, userId, "user.deleted") > 0);
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("web").ShouldBe(
+            [
+                new HandlerRun(typeof(ListUserMembershipsQuery), typeof(ListUserMembershipsHandler)),
+                new HandlerRun(typeof(DeleteUserCommand), typeof(DeleteUserHandler)),
+            ],
+            ignoreOrder: true);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+                new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+                new HandlerRun(typeof(EraseFormerMemberCommand), typeof(EraseFormerMemberHandler)),
+                new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Identity.Withdrawn.ShouldBe([signUp]);
+        web.Identity.Withdrawn.ShouldBeEmpty();
     }
 
     // O3, K3: a user changes their preferences in the web host. Audit records the change in the worker, once.
@@ -430,6 +635,32 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRoleCommand), typeof(ChangeMemberRoleHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChangedEvent), typeof(RecordMemberRoleChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+    }
+
+    // Owner recovery (section 6): the platform's new Owner is accepted by the web host, and its records in both logs run in the worker,
+    // once: tenant.owner_made in the platform's log and member.role_changed in the tenant's.
+    [Fact]
+    public async Task MakeOwner_OnAWebAndAWorkerHost_RecordsInBothLogsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var member = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id));
+        var admin = web.CreateClient(await testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var made = await admin.MakeOwnerAsync(tenant.Id, member);
+        await Waiting.UntilAsync(async () =>
+            await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0 && await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_made") > 0);
+
+        made.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(MakeOwnerCommand), typeof(MakeOwnerHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(OwnerMadeEvent), typeof(RecordOwnerMadeHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_made")).ShouldBe(1L);
     }
 
     // O3: each change to a custom role is announced from the web host, and its Audit handler runs in the worker, once (step r4b).
@@ -592,9 +823,9 @@ public sealed class HostRoleTests(Database database)
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
-    private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null) => new(
+    private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null, IReadOnlyDictionary<string, string?>? settings = null) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
-        settings: new Dictionary<string, string?> { ["Host:Role"] = role },
+        settings: new Dictionary<string, string?>(settings ?? new Dictionary<string, string?>()) { ["Host:Role"] = role },
         configureServices: HandlerRunsOfHost.Register(role, runs),
         ports: ports);
 

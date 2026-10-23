@@ -3,6 +3,7 @@ using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.Users;
 using SharedKernel;
 
 namespace ControlPlane.UnitTests.Tenants;
@@ -279,6 +280,7 @@ public sealed class TenantTests
 
     [Theory]
     [InlineData("Closed")]
+    [InlineData("Purging")]
     public void RenameTenant_NeitherActiveNorSuspended_IsRejected(string status)
     {
         var tenant = InStatus(status);
@@ -438,6 +440,7 @@ public sealed class TenantTests
 
     [Theory]
     [InlineData("Suspended")]
+    [InlineData("Purging")]
     public void ReopenTenant_NeitherClosedNorActive_IsRejected(string status)
     {
         var tenant = InStatus(status);
@@ -466,6 +469,147 @@ public sealed class TenantTests
 
         allowed.Error.Type.ShouldBe(ErrorType.Forbidden);
         allowed.Error.Code.ToString().ShouldBe(code);
+    }
+
+    // The purge's start and its end refuse a member as a closure does: the tenant door, and every tenant command under the lock (K4).
+    [Theory]
+    [InlineData("Purging")]
+    [InlineData("Purged")]
+    public void CheckMemberAccess_PurgingOrPurged_IsForbiddenAsClosed(string status)
+    {
+        var allowed = Tenant.CheckMemberAccess(Enum.Parse<TenantStatus>(status));
+
+        allowed.Error.Type.ShouldBe(ErrorType.Forbidden);
+        allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantClosed);
+    }
+
+    // The pivot of the purge (S5): a tenant still closed at the closure the purge was scheduled for starts it, and can no longer be
+    // reopened.
+    [Fact]
+    public void StartTenantPurge_ClosedAtTheScheduledClosure_IsPurging()
+    {
+        var tenant = Closed();
+
+        var started = tenant.BeginPurge(Now);
+
+        started.ShouldBe(StateChange.Changed);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+        tenant.ClosedAt.ShouldBe(Now);
+    }
+
+    // PostgreSQL keeps a moment to the microsecond and .NET to 100 ns, so a closure read back from the database is the closure the
+    // message carries, less the ticks under a microsecond.
+    [Fact]
+    public void StartTenantPurge_TheScheduledClosureWithTicksUnderAMicrosecond_IsPurging()
+    {
+        var tenant = Closed();
+
+        var started = tenant.BeginPurge(Now + TimeSpan.FromTicks(7));
+
+        started.ShouldBe(StateChange.Changed);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+    }
+
+    // A tenant reopened and closed again carries a new closure: the first closure's purge does nothing, and its own purge comes later.
+    [Fact]
+    public void StartTenantPurge_ClosedAtAnotherMoment_ChangesNothing()
+    {
+        var tenant = Closed();
+
+        var started = tenant.BeginPurge(Now - TimeSpan.FromDays(1));
+
+        started.ShouldBe(StateChange.Unchanged);
+        tenant.Status.ShouldBe(TenantStatus.Closed);
+    }
+
+    // A tenant reopened before the purge is active again: the scheduled purge does nothing. A purge that has started changes nothing.
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    [InlineData("Purging")]
+    public void StartTenantPurge_NotClosed_ChangesNothing(string status)
+    {
+        var tenant = InStatus(status);
+
+        var started = tenant.BeginPurge(Now);
+
+        started.ShouldBe(StateChange.Unchanged);
+        tenant.Status.ToString().ShouldBe(status);
+    }
+
+    // K4: the tombstone keeps the id, the name, the slug, the status, the moment of the creation and the moment of the purge; the
+    // reason of a suspension and the moment of the closure go.
+    [Fact]
+    public void PurgeTenant_Purging_KeepsOnlyTheTombstone()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason);
+        tenant.Close(Now, []);
+        tenant.BeginPurge(Now);
+        var purgedAt = Now + TimeSpan.FromDays(30);
+
+        var purged = tenant.Purge(purgedAt);
+
+        purged.ShouldBe(StateChange.Changed);
+        (tenant.Id, tenant.Name, tenant.Slug, tenant.Status, tenant.CreatedAt, tenant.PurgedAt).ShouldBe((Id, "Acme Ltd", "acme", TenantStatus.Purged, CreatedAt, purgedAt));
+        (tenant.SuspensionReason, tenant.ClosedAt).ShouldBe((null, null));
+    }
+
+    // The purge's last step may run twice (S7): a tombstone stays as it is.
+    [Fact]
+    public void PurgeTenant_Purged_ChangesNothing()
+    {
+        var tenant = InStatus("Purged");
+
+        var purged = tenant.Purge(Now + TimeSpan.FromDays(1));
+
+        purged.ShouldBe(StateChange.Unchanged);
+        tenant.PurgedAt.ShouldBe(Now);
+    }
+
+    // Only the purge's pivot leads to its last step: a tenant whose purge has not started is a fault there, not an answer.
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Closed")]
+    public void PurgeTenant_PurgeNotStarted_Throws(string status)
+    {
+        var tenant = InStatus(status);
+
+        Should.Throw<InvalidOperationException>(() => tenant.Purge(Now));
+        tenant.Status.ToString().ShouldBe(status);
+    }
+
+    [Fact]
+    public void CloseTenant_Purging_IsRejected()
+    {
+        var tenant = InStatus("Purging");
+
+        var closed = tenant.Close(Now, []);
+
+        closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+    }
+
+    [Fact]
+    public void SuspendTenant_Purging_IsRejected()
+    {
+        var tenant = InStatus("Purging");
+
+        var suspended = tenant.Suspend(Reason);
+
+        suspended.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
+    }
+
+    [Fact]
+    public void ReactivateTenant_Purging_IsRejected()
+    {
+        var tenant = InStatus("Purging");
+
+        var reactivated = tenant.Reactivate();
+
+        reactivated.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        tenant.Status.ShouldBe(TenantStatus.Purging);
     }
 
     [Fact]
@@ -511,6 +655,7 @@ public sealed class TenantTests
     [Theory]
     [InlineData("Suspended")]
     [InlineData("Closed")]
+    [InlineData("Purging")]
     public void InviteOwner_ATenantThatIsNotActive_IsAConflict(string status)
     {
         var invited = InStatus(status).Invite(Platform, Request("ada@example.com", RoleOf("Owner")), Facts(owners: 0), DailyLimit);
@@ -867,11 +1012,98 @@ public sealed class TenantTests
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
 
+    // Owner recovery (section 6): the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
+    [Theory]
+    [InlineData("Admin", 0)]
+    [InlineData("Member", 0)]
+    [InlineData("Admin", 1)]
+    [InlineData("Member", 2)]
+    public void MakeOwner_AMemberWithOrWithoutAnOwnerThere_GivesThemTheOwnerRole(string role, int owners)
+    {
+        var target = Membership(role);
+
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, owners, Roles), UserStatus.Active);
+
+        (result.Value.Change, result.Value.Member, result.Value.OldRole).ShouldBe((StateChange.Changed, target, RoleOf(role)));
+        target.RoleId.ShouldBe(RoleOf("Owner").Id);
+    }
+
+    [Fact]
+    public void MakeOwner_AMemberOfACustomRole_GivesThemTheOwnerRole()
+    {
+        var billing = Custom("Billing", ProfileRead, MembersRead);
+        var target = Membership(billing);
+
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, 0, RolesWith(billing)), UserStatus.Active);
+
+        result.Value.OldRole.ShouldBe(billing);
+        target.RoleId.ShouldBe(RoleOf("Owner").Id);
+    }
+
+    // The rule InviteOwner asks: only an active tenant gets an Owner from the platform. It comes first.
+    [Theory]
+    [InlineData("Suspended")]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    public void MakeOwner_ATenantThatIsNotActive_IsAConflictAndChangesNothing(string status)
+    {
+        var target = Membership("Member");
+
+        var result = InStatus(status).MakeOwner(RoleOf("Owner"), new MemberFacts(target, 0, Roles), UserStatus.Suspended);
+
+        (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.TenantNotActive, ErrorType.Conflict));
+        target.RoleId.ShouldBe(RoleOf("Member").Id);
+    }
+
+    // Row level security hides another tenant's members, so the target is not found; an id no user has is no member either.
+    [Fact]
+    public void MakeOwner_NoMembership_IsNotFound()
+    {
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(null, 1, Roles), userStatus: null);
+
+        (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.MemberNotFound, ErrorType.NotFound));
+    }
+
+    [Fact]
+    public void MakeOwner_AMembershipOfAnotherTenant_IsNotFound()
+    {
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
+
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(other, 1, Roles), UserStatus.Active);
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+    }
+
+    // A member whose role holds tenant.owners.manage is an Owner already (A1). It is no state to set again: the action makes an Owner.
+    [Fact]
+    public void MakeOwner_AnOwner_IsAConflict()
+    {
+        var target = Membership("Owner");
+
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, 1, Roles), UserStatus.Suspended);
+
+        (result.Error.Code, result.Error.Type).ShouldBe((ControlPlaneErrorCodes.MemberAlreadyOwner, ErrorType.Conflict));
+    }
+
+    // A suspended user is refused at the tenant door (A9), and a deleted one has no names (A8): neither can manage the tenant.
+    [Theory]
+    [InlineData("Suspended", "user.suspended")]
+    [InlineData("Deleted", "user.deleted")]
+    public void MakeOwner_AUserWhoIsNotActive_IsAConflictAndChangesNothing(string status, string code)
+    {
+        var target = Membership("Member");
+
+        var result = Active().MakeOwner(RoleOf("Owner"), new MemberFacts(target, 0, Roles), Enum.Parse<UserStatus>(status));
+
+        (result.Error.Code.Value, result.Error.Type).ShouldBe((code, ErrorType.Conflict));
+        target.RoleId.ShouldBe(RoleOf("Member").Id);
+    }
+
     // Section 6, "User deletion": the tenant's last Owner stays, and the error names the tenant.
     [Fact]
     public void RemoveUserMembership_TheLastOwner_IsAConflictThatNamesTheTenant()
     {
-        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles), []);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -886,17 +1118,108 @@ public sealed class TenantTests
     {
         var membership = Membership(role);
 
-        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners, Roles));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(membership, owners, Roles), []);
 
-        result.Value.ShouldBeSameAs(membership);
+        result.Value!.Membership.ShouldBeSameAs(membership);
     }
 
     [Fact]
     public void RemoveUserMembership_AUserWhoIsNoLongerAMember_AnswersNone()
     {
-        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1, Roles));
+        var result = Active().RemoveForUserDeletion(new MemberFacts(null, 1, Roles), []);
 
         result.Value.ShouldBeNull();
+    }
+
+    // A8: a pending invitation always has an address, so it is cancelled before its address goes.
+    [Fact]
+    public void RemoveUserMembership_InvitationsOfTheUser_CancelsThePendingOneAndErasesEveryAddress()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var removed = Active().RemoveForUserDeletion(new MemberFacts(Membership("Member"), 1, Roles), [pending, cancelled]);
+
+        removed.Value!.Cancelled.ShouldBe([pending]);
+        (pending.Status, pending.Email, cancelled.Status, cancelled.Email).ShouldBe((InvitationStatus.Cancelled, null, InvitationStatus.Cancelled, null));
+    }
+
+    // The last Owner stays, and so does every address of the tenant's invitations (W7).
+    [Fact]
+    public void RemoveUserMembership_TheLastOwner_ErasesNoAddress()
+    {
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var removed = Active().RemoveForUserDeletion(new MemberFacts(Membership("Owner"), 1, Roles), [cancelled]);
+
+        removed.Error.Code.ShouldBe(ControlPlaneErrorCodes.UserLastOwner);
+        cancelled.Email.ShouldBe("ada@example.com");
+    }
+
+    [Fact]
+    public void RemoveUserMembership_AnInvitationOfAnotherTenant_IsNeverErased()
+    {
+        var invitation = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var erase = () => Active().RemoveForUserDeletion(new MemberFacts(Membership("Member"), 1, Roles), [invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        invitation.Email.ShouldBe("ada@example.com");
+    }
+
+    // A8: a tenant the deleted user left before erases their address by the same rule, without a membership to remove.
+    [Fact]
+    public void EraseFormerMember_InvitationsOfTheUser_CancelsThePendingOneAndErasesEveryAddress()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var cancelledNow = Active().EraseFormerMember(null, [pending, cancelled]);
+
+        cancelledNow.ShouldBe([pending]);
+        (pending.Status, pending.Email, cancelled.Status, cancelled.Email).ShouldBe((InvitationStatus.Cancelled, null, InvitationStatus.Cancelled, null));
+    }
+
+    // A message that arrives twice cancels nothing the second time, so no sign-up is withdrawn twice.
+    [Fact]
+    public void EraseFormerMember_Twice_CancelsNothingTheSecondTime()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var tenant = Active();
+        tenant.EraseFormerMember(null, [pending]);
+
+        var cancelledAgain = tenant.EraseFormerMember(null, [pending]);
+
+        cancelledAgain.ShouldBeEmpty();
+        (pending.Status, pending.Email).ShouldBe((InvitationStatus.Cancelled, null));
+    }
+
+    // A deleted user is a member of no tenant (A8): a member's invitations keep their addresses.
+    [Fact]
+    public void EraseFormerMember_AUserWhoIsAMember_IsRefusedAndErasesNothing()
+    {
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
+
+        var erase = () => Active().EraseFormerMember(Membership("Member"), [invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        (invitation.Status, invitation.Email).ShouldBe((InvitationStatus.Pending, "ada@example.com"));
+    }
+
+    [Fact]
+    public void EraseFormerMember_AnInvitationOfAnotherTenant_IsNeverErased()
+    {
+        var invitation = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var erase = () => Active().EraseFormerMember(null, [invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        invitation.Email.ShouldBe("ada@example.com");
     }
 
     [Theory]
@@ -1526,6 +1849,9 @@ public sealed class TenantTests
             "Active" => true,
             "Suspended" => tenant.Suspend(Reason).Value is StateChange.Changed,
             "Closed" => tenant.Close(Now, []).Value.Change is StateChange.Changed,
+            "Purging" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed,
+            "Purged" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed
+                && tenant.Purge(Now) is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;

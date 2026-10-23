@@ -24,13 +24,15 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     async Task<TenantView?> ITenantQueries.FindTenantAsync(CancellationToken cancellationToken) =>
         await FindAsync(cancellationToken) is { } tenant ? TenantView.Of(tenant) : null;
 
-    // Two queries, as before the views: the tenant with its summary joined (R12), then its Owners from its own rows.
+    // Two queries, as before the views: the tenant with its summary joined (R12), then its Owners from its own rows. A purged tenant has
+    // no summary, so the summary is joined where it exists, and a tombstone counts nothing (K4).
     async Task<TenantDetailView?> ITenantQueries.FindTenantDetailAsync(TimeSpan reopenPeriod, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var found = await (
                 from tenant in controlPlane.Tenants
                 where tenant.Id == controlPlane.ActiveTenant
-                join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
+                join kept in controlPlane.TenantSummaries on tenant.Id equals kept.TenantId into summaries
+                from summary in summaries.DefaultIfEmpty()
                 select new { Tenant = tenant, Summary = summary })
             .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
@@ -43,10 +45,10 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         return new TenantDetailView(
             TenantView.Of(found.Tenant),
             found.Tenant.ReopenableUntil(reopenPeriod),
-            found.Summary.MemberCount,
-            found.Summary.OwnerCount,
+            found.Summary?.MemberCount ?? 0,
+            found.Summary?.OwnerCount ?? 0,
             [.. owners.Select(TenantOwnerView.Of)],
-            OwnerInvitationView.Of(found.Summary, now));
+            found.Summary is { } stored ? OwnerInvitationView.Of(stored, now) : null);
     }
 
     // The tenant, the person and their membership's role with its permissions, in three queries; row level security keeps the membership
@@ -71,7 +73,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     }
 
     // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. The page joins
-    // each tenant's summary (R12): one query, with no query for each tenant.
+    // each tenant's summary (R12): one query, with no query for each tenant. A purged tenant has no summary, so the summary is joined where
+    // it exists, and a tombstone counts nothing (K4).
     async Task<ListPage<TenantListItemView>> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         TenantStatus? status,
@@ -95,7 +98,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         var total = await tenants.CountAsync(cancellationToken);
         var rows =
             from tenant in tenants
-            join summary in controlPlane.TenantSummaries on tenant.Id equals summary.TenantId
+            join kept in controlPlane.TenantSummaries on tenant.Id equals kept.TenantId into summaries
+            from summary in summaries.DefaultIfEmpty()
             select new { Tenant = tenant, Summary = summary };
         var sorted = list.Sort switch
         {
@@ -114,9 +118,9 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
                 .. page.Select(row => new TenantListItemView(
                     TenantView.Of(row.Tenant),
                     row.Tenant.ReopenableUntil(reopenPeriod),
-                    row.Summary.MemberCount,
-                    row.Summary.OwnerCount,
-                    OwnerInvitationView.Of(row.Summary, now))),
+                    row.Summary?.MemberCount ?? 0,
+                    row.Summary?.OwnerCount ?? 0,
+                    row.Summary is { } stored ? OwnerInvitationView.Of(stored, now) : null)),
             ],
             list.Paging,
             total);

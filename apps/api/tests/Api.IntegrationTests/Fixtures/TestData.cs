@@ -193,7 +193,8 @@ internal sealed class TestData(Database database, string databaseName = Database
             databaseName);
 
     // An invitation of the tenant, with its tenant declared, from the inviter or a new one. Without a secret its token hash is new, so no
-    // link names it; with one, the link's code is the tenant id and the secret (InvitationCodeOf).
+    // link names it; with one, the link's code is the tenant id and the secret (InvitationCodeOf). With an accepting user, it was accepted
+    // by them at the insert.
     public async Task<Guid> AddInvitationAsync(
         Guid tenantId,
         string? email = null,
@@ -204,17 +205,20 @@ internal sealed class TestData(Database database, string databaseName = Database
         string? invitedBy = null,
         string? secret = null,
         string language = "en",
-        Guid? roleId = null)
+        Guid? roleId = null,
+        string? acceptedBy = null)
     {
         var invitationId = id ?? Guid.NewGuid();
         var inviter = await UserIdOfAsync(invitedBy ?? await AddUserAsync());
+        var accepter = acceptedBy is null ? "NULL" : $"'{await UserIdOfAsync(acceptedBy)}'";
         var tokenHash = secret is null ? $"{Guid.NewGuid():N}{Guid.NewGuid():N}" : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
         await database.ExecuteInTenantAsync(
             tenantId,
             $"""
-            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, secret_hash, status, language)
+            INSERT INTO control_plane.invitations (id, tenant_id, email, role_id, invited_by, created_at, expires_at, secret_hash, status, language, accepted_by, accepted_at)
             SELECT '{invitationId}', '{tenantId}', '{email ?? $"{Guid.NewGuid():N}@example.com"}', roles.id, '{inviter}', now(),
-                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', '{language}'
+                '{(expiresAt ?? DateTimeOffset.UtcNow.AddDays(7)):O}', '{tokenHash}', '{status}', '{language}', {accepter},
+                {(acceptedBy is null ? "NULL" : "now()")}
             FROM control_plane.roles WHERE {(roleId is { } custom ? $"roles.id = '{custom}'" : $"roles.built_in = '{role}'")}
             """,
             database: databaseName);

@@ -100,7 +100,9 @@ internal static class ClerkAuthentication
 
 internal sealed class ClerkAuthenticationOptions
 {
-    public const string Section = "Authentication:Clerk";
+    // Rule 9 of section 7: the host's section. The issuer and the authorized parties are OpenID Connect terms, so the section names no
+    // vendor.
+    public const string Section = "Host:Authentication";
 
     /// <summary>The Frontend API URL of the Clerk instance: the tokens' issuer and the source of their signing keys.</summary>
     public string? Issuer { get; set; }

@@ -30,9 +30,14 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
   RoleUpdated: 'role.updated',
+  SystemAdminGranted: 'system_admin.granted',
+  SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
+  TenantOwnerMade: 'tenant.owner_made',
+  TenantPurgeWarned: 'tenant.purge_warned',
+  TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
@@ -82,9 +87,12 @@ export const ListPlatformAuditEntriesResponse = zod.object({
 }),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformSystemAdminsCreate: 'platform.system_admins.create',
+  PlatformSystemAdminsDelete: 'platform.system_admins.delete',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
   PlatformTenantsReactivate: 'platform.tenants.reactivate',
   PlatformTenantsRead: 'platform.tenants.read',
   PlatformTenantsReopen: 'platform.tenants.reopen',
@@ -124,6 +132,16 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "invitationId": zod.uuid(),
   "replacedInvitationId": zod.uuid().nullable()
 }).describe('The details of `tenant.owner_invited`: the invitation\'s id, and the pending invitation it replaced, if any.'),zod.object({
+  "operation": zod.enum({
+  TenantOwnerMade: 'tenant.owner_made',
+}),
+  "userId": zod.uuid(),
+  "oldRole": zod.object({
+  "id": zod.uuid().nullable(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then.')
+}).describe('The details of `tenant.owner_made`: the member who became an Owner, and the role they had.'),zod.object({
   "operation": zod.enum({
   TenantRenamed: 'tenant.renamed',
 }),

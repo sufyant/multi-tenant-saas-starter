@@ -221,6 +221,23 @@ describe("TenantProvider", () => {
     ).not.toBeInTheDocument();
   });
 
+  // The API refuses a member of an organisation whose deletion has started as a closed one's, so its page is the Closed board.
+  it("TenantProvider_Purging_ShowsTheClosedPage", async () => {
+    server.use(
+      tenants([{ ...kestrel, status: MyTenantResponseStatus.Purging }]),
+    );
+
+    renderWithProviders(
+      <TenantProvider slug="kestrel">
+        <Probe />
+      </TenantProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Kestrel Labs is closed" }),
+    ).toBeInTheDocument();
+  });
+
   it("TenantProvider_ClosedWithOtherOrganisations_OffersTheChooser", async () => {
     server.use(tenants([kestrel, northwind]));
 

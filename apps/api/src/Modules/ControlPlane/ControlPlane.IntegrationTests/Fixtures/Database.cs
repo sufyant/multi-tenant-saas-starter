@@ -20,7 +20,7 @@ public sealed class Database : IAsyncLifetime
 {
     public const string AcceptUrl = "https://app.test/invitations/accept";
 
-    public const string FirstSystemAdminEmail = "first-admin@app.test";
+    public const string RootEmail = "root-admin@app.test";
 
     private const string Password = "test-password";
 
@@ -74,7 +74,7 @@ public sealed class Database : IAsyncLifetime
             {
                 ["ControlPlane:Invitations:AcceptUrl"] = AcceptUrl,
                 ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
-                ["ControlPlane:FirstSystemAdminEmail"] = FirstSystemAdminEmail,
+                ["ControlPlane:SystemAdmins:RootEmails:0"] = RootEmail,
             })
             .AddInMemoryCollection(settings ?? [])
             .Build();

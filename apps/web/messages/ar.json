@@ -37,7 +37,8 @@
     "status": {
       "suspended": "موقوفة",
       "closed": "مغلقة",
-      "active": "نشطة"
+      "active": "نشطة",
+      "purging": "قيد الحذف"
     }
   },
   "overview": {
@@ -257,10 +258,17 @@
         "deleted": "<actor></actor> حذف الدور <target></target>.",
         "updated": "<actor></actor> غيّر الدور <target></target>."
       },
+      "system_admin": {
+        "granted": "<actor></actor> جعل <target></target> مسؤول نظام.",
+        "revoked": "<actor></actor> سحب صلاحية مسؤول النظام من <target></target>."
+      },
       "tenant": {
         "closed": "<actor></actor> أغلق هذه المؤسسة.",
         "created": "<actor></actor> أنشأ هذه المؤسسة.",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
+        "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
+        "purge_warned": "<actor></actor> نبّه المالكين إلى أن هذه المؤسسة ستُحذف.",
+        "purged": "<actor></actor> حذف هذه المؤسسة وبياناتها.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
         "reopened": "<actor></actor> أعاد فتح هذه المؤسسة.",

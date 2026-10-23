@@ -32,6 +32,13 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
         await audit.SaveChangesAsync(cancellationToken);
     }
 
+    // R14: the application may only execute the function, which deletes the entries of the tenant the transaction declares.
+    async Task IAuditLog.PurgeTenantEntriesAsync(CancellationToken cancellationToken)
+    {
+        _ = audit.MessageTenantId ?? throw new InvalidOperationException("A tenant's log is purged inside the tenant.");
+        await audit.Database.ExecuteSqlAsync($"SELECT audit.purge_tenant_entries()", cancellationToken);
+    }
+
     async Task<IReadOnlyList<AuditEntry>> IAuditLog.ListTenantEntriesAsync(CursorRequest page, CancellationToken cancellationToken) =>
         await PageOf(audit.Entries, page).ToListAsync(cancellationToken);
 

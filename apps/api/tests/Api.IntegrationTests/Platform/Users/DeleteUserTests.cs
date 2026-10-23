@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Application.Users.EraseFormerMember;
 using ControlPlane.Contracts.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Tenancy;
+using Wolverine;
 
 namespace Api.IntegrationTests.Platform.Users;
 
@@ -57,6 +59,164 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         _api.Identity.Deleted.ShouldBe([user]);
         await _summaries.ShouldMatchTheRowsAsync(first.Id);
         await _summaries.ShouldMatchTheRowsAsync(second.Id);
+    }
+
+    // A8, GDPR Article 17: an invitation keeps its address as a historical fact, until its invited person is deleted. Each tenant the user
+    // leaves erases the address from its invitations the user accepted and from its invitations to the user's address. A tenant that only
+    // invited the address, and that the user never joined, keeps it: that is the tenant's data, which goes with the tenant's purge.
+    [Fact]
+    public async Task DeleteUser_AcceptedInvitationsInTwoTenants_ErasesTheirAddressesAndATenantNeverJoinedKeepsIt()
+    {
+        var (firstId, secondId) = TwoIdsInOrder();
+        var first = await _testData.AddTenantAsync(tenantId: firstId);
+        var second = await _testData.AddTenantAsync(tenantId: secondId);
+        var neverJoined = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddMemberAsync(first.Id, user);
+        await _testData.AddMemberAsync(second.Id, user);
+        await _testData.AddInvitationAsync(first.Id, email, status: "Accepted", acceptedBy: user);
+        await _testData.AddInvitationAsync(second.Id, email, status: "Cancelled");
+        await _testData.AddInvitationAsync(second.Id, email, status: "Accepted", acceptedBy: user);
+        await _testData.AddInvitationAsync(neverJoined.Id, email, status: "Cancelled");
+        await _testData.AddInvitationAsync(neverJoined.Id, email);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(first.Id)).ShouldBe("Accepted:-");
+        (await InvitationsOfAsync(second.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        (await InvitationsOfAsync(neverJoined.Id)).ShouldBe($"Cancelled:{email}, Pending:{email}");
+        await _summaries.ShouldMatchTheRowsAsync(first.Id);
+        await _summaries.ShouldMatchTheRowsAsync(second.Id);
+    }
+
+    // The user joined with another of their verified addresses, so a pending invitation to the user's own address stayed in the tenant
+    // (member.exists asks the users' addresses). A pending invitation always has an address (ck_invitations_pending_has_email), so the
+    // removal cancels it first, expired or not, as a closure does, and withdraws its sign-up. Then it erases both addresses: the user's,
+    // and the one of the invitation the user accepted.
+    [Theory]
+    [InlineData(3)]
+    [InlineData(-1)]
+    public async Task DeleteUser_APendingInvitationToTheirAddressInATenantTheyJoined_CancelsItErasesItAndWithdrawsItsSignUp(int days)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var other = $"{Guid.NewGuid():N}@example.org";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddMemberAsync(tenant.Id, user);
+        await _testData.AddInvitationAsync(tenant.Id, other, status: "Cancelled");
+        await _testData.AddInvitationAsync(tenant.Id, other, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(tenant.Id, email, expiresAt: DateTimeOffset.UtcNow.AddDays(days));
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe("Accepted:-, Cancelled:-, Cancelled:-");
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
+        (await _audit.TenantLogAsync(id)).ShouldBe($"{tenant.Id}:member.removed|Platform|-|User|{id}|-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // A8, decision B of 2026-10-23: a tenant the user left before counts as a tenant they joined. Ayşe accepted an invitation in Acme,
+    // Acme removed her, and Acme invited her again. Her deletion erases her address from Acme's invitations, cancels the pending one and
+    // withdraws its sign-up, as in a tenant she still was a member of. A tenant that only invited her address keeps it.
+    [Fact]
+    public async Task DeleteUser_AnInvitationAcceptedInATenantTheyLeft_ErasesItsAddressesCancelsThePendingOneAndWithdrawsItsSignUp()
+    {
+        var acme = await _testData.AddTenantAsync();
+        var neverJoined = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email, firstName: "Ayşe");
+        await _testData.AddInvitationAsync(acme.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(acme.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(acme.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        await _testData.SummarizeAsync(acme.Id);
+        await _testData.AddInvitationAsync(neverJoined.Id, email);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(acme.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        (await InvitationsOfAsync(neverJoined.Id)).ShouldBe($"Pending:{email}");
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
+        _api.Identity.Deleted.ShouldBe([user]);
+        await _summaries.ShouldMatchTheRowsAsync(acme.Id);
+    }
+
+    // Section 13: a user deleted before step r7c kept their address in a tenant they left before. A second deletion has no address of the
+    // user to send, so it erases by the invitation the user accepted: its address goes, and so does a pending one to that address.
+    [Fact]
+    public async Task DeleteUser_AgainAfterAnEarlierDeletionLeftATenantTheyLeftWithTheAddress_ErasesItThere()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        await _testData.AddInvitationAsync(tenant.Id, email);
+        await _testData.SummarizeAsync(tenant.Id);
+        await _testData.DeleteUserAsync(user);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // Any message may arrive twice. The second erasure in a tenant the user left finds nothing to cancel or erase, so it withdraws no
+    // sign-up again and leaves the rows and the summary as the first left them.
+    [Fact]
+    public async Task EraseFormerMember_Twice_ChangesNothingMoreAndWithdrawsTheSignUpOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        var command = new EraseFormerMemberCommand(await _testData.UserIdOfAsync(user), email);
+
+        await EraseAsync(tenant.Id, command);
+        var first = await InvitationsOfAsync(tenant.Id);
+        await EraseAsync(tenant.Id, command);
+
+        (first, await InvitationsOfAsync(tenant.Id)).ShouldBe(("Accepted:-, Cancelled:-", "Accepted:-, Cancelled:-"));
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // Only a finished invitation loses its address: a pending one, expired or not, is still a link to a person (A8).
+    [Fact]
+    public async Task StoreInvitation_PendingWithoutAnAddress_IsRefused()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
+
+        var erase = () => database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET email = NULL WHERE id = '{invitationId}'");
+
+        (await erase.ShouldThrowAsync<PostgresException>()).ConstraintName.ShouldBe("ck_invitations_pending_has_email");
+    }
+
+    [Theory]
+    [InlineData("Accepted")]
+    [InlineData("Cancelled")]
+    public async Task StoreInvitation_FinishedWithoutAnAddress_IsStored(string status)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, status: status);
+
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET email = NULL WHERE id = '{invitationId}'");
+
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe($"{status}:-");
     }
 
     // K3, GDPR Article 17: an audit entry holds no name and no email address, so erasing the user erases them from every
@@ -237,8 +397,25 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         return (Guid.CreateVersion7(now), Guid.CreateVersion7(now.AddMilliseconds(1)));
     }
 
+    // The erasure in the tenant, as a deletion sends it, and every message it causes.
+    private Task<Guid> EraseAsync(Guid tenantId, EraseFormerMemberCommand command) =>
+        _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), command, Cancellation);
+            return tenantId;
+        });
+
     private Task<HttpResponseMessage> DeleteAsync(string admin, Guid userId) =>
         _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
+
+    // The tenant's invitations as the superuser reads them, by status and address: "-" for an erased address.
+    private Task<string?> InvitationsOfAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(status || ':' || coalesce(email, '-'), ', ' ORDER BY status, email)
+            FROM control_plane.invitations WHERE tenant_id = '{tenantId}'
+            """);
 
     private Task<long> MembershipsOfAsync(Guid userId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{userId}'");

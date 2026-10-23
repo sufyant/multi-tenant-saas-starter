@@ -206,7 +206,7 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
         (await _testData.UserOfAsync(user)).TimeZone.ShouldBeNull();
     }
 
-    // A person becomes a user only through an invitation or as the first system admin, as GetMe answers.
+    // A person becomes a user only through an invitation or as a root system admin at the system door, as GetMe answers.
     [Fact]
     public async Task ChangePreferences_ASignedInPersonWhoIsNotAUserYet_IsNotFound()
     {

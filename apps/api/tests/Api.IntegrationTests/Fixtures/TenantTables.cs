@@ -30,6 +30,9 @@ internal static class TenantTables
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO control_plane.roles (id, tenant_id, name) VALUES (gen_random_uuid(), '{tenant}', 'Isolation')",
             OwnRows: "name = 'Isolation'"),
+        ["control_plane.tenant_purge_sagas"] = new(
+            ApplicationMayUpdate: true,
+            tenant => $"INSERT INTO control_plane.tenant_purge_sagas (id, state, waiting, version, tenant_id) VALUES ('{tenant}', 'PurgingModules', ARRAY['Audit'], 1, '{tenant}')"),
         ["probes.probes"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO probes.probes (id, value, tenant_id) VALUES (gen_random_uuid(), 'isolation', '{tenant}')"),

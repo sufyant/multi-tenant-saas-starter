@@ -22,13 +22,23 @@ public static class AuditOperations
 
     public const string RoleUpdated = "role.updated";
 
+    public const string SystemAdminGranted = "system_admin.granted";
+
+    public const string SystemAdminRevoked = "system_admin.revoked";
+
     public const string TenantClosed = "tenant.closed";
 
     public const string TenantCreated = "tenant.created";
 
     public const string TenantOwnerInvited = "tenant.owner_invited";
 
+    public const string TenantOwnerMade = "tenant.owner_made";
+
     public const string TenantReactivated = "tenant.reactivated";
+
+    public const string TenantPurgeWarned = "tenant.purge_warned";
+
+    public const string TenantPurged = "tenant.purged";
 
     public const string TenantRenamed = "tenant.renamed";
 

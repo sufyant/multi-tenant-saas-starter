@@ -20,6 +20,7 @@ const tones: Record<MyTenantResponseStatus, StatusTone> = {
   [MyTenantResponseStatus.Active]: "success",
   [MyTenantResponseStatus.Suspended]: "warning",
   [MyTenantResponseStatus.Closed]: "neutral",
+  [MyTenantResponseStatus.Purging]: "neutral",
 };
 
 /**

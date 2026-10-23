@@ -19,7 +19,8 @@ export const GetMyTenantResponse = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
-}).describe('The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.'),
+  Purging: 'purging',
+}).describe('The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.'),
   "role": zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
@@ -27,9 +28,12 @@ export const GetMyTenantResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformSystemAdminsCreate: 'platform.system_admins.create',
+  PlatformSystemAdminsDelete: 'platform.system_admins.delete',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
   PlatformTenantsReactivate: 'platform.tenants.reactivate',
   PlatformTenantsRead: 'platform.tenants.read',
   PlatformTenantsReopen: 'platform.tenants.reopen',
