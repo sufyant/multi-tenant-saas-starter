@@ -122,6 +122,34 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
+    // A8, decision B of 2026-10-23: a tenant the user left before counts as a tenant they joined. Ayşe accepted an invitation in Acme,
+    // Acme removed her, and Acme invited her again. Her deletion erases her address from Acme's invitations, cancels the pending one and
+    // withdraws its sign-up, as in a tenant she still was a member of. A tenant that only invited her address keeps it.
+    [Fact]
+    public async Task DeleteUser_AnInvitationAcceptedInATenantTheyLeft_ErasesItsAddressesCancelsThePendingOneAndWithdrawsItsSignUp()
+    {
+        var acme = await _testData.AddTenantAsync();
+        var neverJoined = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email, firstName: "Ayşe");
+        await _testData.AddInvitationAsync(acme.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(acme.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(acme.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        await _testData.SummarizeAsync(acme.Id);
+        await _testData.AddInvitationAsync(neverJoined.Id, email);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(acme.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        (await InvitationsOfAsync(neverJoined.Id)).ShouldBe($"Pending:{email}");
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
+        _api.Identity.Deleted.ShouldBe([user]);
+        await _summaries.ShouldMatchTheRowsAsync(acme.Id);
+    }
+
     // Any message may arrive twice. The second erasure in a tenant the user left finds nothing to cancel or erase, so it withdraws no
     // sign-up again and leaves the rows and the summary as the first left them.
     [Fact]
