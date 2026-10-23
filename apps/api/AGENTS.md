@@ -6,6 +6,20 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
 
 - `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`). It is authoritative. If this file and it disagree, it wins.
 - Read the section of `ARCHITECTURE.md` for the area before you change anything in it. Cite a rule by its id; do not copy rules into code comments.
+- Read `ARCHITECTURE.md` and only the flow files of your task. A flow file in `docs/flows/` says what happens, step by step, and cites the rules by id; it defines no rule (`RuleIdTests`). The flow files:
+  - `tenant-creation.md`: a system admin creates a tenant and invites its first Owner in one transaction.
+  - `invitations.md`: the identity provider's sign-up of every invitation, a member's invitation, and the platform's invitation of an Owner.
+  - `tenant-lifecycle.md`: a system admin renames, suspends, reactivates, closes and reopens a tenant.
+  - `tenant-purge.md`: the saga that deletes a closed tenant's data when its reopen period ends.
+  - `owner-recovery.md`: the platform makes an existing member of a tenant an Owner.
+  - `tenant-summary.md`: the summary row that the platform's tenant list reads across tenants.
+  - `what-the-screens-read.md`: the fields and the endpoints that the tenant web and the platform app read.
+  - `user-deletion.md`: a system admin deletes a user, in steps across the user's tenants.
+  - `system-admins.md`: the root system admins from configuration, the system door, and the grant and revocation of system admins.
+  - `member-management.md`: an Owner or an Admin changes a member's role and removes a member.
+  - `custom-roles.md`: a tenant creates, updates and deletes its own roles.
+  - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
+  - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
