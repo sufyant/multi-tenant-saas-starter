@@ -638,6 +638,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             "AcceptInvitationRequest.firstName PredicateValidator",
             "AcceptInvitationRequest.lastName PredicateValidator",
             "ChangePreferencesRequest.timeZone RegularExpressionValidator",
+            "RenameMeRequest.firstName PredicateValidator",
+            "RenameMeRequest.lastName PredicateValidator",
             "RenameUserRequest.firstName PredicateValidator",
             "RenameUserRequest.lastName PredicateValidator",
             "SuspendTenantRequest.reason PredicateValidator",

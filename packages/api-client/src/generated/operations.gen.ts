@@ -299,6 +299,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "RenameMe",
+    "method": "PATCH",
+    "path": "/v1/me",
+    "tag": "Me/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "RenameTenant",
     "method": "PATCH",
     "path": "/v1/platform/tenants/{tenantId}",

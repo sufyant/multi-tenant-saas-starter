@@ -6,7 +6,7 @@ namespace ControlPlane.Domain.Users;
 
 /// <summary>
 /// One identity across tenants, matched to the identity provider's user id. ControlPlane owns the email address and the names (A7):
-/// the identity provider keeps no name, and only a system admin changes one.
+/// the identity provider keeps no name, and only the user or a system admin changes one.
 /// </summary>
 internal sealed class User(Guid id, string externalId)
 {
@@ -126,17 +126,15 @@ internal sealed class User(Guid id, string externalId)
     /// A system admin changes the names. Changed when they changed; the same names with spaces around them are no change. A deleted user
     /// has no names to change: giving them one would keep personal data the deletion erased.
     /// </summary>
-    public Result<StateChange> Rename(string firstName, string lastName)
-    {
-        if (DeletedAt is not null)
-        {
-            return Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
-        }
+    public Result<StateChange> Rename(string firstName, string lastName) =>
+        DeletedAt is null ? SetNames(firstName, lastName) : Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
 
-        var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
-        (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
-        return changed ? StateChange.Changed : StateChange.Unchanged;
-    }
+    /// <summary>
+    /// The user corrects their own names, under the rules of <see cref="Rename"/>. A deleted user is refused, as on every me endpoint
+    /// (A9).
+    /// </summary>
+    public Result<StateChange> RenameMe(string firstName, string lastName) =>
+        DeletedAt is null ? SetNames(firstName, lastName) : Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
 
     /// <summary>
     /// Erases the email address, the names and the time zone, which tells where the person lives, and marks the user deleted. A second
@@ -170,6 +168,14 @@ internal sealed class User(Guid id, string externalId)
     {
         var changed = SuspendedAt is not null;
         (SuspendedAt, SuspendedBy) = (null, null);
+        return changed ? StateChange.Changed : StateChange.Unchanged;
+    }
+
+    // The names without the spaces around them. Changed when they changed.
+    private StateChange SetNames(string firstName, string lastName)
+    {
+        var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
+        (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
         return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 }

@@ -844,6 +844,17 @@ export interface ProblemDetails {
 }
 
 /**
+ * The signed-in user's own names, each within the API's limit. The API trims each name before it counts its length. Both are required,
+ * so a client that leaves one out never clears it.
+ */
+export interface RenameMeRequest {
+  /** @maxLength 100 */
+  firstName: string;
+  /** @maxLength 100 */
+  lastName: string;
+}
+
+/**
  * A tenant's new name. The API trims it before it counts its length. The slug never changes.
  */
 export interface RenameTenantRequest {

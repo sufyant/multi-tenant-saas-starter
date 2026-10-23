@@ -155,6 +155,41 @@ public sealed class UserTests
         (user.FirstName, user.LastName).ShouldBe((null, null));
     }
 
+    // S2: the user corrects their own names, trimmed, under the rule of a system admin's rename.
+    [Fact]
+    public void RenameMe_AnotherNameWithSpaces_IsAChangeAndKeepsItTrimmed()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Byron", Language.En, Now);
+
+        var changed = user.RenameMe(" Ada ", "Lovelace ");
+
+        changed.Value.ShouldBe(StateChange.Changed);
+        (user.FirstName, user.LastName).ShouldBe(("Ada", "Lovelace"));
+    }
+
+    [Fact]
+    public void RenameMe_SameNamesWithSpaces_IsNoChange()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
+
+        var changed = user.RenameMe(" Ada", "Lovelace ");
+
+        changed.Value.ShouldBe(StateChange.Unchanged);
+    }
+
+    // A deleted user is refused on every me endpoint (A9), with the door's answer, also when a deletion commits while the request waits.
+    [Fact]
+    public void RenameMe_Deleted_IsForbiddenAndStaysErased()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
+        user.Delete(Now);
+
+        var renamed = user.RenameMe("Ada", "King");
+
+        (renamed.Error.Code.Value, renamed.Error.Type).ShouldBe(("user.deleted", ErrorType.Forbidden));
+        (user.FirstName, user.LastName).ShouldBe((null, null));
+    }
+
     [Fact]
     public void DeleteUser_Twice_ChangesTheUserOnlyTheFirstTime()
     {
