@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Application.Users.EraseFormerMember;
 using ControlPlane.Contracts.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Tenancy;
+using Wolverine;
 
 namespace Api.IntegrationTests.Platform.Users;
 
@@ -117,6 +119,78 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe("Accepted:-, Cancelled:-, Cancelled:-");
         _api.Identity.Withdrawn.ShouldBe([signUp]);
         (await _audit.TenantLogAsync(id)).ShouldBe($"{tenant.Id}:member.removed|Platform|-|User|{id}|-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // A8, decision B of 2026-10-23: a tenant the user left before counts as a tenant they joined. Ayşe accepted an invitation in Acme,
+    // Acme removed her, and Acme invited her again. Her deletion erases her address from Acme's invitations, cancels the pending one and
+    // withdraws its sign-up, as in a tenant she still was a member of. A tenant that only invited her address keeps it.
+    [Fact]
+    public async Task DeleteUser_AnInvitationAcceptedInATenantTheyLeft_ErasesItsAddressesCancelsThePendingOneAndWithdrawsItsSignUp()
+    {
+        var acme = await _testData.AddTenantAsync();
+        var neverJoined = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email, firstName: "Ayşe");
+        await _testData.AddInvitationAsync(acme.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(acme.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(acme.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        await _testData.SummarizeAsync(acme.Id);
+        await _testData.AddInvitationAsync(neverJoined.Id, email);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(acme.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        (await InvitationsOfAsync(neverJoined.Id)).ShouldBe($"Pending:{email}");
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
+        _api.Identity.Deleted.ShouldBe([user]);
+        await _summaries.ShouldMatchTheRowsAsync(acme.Id);
+    }
+
+    // Section 13: a user deleted before step r7c kept their address in a tenant they left before. A second deletion has no address of the
+    // user to send, so it erases by the invitation the user accepted: its address goes, and so does a pending one to that address.
+    [Fact]
+    public async Task DeleteUser_AgainAfterAnEarlierDeletionLeftATenantTheyLeftWithTheAddress_ErasesItThere()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        await _testData.AddInvitationAsync(tenant.Id, email);
+        await _testData.SummarizeAsync(tenant.Id);
+        await _testData.DeleteUserAsync(user);
+        var id = await _testData.UserIdOfAsync(user);
+
+        var deleted = await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // Any message may arrive twice. The second erasure in a tenant the user left finds nothing to cancel or erase, so it withdraws no
+    // sign-up again and leaves the rows and the summary as the first left them.
+    [Fact]
+    public async Task EraseFormerMember_Twice_ChangesNothingMoreAndWithdrawsTheSignUpOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await _testData.AddUserAsync(email: email);
+        await _testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await _testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'");
+        var command = new EraseFormerMemberCommand(await _testData.UserIdOfAsync(user), email);
+
+        await EraseAsync(tenant.Id, command);
+        var first = await InvitationsOfAsync(tenant.Id);
+        await EraseAsync(tenant.Id, command);
+
+        (first, await InvitationsOfAsync(tenant.Id)).ShouldBe(("Accepted:-, Cancelled:-", "Accepted:-, Cancelled:-"));
+        _api.Identity.Withdrawn.ShouldBe([signUp]);
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -322,6 +396,15 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         var now = DateTimeOffset.UtcNow;
         return (Guid.CreateVersion7(now), Guid.CreateVersion7(now.AddMilliseconds(1)));
     }
+
+    // The erasure in the tenant, as a deletion sends it, and every message it causes.
+    private Task<Guid> EraseAsync(Guid tenantId, EraseFormerMemberCommand command) =>
+        _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), command, Cancellation);
+            return tenantId;
+        });
 
     private Task<HttpResponseMessage> DeleteAsync(string admin, Guid userId) =>
         _api.CreateClient(admin, secondFactor: true).DeleteAsync($"/v1/platform/users/{userId}", Cancellation);

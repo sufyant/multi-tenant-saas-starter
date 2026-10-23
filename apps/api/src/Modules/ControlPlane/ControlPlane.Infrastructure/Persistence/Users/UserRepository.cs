@@ -102,6 +102,17 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
             .ToListAsync(cancellationToken);
     }
 
+    async Task<IReadOnlyList<Guid>> IUserRepository.ListJoinedTenantsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        return await controlPlane.Invitations
+            .Where(invitation => invitation.AcceptedBy == userId)
+            .Select(invitation => invitation.TenantId)
+            .Distinct()
+            .Order()
+            .ToListAsync(cancellationToken);
+    }
+
     void IUserRepository.Add(User user) => controlPlane.Users.Add(user);
 
     Task IUserRepository.SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);

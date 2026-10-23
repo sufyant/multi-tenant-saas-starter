@@ -77,6 +77,25 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await PlatformLogAsync(aloneId)).ShouldBe($"user.deleted|Platform|-|User|{aloneId}|-");
     }
 
+    // A8: a purge deletes a user through the user deletion path, so a tenant the user left before loses the user's address too.
+    [Fact]
+    public async Task PurgeTenant_AMemberLeftWithoutATenantWhoLeftAnotherTenantBefore_ErasesTheirAddressThere()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var left = await _testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var alone = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email));
+        await _testData.AddInvitationAsync(left.Id, email, status: "Accepted", acceptedBy: alone);
+        await _testData.AddInvitationAsync(left.Id, email);
+        await _testData.SummarizeAsync(left.Id);
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+        await Waiting.UntilAsync(async () => await InvitationsOfAsync(left.Id) == "Accepted:-, Cancelled:-");
+
+        (await InvitationsOfAsync(left.Id)).ShouldBe("Accepted:-, Cancelled:-");
+        (await _testData.UserOfAsync(alone, _databaseName)).Deleted.ShouldBeTrue();
+    }
+
     // The scheduled purge of an earlier closure, or of a reopened tenant, does nothing (K4).
     [Fact]
     public async Task PurgeTenant_ClosedAgainAtAnotherMoment_DoesNothing()
@@ -252,6 +271,15 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     private Task<long> PlatformEntriesAsync(Guid targetId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.platform_entries WHERE target_id = '{targetId}' AND operation = '{operation}'", _databaseName);
+
+    // The tenant's invitations as the superuser reads them, by status and address: "-" for an erased address.
+    private Task<string?> InvitationsOfAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(status || ':' || coalesce(email, '-'), ', ' ORDER BY status, email)
+            FROM control_plane.invitations WHERE tenant_id = '{tenantId}'
+            """,
+            _databaseName);
 
     // "state|the steps it waits for", or null when no purge started.
     private Task<string?> SagaOfAsync(Guid tenantId) =>

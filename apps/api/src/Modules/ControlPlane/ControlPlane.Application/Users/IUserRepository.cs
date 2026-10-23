@@ -62,6 +62,13 @@ public interface IUserRepository
     /// </summary>
     internal Task<IReadOnlyList<UserMembership>> ListMembershipsAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The tenants where the user accepted an invitation, by tenant id, also those where no membership is left: the tenants the user
+    /// joined (A8). It declares the user in the transaction (R11), so the own_accepted_invitations policy decides what is seen; the
+    /// transaction then declares no tenant (R4).
+    /// </summary>
+    internal Task<IReadOnlyList<Guid>> ListJoinedTenantsAsync(Guid userId, CancellationToken cancellationToken);
+
     internal void Add(User user);
 
     internal Task SaveChangesAsync(CancellationToken cancellationToken);

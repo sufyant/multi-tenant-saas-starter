@@ -1170,6 +1170,58 @@ public sealed class TenantTests
         invitation.Email.ShouldBe("ada@example.com");
     }
 
+    // A8: a tenant the deleted user left before erases their address by the same rule, without a membership to remove.
+    [Fact]
+    public void EraseFormerMember_InvitationsOfTheUser_CancelsThePendingOneAndErasesEveryAddress()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var cancelled = PendingTo("ada@example.com", RoleOf("Member"));
+        cancelled.Cancel();
+
+        var cancelledNow = Active().EraseFormerMember(null, [pending, cancelled]);
+
+        cancelledNow.ShouldBe([pending]);
+        (pending.Status, pending.Email, cancelled.Status, cancelled.Email).ShouldBe((InvitationStatus.Cancelled, null, InvitationStatus.Cancelled, null));
+    }
+
+    // A message that arrives twice cancels nothing the second time, so no sign-up is withdrawn twice.
+    [Fact]
+    public void EraseFormerMember_Twice_CancelsNothingTheSecondTime()
+    {
+        var pending = PendingTo("ada@example.com", RoleOf("Member"));
+        var tenant = Active();
+        tenant.EraseFormerMember(null, [pending]);
+
+        var cancelledAgain = tenant.EraseFormerMember(null, [pending]);
+
+        cancelledAgain.ShouldBeEmpty();
+        (pending.Status, pending.Email).ShouldBe((InvitationStatus.Cancelled, null));
+    }
+
+    // A deleted user is a member of no tenant (A8): a member's invitations keep their addresses.
+    [Fact]
+    public void EraseFormerMember_AUserWhoIsAMember_IsRefusedAndErasesNothing()
+    {
+        var invitation = PendingTo("ada@example.com", RoleOf("Member"));
+
+        var erase = () => Active().EraseFormerMember(Membership("Member"), [invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        (invitation.Status, invitation.Email).ShouldBe((InvitationStatus.Pending, "ada@example.com"));
+    }
+
+    [Fact]
+    public void EraseFormerMember_AnInvitationOfAnotherTenant_IsNeverErased()
+    {
+        var invitation = Invitation.Create(
+            Guid.NewGuid(), Guid.NewGuid(), EmailAddress.Create("ada@example.com"), RoleOf("Member"), InviterId, Now, Lifetime, InvitationSecret.Generate(), Language.En);
+
+        var erase = () => Active().EraseFormerMember(null, [invitation]);
+
+        erase.ShouldThrow<InvalidOperationException>();
+        invitation.Email.ShouldBe("ada@example.com");
+    }
+
     [Theory]
     [InlineData("Owner", 1, false)]
     [InlineData("Owner", 2, true)]

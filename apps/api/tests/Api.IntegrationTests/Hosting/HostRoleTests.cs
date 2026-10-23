@@ -52,6 +52,7 @@ using ControlPlane.Application.Users.ChangePreferences;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Application.Users.DeleteUserWithoutTenant;
+using ControlPlane.Application.Users.EraseFormerMember;
 using ControlPlane.Application.Users.ListUserMemberships;
 using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
@@ -448,6 +449,50 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
                 new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
                 new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Identity.Withdrawn.ShouldBe([signUp]);
+        web.Identity.Withdrawn.ShouldBeEmpty();
+    }
+
+    // A8: a user's deletion erases their address in a tenant they left before. The web host erases the user; the erasure in that tenant
+    // and the withdrawal of the sign-up it cancelled run in the worker, once each.
+    [Fact]
+    public async Task DeleteUser_AnInvitationAcceptedInATenantTheyLeftOnAWebAndAWorkerHost_ErasesItAndWithdrawsItsSignUpInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await testData.AddUserAsync(email: email);
+        await testData.AddInvitationAsync(tenant.Id, email, status: "Accepted", acceptedBy: user);
+        var pending = await testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'", database: name);
+        var userId = await testData.UserIdOfAsync(user);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
+        await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && !worker.Identity.Withdrawn.IsEmpty
+            && await PlatformEntriesAsync(name, userId, "user.deleted") > 0);
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("web").ShouldBe(
+            [
+                new HandlerRun(typeof(ListUserMembershipsQuery), typeof(ListUserMembershipsHandler)),
+                new HandlerRun(typeof(DeleteUserCommand), typeof(DeleteUserHandler)),
+            ],
+            ignoreOrder: true);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+                new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+                new HandlerRun(typeof(EraseFormerMemberCommand), typeof(EraseFormerMemberHandler)),
+                new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
             ],
             ignoreOrder: true);
         worker.Identity.Withdrawn.ShouldBe([signUp]);
