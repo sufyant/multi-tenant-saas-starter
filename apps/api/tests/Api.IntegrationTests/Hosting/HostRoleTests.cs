@@ -6,6 +6,7 @@ using Audit.Application.Invitations.RecordOwnerInvited;
 using Audit.Application.Members.RecordMemberInvited;
 using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
+using Audit.Application.Members.RecordOwnerMade;
 using Audit.Application.Roles.RecordRoleCreated;
 using Audit.Application.Roles.RecordRoleDeleted;
 using Audit.Application.Roles.RecordRoleUpdated;
@@ -28,6 +29,7 @@ using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.RevokeInvitation;
 using ControlPlane.Application.Members.ChangeMemberRole;
+using ControlPlane.Application.Members.MakeOwner;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Application.Roles.CreateRole;
 using ControlPlane.Application.Roles.DeleteRole;
@@ -484,6 +486,32 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRoleCommand), typeof(ChangeMemberRoleHandler))]);
         runs.In("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChangedEvent), typeof(RecordMemberRoleChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+    }
+
+    // Owner recovery (section 6): the platform's new Owner is accepted by the web host, and its records in both logs run in the worker,
+    // once: tenant.owner_made in the platform's log and member.role_changed in the tenant's.
+    [Fact]
+    public async Task MakeOwner_OnAWebAndAWorkerHost_RecordsInBothLogsOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var member = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id));
+        var admin = web.CreateClient(await testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var made = await admin.MakeOwnerAsync(tenant.Id, member);
+        await Waiting.UntilAsync(async () =>
+            await AuditEntriesAsync(name, tenant.Id, "member.role_changed") > 0 && await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_made") > 0);
+
+        made.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(MakeOwnerCommand), typeof(MakeOwnerHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(OwnerMadeEvent), typeof(RecordOwnerMadeHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.owner_made")).ShouldBe(1L);
     }
 
     // O3: each change to a custom role is announced from the web host, and its Audit handler runs in the worker, once (step r4b).
