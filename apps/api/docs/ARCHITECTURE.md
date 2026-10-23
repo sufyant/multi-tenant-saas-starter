@@ -989,6 +989,8 @@ The test is written first. Tests run with real PostgreSQL. We do not fake our ow
 
 12. A test of each list that step 20l changed (`ListMyTenants`, `ListMembers`, `ListInvitations`, `ListUsers`) and of the memberships of `GetUser` counts the SQL commands of one request, from Npgsql's spans (`SqlCommands`). The request carries a trace id of its own (`traceparent`), so another test's commands never count. It sends the request once before it counts, because the first request of a pool loads the database's types. A list that reads its page in one query sends as many commands for a page of one item as for a page of three. Source: Fowler, *Patterns of Enterprise Application Architecture*, Chapter 11, "Lazy Load" (ripple loading: one query for each object).
 
+13. A test asserts no exact duration that a real clock measures. It asserts the bound that the clock guarantees, and names that bound. Wolverine waits an inline retry's pause with `Task.Delay`. Its timer counts on the system's coarse clock (`Environment.TickCount64`): one kernel tick on Linux, at most 10 ms, and under 1 ms on macOS. So the timer can fire up to one tick early on a stopwatch, and a tracked session's `SessionTime` counts whole milliseconds. `InvitationDeliveryTests` allowed 1 ms, and on Linux under load a pause of 100 ms measured 98 ms in 2 of 558 runs. It now allows 11 ms (`PauseTolerance`). A test that can use the fake clock (rule 4) uses it instead. Source: dotnet/runtime, `TimerQueue` and `SystemNative_GetLowResolutionTimestamp` (`CLOCK_MONOTONIC_COARSE`); Meszaros, *xUnit Test Patterns*, Chapter 16 (Erratic Test: Nondeterministic Test).
+
 Unit test standard:
 
 - Each test kind is in its own project: .UnitTests, .IntegrationTests, .EndToEndTests and .ArchitectureTests (N9).

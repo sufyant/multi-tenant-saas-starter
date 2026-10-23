@@ -17,8 +17,10 @@ namespace Api.IntegrationTests.Platform;
 // Resend. It is sent from the event ControlPlane publishes once the tenant is active.
 public sealed class InvitationDeliveryTests(Database database)
 {
-    // Milliseconds: the resolution of the timer Wolverine waits a retry's pause with.
-    private const long TimerResolution = 1;
+    // Milliseconds a retry's pause can look short on the tracked session's clock (section 9, rule 13). Wolverine waits a pause with
+    // Task.Delay, whose timer counts on the system's coarse clock: on Linux one kernel tick, at most 10 ms, and under 1 ms on macOS.
+    // The timer can fire up to one tick early on the session's stopwatch, which also counts whole milliseconds: 1 ms more.
+    private const long PauseTolerance = 11;
 
     private static readonly Dictionary<string, string?> Resend = new()
     {
@@ -73,8 +75,8 @@ public sealed class InvitationDeliveryTests(Database database)
         start.ShouldThrow<Exception>().Message.ShouldContain("Notifications:Resend:ApiKey");
     }
 
-    // The email service may be down for a while: a failed email is tried again, each time after a longer pause. Wolverine waits each
-    // pause with a timer that counts whole milliseconds, so a pause can end up to one millisecond early on the test's stopwatch.
+    // The email service may be down for a while: a failed email is tried again, each time after a longer pause. A pause can end a
+    // little early on the test's stopwatch (PauseTolerance), so the test checks each pause within that bound.
     [Fact]
     public async Task SendInvitation_TheEmailServiceRecovers_IsTriedAgainAfterGrowingPauses()
     {
@@ -96,8 +98,8 @@ public sealed class InvitationDeliveryTests(Database database)
             .Select(record => record.SessionTime)
             .ToArray();
         attempts.Length.ShouldBe(3);
-        (attempts[1] - attempts[0]).ShouldBeGreaterThanOrEqualTo(100 - TimerResolution);
-        (attempts[2] - attempts[1]).ShouldBeGreaterThanOrEqualTo(200 - TimerResolution);
+        (attempts[1] - attempts[0]).ShouldBeGreaterThanOrEqualTo(100 - PauseTolerance);
+        (attempts[2] - attempts[1]).ShouldBeGreaterThanOrEqualTo(200 - PauseTolerance);
         api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe(email);
     }
 
