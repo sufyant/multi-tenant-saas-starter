@@ -11,9 +11,10 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
 {
     async Task IAuditLog.RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken)
     {
+        // An event that arrives again has the same moment and id, so the lookup reads the key (R18).
         var stored = tenant is not null
-            ? await audit.Entries.AnyAsync(entry => entry.Id == tenant.Id, cancellationToken)
-            : await audit.PlatformEntries.AnyAsync(entry => entry.Id == platform!.Id, cancellationToken);
+            ? await audit.Entries.AnyAsync(entry => entry.OccurredAt == tenant.OccurredAt && entry.Id == tenant.Id, cancellationToken)
+            : await audit.PlatformEntries.AnyAsync(entry => entry.OccurredAt == platform!.OccurredAt && entry.Id == platform.Id, cancellationToken);
         if (stored)
         {
             return;

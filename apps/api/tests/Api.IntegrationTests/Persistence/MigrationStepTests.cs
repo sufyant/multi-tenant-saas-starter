@@ -442,6 +442,34 @@ public sealed class MigrationStepTests(Database database)
         (await TenantIndexesAsync(name, "audit", "entries")).ShouldBe("ix_entries_tenant_id_occurred_at_id");
     }
 
+    // R18: both logs are keyed by the entry's moment and then its id, so a later retention can partition them by the moment (PostgreSQL
+    // documentation, 5.12.2.3). The entries stay through the migration, a second entry with the same moment and id is refused, and the
+    // platform's index on the same columns goes with the key that replaces it.
+    [Fact]
+    public async Task Migrate_AuditEntriesOfBothLogs_KeepsThemAndKeysThemByTheirMomentAndId()
+    {
+        var name = await database.CreateDatabaseBeforeAuditMigrationAsync("KeyTheLogsByTheMomentAndTheId");
+        var (tenantEntry, platformEntry) = await AddAuditEntriesAsync(name);
+        var before = await AuditRowsAsync(name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await AuditRowsAsync(name)).ShouldBe(before);
+        (await PrimaryKeyAsync(name, "audit.entries")).ShouldBe("PRIMARY KEY (occurred_at, id)");
+        (await PrimaryKeyAsync(name, "audit.platform_entries")).ShouldBe("PRIMARY KEY (occurred_at, id)");
+        (await database.ScalarAsSuperuserAsync<string>(
+            "SELECT string_agg(indexname, ', ' ORDER BY indexname) FROM pg_indexes WHERE schemaname = 'audit' AND tablename = 'platform_entries'",
+            name)).ShouldBe("ix_platform_entries_target_kind_target_id_occurred_at_id, pk_platform_entries");
+        var copy = () => database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO audit.entries SELECT * FROM audit.entries WHERE id = '{tenantEntry}';
+            INSERT INTO audit.platform_entries SELECT * FROM audit.platform_entries WHERE id = '{platformEntry}';
+            """,
+            name);
+        (await copy.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.UniqueViolation);
+    }
+
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
     [Fact]
     public async Task StartApplication_OnAMigratedDatabase_IsReady()
@@ -660,6 +688,10 @@ public sealed class MigrationStepTests(Database database)
             WHERE pg_index.indrelid = '{schema}.{table}'::regclass AND first.attname = 'tenant_id'
             """,
             databaseName);
+
+    private Task<string?> PrimaryKeyAsync(string databaseName, string table) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = '{table}'::regclass AND contype = 'p'", databaseName);
 
     // The roles of the tenant, by their kind and their name.
     private Task<string?> RolesOfAsync(Guid tenantId, string databaseName) =>

@@ -7,8 +7,9 @@ namespace ControlPlane.Application.Tenants.WarnTenantPurge;
 
 // The warning of a closed tenant's purge. It locks the tenant row (K6a), so a reopening runs before or after it, and acts only for a tenant
 // still closed at the message's closure: a reopening cancels no scheduled message, so the message itself checks (K4). It writes nothing
-// in ControlPlane: it hands each Owner's email to Notifications and the warning to Audit. A warning of one closure has one id, so a copy
-// that arrives again records one entry, and each email's idempotency key is the Owner's warning of this purge (O4).
+// in ControlPlane: it hands each Owner's email to Notifications and the warning to Audit. A warning of one closure has one id and one
+// moment, the moment it was scheduled for, so a copy that arrives again later records one entry (R18), and each email's idempotency key
+// is the Owner's warning of this purge (O4).
 public static class WarnTenantPurgeHandler
 {
     public static async Task<OutgoingMessages> HandleAsync(
@@ -28,7 +29,7 @@ public static class WarnTenantPurgeHandler
         var owners = await tenants.FindOwnerAddressesAsync(cancellationToken);
         return
         [
-            new TenantPurgeWarnedEvent(WarningId(tenant.Id, warn.ClosedAt), now, tenant.Id, tenant.Name),
+            new TenantPurgeWarnedEvent(WarningId(tenant.Id, warn.ClosedAt), purgesAt - settings.PurgeWarningLead, tenant.Id, tenant.Name),
             .. owners.Select(owner =>
                 new TenantPurgeWarningReadyEvent(Guid.CreateVersion7(now), now, tenant.Id, owner.UserId, owner.Email, tenant.Name, owner.Language, purgesAt)),
         ];

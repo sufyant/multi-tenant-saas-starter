@@ -161,6 +161,22 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
     }
 
+    // R18: the audit logs are keyed by the moment and the id, so every copy of a warning carries the same moment: the moment the closure
+    // scheduled it, not the moment a copy runs. A copy that runs later still records no second entry.
+    [Fact]
+    public async Task WarnTenantPurge_ArrivesTwiceAtTwoMoments_RecordsOnceAtTheScheduledMoment()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+
+        await WarnAsync(tenant.Id, ClosedAt);
+        _time.Advance(TimeSpan.FromMinutes(5));
+        await WarnAsync(tenant.Id, ClosedAt);
+
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.US'), ', ') FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.purge_warned'",
+            _databaseName)).ShouldBe("2026-09-24 09:00:00.000000");
+    }
+
     // A reopening cancels no scheduled message: the warning of a reopened tenant, or of an earlier closure, does nothing (K4).
     [Theory]
     [InlineData("Active", 0)]
