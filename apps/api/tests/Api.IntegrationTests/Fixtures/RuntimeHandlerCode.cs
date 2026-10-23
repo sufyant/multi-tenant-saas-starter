@@ -55,13 +55,16 @@ public static class RuntimeHandlerCode
 }
 
 // Marks a test class whose hosts generate their handler code at runtime. CI runs these classes in a part of their own, because each
-// of their hosts keeps much more memory than a host on the committed code (scripts/ci/test-api.sh).
+// of their hosts keeps much more memory than a host on the committed code (scripts/ci/test-api.sh). The reason names the test-only
+// handler, message or policy the class needs (section 9, rule 11; RuntimeHandlerCodeTests).
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class RuntimeHandlerCodeAttribute : Attribute, ITraitAttribute
+public sealed class RuntimeHandlerCodeAttribute(string reason) : Attribute, ITraitAttribute
 {
     public const string Trait = "HandlerCode";
 
     public const string Value = "Runtime";
+
+    public string Reason { get; } = reason;
 
     public IReadOnlyCollection<KeyValuePair<string, string>> GetTraits() => [new(Trait, Value)];
 }

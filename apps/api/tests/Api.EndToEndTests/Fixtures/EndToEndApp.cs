@@ -10,12 +10,12 @@ using Notifications.Application.Email;
 namespace Api.EndToEndTests.Fixtures;
 
 // The application as Program composes it, running in Production in the given role against the database the deployment steps
-// prepared. Clerk and the email channel are fakes at their ports, shared by the hosts of one test. The first system admin is the
-// person whose verified email address the configuration names.
+// prepared. Clerk and the email channel are fakes at their ports, shared by the hosts of one test. The root system admin is the
+// person whose verified email address the configuration's list names.
 internal sealed class EndToEndApp(Database database, string role, FakeIdentityProvider identity, FakeEmailChannel email)
     : WebApplicationFactory<Program>
 {
-    public const string FirstSystemAdminEmail = "admin@e2e.test";
+    public const string RootEmail = "admin@e2e.test";
 
     public HttpClient ClientFor(string userId, bool secondFactor = false)
     {
@@ -31,9 +31,9 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
         builder.UseSetting("ConnectionStrings:Database", database.ApplicationConnectionString);
         builder.UseSetting("ControlPlane:Invitations:AcceptUrl", "https://app.test/invitations/accept");
         builder.UseSetting("ControlPlane:Clerk:SecretKey", "sk_test_unused");
-        builder.UseSetting("ControlPlane:FirstSystemAdminEmail", FirstSystemAdminEmail);
-        builder.UseSetting("Authentication:Clerk:Issuer", TestTokens.Issuer);
-        builder.UseSetting("Authentication:Clerk:AuthorizedParties:0", TestTokens.AuthorizedParty);
+        builder.UseSetting("ControlPlane:SystemAdmins:RootEmails:0", RootEmail);
+        builder.UseSetting("Host:Authentication:Issuer", TestTokens.Issuer);
+        builder.UseSetting("Host:Authentication:AuthorizedParties:0", TestTokens.AuthorizedParty);
         builder.UseSetting("Notifications:Resend:ApiKey", "re_test_unused");
         builder.UseSetting("Notifications:Resend:From", "no-reply@app.test");
 

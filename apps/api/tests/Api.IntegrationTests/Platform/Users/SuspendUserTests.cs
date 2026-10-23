@@ -38,7 +38,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         body.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(id);
         body.GetProperty("firstName").GetString().ShouldBe("Ada");
         body.GetProperty("status").GetString().ShouldBe("suspended");
@@ -75,7 +75,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         (await SuspendedAtAsync(systemAdmin)).ShouldBeNull();
     }
 
-    // One error code has one text (C7): suspension answers the text that deletion answers.
+    // One error code has one text (N11w): suspension answers the text that deletion answers.
     [Fact]
     public async Task SuspendUser_ASystemAdmin_AnswersTheTextOfTheCode()
     {

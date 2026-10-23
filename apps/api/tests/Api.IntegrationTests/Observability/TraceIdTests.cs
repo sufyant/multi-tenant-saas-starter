@@ -1,14 +1,12 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
-using ControlPlane.Application.Tenants.ActivateTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
-using Notifications.Contracts.Invitations;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using SharedKernel;
@@ -24,13 +22,10 @@ public sealed class TraceIdTests(Database database)
     private static readonly string[] TenantCreationHandlers =
     [
         NameOf(typeof(CreateTenantCommand)),
-        NameOf(typeof(ActivateTenantCommand)),
-        NameOf(typeof(ActivateTenantReply)),
-        NameOf(typeof(TenantActivatedEvent)),
-        NameOf(typeof(OpenOwnerSignUpCommand)),
+        NameOf(typeof(TenantCreatedEvent)),
+        NameOf(typeof(OpenSignUpCommand)),
         NameOf(typeof(RecordSignUpCommand)),
-        NameOf(typeof(OwnerInvitationReadyEvent)),
-        NameOf(typeof(SendInvitationEmailReply)),
+        NameOf(typeof(InvitationReadyEvent)),
     ];
 
     [Fact]
@@ -48,7 +43,7 @@ public sealed class TraceIdTests(Database database)
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
         var tenantId = await TwoWorkers.IdOfAsync(created);
-        await Waiting.UntilAsync(() => spans.OfTenant(tenantId).Any(span => span.MessageType == NameOf(typeof(SendInvitationEmailReply))));
+        await Waiting.UntilAsync(() => TenantCreationHandlers.All(handler => spans.OfTenant(tenantId).Any(span => span.MessageType == handler)));
         var handlers = spans.OfTenant(tenantId);
 
         handlers.Select(span => span.MessageType).Distinct().ShouldBe(TenantCreationHandlers, ignoreOrder: true);

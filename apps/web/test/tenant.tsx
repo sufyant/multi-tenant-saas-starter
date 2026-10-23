@@ -1,27 +1,47 @@
 import {
   type MemberResponse,
-  MemberRole,
   type MeResponse,
   type MyTenantResponse,
   Permission,
+  type RoleResponse,
 } from "@repo/api-client";
 import { Toaster } from "@repo/ui/components/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import type { ReactNode } from "react";
+import { BuiltInRole } from "@/shared/roles";
 import { TenantProvider } from "@/shared/tenant-context";
 import { renderWithProviders } from "./render";
 
 // The sample organisation and its people (the design system's sample data), and the answers a tenant screen reads first:
-// ListMyTenants, GetMyTenant and GetMe. Each role gets the permissions the API gives it.
+// ListMyTenants, GetMyTenant, GetMe and ListRoles. Each role gets the permissions the API gives it.
+
+/** Northwind's built-in roles, each with its id, as the API answers them. */
+export const roleOf: Record<BuiltInRole, RoleResponse> = {
+  owner: {
+    id: "0198f0a2-0000-7000-8000-0000000000f1",
+    name: BuiltInRole.Owner,
+    builtIn: true,
+  },
+  admin: {
+    id: "0198f0a2-0000-7000-8000-0000000000f2",
+    name: BuiltInRole.Admin,
+    builtIn: true,
+  },
+  member: {
+    id: "0198f0a2-0000-7000-8000-0000000000f3",
+    name: BuiltInRole.Member,
+    builtIn: true,
+  },
+};
 
 export const northwind: MyTenantResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
   name: "Northwind Traders",
   slug: "northwind",
   status: "active",
-  role: { builtIn: MemberRole.Owner, name: MemberRole.Owner },
+  role: roleOf.owner,
 };
 
 const member = (
@@ -29,14 +49,14 @@ const member = (
   firstName: string,
   lastName: string,
   email: string,
-  role: MemberRole,
+  role: BuiltInRole,
   joinedAt: string,
 ): MemberResponse => ({
   userId,
   firstName,
   lastName,
   email,
-  role: { builtIn: role, name: role },
+  role: roleOf[role],
   deleted: false,
   joinedAt,
 });
@@ -46,7 +66,7 @@ export const ayse = member(
   "Ayşe",
   "Yılmaz",
   "ayse@northwind.io",
-  MemberRole.Owner,
+  BuiltInRole.Owner,
   "2026-03-03T09:20:00Z",
 );
 export const mehmet = member(
@@ -54,7 +74,7 @@ export const mehmet = member(
   "Mehmet",
   "Kaya",
   "mehmet@northwind.io",
-  MemberRole.Admin,
+  BuiltInRole.Admin,
   "2026-03-05T10:00:00Z",
 );
 export const ibrahim = member(
@@ -62,7 +82,7 @@ export const ibrahim = member(
   "İbrahim",
   "Bulut",
   "ibrahim@northwind.io",
-  MemberRole.Member,
+  BuiltInRole.Member,
   "2026-06-02T10:15:00Z",
 );
 export const john = member(
@@ -70,13 +90,13 @@ export const john = member(
   "John",
   "Byrne",
   "john@northwind.io",
-  MemberRole.Member,
+  BuiltInRole.Member,
   "2026-03-09T08:00:00Z",
 );
 export const people = [ayse, mehmet, ibrahim, john];
 
 /** The signed-in person of each role: the Owner Ayşe, the Admin Mehmet, the Member İbrahim. */
-export const viewerOf: Record<MemberRole, MemberResponse> = {
+export const viewerOf: Record<BuiltInRole, MemberResponse> = {
   owner: ayse,
   admin: mehmet,
   member: ibrahim,
@@ -87,13 +107,13 @@ const tenantPermissions = Object.values(Permission).filter((name) =>
 );
 
 /** The permissions of a built-in role, as GetMyTenant answers them. */
-export const permissionsOf: Record<MemberRole, Permission[]> = {
+export const permissionsOf: Record<BuiltInRole, Permission[]> = {
   owner: tenantPermissions,
   admin: tenantPermissions,
   member: [Permission.TenantMembersRead, Permission.TenantProfileRead],
 };
 
-export const meOf = (role: MemberRole): MeResponse => {
+export const meOf = (role: BuiltInRole): MeResponse => {
   const person = viewerOf[role];
   return {
     id: person.userId,
@@ -106,9 +126,9 @@ export const meOf = (role: MemberRole): MeResponse => {
   };
 };
 
-/** ListMyTenants, GetMyTenant and GetMe for a viewer of the role. */
+/** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of the role. */
 export const tenantAnswers = (
-  role: MemberRole,
+  role: BuiltInRole,
   permissions: Permission[] = permissionsOf[role],
 ) => [
   http.get("*/v1/me/tenants", () =>
@@ -117,13 +137,28 @@ export const tenantAnswers = (
   http.get(`*/v1/tenants/${northwind.id}`, () =>
     HttpResponse.json({
       ...northwind,
-      role: { builtIn: role, name: role },
+      role: roleOf[role],
       createdAt: "2026-01-05T09:00:00Z",
       permissions,
     }),
   ),
   http.get("*/v1/me", () => HttpResponse.json(meOf(role))),
+  rolesAnswer(),
 ];
+
+/** ListRoles: Northwind's built-in roles with their permissions, and the custom roles given. */
+export function rolesAnswer(custom: RoleResponse[] = []) {
+  const items = [
+    ...Object.values(BuiltInRole).map((name) => ({
+      ...roleOf[name],
+      permissions: permissionsOf[name],
+    })),
+    ...custom.map((role) => ({ ...role, permissions: [] })),
+  ];
+  return http.get(`*/v1/tenants/${northwind.id}/roles`, () =>
+    HttpResponse.json({ items, page: 1, pageSize: 100, total: items.length }),
+  );
+}
 
 /** A Problem Details answer of the API (N11g). */
 export const problem = (status: number, code: string) =>

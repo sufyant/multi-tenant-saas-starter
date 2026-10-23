@@ -30,11 +30,7 @@ export const ListMembersQueryParams = zod.object({
   LastNameDescending: '-lastName',
 }).optional(),
   "q": zod.string().max(listMembersQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
-  "role": zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).optional()
+  "roleId": zod.uuid().optional()
 })
 
 export const ListMembersResponse = zod.object({
@@ -44,13 +40,10 @@ export const ListMembersResponse = zod.object({
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "deleted": zod.boolean(),
   "joinedAt": zod.iso.datetime({"offset":true})
 }).describe('A member of the tenant: the user\'s id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows "Deleted user", as the audit logs say `deleted` (K3).')),
@@ -65,12 +58,8 @@ export const ChangeMemberRoleParams = zod.object({
 })
 
 export const ChangeMemberRoleBody = zod.object({
-  "role": zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')
-}).describe('The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum\'s\nfirst value.')
+  "roleId": zod.uuid()
+}).describe('The id of the tenant\'s role to give the member. The role is required: a request without one is refused, so it never falls back to\nan empty id.')
 
 export const ChangeMemberRoleResponse = zod.object({
   "userId": zod.uuid(),
@@ -78,13 +67,10 @@ export const ChangeMemberRoleResponse = zod.object({
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "deleted": zod.boolean(),
   "joinedAt": zod.iso.datetime({"offset":true})
 }).describe('A member of the tenant: the user\'s id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows "Deleted user", as the audit logs say `deleted` (K3).')

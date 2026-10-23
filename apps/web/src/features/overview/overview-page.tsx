@@ -9,10 +9,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { DetailList } from "@/shared/detail-list";
 import { useTenant } from "@/shared/tenant-context";
+import { useRoleName } from "@/shared/use-role-name";
 
 /** The Overview of an organisation (the Overview board): a quiet start page with the organisation and the role, until the product adds its own work. */
 export function OverviewPage() {
   const t = useTranslations();
+  const roleName = useRoleName();
   const { tenant, detail } = useTenant();
   // The tenant layout read GetMyTenant; this reads its cache, for when it was loaded.
   const read = useQuery(getGetMyTenantQueryOptions(tenant.id));
@@ -48,9 +50,7 @@ export function OverviewPage() {
           },
           {
             term: t("general.yourRole"),
-            value: detail.role.builtIn
-              ? t(`shell.roles.${detail.role.builtIn}`)
-              : detail.role.name,
+            value: roleName(detail.role),
           },
         ]}
       />

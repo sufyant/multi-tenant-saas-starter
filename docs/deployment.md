@@ -377,6 +377,43 @@ Remove a shared variable from the API services without apply:
 
 Step 20i removed `ControlPlane__Clerk__WebhookSigningSecret` this way. The step that added the web apps removed `Host__Cors__AllowedOrigins__0` with its apply (section 13).
 
+Rename a configuration key of the API without apply. The API reads a key only by its new name, so the value must exist under the new name before the new version starts:
+
+1. In the pull request that renames the key, rename it in `sharedVariables` in `.railway/railway.ts`.
+2. Before the merge, in each environment, add a shared variable with the new name and the same value, and tick `api-web` and `api-worker` for it (steps 2 and 3 of "Add a shared variable"). The running version ignores it.
+3. Merge, and let the deploy finish in each environment. The version before it may still need the old name to start, also after a rollback (section 6).
+4. Then untick `api-web` and `api-worker` for the old shared variable and delete it (step 3 of "Remove a shared variable").
+
+Step r1 renamed these keys. Each one is optional and has a default, and no entry of `sharedVariables` names one, so no environment needs a step:
+
+| Old key | New key |
+| --- | --- |
+| `ControlPlane:Clerk:RetryDelays` | `ControlPlane:IdentityProvider:RetryDelays` |
+| `Api:IdempotencyKeyRetention` | `Host:Idempotency:KeyRetention` |
+| `RateLimiting:...` | `Host:RateLimiting:...` |
+| `Messaging:UnknownMessages:...` | `Host:Messaging:UnknownMessages:...` |
+| `Notifications:InvitationEmailRetryDelays` | `Notifications:InvitationEmails:RetryDelays` |
+
+`ControlPlane__Clerk__SecretKey` keeps its name. If an environment has a shared variable with an old name, no service references it, so the API never read it: delete it in the Railway dashboard.
+
+Step r5 renamed these keys. Each one is required, or a list that the API reads, so each environment needs the manual step below, once:
+
+| Old shared variable | New shared variable |
+| --- | --- |
+| `ControlPlane__FirstSystemAdminEmail` | `ControlPlane__SystemAdmins__RootEmails__0` |
+| `Authentication__Clerk__Issuer` | `Host__Authentication__Issuer` |
+| `Authentication__Clerk__AuthorizedParties__0` | `Host__Authentication__AuthorizedParties__0` |
+| `Authentication__Clerk__AuthorizedParties__1` | `Host__Authentication__AuthorizedParties__1` |
+| `ForwardedHeaders__KnownProxies__<n>` | `Host__ForwardedHeaders__KnownProxies__<n>` |
+| `ForwardedHeaders__KnownNetworks__<n>` | `Host__ForwardedHeaders__KnownNetworks__<n>` |
+
+The maintainer does it in `staging` before the pull request of step r5 merges, and in `production` before its first deploy of that release. It is manual, because the values stay out of the repository and only the maintainer changes Railway (the root `AGENTS.md`, "Repository settings"):
+
+1. In the Railway dashboard, open Shared Variables of the environment. For each old variable in the table that exists, add the new variable with the same value, and tick `api-web` and `api-worker` for it ("Configure Shared Variable"). `ControlPlane__SystemAdmins__RootEmails__0` holds the old first system admin's address; add `__1`, `__2` and so on for more root system admins. A `ForwardedHeaders__*` variable exists only if someone set one; `sharedVariables` does not name one, so a new name of it also needs its service variable. The running version ignores the new variables.
+2. On the pull request branch, run `pnpm railway:plan`. It must show only the renamed variables of `api-web` and `api-worker` and the two `source` changes (section 7, "Add a shared variable"). Do not apply.
+3. Merge, and let the deploy finish. The version before it still needs the old names to start, also after a rollback (section 6).
+4. Then untick `api-web` and `api-worker` for each old variable and delete it (section 7, "Remove a shared variable").
+
 ## 8. Migrations and the running version
 
 `deploy.yml` runs the migration while the old version still serves. The new version starts after the migration. So every migration must work with the version before it. A migration that breaks the previous version breaks production during the deploy.
@@ -451,7 +488,7 @@ After a restore, the private host, the proxy and the root certificate are new. U
 
 - **Staging runs no automated acceptance tests yet.** It runs only the smoke test of `deploy.yml`. *Continuous Delivery*, chapter 5, puts an automated acceptance test stage before a release. The job `e2e` of `ci.yml` runs the Playwright tests on each pull request, but it answers the API in the browser and does not test staging, so it does not close this.
 - **Production's backups stay inside Railway.** The volume backups and the archive of point-in-time recovery are in the same Railway project as the database. The 3-2-1 backup rule asks for three copies of the data, on two kinds of media, with one copy off site (Peter Krogh, *The DAM Book*). Planned: a scheduled `pg_dump` of production to storage outside Railway, when production holds real data.
-- **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway. The web apps call the API over the private network, from their own address, so an anonymous call through a BFF shares the limit of that app's replica too. A BFF answers 401 itself without a session (F6), so few anonymous calls reach the API.
+- **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `Host:ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway. The web apps call the API over the private network, from their own address, so an anonymous call through a BFF shares the limit of that app's replica too. A BFF answers 401 itself without a session (F6), so few anonymous calls reach the API.
 - **The npm advisories of three packages have no safe fix today.** `uuid` 8.3.2 and `stream-json` 1.9.1 come through `jayson` 4, which `@solana/web3.js` 1.x requires (`^4.3.0`, also in 1.99.0), and `@clerk/ui` brings in the Solana packages. The fixed versions are new major versions (`uuid` 11.1.1, `stream-json` 3.6.0) that `jayson` 4 does not accept (`^8.3.2`, `^1.9.1`). `braces` 3.0.3 has no fixed release (GHSA-vfj7-8cjw-p6xm). Dependabot cannot update a version-pinned transitive dependency with pnpm (dependabot-core issue 15766), so its run fails until then. Check again when `@solana/web3.js` or `braces` releases. Source: `pnpm audit` and `pnpm why`.
 - **A crash outside `Main` can hang the process on arm64.** Step 18g makes `Main` return an exit code. An exception that leaves another thread still calls `abort()`. As PID 1 in a container on arm64, this can hang at full CPU (dotnet/runtime issues 66707 and 111601; 111601 is open for .NET 10). A small init process (`tini`, or `docker run --init`) would reap the process. Planned: decide this in a later step about the image.
 - **No monitoring and no alerts.** OpenTelemetry is not connected to a backend: `OTEL_EXPORTER_OTLP_ENDPOINT` is not set (`apps/api/docs/configuration.md`). A failed deploy shows in GitHub Actions, but a failure at run time shows only in the Railway logs. Nobody gets an alert. Source: *Release It!* (Nygard), "Transparency".
@@ -543,8 +580,8 @@ These shared variables exist already. Their values change to the custom domains.
 
 | Shared variable | Value | Why |
 | --- | --- | --- |
-| `Authentication__Clerk__AuthorizedParties__0` | `https://<web domain>` | The API accepts a token only from an origin that this list names (the token's `azp`) |
-| `Authentication__Clerk__AuthorizedParties__1` | `https://<platform domain>` | The same, for the platform app, which runs on an origin of its own |
+| `Host__Authentication__AuthorizedParties__0` | `https://<web domain>` | The API accepts a token only from an origin that this list names (the token's `azp`) |
+| `Host__Authentication__AuthorizedParties__1` | `https://<platform domain>` | The same, for the platform app, which runs on an origin of its own |
 | `ControlPlane__Invitations__AcceptUrl` | `https://<web domain>/invitations/accept` | The invitation email links to the web app's accept page (F44 in `docs/frontend/ARCHITECTURE.md`) |
 
 One shared variable is new:
@@ -593,7 +630,7 @@ A later plan of `.railway/railway.ts` may show a custom domain going away, as it
 
 Staging runs the API already. Do these steps in this order, once, for `staging` only. Production waits (section 7). Each step is manual because it sets a value that stays out of the repository, or because only the maintainer may run it (the root `AGENTS.md`, "Repository settings").
 
-Before step 1, set the shared variables in the Railway dashboard, Shared Variables of `staging`: add `CLERK_PUBLISHABLE_KEY`, and change the values of `Authentication__Clerk__AuthorizedParties__0`, `Authentication__Clerk__AuthorizedParties__1` and `ControlPlane__Invitations__AcceptUrl` (section 13, "The API's settings for the web apps"). Why first: a reference to a shared variable that does not exist gives an empty value (section 7). Manual: values never go into the repository. The running API reads the new values only at its next deploy.
+Before step 1, set the shared variables in the Railway dashboard, Shared Variables of `staging`: add `CLERK_PUBLISHABLE_KEY`, and change the values of `Host__Authentication__AuthorizedParties__0`, `Host__Authentication__AuthorizedParties__1` and `ControlPlane__Invitations__AcceptUrl` (section 13, "The API's settings for the web apps"). Why first: a reference to a shared variable that does not exist gives an empty value (section 7). Manual: values never go into the repository. The running API reads the new values only at its next deploy.
 
 1. **Read the plan.** On the pull request branch, with the CLI linked to `staging`:
 
@@ -649,3 +686,31 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
 9. **Delete the old shared variable.** In the Railway dashboard, Shared Variables of `staging`: delete `Host__Cors__AllowedOrigins__0`. No service references it after step 2 (section 7, "Remove a shared variable"). Manual: the dashboard holds the shared variables.
 
 `pnpm clerk:apply` is not a step: `.clerk/config.json` does not change (section 13, "Clerk").
+
+## 14. Retry a failed message
+
+A message that fails all its retries goes to the dead letter queue: the table `wolverine.wolverine_dead_letters` in the environment's database (W11 in `apps/api/docs/ARCHITECTURE.md`). Wolverine keeps it for `Host:Messaging:DeadLetters:Retention`, 14 days by default. Then a worker deletes it (W13). The API has no endpoint for dead letters.
+
+Retry a dead letter only after its cause is fixed. Examples: the email service was down for longer than the retries, or a setting was wrong and is now correct. A message whose cause is still there fails its retries again and comes back to the table.
+
+An invitation email does not need this step. The inviter can invite the same address again: the new invitation replaces the old one and sends a new email (K2 in `apps/api/docs/api-catalog.md`).
+
+1. **List the dead letters.** Connect to the database as `api_owner`. The query leaves out `body`, because the body holds the message, email addresses and invitation links included.
+
+   ```sql
+   SELECT id, message_type, exception_type, exception_message, sent_at, expires
+   FROM wolverine.wolverine_dead_letters
+   ORDER BY sent_at DESC;
+   ```
+
+2. **Mark one dead letter for a retry.** Use the `id` from step 1.
+
+   ```sql
+   UPDATE wolverine.wolverine_dead_letters
+   SET replayable = true
+   WHERE id = '<id>';
+   ```
+
+3. **Wait for a worker.** A worker's durability agent moves each row with `replayable = true` back to the incoming messages and handles it again. It polls, so this takes a few seconds. The row then leaves `wolverine_dead_letters`. If the message fails its retries again, it comes back with a new expiry.
+
+Source: Wolverine, "Dead Letter Storage" (the `replayable` column and the durability agent's replay) and "Dead Letter Expiration". Hohpe and Woolf, *Enterprise Integration Patterns*, "Dead Letter Channel".

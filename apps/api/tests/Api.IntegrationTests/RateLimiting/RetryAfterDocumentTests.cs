@@ -20,7 +20,7 @@ public sealed partial class RetryAfterDocumentTests(Database database) : IAsyncL
     {
         _api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application),
-            settings: new Dictionary<string, string?> { ["RateLimiting:PermitLimit"] = "1", ["RateLimiting:Window"] = "01:00:00" });
+            settings: new Dictionary<string, string?> { ["Host:RateLimiting:PermitLimit"] = "1", ["Host:RateLimiting:Window"] = "01:00:00" });
         return ValueTask.CompletedTask;
     }
 

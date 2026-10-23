@@ -56,25 +56,16 @@ export const MemberInvitedDetailsResponseOperation = {
 } as const;
 
 /**
- * A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an
- * invitation gives, and the role a member is given.
+ * A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The
+ * role may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the
+ * maintainer's decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because
+ * every role was then.
  */
-export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
-
-
-export const MemberRole = {
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-} as const;
-
-/**
- * A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers
- * `{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.
- */
-export interface RoleResponse {
-  builtIn: null | MemberRole;
+export interface AuditRoleResponse {
+  /** @nullable */
+  id: string | null;
   name: string;
+  builtIn: boolean;
 }
 
 /**
@@ -82,7 +73,7 @@ export interface RoleResponse {
  */
 export interface MemberInvitedDetailsResponse {
   operation: MemberInvitedDetailsResponseOperation;
-  role: RoleResponse;
+  role: AuditRoleResponse;
   /** @nullable */
   replacedInvitationId: string | null;
 }
@@ -99,7 +90,7 @@ export const MemberRemovedDetailsResponseOperation = {
  */
 export interface MemberRemovedDetailsResponse {
   operation: MemberRemovedDetailsResponseOperation;
-  role: RoleResponse;
+  role: AuditRoleResponse;
 }
 
 export type MemberRoleChangedDetailsResponseOperation = typeof MemberRoleChangedDetailsResponseOperation[keyof typeof MemberRoleChangedDetailsResponseOperation];
@@ -114,8 +105,80 @@ export const MemberRoleChangedDetailsResponseOperation = {
  */
 export interface MemberRoleChangedDetailsResponse {
   operation: MemberRoleChangedDetailsResponseOperation;
-  oldRole: RoleResponse;
-  newRole: RoleResponse;
+  oldRole: AuditRoleResponse;
+  newRole: AuditRoleResponse;
+}
+
+export type RoleCreatedDetailsResponseOperation = typeof RoleCreatedDetailsResponseOperation[keyof typeof RoleCreatedDetailsResponseOperation];
+
+
+export const RoleCreatedDetailsResponseOperation = {
+  RoleCreated: 'role.created',
+} as const;
+
+/**
+ * A name of the permission list. Every endpoint checks its own permission.
+ */
+export type Permission = typeof Permission[keyof typeof Permission];
+
+
+export const Permission = {
+  PlatformAuditRead: 'platform.audit.read',
+  PlatformSystemAdminsCreate: 'platform.system_admins.create',
+  PlatformSystemAdminsDelete: 'platform.system_admins.delete',
+  PlatformTenantsClose: 'platform.tenants.close',
+  PlatformTenantsCreate: 'platform.tenants.create',
+  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
+  PlatformTenantsReactivate: 'platform.tenants.reactivate',
+  PlatformTenantsRead: 'platform.tenants.read',
+  PlatformTenantsReopen: 'platform.tenants.reopen',
+  PlatformTenantsSuspend: 'platform.tenants.suspend',
+  PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformUsersDelete: 'platform.users.delete',
+  PlatformUsersReactivate: 'platform.users.reactivate',
+  PlatformUsersRead: 'platform.users.read',
+  PlatformUsersSuspend: 'platform.users.suspend',
+  PlatformUsersUpdate: 'platform.users.update',
+  TenantAuditRead: 'tenant.audit.read',
+  TenantInvitationsCreate: 'tenant.invitations.create',
+  TenantInvitationsDelete: 'tenant.invitations.delete',
+  TenantInvitationsRead: 'tenant.invitations.read',
+  TenantMembersDelete: 'tenant.members.delete',
+  TenantMembersRead: 'tenant.members.read',
+  TenantMembersUpdate: 'tenant.members.update',
+  TenantOwnersManage: 'tenant.owners.manage',
+  TenantProfileRead: 'tenant.profile.read',
+  TenantRolesCreate: 'tenant.roles.create',
+  TenantRolesDelete: 'tenant.roles.delete',
+  TenantRolesRead: 'tenant.roles.read',
+  TenantRolesUpdate: 'tenant.roles.update',
+} as const;
+
+/**
+ * The details of `role.created`: the names of the new role's permissions, in ordinal order.
+ */
+export interface RoleCreatedDetailsResponse {
+  operation: RoleCreatedDetailsResponseOperation;
+  permissions: Permission[];
+}
+
+export type RoleUpdatedDetailsResponseOperation = typeof RoleUpdatedDetailsResponseOperation[keyof typeof RoleUpdatedDetailsResponseOperation];
+
+
+export const RoleUpdatedDetailsResponseOperation = {
+  RoleUpdated: 'role.updated',
+} as const;
+
+/**
+ * The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order.
+ */
+export interface RoleUpdatedDetailsResponse {
+  operation: RoleUpdatedDetailsResponseOperation;
+  oldName: string;
+  newName: string;
+  permissionsAdded: string[];
+  permissionsRemoved: string[];
 }
 
 export type TenantOwnerInvitedDetailsResponseOperation = typeof TenantOwnerInvitedDetailsResponseOperation[keyof typeof TenantOwnerInvitedDetailsResponseOperation];
@@ -133,6 +196,22 @@ export interface TenantOwnerInvitedDetailsResponse {
   invitationId: string;
   /** @nullable */
   replacedInvitationId: string | null;
+}
+
+export type TenantOwnerMadeDetailsResponseOperation = typeof TenantOwnerMadeDetailsResponseOperation[keyof typeof TenantOwnerMadeDetailsResponseOperation];
+
+
+export const TenantOwnerMadeDetailsResponseOperation = {
+  TenantOwnerMade: 'tenant.owner_made',
+} as const;
+
+/**
+ * The details of `tenant.owner_made`: the member who became an Owner, and the role they had.
+ */
+export interface TenantOwnerMadeDetailsResponse {
+  operation: TenantOwnerMadeDetailsResponseOperation;
+  userId: string;
+  oldRole: AuditRoleResponse;
 }
 
 export type TenantRenamedDetailsResponseOperation = typeof TenantRenamedDetailsResponseOperation[keyof typeof TenantRenamedDetailsResponseOperation];
@@ -170,7 +249,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -184,9 +263,17 @@ export const AuditOperation = {
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  RoleCreated: 'role.created',
+  RoleDeleted: 'role.deleted',
+  RoleUpdated: 'role.updated',
+  SystemAdminGranted: 'system_admin.granted',
+  SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
+  TenantOwnerMade: 'tenant.owner_made',
+  TenantPurgeWarned: 'tenant.purge_warned',
+  TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
@@ -208,11 +295,12 @@ export const AuditTargetResponseKind = {
   Tenant: 'tenant',
   User: 'user',
   Invitation: 'invitation',
+  Role: 'role',
 } as const;
 
 /**
- * What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which
- * has no name. `deleted` is set for a user only.
+ * What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an
+ * invitation, which has no name. `deleted` is set for a user only.
  */
 export interface AuditTargetResponse {
   kind: AuditTargetResponseKind;
@@ -238,11 +326,11 @@ export interface AuditEntryResponse {
 }
 
 /**
- * The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum's
- * first value.
+ * The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to
+ * an empty id.
  */
 export interface ChangeMemberRoleRequest {
-  role: MemberRole;
+  roleId: string;
 }
 
 /**
@@ -268,6 +356,15 @@ export interface ChangePreferencesRequest {
      * @nullable
      */
   timeZone: string | null;
+}
+
+/**
+ * The name of the custom role, and the names of its permissions, from the tenant pool.
+ */
+export interface CreateRoleRequest {
+  /** @maxLength 100 */
+  name: string;
+  permissions: Permission[];
 }
 
 /**
@@ -314,6 +411,7 @@ export const ErrorCode = {
   InvitationNotPending: 'invitation.not_pending',
   InvitationOwnerRequiresOwner: 'invitation.owner_requires_owner',
   InvitationSystemAdminCannotJoin: 'invitation.system_admin_cannot_join',
+  MemberAlreadyOwner: 'member.already_owner',
   MemberCannotRemoveSelf: 'member.cannot_remove_self',
   MemberExists: 'member.exists',
   MemberLastOwner: 'member.last_owner',
@@ -332,9 +430,26 @@ export const ErrorCode = {
   RequestTooLarge: 'request.too_large',
   RequestUnsupportedMediaType: 'request.unsupported_media_type',
   RequestValidationFailed: 'request.validation_failed',
+  RoleBuiltIn: 'role.built_in',
+  RoleEscalation: 'role.escalation',
+  RoleInUse: 'role.in_use',
+  RoleLimitReached: 'role.limit_reached',
+  RoleNameInvalid: 'role.name_invalid',
+  RoleNameTaken: 'role.name_taken',
+  RoleNotFound: 'role.not_found',
+  RoleNotPermitted: 'role.not_permitted',
+  RolePermissionInvalid: 'role.permission_invalid',
+  RolePermissionOwnerOnly: 'role.permission_owner_only',
+  RolePermissionsRequired: 'role.permissions_required',
+  RoleProfileReadRequired: 'role.profile_read_required',
+  RoleRolesReadRequired: 'role.roles_read_required',
   RouteMethodNotAllowed: 'route.method_not_allowed',
   RouteNotFound: 'route.not_found',
   ServerError: 'server.error',
+  SystemAdminCannotRevokeSelf: 'system_admin.cannot_revoke_self',
+  SystemAdminExists: 'system_admin.exists',
+  SystemAdminNotFound: 'system_admin.not_found',
+  SystemAdminRoot: 'system_admin.root',
   TenantClosed: 'tenant.closed',
   TenantHasOwner: 'tenant.has_owner',
   TenantNameInvalid: 'tenant.name_invalid',
@@ -400,6 +515,17 @@ export interface InviterNameResponse {
 }
 
 /**
+ * A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in
+ * role answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).
+ * A request gives a role by its id.
+ */
+export interface RoleResponse {
+  id: string;
+  name: string;
+  builtIn: boolean;
+}
+
+/**
  * The state of an invitation at the moment of the request: pending, expired (pending past its expiry), accepted (used) or cancelled
  * (revoked, replaced, or cancelled with its tenant). Every response that holds the state of an invitation uses this one enum, and says
  * which of its values it can hold.
@@ -416,13 +542,13 @@ export const InvitationResponseState = {
 
 /**
  * What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation
- * gives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
+ * gives (null for a finished invitation whose custom role was deleted), when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or
  * `cancelled`. Only a caller with the invited address gets it.
  */
 export interface InvitationPreviewResponse {
   tenantName: string;
   inviterName: InviterNameResponse;
-  role: RoleResponse;
+  role: null | RoleResponse;
   expiresAt: string;
   state: InvitationResponseState;
 }
@@ -459,13 +585,13 @@ export interface InvitationResponse {
 }
 
 /**
- * The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the
- * inviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value.
+ * The address to invite, the id of the tenant's role the invitation gives, and the language of the invitation's email: without one,
+ * the inviter's own. The role is required: a request without one is refused, so it never falls back to an empty id.
  */
 export interface InviteMemberRequest {
   /** @maxLength 320 */
   email: string;
-  role: MemberRole;
+  roleId: string;
   language?: null | Language;
 }
 
@@ -512,7 +638,7 @@ export interface ListPageOfMemberResponse {
 }
 
 /**
- * The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.
+ * The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.
  */
 export type MyTenantResponseStatus = typeof MyTenantResponseStatus[keyof typeof MyTenantResponseStatus];
 
@@ -521,11 +647,12 @@ export const MyTenantResponseStatus = {
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
+  Purging: 'purging',
 } as const;
 
 /**
  * A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is
- * active, or suspended or closed when its members cannot enter it. The role is the user's there.
+ * active, or suspended, closed or purging when its members cannot enter it. The role is the user's there.
  */
 export interface MyTenantResponse {
   id: string;
@@ -543,31 +670,36 @@ export interface ListPageOfMyTenantResponse {
 }
 
 /**
- * The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.
+ * A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role's
+ * permissions, in ordinal order.
+ */
+export interface RoleDetailResponse {
+  id: string;
+  name: string;
+  builtIn: boolean;
+  permissions: Permission[];
+}
+
+export interface ListPageOfRoleDetailResponse {
+  items: RoleDetailResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+/**
+ * The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).
  */
 export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof TenantResponseStatus];
 
 
 export const TenantResponseStatus = {
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
+  Purging: 'purging',
+  Purged: 'purged',
 } as const;
-
-/**
- * An Owner of a tenant: the user's id, names and address.
- */
-export interface TenantOwnerResponse {
-  userId: string;
-  /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
-  /** @nullable */
-  email: string | null;
-}
 
 /**
  * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
@@ -587,7 +719,8 @@ export interface OwnerInvitationResponse {
 
 /**
  * A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners
- * counted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+ * counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member
+ * and no Owner: its purge deleted its summary with its members (K4).
  */
 export interface TenantListItemResponse {
   id: string;
@@ -599,10 +732,11 @@ export interface TenantListItemResponse {
   /** @nullable */
   closedAt: string | null;
   /** @nullable */
+  purgedAt: string | null;
+  /** @nullable */
   reopenableUntil: string | null;
   memberCount: number;
   ownerCount: number;
-  firstOwner: null | TenantOwnerResponse;
   ownerInvitation: null | OwnerInvitationResponse;
 }
 
@@ -627,7 +761,8 @@ export const UserResponseStatus = {
 
 /**
  * A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or
- * deleted), whether they are a system admin, how many tenants they are a member of, and when they became a user.
+ * deleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin
+ * can revoke, how many tenants they are a member of, and when they became a user.
  */
 export interface UserResponse {
   id: string;
@@ -639,6 +774,7 @@ export interface UserResponse {
   lastName: string | null;
   status: UserResponseStatus;
   isSystemAdmin: boolean;
+  isRootSystemAdmin: boolean;
   membershipCount: number;
   createdAt: string;
 }
@@ -648,6 +784,14 @@ export interface ListPageOfUserResponse {
   page: number;
   pageSize: number;
   total: number;
+}
+
+/**
+ * The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a
+ * request without one is refused, so it never falls back to an empty id.
+ */
+export interface MakeOwnerRequest {
+  userId: string;
 }
 
 /**
@@ -667,37 +811,6 @@ export interface MeResponse {
   /** @nullable */
   timeZone: string | null;
 }
-
-/**
- * A name of the permission list. Every endpoint checks its own permission.
- */
-export type Permission = typeof Permission[keyof typeof Permission];
-
-
-export const Permission = {
-  PlatformAuditRead: 'platform.audit.read',
-  PlatformTenantsClose: 'platform.tenants.close',
-  PlatformTenantsCreate: 'platform.tenants.create',
-  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
-  PlatformTenantsReactivate: 'platform.tenants.reactivate',
-  PlatformTenantsRead: 'platform.tenants.read',
-  PlatformTenantsReopen: 'platform.tenants.reopen',
-  PlatformTenantsSuspend: 'platform.tenants.suspend',
-  PlatformTenantsUpdate: 'platform.tenants.update',
-  PlatformUsersDelete: 'platform.users.delete',
-  PlatformUsersReactivate: 'platform.users.reactivate',
-  PlatformUsersRead: 'platform.users.read',
-  PlatformUsersSuspend: 'platform.users.suspend',
-  PlatformUsersUpdate: 'platform.users.update',
-  TenantAuditRead: 'tenant.audit.read',
-  TenantInvitationsCreate: 'tenant.invitations.create',
-  TenantInvitationsDelete: 'tenant.invitations.delete',
-  TenantInvitationsRead: 'tenant.invitations.read',
-  TenantMembersDelete: 'tenant.members.delete',
-  TenantMembersRead: 'tenant.members.read',
-  TenantMembersUpdate: 'tenant.members.update',
-  TenantProfileRead: 'tenant.profile.read',
-} as const;
 
 /**
  * The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
@@ -756,6 +869,17 @@ export interface ProblemDetails {
 }
 
 /**
+ * The signed-in user's own names, each within the API's limit. The API trims each name before it counts its length. Both are required,
+ * so a client that leaves one out never clears it.
+ */
+export interface RenameMeRequest {
+  /** @maxLength 100 */
+  firstName: string;
+  /** @maxLength 100 */
+  lastName: string;
+}
+
+/**
  * A tenant's new name. The API trims it before it counts its length. The slug never changes.
  */
 export interface RenameTenantRequest {
@@ -775,11 +899,25 @@ export interface RenameUserRequest {
 
 /**
  * Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member
- * never sees it.
+ * never sees it. It holds no personal data, such as a person's name or email address: the platform's audit log keeps it after the
+ * tenant's purge (A8).
  */
 export interface SuspendTenantRequest {
   /** @maxLength 500 */
   reason: string;
+}
+
+/**
+ * An Owner of a tenant: the user's id, names and address.
+ */
+export interface TenantOwnerResponse {
+  userId: string;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  email: string | null;
 }
 
 /**
@@ -795,6 +933,8 @@ export interface TenantDetailResponse {
   /** @nullable */
   closedAt: string | null;
   /** @nullable */
+  purgedAt: string | null;
+  /** @nullable */
   reopenableUntil: string | null;
   memberCount: number;
   ownerCount: number;
@@ -803,8 +943,8 @@ export interface TenantDetailResponse {
 }
 
 /**
- * A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its
- * closure while it is closed. Only a system admin sees this shape.
+ * A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its
+ * closure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.
  */
 export interface TenantResponse {
   id: string;
@@ -815,10 +955,21 @@ export interface TenantResponse {
   suspensionReason: string | null;
   /** @nullable */
   closedAt: string | null;
+  /** @nullable */
+  purgedAt: string | null;
 }
 
 /**
- * The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.
+ * The name the custom role takes, and exactly the permissions it holds afterwards, from the tenant pool.
+ */
+export interface UpdateRoleRequest {
+  /** @maxLength 100 */
+  name: string;
+  permissions: Permission[];
+}
+
+/**
+ * The status of a tenant a user is a member of: active, or suspended, closed or purging when its members cannot enter it. A purged tenant has no member.
  */
 export type UserMembershipResponseTenantStatus = typeof UserMembershipResponseTenantStatus[keyof typeof UserMembershipResponseTenantStatus];
 
@@ -827,6 +978,7 @@ export const UserMembershipResponseTenantStatus = {
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
+  Purging: 'purging',
 } as const;
 
 /**
@@ -857,6 +1009,7 @@ export interface UserDetailResponse {
   lastName: string | null;
   status: UserResponseStatus;
   isSystemAdmin: boolean;
+  isRootSystemAdmin: boolean;
   membershipCount: number;
   createdAt: string;
   /** @nullable */
@@ -941,6 +1094,15 @@ export const ListUsersSort = {
   LastNameDescending: '-lastName',
 } as const;
 
+export type GrantSystemAdminHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
+
 export type ListPlatformAuditEntriesParams = {
 cursor?: string;
 /**
@@ -967,7 +1129,7 @@ sort?: ListMembersSort;
  * @maxLength 100
  */
 q?: string;
-role?: MemberRole;
+roleId?: string;
 };
 
 export type ListMembersSort = typeof ListMembersSort[keyof typeof ListMembersSort];
@@ -1007,7 +1169,7 @@ sort?: ListInvitationsSort;
  * @maxLength 100
  */
 q?: string;
-role?: MemberRole;
+roleId?: string;
 };
 
 export type ListInvitationsSort = typeof ListInvitationsSort[keyof typeof ListInvitationsSort];
@@ -1019,6 +1181,41 @@ export const ListInvitationsSort = {
   Email: 'email',
   EmailDescending: '-email',
 } as const;
+
+export type ListRolesParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+sort?: ListRolesSort;
+/**
+ * The search. The API trims it before it counts its length.
+ * @maxLength 100
+ */
+q?: string;
+};
+
+export type ListRolesSort = typeof ListRolesSort[keyof typeof ListRolesSort];
+
+
+export const ListRolesSort = {
+  Name: 'name',
+  NameDescending: '-name',
+} as const;
+
+export type CreateRoleHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
 
 export type ListAuditEntriesParams = {
 cursor?: string;

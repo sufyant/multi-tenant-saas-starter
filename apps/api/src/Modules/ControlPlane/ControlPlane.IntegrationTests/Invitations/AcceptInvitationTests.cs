@@ -1,4 +1,3 @@
-using ControlPlane.Application.Invitations.CancelInvitation;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Contracts.Tenants;
@@ -22,7 +21,7 @@ public sealed class AcceptInvitationTests(Database database)
 
         var accepted = await Handlers.AcceptAsync(database.Services, code, invitee);
 
-        accepted.Value.ShouldBe(new MyTenantView(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'"), "Active", new RoleView("Owner", "owner")));
+        accepted.Value.ShouldBe(new MyTenantView(tenantId, "Acme Ltd", await ScalarAsync<string>($"SELECT slug FROM control_plane.tenants WHERE id = '{tenantId}'"), "Active", new RoleView(await ScalarAsync<Guid>($"SELECT id FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in = 'Owner'"), "owner", true)));
         (await FindMembershipAsync(tenantId, invitee)).ShouldNotBeNull();
         (await ScalarAsync<string>(
             $"""
@@ -92,13 +91,12 @@ public sealed class AcceptInvitationTests(Database database)
         (await FindMembershipAsync(tenantId, invitee)).ShouldBeNull();
     }
 
-    // A cancelled invitation answers like one that does not exist.
+    // A cancelled invitation, as a replacement or a closure leaves it, answers like one that does not exist.
     [Fact]
     public async Task AcceptInvitation_Cancelled_IsNotFound()
     {
         var (tenantId, email, code) = await InviteOwnerAsync();
-        var invitationId = await ScalarAsync<Guid>($"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");
-        await Handlers.CancelInvitationAsync(database.Services, tenantId, new CancelInvitationCommand(tenantId, invitationId));
+        await database.ExecuteAsSuperuserAsync($"UPDATE control_plane.invitations SET status = 'Cancelled' WHERE tenant_id = '{tenantId}'");
         var invitee = Unique.ExternalId();
         database.Identity.AddAccount(invitee, email);
 
@@ -108,7 +106,7 @@ public sealed class AcceptInvitationTests(Database database)
         (await FindMembershipAsync(tenantId, invitee)).ShouldBeNull();
     }
 
-    // The first owner is invited the way tenant creation does it: the email carries our accept link.
+    // The first owner is invited the way tenant creation does it: the sign-up carries our accept link.
     private async Task<(Guid TenantId, string Email, string Code)> InviteOwnerAsync(IServiceProvider? services = null)
     {
         var email = Unique.Email();

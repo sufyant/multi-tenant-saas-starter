@@ -1,6 +1,9 @@
 using ControlPlane.Application.Tenants;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.Users;
+using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +31,7 @@ public sealed class TenantRepositoryTests(Database database)
         members.ShouldBe([member.Id]);
     }
 
-    // B8: one repository method writes the membership, the tenant's summary and the user's count (R13).
+    // One repository method writes the membership, the tenant's summary and the user's count (R13).
     [Fact]
     public async Task AddMembership_InATenant_BelongsToThatTenantAndIsCountedAndSummarized()
     {
@@ -39,7 +42,7 @@ public sealed class TenantRepositoryTests(Database database)
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
             var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
-            await tenants.AddMembershipAsync(locked, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            await tenants.AddMembershipAsync(locked, user.Id, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Member).Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
@@ -58,7 +61,7 @@ public sealed class TenantRepositoryTests(Database database)
         await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
         {
             var tenants = scope.GetRequiredService<ITenantRepository>();
-            await tenants.AddMembershipAsync((await tenants.FindTenantForUpdateAsync(Cancellation))!, user.Id, BuiltInRoles.Member.Id, DateTimeOffset.UtcNow, Cancellation);
+            await tenants.AddMembershipAsync((await tenants.FindTenantForUpdateAsync(Cancellation))!, user.Id, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Member).Id, DateTimeOffset.UtcNow, Cancellation);
             return SharedKernel.Result.Success();
         });
 
@@ -72,6 +75,44 @@ public sealed class TenantRepositoryTests(Database database)
 
         (await TestData.MembershipCountOfAsync(database.Services, user)).ShouldBe(0);
         (await TestData.MemberCountOfAsync(database.Services, tenant)).ShouldBe(0);
+    }
+
+    // K6k: a command that changes an invitation or a membership and saves it without the summary does not commit, so the summary
+    // never says less than the rows (R12).
+    [Fact]
+    public async Task CommitTransaction_AnInvitationSavedWithoutTheSummary_IsRefusedAndAddsNothing()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var inviter = await TestData.AddUserAsync(database.Services);
+
+        var commit = () => InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            await tenants.FindTenantForUpdateAsync(Cancellation);
+            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Owner)));
+            await tenants.SaveChangesAsync(Cancellation);
+        });
+
+        await commit.ShouldThrowAsync<InvalidOperationException>();
+        (await InvitationsOfAsync(tenant)).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task CommitTransaction_AnInvitationSavedWithTheSummary_CommitsAndSummarizes()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var inviter = await TestData.AddUserAsync(database.Services);
+
+        await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
+            scope.GetRequiredService<ControlPlaneDbContext>().Invitations.Add(OwnerInvitation(tenant, inviter, (await tenants.FindRolesAsync(Cancellation)).BuiltIn(BuiltInRole.Owner)));
+            await tenants.SaveAsync(locked, Cancellation);
+        });
+
+        (await InvitationsOfAsync(tenant)).ShouldBe(1);
+        (await TestData.OwnerInvitationEmailOfAsync(database.Services, tenant)).ShouldBe("ada@example.com");
     }
 
     [Fact]
@@ -119,8 +160,24 @@ public sealed class TenantRepositoryTests(Database database)
         var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), DateTimeOffset.UtcNow).Value;
 
         var add = () => InTenant.ReadAsync(database.Services, Guid.CreateVersion7(), scope =>
-            scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, Cancellation));
+            scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, [], Cancellation));
 
         await add.ShouldThrowAsync<InvalidOperationException>();
     }
+
+    private static Invitation OwnerInvitation(Tenant tenant, User inviter, Role owner) =>
+        Invitation.Create(
+            Guid.CreateVersion7(),
+            tenant.Id,
+            EmailAddress.Create("ada@example.com"),
+            owner,
+            inviter.Id,
+            DateTimeOffset.UtcNow,
+            TimeSpan.FromDays(7),
+            InvitationSecret.Generate(),
+            SharedKernel.Language.En);
+
+    private Task<int> InvitationsOfAsync(Tenant tenant) =>
+        InTenant.ReadAsync(database.Services, tenant.Id, scope =>
+            scope.GetRequiredService<ITenantRepository>().CountInvitationsSinceAsync(DateTimeOffset.MinValue, Cancellation));
 }

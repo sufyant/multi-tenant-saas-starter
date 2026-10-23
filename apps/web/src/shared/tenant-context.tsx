@@ -117,10 +117,13 @@ export function TenantProvider({
   if (error) return <ProblemScreen error={error} />;
   if (matching.data && !tenant) return <NoAccess />;
   if (!tenant || !all.data) return <Skeleton label={t("loading")} />;
+  // The API refuses a member of an organisation whose deletion has started as it refuses a closed one's (403 `tenant.closed`).
   const blocked =
     tenant.status === MyTenantResponseStatus.Active
       ? blockedBy(detail.error)
-      : tenant.status;
+      : tenant.status === MyTenantResponseStatus.Purging
+        ? MyTenantResponseStatus.Closed
+        : tenant.status;
   if (blocked)
     return (
       <BlockedOrganisation

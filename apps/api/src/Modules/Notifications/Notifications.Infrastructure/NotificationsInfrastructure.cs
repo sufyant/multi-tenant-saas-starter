@@ -15,14 +15,7 @@ namespace Notifications.Infrastructure;
 public static class NotificationsInfrastructure
 {
     /// <summary>The key of the pauses before each new try of an invitation email.</summary>
-    public const string InvitationEmailRetryDelaysKey = $"{InvitationEmailOptions.Section}:{nameof(InvitationEmailOptions.InvitationEmailRetryDelays)}";
-
-    /// <summary>
-    /// The pauses before each new try of an invitation email, as configured or by default. The host checks the tenant creation's wait
-    /// for the email against them (section 6, "Tenant creation process").
-    /// </summary>
-    public static IReadOnlyList<TimeSpan> InvitationEmailRetryDelays(IServiceProvider services) =>
-        services.GetRequiredService<IOptions<InvitationEmailOptions>>().Value.RetryDelays;
+    public const string InvitationEmailRetryDelaysKey = $"{InvitationEmailOptions.Section}:{nameof(InvitationEmailOptions.RetryDelays)}";
 
     public static IServiceCollection AddNotificationsInfrastructure(this IServiceCollection services)
     {
@@ -61,7 +54,7 @@ public static class NotificationsInfrastructure
 
         services.AddOptions<InvitationEmailOptions>()
             .BindConfiguration(InvitationEmailOptions.Section)
-            .Validate(settings => settings.IsValid, $"{InvitationEmailOptions.Section}:InvitationEmailRetryDelays must be positive pauses that grow.")
+            .Validate(settings => settings.IsValid, $"{InvitationEmailRetryDelaysKey} must be positive pauses that grow.")
             .ValidateOnStart();
         services.AddSingleton<IWolverineExtension, InvitationEmailRetries>();
 

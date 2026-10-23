@@ -27,9 +27,17 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  RoleCreated: 'role.created',
+  RoleDeleted: 'role.deleted',
+  RoleUpdated: 'role.updated',
+  SystemAdminGranted: 'system_admin.granted',
+  SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
+  TenantOwnerMade: 'tenant.owner_made',
+  TenantPurgeWarned: 'tenant.purge_warned',
+  TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
@@ -45,53 +53,95 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   MemberInvited: 'member.invited',
 }),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
+  "id": zod.uuid().nullable(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then.'),
   "replacedInvitationId": zod.uuid().nullable()
 }).describe('The details of `member.invited`: the role the invitation gives, and the pending invitation it replaced, if any.'),zod.object({
   "operation": zod.enum({
   MemberRemoved: 'member.removed',
 }),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.')
+  "id": zod.uuid().nullable(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then.')
 }).describe('The details of `member.removed`: the role the member had.'),zod.object({
   "operation": zod.enum({
   MemberRoleChanged: 'member.role_changed',
 }),
   "oldRole": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
+  "id": zod.uuid().nullable(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then.'),
   "newRole": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.')
+  "id": zod.uuid().nullable(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then.')
 }).describe('The details of `member.role_changed`: the member\'s old and new role.'),zod.object({
+  "operation": zod.enum({
+  RoleCreated: 'role.created',
+}),
+  "permissions": zod.array(zod.enum({
+  PlatformAuditRead: 'platform.audit.read',
+  PlatformSystemAdminsCreate: 'platform.system_admins.create',
+  PlatformSystemAdminsDelete: 'platform.system_admins.delete',
+  PlatformTenantsClose: 'platform.tenants.close',
+  PlatformTenantsCreate: 'platform.tenants.create',
+  PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
+  PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
+  PlatformTenantsReactivate: 'platform.tenants.reactivate',
+  PlatformTenantsRead: 'platform.tenants.read',
+  PlatformTenantsReopen: 'platform.tenants.reopen',
+  PlatformTenantsSuspend: 'platform.tenants.suspend',
+  PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformUsersDelete: 'platform.users.delete',
+  PlatformUsersReactivate: 'platform.users.reactivate',
+  PlatformUsersRead: 'platform.users.read',
+  PlatformUsersSuspend: 'platform.users.suspend',
+  PlatformUsersUpdate: 'platform.users.update',
+  TenantAuditRead: 'tenant.audit.read',
+  TenantInvitationsCreate: 'tenant.invitations.create',
+  TenantInvitationsDelete: 'tenant.invitations.delete',
+  TenantInvitationsRead: 'tenant.invitations.read',
+  TenantMembersDelete: 'tenant.members.delete',
+  TenantMembersRead: 'tenant.members.read',
+  TenantMembersUpdate: 'tenant.members.update',
+  TenantOwnersManage: 'tenant.owners.manage',
+  TenantProfileRead: 'tenant.profile.read',
+  TenantRolesCreate: 'tenant.roles.create',
+  TenantRolesDelete: 'tenant.roles.delete',
+  TenantRolesRead: 'tenant.roles.read',
+  TenantRolesUpdate: 'tenant.roles.update',
+}).describe('A name of the permission list. Every endpoint checks its own permission.'))
+}).describe('The details of `role.created`: the names of the new role\'s permissions, in ordinal order.'),zod.object({
+  "operation": zod.enum({
+  RoleUpdated: 'role.updated',
+}),
+  "oldName": zod.string(),
+  "newName": zod.string(),
+  "permissionsAdded": zod.array(zod.string()),
+  "permissionsRemoved": zod.array(zod.string())
+}).describe('The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order.'),zod.object({
   "operation": zod.enum({
   TenantOwnerInvited: 'tenant.owner_invited',
 }),
   "invitationId": zod.uuid(),
   "replacedInvitationId": zod.uuid().nullable()
 }).describe('The details of `tenant.owner_invited`: the invitation\'s id, and the pending invitation it replaced, if any.'),zod.object({
+  "operation": zod.enum({
+  TenantOwnerMade: 'tenant.owner_made',
+}),
+  "userId": zod.uuid(),
+  "oldRole": zod.object({
+  "id": zod.uuid().nullable(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then.')
+}).describe('The details of `tenant.owner_made`: the member who became an Owner, and the role they had.'),zod.object({
   "operation": zod.enum({
   TenantRenamed: 'tenant.renamed',
 }),
@@ -117,11 +167,12 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   Tenant: 'tenant',
   User: 'user',
   Invitation: 'invitation',
+  Role: 'role',
 }).describe('The kind of target of an audit entry.'),
   "id": zod.uuid(),
   "name": zod.string().nullable(),
   "deleted": zod.boolean().nullable()
-}).describe('What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which\nhas no name. `deleted` is set for a user only.')
+}).describe('What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an\ninvitation, which has no name. `deleted` is set for a user only.')
 }).describe('One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry\nkeeps: the shape of its operation, or null for an operation without details. Names are resolved when the log is read; a name is only\na person\'s real name. It holds no email address.')),
   "nextCursor": zod.string().nullable()
 })

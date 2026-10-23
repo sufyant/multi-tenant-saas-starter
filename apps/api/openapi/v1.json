@@ -1352,6 +1352,136 @@
         }
       }
     },
+    "/v1/platform/tenants/{tenantId}/owners": {
+      "post": {
+        "tags": [
+          "Platform/Members"
+        ],
+        "operationId": "MakeOwner",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MakeOwnerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMembershipResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/users": {
       "get": {
         "tags": [
@@ -2116,6 +2246,331 @@
         }
       }
     },
+    "/v1/platform/users/{userId}/system-admin": {
+      "post": {
+        "tags": [
+          "Platform/SystemAdmins"
+        ],
+        "description": "Answers 201 with the user and without Location: the API has no GET for one grant, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
+        "operationId": "GrantSystemAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform/SystemAdmins"
+        ],
+        "operationId": "RevokeSystemAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/audit-log": {
       "get": {
         "tags": [
@@ -2431,10 +2886,11 @@
             }
           },
           {
-            "name": "role",
+            "name": "roleId",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/MemberRole"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3086,10 +3542,11 @@
             }
           },
           {
-            "name": "role",
+            "name": "roleId",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/MemberRole"
+              "type": "string",
+              "format": "uuid"
             }
           },
           {
@@ -3214,6 +3671,650 @@
         "parameters": [
           {
             "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/roles": {
+      "get": {
+        "tags": [
+          "Tenant/Roles"
+        ],
+        "operationId": "ListRoles",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "name",
+                "-name"
+              ],
+              "type": "string",
+              "x-enumNames": [
+                "Name",
+                "NameDescending"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The search. The API trims it before it counts its length.",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListPageOfRoleDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tenant/Roles"
+        ],
+        "description": "Answers 201 with the role and without Location: the API has no GET for one role, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
+        "operationId": "CreateRole",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/roles/{roleId}": {
+      "patch": {
+        "tags": [
+          "Tenant/Roles"
+        ],
+        "operationId": "UpdateRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tenant/Roles"
+        ],
+        "operationId": "DeleteRole",
+        "parameters": [
+          {
+            "name": "roleId",
             "in": "path",
             "required": true,
             "schema": {
@@ -3470,6 +4571,123 @@
           "Me/Users"
         ],
         "operationId": "GetMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Me/Users"
+        ],
+        "operationId": "RenameMe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameMeRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -4175,7 +5393,16 @@
             "$ref": "#/components/schemas/MemberRoleChangedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/RoleCreatedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/RoleUpdatedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantOwnerInvitedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantOwnerMadeDetailsResponse"
           },
           {
             "$ref": "#/components/schemas/TenantRenamedDetailsResponse"
@@ -4191,7 +5418,10 @@
             "member.invited": "#/components/schemas/MemberInvitedDetailsResponse",
             "member.removed": "#/components/schemas/MemberRemovedDetailsResponse",
             "member.role_changed": "#/components/schemas/MemberRoleChangedDetailsResponse",
+            "role.created": "#/components/schemas/RoleCreatedDetailsResponse",
+            "role.updated": "#/components/schemas/RoleUpdatedDetailsResponse",
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
+            "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
           }
@@ -4245,9 +5475,17 @@
           "member.joined",
           "member.removed",
           "member.role_changed",
+          "role.created",
+          "role.deleted",
+          "role.updated",
+          "system_admin.granted",
+          "system_admin.revoked",
           "tenant.closed",
           "tenant.created",
           "tenant.owner_invited",
+          "tenant.owner_made",
+          "tenant.purge_warned",
+          "tenant.purged",
           "tenant.reactivated",
           "tenant.renamed",
           "tenant.reopened",
@@ -4266,9 +5504,17 @@
           "MemberJoined",
           "MemberRemoved",
           "MemberRoleChanged",
+          "RoleCreated",
+          "RoleDeleted",
+          "RoleUpdated",
+          "SystemAdminGranted",
+          "SystemAdminRevoked",
           "TenantClosed",
           "TenantCreated",
           "TenantOwnerInvited",
+          "TenantOwnerMade",
+          "TenantPurgeWarned",
+          "TenantPurged",
           "TenantReactivated",
           "TenantRenamed",
           "TenantReopened",
@@ -4279,6 +5525,30 @@
           "UserRenamed",
           "UserSuspended"
         ]
+      },
+      "AuditRoleResponse": {
+        "required": [
+          "id",
+          "name",
+          "builtIn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "builtIn": {
+            "type": "boolean"
+          }
+        },
+        "description": "A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer's decision in step r4b). An entry written before step r4b keeps the name only: its id is null, and it is built in, because\nevery role was then."
       },
       "AuditTargetResponse": {
         "required": [
@@ -4309,33 +5579,36 @@
             ]
           }
         },
-        "description": "What the action was done to: a tenant with its name at that moment, a user with their real name now or null, or an invitation, which\nhas no name. `deleted` is set for a user only."
+        "description": "What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an\ninvitation, which has no name. `deleted` is set for a user only."
       },
       "AuditTargetResponseKind": {
         "enum": [
           "tenant",
           "user",
-          "invitation"
+          "invitation",
+          "role"
         ],
         "type": "string",
         "description": "The kind of target of an audit entry.",
         "x-enumNames": [
           "Tenant",
           "User",
-          "Invitation"
+          "Invitation",
+          "Role"
         ]
       },
       "ChangeMemberRoleRequest": {
         "required": [
-          "role"
+          "roleId"
         ],
         "type": "object",
         "properties": {
-          "role": {
-            "$ref": "#/components/schemas/MemberRole"
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
-        "description": "The built-in role to give the member. The role is required: a request without one is refused, so it never falls back to the enum's\nfirst value."
+        "description": "The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to\nan empty id."
       },
       "ChangePreferencesRequest": {
         "required": [
@@ -4356,6 +5629,26 @@
           }
         },
         "description": "The user's language, one of the list, and the IANA name of their time zone, such as `Europe/Dublin`, or null for \"not set\":\nthe web then uses the browser's. Both are required, so a client that leaves the time zone out never clears it by mistake."
+      },
+      "CreateRoleRequest": {
+        "required": [
+          "name",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            }
+          }
+        },
+        "description": "The name of the custom role, and the names of its permissions, from the tenant pool."
       },
       "CreateTenantRequest": {
         "required": [
@@ -4429,6 +5722,7 @@
           "invitation.not_pending",
           "invitation.owner_requires_owner",
           "invitation.system_admin_cannot_join",
+          "member.already_owner",
           "member.cannot_remove_self",
           "member.exists",
           "member.last_owner",
@@ -4447,9 +5741,26 @@
           "request.too_large",
           "request.unsupported_media_type",
           "request.validation_failed",
+          "role.built_in",
+          "role.escalation",
+          "role.in_use",
+          "role.limit_reached",
+          "role.name_invalid",
+          "role.name_taken",
+          "role.not_found",
+          "role.not_permitted",
+          "role.permission_invalid",
+          "role.permission_owner_only",
+          "role.permissions_required",
+          "role.profile_read_required",
+          "role.roles_read_required",
           "route.method_not_allowed",
           "route.not_found",
           "server.error",
+          "system_admin.cannot_revoke_self",
+          "system_admin.exists",
+          "system_admin.not_found",
+          "system_admin.root",
           "tenant.closed",
           "tenant.has_owner",
           "tenant.name_invalid",
@@ -4483,6 +5794,7 @@
           "InvitationNotPending",
           "InvitationOwnerRequiresOwner",
           "InvitationSystemAdminCannotJoin",
+          "MemberAlreadyOwner",
           "MemberCannotRemoveSelf",
           "MemberExists",
           "MemberLastOwner",
@@ -4501,9 +5813,26 @@
           "RequestTooLarge",
           "RequestUnsupportedMediaType",
           "RequestValidationFailed",
+          "RoleBuiltIn",
+          "RoleEscalation",
+          "RoleInUse",
+          "RoleLimitReached",
+          "RoleNameInvalid",
+          "RoleNameTaken",
+          "RoleNotFound",
+          "RoleNotPermitted",
+          "RolePermissionInvalid",
+          "RolePermissionOwnerOnly",
+          "RolePermissionsRequired",
+          "RoleProfileReadRequired",
+          "RoleRolesReadRequired",
           "RouteMethodNotAllowed",
           "RouteNotFound",
           "ServerError",
+          "SystemAdminCannotRevokeSelf",
+          "SystemAdminExists",
+          "SystemAdminNotFound",
+          "SystemAdminRoot",
           "TenantClosed",
           "TenantHasOwner",
           "TenantNameInvalid",
@@ -4569,7 +5898,14 @@
             "$ref": "#/components/schemas/InviterNameResponse"
           },
           "role": {
-            "$ref": "#/components/schemas/RoleResponse"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RoleResponse"
+              }
+            ]
           },
           "expiresAt": {
             "type": "string",
@@ -4579,7 +5915,7 @@
             "$ref": "#/components/schemas/InvitationResponseState"
           }
         },
-        "description": "What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation\ngives, when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or\n`cancelled`. Only a caller with the invited address gets it."
+        "description": "What the accept screen shows the invited person before they accept: the tenant's name, who invited, the role the invitation\ngives (null for a finished invitation whose custom role was deleted), when it expires, and its state at the moment of the request: `pending`, `expired`, `accepted` or\n`cancelled`. Only a caller with the invited address gets it."
       },
       "InvitationResponse": {
         "required": [
@@ -4648,7 +5984,7 @@
       "InviteMemberRequest": {
         "required": [
           "email",
-          "role"
+          "roleId"
         ],
         "type": "object",
         "properties": {
@@ -4657,8 +5993,9 @@
             "type": "string",
             "format": "email"
           },
-          "role": {
-            "$ref": "#/components/schemas/MemberRole"
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
           },
           "language": {
             "oneOf": [
@@ -4671,7 +6008,7 @@
             ]
           }
         },
-        "description": "The address to invite, the built-in role the invitation gives, and the language of the invitation's email: without one, the\ninviter's own. The role is required: a request without one is refused, so it never falls back to the enum's first value."
+        "description": "The address to invite, the id of the tenant's role the invitation gives, and the language of the invitation's email: without one,\nthe inviter's own. The role is required: a request without one is refused, so it never falls back to an empty id."
       },
       "InviteOwnerRequest": {
         "required": [
@@ -4843,6 +6180,35 @@
           }
         }
       },
+      "ListPageOfRoleDetailResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleDetailResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ListPageOfTenantListItemResponse": {
         "required": [
           "items",
@@ -4901,6 +6267,19 @@
           }
         }
       },
+      "MakeOwnerRequest": {
+        "required": [
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a\nrequest without one is refused, so it never falls back to an empty id."
+      },
       "MemberInvitedDetailsResponse": {
         "required": [
           "role",
@@ -4918,7 +6297,7 @@
             ]
           },
           "role": {
-            "$ref": "#/components/schemas/RoleResponse"
+            "$ref": "#/components/schemas/AuditRoleResponse"
           },
           "replacedInvitationId": {
             "type": [
@@ -4946,7 +6325,7 @@
             ]
           },
           "role": {
-            "$ref": "#/components/schemas/RoleResponse"
+            "$ref": "#/components/schemas/AuditRoleResponse"
           }
         },
         "description": "The details of `member.removed`: the role the member had."
@@ -4998,20 +6377,6 @@
         },
         "description": "A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows \"Deleted user\", as the audit logs say `deleted` (K3)."
       },
-      "MemberRole": {
-        "enum": [
-          "owner",
-          "admin",
-          "member"
-        ],
-        "type": "string",
-        "description": "A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.",
-        "x-enumNames": [
-          "Owner",
-          "Admin",
-          "Member"
-        ]
-      },
       "MemberRoleChangedDetailsResponse": {
         "required": [
           "oldRole",
@@ -5029,10 +6394,10 @@
             ]
           },
           "oldRole": {
-            "$ref": "#/components/schemas/RoleResponse"
+            "$ref": "#/components/schemas/AuditRoleResponse"
           },
           "newRole": {
-            "$ref": "#/components/schemas/RoleResponse"
+            "$ref": "#/components/schemas/AuditRoleResponse"
           }
         },
         "description": "The details of `member.role_changed`: the member's old and new role."
@@ -5154,20 +6519,22 @@
             "$ref": "#/components/schemas/RoleResponse"
           }
         },
-        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended or closed when its members cannot enter it. The role is the user's there."
+        "description": "A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended, closed or purging when its members cannot enter it. The role is the user's there."
       },
       "MyTenantResponseStatus": {
         "enum": [
           "active",
           "suspended",
-          "closed"
+          "closed",
+          "purging"
         ],
         "type": "string",
-        "description": "The status of a tenant as its members see it: active, or suspended or closed when they cannot enter it.",
+        "description": "The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.",
         "x-enumNames": [
           "Active",
           "Suspended",
-          "Closed"
+          "Closed",
+          "Purging"
         ]
       },
       "OwnerInvitationResponse": {
@@ -5206,9 +6573,12 @@
       "Permission": {
         "enum": [
           "platform.audit.read",
+          "platform.system_admins.create",
+          "platform.system_admins.delete",
           "platform.tenants.close",
           "platform.tenants.create",
           "platform.tenants.invite_owner",
+          "platform.tenants.make_owner",
           "platform.tenants.reactivate",
           "platform.tenants.read",
           "platform.tenants.reopen",
@@ -5226,15 +6596,23 @@
           "tenant.members.delete",
           "tenant.members.read",
           "tenant.members.update",
-          "tenant.profile.read"
+          "tenant.owners.manage",
+          "tenant.profile.read",
+          "tenant.roles.create",
+          "tenant.roles.delete",
+          "tenant.roles.read",
+          "tenant.roles.update"
         ],
         "type": "string",
         "description": "A name of the permission list. Every endpoint checks its own permission.",
         "x-enumNames": [
           "PlatformAuditRead",
+          "PlatformSystemAdminsCreate",
+          "PlatformSystemAdminsDelete",
           "PlatformTenantsClose",
           "PlatformTenantsCreate",
           "PlatformTenantsInviteOwner",
+          "PlatformTenantsMakeOwner",
           "PlatformTenantsReactivate",
           "PlatformTenantsRead",
           "PlatformTenantsReopen",
@@ -5252,7 +6630,12 @@
           "TenantMembersDelete",
           "TenantMembersRead",
           "TenantMembersUpdate",
-          "TenantProfileRead"
+          "TenantOwnersManage",
+          "TenantProfileRead",
+          "TenantRolesCreate",
+          "TenantRolesDelete",
+          "TenantRolesRead",
+          "TenantRolesUpdate"
         ]
       },
       "PreferencesResponse": {
@@ -5345,6 +6728,24 @@
           }
         }
       },
+      "RenameMeRequest": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "lastName": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "description": "The signed-in user's own names, each within the API's limit. The API trims each name before it counts its length. Both are required,\nso a client that leaves one out never clears it."
+      },
       "RenameTenantRequest": {
         "required": [
           "name"
@@ -5376,28 +6777,117 @@
         },
         "description": "A user's new names, each within the API's limit. The API trims each name before it counts its length."
       },
-      "RoleResponse": {
+      "RoleCreatedDetailsResponse": {
         "required": [
+          "permissions",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "role.created"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "RoleCreated"
+            ]
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            }
+          }
+        },
+        "description": "The details of `role.created`: the names of the new role's permissions, in ordinal order."
+      },
+      "RoleDetailResponse": {
+        "required": [
+          "id",
+          "name",
           "builtIn",
-          "name"
+          "permissions"
         ],
         "type": "object",
         "properties": {
-          "builtIn": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MemberRole"
-              }
-            ]
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
           "name": {
             "type": "string"
+          },
+          "builtIn": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            }
           }
         },
-        "description": "A role: the built-in role, or null for a custom role, which comes later (A3), and the role's stored name. A built-in role answers\n`{ \"builtIn\": \"owner\", \"name\": \"owner\" }`. A client compares `builtIn` with MemberRole, never the name."
+        "description": "A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role's\npermissions, in ordinal order."
+      },
+      "RoleResponse": {
+        "required": [
+          "id",
+          "name",
+          "builtIn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "builtIn": {
+            "type": "boolean"
+          }
+        },
+        "description": "A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id."
+      },
+      "RoleUpdatedDetailsResponse": {
+        "required": [
+          "oldName",
+          "newName",
+          "permissionsAdded",
+          "permissionsRemoved",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "role.updated"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "RoleUpdated"
+            ]
+          },
+          "oldName": {
+            "type": "string"
+          },
+          "newName": {
+            "type": "string"
+          },
+          "permissionsAdded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissionsRemoved": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order."
       },
       "SuspendTenantRequest": {
         "required": [
@@ -5410,7 +6900,7 @@
             "type": "string"
           }
         },
-        "description": "Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member\nnever sees it."
+        "description": "Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member\nnever sees it. It holds no personal data, such as a person's name or email address: the platform's audit log keeps it after the\ntenant's purge (A8)."
       },
       "TenantDetailResponse": {
         "required": [
@@ -5420,6 +6910,7 @@
           "status",
           "suspensionReason",
           "closedAt",
+          "purgedAt",
           "reopenableUntil",
           "memberCount",
           "ownerCount",
@@ -5448,6 +6939,13 @@
             ]
           },
           "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "purgedAt": {
             "type": [
               "null",
               "string"
@@ -5496,10 +6994,10 @@
           "status",
           "suspensionReason",
           "closedAt",
+          "purgedAt",
           "reopenableUntil",
           "memberCount",
           "ownerCount",
-          "firstOwner",
           "ownerInvitation"
         ],
         "type": "object",
@@ -5530,6 +7028,13 @@
             ],
             "format": "date-time"
           },
+          "purgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "reopenableUntil": {
             "type": [
               "null",
@@ -5545,16 +7050,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "firstOwner": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/TenantOwnerResponse"
-              }
-            ]
-          },
           "ownerInvitation": {
             "oneOf": [
               {
@@ -5566,7 +7061,7 @@
             ]
           }
         },
-        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply."
+        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member\nand no Owner: its purge deleted its summary with its members (K4)."
       },
       "TenantOwnerInvitedDetailsResponse": {
         "required": [
@@ -5597,6 +7092,32 @@
           }
         },
         "description": "The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any."
+      },
+      "TenantOwnerMadeDetailsResponse": {
+        "required": [
+          "userId",
+          "oldRole",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.owner_made"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantOwnerMade"
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "oldRole": {
+            "$ref": "#/components/schemas/AuditRoleResponse"
+          }
+        },
+        "description": "The details of `tenant.owner_made`: the member who became an Owner, and the role they had."
       },
       "TenantOwnerResponse": {
         "required": [
@@ -5664,7 +7185,8 @@
           "slug",
           "status",
           "suspensionReason",
-          "closedAt"
+          "closedAt",
+          "purgedAt"
         ],
         "type": "object",
         "properties": {
@@ -5693,26 +7215,33 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "purgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape."
+        "description": "A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape."
       },
       "TenantResponseStatus": {
         "enum": [
-          "provisioning",
           "active",
           "suspended",
-          "cancelled",
-          "closed"
+          "closed",
+          "purging",
+          "purged"
         ],
         "type": "string",
-        "description": "The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.",
+        "description": "The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).",
         "x-enumNames": [
-          "Provisioning",
           "Active",
           "Suspended",
-          "Cancelled",
-          "Closed"
+          "Closed",
+          "Purging",
+          "Purged"
         ]
       },
       "TenantSuspendedDetailsResponse": {
@@ -5736,6 +7265,26 @@
         },
         "description": "The details of `tenant.suspended`: the system admin's reason. Only the platform's log holds it."
       },
+      "UpdateRoleRequest": {
+        "required": [
+          "name",
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            }
+          }
+        },
+        "description": "The name the custom role takes, and exactly the permissions it holds afterwards, from the tenant pool."
+      },
       "UserDetailResponse": {
         "required": [
           "id",
@@ -5744,6 +7293,7 @@
           "lastName",
           "status",
           "isSystemAdmin",
+          "isRootSystemAdmin",
           "membershipCount",
           "createdAt",
           "suspendedAt",
@@ -5778,6 +7328,9 @@
             "$ref": "#/components/schemas/UserResponseStatus"
           },
           "isSystemAdmin": {
+            "type": "boolean"
+          },
+          "isRootSystemAdmin": {
             "type": "boolean"
           },
           "membershipCount": {
@@ -5856,14 +7409,16 @@
         "enum": [
           "active",
           "suspended",
-          "closed"
+          "closed",
+          "purging"
         ],
         "type": "string",
-        "description": "The status of a tenant a user is a member of: active, or suspended or closed when its members cannot enter it.",
+        "description": "The status of a tenant a user is a member of: active, or suspended, closed or purging when its members cannot enter it. A purged tenant has no member.",
         "x-enumNames": [
           "Active",
           "Suspended",
-          "Closed"
+          "Closed",
+          "Purging"
         ]
       },
       "UserNameResponse": {
@@ -5900,6 +7455,7 @@
           "lastName",
           "status",
           "isSystemAdmin",
+          "isRootSystemAdmin",
           "membershipCount",
           "createdAt"
         ],
@@ -5933,6 +7489,9 @@
           "isSystemAdmin": {
             "type": "boolean"
           },
+          "isRootSystemAdmin": {
+            "type": "boolean"
+          },
           "membershipCount": {
             "type": "integer",
             "format": "int32"
@@ -5942,7 +7501,7 @@
             "format": "date-time"
           }
         },
-        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, how many tenants they are a member of, and when they became a user."
+        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user."
       },
       "UserResponseStatus": {
         "enum": [
@@ -5990,6 +7549,12 @@
       "name": "Platform/Invitations"
     },
     {
+      "name": "Platform/Members"
+    },
+    {
+      "name": "Platform/SystemAdmins"
+    },
+    {
       "name": "Platform/Tenants"
     },
     {
@@ -6003,6 +7568,9 @@
     },
     {
       "name": "Tenant/Members"
+    },
+    {
+      "name": "Tenant/Roles"
     },
     {
       "name": "Tenant/Tenants"

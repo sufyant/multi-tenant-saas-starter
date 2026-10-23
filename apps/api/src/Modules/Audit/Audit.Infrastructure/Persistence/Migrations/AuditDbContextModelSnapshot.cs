@@ -23,7 +23,70 @@ namespace Audit.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Audit.Domain.AuditEntry", b =>
+            modelBuilder.Entity("Audit.Domain.AuditEntries.PlatformAuditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("ActorKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("actor_kind");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("details");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("operation");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("target_kind");
+
+                    b.Property<string>("TargetName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("target_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_platform_entries");
+
+                    b.HasIndex("OccurredAt", "Id")
+                        .HasDatabaseName("ix_platform_entries_occurred_at_id");
+
+                    b.HasIndex("TargetKind", "TargetId", "OccurredAt", "Id")
+                        .HasDatabaseName("ix_platform_entries_target_kind_target_id_occurred_at_id");
+
+                    b.ToTable("platform_entries", "audit");
+                });
+
+            modelBuilder.Entity("Audit.Domain.AuditEntries.TenantAuditEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -90,69 +153,6 @@ namespace Audit.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_entries_tenant_id_occurred_at_id");
 
                     b.ToTable("entries", "audit");
-                });
-
-            modelBuilder.Entity("Audit.Domain.PlatformAuditEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("ActorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("actor_id");
-
-                    b.Property<string>("ActorKind")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("actor_kind");
-
-                    b.Property<string>("Details")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("details");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("kind");
-
-                    b.Property<DateTimeOffset>("OccurredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at");
-
-                    b.Property<string>("Operation")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("operation");
-
-                    b.Property<Guid>("TargetId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("target_id");
-
-                    b.Property<string>("TargetKind")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("target_kind");
-
-                    b.Property<string>("TargetName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("target_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_platform_entries");
-
-                    b.HasIndex("OccurredAt", "Id")
-                        .HasDatabaseName("ix_platform_entries_occurred_at_id");
-
-                    b.HasIndex("TargetKind", "TargetId", "OccurredAt", "Id")
-                        .HasDatabaseName("ix_platform_entries_target_kind_target_id_occurred_at_id");
-
-                    b.ToTable("platform_entries", "audit");
                 });
 #pragma warning restore 612, 618
         }

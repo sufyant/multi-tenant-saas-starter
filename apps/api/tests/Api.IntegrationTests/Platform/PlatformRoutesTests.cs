@@ -3,7 +3,6 @@ using System.Net;
 namespace Api.IntegrationTests.Platform;
 
 // The system door is a separate route group with its own authorization, and needs a second factor.
-[RuntimeHandlerCode]
 public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);

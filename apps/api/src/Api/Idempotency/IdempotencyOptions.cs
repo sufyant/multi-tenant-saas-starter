@@ -2,8 +2,8 @@ namespace Api.Idempotency;
 
 public sealed class IdempotencyOptions
 {
-    public const string Section = "Api";
-    public TimeSpan IdempotencyKeyRetention { get; set; } = TimeSpan.FromHours(24);
+    public const string Section = "Host:Idempotency";
+    public TimeSpan KeyRetention { get; set; } = TimeSpan.FromHours(24);
 }
 
 internal static class IdempotencyOptionsExtensions
@@ -12,7 +12,7 @@ internal static class IdempotencyOptionsExtensions
     {
         services.AddOptions<IdempotencyOptions>()
             .BindConfiguration(IdempotencyOptions.Section)
-            .Validate(options => options.IdempotencyKeyRetention >= TimeSpan.FromHours(24), $"{IdempotencyOptions.Section}:IdempotencyKeyRetention must be at least 24 hours.")
+            .Validate(options => options.KeyRetention >= TimeSpan.FromHours(24), $"{IdempotencyOptions.Section}:KeyRetention must be at least 24 hours.")
             .ValidateOnStart();
 
         return services;

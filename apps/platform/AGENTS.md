@@ -17,5 +17,5 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - An ink "Platform" label starts the top bar on every page and every screen size. There is no OrgMenu.
 - A session without a verified second factor goes to `/two-step` first: the enrolment or the challenge (F42). Only then does the shell read `GetMe`.
 - A signed-in user whose `GetMe.isSystemAdmin` is false sees "You don't have access". The first system admin has no user until their first platform request; on `GetMe` 404 the shell asks the door once (F42).
-- The platform runs on its own origin, so the API accepts its tokens through `Authentication__Clerk__AuthorizedParties__1` (`apps/api/docs/configuration.md`, `.railway/railway.ts`).
+- The platform runs on its own origin, so the API accepts its tokens through `Host__Authentication__AuthorizedParties__1` (`apps/api/docs/configuration.md`, `.railway/railway.ts`).
 - The dev server runs on port 3001, so both apps run side by side.

@@ -8,7 +8,7 @@ using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Messaging;
 
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The test handlers of RetryProbe and SpecificRetryProbe always fail and count their tries; no module handler does.")]
 public sealed class DefaultRetryTests(Database database)
 {
     [Theory]
@@ -22,7 +22,7 @@ public sealed class DefaultRetryTests(Database database)
         {
             ["Host:Role"] = role,
             ["ConnectionStrings:Database"] = database.ConnectionStringFor(Tenancy.DatabaseRoles.Application, name),
-        });
+        }, testHandlers: true);
         var command = new RetryProbe(Guid.NewGuid());
 
         await host.Host.MessageBus().SendAsync(command);
@@ -35,7 +35,7 @@ public sealed class DefaultRetryTests(Database database)
     [Fact]
     public async Task HandleQueuedMessage_MessageSpecificRule_RunsBeforeTheGlobalRule()
     {
-        await using var host = await PipelineHost.StartAsync();
+        await using var host = await PipelineHost.StartAsync(testHandlers: true);
         var command = new SpecificRetryProbe(Guid.NewGuid());
 
         await host.Tracking().DoNotAssertOnExceptionsDetected().SendMessageAndWaitAsync(command);
@@ -46,7 +46,7 @@ public sealed class DefaultRetryTests(Database database)
     [Fact]
     public async Task InvokeCommand_DefaultRule_DoesNotRetryTheHttpCommand()
     {
-        await using var host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["Host:Role"] = "web" });
+        await using var host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["Host:Role"] = "web" }, testHandlers: true);
         var command = new RetryProbe(Guid.NewGuid());
 
         var response = await host.CreateClient("user_retry").PostAsJsonAsync("/v1/retry-probes", command, TestContext.Current.CancellationToken);
@@ -59,7 +59,7 @@ public sealed class DefaultRetryTests(Database database)
     public async Task InvokeCommand_UnrestrictedGlobalRule_RetriesTheHttpCommand()
     {
         await using var host = await PipelineHost.StartAsync(configureServices: services => services.ConfigureWolverine(options =>
-            options.OnAnyException().RetryWithCooldown(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero)));
+            options.OnAnyException().RetryWithCooldown(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero)), testHandlers: true);
         var command = new RetryProbe(Guid.NewGuid());
 
         var response = await host.CreateClient("user_unrestricted_retry").PostAsJsonAsync("/v1/retry-probes", command, TestContext.Current.CancellationToken);

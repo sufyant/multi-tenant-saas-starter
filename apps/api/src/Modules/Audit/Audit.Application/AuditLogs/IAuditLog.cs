@@ -20,6 +20,12 @@ public interface IAuditLog
     internal Task RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Deletes every entry of the active tenant's log, for the tenant purge, through the one function that may delete entries (R14). No
+    /// other code deletes or changes an entry (K3).
+    /// </summary>
+    internal Task PurgeTenantEntriesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// The entries of the active tenant's log after the cursor's place, newest first, by the moment and then the id, both descending: one
     /// more than the limit when there are, so the caller knows a next page exists. Row level security keeps the log to the tenant.
     /// </summary>

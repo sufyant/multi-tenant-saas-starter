@@ -412,7 +412,7 @@ export function dateFormattingOutsideFormatter(
 
 /**
  * Rule F3: no value of a contract enum as a string literal. A screen reads `Object.values(Language)` or
- * `MemberRole.Owner`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed, and so
+ * `Language.En`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed, and so
  * is a literal type, such as the element name of `ComponentProps<"tr">`.
  */
 export function enumLiterals(

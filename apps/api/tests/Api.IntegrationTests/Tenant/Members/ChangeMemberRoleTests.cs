@@ -47,13 +47,14 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         body.GetProperty("userId").GetGuid().ShouldBe(memberId);
         body.GetProperty("email").GetString().ShouldBe("ada@example.com");
         body.GetProperty("lastName").GetString().ShouldBe("Lovelace");
-        Roles.Of(body).ShouldBe(Roles.BuiltIn("admin"));
+        RoleAnswers.Of(body).ShouldBe(RoleAnswers.BuiltIn("admin"));
         body.GetProperty("deleted").GetBoolean().ShouldBeFalse();
         body.GetProperty("joinedAt").GetDateTimeOffset().ShouldBe(joined);
         (await RoleOfAsync(tenant.Id, memberId)).ShouldBe("Admin");
         (await _audit.TenantLogAsync(memberId))
             .ShouldBe($"{tenant.Id}:member.role_changed|User|{await _testData.UserIdOfAsync(actor)}|User|{memberId}|-");
-        (await _audit.TenantDetailsAsync(memberId)).ShouldBe("""{"newRole": "admin", "oldRole": "member"}""");
+        (await _audit.TenantDetailsAsync(memberId)).ShouldBe(
+            $$"""{"newRole": "admin", "oldRole": "member", "newRoleId": "{{await _testData.RoleIdOfAsync(tenant.Id, "Admin")}}", "oldRoleId": "{{await _testData.RoleIdOfAsync(tenant.Id, "Member")}}", "newRoleBuiltIn": true, "oldRoleBuiltIn": true}""");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
@@ -202,7 +203,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var again = await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 
         again.StatusCode.ShouldBe(HttpStatusCode.OK);
-        Roles.Of(await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(Roles.BuiltIn("admin"));
+        RoleAnswers.Of(await again.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(RoleAnswers.BuiltIn("admin"));
         (await _audit.TenantLogAsync(member)).ShouldNotBeNull().Split(", ").ShouldHaveSingleItem();
     }
 
@@ -291,17 +292,15 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
     }
 
-    // The role is required and is its exact name: a request without one, with an unknown one, with a number, with a list of names, with
-    // spaces or in another case is refused, and never falls back to the enum's first value, Owner.
+    // Step r4b: the role is required and is its id: a request without one, with a name in place of an id, with a number or with a role
+    // name in the old field is refused before the handler, and never falls back to an empty id.
     [Theory]
     [InlineData("{}")]
-    [InlineData("""{ "role": "Root" }""")]
-    [InlineData("""{ "role": 0 }""")]
-    [InlineData("""{ "role": "Owner, Admin" }""")]
-    [InlineData("""{ "role": "Admin, Member" }""")]
-    [InlineData("""{ "role": " Admin" }""")]
-    [InlineData("""{ "role": "Admin" }""")]
-    [InlineData("""{ "role": "OWNER" }""")]
+    [InlineData("""{ "roleId": "Root" }""")]
+    [InlineData("""{ "roleId": 0 }""")]
+    [InlineData("""{ "roleId": "owner" }""")]
+    [InlineData("""{ "roleId": null }""")]
+    [InlineData("""{ "role": "admin" }""")]
     public async Task ChangeMemberRole_WithoutAValidRole_IsABadRequestAndKeepsTheRole(string body)
     {
         var tenant = await _testData.AddTenantAsync();
@@ -330,6 +329,83 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "@")).ShouldBe(0);
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "Grace")).ShouldBe(0);
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "Hopper")).ShouldBe(0);
+    }
+
+    // A3: a member is given a custom role by its id, and answers it as a built-in role.
+    [Fact]
+    public async Task ChangeMemberRole_ToACustomRole_ChangesIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, roleId.ToString());
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        RoleAnswers.Of(body).ShouldBe(RoleAnswers.Custom("Billing"));
+        body.GetProperty("role").GetProperty("id").GetGuid().ShouldBe(roleId);
+    }
+
+    [Fact]
+    public async Task ChangeMemberRole_ToARoleOfAnotherTenant_IsNotFoundAndKeepsTheRole()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+        var other = await _testData.AddTenantAsync();
+
+        var changed = await _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, (await _testData.RoleIdOfAsync(other.Id, "Admin")).ToString());
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await CodeOfAsync(changed)).ShouldBe("role.not_found");
+        (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
+    }
+
+    // Decision 2 of step r4b: nobody gives a role stronger than their own.
+    [Fact]
+    public async Task ChangeMemberRole_ToARoleStrongerThanTheActors_IsForbiddenAsAnEscalation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var lead = await _testData.AddCustomRoleAsync(tenant.Id, "Lead", "tenant.members.update", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, lead);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+
+        var changed = await _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, member, "admin");
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(changed)).ShouldBe("role.escalation");
+        (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
+    }
+
+    // Decision 2 of step r4b: nobody acts on a member whose role is stronger than their own.
+    [Fact]
+    public async Task ChangeMemberRole_AMemberWhoseRoleIsStrongerThanTheActors_IsForbiddenAsAnEscalation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var lead = await _testData.AddCustomRoleAsync(tenant.Id, "Lead", "tenant.members.update", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, lead);
+        var admin = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Admin"));
+
+        var changed = await _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, admin, "member");
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(changed)).ShouldBe("role.escalation");
+        (await RoleOfAsync(tenant.Id, admin)).ShouldBe("Admin");
+    }
+
+    [Fact]
+    public async Task ChangeMemberRole_RolesTheActorHoldsExactly_ChangesIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var lead = await _testData.AddCustomRoleAsync(tenant.Id, "Lead", "tenant.members.update", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var actor = await _testData.AddMemberWithRoleAsync(tenant.Id, lead);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+
+        var changed = await _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, member, lead.ToString());
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

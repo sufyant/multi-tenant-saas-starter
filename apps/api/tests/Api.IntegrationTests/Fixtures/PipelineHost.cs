@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using Api.Hosting;
 using Api.Routing;
 using ControlPlane.Application.Identity;
 using ControlPlane.Infrastructure;
@@ -19,18 +20,19 @@ using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// Runs the host's real pipeline on a test server against the test database, with the test endpoints and handlers mapped
-// where module endpoints go. The test handlers are not in the committed handler code, so the host generates it at runtime.
+// Runs the host's real pipeline on a test server against the test database, with the test endpoints mapped where module endpoints go.
+// By default the host composes the modules as Program does (ModuleComposition) and loads the committed handler code (section 9, rule 11).
+// A host with the test handlers has chains the committed code does not hold, so it generates its handler code at runtime.
 internal sealed class PipelineHost : IAsyncDisposable
 {
     private static readonly Dictionary<string, string?> DefaultSettings = new()
     {
-        ["RateLimiting:PermitLimit"] = "1000",
-        ["RateLimiting:Window"] = "00:01:00",
+        ["Host:RateLimiting:PermitLimit"] = "1000",
+        ["Host:RateLimiting:Window"] = "00:01:00",
         ["Host:Role"] = "all",
         ["ControlPlane:Invitations:AcceptUrl"] = ApiFactory.AcceptUrl,
         ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
-        ["ControlPlane:FirstSystemAdminEmail"] = ApiFactory.FirstSystemAdminEmail,
+        ["ControlPlane:SystemAdmins:RootEmails:0"] = ApiFactory.RootEmail,
     };
 
     private readonly WebApplication _app;
@@ -45,7 +47,8 @@ internal sealed class PipelineHost : IAsyncDisposable
 
     public static async Task<PipelineHost> StartAsync(
         IReadOnlyDictionary<string, string?>? settings = null,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        bool testHandlers = false)
     {
         var database = await TestContext.Current.GetFixture<Database>()
             ?? throw new InvalidOperationException("The database fixture is not available.");
@@ -65,15 +68,23 @@ internal sealed class PipelineHost : IAsyncDisposable
             ["ConnectionStrings:Messaging"] = Database.ForHost(builder.Configuration.GetConnectionString("Messaging"), nameof(PipelineHost)),
         });
 
-        builder.AddApiPipeline(typeof(PipelineHost).Assembly);
-        builder.Services.AddControlPlaneInfrastructure();
-        builder.Services.AddNotificationsInfrastructure();
+        if (testHandlers)
+        {
+            builder.AddApiPipeline(typeof(PipelineHost).Assembly);
+            builder.Services.AddControlPlaneInfrastructure();
+            builder.Services.AddNotificationsInfrastructure();
+            builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
+            builder.Services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
+        }
+        else
+        {
+            builder.AddApiWithModules();
+        }
+
         builder.Services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
             (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
             TenancyServiceCollectionExtensions.MessageSchema);
         builder.Services.AddModuleMigrations<ProbeDbContext>(ProbeDbContext.Schema);
-        builder.Services.ConfigureWolverine(options => options.GenerateHandlerCodeAtRuntime());
-        builder.Services.AddSingleton<IAssemblyGenerator, CollectingAssemblyGenerator>();
         builder.Services.TrustTestKey();
         builder.Services.AddSingleton<IdempotencyGate>();
         builder.Services.AddSingleton<RetryAttempts>();
@@ -94,6 +105,15 @@ internal sealed class PipelineHost : IAsyncDisposable
         TestEndpoints.MapTenant(v1.MapTenant());
         TestEndpoints.MapPlatform(platform);
         await app.StartAsync(TestContext.Current.CancellationToken);
+        try
+        {
+            RuntimeHandlerCode.AssertTheCommittedCodeHoldsEveryFrame(app.Services);
+        }
+        catch (InvalidOperationException)
+        {
+            await app.DisposeAsync();
+            throw;
+        }
 
         return new PipelineHost(app);
     }

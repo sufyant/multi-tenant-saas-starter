@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Persistence;
 
 // Wolverine opens, saves and commits the transaction of every handler, and the transaction declares the tenant of the message
 // when it starts (W1, W2). Row level security does the rest.
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The probe handlers write and read rows under a tenant and report the tenant their transaction declared (WriteProbe, ReadProbes, ObserveTenant).")]
 public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -19,7 +19,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync();
+    public async ValueTask InitializeAsync() => _host = await PipelineHost.StartAsync(testHandlers: true);
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 
@@ -143,7 +143,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         {
             ["ConnectionStrings:Database"] = new NpgsqlConnectionStringBuilder(database.ApplicationConnectionString) { MaxPoolSize = 1 }.ConnectionString,
             ["ConnectionStrings:Messaging"] = database.ApplicationConnectionString,
-        });
+        }, testHandlers: true);
         var bus = host.Host.MessageBus();
 
         var seenByA = await bus.InvokeForTenantAsync<TenantObservation>(tenantA.ToString(), new ObserveTenant(), Cancellation);
@@ -191,7 +191,7 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         await invoke.ShouldThrowAsync<FormatException>();
     }
 
-    // Spike T8: each handler of one event runs in its own transaction (O3).
+    // The spike's T08_separated_handlers_commit_independently: each handler of one event runs in its own transaction (O3).
     [Fact]
     public async Task PublishAnEventWithTwoHandlers_OneThrows_TheOtherCommits()
     {
@@ -204,7 +204,8 @@ public sealed class TenantTransactionTests(Database database) : IAsyncLifetime
         (await ReadProbesAsync(tenant)).ShouldBe([$"recorded:{value}"]);
     }
 
-    // Spike T10a: Wolverine does not look at a Result, so a handler rejects before it changes anything (W7).
+    // The spike's T10a_failed_result_after_a_change_is_committed: Wolverine does not look at a Result, so a handler rejects before it
+    // changes anything (W7).
     [Fact]
     public async Task InvokeForTenant_HandlerRejectsAfterAChange_ChangeIsCommitted()
     {

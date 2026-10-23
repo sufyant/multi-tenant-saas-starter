@@ -3,7 +3,7 @@
 import { TextButton } from "@repo/ui/components/sign-in";
 import { useTranslations } from "next-intl";
 
-/** The end of the header around sign-in (the D5 boards): who is signed in, and Sign out. */
+/** The end of the header around sign-in (the design system's boards): who is signed in, and Sign out. */
 export function SignedInAs({
   email,
   onSignOut,

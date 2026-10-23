@@ -1,3 +1,4 @@
+using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Users;
 
 namespace ControlPlane.Application.Users;
@@ -16,8 +17,14 @@ public interface IUserRepository
     /// <summary>The profile of the user with this identity provider id, without a lock: the actor of a command.</summary>
     internal Task<UserProfile?> FindProfileAsync(string externalUserId, CancellationToken cancellationToken);
 
-    /// <summary>The profile of the user with this id, without a lock: the member whose view a command answers.</summary>
+    /// <summary>
+    /// The profile of the user with this id, without a lock: the member whose view a command answers, or the member whose address a
+    /// deletion erases from a tenant's invitations.
+    /// </summary>
     internal Task<UserProfile?> FindProfileAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>The status of the user with this id, without a lock, or none when no user has it: the member the platform makes an Owner.</summary>
+    internal Task<UserStatus?> FindStatusAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Whether a user has this id, a deleted user included.</summary>
     internal Task<bool> UserExistsAsync(Guid userId, CancellationToken cancellationToken);
@@ -40,10 +47,27 @@ public interface IUserRepository
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The user's grant on the system admin list, locked for the rest of the transaction, to revoke it; none when the user is no system
+    /// admin.
+    /// </summary>
+    internal Task<SystemAdmin?> FindSystemAdminForUpdateAsync(Guid userId, CancellationToken cancellationToken);
+
+    internal void AddSystemAdmin(SystemAdmin systemAdmin);
+
+    internal void RemoveSystemAdmin(SystemAdmin systemAdmin);
+
+    /// <summary>
     /// The user's memberships in every tenant, by tenant id. It declares the user in the transaction (R11), so the own_memberships policy
     /// decides what is seen; the transaction then declares no tenant (R4).
     /// </summary>
     internal Task<IReadOnlyList<UserMembership>> ListMembershipsAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The tenants where the user accepted an invitation, by tenant id, also those where no membership is left: the tenants the user
+    /// joined (A8). It declares the user in the transaction (R11), so the own_accepted_invitations policy decides what is seen; the
+    /// transaction then declares no tenant (R4).
+    /// </summary>
+    internal Task<IReadOnlyList<Guid>> ListJoinedTenantsAsync(Guid userId, CancellationToken cancellationToken);
 
     internal void Add(User user);
 

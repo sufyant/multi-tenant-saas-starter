@@ -16,20 +16,22 @@ internal static class ResponseStatus
 {
     public static TenantResponseStatus OfTenant(string status) => status switch
     {
-        "Provisioning" => TenantResponseStatus.Provisioning,
         "Active" => TenantResponseStatus.Active,
         "Suspended" => TenantResponseStatus.Suspended,
-        "Cancelled" => TenantResponseStatus.Cancelled,
         "Closed" => TenantResponseStatus.Closed,
+        "Purging" => TenantResponseStatus.Purging,
+        "Purged" => TenantResponseStatus.Purged,
         _ => throw Unknown(status),
     };
 
-    // A member sees only an active, a suspended or a closed tenant (T4), and an invitation is accepted only in an active one.
+    // A member sees only an active, a suspended, a closed or a purging tenant (T4): the purge's last step takes every membership away,
+    // so a purged tenant has no member. An invitation is accepted only in an active one.
     public static MyTenantResponseStatus OfMyTenant(string status) => status switch
     {
         "Active" => MyTenantResponseStatus.Active,
         "Suspended" => MyTenantResponseStatus.Suspended,
         "Closed" => MyTenantResponseStatus.Closed,
+        "Purging" => MyTenantResponseStatus.Purging,
         _ => throw Unknown(status),
     };
 
@@ -41,12 +43,13 @@ internal static class ResponseStatus
         _ => throw Unknown(status),
     };
 
-    // A membership exists only in a tenant past its creation's pivot (section 6).
+    // A tenant with members is active, suspended, closed or purging (K4).
     public static UserMembershipResponseTenantStatus OfUserMembership(string status) => status switch
     {
         "Active" => UserMembershipResponseTenantStatus.Active,
         "Suspended" => UserMembershipResponseTenantStatus.Suspended,
         "Closed" => UserMembershipResponseTenantStatus.Closed,
+        "Purging" => UserMembershipResponseTenantStatus.Purging,
         _ => throw Unknown(status),
     };
 
@@ -69,11 +72,11 @@ internal static class ResponseStatus
     // A filter's value is the status of a response; the query names ControlPlane's status.
     public static string OfTenant(TenantResponseStatus status) => status switch
     {
-        TenantResponseStatus.Provisioning => "Provisioning",
         TenantResponseStatus.Active => "Active",
         TenantResponseStatus.Suspended => "Suspended",
-        TenantResponseStatus.Cancelled => "Cancelled",
         TenantResponseStatus.Closed => "Closed",
+        TenantResponseStatus.Purging => "Purging",
+        TenantResponseStatus.Purged => "Purged",
         _ => throw Unknown(status.ToString()),
     };
 

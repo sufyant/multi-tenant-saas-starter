@@ -1,9 +1,9 @@
 using ControlPlane.Application.Identity;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
-using ControlPlane.Application.Invitations.OpenOwnerSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Contracts.Invitations;
+using ControlPlane.Contracts.Tenants;
 using JasperFx;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
@@ -39,8 +39,9 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
 
         calling.Select(chain => chain.MessageType).ShouldBe(
             [
-                typeof(OpenOwnerSignUpCommand), typeof(OpenMemberSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand),
-                typeof(OwnerInvitationReadyEvent), typeof(MemberInvitationReadyEvent),
+                typeof(OpenSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand),
+                typeof(InvitationReadyEvent),
+                typeof(TenantPurgeWarningReadyEvent),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

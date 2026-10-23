@@ -42,23 +42,18 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
+        body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(tenant.Id);
         body.GetProperty("slug").GetString().ShouldBe(tenant.Slug);
         body.GetProperty("status").GetString().ShouldBe(answered);
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe(stored);
     }
 
-    // A tenant whose creation has not passed its pivot, or never will, is neither suspended nor reactivated, and a closed one comes back
-    // only through a reopening.
+    // A closed tenant is neither suspended nor reactivated: it comes back only through a reopening.
     [Theory]
-    [InlineData("Provisioning", "suspend")]
-    [InlineData("Provisioning", "reactivate")]
-    [InlineData("Cancelled", "suspend")]
-    [InlineData("Cancelled", "reactivate")]
     [InlineData("Closed", "suspend")]
     [InlineData("Closed", "reactivate")]
-    public async Task SuspendOrReactivateTenant_ProvisioningCancelledOrClosed_IsAConflictAndChangesNothing(string status, string action)
+    public async Task SuspendOrReactivateTenant_Closed_IsAConflictAndChangesNothing(string status, string action)
     {
         var tenant = await _testData.AddTenantAsync(status: status);
 

@@ -4,14 +4,13 @@ using System.Text.Json;
 
 namespace Api.IntegrationTests.RateLimiting;
 
-[RuntimeHandlerCode]
 public sealed class RateLimitingTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
     private PipelineHost _host = null!;
 
     public async ValueTask InitializeAsync() =>
-        _host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["RateLimiting:PermitLimit"] = "1" });
+        _host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["Host:RateLimiting:PermitLimit"] = "1" });
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 

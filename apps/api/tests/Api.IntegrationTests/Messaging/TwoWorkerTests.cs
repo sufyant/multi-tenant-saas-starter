@@ -7,7 +7,7 @@ namespace Api.IntegrationTests.Messaging;
 // Requirements 3 and 5 of the messaging tool (section 3): with two workers on one database, only one of them takes a message at a
 // time, and a message that a dying worker was handling is taken over by the other. Wolverine's guarantee is at least once: the
 // other worker runs the handler again, so the handler's second run must have no effect (O4).
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The workers have the test handlers of RecordHandling and RecordHandlingThenHold, and the test policy RecordHandlerRuns.")]
 public sealed class TwoWorkerTests(Database database)
 {
     // W5: a web host runs no durability agent, even when it leads the cluster; it gives the agent to a worker.
@@ -54,22 +54,19 @@ public sealed class TwoWorkerTests(Database database)
     }
 
     [Fact]
-    public async Task CreateTenant_WorkerDiesWhileTheSagaWaitsForTheEmail_TheOtherWorkerCompletesIt()
+    public async Task CreateTenant_WorkerDiesWhileItSendsTheEmail_TheOtherWorkerSendsIt()
     {
         await using var workers = await TwoWorkers.StartAsync(database);
         var admin = workers.Web.CreateClient(await workers.AddSystemAdminAsync(), secondFactor: true);
 
         var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug = "acme", ownerEmail = "owner@acme.test" });
-        var tenantId = await TwoWorkers.IdOfAsync(created);
         var dead = await workers.Hold.HeldInAsync();
-        await workers.WaitForSagaStateAsync(tenantId, "SendingInvitation");
         await workers.CrashAsync(dead);
-        await workers.WaitForSagaStateAsync(tenantId, "Completed");
+        await Waiting.UntilAsync(() => workers.Email.Sent.Count > 0);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await workers.SagaStateAsync(tenantId)).ShouldBe("Completed");
         workers.Email.Sent.ShouldHaveSingleItem().To.ShouldBe("owner@acme.test");
-        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)));
-        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(OwnerInvitationReadyEvent), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(workers.Survivor(dead)).ShouldContain(new HandlerRun(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)));
+        workers.Runs.In(dead).ShouldNotContain(new HandlerRun(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)));
     }
 }

@@ -1,28 +1,22 @@
 using ControlPlane.Contracts.Invitations;
-using Microsoft.Extensions.Time.Testing;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
-using Notifications.Contracts.Invitations;
 using SharedKernel;
+using Wolverine;
 
 namespace Notifications.UnitTests.Invitations.SendInvitationEmail;
 
-// The Notifications module sends the invitation email when ControlPlane announces that a tenant's first owner can be invited.
+// The Notifications module emails an invited person: a new tenant's first Owner, an Owner the platform invites, or a person a member
+// invites. It hears InvitationReadyEvent, which only it hears, so the email's retries may be scheduled (W5).
 public sealed class SendInvitationEmailHandlerTests
 {
-    private static readonly Guid TenantId = new("0199a8f0-0000-7000-8000-000000000201");
+    private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000402");
 
-    private static readonly Guid InvitationId = new("0199a8f0-0000-7000-8000-000000000401");
-
-    private static readonly DateTimeOffset Now = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
-
-    private static readonly Uri Link = new("https://clerk.test/invitations/inv_1");
+    private static readonly Uri Link = new("https://app.test/invitations/accept?code=x");
 
     private static readonly TimeSpan SevenDays = TimeSpan.FromDays(7);
 
     private readonly RecordingEmailChannel _channel = new();
-
-    private readonly FakeTimeProvider _time = new(Now);
 
     public static TheoryData<Language, string, string> Texts => new()
     {
@@ -43,48 +37,40 @@ public sealed class SendInvitationEmailHandlerTests
         },
     };
 
+    public static TheoryData<Language> Languages => [.. Enum.GetValues<Language>()];
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
+    // The tenant's name, the link and how long it works.
     [Fact]
-    public async Task SendInvitation_InvitationReady_EmailsTheOwnerTheTenantsNameAndTheLink()
+    public async Task SendInvitationEmail_Asked_EmailsTheTenantsNameAndTheLink()
     {
-        await SendAsync(Ready());
+        await SendInvitationEmailHandler.HandleAsync(Ready(), _channel, Cancellation);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
-        email.To.ShouldBe("owner@acme.test");
-        email.Subject.ShouldContain("Acme Ltd");
-        email.Text.ShouldContain("Acme Ltd");
-        email.Text.ShouldContain(Link.ToString());
+        email.To.ShouldBe("grace@navy.test");
+        email.Subject.ShouldBe("You are invited to Acme Ltd");
+        email.Text.ShouldBe($"You have been invited to join Acme Ltd. Open this link to accept the invitation:\n\n{Link}\n\nThe link works for 7 days.");
     }
 
-    // The key is the invitation's, never a new one, so an event that arrives twice does not send a second email (O4).
+    // The key is the invitation's, so an event that arrives twice does not send a second email (O4).
     [Fact]
-    public async Task SendInvitation_InvitationReady_SendsUnderTheInvitationsIdempotencyKey()
+    public async Task SendInvitationEmail_AskedTwice_SendsUnderTheInvitationsIdempotencyKey()
     {
-        await SendAsync(Ready());
-        await SendAsync(Ready());
+        var ready = Ready();
+
+        await SendInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
+        await SendInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
 
         _channel.Sent.Select(email => email.IdempotencyKey).ShouldBe([$"invite/{InvitationId}", $"invite/{InvitationId}"]);
     }
 
     [Fact]
-    public async Task SendInvitation_EmailSent_AnnouncesItForTheInvitation()
-    {
-        var sent = await SendAsync(Ready());
-
-        sent.ShouldSatisfyAllConditions(
-            announced => announced.TenantId.ShouldBe(TenantId),
-            announced => announced.InvitationId.ShouldBe(InvitationId),
-            announced => announced.OccurredAt.ShouldBe(Now),
-            announced => announced.EventId.ShouldNotBe(Guid.Empty));
-    }
-
-    [Fact]
-    public async Task SendInvitation_EmailChannelFails_IsAnError()
+    public async Task SendInvitationEmail_EmailChannelFails_IsAnError()
     {
         _channel.IsDown = true;
 
-        var send = () => SendAsync(Ready());
+        var send = () => SendInvitationEmailHandler.HandleAsync(Ready(), _channel, Cancellation);
 
         await send.ShouldThrowAsync<HttpRequestException>();
     }
@@ -93,25 +79,70 @@ public sealed class SendInvitationEmailHandlerTests
     [MemberData(nameof(Texts))]
     public async Task SendInvitationEmail_InTheInvitationsLanguage_WritesTheSubjectTheLinkAndTheLifetime(Language language, string subject, string text)
     {
-        await SendOwnerAsync(OwnerReady(language, SevenDays));
+        await SendAsync(ReadyIn(language, SevenDays));
 
         var email = _channel.Sent.ShouldHaveSingleItem();
         (email.Subject, email.Text).ShouldBe((subject, text));
     }
 
-    private static OwnerInvitationReadyEvent Ready() =>
-        new(Guid.CreateVersion7(), Now, TenantId, InvitationId, "owner@acme.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
+    // A new language is a member of the enum and its texts: one without texts fails here, not in production.
+    [Theory]
+    [MemberData(nameof(Languages))]
+    public async Task SendInvitationEmail_EveryLanguage_HasItsTexts(Language language)
+    {
+        await SendAsync(ReadyIn(language, SevenDays));
 
-    private static OwnerInvitationReadyEvent OwnerReady(Language language, TimeSpan lifetime) =>
-        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "owner@acme.test", "Acme Ltd", Link, language, lifetime);
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain(Link.ToString());
+    }
 
-    private Task<SendInvitationEmailReply> SendAsync(OwnerInvitationReadyEvent ready) =>
-        SendInvitationEmailHandler.HandleAsync(ready, _channel, _time, Cancellation);
+    // The lifetime is said in whole days, with each language's plural forms (Unicode CLDR, "Language Plural Rules"). Arabic has six.
+    [Theory]
+    [InlineData(Language.En, 1, "The link works for 1 day.")]
+    [InlineData(Language.En, 2, "The link works for 2 days.")]
+    [InlineData(Language.Tr, 1, "Bağlantı 1 gün geçerlidir.")]
+    [InlineData(Language.Tr, 30, "Bağlantı 30 gün geçerlidir.")]
+    [InlineData(Language.Ar, 1, "الرابط صالح لمدة يوم واحد.")]
+    [InlineData(Language.Ar, 2, "الرابط صالح لمدة يومين.")]
+    [InlineData(Language.Ar, 3, "الرابط صالح لمدة 3 أيام.")]
+    [InlineData(Language.Ar, 10, "الرابط صالح لمدة 10 أيام.")]
+    [InlineData(Language.Ar, 11, "الرابط صالح لمدة 11 يومًا.")]
+    [InlineData(Language.Ar, 99, "الرابط صالح لمدة 99 يومًا.")]
+    [InlineData(Language.Ar, 100, "الرابط صالح لمدة 100 يوم.")]
+    [InlineData(Language.Ar, 103, "الرابط صالح لمدة 103 أيام.")]
+    public async Task SendInvitationEmail_ALifetimeOfDays_SaysItInTheLanguagesPluralForm(Language language, int days, string lastLine)
+    {
+        await SendAsync(ReadyIn(language, TimeSpan.FromDays(days)));
 
-    private Task<SendInvitationEmailReply> SendOwnerAsync(OwnerInvitationReadyEvent ready) =>
-        SendInvitationEmailHandler.HandleAsync(ready, _channel, new FakeTimeProvider(DateTimeOffset.UnixEpoch), Cancellation);
+        _channel.Sent.ShouldHaveSingleItem().Text.Split("\n\n")[^1].ShouldBe(lastLine);
+    }
 
-    // The email channel, as a system we do not own, at our port.
+    // A part of a day is not promised: a lifetime of 7 days and 20 hours says 7 days.
+    [Fact]
+    public async Task SendInvitationEmail_ALifetimeWithPartOfADay_SaysTheWholeDays()
+    {
+        await SendAsync(ReadyIn(Language.En, TimeSpan.FromDays(7) + TimeSpan.FromHours(20)));
+
+        _channel.Sent.ShouldHaveSingleItem().Text.Split("\n\n")[^1].ShouldBe("The link works for 7 days.");
+    }
+
+    // The language travels as its tag, as in the API: a message holds "tr", not a number that a new member of the enum could move.
+    [Fact]
+    public void WriteInvitationReady_InTurkish_HoldsTheLanguagesTag()
+    {
+        var json = System.Text.Encoding.UTF8.GetString(new WolverineOptions().DefaultSerializer.WriteMessage(ReadyIn(Language.Tr, SevenDays)));
+
+        json.ShouldContain("\"tr\"");
+    }
+
+    private static InvitationReadyEvent Ready() =>
+        new(
+            Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, Language.En, TimeSpan.FromDays(7));
+
+    private static InvitationReadyEvent ReadyIn(Language language, TimeSpan lifetime) =>
+        new(Guid.CreateVersion7(), DateTimeOffset.UnixEpoch, Guid.CreateVersion7(), InvitationId, "grace@navy.test", "Acme Ltd", Link, language, lifetime);
+
+    private Task SendAsync(InvitationReadyEvent ready) => SendInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
+
     private sealed class RecordingEmailChannel : IEmailChannel
     {
         public List<EmailMessage> Sent { get; } = [];

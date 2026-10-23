@@ -10,6 +10,16 @@ namespace Api.IntegrationTests.Persistence;
 public sealed class MigrationStepTests(Database database)
 {
     private const string ControlPlaneExists = "SELECT to_regclass('control_plane.tenants') IS NOT NULL";
+
+    private const string SummaryColumnsOfTenants =
+        """
+        SELECT count(*) FROM information_schema.columns
+        WHERE table_schema = 'control_plane' AND table_name = 'tenants' AND (column_name LIKE '%_count' OR column_name LIKE 'owner_invitation_%')
+        """;
+
+    private const string PendingEmailIndex =
+        "SELECT indexdef FROM pg_indexes WHERE schemaname = 'control_plane' AND indexname = 'ix_invitations_pending_email'";
+
     private const string MessageStorageExists = "SELECT to_regclass('wolverine.wolverine_incoming_envelopes') IS NOT NULL";
 
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
@@ -83,7 +93,7 @@ public sealed class MigrationStepTests(Database database)
         var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddOwnerInvitationLanguage");
         var testData = new TestData(database, name);
         var summaries = new TenantSummaries(database, name);
-        var tenant = await testData.AddTenantAsync();
+        var tenant = await testData.AddTenantRowAsync();
         var invitation = await testData.AddInvitationAsync(tenant.Id, role: "Owner", language: "ar");
         await database.ScalarAsSuperuserAsync<object>(
             $"""
@@ -98,6 +108,132 @@ public sealed class MigrationStepTests(Database database)
         exitCode.ShouldBe(0, output);
         (await summaries.StoredAsync(tenant.Id)).ShouldEndWith("|ar");
         await summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // R12: the migration that moves the summary to its own table copies every tenant's summary, then drops the old columns. A tenant with
+    // members and one without an Owner, whose summary keeps its Owner invitation, both keep what their summary said.
+    [Fact]
+    public async Task Migrate_TenantsWithTheirSummaries_MovesEachSummaryToItsOwnTable()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("MoveTenantSummary");
+        var testData = new TestData(database, name);
+        var summaries = new TenantSummaries(database, name);
+        var owned = await testData.AddTenantRowAsync();
+        await testData.AddMemberAsync(owned.Id, role: "Owner");
+        await testData.AddMemberAsync(owned.Id);
+        var invited = await testData.AddTenantRowAsync();
+        var invitation = await testData.AddInvitationAsync(invited.Id, role: "Owner", language: "tr");
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenants SET member_count = 2, owner_count = 1 WHERE id = '{owned.Id}';
+            UPDATE control_plane.tenants AS tenant SET owner_invitation_email = invitation.email, owner_invitation_expires_at = invitation.expires_at,
+                owner_invitation_status = invitation.status, owner_invitation_language = invitation.language
+            FROM control_plane.invitations AS invitation WHERE tenant.id = '{invited.Id}' AND invitation.id = '{invitation}'
+            """,
+            name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await summaries.StoredAsync(owned.Id)).ShouldBe("2|1|-|-|-|-");
+        await summaries.ShouldMatchTheRowsAsync(owned.Id);
+        (await summaries.StoredAsync(invited.Id)).ShouldEndWith("|Pending|tr");
+        await summaries.ShouldMatchTheRowsAsync(invited.Id);
+        (await database.ScalarAsSuperuserAsync<long>(SummaryColumnsOfTenants, name)).ShouldBe(0);
+    }
+
+    // The migration that keeps one form of an address lowercases the stored addresses in the database, and the form it leaves is the one
+    // .NET gives (EmailAddressTests): it keeps the Turkish dotted capital I, as .NET does, where PostgreSQL's lower() alone would not. The unique index of pending invitations is then on the
+    // stored value, without lower() (the maintainer's decision in step r2a).
+    [Fact]
+    public async Task Migrate_AddressesInMixedCase_KeepsThemInLowerCaseAndIndexesTheStoredValue()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("KeepEmailAddressesInLowerCase");
+        var testData = new TestData(database, name);
+        var local = Guid.NewGuid().ToString("N");
+        var user = await testData.AddUserAsync(email: $"Ali.{local}@Example.COM");
+        var tenant = await testData.AddTenantAsync();
+        var invitation = await testData.AddInvitationAsync(tenant.Id, $"İpek.{local}@Example.com", role: "Owner");
+        await database.ScalarAsSuperuserAsync<object>(
+            $"UPDATE control_plane.tenant_summaries SET owner_invitation_email = 'İpek.{local}@Example.com' WHERE tenant_id = '{tenant.Id}'",
+            name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await testData.UserOfAsync(user, name)).Email.ShouldBe($"ali.{local}@example.com");
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT email FROM control_plane.invitations WHERE id = '{invitation}'", name))
+            .ShouldBe($"İpek.{local}@example.com");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT owner_invitation_email FROM control_plane.tenant_summaries WHERE tenant_id = '{tenant.Id}'", name)).ShouldBe($"İpek.{local}@example.com");
+        (await database.ScalarAsSuperuserAsync<string>(PendingEmailIndex, name)).ShouldBe(
+            "CREATE UNIQUE INDEX ix_invitations_pending_email ON control_plane.invitations USING btree (tenant_id, email) WHERE ((status)::text = 'Pending'::text)");
+    }
+
+    // Tenant creation is one transaction (section 6, "Tenant creation process"). The migration that removes the creation saga makes a
+    // provisioning tenant active and a cancelled one closed at the migration's time, so it can be reopened; an active tenant stays as it
+    // is. It drops the saga's table and the cancellation reason.
+    [Fact]
+    public async Task Migrate_ProvisioningAndCancelledTenants_BecomeActiveAndClosedAndTheSagaTableGoes()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("RemoveTenantCreationSaga");
+        var testData = new TestData(database, name);
+        var provisioning = await testData.AddTenantAsync(status: "Provisioning");
+        var cancelled = await testData.AddTenantAsync(status: "Cancelled");
+        var active = await testData.AddTenantAsync();
+        var started = await database.ScalarAsSuperuserAsync<DateTime>("SELECT now()", name);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(format('%s|%s', status, CASE WHEN closed_at IS NULL THEN '-' WHEN closed_at >= '{started:O}'::timestamptz THEN 'now' ELSE 'before' END), ', '
+                ORDER BY array_position(ARRAY['{provisioning.Id}', '{cancelled.Id}', '{active.Id}']::uuid[], id))
+            FROM control_plane.tenants WHERE id IN ('{provisioning.Id}', '{cancelled.Id}', '{active.Id}')
+            """,
+            name)).ShouldBe("Active|-, Closed|now, Active|-");
+        (await database.ScalarAsSuperuserAsync<bool>("SELECT to_regclass('control_plane.tenant_creation_sagas') IS NULL", name)).ShouldBeTrue();
+        (await database.ScalarAsSuperuserAsync<long>(
+            "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'control_plane' AND table_name = 'tenants' AND column_name = 'cancellation_reason'",
+            name)).ShouldBe(0);
+    }
+
+    // A2: the migration that gives each tenant its roles writes every tenant's Owner, Admin and Member rows, moves each membership and
+    // invitation to its own tenant's role of the same kind, and removes the roles of no tenant. The composite foreign key then refuses a
+    // role of another tenant, also to the superuser, whom row level security does not hold (Citus documentation, "Multi-tenant
+    // applications").
+    [Fact]
+    public async Task Migrate_TwoTenantsWithMembersAndInvitations_KeepEveryRoleAsARoleOfTheirOwnTenant()
+    {
+        var name = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("GiveEachTenantItsRoles");
+        var testData = new TestData(database, name);
+        var first = await testData.AddTenantAsync();
+        var second = await testData.AddTenantAsync();
+        await testData.AddMemberAsync(first.Id, role: "Owner");
+        await testData.AddMemberAsync(first.Id, role: "Admin");
+        await testData.AddInvitationAsync(first.Id, role: "Member");
+        await testData.AddMemberAsync(second.Id, role: "Member");
+        await testData.AddInvitationAsync(second.Id, role: "Owner");
+        await testData.AddInvitationAsync(second.Id, role: "Admin");
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, name));
+
+        exitCode.ShouldBe(0, output);
+        (await RolesOfAsync(first.Id, name)).ShouldBe("Admin|admin, Member|member, Owner|owner");
+        (await RolesOfAsync(second.Id, name)).ShouldBe("Admin|admin, Member|member, Owner|owner");
+        (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.roles", name)).ShouldBe(6);
+        (await RolesOfOwnTenantAsync("memberships", first.Id, name)).ShouldBe("Admin, Owner");
+        (await RolesOfOwnTenantAsync("invitations", first.Id, name)).ShouldBe("Member");
+        (await RolesOfOwnTenantAsync("memberships", second.Id, name)).ShouldBe("Member");
+        (await RolesOfOwnTenantAsync("invitations", second.Id, name)).ShouldBe("Admin, Owner");
+        var crossing = () => database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.memberships SET role_id = (SELECT id FROM control_plane.roles WHERE tenant_id = '{second.Id}' AND built_in = 'Owner')
+            WHERE tenant_id = '{first.Id}'
+            """,
+            name);
+        (await crossing.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.ForeignKeyViolation);
     }
 
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.
@@ -187,6 +323,22 @@ public sealed class MigrationStepTests(Database database)
 
         crossing.ShouldBeEmpty();
     }
+
+    // The roles of the tenant, by their kind and their name.
+    private Task<string?> RolesOfAsync(Guid tenantId, string databaseName) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(format('%s|%s', built_in, name), ', ' ORDER BY built_in) FROM control_plane.roles WHERE tenant_id = '{tenantId}'",
+            databaseName);
+
+    // The kinds of the roles that the table's rows of the tenant name, joined only to a role of the same tenant.
+    private Task<string?> RolesOfOwnTenantAsync(string table, Guid tenantId, string databaseName) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(roles.built_in, ', ' ORDER BY roles.built_in) FROM control_plane.{table}
+            JOIN control_plane.roles ON roles.tenant_id = {table}.tenant_id AND roles.id = {table}.role_id
+            WHERE {table}.tenant_id = '{tenantId}'
+            """,
+            databaseName);
 
     private Task<string?> OwnerOfAsync(string schema, string table, string databaseName) =>
         database.ScalarAsync<string>(

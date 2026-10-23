@@ -1,4 +1,3 @@
-using ControlPlane.Domain.Roles;
 using SharedKernel;
 
 namespace ControlPlane.Application.Invitations.ListInvitations;
@@ -10,9 +9,5 @@ public static class ListInvitationsHandler
         IInvitationQueries invitations,
         TimeProvider time,
         CancellationToken cancellationToken) =>
-        await invitations.ListPendingInvitationsAsync(
-            query.List,
-            query.Role is { } role ? Enum.Parse<BuiltInRole>(role) : null,
-            time.GetUtcNow(),
-            cancellationToken);
+        await invitations.ListPendingInvitationsAsync(query.List, query.RoleId, time.GetUtcNow(), cancellationToken);
 }

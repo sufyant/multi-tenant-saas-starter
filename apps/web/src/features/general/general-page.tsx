@@ -14,11 +14,13 @@ import { DetailList } from "@/shared/detail-list";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { useRoleName } from "@/shared/use-role-name";
 
 const tones: Record<MyTenantResponseStatus, StatusTone> = {
   [MyTenantResponseStatus.Active]: "success",
   [MyTenantResponseStatus.Suspended]: "warning",
   [MyTenantResponseStatus.Closed]: "neutral",
+  [MyTenantResponseStatus.Purging]: "neutral",
 };
 
 /**
@@ -27,6 +29,7 @@ const tones: Record<MyTenantResponseStatus, StatusTone> = {
  */
 export function GeneralPage() {
   const t = useTranslations();
+  const roleName = useRoleName();
   const can = useCan();
   const { detail } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
@@ -65,9 +68,7 @@ export function GeneralPage() {
           },
           {
             term: t("general.yourRole"),
-            value: detail.role.builtIn
-              ? t(`shell.roles.${detail.role.builtIn}`)
-              : detail.role.name,
+            value: roleName(detail.role),
           },
         ]}
       />

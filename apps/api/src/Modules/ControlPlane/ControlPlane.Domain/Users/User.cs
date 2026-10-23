@@ -1,11 +1,12 @@
 using System.Linq.Expressions;
+using ControlPlane.Domain.EmailAddresses;
 using SharedKernel;
 
 namespace ControlPlane.Domain.Users;
 
 /// <summary>
 /// One identity across tenants, matched to the identity provider's user id. ControlPlane owns the email address and the names (A7):
-/// the identity provider keeps no name, and only a system admin changes one.
+/// the identity provider keeps no name, and only the user or a system admin changes one.
 /// </summary>
 internal sealed class User(Guid id, string externalId)
 {
@@ -25,7 +26,7 @@ internal sealed class User(Guid id, string externalId)
 
     /// <summary>
     /// The user's status: a deletion outranks a suspension, because the identity provider no longer knows the person. It is an
-    /// expression, so the queries filter by the same rule (B9).
+    /// expression, so the queries filter by the same rule (N7s).
     /// </summary>
     public static Expression<Func<User, UserStatus>> StatusOf => StatusExpression;
 
@@ -33,13 +34,17 @@ internal sealed class User(Guid id, string externalId)
 
     public string ExternalId { get; private init; } = externalId;
 
+    /// <summary>The user's address, in its one form (<see cref="EmailAddress"/>); none once the user is deleted.</summary>
     public string? Email { get; private set; }
 
     public string? FirstName { get; private set; }
 
     public string? LastName { get; private set; }
 
-    /// <summary>The language the web speaks to the user. A new user starts with their invitation's; the first system admin with English.</summary>
+    /// <summary>
+    /// The language the web speaks to the user. A new user starts with their invitation's; a root system admin whom the system door lets in
+    /// first starts with English.
+    /// </summary>
     public Language Language { get; private set; }
 
     /// <summary>The IANA name of the user's time zone, such as <c>Europe/Dublin</c>; null when it is not set.</summary>
@@ -55,7 +60,7 @@ internal sealed class User(Guid id, string externalId)
     public Guid? SuspendedBy { get; private set; }
 
     /// <summary>
-    /// When the person became a user: when they accepted their first invitation, or when the first system admin was written.
+    /// When the person became a user: when they accepted their first invitation, or when the system door let them in as a root system admin.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
@@ -77,13 +82,26 @@ internal sealed class User(Guid id, string externalId)
     /// verified, and the names they typed, without the spaces around them. They have no membership yet: ControlPlane adds the membership of
     /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>
-    public static User Join(Guid id, string externalId, string email, string firstName, string lastName, Language language, DateTimeOffset now) =>
+    public static User Join(Guid id, string externalId, EmailAddress email, string firstName, string lastName, Language language, DateTimeOffset now) =>
         new(id, externalId)
         {
-            Email = email,
+            Email = email.Value,
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Language = language,
+            CreatedAt = now,
+        };
+
+    /// <summary>
+    /// A root system admin who is not a user yet enters through the system door, at this moment: the listed address, which the identity
+    /// provider verified, no names, as the identity provider keeps none, and English, as no invitation chose a language. A system admin
+    /// gives them their names (A7).
+    /// </summary>
+    public static User EnterAsRootSystemAdmin(Guid id, string externalId, EmailAddress email, DateTimeOffset now) =>
+        new(id, externalId)
+        {
+            Email = email.Value,
+            Language = Language.En,
             CreatedAt = now,
         };
 
@@ -108,17 +126,15 @@ internal sealed class User(Guid id, string externalId)
     /// A system admin changes the names. Changed when they changed; the same names with spaces around them are no change. A deleted user
     /// has no names to change: giving them one would keep personal data the deletion erased.
     /// </summary>
-    public Result<StateChange> Rename(string firstName, string lastName)
-    {
-        if (DeletedAt is not null)
-        {
-            return Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
-        }
+    public Result<StateChange> Rename(string firstName, string lastName) =>
+        DeletedAt is null ? SetNames(firstName, lastName) : Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
 
-        var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
-        (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
-        return changed ? StateChange.Changed : StateChange.Unchanged;
-    }
+    /// <summary>
+    /// The user corrects their own names, under the rules of <see cref="Rename"/>. A deleted user is refused, as on every me endpoint
+    /// (A9).
+    /// </summary>
+    public Result<StateChange> RenameMe(string firstName, string lastName) =>
+        DeletedAt is null ? SetNames(firstName, lastName) : Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
 
     /// <summary>
     /// Erases the email address, the names and the time zone, which tells where the person lives, and marks the user deleted. A second
@@ -152,6 +168,14 @@ internal sealed class User(Guid id, string externalId)
     {
         var changed = SuspendedAt is not null;
         (SuspendedAt, SuspendedBy) = (null, null);
+        return changed ? StateChange.Changed : StateChange.Unchanged;
+    }
+
+    // The names without the spaces around them. Changed when they changed.
+    private StateChange SetNames(string firstName, string lastName)
+    {
+        var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
+        (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
         return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 }

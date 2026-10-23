@@ -1,4 +1,4 @@
-using ControlPlane.Application.Tenants.ActivateTenant;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
@@ -21,7 +21,7 @@ public sealed class DefaultLoggingTests(Database database)
             client.CreateTenantAsync(new { name = "Acme Ltd", slug = $"tenant-{Guid.NewGuid():N}"[..20], ownerEmail = "owner@acme.test" }));
 
         var logs = api.Services.GetFakeLogCollector().GetSnapshot();
-        logs.ShouldContain(record => record.Level == LogLevel.Information && record.Message.Contains(typeof(ActivateTenantCommand).ToMessageTypeName()));
+        logs.ShouldContain(record => record.Level == LogLevel.Information && record.Message.Contains(typeof(OpenSignUpCommand).ToMessageTypeName()));
         logs.ShouldNotContain(record => record.Category == "Microsoft.EntityFrameworkCore.Database.Command" && record.Level < LogLevel.Warning);
     }
 }

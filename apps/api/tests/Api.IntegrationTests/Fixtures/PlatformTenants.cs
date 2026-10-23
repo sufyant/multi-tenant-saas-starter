@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// Tenants that the platform makes through the API, as a system admin does: the tenant creation saga invites the first Owner, and a person
+// Tenants that the platform makes through the API, as a system admin does: the tenant creation invites the first Owner, and a person
 // with an account accepts an invitation with the code of its email. A test of the platform's screens builds each state of an Owner this
 // way, so the summary the tenant keeps (R12) comes from the commands, not from rows a test writes.
 internal sealed class PlatformTenants(Database database, ApiFactory api)

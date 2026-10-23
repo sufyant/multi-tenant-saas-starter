@@ -4,30 +4,80 @@ import {
   type AuditEntryResponse,
   AuditOperation,
   AuditTargetResponseKind,
+  type ChangeMemberRoleRequest,
   type ChangePreferencesRequest,
   type CursorPageOfAuditEntryResponse,
   ErrorCode,
   type InvitationPreviewResponse,
   type InvitationResponse,
   InvitationResponseState,
+  type InviteMemberRequest,
   InviterNameResponseKind,
   Language,
   type MemberResponse,
-  MemberRole,
   type MeResponse,
   type MyTenantResponse,
   type MyTenantResponseStatus,
   Permission,
+  type RoleDetailResponse,
+  type RoleResponse,
 } from "@repo/api-client";
+import { BuiltInRole } from "../src/shared/roles";
 
 // The API at the browser's door: the page's calls to /api/v1 get these answers, so a page test needs no API and no database.
 // The BFF has its own tests (src/app/api/[...path]/route.test.ts).
+
+const tenantPermissions = Object.values(Permission).filter((name) =>
+  name.startsWith("tenant."),
+);
+
+const memberPermissions = [
+  Permission.TenantMembersRead,
+  Permission.TenantProfileRead,
+];
+
+const builtIn = (
+  id: string,
+  name: BuiltInRole,
+  permissions: Permission[],
+): RoleDetailResponse => ({ id, name, builtIn: true, permissions });
+
+/** Northwind's roles, as ListRoles answers them. A request gives a role by its id. */
+export const roles: Record<BuiltInRole, RoleDetailResponse> = {
+  owner: builtIn(
+    "0198f0a2-0000-7000-8000-0000000000f1",
+    BuiltInRole.Owner,
+    tenantPermissions,
+  ),
+  admin: builtIn(
+    "0198f0a2-0000-7000-8000-0000000000f2",
+    BuiltInRole.Admin,
+    tenantPermissions,
+  ),
+  member: builtIn(
+    "0198f0a2-0000-7000-8000-0000000000f3",
+    BuiltInRole.Member,
+    memberPermissions,
+  ),
+};
+
+/** A role as a member, an invitation or a tenant holds it. */
+const roleOf = ({ id, name, builtIn }: RoleDetailResponse): RoleResponse => ({
+  id,
+  name,
+  builtIn,
+});
+
+/** The role of an id, from the list that ListRoles answers. */
+const roleById = (id: string) =>
+  Object.values(roles).find((role) => role.id === id);
+
 export const northwind: MyTenantResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
   name: "Northwind Traders",
   slug: "northwind",
   status: "active",
-  role: { builtIn: MemberRole.Owner, name: MemberRole.Owner },
+  role: roleOf(roles.owner),
 };
 
 export const me = (language: Language): MeResponse => ({
@@ -57,12 +107,16 @@ export async function mockApi(
       json: {
         ...northwind,
         createdAt: "2026-01-05T09:00:00Z",
-        permissions: Object.values(Permission).filter((name) =>
-          name.startsWith("tenant."),
-        ),
+        permissions: tenantPermissions,
       },
     }),
   );
+  await page.route(`**/api/v1/tenants/${northwind.id}/roles*`, (route) => {
+    const items = Object.values(roles);
+    return route.fulfill({
+      json: { items, page: 1, pageSize: 100, total: items.length },
+    });
+  });
 }
 
 export const invitationCode = `${northwind.id}.e2e-secret`;
@@ -75,7 +129,7 @@ export const pendingInvitation: InvitationPreviewResponse = {
     lastName: "Yılmaz",
     deleted: false,
   },
-  role: { builtIn: MemberRole.Member, name: MemberRole.Member },
+  role: roleOf(roles.member),
   expiresAt: "2099-10-23T13:32:00Z",
   state: InvitationResponseState.Pending,
 };
@@ -112,14 +166,14 @@ const person = (
   userId: string,
   firstName: string,
   lastName: string,
-  role: MemberRole,
+  role: BuiltInRole,
   joinedAt: string,
 ): MemberResponse => ({
   userId,
   firstName,
   lastName,
   email: `${firstName.toLocaleLowerCase("en")}@northwind.io`,
-  role: { builtIn: role, name: role },
+  role: roleOf(roles[role]),
   deleted: false,
   joinedAt,
 });
@@ -130,35 +184,35 @@ export const members: MemberResponse[] = [
     me(Language.En).id,
     "Ayşe",
     "Yılmaz",
-    MemberRole.Owner,
+    BuiltInRole.Owner,
     "2026-03-03T09:20:00Z",
   ),
   person(
     "0198f0a2-0000-7000-8000-000000000002",
     "Mehmet",
     "Kaya",
-    MemberRole.Admin,
+    BuiltInRole.Admin,
     "2026-03-05T10:00:00Z",
   ),
   person(
     "0198f0a2-0000-7000-8000-000000000003",
     "Siobhan",
     "Oneill",
-    MemberRole.Admin,
+    BuiltInRole.Admin,
     "2026-04-11T16:05:00Z",
   ),
   person(
     "0198f0a2-0000-7000-8000-000000000004",
     "Ibrahim",
     "Bulut",
-    MemberRole.Member,
+    BuiltInRole.Member,
     "2026-06-02T10:15:00Z",
   ),
   person(
     "0198f0a2-0000-7000-8000-000000000006",
     "John",
     "Byrne",
-    MemberRole.Member,
+    BuiltInRole.Member,
     "2026-03-09T08:00:00Z",
   ),
 ];
@@ -170,12 +224,12 @@ const invited = (
   id: string,
   email: string,
   days: number,
-  role: MemberRole = MemberRole.Member,
+  role: RoleDetailResponse = roles.member,
   language: Language = Language.En,
 ): InvitationResponse => ({
   id,
   email,
-  role: { builtIn: role, name: role },
+  role: roleOf(role),
   invitedBy: me(Language.En).id,
   invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
   language,
@@ -193,23 +247,18 @@ export const invitations: InvitationResponse[] = [
     "0198f0a2-0000-7000-8000-0000000000a1",
     "ali@northwind.io",
     6,
-    MemberRole.Member,
+    roles.member,
     Language.Ar,
   ),
   invited(
     "0198f0a2-0000-7000-8000-0000000000a2",
     "fatma@northwind.io",
     3,
-    MemberRole.Admin,
+    roles.admin,
     Language.Tr,
   ),
   invited("0198f0a2-0000-7000-8000-0000000000a3", "conor@northwind.io", 0.5),
   invited("0198f0a2-0000-7000-8000-0000000000a4", "padraig@northwind.io", -4),
-];
-
-const memberPermissions = [
-  Permission.TenantMembersRead,
-  Permission.TenantProfileRead,
 ];
 
 /**
@@ -219,12 +268,12 @@ const memberPermissions = [
 export async function mockMembers(
   page: Page,
   {
-    role = MemberRole.Owner,
+    role = BuiltInRole.Owner,
     language = Language.En,
-  }: { role?: MemberRole; language?: Language } = {},
+  }: { role?: BuiltInRole; language?: Language } = {},
 ): Promise<void> {
   await mockApi(page, language);
-  const viewer = members.find((member) => member.role.builtIn === role);
+  const viewer = members.find((member) => member.role.id === roles[role].id);
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({
       json: {
@@ -240,14 +289,9 @@ export async function mockMembers(
     route.fulfill({
       json: {
         ...northwind,
-        role: { builtIn: role, name: role },
+        role: roleOf(roles[role]),
         createdAt: "2026-01-05T09:00:00Z",
-        permissions:
-          role === MemberRole.Member
-            ? memberPermissions
-            : Object.values(Permission).filter((name) =>
-                name.startsWith("tenant."),
-              ),
+        permissions: roles[role].permissions,
       },
     }),
   );
@@ -259,12 +303,12 @@ export async function mockMembers(
   await page.route(`**/api/v1/tenants/${northwind.id}/members/*`, (route) => {
     if (route.request().method() !== "PATCH")
       return route.fulfill({ status: 204 });
-    const { role: given } = route.request().postDataJSON() as {
-      role: MemberRole;
-    };
-    return route.fulfill({
-      json: { ...members[4], role: { builtIn: given, name: given } },
-    });
+    const { roleId } = route
+      .request()
+      .postDataJSON() as ChangeMemberRoleRequest;
+    const given = roleById(roleId);
+    if (!given) return route.fulfill(problem(404, ErrorCode.RoleNotFound));
+    return route.fulfill({ json: { ...members[4], role: roleOf(given) } });
   });
   await page.route(`**/api/v1/tenants/${northwind.id}/invitations?*`, (route) =>
     route.fulfill({
@@ -276,18 +320,23 @@ export async function mockMembers(
       },
     }),
   );
-  await page.route(`**/api/v1/tenants/${northwind.id}/invitations`, (route) =>
-    route.fulfill({
+  await page.route(`**/api/v1/tenants/${northwind.id}/invitations`, (route) => {
+    const { email, roleId, language } = route
+      .request()
+      .postDataJSON() as InviteMemberRequest;
+    const given = roleById(roleId);
+    if (!given) return route.fulfill(problem(404, ErrorCode.RoleNotFound));
+    return route.fulfill({
       status: 201,
       json: invited(
         "0198f0a2-0000-7000-8000-0000000000a5",
-        route.request().postDataJSON().email,
+        email,
         7,
-        route.request().postDataJSON().role,
-        route.request().postDataJSON().language,
+        given,
+        language ?? Language.En,
       ),
-    }),
-  );
+    });
+  });
   await page.route(`**/api/v1/tenants/${northwind.id}/invitations/*`, (route) =>
     route.fulfill({ status: 204 }),
   );
@@ -297,13 +346,13 @@ export async function mockMembers(
 export async function mockTenantStatus(
   page: Page,
   status: MyTenantResponseStatus,
-  { role = MemberRole.Admin }: { role?: MemberRole } = {},
+  { role = BuiltInRole.Admin }: { role?: BuiltInRole } = {},
 ): Promise<void> {
   await mockApi(page);
   await page.route("**/api/v1/me/tenants*", (route) =>
     route.fulfill({
       json: {
-        items: [{ ...northwind, status, role: { builtIn: role, name: role } }],
+        items: [{ ...northwind, status, role: roleOf(roles[role]) }],
         page: 1,
         pageSize: 100,
         total: 1,
@@ -378,7 +427,7 @@ export const auditPages: Record<string, CursorPageOfAuditEntryResponse> = {
 /** ListAuditEntries answers the page of the request's cursor. */
 export async function mockAuditLog(
   page: Page,
-  { role = MemberRole.Owner }: { role?: MemberRole } = {},
+  { role = BuiltInRole.Owner }: { role?: BuiltInRole } = {},
 ): Promise<void> {
   await mockMembers(page, { role });
   await page.route(`**/api/v1/tenants/${northwind.id}/audit-log*`, (route) =>

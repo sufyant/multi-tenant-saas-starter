@@ -16,6 +16,7 @@ import {
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../../test/render";
+import { roleOf } from "../../../test/tenant";
 import { ChooseOrganisation } from "./choose-organisation";
 
 const replace = vi.fn();
@@ -43,7 +44,7 @@ const tenant = (name: string, slug: string): MyTenantResponse => ({
   name,
   slug,
   status: "active",
-  role: { builtIn: "owner", name: "owner" },
+  role: roleOf.owner,
 });
 
 const page = (items: MyTenantResponse[]) =>
@@ -131,6 +132,23 @@ describe("ChooseOrganisation", () => {
       await screen.findByText("You belong to 2 organisations."),
     ).toBeInTheDocument();
     expect(screen.getByText("Suspended")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Atlas Logistics/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_PurgingOrganisation_ShowsBeingDeletedAndNoLink", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Atlas Logistics", "atlas"), status: "purging" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(await screen.findByText("Being deleted")).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: /Atlas Logistics/ }),
     ).not.toBeInTheDocument();

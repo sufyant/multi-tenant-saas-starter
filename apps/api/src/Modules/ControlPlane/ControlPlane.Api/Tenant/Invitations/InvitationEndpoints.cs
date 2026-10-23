@@ -8,12 +8,12 @@ using ControlPlane.Application.Invitations.ListInvitations;
 using ControlPlane.Application.Invitations.RevokeInvitation;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
-using ControlPlane.Contracts.Members;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
+using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api.Tenant.Invitations;
 
@@ -36,11 +36,12 @@ public static class InvitationEndpoints
         tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete);
     }
 
-    // The platform answers its Owner invitation in the same shape (N7g: a response that two audiences answer stays in the first one's file).
+    // A pending invitation always has a role and an address, and the API answers this shape for a pending invitation only. The platform answers its
+    // Owner invitation in the same shape (N7g: a response that two audiences answer stays in the first one's file).
     internal static InvitationResponse ToResponse(InvitationView invitation) => new(
         invitation.Id,
-        invitation.Email,
-        MemberEndpoints.ToResponse(invitation.Role),
+        invitation.Email ?? throw new InvalidOperationException("A pending invitation always has an address."),
+        RoleEndpoints.ToResponse(invitation.Role ?? throw new InvalidOperationException("A pending invitation always has a role.")),
         invitation.InvitedBy,
         ToResponse(invitation.InvitedByName),
         invitation.CreatedAt,
@@ -62,7 +63,7 @@ public static class InvitationEndpoints
         CancellationToken cancellationToken)
     {
         var invited = await idempotency.ExecuteAsync<InvitationView>(
-            new InviteMemberCommand(user.Id(), request.Email, request.Role.ToString(), request.Language), tenantId.ToString(), cancellationToken);
+            new InviteMemberCommand(user.Id(), request.Email, request.RoleId, request.Language), tenantId.ToString(), cancellationToken);
         return invited.Map(ToResponse);
     }
 
@@ -72,7 +73,7 @@ public static class InvitationEndpoints
         int? pageSize,
         ListSort<ListInvitationsSort>? sort,
         string? q,
-        ListFilter<MemberRole>? role,
+        Guid? roleId,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -82,14 +83,7 @@ public static class InvitationEndpoints
             return list.Error;
         }
 
-        var filter = ListFilter.Read(role, nameof(role));
-        if (!filter.IsSuccess)
-        {
-            return filter.Error;
-        }
-
-        var invitations = await bus.InvokeAsync<Result<ListPage<InvitationView>>>(
-            new ListInvitationsQuery(list.Value, filter.Value?.ToString()), cancellationToken);
+        var invitations = await bus.InvokeAsync<Result<ListPage<InvitationView>>>(new ListInvitationsQuery(list.Value, roleId), cancellationToken);
         return invitations.Map(found => found.Map(ToResponse));
     }
 

@@ -18,15 +18,14 @@ import type {
 
 import {
   InvitationResponseState,
-  Language,
-  MemberRole
+  Language
 } from '../endpoints.schemas.gen';
 import type {
   InvitationResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getInviteOwnerResponseMock = (overrideResponse: Partial<Extract<InvitationResponse, object>> = {}): InvitationResponse => ({id: faker.string.uuid(), email: faker.string.alpha({length: {min: 10, max: 20}}), role: {builtIn: faker.helpers.arrayElement([null,faker.helpers.arrayElement(Object.values(MemberRole)),]), name: faker.string.alpha({length: {min: 10, max: 20}})}, invitedBy: faker.string.uuid(), invitedByName: {firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), language: faker.helpers.arrayElement(Object.values(Language)), ...overrideResponse})
+export const getInviteOwnerResponseMock = (overrideResponse: Partial<Extract<InvitationResponse, object>> = {}): InvitationResponse => ({id: faker.string.uuid(), email: faker.string.alpha({length: {min: 10, max: 20}}), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, invitedBy: faker.string.uuid(), invitedByName: {firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), language: faker.helpers.arrayElement(Object.values(Language)), ...overrideResponse})
 
 
 export const getInviteOwnerMockHandler = (overrideResponse?: InvitationResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<InvitationResponse> | InvitationResponse), options?: RequestHandlerOptions) => {

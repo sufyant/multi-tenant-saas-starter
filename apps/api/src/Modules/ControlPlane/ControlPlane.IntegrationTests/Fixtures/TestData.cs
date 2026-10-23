@@ -1,3 +1,4 @@
+using ControlPlane.Application.Tenants;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -13,11 +14,6 @@ internal static class TestData
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
         var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), DateTimeOffset.UtcNow).Value;
-        if (status is TenantStatus.Active or TenantStatus.Suspended or TenantStatus.Closed)
-        {
-            tenant.Activate();
-        }
-
         if (status == TenantStatus.Suspended)
         {
             tenant.Suspend("Unpaid invoices");
@@ -25,10 +21,22 @@ internal static class TestData
 
         if (status == TenantStatus.Closed)
         {
-            tenant.Close(DateTimeOffset.UtcNow);
+            tenant.Close(DateTimeOffset.UtcNow, []);
         }
 
-        await SaveAsync(services, controlPlane => controlPlane.Tenants.Add(tenant));
+        // Every tenant has its summary (R12) and its own built-in roles (A2) from its creation on. The roles belong to the tenant, so
+        // they are written with it declared.
+        await SaveAsync(services, controlPlane =>
+        {
+            controlPlane.Tenants.Add(tenant);
+            controlPlane.TenantSummaries.Add(new TenantSummary(tenant.Id));
+        });
+        await InTenant.RunAsync(services, tenant.Id, scope =>
+        {
+            scope.GetRequiredService<ControlPlaneDbContext>().Roles.AddRange(
+                Enum.GetValues<BuiltInRole>().Select(builtIn => Role.CreateBuiltIn(Guid.CreateVersion7(), tenant.Id, builtIn)));
+            return Task.CompletedTask;
+        });
         return tenant;
     }
 
@@ -39,15 +47,18 @@ internal static class TestData
         return user;
     }
 
-    // The user's membership count follows, as the commands keep it.
-    public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, Role? role = null) =>
-        SaveInTenantAsync(services, tenant.Id, controlPlane =>
+    // The user's membership count and the tenant's summary follow, as the commands keep them: through the repository (K6k, R13).
+    public static Task AddMemberAsync(IServiceProvider services, Tenant tenant, User user, BuiltInRole role = BuiltInRole.Member) =>
+        InTenant.RunAsync(services, tenant.Id, async scope =>
         {
-            controlPlane.Memberships.Add(new Membership(tenant.Id, user.Id, (role ?? BuiltInRoles.Member).Id, DateTimeOffset.UtcNow));
-            controlPlane.Database.ExecuteSql($"UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE id = {user.Id}");
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = await tenants.FindTenantForUpdateAsync(TestContext.Current.CancellationToken)
+                ?? throw new InvalidOperationException("A member joins a tenant that exists.");
+            var roleId = (await tenants.FindRolesAsync(TestContext.Current.CancellationToken)).BuiltIn(role).Id;
+            await tenants.AddMembershipAsync(locked, user.Id, roleId, DateTimeOffset.UtcNow, TestContext.Current.CancellationToken);
         });
 
-    public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, Role role)
+    public static async Task<User> AddMemberAsync(IServiceProvider services, Tenant tenant, BuiltInRole role)
     {
         var user = await AddUserAsync(services);
         await AddMemberAsync(services, tenant, user, role);
@@ -62,11 +73,18 @@ internal static class TestData
             .Where(found => found.Id == user.Id).Select(found => found.MembershipCount).SingleAsync(TestContext.Current.CancellationToken);
     }
 
+    public static async Task<string?> OwnerInvitationEmailOfAsync(IServiceProvider services, Tenant tenant)
+    {
+        await using var scope = services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
+            .Where(found => found.TenantId == tenant.Id).Select(found => found.OwnerInvitationEmail).SingleAsync(TestContext.Current.CancellationToken);
+    }
+
     public static async Task<int> MemberCountOfAsync(IServiceProvider services, Tenant tenant)
     {
         await using var scope = services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().Tenants
-            .Where(found => found.Id == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
+            .Where(found => found.TenantId == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
     }
 
     private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)
@@ -77,16 +95,6 @@ internal static class TestData
         await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    // A membership belongs to a tenant, so it is written in a transaction that declares its tenant.
-    private static async Task SaveInTenantAsync(IServiceProvider services, Guid tenantId, Action<ControlPlaneDbContext> change)
-    {
-        await using var scope = services.CreateAsyncScope();
-        var controlPlane = InTenant.ControlPlane(scope, tenantId);
-        await using var transaction = await controlPlane.Database.BeginTransactionAsync(TestContext.Current.CancellationToken);
-        change(controlPlane);
-        await controlPlane.SaveChangesAsync(TestContext.Current.CancellationToken);
-        await transaction.CommitAsync(TestContext.Current.CancellationToken);
-    }
 }
 
 // The tests share one database, so each one works with tenants, users and email addresses of its own. The values never matter,

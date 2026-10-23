@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
@@ -18,7 +18,9 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
     private readonly AuditEntries _audit = new(database);
 
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 4, 9, 0, 0, TimeSpan.Zero));
+    // The clock starts at the real now: a closure schedules its warning and its purge weeks after it, by Wolverine's clock, so neither
+    // comes during a run on the shared database (section 9, rule 10).
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
     private ApiFactory _api = null!;
 
@@ -44,7 +46,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
         var tenant = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         tenant.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role"], ignoreOrder: true);
-        Roles.Of(tenant).ShouldBe(Roles.BuiltIn("owner"));
+        RoleAnswers.Of(tenant).ShouldBe(RoleAnswers.BuiltIn("owner"));
         tenant.GetProperty("id").GetGuid().ShouldBe(await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'"));
         tenant.GetProperty("name").GetString().ShouldBe("Acme Ltd");
         tenant.GetProperty("slug").GetString().ShouldBe(slug);

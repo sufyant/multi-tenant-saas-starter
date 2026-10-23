@@ -137,7 +137,7 @@ describe("apiFetch", () => {
             id: tenantId,
             name: "Atlas Logistics",
             slug: "atlas",
-            status: "provisioning",
+            status: "active",
             suspensionReason: null,
             closedAt: null,
           },
@@ -155,7 +155,7 @@ describe("apiFetch", () => {
       { "Idempotency-Key": "key-1" },
     );
 
-    expect(tenant.status).toBe(TenantResponseStatus.Provisioning);
+    expect(tenant.status).toBe(TenantResponseStatus.Active);
     expect(requests[0]?.headers.get("Idempotency-Key")).toBe("key-1");
   });
 

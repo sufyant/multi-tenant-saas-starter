@@ -114,7 +114,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         await _testData.AddMemberAsync(tenant.Id);
 
         var (result, session) = await InvokeForTenantAsync<Result<ListPage<MemberView>>>(
-            tenant.Id, new ListMembersQuery(ListRequest.Create<ListMembersSort>(2, 50, null, null).Value, Role: null));
+            tenant.Id, new ListMembersQuery(ListRequest.Create<ListMembersSort>(2, 50, null, null).Value, RoleId: null));
 
         result.Value.Items.ShouldBeEmpty();
         (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
