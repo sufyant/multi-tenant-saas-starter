@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Platform.Users;
+namespace Api.IntegrationTests.Platform.SystemAdmins;
 
 // DELETE /v1/platform/users/{userId}/system-admin: a system admin takes the grant away from another system admin (section 6, "Root
 // system admins"). The user stays a user, with every membership. A root system admin, whom the configuration names, cannot be revoked

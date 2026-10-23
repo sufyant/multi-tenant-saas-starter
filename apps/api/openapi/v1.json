@@ -2119,7 +2119,7 @@
     "/v1/platform/users/{userId}/system-admin": {
       "post": {
         "tags": [
-          "Platform/Users"
+          "Platform/SystemAdmins"
         ],
         "description": "Answers 201 with the user and without Location: the API has no GET for one grant, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
         "operationId": "GrantSystemAdmin",
@@ -2331,7 +2331,7 @@
       },
       "delete": {
         "tags": [
-          "Platform/Users"
+          "Platform/SystemAdmins"
         ],
         "operationId": "RevokeSystemAdmin",
         "parameters": [
@@ -7197,6 +7197,9 @@
     },
     {
       "name": "Platform/Invitations"
+    },
+    {
+      "name": "Platform/SystemAdmins"
     },
     {
       "name": "Platform/Tenants"

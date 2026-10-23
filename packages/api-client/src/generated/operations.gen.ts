@@ -143,7 +143,7 @@ export const operations = [
     "operationId": "GrantSystemAdmin",
     "method": "POST",
     "path": "/v1/platform/users/{userId}/system-admin",
-    "tag": "Platform/Users",
+    "tag": "Platform/SystemAdmins",
     "requestHeaders": [
       "Idempotency-Key"
     ],
@@ -332,7 +332,7 @@ export const operations = [
     "operationId": "RevokeSystemAdmin",
     "method": "DELETE",
     "path": "/v1/platform/users/{userId}/system-admin",
-    "tag": "Platform/Users",
+    "tag": "Platform/SystemAdmins",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

@@ -4,7 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
-namespace Api.IntegrationTests.Platform.Users;
+namespace Api.IntegrationTests.Platform.SystemAdmins;
 
 // POST /v1/platform/users/{userId}/system-admin: a system admin makes an existing user a system admin (section 6, "Root system
 // admins"). The new system admin enters the system door with a second factor (A6), and the platform's log names the system admin who
