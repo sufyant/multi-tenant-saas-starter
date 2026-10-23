@@ -537,6 +537,48 @@ public sealed class TenantTests
         tenant.Status.ToString().ShouldBe(status);
     }
 
+    // K4: the tombstone keeps the id, the name, the slug, the status, the moment of the creation and the moment of the purge; the
+    // reason of a suspension and the moment of the closure go.
+    [Fact]
+    public void PurgeTenant_Purging_KeepsOnlyTheTombstone()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason);
+        tenant.Close(Now, []);
+        tenant.BeginPurge(Now);
+        var purgedAt = Now + TimeSpan.FromDays(30);
+
+        var purged = tenant.Purge(purgedAt);
+
+        purged.ShouldBe(StateChange.Changed);
+        (tenant.Id, tenant.Name, tenant.Slug, tenant.Status, tenant.CreatedAt, tenant.PurgedAt).ShouldBe((Id, "Acme Ltd", "acme", TenantStatus.Purged, CreatedAt, purgedAt));
+        (tenant.SuspensionReason, tenant.ClosedAt).ShouldBe((null, null));
+    }
+
+    // The purge's last step may run twice (S7): a tombstone stays as it is.
+    [Fact]
+    public void PurgeTenant_Purged_ChangesNothing()
+    {
+        var tenant = InStatus("Purged");
+
+        var purged = tenant.Purge(Now + TimeSpan.FromDays(1));
+
+        purged.ShouldBe(StateChange.Unchanged);
+        tenant.PurgedAt.ShouldBe(Now);
+    }
+
+    // Only the purge's pivot leads to its last step: a tenant whose purge has not started is a fault there, not an answer.
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Closed")]
+    public void PurgeTenant_PurgeNotStarted_Throws(string status)
+    {
+        var tenant = InStatus(status);
+
+        Should.Throw<InvalidOperationException>(() => tenant.Purge(Now));
+        tenant.Status.ToString().ShouldBe(status);
+    }
+
     [Fact]
     public void CloseTenant_Purging_IsRejected()
     {
@@ -1756,6 +1798,8 @@ public sealed class TenantTests
             "Suspended" => tenant.Suspend(Reason).Value is StateChange.Changed,
             "Closed" => tenant.Close(Now, []).Value.Change is StateChange.Changed,
             "Purging" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed,
+            "Purged" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed
+                && tenant.Purge(Now) is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
         return tenant;

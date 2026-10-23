@@ -42,7 +42,7 @@ public sealed class ReactivateTenantTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt"], ignoreOrder: true);
+        body.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(tenant.Id);
         body.GetProperty("slug").GetString().ShouldBe(tenant.Slug);
         body.GetProperty("status").GetString().ShouldBe(answered);

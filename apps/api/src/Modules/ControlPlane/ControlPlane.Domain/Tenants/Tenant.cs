@@ -58,8 +58,11 @@ internal sealed class Tenant
     /// <summary>Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a suspension.</summary>
     public string? SuspensionReason { get; private set; }
 
-    /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed.</summary>
+    /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed or purging.</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
+
+    /// <summary>When the purge ended and left the tenant as its tombstone (K4). None unless purged.</summary>
+    public DateTimeOffset? PurgedAt { get; private set; }
 
     /// <summary>A new tenant is active at once (section 6, "Tenant creation process"). The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
@@ -226,6 +229,32 @@ internal sealed class Tenant
         }
 
         Status = TenantStatus.Purging;
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Ends the purge: the tenant row becomes its tombstone, which keeps the id, the name, the slug, the status, the moment of the creation
+    /// and the moment of the purge, so the platform still sees that the tenant existed and its slug is never given again. Every other
+    /// value goes: the reason of a suspension and the moment of the closure (K4). The last step of the purge may run twice (S7): a
+    /// tombstone changes nothing. Only a tenant whose purge has started gets here, so any other is a fault. The caller holds the
+    /// tenant's lock.
+    /// </summary>
+    public StateChange Purge(DateTimeOffset now)
+    {
+        if (Status == TenantStatus.Purged)
+        {
+            return StateChange.Unchanged;
+        }
+
+        if (Status != TenantStatus.Purging)
+        {
+            throw new InvalidOperationException("Only a tenant whose purge has started is purged.");
+        }
+
+        Status = TenantStatus.Purged;
+        PurgedAt = now;
+        SuspensionReason = null;
+        ClosedAt = null;
         return StateChange.Changed;
     }
 

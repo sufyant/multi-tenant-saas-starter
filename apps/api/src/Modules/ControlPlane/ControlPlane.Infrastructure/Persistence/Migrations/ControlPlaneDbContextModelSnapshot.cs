@@ -274,6 +274,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<DateTimeOffset?>("PurgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purged_at");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(63)

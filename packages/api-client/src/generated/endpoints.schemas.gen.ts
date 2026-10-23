@@ -717,7 +717,8 @@ export interface OwnerInvitationResponse {
 
 /**
  * A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners
- * counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+ * counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member
+ * and no Owner: its purge deleted its summary with its members (K4).
  */
 export interface TenantListItemResponse {
   id: string;
@@ -728,6 +729,8 @@ export interface TenantListItemResponse {
   suspensionReason: string | null;
   /** @nullable */
   closedAt: string | null;
+  /** @nullable */
+  purgedAt: string | null;
   /** @nullable */
   reopenableUntil: string | null;
   memberCount: number;
@@ -927,6 +930,8 @@ export interface TenantDetailResponse {
   /** @nullable */
   closedAt: string | null;
   /** @nullable */
+  purgedAt: string | null;
+  /** @nullable */
   reopenableUntil: string | null;
   memberCount: number;
   ownerCount: number;
@@ -935,8 +940,8 @@ export interface TenantDetailResponse {
 }
 
 /**
- * A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its
- * closure while it is closed. Only a system admin sees this shape.
+ * A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its
+ * closure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.
  */
 export interface TenantResponse {
   id: string;
@@ -947,6 +952,8 @@ export interface TenantResponse {
   suspensionReason: string | null;
   /** @nullable */
   closedAt: string | null;
+  /** @nullable */
+  purgedAt: string | null;
 }
 
 /**

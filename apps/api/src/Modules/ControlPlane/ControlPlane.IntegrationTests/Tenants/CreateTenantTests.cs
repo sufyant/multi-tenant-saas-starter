@@ -31,7 +31,7 @@ public sealed class CreateTenantTests(Database database)
 
         var created = await Handlers.CreateTenantAsync(database.Services, tenantId, admin.ExternalId, slug, owner);
 
-        created.Result.Value.ShouldBe(new TenantView(tenantId, "Acme Ltd", slug, "Active", null, null));
+        created.Result.Value.ShouldBe(new TenantView(tenantId, "Acme Ltd", slug, "Active", null, null, null));
         (await StatusOfAsync(tenantId)).ShouldBe("Active");
         (await ScalarAsync<long>(
             $"""

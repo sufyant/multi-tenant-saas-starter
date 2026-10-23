@@ -6906,6 +6906,7 @@
           "status",
           "suspensionReason",
           "closedAt",
+          "purgedAt",
           "reopenableUntil",
           "memberCount",
           "ownerCount",
@@ -6934,6 +6935,13 @@
             ]
           },
           "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "purgedAt": {
             "type": [
               "null",
               "string"
@@ -6982,6 +6990,7 @@
           "status",
           "suspensionReason",
           "closedAt",
+          "purgedAt",
           "reopenableUntil",
           "memberCount",
           "ownerCount",
@@ -7015,6 +7024,13 @@
             ],
             "format": "date-time"
           },
+          "purgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "reopenableUntil": {
             "type": [
               "null",
@@ -7041,7 +7057,7 @@
             ]
           }
         },
-        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply."
+        "description": "A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member\nand no Owner: its purge deleted its summary with its members (K4)."
       },
       "TenantOwnerInvitedDetailsResponse": {
         "required": [
@@ -7165,7 +7181,8 @@
           "slug",
           "status",
           "suspensionReason",
-          "closedAt"
+          "closedAt",
+          "purgedAt"
         ],
         "type": "object",
         "properties": {
@@ -7194,9 +7211,16 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "purgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape."
+        "description": "A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape."
       },
       "TenantResponseStatus": {
         "enum": [
