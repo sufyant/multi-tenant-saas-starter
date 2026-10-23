@@ -27,7 +27,8 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     private readonly AuditEntries _audit = new(database);
 
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+    // The clock starts at the real now, so the expiry that each invitation schedules comes after the run (section 9, rule 10).
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
     private ApiFactory _api = null!;
 

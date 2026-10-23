@@ -1,10 +1,14 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
 });
+
+// A test has one time limit: testTimeout in vitest.config.ts. Testing Library's findBy and waitFor stop after 1 s by default,
+// a second and shorter limit that CI's load passes. They wait up to the same 15 s (F50).
+configure({ asyncUtilTimeout: 15_000 });
 
 // jsdom has no matchMedia. sonner and next-themes read it; every query answers "no match", as a desktop with a fine pointer.
 Object.defineProperty(window, "matchMedia", {

@@ -64,6 +64,7 @@ internal static class MessageStorage
     {
         await using var dataSource = DatabaseConnection.CreateDataSource(ownerConnectionString);
         var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings { DisableDefaults = true });
+        MessageNames.Register();
         builder.Services.AddWolverine(options => Configure(options, dataSource, HostRole.Worker));
         var host = builder.Build();
 

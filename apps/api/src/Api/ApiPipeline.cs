@@ -151,7 +151,11 @@ internal static class ApiPipeline
         services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
     }
 
-    private static void AddMessaging(this WebApplicationBuilder builder, HostingOptions host, HostRole? role, bool openApiBuild, Assembly[] handlerAssemblies) =>
+    private static void AddMessaging(this WebApplicationBuilder builder, HostingOptions host, HostRole? role, bool openApiBuild, Assembly[] handlerAssemblies)
+    {
+        // Each message travels and is stored under its fixed name (W12). The name is set before Wolverine reads it (W14).
+        MessageNames.Register();
+
         builder.Services.AddWolverine(options =>
         {
             // The handler code is written by `codegen write`, committed in Internal/Generated and loaded as static types (W10). The
@@ -173,9 +177,6 @@ internal static class ApiPipeline
 
             // A stopping host stops taking messages and finishes the ones it has, within the host's shutdown time.
             options.Durability.DrainTimeout = host.ShutdownTimeout;
-
-            // Each message travels and is stored under its fixed name (W12).
-            MessageNames.Register();
 
             // Of two messages the tenant purge handles at once, the second fails on the saga's version and is tried again on the first
             // one's result (W6, S8). Wolverine does not retry this by itself.
@@ -200,4 +201,5 @@ internal static class ApiPipeline
             // Each process logs every message it handled, at Information (Wolverine's default is Debug).
             options.Policies.MessageSuccessLogLevel(LogLevel.Information);
         });
+    }
 }

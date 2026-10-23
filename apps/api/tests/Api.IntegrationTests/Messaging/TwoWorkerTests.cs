@@ -48,8 +48,11 @@ public sealed class TwoWorkerTests(Database database)
         await workers.CrashAsync(dead);
         await workers.WaitForHandledAsync<RecordHandlingThenHold>(1);
 
+        // Delivery is at least once (O4): the survivor runs the message once or more, and the effect stays one (section 9, rule 14).
         (await workers.Handlings.ReadAsync()).ShouldBe([(id, dead)]);
-        workers.Handlings.Runs.ShouldBe([dead, workers.Survivor(dead)]);
+        workers.Handlings.Runs.First().ShouldBe(dead);
+        workers.Handlings.Runs.Skip(1).ShouldNotBeEmpty();
+        workers.Handlings.Runs.Skip(1).ShouldAllBe(worker => worker == workers.Survivor(dead));
         (await workers.DeadLettersAsync()).ShouldBe(0);
     }
 
