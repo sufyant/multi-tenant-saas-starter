@@ -32,6 +32,6 @@ public static class SuspendTenantHandler
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), [new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, tenant.SuspensionReason)]);
+        return (TenantView.Of(tenant), [new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, tenant.SuspensionReason!)]);
     }
 }

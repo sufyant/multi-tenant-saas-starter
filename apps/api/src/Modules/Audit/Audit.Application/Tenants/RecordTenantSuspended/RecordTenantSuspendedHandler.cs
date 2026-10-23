@@ -21,7 +21,7 @@ public static class RecordTenantSuspendedHandler
                 AuditActor.User(suspended.SuspendedBy),
                 AuditOperations.TenantSuspended,
                 tenant,
-                suspended.Reason is { } reason ? JsonSerializer.Serialize(new TenantSuspendedDetails(reason), JsonSerializerOptions.Web) : null),
+                JsonSerializer.Serialize(new TenantSuspendedDetails(suspended.Reason), JsonSerializerOptions.Web)),
             new TenantAuditEntry(suspended.EventId, suspended.OccurredAt, AuditActor.Platform, AuditOperations.TenantSuspended, tenant),
             cancellationToken);
     }
