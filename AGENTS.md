@@ -102,6 +102,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Add a skill only for a tool this repository uses or has a planned place for. `docs/agent-skills.md` lists them.
 - Agents never install, update or remove a skill. Report a stale or missing skill to the maintainer.
 
+## Generated code
+
+- A version change of Wolverine, Orval or any other generator package changes a source of generated code. Run `pnpm generate` from the repository root and commit what it changes. The CI job "Generated files: current" fails otherwise (`apps/api/docs/ARCHITECTURE.md`, section 2, "Generated files"). `docs/github-settings.md`, section 3.2, says how to fix a Dependabot pull request.
+
 ## Monorepo tasks
 
 - In `turbo.json`, the web `build` depends on its own `check-types`, because `next build` cleans `.next` while `next typegen` writes to it.

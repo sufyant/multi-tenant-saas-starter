@@ -37,7 +37,8 @@
     "status": {
       "suspended": "Suspended",
       "closed": "Closed",
-      "active": "Active"
+      "active": "Active",
+      "purging": "Being deleted"
     }
   },
   "overview": {
@@ -203,6 +204,7 @@
     "inviteEmailPlaceholder": "name@company.com",
     "inviteRoleHintOwner": "Owners can also give the Owner role.",
     "inviteRoleHintAdmin": "Only an Owner can invite an Owner.",
+    "revokeOwnerHint": "Only an Owner can revoke an Owner's invitation.",
     "inviteLanguage": "Email language",
     "inviteLanguageHint": "The invitation email and their first screens use this language. They can change it later.",
     "languageSearch": "Search languages",
@@ -251,10 +253,22 @@
         "removed": "<actor></actor> removed <target></target> ({role}) from the organisation.",
         "role_changed": "<actor></actor> changed the role of <target></target> from {oldRole} to {newRole}."
       },
+      "role": {
+        "created": "<actor></actor> created the role <target></target>.",
+        "deleted": "<actor></actor> deleted the role <target></target>.",
+        "updated": "<actor></actor> changed the role <target></target>."
+      },
+      "system_admin": {
+        "granted": "<actor></actor> made <target></target> a system admin.",
+        "revoked": "<actor></actor> revoked the system admin access of <target></target>."
+      },
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",
         "created": "<actor></actor> created this organisation.",
         "owner_invited": "<actor></actor> invited someone as Owner.",
+        "owner_made": "<actor></actor> made a member an Owner.",
+        "purge_warned": "<actor></actor> warned the Owners that this organisation will be deleted.",
+        "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",
         "renamed": "<actor></actor> renamed the organisation from <name>{oldName}</name> to <name>{newName}</name>.",
         "reopened": "<actor></actor> reopened this organisation.",

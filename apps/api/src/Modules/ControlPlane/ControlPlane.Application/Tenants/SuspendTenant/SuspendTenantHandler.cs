@@ -1,6 +1,7 @@
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Tenants.SuspendTenant;
 
@@ -8,7 +9,7 @@ namespace ControlPlane.Application.Tenants.SuspendTenant;
 // (W7).
 public static class SuspendTenantHandler
 {
-    public static async Task<(Result<TenantView>, TenantSuspendedEvent?)> HandleAsync(
+    public static async Task<(Result<TenantView>, OutgoingMessages)> HandleAsync(
         SuspendTenantCommand command,
         ITenantRepository tenants,
         IUserRepository users,
@@ -17,13 +18,13 @@ public static class SuspendTenantHandler
     {
         if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant)
         {
-            return (Errors.TenantNotFound, null);
+            return (Errors.TenantNotFound, []);
         }
 
         var suspended = tenant.Suspend(command.Reason);
         if (!suspended.IsSuccess || suspended.Value == StateChange.Unchanged)
         {
-            return (suspended.Map(_ => TenantView.Of(tenant)), null);
+            return (suspended.Map(_ => TenantView.Of(tenant)), []);
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
@@ -31,6 +32,6 @@ public static class SuspendTenantHandler
         await tenants.SaveChangesAsync(cancellationToken);
 
         var now = time.GetUtcNow();
-        return (TenantView.Of(tenant), new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, tenant.SuspensionReason));
+        return (TenantView.Of(tenant), [new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, tenant.SuspensionReason)]);
     }
 }

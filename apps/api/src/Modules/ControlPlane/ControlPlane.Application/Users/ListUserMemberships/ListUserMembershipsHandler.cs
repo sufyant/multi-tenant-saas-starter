@@ -2,8 +2,8 @@ using SharedKernel;
 
 namespace ControlPlane.Application.Users.ListUserMemberships;
 
-// A system admin is never deleted, as they are never suspended: the system door stays open to system admins, and the first system admin is
-// written only while the system admin list is empty.
+// A system admin is never deleted, as they are never suspended: the system door stays open to system admins. A system admin who is no root
+// is revoked first (section 6, "Root system admins").
 public static class ListUserMembershipsHandler
 {
     public static async Task<Result<UserMembership[]>> HandleAsync(

@@ -2,7 +2,6 @@ using System.Net;
 
 namespace Api.IntegrationTests.Tenant;
 
-[RuntimeHandlerCode]
 public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -70,14 +69,4 @@ public sealed class TenantResolutionTests(Database database) : IAsyncLifetime
         response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
     }
 
-    [Fact]
-    public async Task ResolveTenant_MemberOfATenantNotActive_IsNotFound()
-    {
-        var tenant = await _testData.AddTenantAsync(status: "Provisioning");
-        var member = await _testData.AddMemberAsync(tenant.Id);
-
-        var response = await _host.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/ping", TestContext.Current.CancellationToken);
-
-        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-    }
 }

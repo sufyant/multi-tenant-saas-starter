@@ -25,6 +25,8 @@ public static class Permissions
 
     public const string PlatformTenantsInviteOwner = "platform.tenants.invite_owner";
 
+    public const string PlatformTenantsMakeOwner = "platform.tenants.make_owner";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";
@@ -35,6 +37,10 @@ public static class Permissions
 
     public const string PlatformUsersDelete = "platform.users.delete";
 
+    public const string PlatformSystemAdminsCreate = "platform.system_admins.create";
+
+    public const string PlatformSystemAdminsDelete = "platform.system_admins.delete";
+
     public const string PlatformAuditRead = "platform.audit.read";
 
     public const string TenantMembersRead = "tenant.members.read";
@@ -42,6 +48,8 @@ public static class Permissions
     public const string TenantMembersUpdate = "tenant.members.update";
 
     public const string TenantMembersDelete = "tenant.members.delete";
+
+    public const string TenantOwnersManage = "tenant.owners.manage";
 
     public const string TenantProfileRead = "tenant.profile.read";
 
@@ -52,4 +60,12 @@ public static class Permissions
     public const string TenantInvitationsDelete = "tenant.invitations.delete";
 
     public const string TenantAuditRead = "tenant.audit.read";
+
+    public const string TenantRolesRead = "tenant.roles.read";
+
+    public const string TenantRolesCreate = "tenant.roles.create";
+
+    public const string TenantRolesUpdate = "tenant.roles.update";
+
+    public const string TenantRolesDelete = "tenant.roles.delete";
 }

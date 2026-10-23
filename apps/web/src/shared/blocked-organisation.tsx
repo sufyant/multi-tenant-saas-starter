@@ -11,6 +11,7 @@ import { Status } from "@repo/ui/components/status";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { DetailList } from "./detail-list";
+import { useRoleName } from "./use-role-name";
 
 export type BlockedStatus =
   | typeof MyTenantResponseStatus.Suspended
@@ -31,6 +32,7 @@ export function BlockedOrganisation({
   hasOthers: boolean;
 }) {
   const t = useTranslations();
+  const roleName = useRoleName();
   const { signOut } = useClerk();
   return (
     <AuthLayout brand={t("meta.title")}>
@@ -60,9 +62,7 @@ export function BlockedOrganisation({
             },
             {
               term: t("general.yourRole"),
-              value: tenant.role.builtIn
-                ? t(`shell.roles.${tenant.role.builtIn}`)
-                : tenant.role.name,
+              value: roleName(tenant.role),
             },
           ]}
         />

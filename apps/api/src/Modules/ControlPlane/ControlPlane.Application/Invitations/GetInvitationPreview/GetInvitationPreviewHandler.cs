@@ -1,6 +1,7 @@
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -26,7 +27,7 @@ public static class GetInvitationPreviewHandler
             return Errors.InvitationNotFound;
         }
 
-        var allowed = Invitation.CheckEmail(invitation.Email, query.VerifiedEmails);
+        var allowed = Invitation.CheckEmail(invitation.Email, EmailAddress.AllOf(query.VerifiedEmails));
         if (!allowed.IsSuccess)
         {
             return allowed.Error;

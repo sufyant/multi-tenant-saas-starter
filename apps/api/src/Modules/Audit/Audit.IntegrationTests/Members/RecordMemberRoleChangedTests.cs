@@ -30,6 +30,23 @@ public sealed class RecordMemberRoleChangedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, changed.EventId)).ShouldBe(0);
     }
 
+    // Step r4b: the details keep each role's id and whether it is built in, beside its name of that moment, so a custom role that is
+    // renamed or deleted later still reads as it was.
+    [Fact]
+    public async Task RecordMemberRoleChanged_ToACustomRole_KeepsEachRolesIdAndWhetherItIsBuiltIn()
+    {
+        var changed = new MemberRoleChangedEvent(
+            Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member", "Billing", Guid.CreateVersion7(), true, Guid.CreateVersion7(), false);
+
+        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
+            RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId))!).RootElement;
+        (details.GetProperty("oldRoleId").GetGuid(), details.GetProperty("oldRoleBuiltIn").GetBoolean()).ShouldBe((changed.OldRoleId!.Value, true));
+        (details.GetProperty("newRoleId").GetGuid(), details.GetProperty("newRole").GetString(), details.GetProperty("newRoleBuiltIn").GetBoolean())
+            .ShouldBe((changed.NewRoleId!.Value, "Billing", false));
+    }
+
     // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberRoleChanged_EventArrivesTwice_WritesOneEntry()
@@ -45,5 +62,5 @@ public sealed class RecordMemberRoleChangedTests(Database database)
     }
 
     private static MemberRoleChangedEvent RoleChanged() =>
-        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "owner", "admin");
+        new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "owner", "admin", Guid.CreateVersion7(), true, Guid.CreateVersion7(), true);
 }

@@ -19,7 +19,7 @@ public sealed class RecordMemberRemovedTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_MemberRemoved_WritesTheTenantEntryWithTheRoleTheMemberHad()
     {
-        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin");
+        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "admin", Guid.CreateVersion7(), true);
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -36,7 +36,7 @@ public sealed class RecordMemberRemovedTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_UserMembershipRemoved_WritesTheTenantEntryByThePlatform()
     {
-        var removed = new UserMembershipRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "owner");
+        var removed = new UserMembershipRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "owner", Guid.CreateVersion7(), true);
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordUserMembershipRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));
@@ -51,7 +51,7 @@ public sealed class RecordMemberRemovedTests(Database database)
     [Fact]
     public async Task RecordMemberRemoved_EventArrivesTwice_WritesOneEntry()
     {
-        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member");
+        var removed = new MemberRemovedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "member", Guid.CreateVersion7(), true);
 
         await InTenant.RunAsync(database.Services, removed.TenantId, scope =>
             RecordMemberRemovedHandler.HandleAsync(removed, scope.GetRequiredService<IAuditLog>(), Cancellation));

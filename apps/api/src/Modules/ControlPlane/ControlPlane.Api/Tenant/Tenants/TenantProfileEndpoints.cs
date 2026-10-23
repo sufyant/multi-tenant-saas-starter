@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
+using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api.Tenant.Tenants;
 
@@ -27,7 +28,7 @@ public static class TenantProfileEndpoints
         tenant.Tenant.Name,
         tenant.Tenant.Slug,
         ResponseStatus.OfMyTenant(tenant.Tenant.Status),
-        MemberEndpoints.ToResponse(tenant.Tenant.Role),
+        RoleEndpoints.ToResponse(tenant.Tenant.Role),
         tenant.Permissions,
         tenant.CreatedAt);
 }

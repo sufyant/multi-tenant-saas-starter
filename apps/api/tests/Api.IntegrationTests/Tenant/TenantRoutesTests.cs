@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Api.IntegrationTests.Tenant;
 
 // T7, as an architecture test over the endpoints the application really maps; it needs the composed host, so it lives here.
-[RuntimeHandlerCode]
 public sealed class TenantRoutesTests(Database database)
 {
     [Fact]

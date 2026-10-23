@@ -1,5 +1,5 @@
 // Writes the permission list of ControlPlane.Contracts from the one source of the permission names, ControlPlane.Domain's
-// PermissionPools (B18). Contracts never references Domain (section 2), so it reads a generated copy, and CI fails when the copy
+// PermissionPools (D1). Contracts never references Domain (section 2), so it reads a generated copy, and CI fails when the copy
 // differs from what this script writes (scripts/ci/check-generated.sh). Run it from apps/api: node scripts/generate-permissions.mjs
 import { readFileSync, writeFileSync } from "node:fs";
 

@@ -21,6 +21,6 @@ public static class RecordUserMembershipRemovedHandler
                 AuditActor.Platform,
                 AuditOperations.MemberRemoved,
                 AuditTarget.User(removed.UserId),
-                JsonSerializer.Serialize(new MemberRemovedDetails(removed.Role), JsonSerializerOptions.Web)),
+                JsonSerializer.Serialize(new MemberRemovedDetails(removed.Role, removed.RoleId, removed.RoleBuiltIn), JsonSerializerOptions.Web)),
             cancellationToken);
 }

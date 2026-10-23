@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace Api.EndToEndTests.TenantCreation;
 
 // The tracer bullet: the whole tenant creation flow through HTTP against the composed application, as it is deployed: one build output
-// running as a web host and a worker host on one database (section 1). The first system admin, named by configuration, creates a
+// running as a web host and a worker host on one database (section 1). The root system admin, named by configuration, creates a
 // tenant; its first owner gets the email, signs up with the identity provider through the email's link, accepts the invitation with the
 // code that link leads to and their names, and sees the tenant; another user does not find it.
 public sealed class TenantCreationTests(Database database) : IAsyncLifetime
@@ -42,7 +42,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         var stranger = _web.ClientFor("user_e2e_stranger");
         const string slug = "acme";
         const string ownerEmail = "owner@acme.test";
-        _identity.SignUp(Database.SystemAdmin, EndToEndApp.FirstSystemAdminEmail);
+        _identity.SignUp(Database.SystemAdmin, EndToEndApp.RootEmail);
 
         var created = await admin.SendAsync(CreateTenant(new { name = "Acme Ltd", slug, ownerEmail }), Cancellation);
         var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
@@ -61,7 +61,9 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         myTenants.GetProperty("items").EnumerateArray()
             .Select(tenant => (tenant.GetProperty("id").GetGuid(), tenant.GetProperty("name").GetString(), tenant.GetProperty("slug").GetString()))
             .ShouldBe([(tenantId, "Acme Ltd", slug)]);
-        members.GetProperty("items").EnumerateArray().Select(member => member.GetProperty("role").GetRawText()).ShouldBe(["""{"builtIn":"owner","name":"owner"}"""]);
+        members.GetProperty("items").EnumerateArray()
+            .Select(member => $"{member.GetProperty("role").GetProperty("name").GetString()} {member.GetProperty("role").GetProperty("builtIn").GetBoolean()}")
+            .ShouldBe(["owner True"]);
         strangerMembers.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 

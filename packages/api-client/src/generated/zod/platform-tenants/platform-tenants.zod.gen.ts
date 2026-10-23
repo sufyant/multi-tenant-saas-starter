@@ -44,15 +44,16 @@ export const CreateTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
-  "closedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
+  "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.')
 
 
 export const listTenantsQueryPageSizeMax = 100;
@@ -72,11 +73,11 @@ export const ListTenantsQueryParams = zod.object({
 }).optional(),
   "q": zod.string().max(listTenantsQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
+  Purging: 'purging',
+  Purged: 'purged',
 }).optional()
 })
 
@@ -86,23 +87,18 @@ export const ListTenantsResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
   "memberCount": zod.int(),
   "ownerCount": zod.int(),
-  "firstOwner": zod.union([zod.null(),zod.object({
-  "userId": zod.uuid(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
-  "email": zod.string().nullable()
-}).describe('An Owner of a tenant: the user\'s id, names and address.')]),
   "ownerInvitation": zod.union([zod.null(),zod.object({
   "email": zod.string(),
   "expiresAt": zod.iso.datetime({"offset":true}),
@@ -118,7 +114,7 @@ export const ListTenantsResponse = zod.object({
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.')]).describe('A language the web speaks, by its BCP 47 language tag.')
 }).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back. When the previous version wrote the summary during a deploy, the language is null or that of an earlier\ninvitation. It becomes required when the migrations are squashed into one initial migration before production (section 13 of\nARCHITECTURE.md).')])
-}).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, the Owner who joined first, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.')),
+}).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member\nand no Owner: its purge deleted its summary with its members (K4).')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
@@ -133,14 +129,15 @@ export const GetTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
   "memberCount": zod.int(),
   "ownerCount": zod.int(),
@@ -184,15 +181,16 @@ export const RenameTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
-  "closedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
+  "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.')
 
 export const SuspendTenantParams = zod.object({
   "tenantId": zod.uuid()
@@ -204,22 +202,23 @@ export const suspendTenantBodyReasonMax = 500;
 
 export const SuspendTenantBody = zod.object({
   "reason": zod.string().max(suspendTenantBodyReasonMax)
-}).describe('Why the system admin suspends the tenant, within the API\'s limit. The API trims the reason before it counts its length. A member\nnever sees it.')
+}).describe('Why the system admin suspends the tenant, within the API\'s limit. The API trims the reason before it counts its length. A member\nnever sees it. It holds no personal data, such as a person\'s name or email address: the platform\'s audit log keeps it after the\ntenant\'s purge (A8).')
 
 export const SuspendTenantResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
-  "closedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
+  "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.')
 
 export const ReactivateTenantParams = zod.object({
   "tenantId": zod.uuid()
@@ -230,15 +229,16 @@ export const ReactivateTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
-  "closedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
+  "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.')
 
 export const CloseTenantParams = zod.object({
   "tenantId": zod.uuid()
@@ -249,15 +249,16 @@ export const CloseTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
-  "closedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
+  "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.')
 
 export const ReopenTenantParams = zod.object({
   "tenantId": zod.uuid()
@@ -268,13 +269,14 @@ export const ReopenTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "status": zod.enum({
-  Provisioning: 'provisioning',
   Active: 'active',
   Suspended: 'suspended',
-  Cancelled: 'cancelled',
   Closed: 'closed',
-}).describe('The status of a tenant: provisioning until its creation ends, then active, suspended or closed, or cancelled.'),
+  Purging: 'purging',
+  Purged: 'purged',
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
   "suspensionReason": zod.string().nullable(),
-  "closedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, and the moment of its\nclosure while it is closed. Only a system admin sees this shape.')
+  "closedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "purgedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.')
 

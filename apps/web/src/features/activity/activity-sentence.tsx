@@ -5,15 +5,16 @@ import {
   AuditActorResponseKind,
   type AuditDetailsResponse,
   type AuditEntryResponse,
+  type AuditRoleResponse,
   type AuditTargetResponse,
   MemberInvitedDetailsResponseOperation,
   MemberRemovedDetailsResponseOperation,
   MemberRoleChangedDetailsResponseOperation,
-  type RoleResponse,
   TenantRenamedDetailsResponseOperation,
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useRoleName } from "@/shared/use-role-name";
 
 /** The words for a person the log cannot name. */
 type Translate = (
@@ -40,7 +41,7 @@ function targetName(target: AuditTargetResponse, t: Translate): string {
  */
 function detailValues(
   details: AuditDetailsResponse | null,
-  role: (role: RoleResponse) => string,
+  role: (role: AuditRoleResponse) => string,
 ): Record<string, string> {
   switch (details?.operation) {
     case MemberInvitedDetailsResponseOperation.MemberInvited:
@@ -65,8 +66,7 @@ const person = (name: string) => () => (
  */
 export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const t = useTranslations();
-  const role = (value: RoleResponse) =>
-    value.builtIn ? t(`shell.roles.${value.builtIn}`) : value.name;
+  const role = useRoleName();
   return (
     <p className="min-w-0">
       {entry.actor.kind === AuditActorResponseKind.Platform && (

@@ -43,6 +43,19 @@ export const operations = [
     ]
   },
   {
+    "operationId": "CreateRole",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/roles",
+    "tag": "Tenant/Roles",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "CreateTenant",
     "method": "POST",
     "path": "/v1/platform/tenants",
@@ -53,6 +66,16 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Location",
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "DeleteRole",
+    "method": "DELETE",
+    "path": "/v1/tenants/{tenantId}/roles/{roleId}",
+    "tag": "Tenant/Roles",
+    "requestHeaders": [],
+    "responseHeaders": [
       "Retry-After"
     ]
   },
@@ -113,6 +136,19 @@ export const operations = [
     "tag": "Platform/Users",
     "requestHeaders": [],
     "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GrantSystemAdmin",
+    "method": "POST",
+    "path": "/v1/platform/users/{userId}/system-admin",
+    "tag": "Platform/SystemAdmins",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
       "Retry-After"
     ]
   },
@@ -193,6 +229,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ListRoles",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/roles",
+    "tag": "Tenant/Roles",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ListTenants",
     "method": "GET",
     "path": "/v1/platform/tenants",
@@ -207,6 +253,16 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/users",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "MakeOwner",
+    "method": "POST",
+    "path": "/v1/platform/tenants/{tenantId}/owners",
+    "tag": "Platform/Members",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -237,6 +293,16 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/tenants/{tenantId}/members/{userId}",
     "tag": "Tenant/Members",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "RenameMe",
+    "method": "PATCH",
+    "path": "/v1/me",
+    "tag": "Me/Users",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -283,6 +349,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "RevokeSystemAdmin",
+    "method": "DELETE",
+    "path": "/v1/platform/users/{userId}/system-admin",
+    "tag": "Platform/SystemAdmins",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "SuspendTenant",
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/suspend",
@@ -297,6 +373,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/suspend",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "UpdateRole",
+    "method": "PATCH",
+    "path": "/v1/tenants/{tenantId}/roles/{roleId}",
+    "tag": "Tenant/Roles",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

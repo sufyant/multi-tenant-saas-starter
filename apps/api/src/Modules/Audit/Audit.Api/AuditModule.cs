@@ -1,6 +1,7 @@
 using System.Reflection;
 using Audit.Api.Platform.AuditLogs;
 using Audit.Api.Tenant.AuditLogs;
+using Audit.Application.Tenants.PurgeTenantData;
 using Audit.Application.Tenants.RecordTenantCreated;
 using Microsoft.AspNetCore.Routing;
 
@@ -9,6 +10,9 @@ namespace Audit.Api;
 /// <summary>The module's API entry point. Its infrastructure is registered by <c>AuditInfrastructure</c>.</summary>
 public static class AuditModule
 {
+    /// <summary>The name Audit takes part in the tenant purge by, for the host to register (section 6, "Tenant purge").</summary>
+    public const string TenantPurgeParticipant = PurgeTenantDataHandler.Participant;
+
     /// <summary>The assembly with the module's handlers, for the host to give Wolverine.</summary>
     public static Assembly HandlerAssembly => typeof(RecordTenantCreatedHandler).Assembly;
 

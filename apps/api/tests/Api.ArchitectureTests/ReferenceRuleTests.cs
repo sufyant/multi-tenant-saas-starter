@@ -7,8 +7,9 @@ public sealed class ReferenceRuleTests
 {
     private const string DbContext = "Microsoft.EntityFrameworkCore.DbContext";
 
-    // N8: the response types that two modules answer. Each lives in its owner's Contracts.
-    private static readonly string[] SharedResponses = ["ControlPlane.Contracts.Members.RoleResponse", "ControlPlane.Contracts.Members.MemberRole"];
+    // N8: the response types that two modules answer, each in its owner's Contracts. None since step r4b: Audit answers a role in its own
+    // AuditRoleResponse (N7k).
+    private static readonly string[] SharedResponses = [];
 
     public static TheoryData<string> Modules => [.. Solution.Modules];
 

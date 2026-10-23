@@ -67,6 +67,7 @@
       "system_admin_cannot_join": "A system admin cannot join an organisation."
     },
     "member": {
+      "already_owner": "This member is already an Owner.",
       "cannot_remove_self": "You cannot remove yourself.",
       "exists": "This person is already a member.",
       "last_owner": "An organisation needs at least one Owner.",
@@ -92,12 +93,33 @@
       "unsupported_media_type": "The request was not valid. Reload the page and try again.",
       "validation_failed": "Some fields need attention. Check them and try again."
     },
+    "role": {
+      "built_in": "A built-in role keeps its name and its permissions, and cannot be deleted.",
+      "escalation": "Your role does not hold every permission of this role.",
+      "in_use": "A member or a pending invitation has this role. Give them another role first.",
+      "limit_reached": "This organisation has as many custom roles as it may have. Delete a role first.",
+      "name_invalid": "Enter a role name.",
+      "name_taken": "This organisation already has a role with this name. Choose another name.",
+      "not_found": "This role is no longer in the organisation.",
+      "not_permitted": "Your role cannot change roles this way.",
+      "permission_invalid": "A role can hold only the permissions of an organisation.",
+      "permission_owner_only": "A custom role cannot hold a permission that only the Owner role holds.",
+      "permissions_required": "Choose at least one permission.",
+      "profile_read_required": "A role must be able to read the organisation's profile.",
+      "roles_read_required": "A role that invites people or changes a member's role must be able to read the roles."
+    },
     "route": {
       "method_not_allowed": "This action is not available here.",
       "not_found": "This page does not exist."
     },
     "server": {
       "error": "Something went wrong on our side. Your data is safe. Try again in a moment."
+    },
+    "system_admin": {
+      "cannot_revoke_self": "You cannot revoke your own system admin access.",
+      "exists": "This user is a system admin already.",
+      "not_found": "This user is not a system admin.",
+      "root": "A root system admin cannot be revoked. The configuration names them."
     },
     "tenant": {
       "closed": "This organisation is closed.",

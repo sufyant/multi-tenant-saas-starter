@@ -9,13 +9,13 @@ namespace Api.IntegrationTests.Messaging;
 // W12: a node without a handler for a message does not drop it. During a rolling deploy an old worker takes a message only the new
 // version knows. It puts the message back on the queue, and a worker that knows it handles it. A message no node knows goes to the
 // dead letter queue after the tries.
-[RuntimeHandlerCode]
+[RuntimeHandlerCode("The new worker of RollingDeploy has the test handler of RecordHandling, which the old worker lacks.")]
 public sealed class UnknownMessageTests(Database database)
 {
     private static readonly Dictionary<string, string?> ShortPutBacks = new()
     {
-        ["Messaging:UnknownMessages:Delay"] = "00:00:00.200",
-        ["Messaging:UnknownMessages:Tries"] = "2",
+        ["Host:Messaging:UnknownMessages:Delay"] = "00:00:00.200",
+        ["Host:Messaging:UnknownMessages:Tries"] = "2",
     };
 
     [Fact]
@@ -23,7 +23,7 @@ public sealed class UnknownMessageTests(Database database)
     {
         await using var deploy = await RollingDeploy.StartAsync(database, new Dictionary<string, string?>(ShortPutBacks)
         {
-            ["Messaging:UnknownMessages:Tries"] = "1000",
+            ["Host:Messaging:UnknownMessages:Tries"] = "1000",
         });
         deploy.StartWorker(RollingDeploy.Old);
         var id = Guid.NewGuid();
@@ -64,8 +64,8 @@ public sealed class UnknownMessageTests(Database database)
     }
 
     [Theory]
-    [InlineData("Messaging:UnknownMessages:Delay", "00:00:00")]
-    [InlineData("Messaging:UnknownMessages:Tries", "0")]
+    [InlineData("Host:Messaging:UnknownMessages:Delay", "00:00:00")]
+    [InlineData("Host:Messaging:UnknownMessages:Tries", "0")]
     public async Task StartApplication_PutBackSettingNotPositive_FailsValidation(string setting, string value)
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString, settings: new Dictionary<string, string?> { [setting] = value });

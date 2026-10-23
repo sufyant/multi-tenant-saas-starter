@@ -12,7 +12,7 @@ namespace Api.ArchitectureTests;
 
 // Smoke findings 8 and 11: docs/configuration.md has a row for every key the application binds. The keys are read from the composed
 // application: every options class of the solution that is bound to a configuration section, and the settable properties under it.
-// The example file lists the same keys, and the Default column holds the code's defaults (audit B12, B13).
+// The example file lists the same keys, and the Default column holds the code's defaults (section 7, "Configuration").
 public sealed partial class ConfigurationDocumentTests
 {
     // The host reads its ASPNETCORE_ variables from the environment, not from a configuration file.
@@ -65,8 +65,8 @@ public sealed partial class ConfigurationDocumentTests
         differences.ShouldBeEmpty();
     }
 
-    // B14: each deployed environment gets every key that the document marks as required, and only keys that it documents. The
-    // migration's own connection goes to the migrate command alone (R3).
+    // Section 7, "Configuration": each deployed environment gets every key that the document marks as required, and only keys that it
+    // documents. The migration's own connection goes to the migrate command alone (R3).
     [Fact]
     public void RailwayConfiguration_ItsVariables_SetEveryRequiredKey()
     {
@@ -78,7 +78,7 @@ public sealed partial class ConfigurationDocumentTests
         set.Except(DocumentedKeys()).ShouldBeEmpty();
     }
 
-    // A variable such as Authentication__Clerk__AuthorizedParties__0 is the key Authentication:Clerk:AuthorizedParties.
+    // A variable such as Host__Authentication__AuthorizedParties__0 is the key Host:Authentication:AuthorizedParties.
     private static string KeyOf(string variable) => ListIndex().Replace(variable, "").Replace("__", ":", StringComparison.Ordinal);
 
     private static IEnumerable<(string Key, string Required)> DocumentedRows() =>

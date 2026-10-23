@@ -32,11 +32,11 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Theory]
-    [InlineData("Provisioning", "provisioning")]
     [InlineData("Active", "active")]
     [InlineData("Suspended", "suspended")]
-    [InlineData("Cancelled", "cancelled")]
     [InlineData("Closed", "closed")]
+    [InlineData("Purging", "purging")]
+    [InlineData("Purged", "purged")]
     public async Task GetTenant_ATenantInAnyStatus_ReturnsItWithItsStatus(string stored, string answered)
     {
         var tenant = await _testData.AddTenantAsync(status: stored, name: "Admin View Ltd");
@@ -48,11 +48,31 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Admin View Ltd", tenant.Slug, answered));
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "reopenableUntil", "memberCount", "ownerCount", "owners", "ownerInvitation"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "owners", "ownerInvitation"],
             ignoreOrder: true);
     }
 
-    // The system admin sees why a tenant is suspended, and when it was closed; a member never does.
+    // K4: the purge leaves a tombstone, the tenant row with its id, name, slug, status and the moments of its creation and its purge, and
+    // no summary: no member, no Owner, no invitation.
+    [Fact]
+    public async Task GetTenant_APurgedTenant_AnswersItsTombstone()
+    {
+        var purgedAt = new DateTimeOffset(2026, 10, 20, 9, 30, 0, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantRowAsync(status: "Purged", name: "Gone Ltd");
+        await database.ScalarAsync<object>($"UPDATE control_plane.tenants SET purged_at = '{purgedAt:O}' WHERE id = '{tenant.Id}'");
+
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString(), found.GetProperty("purgedAt").GetDateTimeOffset())
+            .ShouldBe(("Gone Ltd", tenant.Slug, "purged", purgedAt));
+        (found.GetProperty("suspensionReason").ValueKind, found.GetProperty("closedAt").ValueKind, found.GetProperty("reopenableUntil").ValueKind, found.GetProperty("ownerInvitation").ValueKind)
+            .ShouldBe((JsonValueKind.Null, JsonValueKind.Null, JsonValueKind.Null, JsonValueKind.Null));
+        (found.GetProperty("memberCount").GetInt32(), found.GetProperty("ownerCount").GetInt32(), found.GetProperty("owners").GetArrayLength()).ShouldBe((0, 0, 0));
+    }
+
+
     [Fact]
     public async Task GetTenant_ClosedAfterASuspension_ShowsTheReasonAndTheMomentOfTheClosure()
     {
@@ -126,7 +146,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var admin = await SystemAdminAsync();
         var email = PlatformTenants.Email();
         var tenant = await _tenants.CreateAsync(admin, email);
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET owner_invitation_language = NULL WHERE id = '{tenant}'");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{tenant}'");
 
         var found = await admin.GetAsync($"/v1/platform/tenants/{tenant}", Cancellation);
 

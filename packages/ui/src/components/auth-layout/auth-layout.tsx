@@ -13,7 +13,7 @@ export type AuthLayoutProps = {
 };
 
 /**
- * The frame of the screens around sign-in (the D5 boards): the logo and the product's name, or the Platform label, a centred
+ * The frame of the screens around sign-in (the design system's boards): the logo and the product's name, or the Platform label, a centred
  * column of at most 400px, and an optional footer. It has no navigation: the person is not in the app yet.
  */
 export function AuthLayout({

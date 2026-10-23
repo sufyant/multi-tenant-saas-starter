@@ -4,7 +4,6 @@ namespace Api.IntegrationTests.Hosting;
 
 // Section 8 (API8): the API sends no CORS headers. No browser calls it: the browser calls only its app's BFF (F6). Without the
 // headers, a browser keeps a script of another origin from reading an answer.
-[RuntimeHandlerCode]
 public sealed class CorsTests : IAsyncLifetime
 {
     private const string Origin = "https://app.test";

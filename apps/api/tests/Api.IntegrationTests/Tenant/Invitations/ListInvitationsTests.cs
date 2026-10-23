@@ -46,7 +46,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        Invitations(page).ShouldBe([(expired, Roles.BuiltIn("member")), (pending, Roles.BuiltIn("admin"))]);
+        Invitations(page).ShouldBe([(expired, RoleAnswers.BuiltIn("member")), (pending, RoleAnswers.BuiltIn("admin"))]);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(2);
@@ -183,11 +183,12 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         Emails(page).ShouldBe([found]);
     }
 
+    // Step r4b: the filter takes the role's id.
     [Theory]
-    [InlineData("owner")]
-    [InlineData("admin")]
-    [InlineData("member")]
-    public async Task ListInvitations_ARoleFilter_ReturnsTheInvitationsOfThatRoleOnly(string role)
+    [InlineData("owner", "Owner")]
+    [InlineData("admin", "Admin")]
+    [InlineData("member", "Member")]
+    public async Task ListInvitations_ARoleFilter_ReturnsTheInvitationsOfThatRoleOnly(string role, string builtIn)
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
@@ -195,9 +196,9 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         await _testData.AddInvitationAsync(tenant.Id, role: "Admin");
         await _testData.AddInvitationAsync(tenant.Id, role: "Member");
 
-        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/invitations?role={role}", Cancellation);
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/invitations?roleId={await _testData.RoleIdOfAsync(tenant.Id, builtIn)}", Cancellation);
 
-        Invitations(page).Select(invitation => invitation.Role).ShouldBe([Roles.BuiltIn(role)]);
+        Invitations(page).Select(invitation => invitation.Role).ShouldBe([RoleAnswers.BuiltIn(role)]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
@@ -263,8 +264,8 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
     [InlineData("page=0", "paging.page_invalid")]
     [InlineData("sort=createdAt", "paging.sort_invalid")]
     [InlineData("sort=ExpiresAt", "paging.sort_invalid")]
-    [InlineData("role=Owner", "paging.filter_invalid")]
-    [InlineData("role=Guest", "paging.filter_invalid")]
+    [InlineData("roleId=Owner", "request.invalid")]
+    [InlineData("roleId=Guest", "request.invalid")]
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListInvitations_AnInvalidPageSortFilterOrSearch_IsRejected(string query, string code)
     {
@@ -281,7 +282,7 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
         [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("email").GetString()!)];
 
     private static List<(Guid Id, string Role)> Invitations(JsonElement page) =>
-        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), Roles.Of(item)))];
+        [.. page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid(), RoleAnswers.Of(item)))];
 
     private async Task AddInvitationsAsync(Guid tenantId, params string[] emails)
     {

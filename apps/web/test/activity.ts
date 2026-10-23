@@ -7,17 +7,17 @@ import {
   type CursorPageOfAuditEntryResponse,
   MemberInvitedDetailsResponseOperation,
   MemberRemovedDetailsResponseOperation,
-  MemberRole,
   MemberRoleChangedDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
 } from "@repo/api-client";
 import { getListAuditEntriesMockHandler } from "@repo/api-client/msw";
+import { BuiltInRole } from "@/shared/roles";
 
 // The tenant log's entries of the Activity board, and the answers of ListAuditEntries.
 
-const role = (name: MemberRole) => ({ builtIn: name, name });
+const role = (name: BuiltInRole) => ({ id: null, name, builtIn: true });
 
 /** An entry of the tenant log: Ayşe acted on Khalid. */
 export const entry = (
@@ -47,17 +47,17 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
   {
     [AuditOperation.MemberInvited]: {
       operation: MemberInvitedDetailsResponseOperation.MemberInvited,
-      role: role(MemberRole.Member),
+      role: role(BuiltInRole.Member),
       replacedInvitationId: null,
     },
     [AuditOperation.MemberRemoved]: {
       operation: MemberRemovedDetailsResponseOperation.MemberRemoved,
-      role: role(MemberRole.Admin),
+      role: role(BuiltInRole.Admin),
     },
     [AuditOperation.MemberRoleChanged]: {
       operation: MemberRoleChangedDetailsResponseOperation.MemberRoleChanged,
-      oldRole: role(MemberRole.Member),
-      newRole: role(MemberRole.Admin),
+      oldRole: role(BuiltInRole.Member),
+      newRole: role(BuiltInRole.Admin),
     },
     [AuditOperation.TenantOwnerInvited]: {
       operation: TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited,

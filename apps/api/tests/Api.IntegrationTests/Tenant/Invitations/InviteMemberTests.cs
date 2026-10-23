@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ControlPlane.Application.Invitations.OpenMemberSignUp;
+using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Contracts.Invitations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,7 +64,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
-        Roles.Of(invitation).ShouldBe(Roles.BuiltIn("member"));
+        RoleAnswers.Of(invitation).ShouldBe(RoleAnswers.BuiltIn("member"));
         invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _testData.UserIdOfAsync(inviter));
         invitation.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
         invitation.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow().AddDays(7));
@@ -178,7 +178,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, NewEmail(), role: "owner");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
-        Roles.Of(await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(Roles.BuiltIn("owner"));
+        RoleAnswers.Of(await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(RoleAnswers.BuiltIn("owner"));
     }
 
     [Theory]
@@ -196,16 +196,16 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await InvitationsOfAsync(tenant.Id)).ShouldBe(0);
     }
 
+    // Step r4b: a request gives a role by its id, which is required. A request without one, with a name in place of an id, with a number
+    // or with a role name in the old field is refused before the handler, and never falls back to an empty id.
     [Theory]
     [InlineData("""{ "email": "ada@example.com" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Guest" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": 7 }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": 0 }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Owner, Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Admin, Member" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": " Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "Admin" }""")]
-    [InlineData("""{ "email": "ada@example.com", "role": "OWNER" }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": "Guest" }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": 7 }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": 0 }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": "owner" }""")]
+    [InlineData("""{ "email": "ada@example.com", "roleId": null }""")]
+    [InlineData("""{ "email": "ada@example.com", "role": "admin" }""")]
     public async Task InviteMember_WithoutAKnownRole_IsABadRequest(string body)
     {
         var tenant = await _testData.AddTenantAsync();
@@ -288,16 +288,51 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         (await _testData.InvitationStatusOfAsync(second)).ShouldBe("Pending");
     }
 
-    // K2, K6i: a unique index keeps one pending invitation for each tenant and address, in any case. The lock is the first guard; the
-    // index is the second.
+    // The address takes one form where it enters: trimmed, in lower case by the invariant culture (the maintainer's decision in step r2a).
+    // The invitation keeps it and answers it, and the two invitations are one pending invitation.
     [Fact]
-    public async Task StoreInvitation_ASecondPendingOneToTheSameEmailInAnotherCase_IsRefusedByTheIndex()
+    public async Task InviteMember_TheSameEmailInTwoCases_KeepsOnePendingInvitationInLowerCase()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var local = Guid.NewGuid().ToString("N");
+        await owner.InviteMemberAsync(tenant.Id, $"ali.{local}@example.com");
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, $"Ali.{local}@Example.com");
+
+        (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("email").GetString().ShouldBe($"ali.{local}@example.com");
+        (await PendingInvitationsToAsync(tenant.Id, $"ali.{local}@example.com")).ShouldBe(1);
+        (await InvitationsOfAsync(tenant.Id)).ShouldBe(2);
+    }
+
+    // The Turkish dotted capital I: .NET's invariant lower case keeps it, where PostgreSQL's lower() makes it an "i". The address keeps
+    // .NET's form and the database compares it by plain equality, so both sides see the same address: "İpek" in two cases is one, and
+    // the database holds no "ipek".
+    [Fact]
+    public async Task InviteMember_AnAddressWithTheTurkishDottedCapitalI_IsTheSameAddressInDotNetAndInTheDatabase()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var local = Guid.NewGuid().ToString("N");
+        var first = await IdOfAsync(await owner.InviteMemberAsync(tenant.Id, $"İpek.{local}@Example.com"));
+
+        await owner.InviteMemberAsync(tenant.Id, $"İPEK.{local}@example.COM");
+
+        (await _testData.InvitationStatusOfAsync(first)).ShouldBe("Cancelled");
+        (await PendingInvitationsToAsync(tenant.Id, $"İpek.{local}@example.com")).ShouldBe(1);
+        (await PendingInvitationsToAsync(tenant.Id, $"ipek.{local}@example.com")).ShouldBe(0);
+    }
+
+    // K2, K6i: a unique index keeps one pending invitation for each tenant and address, in the one form it is stored in. The lock is the
+    // first guard; the index is the second.
+    [Fact]
+    public async Task StoreInvitation_ASecondPendingOneToTheSameEmail_IsRefusedByTheIndex()
     {
         var tenant = await _testData.AddTenantAsync();
         var local = Guid.NewGuid().ToString("N");
         await _testData.AddInvitationAsync(tenant.Id, $"ada.{local}@example.com");
 
-        var second = () => _testData.AddInvitationAsync(tenant.Id, $"ADA.{local}@example.com");
+        var second = () => _testData.AddInvitationAsync(tenant.Id, $"ada.{local}@example.com");
 
         (await second.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.UniqueViolation);
     }
@@ -347,16 +382,16 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
-    // Our copy of a member's address, compared without case.
+    // Our copy of a member's address, compared in its one form, so another case of it is the same address.
     [Fact]
     public async Task InviteMember_TheEmailOfAMember_IsAConflict()
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var local = Guid.NewGuid().ToString("N");
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"Grace.{local}@Navy.mil"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"grace.{local}@navy.mil"));
 
-        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"grace.{local}@navy.MIL");
+        var invited = await _api.CreateClient(owner).InviteMemberAsync(tenant.Id, $"Grace.{local}@Navy.MIL");
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await CodeOfAsync(invited)).ShouldBe("member.exists");
@@ -491,7 +526,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
-        var invited = new MemberInvitationReadyEvent(
+        var invited = new InvitationReadyEvent(
             Guid.CreateVersion7(),
             _time.GetUtcNow(),
             Guid.NewGuid(),
@@ -608,9 +643,66 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => invited = await owner.InviteMemberAsync(tenantId, email));
 
         var invitationId = (await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
-        messages.MovedToErrorQueue.SingleMessage<OpenMemberSignUpCommand>().InvitationId.ShouldBe(invitationId);
+        messages.MovedToErrorQueue.SingleMessage<OpenSignUpCommand>().InvitationId.ShouldBe(invitationId);
         _api.Email.Attempts.ShouldNotContain(attempt => attempt.Email.To == email);
         (await _testData.InvitationStatusOfAsync(invitationId)).ShouldBe("Pending");
+    }
+
+    // A3: an invitation gives a custom role by its id, and the invitation answers it as it answers a built-in role.
+    [Fact]
+    public async Task InviteMember_ACustomRole_CreatesTheInvitationWithIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, NewEmail(), role: roleId.ToString());
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var invitation = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        RoleAnswers.Of(invitation).ShouldBe(RoleAnswers.Custom("Billing"));
+        invitation.GetProperty("role").GetProperty("id").GetGuid().ShouldBe(roleId);
+    }
+
+    // Row level security hides another tenant's roles, so its id is not found, and nothing is invited.
+    [Fact]
+    public async Task InviteMember_ARoleOfAnotherTenant_IsNotFoundAndInvitesNobody()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var other = await _testData.AddTenantAsync();
+
+        var invited = await owner.InviteMemberAsync(tenant.Id, NewEmail(), role: (await _testData.RoleIdOfAsync(other.Id, "Member")).ToString());
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await CodeOfAsync(invited)).ShouldBe("role.not_found");
+        (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.invitations")).ShouldBe(0);
+    }
+
+    // Decision 2 of step r4b: nobody invites someone with a role stronger than their own.
+    [Fact]
+    public async Task InviteMember_ARoleStrongerThanTheInvitersRole_IsForbiddenAsAnEscalation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.create", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var inviter = _api.CreateClient(await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter));
+
+        var invited = await inviter.InviteMemberAsync(tenant.Id, NewEmail(), role: "admin");
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(invited)).ShouldBe("role.escalation");
+    }
+
+    [Fact]
+    public async Task InviteMember_ARoleTheInviterHoldsExactly_CreatesTheInvitation()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var recruiter = await _testData.AddCustomRoleAsync(tenant.Id, "Recruiter", "tenant.invitations.create", "tenant.roles.read", "tenant.members.read", "tenant.profile.read");
+        var inviter = _api.CreateClient(await _testData.AddMemberWithRoleAsync(tenant.Id, recruiter));
+
+        var invited = await inviter.InviteMemberAsync(tenant.Id, NewEmail(), role: "member");
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     private static (string? Role, string? ReplacedInvitationId) Details(string? json)
@@ -673,4 +765,9 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
 
     private Task<long> PendingInvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'");
+
+    // The stored form compared by plain equality, as every query compares it.
+    private Task<long> PendingInvitationsToAsync(Guid tenantId, string email) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND email = '{email}' AND status = 'Pending'");
 }

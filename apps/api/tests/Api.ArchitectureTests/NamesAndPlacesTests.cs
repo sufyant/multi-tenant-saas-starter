@@ -155,7 +155,7 @@ public sealed partial class NamesAndPlacesTests
     }
 
     // N9: in a module's integration test project, each test of a use case sits in the one class of that use case, {UseCase}Tests, in the
-    // folder of its resource in Application (Tenants/ActivateTenantTests). A class named by a class of the module, such as
+    // folder of its resource in Application (Invitations/RecordSignUpTests). A class named by a class of the module, such as
     // TenantRepositoryTests, tests that class.
     [Theory]
     [MemberData(nameof(ModuleIntegrationTestProjects))]
@@ -196,8 +196,9 @@ public sealed partial class NamesAndPlacesTests
         misnamed.ShouldBeEmpty();
     }
 
-    // N8, rule 2: a message names its role. An integration event in Contracts is {PastTense}Event, a saga's reply {Work}Reply (N3); in
-    // Application a command is {Action}Command, a query {Action}Query, and a saga's timeout {Wait}TimedOut (N3).
+    // N8, rule 2: a message names its role. An integration event in Contracts is {PastTense}Event, a saga's reply {Work}Reply (N3), and
+    // a saga's step that other modules handle {Work}Command, beside its reply (N3); in Application a command is {Action}Command, a query
+    // {Action}Query, and a saga's timeout {Wait}TimedOut (N3).
     [Fact]
     public void NameMessages_EveryHandledMessage_EndsWithItsRole()
     {
@@ -389,8 +390,11 @@ public sealed partial class NamesAndPlacesTests
 
     private static bool NamesItsRole(Type message) =>
         message.Assembly.GetName().Name!.EndsWith(".Contracts", StringComparison.Ordinal)
-            ? EndsWithAny(message.Name, "Event", "Reply")
+            ? EndsWithAny(message.Name, "Event", "Reply") || IsAStepWithItsReply(message)
             : EndsWithAny(message.Name, "Command", "Query", "Reply", "TimedOut");
+
+    private static bool IsAStepWithItsReply(Type message) =>
+        message.Name.EndsWith("Command", StringComparison.Ordinal) && message.Assembly.GetType($"{message.Namespace}.{ActionOf(message)}Reply") is not null;
 
     private static bool EndsWithAny(string name, params string[] suffixes) => suffixes.Any(suffix => name.EndsWith(suffix, StringComparison.Ordinal));
 

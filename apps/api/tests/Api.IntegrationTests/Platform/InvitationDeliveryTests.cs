@@ -82,9 +82,9 @@ public sealed class InvitationDeliveryTests(Database database)
             database.ConnectionStringFor(DatabaseRoles.Application),
             settings: new Dictionary<string, string?>
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:00:00.100",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:00:00.200",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:00:00.400",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:00:00.100",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:00:00.200",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:00:00.400",
             });
         api.Email.FailNext(2);
         var email = $"{Guid.NewGuid():N}@example.com";
@@ -92,7 +92,7 @@ public sealed class InvitationDeliveryTests(Database database)
         var messages = await api.TrackMessagesAsync(() => CreateTenantForOwnerAsync(api, email));
 
         var attempts = messages.ExecutionStarted.RecordsInOrder()
-            .Where(record => record.Message is OwnerInvitationReadyEvent)
+            .Where(record => record.Message is InvitationReadyEvent)
             .Select(record => record.SessionTime)
             .ToArray();
         attempts.Length.ShouldBe(3);
@@ -112,9 +112,9 @@ public sealed class InvitationDeliveryTests(Database database)
             database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:02:00",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:03:00",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:01:00",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:02:00",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:03:00",
             });
         var refused = $"{Guid.NewGuid():N}@example.com";
         var next = $"{Guid.NewGuid():N}@example.com";
@@ -132,7 +132,7 @@ public sealed class InvitationDeliveryTests(Database database)
         await StopAndDrainAsync(api);
 
         api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe(next);
-        messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReadyEvent { Email: var email } && email == refused)
+        messages.Requeued.Envelopes().Where(envelope => envelope.Message is InvitationReadyEvent { Email: var email } && email == refused)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
 
@@ -147,9 +147,9 @@ public sealed class InvitationDeliveryTests(Database database)
             database.ConnectionStringFor(DatabaseRoles.Application, name),
             settings: new Dictionary<string, string?>
             {
-                ["Notifications:InvitationEmailRetryDelays:0"] = "00:01:00",
-                ["Notifications:InvitationEmailRetryDelays:1"] = "00:02:00",
-                ["Notifications:InvitationEmailRetryDelays:2"] = "00:03:00",
+                ["Notifications:InvitationEmails:RetryDelays:0"] = "00:01:00",
+                ["Notifications:InvitationEmails:RetryDelays:1"] = "00:02:00",
+                ["Notifications:InvitationEmails:RetryDelays:2"] = "00:03:00",
             },
             configureServices: services => services.AddLogging(logging => logging.AddProvider(new SlowRescheduleLog())));
         var refused = $"{Guid.NewGuid():N}@example.com";
@@ -167,7 +167,7 @@ public sealed class InvitationDeliveryTests(Database database)
             until: new SentAndRescheduled(sent: next, rescheduled: refused));
         await StopAndDrainAsync(api);
 
-        messages.Requeued.Envelopes().Where(envelope => envelope.Message is OwnerInvitationReadyEvent { Email: var email } && email == refused)
+        messages.Requeued.Envelopes().Where(envelope => envelope.Message is InvitationReadyEvent { Email: var email } && email == refused)
             .ShouldHaveSingleItem().ScheduledTime.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(startedAt.AddMinutes(1));
     }
 
@@ -233,7 +233,7 @@ public sealed class InvitationDeliveryTests(Database database)
 
         public void Record(EnvelopeRecord record)
         {
-            if (record.Message is OwnerInvitationReadyEvent ready)
+            if (record.Message is InvitationReadyEvent ready)
             {
                 _sent |= record.MessageEventType == MessageEventType.MessageSucceeded && ready.Email == sent;
                 _rescheduled |= record.MessageEventType == MessageEventType.Requeued && ready.Email == rescheduled;

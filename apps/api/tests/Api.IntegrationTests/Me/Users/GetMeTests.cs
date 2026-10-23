@@ -6,8 +6,8 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Me.Users;
 
-// GET /v1/me: the signed-in user, as ControlPlane knows them. A person becomes a user only through an invitation or as the
-// first system admin, so a signed-in person who is not a user yet is not found, and the web shows "no access yet".
+// GET /v1/me: the signed-in user, as ControlPlane knows them. A person becomes a user only through an invitation or as a
+// root system admin at the system door, so a signed-in person who is not a user yet is not found, and the web shows "no access yet".
 public sealed class GetMeTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);

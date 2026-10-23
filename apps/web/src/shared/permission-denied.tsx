@@ -5,6 +5,7 @@ import { EmptyState } from "@repo/ui/components/empty-state";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useTenant } from "./tenant-context";
+import { useRoleName } from "./use-role-name";
 
 /**
  * Permission denied, inside the shell (the PermissionDenied board): it names the page and the person's role, says who can help,
@@ -12,10 +13,9 @@ import { useTenant } from "./tenant-context";
  */
 export function PermissionDenied({ page }: { page: string }) {
   const t = useTranslations();
+  const roleName = useRoleName();
   const { tenant, detail } = useTenant();
-  const role = detail.role.builtIn
-    ? t(`shell.roles.${detail.role.builtIn}`)
-    : detail.role.name;
+  const role = roleName(detail.role);
   return (
     <EmptyState
       kind="error"

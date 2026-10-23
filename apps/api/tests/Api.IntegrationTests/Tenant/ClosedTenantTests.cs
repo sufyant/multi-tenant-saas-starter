@@ -37,6 +37,20 @@ public sealed class ClosedTenantTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(response)).ShouldBe("tenant.closed");
     }
 
+    // A tenant whose purge has started keeps its members until the purge's last step, and the door refuses them as it refuses a closed
+    // tenant's (K4).
+    [Fact]
+    public async Task EnterTenant_MemberOfAPurgingTenant_IsForbiddenAsClosed()
+    {
+        var tenant = await _testData.AddTenantAsync(status: "Purging", closedAt: DateTimeOffset.UtcNow);
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+
+        var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(response)).ShouldBe("tenant.closed");
+    }
+
     // T3: to anyone else, a closed tenant answers with the handlers' own tenant.not_found, the same body apart from the trace id.
     [Fact]
     public async Task EnterTenant_StrangerToAClosedTenant_AnswersTheHandlersTenantNotFound()

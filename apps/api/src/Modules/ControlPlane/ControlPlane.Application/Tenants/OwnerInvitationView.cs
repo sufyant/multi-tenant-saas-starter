@@ -11,6 +11,8 @@ namespace ControlPlane.Application.Tenants;
 /// </summary>
 public sealed record OwnerInvitationView(string Email, DateTimeOffset ExpiresAt, string State, Language? Language)
 {
-    internal static OwnerInvitationView? Of(Tenant tenant, DateTimeOffset now) =>
-        tenant.OwnerInvitationStateAt(now) is { } state ? new(tenant.OwnerInvitationEmail!, tenant.OwnerInvitationExpiresAt!.Value, state.ToString(), tenant.OwnerInvitationLanguage) : null;
+    internal static OwnerInvitationView? Of(TenantSummary summary, DateTimeOffset now) =>
+        summary.OwnerInvitationStateAt(now) is { } state
+            ? new(summary.OwnerInvitationEmail!, summary.OwnerInvitationExpiresAt!.Value, state.ToString(), summary.OwnerInvitationLanguage)
+            : null;
 }

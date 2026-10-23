@@ -41,13 +41,10 @@ export const InviteOwnerResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string(),
   "role": zod.object({
-  "builtIn": zod.union([zod.null(),zod.enum({
-  Owner: 'owner',
-  Admin: 'admin',
-  Member: 'member',
-}).describe('A built-in role: the built-in role of every role in a response, the role filter of the member and the invitation lists, the role an\ninvitation gives, and the role a member is given.')]),
-  "name": zod.string()
-}).describe('A role: the built-in role, or null for a custom role, which comes later (A3), and the role\'s stored name. A built-in role answers\n`{ "builtIn": "owner", "name": "owner" }`. A client compares `builtIn` with MemberRole, never the name.'),
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "invitedBy": zod.uuid(),
   "invitedByName": zod.object({
   "firstName": zod.string().nullable(),

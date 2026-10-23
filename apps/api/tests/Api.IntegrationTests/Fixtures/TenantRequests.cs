@@ -37,6 +37,11 @@ internal static class TenantRequests
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
+    // POST /v1/platform/tenants/{tenantId}/owners makes a member an Owner. It changes a role and creates nothing, so it takes no
+    // idempotency key (I1).
+    public static Task<HttpResponseMessage> MakeOwnerAsync(this HttpClient client, Guid tenantId, Guid userId) =>
+        client.PostAsJsonAsync($"{Path}/{tenantId}/owners", new { userId }, TestContext.Current.CancellationToken);
+
     // The system admin's changes of a tenant's name and status. Each sets a state, so it takes no idempotency key (I1).
     public static Task<HttpResponseMessage> RenameTenantAsync(this HttpClient client, Guid tenantId, string name) =>
         client.PatchAsJsonAsync($"{Path}/{tenantId}", new { name }, TestContext.Current.CancellationToken);

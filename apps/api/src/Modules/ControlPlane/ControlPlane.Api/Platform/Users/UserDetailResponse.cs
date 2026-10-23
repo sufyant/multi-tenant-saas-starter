@@ -13,6 +13,7 @@ public sealed record UserDetailResponse(
     string? LastName,
     UserResponseStatus Status,
     bool IsSystemAdmin,
+    bool IsRootSystemAdmin,
     int MembershipCount,
     DateTimeOffset CreatedAt,
     DateTimeOffset? SuspendedAt,
