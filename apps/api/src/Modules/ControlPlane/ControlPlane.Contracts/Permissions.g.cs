@@ -25,6 +25,8 @@ public static class Permissions
 
     public const string PlatformTenantsInviteOwner = "platform.tenants.invite_owner";
 
+    public const string PlatformTenantsMakeOwner = "platform.tenants.make_owner";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";

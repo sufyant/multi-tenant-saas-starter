@@ -212,6 +212,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - Step r4a adds `tenant.owners.manage`, for the Owner role only. It is the one permission of `PermissionPools.OwnerOnly`, which a custom role never holds (A1, A3).
 - Step r4b adds `tenant.roles.read`, for the Owner and Admin roles, and `tenant.roles.create`, `tenant.roles.update` and `tenant.roles.delete`, for the Owner role only of the built-in roles. None of them is owner-only (K1).
 - Step r5 adds `platform.system_admins.create` (`GrantSystemAdmin`) and `platform.system_admins.delete` (`RevokeSystemAdmin`), with the CRUD verbs of the existing names (the maintainer's decision in step r5). Every system admin holds the platform pool (A4).
+- Step r6 adds `platform.tenants.make_owner` (`MakeOwner`), in the form of `platform.tenants.invite_owner`: the platform acts on a tenant's Owner only (ARCHITECTURE.md, M2). Every system admin holds it (A4).
 
 ### K8. Language and time zone
 
