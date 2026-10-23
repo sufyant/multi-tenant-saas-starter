@@ -198,6 +198,22 @@ export interface TenantOwnerInvitedDetailsResponse {
   replacedInvitationId: string | null;
 }
 
+export type TenantOwnerMadeDetailsResponseOperation = typeof TenantOwnerMadeDetailsResponseOperation[keyof typeof TenantOwnerMadeDetailsResponseOperation];
+
+
+export const TenantOwnerMadeDetailsResponseOperation = {
+  TenantOwnerMade: 'tenant.owner_made',
+} as const;
+
+/**
+ * The details of `tenant.owner_made`: the member who became an Owner, and the role they had.
+ */
+export interface TenantOwnerMadeDetailsResponse {
+  operation: TenantOwnerMadeDetailsResponseOperation;
+  userId: string;
+  oldRole: AuditRoleResponse;
+}
+
 export type TenantRenamedDetailsResponseOperation = typeof TenantRenamedDetailsResponseOperation[keyof typeof TenantRenamedDetailsResponseOperation];
 
 
@@ -233,7 +249,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -255,6 +271,7 @@ export const AuditOperation = {
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
   TenantOwnerInvited: 'tenant.owner_invited',
+  TenantOwnerMade: 'tenant.owner_made',
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',

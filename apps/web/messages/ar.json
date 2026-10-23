@@ -265,6 +265,7 @@
         "closed": "<actor></actor> أغلق هذه المؤسسة.",
         "created": "<actor></actor> أنشأ هذه المؤسسة.",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
+        "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
         "reopened": "<actor></actor> أعاد فتح هذه المؤسسة.",

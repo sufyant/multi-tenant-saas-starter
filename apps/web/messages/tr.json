@@ -265,6 +265,7 @@
         "closed": "<actor></actor> bu kuruluşu kapattı.",
         "created": "<actor></actor> bu kuruluşu oluşturdu.",
         "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
+        "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
         "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",
         "reopened": "<actor></actor> bu kuruluşu yeniden açtı.",

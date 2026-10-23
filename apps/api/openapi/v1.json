@@ -5402,6 +5402,9 @@
             "$ref": "#/components/schemas/TenantOwnerInvitedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantOwnerMadeDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantRenamedDetailsResponse"
           },
           {
@@ -5418,6 +5421,7 @@
             "role.created": "#/components/schemas/RoleCreatedDetailsResponse",
             "role.updated": "#/components/schemas/RoleUpdatedDetailsResponse",
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
+            "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
           }
@@ -5479,6 +5483,7 @@
           "tenant.closed",
           "tenant.created",
           "tenant.owner_invited",
+          "tenant.owner_made",
           "tenant.reactivated",
           "tenant.renamed",
           "tenant.reopened",
@@ -5505,6 +5510,7 @@
           "TenantClosed",
           "TenantCreated",
           "TenantOwnerInvited",
+          "TenantOwnerMade",
           "TenantReactivated",
           "TenantRenamed",
           "TenantReopened",
@@ -7064,6 +7070,32 @@
           }
         },
         "description": "The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any."
+      },
+      "TenantOwnerMadeDetailsResponse": {
+        "required": [
+          "userId",
+          "oldRole",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.owner_made"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantOwnerMade"
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "oldRole": {
+            "$ref": "#/components/schemas/AuditRoleResponse"
+          }
+        },
+        "description": "The details of `tenant.owner_made`: the member who became an Owner, and the role they had."
       },
       "TenantOwnerResponse": {
         "required": [

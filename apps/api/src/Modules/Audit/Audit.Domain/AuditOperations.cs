@@ -32,6 +32,8 @@ public static class AuditOperations
 
     public const string TenantOwnerInvited = "tenant.owner_invited";
 
+    public const string TenantOwnerMade = "tenant.owner_made";
+
     public const string TenantReactivated = "tenant.reactivated";
 
     public const string TenantRenamed = "tenant.renamed";

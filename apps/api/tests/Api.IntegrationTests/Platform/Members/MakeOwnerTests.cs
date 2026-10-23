@@ -95,23 +95,45 @@ public sealed class MakeOwnerTests(Database database) : IAsyncLifetime
         (await _summaries.StoredAsync(tenant.Id)).ShouldStartWith("1|1|");
     }
 
-    // K3: the tenant's log names the platform, and the platform's log the system admin. Both hold the old and the new role, as a
-    // member's role change does, and the member is the target, by id.
+    // K3: the platform's log keeps tenant.owner_made, by the system admin, about the tenant with its name; its details hold the member's
+    // id and the role they had. The tenant's log keeps the member's role change, by the platform, as a member's role change reads.
     [Fact]
-    public async Task MakeOwner_AMember_RecordsTheRoleChangeInBothLogs()
+    public async Task MakeOwner_AMember_RecordsTenantOwnerMadeForThePlatformAndTheRoleChangeForTheTenant()
     {
-        var tenant = await _testData.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync(name: "Alpha Ltd");
         var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Member"));
         var adminId = await _testData.AddSystemAdminAsync();
         var admin = await _testData.UserIdOfAsync(adminId);
+        var (owner, memberRole) = (await _testData.RoleIdOfAsync(tenant.Id, "Owner"), await _testData.RoleIdOfAsync(tenant.Id, "Member"));
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(adminId, secondFactor: true).MakeOwnerAsync(tenant.Id, member));
 
+        (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.owner_made|User|{admin}|Tenant|{tenant.Id}|Alpha Ltd");
+        (await _audit.PlatformDetailsAsync(tenant.Id)).ShouldBe(
+            $$"""{"userId": "{{member}}", "oldRole": "member", "oldRoleId": "{{memberRole}}", "oldRoleBuiltIn": true}""");
+        (await _audit.PlatformLogAsync(member)).ShouldBeNull();
         (await _audit.TenantLogAsync(member)).ShouldBe($"{tenant.Id}:member.role_changed|Platform|-|User|{member}|-");
-        (await _audit.PlatformLogAsync(member)).ShouldBe($"member.role_changed|User|{admin}|User|{member}|-");
-        var details =
-            $$"""{"newRole": "owner", "oldRole": "member", "newRoleId": "{{await _testData.RoleIdOfAsync(tenant.Id, "Owner")}}", "oldRoleId": "{{await _testData.RoleIdOfAsync(tenant.Id, "Member")}}", "newRoleBuiltIn": true, "oldRoleBuiltIn": true}""";
-        ((await _audit.TenantDetailsAsync(member)), (await _audit.PlatformDetailsAsync(member))).ShouldBe((details, details));
+        (await _audit.TenantDetailsAsync(member)).ShouldBe(
+            $$"""{"newRole": "owner", "oldRole": "member", "newRoleId": "{{owner}}", "oldRoleId": "{{memberRole}}", "newRoleBuiltIn": true, "oldRoleBuiltIn": true}""");
+    }
+
+    // The platform's Activity tab of the tenant reads the platform's log filtered by the tenant: it shows the new Owner, with the details'
+    // shape of tenant.owner_made.
+    [Fact]
+    public async Task MakeOwner_AMember_ShowsInThePlatformsLogOfTheTenant()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Admin"));
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var adminRole = await _testData.RoleIdOfAsync(tenant.Id, "Admin");
+
+        await _api.WaitingForMessagesAsync(() => admin.MakeOwnerAsync(tenant.Id, member));
+
+        var page = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant.Id}", Cancellation);
+        var entry = page.GetProperty("items").EnumerateArray().Single();
+        entry.GetProperty("operation").GetString().ShouldBe("tenant.owner_made");
+        entry.GetProperty("details").GetRawText().ShouldBe(
+            $$$"""{"operation":"tenant.owner_made","userId":"{{{member}}}","oldRole":{"id":"{{{adminRole}}}","name":"admin","builtIn":true}}""");
     }
 
     [Fact]

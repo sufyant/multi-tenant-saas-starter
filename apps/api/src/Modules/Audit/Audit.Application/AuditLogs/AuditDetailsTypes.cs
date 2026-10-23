@@ -27,6 +27,8 @@ public static class AuditDetailsTypes
 
     public const string TenantOwnerInvited = AuditOperations.TenantOwnerInvited;
 
+    public const string TenantOwnerMade = AuditOperations.TenantOwnerMade;
+
     public const string TenantRenamed = AuditOperations.TenantRenamed;
 
     public const string TenantSuspended = AuditOperations.TenantSuspended;
@@ -47,6 +49,7 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantClosed] = null,
         [AuditOperations.TenantCreated] = null,
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),
+        [AuditOperations.TenantOwnerMade] = typeof(TenantOwnerMadeDetails),
         [AuditOperations.TenantReactivated] = null,
         [AuditOperations.TenantRenamed] = typeof(TenantRenamedDetails),
         [AuditOperations.TenantReopened] = null,

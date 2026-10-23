@@ -47,24 +47,6 @@ public sealed class RecordMemberRoleChangedTests(Database database)
             .ShouldBe((changed.NewRoleId!.Value, "Billing", false));
     }
 
-    // Owner recovery (section 6): the platform made the member an Owner. The platform's log names the system admin, and the tenant's own log only
-    // the platform, both with the member as the target and the same details (K3).
-    [Fact]
-    public async Task RecordMemberRoleChanged_ByThePlatform_WritesBothEntriesAndTheTenantsNamesThePlatform()
-    {
-        var changed = RoleChanged() with { OldRole = "member", NewRole = "owner", ByPlatform = true };
-
-        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
-            RecordMemberRoleChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), Cancellation));
-
-        (await Logs.DescribeAsync(database.Services, Logs.Platform, null, changed.EventId))
-            .ShouldBe($"member.role_changed|User|{changed.ChangedBy}|User|{changed.UserId}|-");
-        (await Logs.DescribeAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId))
-            .ShouldBe($"member.role_changed|Platform|-|User|{changed.UserId}|-");
-        (await Logs.DetailsAsync(database.Services, Logs.Platform, null, changed.EventId))
-            .ShouldBe(await Logs.DetailsAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId));
-    }
-
     // An event may arrive twice; its id, chosen by its publisher, is the entry's id, so it is written once.
     [Fact]
     public async Task RecordMemberRoleChanged_EventArrivesTwice_WritesOneEntry()
