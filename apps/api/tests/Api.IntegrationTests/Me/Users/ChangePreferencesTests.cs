@@ -7,8 +7,8 @@ using Tenancy;
 namespace Api.IntegrationTests.Me.Users;
 
 // PATCH /v1/me/preferences: the signed-in user sets their language and time zone, which follow them to every tenant and device. It sets
-// a state (I1): no idempotency key, and the values the user has change nothing. The API never interprets the time zone: it checks the
-// shape of the IANA name only, and keeps it.
+// a state (I1): no idempotency key, and the values the user has change nothing. The API checks the shape of the IANA name only, and
+// keeps it.
 public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
 {
     private const string Path = "/v1/me/preferences";

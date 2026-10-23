@@ -27,8 +27,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:5165aeeb688df15e
 USER 0:0
 WORKDIR /app
 # The time zone data, which the purge warning reads to write the moment in the Owner's zone (section 7). Only the data, not ICU:
-# TimeZoneInfo reads the zone files, and the image keeps invariant globalization. The SDK image is the same Ubuntu release, so a new
-# digest of it brings the release's latest data.
+# TimeZoneInfo reads the zone files, and the image keeps invariant globalization. The pinned SDK digest is Ubuntu 24.04, as the runtime
+# is (the tag names no release), so a new digest of it brings the release's latest data.
 COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=build /app .
 
