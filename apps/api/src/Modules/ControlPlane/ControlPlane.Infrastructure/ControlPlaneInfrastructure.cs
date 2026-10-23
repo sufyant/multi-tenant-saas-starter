@@ -84,6 +84,10 @@ public static class ControlPlaneInfrastructure
         services.AddOptions<TenantOptions>()
             .BindConfiguration(TenantOptions.Section)
             .Validate(settings => settings.ReopenPeriod > TimeSpan.Zero, $"{TenantOptions.Section}:ReopenPeriod must be positive.")
+            .Validate(settings => settings.PurgeWarningLead > TimeSpan.Zero, $"{TenantOptions.Section}:PurgeWarningLead must be positive.")
+            .Validate(
+                settings => settings.PurgeWarningLead < settings.ReopenPeriod,
+                $"{TenantOptions.Section}:PurgeWarningLead must be shorter than {TenantOptions.Section}:ReopenPeriod: the warning comes after the closure.")
             .Validate(settings => settings.PurgeTimeout > TimeSpan.Zero, $"{TenantOptions.Section}:PurgeTimeout must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<TenantOptions>>().Value);

@@ -22,7 +22,9 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     private readonly AuditEntries _audit = new(database);
 
-    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero));
+    // The clock starts at the real now: a closure schedules its warning and its purge weeks after it, by Wolverine's clock, so neither
+    // comes during a run on the shared database (section 9, rule 10).
+    private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
     private ApiFactory _api = null!;
 

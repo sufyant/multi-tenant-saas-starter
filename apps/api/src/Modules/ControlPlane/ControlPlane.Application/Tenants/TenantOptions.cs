@@ -11,6 +11,12 @@ public sealed class TenantOptions
     public TimeSpan ReopenPeriod { get; set; } = TimeSpan.FromDays(30);
 
     /// <summary>
+    /// How long before the purge the closed tenant's Owners are warned (section 6, "Tenant purge"). Positive and shorter than the reopen
+    /// period, so the warning comes after the closure.
+    /// </summary>
+    public TimeSpan PurgeWarningLead { get; set; } = TimeSpan.FromDays(7);
+
+    /// <summary>
     /// How long the tenant purge waits for its steps before it raises its alarm (S10). A healthy purge ends in seconds: each step is one
     /// transaction, which a failure tries three times within seconds before the dead letter queue (W11). An hour also covers a worker that
     /// restarts or a deploy, so an alarm means a step that failed for good or a worker that does not run, and a person still sees it the

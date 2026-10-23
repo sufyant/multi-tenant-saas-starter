@@ -14,6 +14,8 @@ using Audit.Application.SystemAdmins.RecordSystemAdminGranted;
 using Audit.Application.SystemAdmins.RecordSystemAdminRevoked;
 using Audit.Application.Tenants.RecordTenantClosed;
 using Audit.Application.Tenants.RecordTenantCreated;
+using Audit.Application.Tenants.RecordTenantPurged;
+using Audit.Application.Tenants.RecordTenantPurgeWarned;
 using Audit.Application.Tenants.RecordTenantReactivated;
 using Audit.Application.Tenants.RecordTenantRenamed;
 using Audit.Application.Tenants.RecordTenantReopened;
@@ -37,14 +39,19 @@ using ControlPlane.Application.Roles.DeleteRole;
 using ControlPlane.Application.Roles.UpdateRole;
 using ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin;
 using ControlPlane.Application.Tenants.CloseTenant;
+using ControlPlane.Application.Tenants.CompleteTenantPurge;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
 using ControlPlane.Application.Tenants.RenameTenant;
 using ControlPlane.Application.Tenants.ReopenTenant;
+using ControlPlane.Application.Tenants.StartTenantPurge;
 using ControlPlane.Application.Tenants.SuspendTenant;
+using ControlPlane.Application.Tenants.TenantPurge;
+using ControlPlane.Application.Tenants.WarnTenantPurge;
 using ControlPlane.Application.Users.ChangePreferences;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
+using ControlPlane.Application.Users.DeleteUserWithoutTenant;
 using ControlPlane.Application.Users.ListUserMemberships;
 using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
@@ -58,6 +65,7 @@ using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
+using Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
 using Tenancy;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Util;
@@ -81,6 +89,34 @@ public sealed class HostRoleTests(Database database)
     ];
 
     private static readonly HandlerRun Creation = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
+
+    // The handlers of every message a closure sends once its reopen period ends, as section 6, "Tenant purge", lists them: the warning,
+    // the purge's pivot, each module's purge and its reply to the saga, ControlPlane's last step and its reply, the platform's entry, and
+    // the deletion of the user left without a tenant.
+    private static readonly HandlerRun[] HandlersOfThePurge =
+    [
+        new(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler)),
+        new(typeof(WarnTenantPurgeCommand), typeof(WarnTenantPurgeHandler)),
+        new(typeof(TenantPurgeWarnedEvent), typeof(RecordTenantPurgeWarnedHandler)),
+        new(typeof(TenantPurgeWarningReadyEvent), typeof(SendTenantPurgeWarningEmailHandler)),
+        new(typeof(StartTenantPurgeCommand), typeof(StartTenantPurgeHandler)),
+        new(typeof(PurgeTenantDataCommand), typeof(Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
+        new(typeof(PurgeTenantDataCommand), typeof(Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
+        new(typeof(PurgeTenantDataReply), typeof(TenantPurgeSaga)),
+        new(typeof(CompleteTenantPurgeCommand), typeof(CompleteTenantPurgeHandler)),
+        new(typeof(CompleteTenantPurgeReply), typeof(TenantPurgeSaga)),
+        new(typeof(TenantPurgedEvent), typeof(RecordTenantPurgedHandler)),
+        new(typeof(DeleteUserWithoutTenantCommand), typeof(DeleteUserWithoutTenantHandler)),
+        new(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+        new(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+    ];
+
+    // A reopen period of seconds: the warning comes 2 s after the closure and the purge 10 s after it, by Wolverine's clock.
+    private static readonly Dictionary<string, string?> ShortReopenPeriod = new()
+    {
+        ["ControlPlane:Tenants:ReopenPeriod"] = "00:00:10",
+        ["ControlPlane:Tenants:PurgeWarningLead"] = "00:00:08",
+    };
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
@@ -188,6 +224,36 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
+    }
+
+    // S13, W5: the template's saga in the production layout. The web host closes the tenant and, through the outbox, schedules the warning
+    // and the purge; a worker runs every step after them: the warning and its email, the purge's pivot, each module's purge, the saga,
+    // ControlPlane's last step, and the deletion of the Owner it left without a tenant.
+    [Fact]
+    public async Task CloseTenant_TheReopenPeriodEndsOnAWebAndAWorkerHost_WarnsAndPurgesInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: ShortReopenPeriod);
+        await using var worker = Host(name, "worker", runs, settings: ShortReopenPeriod);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddUserAsync(email: "owner@acme.test");
+        await testData.AddMemberAsync(tenant.Id, owner, role: "Owner");
+        var ownerId = await testData.UserIdOfAsync(owner);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var closed = await admin.CloseTenantAsync(tenant.Id);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, ownerId, "user.deleted") > 0 && worker.Identity.Deleted.Contains(owner));
+
+        closed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
+        runs.In("worker").Distinct().ShouldBe(HandlersOfThePurge, ignoreOrder: true);
+        worker.Email.Sent.Select(email => email.To).ShouldBe(["owner@acme.test"]);
+        (await testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Purged");
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.purged")).ShouldBe(1L);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}'", name)).ShouldBe(0L);
     }
 
     // O3: a new name is announced from the web host, and its Audit handler runs in the worker, once, in both logs.
@@ -712,9 +778,9 @@ public sealed class HostRoleTests(Database database)
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
-    private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null) => new(
+    private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null, IReadOnlyDictionary<string, string?>? settings = null) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
-        settings: new Dictionary<string, string?> { ["Host:Role"] = role },
+        settings: new Dictionary<string, string?>(settings ?? new Dictionary<string, string?>()) { ["Host:Role"] = role },
         configureServices: HandlerRunsOfHost.Register(role, runs),
         ports: ports);
 

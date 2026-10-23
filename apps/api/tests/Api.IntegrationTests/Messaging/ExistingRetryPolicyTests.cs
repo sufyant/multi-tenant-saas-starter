@@ -9,6 +9,7 @@ public sealed class ExistingRetryPolicyTests(Database database)
 {
     [Theory]
     [InlineData("InvitationReadyEvent", "Retry inline with a delay of 00:00:00.01")]
+    [InlineData("TenantPurgeWarningReadyEvent", "Retry inline with a delay of 00:00:00.01")]
     [InlineData("OpenSignUpCommand", "Retry inline with a delay of 00:00:00.01")]
     [InlineData("WithdrawSignUpCommand", "Retry inline with a delay of 00:00:00.01")]
     [InlineData("DeleteIdentityAccountCommand", "Retry inline with a delay of 00:00:00.01")]
