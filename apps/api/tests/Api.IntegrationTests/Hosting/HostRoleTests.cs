@@ -28,6 +28,7 @@ using ControlPlane.Application.Invitations.InviteOwner;
 using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.RevokeInvitation;
+using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.MakeOwner;
 using ControlPlane.Application.Members.RemoveMember;
@@ -348,6 +349,43 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, userId, "user.renamed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, userId, "user.deleted")).ShouldBe(1L);
         (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
+    }
+
+    // A8: a user's deletion cancels a pending invitation to their address in a tenant they leave, in the web host. The identity provider's
+    // invitation behind it is withdrawn in the worker, once, as for a revocation.
+    [Fact]
+    public async Task DeleteUser_APendingInvitationToTheirAddressOnAWebAndAWorkerHost_WithdrawsItsSignUpOnceInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(email: email));
+        var pending = await testData.AddInvitationAsync(tenant.Id, email);
+        var signUp = $"inv_{Guid.NewGuid():N}";
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET sign_up_invitation_id = '{signUp}' WHERE id = '{pending}'", database: name);
+        var userId = await testData.UserIdOfAsync(user);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
+        await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && !worker.Identity.Withdrawn.IsEmpty
+            && await PlatformEntriesAsync(name, userId, "user.deleted") > 0 && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(UserMembershipRemovedEvent), typeof(RecordUserMembershipRemovedHandler)),
+                new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
+                new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
+                new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+            ],
+            ignoreOrder: true);
+        worker.Identity.Withdrawn.ShouldBe([signUp]);
+        web.Identity.Withdrawn.ShouldBeEmpty();
     }
 
     // O3, K3: a user changes their preferences in the web host. Audit records the change in the worker, once.

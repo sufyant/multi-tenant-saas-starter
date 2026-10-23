@@ -323,9 +323,12 @@ internal sealed class Tenant
     /// <summary>
     /// A system admin's deletion of the user takes the target's membership away (section 6, "User deletion"), under the rule of
     /// <see cref="CheckUserDeletion"/>, asked again under the tenant's lock (K6l). A user who became the tenant's last Owner since the check
-    /// stays, and the error names this tenant. Returns the membership to remove, or none when the user is no longer a member.
+    /// stays, and the error names this tenant. The user's address goes from the tenant's invitations of the user, those the user accepted
+    /// or that went to one of their addresses (A8). A pending one among them, expired or not, is cancelled first, as a closure cancels it
+    /// (K6h), because a pending invitation always has an address. Returns the membership to remove and the invitations it cancelled, or
+    /// none when the user is no longer a member; then, and on a refusal, nothing changes.
     /// </summary>
-    public Result<Membership?> RemoveForUserDeletion(MemberFacts facts)
+    public Result<UserDeparture?> RemoveForUserDeletion(MemberFacts facts, IReadOnlyList<Invitation> invitations)
     {
         var allowed = CheckUserDeletion(facts);
         if (!allowed.IsSuccess)
@@ -333,17 +336,11 @@ internal sealed class Tenant
             return allowed.Error with { TenantIds = [Id] };
         }
 
-        return facts.Target;
-    }
+        if (facts.Target is not { } membership)
+        {
+            return (UserDeparture?)null;
+        }
 
-    /// <summary>
-    /// The user's deletion erases their address from the tenant's invitations that the user accepted or that went to one of their
-    /// addresses (A8). A pending one among them, expired or not, is cancelled first, as a closure cancels it (K6h), because a pending
-    /// invitation always has an address. Returns the invitations it cancelled. The caller holds the tenant's lock and removes the user's
-    /// membership in the same transaction (K6l).
-    /// </summary>
-    public IReadOnlyList<Invitation> EraseForUserDeletion(IReadOnlyList<Invitation> invitations)
-    {
         if (invitations.Any(invitation => invitation.TenantId != Id))
         {
             throw new InvalidOperationException("A tenant erases only its own invitations.");
@@ -355,7 +352,7 @@ internal sealed class Tenant
             invitation.EraseEmail();
         }
 
-        return cancelled;
+        return new UserDeparture(membership, cancelled);
     }
 
     /// <summary>
