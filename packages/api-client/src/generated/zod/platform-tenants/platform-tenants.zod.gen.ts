@@ -202,7 +202,7 @@ export const suspendTenantBodyReasonMax = 500;
 
 export const SuspendTenantBody = zod.object({
   "reason": zod.string().max(suspendTenantBodyReasonMax)
-}).describe('Why the system admin suspends the tenant, within the API\'s limit. The API trims the reason before it counts its length. A member\nnever sees it.')
+}).describe('Why the system admin suspends the tenant, within the API\'s limit. The API trims the reason before it counts its length. A member\nnever sees it. It holds no personal data, such as a person\'s name or email address: the platform\'s audit log keeps it after the\ntenant\'s purge (A8).')
 
 export const SuspendTenantResponse = zod.object({
   "id": zod.uuid(),

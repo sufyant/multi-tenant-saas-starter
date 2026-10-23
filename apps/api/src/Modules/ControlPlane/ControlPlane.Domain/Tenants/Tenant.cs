@@ -55,7 +55,10 @@ internal sealed class Tenant
     /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
-    /// <summary>Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a suspension.</summary>
+    /// <summary>
+    /// Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a
+    /// suspension. It holds no personal data: the platform's audit log keeps it after the tenant's purge (A8).
+    /// </summary>
     public string? SuspensionReason { get; private set; }
 
     /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed or purging.</summary>
