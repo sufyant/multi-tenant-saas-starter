@@ -5,7 +5,7 @@ using ControlPlane.Application.Roles;
 using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
-using ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm;
+using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;

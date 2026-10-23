@@ -1,7 +1,7 @@
 using System.Diagnostics.Metrics;
 using Microsoft.Extensions.Logging;
 
-namespace ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm;
+namespace ControlPlane.Application.Tenants.TenantPurge;
 
 /// <summary>
 /// Tells a person that a tenant's purge waits too long (S10): an error log entry with a fixed event name, the tenant's id and the steps it

@@ -137,6 +137,23 @@ describe("ChooseOrganisation", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("ChooseOrganisation_PurgingOrganisation_ShowsBeingDeletedAndNoLink", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Atlas Logistics", "atlas"), status: "purging" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(await screen.findByText("Being deleted")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Atlas Logistics/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("ChooseOrganisation_NoOrganisation_ShowsWhoIsSignedInAndSignOut", async () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
