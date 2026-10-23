@@ -28,7 +28,7 @@ internal sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitat
         // R16: a tenant's rows go only through the steps of its purge.
         invitation.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId).OnDelete(DeleteBehavior.Restrict);
         // A2: a role of the invitation's own tenant, as a membership's. A finished invitation keeps no role once its custom role is deleted:
-        // the migration KeepFinishedInvitationsOfADeletedRole writes the key ON DELETE SET NULL (role_id), which nulls the role and keeps the
+        // the initial migration writes the key ON DELETE SET NULL (role_id), which nulls the role and keeps the
         // tenant (PostgreSQL 15 and later). EF Core cannot model a column list there, so the model says NoAction and the database does the
         // rest. It is one of the two keys that do not restrict a deletion (R16). A pending invitation always has a role
         // (ck_invitations_pending_has_role), and a role in use cannot be deleted (A3).

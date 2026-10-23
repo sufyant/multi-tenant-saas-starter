@@ -13,8 +13,7 @@ internal sealed class TestData(Database database, string databaseName = Database
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
     // Every tenant has its summary from its creation on, empty until a command writes it (R12), and its own Owner, Admin and Member roles
-    // (A2), written with its tenant declared. A database before the migration GiveEachTenantItsRoles has one role of each kind, which
-    // every tenant shares, so a tenant there gets no roles of its own.
+    // (A2), written with its tenant declared.
     public async Task<(Guid Id, string Slug)> AddTenantAsync(
         string status = "Active",
         string? slug = null,
@@ -26,16 +25,13 @@ internal sealed class TestData(Database database, string databaseName = Database
     {
         var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt);
         await database.ScalarAsync<object>($"INSERT INTO control_plane.tenant_summaries (tenant_id) VALUES ('{tenant.Id}')", database: databaseName);
-        if (await HasRolesOfEachTenantAsync())
-        {
-            await database.ExecuteInTenantAsync(
-                tenant.Id,
-                $"""
-                INSERT INTO control_plane.roles (id, tenant_id, name, built_in)
-                SELECT gen_random_uuid(), '{tenant.Id}', lower(built_in), built_in FROM unnest(ARRAY['Owner', 'Admin', 'Member']) AS built_in
-                """,
-                database: databaseName);
-        }
+        await database.ExecuteInTenantAsync(
+            tenant.Id,
+            $"""
+            INSERT INTO control_plane.roles (id, tenant_id, name, built_in)
+            SELECT gen_random_uuid(), '{tenant.Id}', lower(built_in), built_in FROM unnest(ARRAY['Owner', 'Admin', 'Member']) AS built_in
+            """,
+            database: databaseName);
 
         return tenant;
     }
@@ -75,7 +71,7 @@ internal sealed class TestData(Database database, string databaseName = Database
         return externalId;
     }
 
-    // The tenant row alone, as before the summary had its own table: for a test of the migrations before MoveTenantSummary.
+    // The tenant row alone, without its summary and its roles, as a purged tenant's tombstone is (K4).
     public async Task<(Guid Id, string Slug)> AddTenantRowAsync(
         string status = "Active",
         string? slug = null,
@@ -275,14 +271,6 @@ internal sealed class TestData(Database database, string databaseName = Database
 
     // The moment the test gives, else the moment of the insert.
     private static string Moment(DateTimeOffset? moment) => moment is { } given ? $"'{given:O}'" : "now()";
-
-    private async Task<bool> HasRolesOfEachTenantAsync() =>
-        await database.ScalarAsync<bool>(
-            """
-            SELECT EXISTS (SELECT FROM information_schema.columns
-                WHERE table_schema = 'control_plane' AND table_name = 'roles' AND column_name = 'tenant_id')
-            """,
-            database: databaseName);
 }
 
 internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted, string Language = "en", string? TimeZone = null);

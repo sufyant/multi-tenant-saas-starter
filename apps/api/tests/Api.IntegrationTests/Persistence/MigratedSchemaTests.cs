@@ -1,10 +1,14 @@
+using Npgsql;
+
 namespace Api.IntegrationTests.Persistence;
 
-// The parts of the schema that the migrations write in SQL. No model snapshot holds them, so PendingModelChangesTests cannot see one go
-// missing: forced row level security, each policy with its rule, each privilege of the application role, and the key and the index that
-// EF Core cannot model. A new migration, or a squash of the migrations, leaves each of them as it is unless it means to change it. The
-// purge function's owner, SECURITY DEFINER, search path and privileges are proven in PurgeTenantDataTests (R14). A database of its own
-// holds only what the migration step creates, without the probe tables of the main database.
+// The schema that the migration step creates on an empty database. First, the parts that the migrations write in SQL. No model snapshot
+// holds them, so PendingModelChangesTests cannot see one go missing: forced row level security, each policy with its rule, each privilege
+// of the application role, and the key and the index that EF Core cannot model. A new migration, or a squash of the migrations, leaves
+// each of them as it is unless it means to change it. The purge function's owner, SECURITY DEFINER, search path and privileges are proven
+// in PurgeTenantDataTests (R14). Then the rules of the model that the database keeps: each CHECK, each foreign key's delete rule and each
+// length refuses the row that breaks it (R15, R16, R17). A database of its own holds only what the migration step creates, without the
+// probe tables of the main database, and the rows of one test.
 public sealed class MigratedSchemaTests(Database database)
 {
     // R1, R11: each table under row level security, and whether the policies bind its owner too.
@@ -147,5 +151,210 @@ public sealed class MigratedSchemaTests(Database database)
             FOREIGN KEY (tenant_id, role_id) REFERENCES control_plane.roles(tenant_id, id) ON DELETE SET NULL (role_id)
             CREATE UNIQUE INDEX ix_roles_tenant_id_lower_name ON control_plane.roles USING btree (tenant_id, lower((name)::text))
             """);
+    }
+
+    // R15: a single-row rule of the code is a CHECK. Rows of every kind, as the code writes them, are stored: tenants of each kind with
+    // their summaries, one with an Owner invitation, users suspended and deleted, invitations of each status, a purge's record. Each
+    // statement then breaks one rule, and the database refuses it and names the rule.
+    [Fact]
+    public async Task WriteRow_BreakingAControlPlaneCheck_IsRefusedByThatCheck()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, migrated);
+        var owned = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(owned.Id, role: "Owner");
+        await testData.AddMemberAsync(owned.Id);
+        var pending = await testData.AddInvitationAsync(owned.Id);
+        await testData.AddInvitationAsync(owned.Id, status: "Accepted", acceptedBy: owner);
+        var cancelled = await testData.AddInvitationAsync(owned.Id, status: "Cancelled");
+        await testData.SummarizeAsync(owned.Id);
+        var invited = await testData.AddTenantAsync(status: "Suspended", suspensionReason: "Unpaid invoices");
+        await testData.AddInvitationAsync(invited.Id, role: "Owner", language: "tr");
+        await SummarizeOwnerInvitationAsync(invited.Id, migrated);
+        var closed = await testData.AddTenantAsync(status: "Closed", suspensionReason: "Unpaid invoices", closedAt: DateTimeOffset.UtcNow);
+        var purged = await testData.AddTenantAsync(status: "Purged");
+        var suspended = await testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", timeZone: "Europe/Dublin");
+        await testData.SuspendUserAsync(suspended);
+        var deleted = await testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace", timeZone: "Europe/Dublin");
+        await testData.DeleteUserAsync(deleted);
+        await database.ScalarAsSuperuserAsync<object>(
+            $"INSERT INTO control_plane.tenant_purge_sagas (id, state, waiting, tenant_id, version) VALUES ('{purged.Id}', 'Completed', ARRAY[]::text[], '{purged.Id}', 3)",
+            migrated);
+
+        var refusals = await RefusingAsync(
+            migrated,
+            PostgresErrorCodes.CheckViolation,
+            $"UPDATE control_plane.tenants SET status = 'Cancelled' WHERE id = '{owned.Id}'",
+            $"UPDATE control_plane.tenants SET closed_at = now() WHERE id = '{purged.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET owner_count = member_count + 1 WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET member_count = -1, owner_count = -1 WHERE tenant_id = '{closed.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET owner_invitation_status = 'Expired' WHERE tenant_id = '{invited.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET owner_invitation_language = 'de' WHERE tenant_id = '{invited.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET owner_invitation_expires_at = NULL WHERE tenant_id = '{invited.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET owner_invitation_email = NULL WHERE tenant_id = '{invited.Id}'",
+            $"UPDATE control_plane.tenant_summaries SET member_count = 1, owner_count = 1 WHERE tenant_id = '{invited.Id}'",
+            $"UPDATE control_plane.users SET language = 'de' WHERE external_id = '{owner}'",
+            $"UPDATE control_plane.users SET membership_count = -1 WHERE external_id = '{suspended}'",
+            $"UPDATE control_plane.users SET suspended_by = NULL WHERE external_id = '{suspended}'",
+            $"UPDATE control_plane.users SET first_name = 'Ada' WHERE external_id = '{deleted}'",
+            $"UPDATE control_plane.invitations SET status = 'Expired' WHERE id = '{cancelled}'",
+            $"UPDATE control_plane.invitations SET language = 'de' WHERE id = '{pending}'",
+            $"UPDATE control_plane.invitations SET accepted_at = now() WHERE id = '{pending}'",
+            $"UPDATE control_plane.tenant_purge_sagas SET state = 'Failed' WHERE id = '{purged.Id}'");
+
+        refusals.ShouldBe(
+        [
+            "ck_tenants_status",
+            "ck_tenants_purged_is_a_tombstone",
+            "ck_tenant_summaries_counts",
+            "ck_tenant_summaries_counts",
+            "ck_tenant_summaries_owner_invitation_status",
+            "ck_tenant_summaries_owner_invitation_language",
+            "ck_tenant_summaries_owner_invitation_together",
+            "ck_tenant_summaries_pending_owner_invitation_has_email",
+            "ck_tenant_summaries_owner_invitation_without_owner",
+            "ck_users_language",
+            "ck_users_membership_count",
+            "ck_users_suspension",
+            "ck_users_deleted_keeps_no_personal_data",
+            "ck_invitations_status",
+            "ck_invitations_language",
+            "ck_invitations_acceptance",
+            "ck_tenant_purge_sagas_state",
+        ]);
+    }
+
+    // R15: the same for Audit. An entry of each log is stored, and the database refuses an entry whose actor, kind or target is no value
+    // the code writes.
+    [Fact]
+    public async Task WriteEntry_BreakingAnAuditCheck_IsRefusedByThatCheck()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var (tenantEntry, platformEntry, tenantId) = (Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO audit.entries (id, tenant_id, occurred_at, actor_kind, kind, operation, target_kind, target_id, target_name)
+            VALUES ('{tenantEntry}', '{tenantId}', now(), 'Platform', 'Command', 'tenant.closed', 'Tenant', '{tenantId}', 'Acme Ltd');
+            INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name)
+            VALUES ('{platformEntry}', now(), 'User', gen_random_uuid(), 'Command', 'tenant.closed', 'Tenant', '{tenantId}', 'Acme Ltd');
+            """,
+            migrated);
+
+        var refusals = await RefusingAsync(
+            migrated,
+            PostgresErrorCodes.CheckViolation,
+            $"UPDATE audit.entries SET actor_kind = 'System' WHERE id = '{tenantEntry}'",
+            $"UPDATE audit.entries SET kind = 'Query' WHERE id = '{tenantEntry}'",
+            $"UPDATE audit.entries SET target_kind = 'Member' WHERE id = '{tenantEntry}'",
+            $"UPDATE audit.platform_entries SET actor_kind = 'System' WHERE id = '{platformEntry}'",
+            $"UPDATE audit.platform_entries SET kind = 'Query' WHERE id = '{platformEntry}'",
+            $"UPDATE audit.platform_entries SET target_kind = 'Member' WHERE id = '{platformEntry}'");
+
+        refusals.ShouldBe(
+        [
+            "ck_entries_actor_kind",
+            "ck_entries_kind",
+            "ck_entries_target_kind",
+            "ck_platform_entries_actor_kind",
+            "ck_platform_entries_kind",
+            "ck_platform_entries_target_kind",
+        ]);
+    }
+
+    // R16: every foreign key restricts the deletion of a row in use, so each deletion is a step of the code, which the counts and the audit
+    // follow. Two keys do not: a custom role's permissions go with the role, and a finished invitation loses its deleted role.
+    [Fact]
+    public async Task DeleteRow_ThatAnotherRowNames_IsRestrictedButForTheTwoKeysKept()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, migrated);
+        var tenant = await testData.AddTenantAsync();
+        var member = await testData.AddMemberAsync(tenant.Id);
+        await testData.AddInvitationAsync(tenant.Id);
+        var role = await testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read");
+        var admin = await testData.AddSystemAdminAsync();
+
+        var rules = await database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(conname || ': ' || substring(pg_get_constraintdef(oid) FROM 'ON DELETE (.*)$'), E'\n' ORDER BY conname)
+            FROM (SELECT conname, oid FROM pg_constraint WHERE contype = 'f' AND connamespace = 'control_plane'::regnamespace) AS keys
+            """,
+            migrated);
+        var refusals = await RefusingAsync(
+            migrated,
+            PostgresErrorCodes.ForeignKeyViolation,
+            $"DELETE FROM control_plane.tenants WHERE id = '{tenant.Id}'",
+            $"DELETE FROM control_plane.users WHERE external_id = '{member}'",
+            $"DELETE FROM control_plane.users WHERE external_id = '{admin}'",
+            $"DELETE FROM control_plane.roles WHERE id = '{role}'");
+
+        rules.ShouldBe(
+            """
+            fk_invitations_roles_tenant_id_role_id: SET NULL (role_id)
+            fk_invitations_tenants_tenant_id: RESTRICT
+            fk_invitations_users_accepted_by: RESTRICT
+            fk_invitations_users_invited_by: RESTRICT
+            fk_memberships_roles_tenant_id_role_id: RESTRICT
+            fk_memberships_tenants_tenant_id: RESTRICT
+            fk_memberships_users_user_id: RESTRICT
+            fk_role_permissions_roles_tenant_id_role_id: CASCADE
+            fk_roles_tenants_tenant_id: RESTRICT
+            fk_system_admins_users_user_id: RESTRICT
+            fk_tenant_summaries_tenants_tenant_id: RESTRICT
+            fk_users_users_suspended_by: RESTRICT
+            """);
+        refusals.ShouldBe(["fk_roles_tenants_tenant_id", "fk_memberships_users_user_id", "fk_system_admins_users_user_id", "taken"]);
+    }
+
+    // R17: a user's address and names have the lengths of the domain, as an invitation's address has. A user at each limit is stored; one
+    // character more is refused.
+    [Fact]
+    public async Task WriteUser_OneCharacterOverALimit_IsRefused()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, migrated);
+        var user = await testData.AddUserAsync(email: $"{new string('a', 308)}@example.com", firstName: new string('F', 100), lastName: new string('L', 100));
+
+        var refusals = await RefusingAsync(
+            migrated,
+            PostgresErrorCodes.StringDataRightTruncation,
+            $"UPDATE control_plane.users SET email = 'a' || email WHERE external_id = '{user}'",
+            $"UPDATE control_plane.users SET first_name = first_name || 'F' WHERE external_id = '{user}'",
+            $"UPDATE control_plane.users SET last_name = last_name || 'L' WHERE external_id = '{user}'");
+
+        refusals.ShouldBe(["refused", "refused", "refused"]);
+    }
+
+    // The tenant's summary keeps its latest Owner invitation while it has no Owner (R12), as a command writes it.
+    private async Task SummarizeOwnerInvitationAsync(Guid tenantId, string databaseName) =>
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenant_summaries AS summary SET owner_invitation_email = invitation.email, owner_invitation_expires_at = invitation.expires_at,
+                owner_invitation_status = invitation.status, owner_invitation_language = invitation.language
+            FROM control_plane.invitations AS invitation WHERE summary.tenant_id = '{tenantId}' AND invitation.tenant_id = '{tenantId}'
+            """,
+            databaseName);
+
+    // What refuses each statement: the name of the constraint, or "refused" for a refusal that names none, such as a length; "taken" for
+    // a statement the database takes. Each runs in a transaction it rolls back, so the rows stay as they were for the next. PostgreSQL
+    // checks the keys of a parent in the order of their triggers' names, which follow the order in which the migration created the keys,
+    // and names the first key that refuses. A key that restricts a deletion refuses it with RestrictViolation.
+    private async Task<List<string>> RefusingAsync(string databaseName, string sqlState, params string[] statements)
+    {
+        var refusals = new List<string>();
+        foreach (var statement in statements)
+        {
+            try
+            {
+                await database.ScalarAsSuperuserAsync<object>($"BEGIN; {statement}; ROLLBACK;", databaseName);
+                refusals.Add("taken");
+            }
+            catch (PostgresException exception) when (exception.SqlState == sqlState || exception.SqlState == PostgresErrorCodes.RestrictViolation)
+            {
+                refusals.Add(exception.ConstraintName ?? "refused");
+            }
+        }
+
+        return refusals;
     }
 }
