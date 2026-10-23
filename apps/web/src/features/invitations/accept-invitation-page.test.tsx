@@ -264,6 +264,61 @@ describe("AcceptInvitationPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  // A finished invitation whose custom role was deleted has no role (the API's step r4b).
+  it.each([
+    [InvitationResponseState.Expired, "This invitation expired"],
+    [InvitationResponseState.Cancelled, "This invitation was withdrawn"],
+    [InvitationResponseState.Accepted, "You already accepted this invitation"],
+  ])(
+    "AcceptInvitationPage_State_%s_WithoutARole_SaysItEndedWithNoRoleRow",
+    async (state, title) => {
+      setUp();
+      server.use(
+        knownUser,
+        getGetInvitationPreviewMockHandler({ ...pending, state, role: null }),
+      );
+
+      renderWithProviders(<AcceptInvitationPage code={code} />);
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Your role")).not.toBeInTheDocument();
+    },
+  );
+
+  it("AcceptInvitationPage_PendingWithoutARole_ShowsNoRoleRow", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler({ ...pending, role: null }),
+    );
+
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    expect(
+      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Your role")).not.toBeInTheDocument();
+  });
+
+  it("AcceptInvitationPage_Pending_ShowsTheExpiryRelativeToExpiresAt", async () => {
+    setUp();
+    vi.useFakeTimers({ now: new Date("2026-10-16T13:32:00Z"), toFake: ["Date"] });
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler({
+        ...pending,
+        expiresAt: "2026-10-19T13:32:00Z",
+      }),
+    );
+
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    expect(await screen.findByText("in 3 days")).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
   it.each([
     [
       {
@@ -347,27 +402,77 @@ describe("AcceptInvitationPage", () => {
     expect(sessionStorage.getItem("invitation-code")).toBe(code);
   });
 
-  it.each([
-    [403, ErrorCode.InvitationSystemAdminCannotJoin],
-    [403, ErrorCode.UserDeleted],
-  ])(
-    "AcceptInvitationPage_Problem_%s_%s_ShowsTheProblemScreen",
-    async (status, problemCode) => {
-      setUp();
-      server.use(
-        knownUser,
-        http.post("*/v1/me/invitations/preview", () =>
-          problem(status, problemCode),
-        ),
-      );
+  it("AcceptInvitationPage_PreviewOfADeletedUser_ShowsTheDeletedAccountPage", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      http.post("*/v1/me/invitations/preview", () =>
+        problem(403, ErrorCode.UserDeleted),
+      ),
+    );
 
-      renderWithProviders(<AcceptInvitationPage code={code} />);
+    renderWithProviders(<AcceptInvitationPage code={code} />);
 
-      expect(
-        await screen.findByRole("heading", { name: "Something went wrong" }),
-      ).toBeInTheDocument();
-    },
-  );
+    expect(
+      await screen.findByRole("heading", { name: "This account was deleted" }),
+    ).toBeInTheDocument();
+  });
+
+  it("AcceptInvitationPage_JoinAsASystemAdmin_SaysItIsNotPossibleAndSwitchesAccount", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler(pending),
+      http.post("*/v1/me/invitations/accept", () =>
+        problem(422, ErrorCode.InvitationSystemAdminCannotJoin),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "System admins can’t join an organisation",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Use another account.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Switch account" }));
+    expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: signInAndBack });
+    expect(sessionStorage.getItem("invitation-code")).toBe(code);
+  });
+
+  it("AcceptInvitationPage_JoinWhileTheOrganisationIsSuspended_SaysItCanJoinLater", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler(pending),
+      http.post("*/v1/me/invitations/accept", () =>
+        problem(409, ErrorCode.TenantSuspended),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "This organisation is suspended",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("You can join when it is active again."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Join Northwind Traders" }),
+    ).not.toBeInTheDocument();
+  });
 
   it("AcceptInvitationPage_TicketWhileSignedOut_SignsUpWithTheTicketAndComesBack", async () => {
     setUp();
@@ -449,6 +554,7 @@ describe("AcceptInvitationPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Your account is suspended" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("You cannot sign in right now. Contact support.")).toBeInTheDocument();
   });
 
   it("AcceptInvitationPage_ExpiredTicket_SaysToAskForANewInvitation", async () => {
