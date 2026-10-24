@@ -1,32 +1,7 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
+import { devComponentGroups } from "@repo/ui/dev-components-page";
 import { expectAccessible } from "./axe";
-
-const names = [
-  "AppShell",
-  "Banner",
-  "Button",
-  "CodeInput",
-  "Combobox",
-  "Dialog",
-  "EmptyState",
-  "Freshness",
-  "Icon",
-  "Input",
-  "OrgMenu",
-  "ProviderButtons",
-  "RowMenu",
-  "SignIn",
-  "Skeleton",
-  "Status",
-  "SubNav",
-  "Table",
-  "Tabs",
-  "Tag",
-  "Time",
-  "Toast",
-  "UserMenu",
-];
 
 // CI runs the production build (`pnpm start`, playwright.config.ts), and a production build has no /dev/components (F33). So
 // each test runs on one kind of build only.
@@ -46,7 +21,10 @@ test("DevComponents_OutsideProduction_ShowsEveryComponent", async ({
     .evaluateAll((regions) =>
       regions.map((region) => region.getAttribute("aria-labelledby")),
     );
-  expect(sections.sort()).toEqual(names.map((name) => `dev-${name}`));
+  // The page's own list of groups, so a new component needs no change here.
+  expect(sections.sort()).toEqual(
+    devComponentGroups.map((name) => `dev-${name}`).sort(),
+  );
   await expectAccessible(page);
 });
 
