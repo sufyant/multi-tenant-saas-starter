@@ -8,7 +8,6 @@ import {
   getGetUserQueryOptions,
   getListTenantsQueryOptions,
   ProblemDetailsError,
-  UserResponseStatus,
 } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
 import { initialsOf } from "@repo/ui/components/avatar";
@@ -27,6 +26,7 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { type ReactNode, useEffect, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
+import { userNameOf } from "@/shared/name-of";
 import { NoAccess } from "@/shared/no-access";
 import { ProblemScreen } from "@/shared/problem-screen";
 
@@ -108,11 +108,7 @@ export function PlatformShell({
   const inSettings = pathname.startsWith("/settings");
   const inUsers = pathname === "/users" || pathname.startsWith("/users/");
   const inActivity = pathname === "/activity";
-  const userName =
-    user.data &&
-    (user.data.status === UserResponseStatus.Deleted
-      ? t("users.deletedUser")
-      : [user.data.firstName, user.data.lastName].filter(Boolean).join(" "));
+  const userName = user.data && userNameOf(user.data, t("users.deletedUser"));
   const crumbs = inSettings
     ? pathname
         .split("/")

@@ -22,7 +22,7 @@ import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 import { DetailList } from "@/shared/detail-list";
 import { Initial } from "@/shared/initial";
-import { nameOf } from "@/shared/name-of";
+import { nameOf, userNameOf } from "@/shared/name-of";
 import { NotFoundPage } from "@/shared/not-found-page";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
@@ -30,7 +30,7 @@ import { MakeOwnerDialog } from "./make-owner-dialog";
 import { isOwnerMembership } from "./owner-membership";
 import { useRoleName } from "./use-role-name";
 import { useUserActions } from "./use-user-actions";
-import { actionsOf, displayNameOf, statuses } from "./user";
+import { actionsOf, statuses } from "./user";
 import { AdminTags } from "./users-table";
 
 /**
@@ -60,7 +60,7 @@ function Detail({ user }: { user: UserDetailResponse }) {
   const actions = useUserActions();
   const locale = t("locale.format");
   const deletedUser = t("users.deletedUser");
-  const name = displayNameOf(user, deletedUser);
+  const name = userNameOf(user, deletedUser);
   const suspended = user.status === UserResponseStatus.Suspended;
   const suspender =
     (user.suspendedBy &&

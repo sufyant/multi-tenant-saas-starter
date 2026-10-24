@@ -19,12 +19,12 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
+import { userNameOf } from "@/shared/name-of";
 import { leaveOf } from "@/shared/problem-screen";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useDates } from "@/shared/use-dates";
 import { AddDialog } from "./add-dialog";
 import { RemoveDialog } from "./remove-dialog";
-import { adminNameOf } from "./system-admin";
 
 /** The page of the list lives in the URL, and each change pushes a history entry (F9). */
 const pageParser = parseAsInteger.withDefault(1).withOptions({
@@ -57,7 +57,9 @@ export function SystemAdminsPage() {
       <Avatar person={{ firstName: user.firstName, lastName: user.lastName }} />
       <span className="flex min-w-0 flex-col">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <bdi className="truncate font-medium">{adminNameOf(user)}</bdi>
+          <bdi className="truncate font-medium">
+            {userNameOf(user, t("users.deletedUser"))}
+          </bdi>
           {user.isRootSystemAdmin && <Tag>{t("systemAdmins.root")}</Tag>}
           {user.id === me.data?.id && <Tag>{t("systemAdmins.you")}</Tag>}
         </span>
@@ -75,7 +77,9 @@ export function SystemAdminsPage() {
       key: "name",
       header: t("systemAdmins.name"),
       render: person,
-      cardRender: (user) => <bdi>{adminNameOf(user)}</bdi>,
+      cardRender: (user) => (
+        <bdi>{userNameOf(user, t("users.deletedUser"))}</bdi>
+      ),
     },
     {
       key: "added",
@@ -104,7 +108,9 @@ export function SystemAdminsPage() {
     const self = user.id === me.data?.id;
     return (
       <RowMenu
-        label={t("systemAdmins.actionsFor", { name: adminNameOf(user) })}
+        label={t("systemAdmins.actionsFor", {
+          name: userNameOf(user, t("users.deletedUser")),
+        })}
         items={[
           {
             label: t("systemAdmins.remove"),

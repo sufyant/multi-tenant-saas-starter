@@ -16,8 +16,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Initial } from "@/shared/initial";
 import { isolated } from "@/shared/isolated";
+import { userNameOf } from "@/shared/name-of";
 import { settingsPages } from "@/shared/settings-nav";
-import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
+import { afterRefusal, refreshUser, type User } from "./user";
 
 const organisationPage = (tenantId: string) => `/organisations/${tenantId}`;
 
@@ -38,7 +39,7 @@ export function DeleteDialog({
   const failureText = useFailureText();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const name = displayNameOf(user, t("deletedUser"));
+  const name = userNameOf(user, t("deletedUser"));
   // The list's row has no memberships. The user's page has read them already, so the dialog takes them from the cache there.
   const detail = useQuery(
     getGetUserQueryOptions(user.id, { query: { refetchOnMount: false } }),

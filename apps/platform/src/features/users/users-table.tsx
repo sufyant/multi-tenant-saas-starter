@@ -18,9 +18,10 @@ import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { userNameOf } from "@/shared/name-of";
 import { settingsPages } from "@/shared/settings-nav";
 import type { useUserActions } from "./use-user-actions";
-import { actionsOf, displayNameOf, statuses } from "./user";
+import { actionsOf, statuses } from "./user";
 
 /** The column a person can sort by, and the API's sort field (K5). The email's sort works from the URL. */
 const sorts = {
@@ -80,7 +81,7 @@ export function UsersTable({
   const t = useTranslations();
   const locale = t("locale.format");
   const nameText = (user: UserResponse) =>
-    displayNameOf(user, t("users.deletedUser"));
+    userNameOf(user, t("users.deletedUser"));
 
   const name = (user: UserResponse) => (
     <Link
