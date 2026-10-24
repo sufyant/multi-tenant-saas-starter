@@ -23,3 +23,4 @@ export {
   type ProblemAction,
 } from "./problem-details";
 export { retryUnlessClientError } from "./query-retry";
+export { BuiltInRole, builtInRoleOf } from "./roles";
