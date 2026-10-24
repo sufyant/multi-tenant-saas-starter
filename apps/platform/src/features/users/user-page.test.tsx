@@ -22,6 +22,7 @@ import {
   mehmet,
   mehmetMemberships,
   rory,
+  unnamed,
   userAnswer,
   userDetailOf,
 } from "../../../test/users";
@@ -301,5 +302,19 @@ describe("UserPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Deleted user" }),
     ).toBeVisible();
+  });
+
+  it("UserPage_ActiveWithoutNames_ShowsTheEmail", async () => {
+    server.use(meAnswer(), userAnswer(userDetailOf(unnamed)));
+
+    renderWithProviders(<UserPage userId={unnamed.id} />);
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "root@starter.example",
+      }),
+    ).toBeVisible();
+    expect(screen.queryByText("Deleted user")).toBeNull();
   });
 });

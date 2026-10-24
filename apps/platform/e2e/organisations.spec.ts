@@ -21,9 +21,6 @@ const open = async (page: Page, path: string) => {
 const pageOf = (id: string) => `/organisations/${id}`;
 const row = (page: Page, name: string) =>
   page.getByRole("row", { name: new RegExp(name) });
-// The hint's link under a waiting organisation is told from the text by its colour alone. A later step fixes the page
-// (organisation-page.tsx, `ownerlessHint`); until then axe's rule passes for that link only.
-const ownerlessHint = { known: ["link-in-text-block: .text-primary"] };
 
 test("Organisations_List_ShowsEachStatus", async ({ page }) => {
   await open(page, "/");
@@ -84,7 +81,7 @@ test("CreateOrganisation_Valid_OpensTheNewOrganisation", async ({ page }) => {
       language: "en",
     },
   ]);
-  await expectAccessible(page, ownerlessHint);
+  await expectAccessible(page);
 });
 
 test("Organisation_Active_ShowsItsOwner", async ({ page }) => {
@@ -115,7 +112,7 @@ test("Organisation_WaitingForOwner_ShowsTheInvitation", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: "open their user page" }),
   ).toHaveAttribute("href", "/users?q=owner%40atlas.example");
-  await expectAccessible(page, ownerlessHint);
+  await expectAccessible(page);
 });
 
 test("Organisation_Closed_ShowsTheWarningDate", async ({ page }) => {

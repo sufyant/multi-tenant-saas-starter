@@ -89,6 +89,20 @@ export const erased = user(
   { status: UserResponseStatus.Deleted, membershipCount: 0 },
 );
 
+/** A root system admin whom the door added: active, with an email and no names yet (A7). */
+export const unnamed = user(
+  "0198f0a2-0000-7000-8000-0000000000a8",
+  null,
+  null,
+  "root@starter.example",
+  {
+    isSystemAdmin: true,
+    isRootSystemAdmin: true,
+    systemAdminGrantedAt: "2026-01-05T08:30:00Z",
+    membershipCount: 0,
+  },
+);
+
 export const everyUser = [ayse, mehmet, john, ciara, rory, erased];
 
 /** One page of ListUsers. */
