@@ -1,4 +1,5 @@
 import {
+  BuiltInRole,
   ErrorCode,
   Permission,
   type RoleDetailResponse,
@@ -16,15 +17,17 @@ import {
   it,
   vi,
 } from "vitest";
-import { BuiltInRole } from "@/shared/roles";
 import {
   billingLead,
   customRole,
+  maxCustomRoles,
   mehmet,
   northwind,
+  permissionsOf,
   pickFromRowMenu,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
   viewerAnswers,
 } from "../../../test/tenant";
@@ -78,6 +81,25 @@ const menuItems = async (role: string) => {
   ]);
 };
 
+/** A role that members and pending invitations use, as ListRoles counts them. */
+const usedBy = (
+  role: RoleDetailResponse,
+  memberCount: number,
+  pendingInvitationCount: number,
+): RoleDetailResponse => ({ ...role, memberCount, pendingInvitationCount });
+
+/** GetMyTenant of the Owner, with the most custom roles Northwind may have. */
+const limitOf = (max: number) =>
+  http.get(`*/v1/tenants/${northwind.id}`, () =>
+    HttpResponse.json({
+      ...northwind,
+      role: roleOf.owner,
+      createdAt: "2026-01-05T09:00:00Z",
+      permissions: permissionsOf.owner,
+      maxCustomRoles: max,
+    }),
+  );
+
 const deleteAnswer = (answer: () => Response) =>
   http.delete(`*/v1/tenants/${northwind.id}/roles/${reviewer.id}`, answer);
 
@@ -90,11 +112,11 @@ describe("RolesPage", () => {
     renderInTenant(<RolesPage />, { url });
 
     expect(await rows()).toEqual([
-      expect.stringMatching(/^Owner13 permissionsBuilt in/),
-      expect.stringMatching(/^Admin9 permissionsBuilt in/),
-      expect.stringMatching(/^Member2 permissionsBuilt in/),
-      expect.stringMatching(/^Billing lead3 permissions$/),
-      expect.stringMatching(/^Reviewer2 permissions$/),
+      expect.stringMatching(/^Owner13 permissionsNot in useBuilt in/),
+      expect.stringMatching(/^Admin9 permissionsNot in useBuilt in/),
+      expect.stringMatching(/^Member2 permissionsNot in useBuilt in/),
+      expect.stringMatching(/^Billing lead3 permissionsNot in use$/),
+      expect.stringMatching(/^Reviewer2 permissionsNot in use$/),
     ]);
     expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
       "href",
@@ -159,6 +181,235 @@ describe("RolesPage", () => {
       ["Edit roleThis role has permissions your role doesn’t have.", true],
       ["Delete roleThis role has permissions your role doesn’t have.", true],
     ]);
+  });
+
+  it.each([
+    [1, 0, "1 member"],
+    [4, 0, "4 members"],
+    [0, 1, "1 pending invitation"],
+    [0, 3, "3 pending invitations"],
+    [4, 1, "4 members · 1 pending invitation"],
+    [1, 2, "1 member · 2 pending invitations"],
+    [0, 0, "Not in use"],
+  ])(
+    "RolesPage_RoleUsedBy%sMembersAnd%sInvitations_SaysWhoUsesIt",
+    async (members, invitations, text) => {
+      server.use(
+        ...tenantAnswers(BuiltInRole.Owner, undefined, [
+          usedBy(reviewer, members, invitations),
+        ]),
+      );
+
+      renderInTenant(<RolesPage />, { url });
+
+      expect((await rows())[3]).toBe(`Reviewer2 permissions${text}`);
+    },
+  );
+
+  it.each([
+    [4, 1, "Give its 4 members and 1 pending invitation another role first."],
+    [1, 0, "Give its 1 member another role first."],
+    [2, 3, "Give its 2 members and 3 pending invitations another role first."],
+  ])(
+    "RolesPage_CustomRoleUsedBy%sMembersAnd%sInvitations_DisablesDeleteWithTheCounts",
+    async (members, invitations, reason) => {
+      server.use(
+        ...tenantAnswers(BuiltInRole.Owner, undefined, [
+          usedBy(reviewer, members, invitations),
+        ]),
+      );
+
+      renderInTenant(<RolesPage />, { url });
+
+      expect(await menuItems("Reviewer")).toEqual([
+        ["Edit role", false],
+        ["See its members", false],
+        [`Delete role${reason}`, true],
+      ]);
+    },
+  );
+
+  it("RolesPage_SeeItsMembers_OpensTheMembersFilteredByTheRole", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [usedBy(reviewer, 4, 1)]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+    await pickFromRowMenu("Roles", "Reviewer", "See its members");
+
+    expect(push).toHaveBeenCalledWith(
+      `/northwind/settings/members?roleId=${reviewer.id}`,
+    );
+  });
+
+  it("RolesPage_CustomRoleUsedOnlyByInvitations_DisablesDeleteAndLinksItsInvitations", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [usedBy(reviewer, 0, 2)]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Reviewer")).toEqual([
+      ["Edit role", false],
+      ["See its invitations", false],
+      ["Delete roleGive its 2 pending invitations another role first.", true],
+    ]);
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "See its invitations" }),
+    );
+    expect(push).toHaveBeenCalledWith(
+      `/northwind/settings/members?tab=invitations&roleId=${reviewer.id}`,
+    );
+  });
+
+  it("RolesPage_BuiltInRoleInUse_OffersItsMembers", async () => {
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}/roles`, () =>
+        HttpResponse.json({
+          items: [
+            {
+              ...roleOf.admin,
+              permissions: permissionsOf.admin,
+              memberCount: 2,
+              pendingInvitationCount: 1,
+            },
+          ],
+          page: 1,
+          pageSize: 100,
+          total: 1,
+        }),
+      ),
+      ...tenantAnswers(BuiltInRole.Owner),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Admin")).toEqual([
+      ["View permissions", false],
+      ["See its members", false],
+    ]);
+  });
+
+  it("RolesPage_CustomRoleInUseAndOutOfReach_ShowsTheEscalationReason", async () => {
+    server.use(
+      ...viewerAnswers(roleEditor, roleEditor.permissions, mehmet, [
+        roleEditor,
+        usedBy(billingLead, 1, 1),
+      ]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Billing lead")).toEqual([
+      ["View permissions", false],
+      ["See its members", false],
+      ["Edit roleThis role has permissions your role doesn’t have.", true],
+      ["Delete roleThis role has permissions your role doesn’t have.", true],
+    ]);
+  });
+
+  it("RolesPage_ViewerWithoutMembersRead_OffersNoMembersLink", async () => {
+    const viewer = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c5",
+      "Role keeper",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantRolesRead,
+        Permission.TenantRolesUpdate,
+        Permission.TenantRolesDelete,
+      ],
+    );
+    const profileOnly = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c6",
+      "Profile only",
+      [Permission.TenantProfileRead],
+    );
+    server.use(
+      ...viewerAnswers(viewer, viewer.permissions, mehmet, [
+        viewer,
+        usedBy(profileOnly, 4, 1),
+      ]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Profile only")).toEqual([
+      ["Edit role", false],
+      [
+        "Delete roleGive its 4 members and 1 pending invitation another role first.",
+        true,
+      ],
+    ]);
+  });
+
+  it("RolesPage_ViewerWithoutInvitationsRead_OffersNoInvitationsLink", async () => {
+    server.use(
+      ...viewerAnswers(roleEditor, roleEditor.permissions, mehmet, [
+        roleEditor,
+        usedBy(reviewer, 0, 2),
+      ]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Reviewer")).toEqual([
+      ["Edit role", false],
+      ["Delete roleGive its 2 pending invitations another role first.", true],
+    ]);
+  });
+
+  it("RolesPage_UnderTheLimit_CountsTheCustomRoles", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [billingLead, reviewer]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(
+      await screen.findByText(`2 of ${maxCustomRoles} custom roles`),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
+      "href",
+      "/northwind/settings/roles/new",
+    );
+  });
+
+  it.each([
+    [
+      2,
+      "Your organisation has 2 custom roles, the most it can have. Delete one to create another.",
+    ],
+    [
+      1,
+      "Your organisation has 1 custom role, the most it can have. Delete one to create another.",
+    ],
+  ])(
+    "RolesPage_LimitOf%sWithTwoCustomRoles_DisablesCreateWithTheReason",
+    async (max, reason) => {
+      server.use(
+        limitOf(max),
+        ...tenantAnswers(BuiltInRole.Owner, undefined, [billingLead, reviewer]),
+      );
+
+      renderInTenant(<RolesPage />, { url });
+
+      const create = await screen.findByRole("button", {
+        name: "Create role",
+      });
+      await waitFor(() => expect(create).toBeDisabled());
+      expect(create).not.toHaveAttribute("href");
+      expect(create).toHaveAccessibleDescription(reason);
+      expect(screen.queryByText(/custom roles$/)).not.toBeInTheDocument();
+    },
+  );
+
+  it("RolesPage_WithoutCreate_ShowsNoCounter", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Admin, undefined, [reviewer]));
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await rows()).toHaveLength(4);
+    expect(screen.queryByText(/custom role/)).not.toBeInTheDocument();
   });
 
   it("RolesPage_OnlyBuiltInRoles_ShowsTheEmptyStateUnderTheTable", async () => {

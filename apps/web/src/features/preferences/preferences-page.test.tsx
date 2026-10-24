@@ -1,4 +1,5 @@
 import {
+  BuiltInRole,
   type ChangePreferencesRequest,
   ErrorCode,
   Language,
@@ -21,7 +22,6 @@ import {
   vi,
 } from "vitest";
 import { setLocale } from "@/i18n/set-locale";
-import { BuiltInRole } from "@/shared/roles";
 import { problem, renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { PreferencesPage } from "./preferences-page";
 

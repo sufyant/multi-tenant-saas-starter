@@ -1,7 +1,6 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { Language } from "@repo/api-client";
-import { BuiltInRole } from "../src/shared/roles";
+import { BuiltInRole, Language } from "@repo/api-client";
 import { mockMembers, northwind } from "./api";
 import { expectAccessible } from "./axe";
 

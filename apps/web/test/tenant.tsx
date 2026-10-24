@@ -1,4 +1,5 @@
 import {
+  BuiltInRole,
   type MemberResponse,
   type MeResponse,
   type MyTenantResponse,
@@ -11,7 +12,6 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import type { ReactNode } from "react";
-import { BuiltInRole } from "@/shared/roles";
 import { TenantProvider } from "@/shared/tenant-context";
 import { renderWithProviders } from "./render";
 
@@ -172,6 +172,9 @@ const meOfPerson = (person: MemberResponse): MeResponse => ({
 export const meOf = (role: BuiltInRole): MeResponse =>
   meOfPerson(viewerOf[role]);
 
+/** The most custom roles Northwind may have, as GetMyTenant answers it (the API's default). */
+export const maxCustomRoles = 20;
+
 /** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of the role. */
 export const tenantAnswers = (
   role: BuiltInRole,
@@ -195,6 +198,7 @@ export const viewerAnswers = (
       role,
       createdAt: "2026-01-05T09:00:00Z",
       permissions,
+      maxCustomRoles,
     }),
   ),
   http.get("*/v1/me", () => HttpResponse.json(meOfPerson(person))),
@@ -207,6 +211,8 @@ export function rolesAnswer(custom: RoleDetailResponse[] = []) {
     ...Object.values(BuiltInRole).map((name) => ({
       ...roleOf[name],
       permissions: permissionsOf[name],
+      memberCount: 0,
+      pendingInvitationCount: 0,
     })),
     ...custom,
   ];

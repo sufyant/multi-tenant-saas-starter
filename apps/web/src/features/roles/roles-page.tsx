@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ListError } from "@/shared/list-error";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { inListOrder } from "@/shared/roles";
@@ -28,10 +28,12 @@ import { DeleteRoleDialog } from "./delete-role-dialog";
 import { RolesFrame } from "./roles-frame";
 
 /**
- * Settings > Roles (the RolesList, RolesAdmin and RolesEmpty boards): Name, Permissions and Type, the built-in roles first (F51).
- * A built-in role offers "View permissions" only. A custom role offers "Edit role" and "Delete role" by their permissions (F5),
- * both disabled with the reason when the viewer's role does not hold every permission of it (F51); without the update permission
- * it opens read-only.
+ * Settings > Roles (the RolesList, RolesAdmin, RolesLimit and RolesEmpty boards): Name, Permissions, Used by and Type, the built-in
+ * roles first (F51). A built-in role offers "View permissions". A custom role offers "Edit role" and "Delete role" by their
+ * permissions (F5), both disabled with the reason when the viewer's role does not hold every permission of it (F51); without the
+ * update permission it opens read-only. A role in use offers its members, or its invitations when only invitations use it, and
+ * its "Delete role" is disabled with the counts, as `role.in_use` counts them. The counter and the limit read
+ * `GetMyTenant.maxCustomRoles`.
  */
 export function RolesPage() {
   const t = useTranslations();
@@ -42,6 +44,7 @@ export function RolesPage() {
   const roles = useTenantRoles();
   const me = useQuery(getGetMeQueryOptions());
   const [deleting, setDeleting] = useState<RoleDetailResponse | null>(null);
+  const counterId = useId();
 
   if (!can(Permission.TenantRolesRead))
     return (
@@ -55,15 +58,44 @@ export function RolesPage() {
   const canUpdate = can(Permission.TenantRolesUpdate);
   const canDelete = can(Permission.TenantRolesDelete);
   const open = (role: RoleDetailResponse) => router.push(`${base}/${role.id}`);
-  const createButton = canCreate && (
-    <Button
-      variant="primary"
-      render={<Link href={`${base}/new`} />}
-      nativeButton={false}
-    >
-      {t("roles.create")}
-    </Button>
-  );
+  const members = `/${tenant.slug}/settings/members`;
+
+  const customRoles = roles.data?.items.filter((role) => !role.builtIn).length;
+  const max = detail.maxCustomRoles;
+  // A tenant may hold more custom roles than a limit lowered later; it creates none until it is under the limit again.
+  const atLimit = customRoles !== undefined && customRoles >= max;
+  // The button waits for the roles, so it never turns from enabled to disabled under the pointer.
+  const createButton =
+    canCreate &&
+    customRoles !== undefined &&
+    (atLimit ? (
+      <Button variant="primary" disabled aria-describedby={counterId}>
+        {t("roles.create")}
+      </Button>
+    ) : (
+      <Button
+        variant="primary"
+        render={<Link href={`${base}/new`} />}
+        nativeButton={false}
+      >
+        {t("roles.create")}
+      </Button>
+    ));
+
+  // Who uses a role, as `role.in_use` counts them: its members and its pending invitations, an expired one included.
+  const usersOf = (
+    role: RoleDetailResponse,
+    both: "roles.usageBoth" | "roles.inUseBoth",
+  ) => {
+    const people =
+      role.memberCount > 0 &&
+      t("roles.usageMembers", { count: role.memberCount });
+    const invitations =
+      role.pendingInvitationCount > 0 &&
+      t("roles.usageInvitations", { count: role.pendingInvitationCount });
+    if (people && invitations) return t(both, { members: people, invitations });
+    return people || invitations || null;
+  };
 
   const name = (role: RoleDetailResponse) => (
     <span className="flex min-w-0 items-center gap-1.5 font-medium">
@@ -83,6 +115,13 @@ export function RolesPage() {
         t("members.permissionCount", { count: role.permissions.length }),
     },
     {
+      key: "use",
+      header: t("roles.usedBy"),
+      secondary: true,
+      card: "hide",
+      render: (role) => usersOf(role, "roles.usageBoth") ?? t("roles.notInUse"),
+    },
+    {
       key: "type",
       header: t("roles.type"),
       card: "end",
@@ -90,25 +129,56 @@ export function RolesPage() {
     },
   ];
 
+  // The members of a role in the members list filtered by it (F9), or its invitations when only invitations use it.
+  const usedBy = (role: RoleDetailResponse): RowMenuItem[] => {
+    if (role.memberCount > 0)
+      return can(Permission.TenantMembersRead)
+        ? [
+            {
+              label: t("roles.seeMembers"),
+              onSelect: () => router.push(`${members}?roleId=${role.id}`),
+            },
+          ]
+        : [];
+    if (
+      role.pendingInvitationCount > 0 &&
+      can(Permission.TenantInvitationsRead)
+    )
+      return [
+        {
+          label: t("roles.seeInvitations"),
+          onSelect: () =>
+            router.push(`${members}?tab=invitations&roleId=${role.id}`),
+        },
+      ];
+    return [];
+  };
+
   const itemsFor = (role: RoleDetailResponse): RowMenuItem[] => {
     const view = {
       label: t("roles.viewPermissions"),
       onSelect: () => open(role),
     };
-    if (role.builtIn) return [view];
-    const reason = holdsAll(detail.permissions, role)
+    if (role.builtIn) return [view, ...usedBy(role)];
+    const outOfReach = holdsAll(detail.permissions, role)
       ? undefined
       : t("roles.outOfReach");
-    const items: RowMenuItem[] = [];
-    if (!canUpdate || reason) items.push(view);
-    if (canUpdate)
-      items.push({
-        label: t("roles.edit"),
-        onSelect: () => open(role),
-        disabled: reason !== undefined,
-        reason,
-      });
-    if (canDelete)
+    const edit = {
+      label: t("roles.edit"),
+      onSelect: () => open(role),
+      disabled: outOfReach !== undefined,
+      reason: outOfReach,
+    };
+    const items: RowMenuItem[] = [
+      canUpdate && !outOfReach ? edit : view,
+      ...usedBy(role),
+    ];
+    if (canUpdate && outOfReach) items.push(edit);
+    if (canDelete) {
+      // The escalation reason wins: the viewer could not delete the role even when nobody used it (F51).
+      const users = usersOf(role, "roles.inUseBoth");
+      const reason =
+        outOfReach ?? (users ? t("roles.inUseReason", { users }) : undefined);
       items.push(
         { separator: true },
         {
@@ -119,6 +189,7 @@ export function RolesPage() {
           reason,
         },
       );
+    }
     return items;
   };
 
@@ -184,7 +255,21 @@ export function RolesPage() {
             />
           )}
         </div>
-        {createButton}
+        {canCreate && (
+          <div className="flex flex-col items-end gap-1">
+            {createButton}
+            {customRoles !== undefined && (
+              <span
+                id={counterId}
+                className="max-w-90 text-end text-small text-muted-foreground"
+              >
+                {atLimit
+                  ? t("roles.limitReached", { max })
+                  : t("roles.counter", { count: customRoles, max })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <p className="max-w-prose text-muted-foreground">{t("roles.lead")}</p>
       {body}

@@ -497,6 +497,44 @@ function isRoleName(node: ts.Expression, file: ts.SourceFile): boolean {
 }
 
 /**
+ * Rule F3: a piece of the contract that `packages/api-client` writes has no second copy in an app. A declaration of one of the names
+ * (a variable, a function or a type) is a finding: the app imports it from the client.
+ */
+export function declarationsOf(
+  root: string,
+  names: readonly string[],
+  options: Options = {},
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const path of filesUnder(root)) {
+    if (
+      !isCode(path) ||
+      isTest(path) ||
+      isGenerated(path) ||
+      ignored(root, path, options)
+    )
+      continue;
+    const file = sourceFile(path);
+    const visit = (node: ts.Node) => {
+      if (
+        (ts.isVariableDeclaration(node) ||
+          ts.isFunctionDeclaration(node) ||
+          ts.isTypeAliasDeclaration(node)) &&
+        node.name &&
+        ts.isIdentifier(node.name) &&
+        names.includes(node.name.text)
+      )
+        findings.push(
+          `${relative(root, path)}:${lineOf(file, node)}: declares ${node.name.text}; import it from @repo/api-client (F3)`,
+        );
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+  }
+  return findings;
+}
+
+/**
  * Rule F51: a role's name decides nothing; the permissions do. A comparison or a `switch` on a role's name is a finding, and so is
  * an import of `builtInRoleOf`. The files that give a role its text and its list order are ignored by the caller.
  */
