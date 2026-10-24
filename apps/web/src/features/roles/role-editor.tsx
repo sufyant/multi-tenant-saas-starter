@@ -8,6 +8,7 @@ import {
   getListRolesQueryKey,
   Permission,
   ProblemDetailsError,
+  problemOf,
   type RoleDetailResponse,
   schemas,
   updateRole,
@@ -17,6 +18,7 @@ import { Button } from "@repo/ui/components/button";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -25,12 +27,10 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { problemOf } from "@/shared/problem";
 import { afterRefusal, refreshRoles, refreshTenant } from "@/shared/refresh";
 import { nameTaken } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
-import { useFailureText } from "@/shared/use-failure-text";
 import { DeleteRoleDialog } from "./delete-role-dialog";
 import { PermissionList } from "./permission-list";
 import { withRequired } from "./permissions";
@@ -183,7 +183,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
     if (title) return { title, text: null };
     return {
       title: role ? t("roles.saveFailed") : t("roles.createFailed"),
-      text: failureText(save.error),
+      text: failureText(problemOf(save.error)),
     };
   })();
 

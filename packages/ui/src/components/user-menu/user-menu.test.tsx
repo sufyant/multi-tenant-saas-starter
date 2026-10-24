@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { UserMenu } from "./user-menu";
 
@@ -22,6 +23,26 @@ const props = {
 };
 
 describe("UserMenu", () => {
+  // The axe engine of the apps' Playwright check (F37). jsdom draws nothing, so the rules of colour and of page regions stay out.
+  // Base UI's focus guards are left out too: jsdom counts them as focusable inside aria-hidden, and Chromium's axe does not.
+  it("UserMenu_Open_HasNoAxeViolation", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    await screen.findByRole("menu");
+    const result = await axe.run(
+      { include: [document.body], exclude: [["[data-base-ui-focus-guard]"]] },
+      {
+        rules: {
+          "color-contrast": { enabled: false },
+          region: { enabled: false },
+        },
+      },
+    );
+
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
   it("UserMenu_PickATheme_SavesItOnTheDevice", async () => {
     const onThemeChange = vi.fn();
     render(
@@ -29,7 +50,9 @@ describe("UserMenu", () => {
     );
 
     await userEvent.click(screen.getByRole("button", { name: /Account/ }));
-    await userEvent.click(await screen.findByRole("button", { name: "Dark" }));
+    await userEvent.click(
+      await screen.findByRole("menuitemradio", { name: "Dark" }),
+    );
 
     expect(onThemeChange).toHaveBeenCalledWith("dark");
   });

@@ -8,6 +8,7 @@ import {
   enumLiterals,
   enumValues,
   messageKeySets,
+  nativeChoiceControls,
   physicalDirectionClasses,
   roleNameDecisions,
   testFolders,
@@ -24,6 +25,16 @@ const generatedSchemas = join(
   "../../packages/api-client/src/generated/endpoints.schemas.gen.ts",
 );
 const languages = enumValues(generatedSchemas, "Language");
+// The parts both apps share from packages/ui since step 22k: an app never declares them again (F29).
+const sharedParts = [
+  "useFailureText",
+  "ListError",
+  "Search",
+  "Avatar",
+  "initialsOf",
+  "groupByDay",
+  "DayGroup",
+];
 
 describe("architecture of apps/web", () => {
   it("F17_AppsWeb_UsesNoPhysicalDirectionClass", () => {
@@ -72,5 +83,21 @@ describe("architecture of apps/web", () => {
 
   it("F3_AppsWeb_WritesNoEnumValueAsALiteral", () => {
     expect(enumLiterals(src, contractEnumValues(generatedSchemas))).toEqual([]);
+  });
+
+  it("F52_AppsWeb_UsesNoNativeCheckboxOrRadio", () => {
+    expect(nativeChoiceControls(src)).toEqual([]);
+  });
+
+  it("F29_AppsWeb_DeclaresNoSecondCopyOfAContractHelper", () => {
+    expect(
+      declarationsOf(src, ["problemOf", "referenceOf"], { rule: "F29" }),
+    ).toEqual([]);
+  });
+
+  it("F29_AppsWeb_DeclaresNoSecondCopyOfASharedPart", () => {
+    expect(
+      declarationsOf(src, sharedParts, { from: "@repo/ui", rule: "F29" }),
+    ).toEqual([]);
   });
 });

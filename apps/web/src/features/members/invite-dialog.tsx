@@ -8,6 +8,7 @@ import {
   inviteMember,
   Language,
   ProblemDetailsError,
+  problemOf,
   schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
@@ -16,18 +17,17 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
 import { directionOf } from "@repo/ui/lib/locale";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-import { problemOf } from "@/shared/problem";
 import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useCanActOn, useTenantRoles } from "@/shared/use-can-act-on";
-import { useFailureText } from "@/shared/use-failure-text";
 import { daysLeft } from "./invitation-status";
 import { RoleChoice } from "./role-choice";
 
@@ -133,7 +133,10 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         title: t("members.roleGone"),
         text: t("members.roleGoneText"),
       };
-    return { title: t("members.notSent"), text: failureText(invite.error) };
+    return {
+      title: t("members.notSent"),
+      text: failureText(problemOf(invite.error)),
+    };
   })();
 
   const emailError = form.formState.errors.email?.message;

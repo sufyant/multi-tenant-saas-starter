@@ -3,11 +3,13 @@
 import {
   ErrorCode,
   getGetUserQueryOptions,
+  problemOf,
   schemas,
   type UserDetailResponse,
   type UserMembershipResponse,
   UserResponseStatus,
 } from "@repo/api-client";
+import { Avatar } from "@repo/ui/components/avatar";
 import { Banner } from "@repo/ui/components/banner";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
@@ -18,12 +20,10 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
-import { Avatar } from "@/shared/avatar";
 import { DetailList } from "@/shared/detail-list";
 import { Initial } from "@/shared/initial";
 import { nameOf } from "@/shared/name-of";
 import { NotFoundPage } from "@/shared/not-found-page";
-import { problemOf } from "@/shared/problem";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import { MakeOwnerDialog } from "./make-owner-dialog";
@@ -112,7 +112,10 @@ function Detail({ user }: { user: UserDetailResponse }) {
         </Banner>
       )}
       <div className="flex items-center gap-3.5">
-        <Avatar user={user} className="size-11" />
+        <Avatar
+          person={{ firstName: user.firstName, lastName: user.lastName }}
+          className="size-11"
+        />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-page-title">

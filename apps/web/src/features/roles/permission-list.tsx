@@ -2,6 +2,7 @@
 
 import { Permission } from "@repo/api-client";
 import { Icon, LockIcon } from "@repo/ui/components/icon";
+import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
@@ -82,16 +83,13 @@ function PermissionRow({
   const key = `permissions.${permission}` as "permissions.tenant.audit.read";
   return (
     <div className="flex min-h-11 items-start gap-3 border-t border-border px-4 py-2.5 first:border-t-0">
-      <input
+      <Checkbox
         id={id}
-        type="checkbox"
-        className="mt-0.5 size-4.5 shrink-0 accent-primary"
+        className="mt-0.5"
         checked={held.includes(permission) || lock !== null}
         disabled={!editable || lock !== null || lacks}
         aria-describedby={reason ? reasonId : undefined}
-        onChange={(event) =>
-          editable?.onChange(permission, event.target.checked)
-        }
+        onCheckedChange={(checked) => editable?.onChange(permission, checked)}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <label

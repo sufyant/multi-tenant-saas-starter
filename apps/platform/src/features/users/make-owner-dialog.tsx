@@ -3,15 +3,16 @@
 import {
   ErrorCode,
   makeOwner,
+  problemOf,
   type UserMembershipResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
+import { isolated } from "@/shared/isolated";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 /**
@@ -45,13 +46,13 @@ export function MakeOwnerDialog({
     if (!make.error) return null;
     switch (problemOf(make.error)?.code) {
       case ErrorCode.MemberAlreadyOwner:
-        return t("alreadyOwnerRaced", { name, organisation });
+        return t.rich("alreadyOwnerRaced", { name, organisation, ...isolated });
       case ErrorCode.TenantNotActive:
-        return t("organisationNotActive", { organisation });
+        return t.rich("organisationNotActive", { organisation, ...isolated });
       case ErrorCode.MemberNotFound:
-        return t("notAMember", { name, organisation });
+        return t.rich("notAMember", { name, organisation, ...isolated });
       case ErrorCode.UserSuspended:
-        return t("reactivateFirst", { name });
+        return t.rich("reactivateFirst", { name, ...isolated });
       case ErrorCode.UserDeleted:
         return t("wasDeleted");
       default:
@@ -63,8 +64,8 @@ export function MakeOwnerDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("makeOwnerTitle", { name, organisation })}
-      description={t("makeOwnerText", { organisation })}
+      title={t.rich("makeOwnerTitle", { name, organisation, ...isolated })}
+      description={t.rich("makeOwnerText", { organisation, ...isolated })}
       actionLabel={t("makeOwner")}
       cancelLabel={common("cancel")}
       pending={make.isPending}
@@ -73,14 +74,19 @@ export function MakeOwnerDialog({
         make.mutate(undefined, {
           onSuccess: () => {
             onClose();
-            showToast({ title: t("madeOwner", { name, organisation }) });
+            showToast({
+              title: t.rich("madeOwner", { name, organisation, ...isolated }),
+            });
           },
         })
       }
     >
       {make.error && (
-        <Banner tone="destructive" title={failure ?? t("notDone", { name })}>
-          {failure ? null : failureText(make.error)}
+        <Banner
+          tone="destructive"
+          title={failure ?? t.rich("notDone", { name, ...isolated })}
+        >
+          {failure ? null : failureText(problemOf(make.error))}
         </Banner>
       )}
     </Dialog>

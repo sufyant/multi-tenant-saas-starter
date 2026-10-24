@@ -1,5 +1,5 @@
 import { ErrorCode, UserResponseStatus } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
 import {
@@ -19,6 +19,7 @@ import {
   problem,
   shannon,
 } from "../../../test/organisations";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   ayse,
@@ -32,6 +33,7 @@ import {
   userDetailOf,
   userResponse,
 } from "../../../test/users";
+import { UserPage } from "./user-page";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -82,7 +84,9 @@ describe("SuspendUserDialog", () => {
     expect(dialog.queryByText(/is the last Owner of/)).toBeNull();
     await suspend(dialog);
 
-    expect(await screen.findByText("Mehmet Kaya suspended")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Mehmet Kaya suspended")),
+    ).toBeVisible();
     expect(
       screen.getByText("They are refused on their next request."),
     ).toBeVisible();
@@ -105,7 +109,9 @@ describe("SuspendUserDialog", () => {
 
     const dialog = await open();
     expect(
-      dialog.getByText("Ayşe Yılmaz is the last Owner of Northwind Traders."),
+      dialog.getByText(
+        sentence("Ayşe Yılmaz is the last Owner of Northwind Traders."),
+      ),
     ).toBeVisible();
     expect(
       dialog.getByText(
@@ -115,7 +121,9 @@ describe("SuspendUserDialog", () => {
     expect(dialog.getByRole("button", { name: "Suspend user" })).toBeEnabled();
     await suspend(dialog);
 
-    expect(await screen.findByText("Ayşe Yılmaz suspended")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Ayşe Yılmaz suspended")),
+    ).toBeVisible();
     expect(calls).toHaveLength(1);
   });
 
@@ -131,7 +139,9 @@ describe("SuspendUserDialog", () => {
 
     expect(
       dialog.getByText(
-        "Ayşe Yılmaz is the last Owner of Northwind Traders and Atlas Logistics.",
+        sentence(
+          "Ayşe Yılmaz is the last Owner of Northwind Traders and Atlas Logistics.",
+        ),
       ),
     ).toBeVisible();
   });
@@ -150,7 +160,9 @@ describe("SuspendUserDialog", () => {
 
     expect(
       dialog.getByText(
-        "Ayşe Yılmaz is the last Owner of Northwind Traders, Atlas Logistics, Shannon Studio and 1 more.",
+        sentence(
+          "Ayşe Yılmaz is the last Owner of Northwind Traders, Atlas Logistics, Shannon Studio and 1 more.",
+        ),
       ),
     ).toBeVisible();
   });
@@ -168,7 +180,7 @@ describe("SuspendUserDialog", () => {
     await suspend(dialog);
 
     expect(
-      await dialog.findByText("Ciara Byrne is a system admin."),
+      await dialog.findByText(sentence("Ciara Byrne is a system admin.")),
     ).toBeVisible();
     expect(
       dialog.getByText("Remove them from System admins first."),
@@ -192,5 +204,28 @@ describe("SuspendUserDialog", () => {
       await dialog.findByText("This user no longer exists."),
     ).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
+  });
+
+  // In Arabic a Latin name reorders the punctuation around it unless it is isolated (W3C, "Inline markup and bidirectional text").
+  it("Suspend_Arabic_IsolatesTheUsersNameInTheTitle", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(mehmet, { memberships: mehmetMemberships })),
+    );
+    renderWithProviders(<UserPage userId={mehmet.id} />, "ar");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "إجراءات Mehmet Kaya" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "إيقاف" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "إيقاف Mehmet Kaya؟",
+    });
+
+    expect(
+      within(dialog).getByText("Mehmet Kaya", { selector: "bdi" }),
+    ).toBeVisible();
   });
 });

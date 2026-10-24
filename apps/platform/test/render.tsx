@@ -35,3 +35,29 @@ export function renderWithProviders(
     </NextIntlClientProvider>,
   );
 }
+
+/**
+ * A text matcher for a sentence whose name sits in its own element (`<bdi>`). It matches what `getByText` matches, an element's own
+ * text, with the text of the `bdi` elements it holds; else the innermost element whose whole text is the sentence.
+ */
+export const sentence =
+  (text: string) => (_content: string, element: Element | null) => {
+    // Testing Library's default normaliser: trimmed, with each run of spaces as one.
+    const normal = (value: string | null) =>
+      (value ?? "").trim().replace(/\s+/g, " ");
+    if (!element) return false;
+    // The element's own text, with the names it isolates: a banner holds its title and its sentence side by side.
+    const own = Array.from(element.childNodes)
+      .filter(
+        (node) => node.nodeType === Node.TEXT_NODE || node.nodeName === "BDI",
+      )
+      .map((node) => node.textContent)
+      .join("");
+    return (
+      normal(own) === text ||
+      (normal(element.textContent) === text &&
+        !Array.from(element.children).some(
+          (child) => normal(child.textContent) === text,
+        ))
+    );
+  };

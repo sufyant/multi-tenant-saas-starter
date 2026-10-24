@@ -98,6 +98,7 @@ The rules are in section 6 of `docs/frontend/ARCHITECTURE.md`. In short:
 ## Writing
 
 - Code, comments, documents and commit messages are in English. The message files hold English, Turkish and Arabic.
+- Name a board in words in code and comments (the platform's Activity boards), never by its canvas row (P6, T8.1): a capital letter and one or two digits read as a rule id.
 - Documents follow ASD-STE100: short sentences, active voice, one idea per sentence. No em dashes.
 - A document in `docs/` has one shape: a level 1 title, the purpose, numbered level 2 sections (`## 1. Name`), no date of its last change.
 - Copy follows the design system's README: sentence case, a button starts with a verb, an error says what went wrong and what to do next, no apology.

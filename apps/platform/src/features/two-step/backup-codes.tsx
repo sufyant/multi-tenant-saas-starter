@@ -2,6 +2,7 @@
 
 import { AuthCard } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
+import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
@@ -58,12 +59,11 @@ export function BackupCodes({
           </Button>
         </div>
         <div className="flex items-start gap-2 text-body">
-          <input
+          <Checkbox
             id={savedId}
-            type="checkbox"
             checked={saved}
-            onChange={(event) => setSaved(event.target.checked)}
-            className="mt-0.5 size-4 shrink-0 accent-primary"
+            onCheckedChange={setSaved}
+            className="mt-0.5"
           />
           <label htmlFor={savedId}>{t("saved")}</label>
         </div>

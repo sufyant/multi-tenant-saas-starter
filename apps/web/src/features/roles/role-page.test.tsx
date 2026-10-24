@@ -25,10 +25,15 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+// A box is the Checkbox of packages/ui, a button: its state is aria-checked, not an input's `checked`.
 const states = () =>
   screen
-    .getAllByRole<HTMLInputElement>("checkbox")
-    .map((box) => [box.labels?.[0]?.textContent, box.checked, box.disabled]);
+    .getAllByRole<HTMLButtonElement>("checkbox")
+    .map((box) => [
+      box.labels?.[0]?.textContent,
+      box.getAttribute("aria-checked") === "true",
+      box.disabled,
+    ]);
 
 const open = (roleId: string, role: BuiltInRole = BuiltInRole.Owner) => {
   server.use(

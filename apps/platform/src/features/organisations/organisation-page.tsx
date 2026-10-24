@@ -4,6 +4,7 @@ import {
   ErrorCode,
   getGetTenantQueryOptions,
   InvitationResponseState,
+  problemOf,
   schemas,
   type TenantDetailResponse,
   type TenantOwnerResponse,
@@ -23,12 +24,12 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { ReactNode } from "react";
 import { DetailList } from "@/shared/detail-list";
 import { Initial } from "@/shared/initial";
+import { isolated } from "@/shared/isolated";
 import { NotFoundPage } from "@/shared/not-found-page";
 import {
   PlatformActivity,
   usePlatformActivity,
 } from "@/shared/platform-activity";
-import { problemOf } from "@/shared/problem";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import {
@@ -156,7 +157,10 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
     }
     if (status === TenantResponseStatus.Purging)
       return (
-        <Banner tone="info" title={t("organisations.beingDeleted", { name })} />
+        <Banner
+          tone="info"
+          title={t.rich("organisations.beingDeleted", { name, ...isolated })}
+        />
       );
     return null;
   })();

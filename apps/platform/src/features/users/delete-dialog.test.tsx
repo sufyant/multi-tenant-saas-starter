@@ -18,6 +18,7 @@ import {
   northwind,
   problem,
 } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   ayse,
@@ -97,7 +98,9 @@ describe("DeleteUserDialog", () => {
     const dialog = await open();
     await confirm(dialog);
 
-    expect(await screen.findByText("Ayşe Yılmaz deleted.")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Ayşe Yılmaz deleted.")),
+    ).toBeVisible();
     expect(calls).toEqual([{ key: null, body: null }]);
     expect(
       await screen.findByRole("heading", { level: 1, name: "Deleted user" }),
@@ -117,7 +120,7 @@ describe("DeleteUserDialog", () => {
     await confirm(dialog, "ciara@starter.example");
 
     expect(
-      await dialog.findByText("Ciara Byrne is a system admin."),
+      await dialog.findByText(sentence("Ciara Byrne is a system admin.")),
     ).toBeVisible();
     expect(
       dialog.getByText("Remove them from System admins first."),
@@ -211,7 +214,7 @@ describe("DeleteUserDialog", () => {
 
     expect(
       await dialog.findByText(
-        "Ayşe Yılmaz joined an organisation while this ran.",
+        sentence("Ayşe Yılmaz joined an organisation while this ran."),
       ),
     ).toBeVisible();
     expect(dialog.getByText("Nothing was deleted. Try again.")).toBeVisible();

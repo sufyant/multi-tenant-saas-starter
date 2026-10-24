@@ -12,6 +12,7 @@ import {
   vi,
 } from "vitest";
 import { meAnswer, problem } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   ayse,
@@ -70,7 +71,7 @@ describe("RenameUserDialog", () => {
     await lastName(dialog, "  Yılmaz Demir ");
 
     expect(
-      await screen.findByText("Renamed to Ayşe Yılmaz Demir."),
+      await screen.findByText(sentence("Renamed to Ayşe Yılmaz Demir.")),
     ).toBeVisible();
     expect(calls).toEqual([
       { key: null, body: { firstName: "Ayşe", lastName: "Yılmaz Demir" } },
@@ -125,7 +126,9 @@ describe("RenameUserDialog", () => {
     const dialog = await open();
     await lastName(dialog, "Demir");
 
-    expect(await dialog.findByText("This user was deleted.")).toBeVisible();
+    expect(
+      await dialog.findByText(sentence("This user was deleted.")),
+    ).toBeVisible();
     expect(dialog.getByText("A deleted user has no name.")).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });

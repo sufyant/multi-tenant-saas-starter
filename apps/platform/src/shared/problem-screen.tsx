@@ -3,7 +3,7 @@
 import { actionFor, ProblemDetailsError } from "@repo/api-client";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 import { NoAccess } from "./no-access";
 
 /** What a page shows when a read fails (F4): sign-in for a 401, the suspended screen, "No access yet" for 404, else the message. */
@@ -37,4 +37,18 @@ export function ProblemScreen({ error }: { error: Error }) {
       description={t.has(key) ? t(key) : t("problems.errorText")}
     />
   );
+}
+
+/**
+ * What a list shows in place of its error when the answer leaves the list (`ListError`'s `leave`): a 401 goes to sign-in and a
+ * suspended user to their screen (F4). Any other answer stays in the list.
+ */
+export function leaveOf(error: Error): ReactNode {
+  const kind =
+    error instanceof ProblemDetailsError
+      ? actionFor(error.status, error.problem).kind
+      : null;
+  return kind === "sign-in" || kind === "account-suspended" ? (
+    <ProblemScreen error={error} />
+  ) : null;
 }

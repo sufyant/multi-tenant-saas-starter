@@ -4,18 +4,18 @@ import {
   changeMemberRole,
   ErrorCode,
   type MemberResponse,
+  problemOf,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { problemOf } from "@/shared/problem";
 import { afterRefusal, refreshMembers, refreshTenant } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
-import { useFailureText } from "@/shared/use-failure-text";
 import { roleSelect } from "@/shared/use-role-name";
 import { nameOf } from "./person";
 import { RoleChoice } from "./role-choice";
@@ -88,7 +88,7 @@ export function ChangeRoleDialog({
       default:
         return {
           title: t("members.changeRoleFailed"),
-          text: failureText(change.error),
+          text: failureText(problemOf(change.error)),
         };
     }
   })();

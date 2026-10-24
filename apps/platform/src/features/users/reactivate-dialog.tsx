@@ -1,13 +1,13 @@
 "use client";
 
-import { ErrorCode, reactivateUser } from "@repo/api-client";
+import { ErrorCode, problemOf, reactivateUser } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
+import { isolated } from "@/shared/isolated";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 /** Reactivate a suspended user (the ReactivateUser board). A refusal shows its text in the dialog (F47). */
@@ -35,8 +35,8 @@ export function ReactivateDialog({
     if (problemOf(reactivate.error)?.code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
     return {
-      title: t("notDone", { name }),
-      text: failureText(reactivate.error),
+      title: t.rich("notDone", { name, ...isolated }),
+      text: failureText(problemOf(reactivate.error)),
     };
   })();
 
@@ -44,7 +44,7 @@ export function ReactivateDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("reactivateTitle", { name })}
+      title={t.rich("reactivateTitle", { name, ...isolated })}
       description={t("reactivateText")}
       actionLabel={t("reactivateAction")}
       cancelLabel={common("cancel")}
@@ -54,7 +54,7 @@ export function ReactivateDialog({
         reactivate.mutate(undefined, {
           onSuccess: () => {
             onClose();
-            showToast({ title: t("reactivated", { name }) });
+            showToast({ title: t.rich("reactivated", { name, ...isolated }) });
           },
         })
       }

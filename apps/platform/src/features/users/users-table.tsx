@@ -5,6 +5,7 @@ import {
   ListUsersSort,
   type UserResponse,
 } from "@repo/api-client";
+import { Avatar } from "@repo/ui/components/avatar";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Status } from "@repo/ui/components/status";
 import {
@@ -17,7 +18,6 @@ import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Avatar } from "@/shared/avatar";
 import { settingsPages } from "@/shared/settings-nav";
 import type { useUserActions } from "./use-user-actions";
 import { actionsOf, displayNameOf, statuses } from "./user";
@@ -98,7 +98,9 @@ export function UsersTable({
       sortable: true,
       render: (user) => (
         <span className="flex min-w-0 items-center gap-3">
-          <Avatar user={user} />
+          <Avatar
+            person={{ firstName: user.firstName, lastName: user.lastName }}
+          />
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 flex-wrap items-center gap-2">
               {name(user)}
@@ -165,7 +167,11 @@ export function UsersTable({
         )
       }
       actionsLabel={t("users.actions")}
-      cardLead={(user) => <Avatar user={user} />}
+      cardLead={(user) => (
+        <Avatar
+          person={{ firstName: user.firstName, lastName: user.lastName }}
+        />
+      )}
       rowCount={page.total}
       page={page.page}
       pageSize={page.pageSize}

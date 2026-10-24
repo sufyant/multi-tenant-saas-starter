@@ -3,18 +3,19 @@
 import {
   ErrorCode,
   getGetTenantQueryOptions,
+  problemOf,
   reopenTenant,
   TenantResponseStatus,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { problemOf } from "@/shared/problem";
+import { isolated } from "@/shared/isolated";
 import { useDates } from "@/shared/use-dates";
-import { useFailureText } from "@/shared/use-failure-text";
 import {
   afterRefusal,
   type Organisation,
@@ -70,23 +71,29 @@ export function ReopenDialog({
         return {
           title: reopenableUntil
             ? t("periodEnded", { date: date(reopenableUntil) })
-            : t("beingDeleted", { name }),
-          text: t("periodEndedText", { name }),
+            : t.rich("beingDeleted", { name, ...isolated }),
+          text: t.rich("periodEndedText", { name, ...isolated }),
         };
       case ErrorCode.TenantNotClosed:
         if (found === null) return null;
         if (found === TenantResponseStatus.Active)
-          return { title: t("notClosed", { name }), text: t("notClosedText") };
+          return {
+            title: t.rich("notClosed", { name, ...isolated }),
+            text: t("notClosedText"),
+          };
         if (found === "unread")
           return {
-            title: t("notDone", { name }),
-            text: failureText(reopen.error),
+            title: t.rich("notDone", { name, ...isolated }),
+            text: failureText(problemOf(reopen.error)),
           };
-        return { title: t("beingDeleted", { name }), text: undefined };
+        return {
+          title: t.rich("beingDeleted", { name, ...isolated }),
+          text: undefined,
+        };
       default:
         return {
-          title: t("notDone", { name }),
-          text: failureText(reopen.error),
+          title: t.rich("notDone", { name, ...isolated }),
+          text: failureText(problemOf(reopen.error)),
         };
     }
   })();
@@ -95,7 +102,7 @@ export function ReopenDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("reopenTitle", { name })}
+      title={t.rich("reopenTitle", { name, ...isolated })}
       description={t("reopenText", { count })}
       actionLabel={t("reopenAction")}
       cancelLabel={common("cancel")}
@@ -105,7 +112,7 @@ export function ReopenDialog({
           onSuccess: () => {
             onClose();
             showToast({
-              title: t("reopened", { name }),
+              title: t.rich("reopened", { name, ...isolated }),
               description: t("signInAgain", { count }),
             });
           },

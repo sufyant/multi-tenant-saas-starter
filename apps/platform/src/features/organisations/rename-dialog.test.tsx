@@ -1,5 +1,5 @@
 import { ErrorCode, FieldErrorCode } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
 import {
@@ -21,6 +21,8 @@ import {
   problem,
   tenantAnswer,
 } from "../../../test/organisations";
+import { renderWithProviders, sentence } from "../../../test/render";
+import { OrganisationPage } from "./organisation-page";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -65,7 +67,7 @@ describe("RenameDialog", () => {
     await rename(dialog, "Northwind Traders Ltd");
 
     expect(
-      await screen.findByText("Renamed to Northwind Traders Ltd."),
+      await screen.findByText(sentence("Renamed to Northwind Traders Ltd.")),
     ).toBeVisible();
     expect(calls.map((call) => call.body)).toEqual([
       { name: "Northwind Traders Ltd" },
@@ -114,9 +116,33 @@ describe("RenameDialog", () => {
     await rename(dialog, "Northwind");
 
     expect(
-      await dialog.findByText("Northwind Traders cannot be renamed now."),
+      await dialog.findByText(
+        sentence("Northwind Traders cannot be renamed now."),
+      ),
     ).toBeVisible();
-    expect(dialog.getByText("It is closed or being deleted.")).toBeVisible();
+    expect(
+      dialog.getByText(sentence("It is closed or being deleted.")),
+    ).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
+  });
+
+  // In Arabic a Latin name reorders the punctuation around it unless it is isolated (W3C, "Inline markup and bidirectional text").
+  it("Rename_Arabic_IsolatesTheOrganisationsNameInTheTitle", async () => {
+    server.use(meAnswer(), detailAnswer(detailOf(northwind)));
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />, "ar");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "إجراءات Northwind Traders" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "إعادة تسمية" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "إعادة تسمية Northwind Traders",
+    });
+
+    expect(
+      within(dialog).getByText("Northwind Traders", { selector: "bdi" }),
+    ).toBeVisible();
   });
 });

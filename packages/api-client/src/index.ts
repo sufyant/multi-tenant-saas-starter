@@ -16,6 +16,7 @@ export {
   type Operation,
   type OperationId,
 } from "./operations";
+export { type FailedCall, problemOf, referenceOf } from "./problem";
 export {
   actionFor,
   fieldErrorsOf,

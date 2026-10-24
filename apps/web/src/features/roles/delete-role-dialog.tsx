@@ -4,17 +4,17 @@ import {
   deleteRole,
   ErrorCode,
   getListRolesQueryKey,
+  problemOf,
   type RoleDetailResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
 import { afterRefusal, refreshRoles, refreshTenant } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
-import { useFailureText } from "@/shared/use-failure-text";
 
 /**
  * Delete a custom role (the RoleDelete board). The API decides: a refusal shows its text in the dialog, and a role that changed
@@ -76,7 +76,7 @@ export function DeleteRoleDialog({
       default:
         return {
           title: t("roles.deleteFailed", { name }),
-          text: failureText(remove.error),
+          text: failureText(problemOf(remove.error)),
         };
     }
   })();

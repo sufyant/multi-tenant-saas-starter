@@ -5,6 +5,7 @@ import {
   actionFor,
   ErrorCode,
   ProblemDetailsError,
+  problemOf,
   schemas,
   suspendTenant,
 } from "@repo/api-client";
@@ -12,14 +13,14 @@ import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { Textarea } from "@repo/ui/components/ui/textarea";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { cn } from "@repo/ui/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
+import { isolated } from "@/shared/isolated";
 import { reasonText } from "./field-text";
 import {
   afterRefusal,
@@ -75,10 +76,13 @@ export function SuspendDialog({
       return null;
     if (code === ErrorCode.TenantNotActive)
       return {
-        title: t("suspendNotActive", { name }),
+        title: t.rich("suspendNotActive", { name, ...isolated }),
         text: t("notActiveText"),
       };
-    return { title: t("notDone", { name }), text: failureText(suspend.error) };
+    return {
+      title: t.rich("notDone", { name, ...isolated }),
+      text: failureText(problemOf(suspend.error)),
+    };
   })();
 
   const submit = form.handleSubmit(
@@ -88,7 +92,7 @@ export function SuspendDialog({
         onSuccess: () => {
           onClose();
           showToast({
-            title: t("suspendedDone", { name }),
+            title: t.rich("suspendedDone", { name, ...isolated }),
             description: t("suspendedToast", { count }),
           });
         },
@@ -100,7 +104,7 @@ export function SuspendDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("suspendTitle", { name })}
+      title={t.rich("suspendTitle", { name, ...isolated })}
       description={t("suspendText", { count })}
       actionLabel={t("suspendAction")}
       cancelLabel={common("cancel")}

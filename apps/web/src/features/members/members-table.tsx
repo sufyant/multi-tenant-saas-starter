@@ -6,6 +6,7 @@ import {
   type MemberResponse,
   Permission,
 } from "@repo/api-client";
+import { Avatar } from "@repo/ui/components/avatar";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
 import {
   sortFrom,
@@ -20,7 +21,7 @@ import { useState } from "react";
 import { useCan } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
 import { ChangeRoleDialog } from "./change-role-dialog";
-import { initialsOf, nameOf } from "./person";
+import { nameOf } from "./person";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 import { useRoleReach } from "./use-role-reach";
 
@@ -71,14 +72,6 @@ export function MembersTable({
       {member.userId === meId && <Tag>{t("members.you")}</Tag>}
     </span>
   );
-  const avatar = (member: MemberResponse) => (
-    <span
-      aria-hidden="true"
-      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-small font-semibold"
-    >
-      {initialsOf(member)}
-    </span>
-  );
 
   const columns: TableColumn<MemberResponse>[] = [
     {
@@ -87,7 +80,7 @@ export function MembersTable({
       sortable: true,
       render: (member) => (
         <span className="flex min-w-0 items-center gap-3">
-          {avatar(member)}
+          <Avatar person={member} />
           <span className="flex min-w-0 flex-col">
             {name(member)}
             {member.email && (
@@ -170,7 +163,7 @@ export function MembersTable({
             : undefined
         }
         actionsLabel={t("members.actions")}
-        cardLead={avatar}
+        cardLead={(member) => <Avatar person={member} />}
         rowCount={page.total}
         page={page.page}
         pageSize={page.pageSize}

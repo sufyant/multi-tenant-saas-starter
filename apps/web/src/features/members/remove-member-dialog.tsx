@@ -1,15 +1,19 @@
 "use client";
 
-import { ErrorCode, type MemberResponse, removeMember } from "@repo/api-client";
+import {
+  ErrorCode,
+  type MemberResponse,
+  problemOf,
+  removeMember,
+} from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
 import { afterRefusal, refreshMembers } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
-import { useFailureText } from "@/shared/use-failure-text";
 import { nameOf } from "./person";
 
 /**
@@ -66,7 +70,7 @@ export function RemoveMemberDialog({
       default:
         return {
           title: t("members.removeFailed", { name }),
-          text: failureText(remove.error),
+          text: failureText(problemOf(remove.error)),
         };
     }
   })();

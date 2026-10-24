@@ -7,18 +7,15 @@ import {
   getListAuditEntriesInfiniteQueryOptions,
   Permission,
   ProblemDetailsError,
+  problemOf,
 } from "@repo/api-client";
-import { Button } from "@repo/ui/components/button";
+import { ActivityLog } from "@repo/ui/components/activity-log";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { Freshness } from "@repo/ui/components/freshness";
+import { ListError } from "@repo/ui/components/list-error";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Time } from "@repo/ui/components/time";
 import { showToast } from "@repo/ui/components/toast";
-import {
-  calendarDay,
-  dayBefore,
-  formatDate,
-} from "@repo/ui/lib/format-date-time";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import {
   useInfiniteQuery,
   useQuery,
@@ -26,14 +23,11 @@ import {
 } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { ListError } from "@/shared/list-error";
 import { PermissionDenied } from "@/shared/permission-denied";
-import { problemOf } from "@/shared/problem";
+import { leaveOf } from "@/shared/problem-screen";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
-import { useFailureText } from "@/shared/use-failure-text";
 import { ActivitySentence } from "./activity-sentence";
-import { groupByDay } from "./day-groups";
 
 /** The entries of one page of the log. The API's limit is 1 to 100. */
 const pageSize = 50;
@@ -91,7 +85,7 @@ export function ActivityPage() {
     }
     showToast({
       title: t("activity.olderError"),
-      description: failureText(result.error),
+      description: failureText(problemOf(result.error)),
       tone: "destructive",
     });
   };
@@ -104,7 +98,8 @@ export function ActivityPage() {
       return (
         <ListError
           title={t("activity.error")}
-          error={log.error}
+          problem={problemOf(log.error)}
+          leave={leaveOf(log.error)}
           at={log.errorUpdatedAt}
           onRetry={() => void log.refetch()}
         />
@@ -117,55 +112,23 @@ export function ActivityPage() {
           description={t("activity.emptyText")}
         />
       );
-    const today = calendarDay(new Date(), { timeZone });
     return (
-      <>
-        {groupByDay(entries, timeZone).map((group) => {
-          const date = formatDate(group.entries[0]?.occurredAt ?? group.day, {
-            locale,
-            timeZone,
-          });
-          const label =
-            group.day === today
-              ? t("activity.today", { date })
-              : group.day === dayBefore(today)
-                ? t("activity.yesterday", { date })
-                : date;
-          return (
-            <section key={group.day} className="flex flex-col gap-1.5">
-              <h2 className="mt-2 text-small text-muted-foreground">{label}</h2>
-              <ul className="rounded-lg border border-border bg-card">
-                {group.entries.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="grid grid-cols-[4rem_minmax(0,1fr)] gap-4 border-t border-border px-4 py-3 text-body first:border-t-0"
-                  >
-                    <span className="text-muted-foreground">
-                      <Time
-                        at={entry.occurredAt}
-                        show="time"
-                        locale={locale}
-                        timeZone={timeZone}
-                      />
-                    </span>
-                    <ActivitySentence entry={entry} timeZone={timeZone} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })}
-        {log.hasNextPage && (
-          <div className="flex justify-center py-2">
-            <Button
-              onClick={() => void showOlder()}
-              disabled={log.isFetchingNextPage}
-            >
-              {t("activity.older")}
-            </Button>
-          </div>
+      <ActivityLog
+        entries={entries}
+        sentence={(entry) => (
+          <ActivitySentence entry={entry} timeZone={timeZone} />
         )}
-      </>
+        locale={locale}
+        timeZone={timeZone}
+        labels={{
+          today: (date) => t("activity.today", { date }),
+          yesterday: (date) => t("activity.yesterday", { date }),
+          older: t("activity.older"),
+        }}
+        hasOlder={log.hasNextPage}
+        loadingOlder={log.isFetchingNextPage}
+        onOlder={() => void showOlder()}
+      />
     );
   })();
 

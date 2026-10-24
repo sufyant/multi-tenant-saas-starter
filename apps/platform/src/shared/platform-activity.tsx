@@ -7,11 +7,14 @@ import {
   getGetMeQueryOptions,
   getListPlatformAuditEntriesInfiniteQueryOptions,
   ProblemDetailsError,
+  problemOf,
 } from "@repo/api-client";
 import { ActivityLog } from "@repo/ui/components/activity-log";
 import { EmptyState } from "@repo/ui/components/empty-state";
+import { ListError } from "@repo/ui/components/list-error";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import {
   useInfiniteQuery,
   useQuery,
@@ -19,9 +22,7 @@ import {
 } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ActivitySentence } from "./activity-sentence";
-import { ListError } from "./list-error";
-import { problemOf } from "./problem";
-import { useFailureText } from "./use-failure-text";
+import { leaveOf } from "./problem-screen";
 
 /** The entries of one page of the log. The API's limit is 1 to 100. */
 const pageSize = 50;
@@ -81,7 +82,7 @@ export function PlatformActivity({
     }
     showToast({
       title: t("activity.olderError"),
-      description: failureText(result.error),
+      description: failureText(problemOf(result.error)),
       tone: "destructive",
     });
   };
@@ -93,7 +94,8 @@ export function PlatformActivity({
     return (
       <ListError
         title={t("activity.error")}
-        error={log.error}
+        problem={problemOf(log.error)}
+        leave={leaveOf(log.error)}
         at={log.errorUpdatedAt}
         onRetry={() => void log.refetch()}
       />

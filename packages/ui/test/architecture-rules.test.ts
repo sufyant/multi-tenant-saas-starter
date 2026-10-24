@@ -12,6 +12,7 @@ import {
   errorCodeMessages,
   generatedFileNames,
   messageKeySets,
+  nativeChoiceControls,
   physicalDirectionClasses,
   roleNameDecisions,
   testFolders,
@@ -248,6 +249,44 @@ describe("architecture rules", () => {
     });
 
     expect(declarationsOf(root, ["BuiltInRole", "builtInRoleOf"])).toEqual([]);
+  });
+
+  it("DeclarationsOf_AnotherSource_NamesItsPackageAndItsRule", () => {
+    const root = folder({
+      "shared/list-error.tsx": "export function ListError() { return null; }",
+    });
+
+    expect(
+      declarationsOf(root, ["ListError"], {
+        from: "@repo/ui",
+        rule: "F29",
+      }),
+    ).toEqual([
+      "shared/list-error.tsx:1: declares ListError; import it from @repo/ui (F29)",
+    ]);
+  });
+
+  it("NativeChoiceControls_CheckboxAndRadioInputs_AreFindings", () => {
+    const root = folder({
+      "a.tsx": [
+        'export const A = () => <input type="checkbox" />;',
+        'export const B = () => <input type={"radio"} />;',
+      ].join("\n"),
+    });
+
+    expect(nativeChoiceControls(root)).toEqual([
+      'a.tsx:1: a native type="checkbox"; use Checkbox or RadioGroup of @repo/ui (F52)',
+      'a.tsx:2: a native type="radio"; use Checkbox or RadioGroup of @repo/ui (F52)',
+    ]);
+  });
+
+  it("NativeChoiceControls_OtherTypesAndTests_AreNoFinding", () => {
+    const root = folder({
+      "a.tsx": 'export const A = () => <input type="search" />;',
+      "a.test.tsx": 'render(<input type="checkbox" />);',
+    });
+
+    expect(nativeChoiceControls(root)).toEqual([]);
   });
 
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {

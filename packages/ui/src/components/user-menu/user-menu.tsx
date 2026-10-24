@@ -8,10 +8,11 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 export type Choice = { id: string; label: string };
 
@@ -84,28 +85,26 @@ export function UserMenu({
           <span>{languageLabel}</span>
           <span className="text-muted-foreground">{languageName}</span>
         </DropdownMenuItem>
+        {/* The theme is a radio group of the menu (WAI-ARIA APG, "Menu Button"): a menu holds only menu items and their groups. */}
         <div className="flex items-center justify-between gap-2 px-1.5 py-1 text-sm">
           <span id={themeId}>{themeLabel}</span>
-          <ToggleGroup
+          <DropdownMenuRadioGroup
             aria-labelledby={themeId}
-            value={[theme]}
-            onValueChange={(value) =>
-              value[0] && onThemeChange(String(value[0]))
-            }
-            spacing={0}
-            variant="outline"
-            size="sm"
+            value={theme}
+            onValueChange={(value) => onThemeChange(String(value))}
+            className="flex"
           >
             {themes.map((choice) => (
-              <ToggleGroupItem
+              <DropdownMenuRadioItem
                 key={choice.id}
                 value={choice.id}
-                className="px-2 text-small"
+                closeOnClick={false}
+                className="h-7 rounded-none border border-input border-s-0 px-2 text-small font-medium first:rounded-s-md first:border-s last:rounded-e-md data-checked:bg-muted *:data-[slot=dropdown-menu-radio-item-indicator]:hidden"
               >
                 {choice.label}
-              </ToggleGroupItem>
+              </DropdownMenuRadioItem>
             ))}
-          </ToggleGroup>
+          </DropdownMenuRadioGroup>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onSignOut}>

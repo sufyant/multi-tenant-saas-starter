@@ -26,6 +26,7 @@ import {
   problem,
   tenantAnswer,
 } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -82,7 +83,9 @@ describe("ReopenDialog", () => {
     ).toBeVisible();
     await confirm(dialog);
 
-    expect(await screen.findByText("Kestrel Labs reopened")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Kestrel Labs reopened")),
+    ).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });
 
@@ -106,7 +109,7 @@ describe("ReopenDialog", () => {
     ).toBeVisible();
     expect(
       dialog.getByText(
-        "Kestrel Labs is being deleted. The page has been refreshed.",
+        sentence("Kestrel Labs is being deleted. The page has been refreshed."),
       ),
     ).toBeVisible();
     await waitFor(() => expect(reads.count).toBeGreaterThan(1));
@@ -125,7 +128,7 @@ describe("ReopenDialog", () => {
     await confirm(dialog);
 
     expect(
-      await dialog.findByText("Kestrel Labs is not closed."),
+      await dialog.findByText(sentence("Kestrel Labs is not closed.")),
     ).toBeVisible();
     expect(
       dialog.getByText(
@@ -150,7 +153,7 @@ describe("ReopenDialog", () => {
 
       expect(
         await dialog.findByText(
-          "Kestrel Labs is being deleted and can’t be reopened.",
+          sentence("Kestrel Labs is being deleted and can’t be reopened."),
         ),
       ).toBeVisible();
     },

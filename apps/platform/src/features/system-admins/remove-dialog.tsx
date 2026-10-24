@@ -3,17 +3,18 @@
 import { useSession } from "@clerk/nextjs";
 import {
   ErrorCode,
+  problemOf,
   revokeSystemAdmin,
   type UserResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
+import { isolated } from "@/shared/isolated";
 import { ReverifyStep } from "./reverify-step";
 import {
   adminNameOf,
@@ -57,7 +58,7 @@ export function RemoveDialog({
     revoke.mutate(undefined, {
       onSuccess: () => {
         onClose();
-        showToast({ title: t("noLongerAdmin", { name }) });
+        showToast({ title: t.rich("noLongerAdmin", { name, ...isolated }) });
       },
     });
 
@@ -81,13 +82,16 @@ export function RemoveDialog({
       case ErrorCode.SystemAdminCannotRevokeSelf:
         return { title: t("cannotRemoveSelf"), text: null };
       case ErrorCode.SystemAdminNotFound:
-        return { title: t("noLongerAdmin", { name }), text: null };
+        return {
+          title: t.rich("noLongerAdmin", { name, ...isolated }),
+          text: null,
+        };
       case ErrorCode.UserNotFound:
         return { title: users("notFound"), text: null };
       default:
         return {
-          title: users("notDone", { name }),
-          text: failureText(revoke.error),
+          title: users.rich("notDone", { name, ...isolated }),
+          text: failureText(problemOf(revoke.error)),
         };
     }
   })();
@@ -97,7 +101,7 @@ export function RemoveDialog({
       open
       tone="destructive"
       onOpenChange={(open) => !open && onClose()}
-      title={t("removeTitle", { name })}
+      title={t.rich("removeTitle", { name, ...isolated })}
       description={t("removeText")}
       actionLabel={t("removeAction")}
       cancelLabel={common("cancel")}

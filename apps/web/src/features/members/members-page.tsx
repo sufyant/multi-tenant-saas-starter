@@ -7,20 +7,22 @@ import {
   ListInvitationsSort,
   ListMembersSort,
   Permission,
+  problemOf,
   schemas,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { Combobox } from "@repo/ui/components/combobox";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { Freshness } from "@repo/ui/components/freshness";
+import { ListError } from "@repo/ui/components/list-error";
+import { Search } from "@repo/ui/components/search";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs } from "@repo/ui/components/tabs";
-import { Input as InputBase } from "@repo/ui/components/ui/input";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { ListError } from "@/shared/list-error";
+import { type ReactNode, useCallback, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
+import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
@@ -29,12 +31,7 @@ import { useRoleName } from "@/shared/use-role-name";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
 import { MembersTable } from "./members-table";
-import {
-  searchDelay,
-  sortValue,
-  type Tab,
-  useListParams,
-} from "./use-list-params";
+import { sortValue, type Tab, useListParams } from "./use-list-params";
 
 const allRoles = "all";
 
@@ -132,7 +129,8 @@ export function MembersPage() {
               ? t("members.membersError")
               : t("members.invitationsError")
           }
-          error={list.error}
+          problem={problemOf(list.error)}
+          leave={leaveOf(list.error)}
           at={list.errorUpdatedAt}
           onRetry={() => void list.refetch()}
         />
@@ -276,6 +274,7 @@ export function MembersPage() {
                 ? t("members.searchMembers")
                 : t("members.searchInvitations")
             }
+            maxLength={schemas.listMembersQueryQMax}
             onSearch={onSearch}
           />
         </div>
@@ -294,35 +293,5 @@ function Frame({ children }: { children: ReactNode }) {
         {children}
       </section>
     </div>
-  );
-}
-
-/** The search field: it sends the text 300 ms after the last key, and follows the URL on back and forward. */
-function Search({
-  value,
-  label,
-  onSearch,
-}: {
-  value: string;
-  label: string;
-  onSearch: (q: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-  useEffect(() => setDraft(value), [value]);
-  useEffect(() => {
-    if (draft === value) return;
-    const timer = setTimeout(() => onSearch(draft), searchDelay);
-    return () => clearTimeout(timer);
-  }, [draft, value, onSearch]);
-  return (
-    <InputBase
-      type="search"
-      aria-label={label}
-      placeholder={label}
-      maxLength={schemas.listMembersQueryQMax}
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      className="h-control-md w-full rounded-md bg-card px-3 text-body pointer-coarse:h-control-lg tablet:w-64"
-    />
   );
 }

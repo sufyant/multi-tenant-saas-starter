@@ -3,10 +3,13 @@
 import {
   getGetMeQueryOptions,
   getListUsersQueryOptions,
+  problemOf,
   type UserResponse,
 } from "@repo/api-client";
+import { Avatar } from "@repo/ui/components/avatar";
 import { Button } from "@repo/ui/components/button";
 import { Freshness } from "@repo/ui/components/freshness";
+import { ListError } from "@repo/ui/components/list-error";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Table, type TableColumn } from "@repo/ui/components/table";
@@ -16,8 +19,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
-import { Avatar } from "@/shared/avatar";
-import { ListError } from "@/shared/list-error";
+import { leaveOf } from "@/shared/problem-screen";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useDates } from "@/shared/use-dates";
 import { AddDialog } from "./add-dialog";
@@ -52,7 +54,7 @@ export function SystemAdminsPage() {
 
   const person = (user: UserResponse) => (
     <span className="flex min-w-0 items-center gap-3">
-      <Avatar user={user} />
+      <Avatar person={{ firstName: user.firstName, lastName: user.lastName }} />
       <span className="flex min-w-0 flex-col">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <bdi className="truncate font-medium">{adminNameOf(user)}</bdi>
@@ -123,7 +125,8 @@ export function SystemAdminsPage() {
       return (
         <ListError
           title={t("systemAdmins.error")}
-          error={list.error}
+          problem={problemOf(list.error)}
+          leave={leaveOf(list.error)}
           at={list.errorUpdatedAt}
           onRetry={() => void list.refetch()}
         />
@@ -136,7 +139,11 @@ export function SystemAdminsPage() {
         label={t("systemAdmins.title")}
         actions={actions}
         actionsLabel={t("systemAdmins.actions")}
-        cardLead={(user) => <Avatar user={user} />}
+        cardLead={(user) => (
+          <Avatar
+            person={{ firstName: user.firstName, lastName: user.lastName }}
+          />
+        )}
         rowCount={list.data.total}
         page={list.data.page}
         pageSize={list.data.pageSize}

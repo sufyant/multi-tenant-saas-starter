@@ -1,14 +1,15 @@
 "use client";
 
-import { Permission } from "@repo/api-client";
+import { Permission, problemOf } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
+import { ListError } from "@repo/ui/components/list-error";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ListError } from "@/shared/list-error";
 import { PermissionDenied } from "@/shared/permission-denied";
+import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
@@ -45,7 +46,8 @@ export function RolePage({ roleId }: { roleId: string }) {
       <RolesFrame>
         <ListError
           title={t("roles.loadError")}
-          error={roles.error}
+          problem={problemOf(roles.error)}
+          leave={leaveOf(roles.error)}
           at={roles.errorUpdatedAt}
           onRetry={() => void roles.refetch()}
         />

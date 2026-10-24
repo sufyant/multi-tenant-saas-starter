@@ -25,6 +25,7 @@ import {
   problem,
   tenantAnswer,
 } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -75,7 +76,7 @@ describe("SuspendDialog", () => {
     await suspend(dialog, "Contract under review");
 
     expect(
-      await screen.findByText("Northwind Traders suspended"),
+      await screen.findByText(sentence("Northwind Traders suspended")),
     ).toBeVisible();
     expect(screen.getByText("Its 7 members cannot sign in.")).toBeVisible();
     expect(calls.map((call) => call.body)).toEqual([
@@ -132,7 +133,9 @@ describe("SuspendDialog", () => {
     await suspend(dialog, "Contract under review");
 
     expect(
-      await dialog.findByText("Northwind Traders cannot be suspended now."),
+      await dialog.findByText(
+        sentence("Northwind Traders cannot be suspended now."),
+      ),
     ).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });

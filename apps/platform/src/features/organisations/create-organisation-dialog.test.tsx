@@ -24,7 +24,7 @@ import {
   pageOf,
   problem,
 } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { pageOf as organisationPageOf } from "./create-organisation-dialog";
 import { OrganisationsPage } from "./organisations-page";
 
@@ -115,7 +115,9 @@ describe("CreateOrganisationDialog", () => {
     await fill(dialog, {});
     await send(dialog);
 
-    expect(await screen.findByText("Liffey Design created")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Liffey Design created")),
+    ).toBeVisible();
     expect(
       screen.getByText("niamh@liffeydesign.example was invited as Owner."),
     ).toBeVisible();
@@ -152,7 +154,9 @@ describe("CreateOrganisationDialog", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     await send(dialog);
 
-    expect(await screen.findByText("Liffey Design created")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Liffey Design created")),
+    ).toBeVisible();
     expect(new Set(calls.map((call) => call.key)).size).toBe(1);
   });
 
@@ -271,7 +275,9 @@ describe("CreateOrganisationDialog", () => {
     await fill(dialog, { slug: "liffey" });
     await send(dialog);
 
-    expect(await screen.findByText("Liffey Design created")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Liffey Design created")),
+    ).toBeVisible();
     expect(new Set(calls.map((call) => call.key)).size).toBe(2);
   });
 });

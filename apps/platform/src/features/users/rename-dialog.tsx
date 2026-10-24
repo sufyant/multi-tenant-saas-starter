@@ -6,6 +6,7 @@ import {
   ErrorCode,
   FieldErrorCode,
   ProblemDetailsError,
+  problemOf,
   renameUser,
   schemas,
 } from "@repo/api-client";
@@ -13,13 +14,13 @@ import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { nameOf } from "@/shared/name-of";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 // The generated schema of RenameUser (F11). The API trims both names and needs 1 to 100 characters each (A7); the generated schema
@@ -87,7 +88,10 @@ export function RenameDialog({
       return { title: t("wasDeleted"), text: t("wasDeletedText") };
     if (code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
-    return { title: t("notDone", { name }), text: failureText(rename.error) };
+    return {
+      title: t.rich("notDone", { name, ...isolated }),
+      text: failureText(problemOf(rename.error)),
+    };
   })();
 
   const submit = form.handleSubmit(
@@ -97,7 +101,10 @@ export function RenameDialog({
         onSuccess: (renamed) => {
           onClose();
           showToast({
-            title: t("renamed", { name: nameOf(renamed) ?? name }),
+            title: t.rich("renamed", {
+              name: nameOf(renamed) ?? name,
+              ...isolated,
+            }),
           });
         },
       }),
@@ -112,7 +119,7 @@ export function RenameDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("renameTitle", { name })}
+      title={t.rich("renameTitle", { name, ...isolated })}
       description={t("renameText")}
       actionLabel={t("renameAction")}
       cancelLabel={common("cancel")}

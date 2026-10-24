@@ -5,22 +5,23 @@ import {
   ErrorCode,
   getListUsersQueryOptions,
   grantSystemAdmin,
+  problemOf,
   schemas,
   type UserResponse,
 } from "@repo/api-client";
+import { Avatar } from "@repo/ui/components/avatar";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Avatar } from "@/shared/avatar";
-import { problemOf } from "@/shared/problem";
+import { isolated } from "@/shared/isolated";
 import { savedUnderKey } from "@/shared/saved-under-key";
-import { useFailureText } from "@/shared/use-failure-text";
 import { ReverifyStep } from "./reverify-step";
 import {
   adminNameOf,
@@ -101,7 +102,9 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         onSuccess: () => {
           renew();
           onClose();
-          showToast({ title: t("granted", { name: adminNameOf(user) }) });
+          showToast({
+            title: t.rich("granted", { name: adminNameOf(user), ...isolated }),
+          });
         },
       },
     );
@@ -126,17 +129,23 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
       if (!grant.error || needsReverification(grant.error)) return null;
       switch (problemOf(grant.error)?.code) {
         case ErrorCode.SystemAdminExists:
-          return { title: t("alreadyAdminRaced", { name }), text: null };
+          return {
+            title: t.rich("alreadyAdminRaced", { name, ...isolated }),
+            text: null,
+          };
         case ErrorCode.UserSuspended:
-          return { title: users("reactivateFirst", { name }), text: null };
+          return {
+            title: users.rich("reactivateFirst", { name, ...isolated }),
+            text: null,
+          };
         case ErrorCode.UserDeleted:
           return { title: users("wasDeleted"), text: null };
         case ErrorCode.UserNotFound:
           return { title: users("notFound"), text: null };
         default:
           return {
-            title: users("notDone", { name }),
-            text: failureText(grant.error),
+            title: users.rich("notDone", { name, ...isolated }),
+            text: failureText(problemOf(grant.error)),
           };
       }
     })();
@@ -144,7 +153,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
       <Dialog
         open
         onOpenChange={close}
-        title={t("confirmTitle", { name })}
+        title={t.rich("confirmTitle", { name, ...isolated })}
         description={t("confirmText")}
         action="secondary"
         actionLabel={t("confirmAction")}
@@ -203,7 +212,10 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         {person?.isSystemAdmin && (
           <Banner
             tone="info"
-            title={t("alreadyAdmin", { name: adminNameOf(person) })}
+            title={t.rich("alreadyAdmin", {
+              name: adminNameOf(person),
+              ...isolated,
+            })}
           />
         )}
       </form>
@@ -216,7 +228,10 @@ function PersonCard({ person }: { person: UserResponse }) {
   const t = useTranslations("systemAdmins");
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-      <Avatar user={person} className="size-10" />
+      <Avatar
+        person={{ firstName: person.firstName, lastName: person.lastName }}
+        className="size-10"
+      />
       <div className="flex min-w-0 flex-col">
         <bdi className="truncate font-medium">{adminNameOf(person)}</bdi>
         <span className="text-small text-muted-foreground">

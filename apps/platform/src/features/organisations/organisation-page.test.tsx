@@ -29,7 +29,7 @@ import {
   northwind,
   problem,
 } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { OrganisationPage } from "./organisation-page";
 
 vi.mock("next/navigation", () => ({
@@ -201,7 +201,7 @@ describe("OrganisationPage", () => {
 
     expect(
       await screen.findByText(
-        "Moyne Gallery is being deleted and can’t be reopened.",
+        sentence("Moyne Gallery is being deleted and can’t be reopened."),
       ),
     ).toBeVisible();
     expect(screen.getByText("Being deleted")).toBeVisible();

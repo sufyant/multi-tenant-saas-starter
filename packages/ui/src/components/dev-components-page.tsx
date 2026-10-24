@@ -4,13 +4,14 @@
 // theme switch. Both apps mount it outside production builds. The sample texts are literals on purpose: this page is outside F25.
 import { NextIntlClientProvider } from "next-intl";
 import { useTheme } from "next-themes";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { z } from "zod";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import tr from "../../messages/tr.json";
 import { ActivityLog } from "./activity-log";
 import { AppShell } from "./app-shell";
+import { Avatar } from "./avatar";
 import { Banner } from "./banner";
 import { Button } from "./button";
 import { CodeInput } from "./code-input";
@@ -29,10 +30,12 @@ import {
   UsersIcon,
 } from "./icon";
 import { Input } from "./input";
+import { ListError } from "./list-error";
 import { OrgMenu } from "./org-menu";
 import { PreferencesForm } from "./preferences-form";
 import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
+import { Search } from "./search";
 import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
 import { Skeleton } from "./skeleton";
 import { Status } from "./status";
@@ -42,6 +45,8 @@ import { Tabs } from "./tabs";
 import { Tag } from "./tag";
 import { Time } from "./time";
 import { showToast } from "./toast";
+import { Checkbox } from "./ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { UserMenu } from "./user-menu";
 
 const at = "2026-10-16T13:32:00Z";
@@ -366,6 +371,14 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       ),
     },
     {
+      name: "Checkbox",
+      render: () => <CheckboxPreview />,
+    },
+    {
+      name: "RadioGroup",
+      render: () => <RadioGroupPreview />,
+    },
+    {
       name: "CodeInput",
       render: () => (
         <>
@@ -458,6 +471,58 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
               fieldCodesOf={() => null}
               onSaved={resolved}
               onFailed={noop}
+            />
+          </div>
+        </NextIntlClientProvider>
+      ),
+    },
+    {
+      name: "Avatar",
+      render: () => (
+        <>
+          <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />
+          <Avatar
+            person={{
+              firstName: null,
+              lastName: null,
+              email: "kemal@northwind.example",
+            }}
+          />
+          <Avatar
+            person={{ firstName: "Mehmet", lastName: "Kaya" }}
+            className="size-11"
+          />
+        </>
+      ),
+    },
+    {
+      name: "Search",
+      render: ({ sample }) => (
+        <Search
+          value=""
+          label={sample.members}
+          maxLength={200}
+          onSearch={noop}
+        />
+      ),
+    },
+    {
+      name: "ListError",
+      render: ({ sample, language }) => (
+        <NextIntlClientProvider
+          locale={language}
+          messages={{
+            ...messages[language],
+            locale: { format: sample.locale },
+          }}
+          timeZone={sample.timeZone}
+        >
+          <div className="w-full max-w-xl">
+            <ListError
+              title="Couldn’t load members"
+              problem={null}
+              at={Date.parse(at)}
+              onRetry={noop}
             />
           </div>
         </NextIntlClientProvider>
@@ -949,6 +1014,98 @@ export function DevComponentsPage({
         </Section>
       ))}
     </div>
+  );
+}
+
+/** The states of a permission's box in the role editor: off, on, locked on and disabled, each reason as its description. */
+function CheckboxPreview() {
+  const id = useId();
+  const boxes = [
+    { label: "See Activity", checked: false },
+    { label: "See members", checked: true },
+    {
+      label: "See the organisation’s details",
+      checked: true,
+      disabled: true,
+      reason: "Every role can see the organisation’s details.",
+    },
+    {
+      label: "Manage roles",
+      checked: false,
+      disabled: true,
+      reason: "Your role doesn’t have this permission.",
+    },
+  ];
+  return (
+    <div className="flex w-80 flex-col gap-3">
+      {boxes.map((box, index) => (
+        <div key={box.label} className="flex items-start gap-3">
+          <Checkbox
+            id={`${id}-${index}`}
+            className="mt-0.5"
+            defaultChecked={box.checked}
+            disabled={box.disabled}
+            aria-describedby={box.reason ? `${id}-${index}-reason` : undefined}
+          />
+          <div className="flex flex-col gap-0.5">
+            <label htmlFor={`${id}-${index}`}>{box.label}</label>
+            {box.reason && (
+              <p
+                id={`${id}-${index}-reason`}
+                className="text-small text-muted-foreground"
+              >
+                {box.reason}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** A role list as the ChangeRole board draws it: the Owner role disabled with its reason. */
+function RadioGroupPreview() {
+  const id = useId();
+  const roles = [
+    {
+      name: "Owner",
+      reason: "Only an Owner can give the Owner role.",
+    },
+    { name: "Admin" },
+    { name: "Member" },
+  ];
+  return (
+    <RadioGroup
+      aria-label="Role"
+      defaultValue="Member"
+      className="flex w-80 flex-col gap-2"
+    >
+      {roles.map((role) => (
+        <div key={role.name} className="flex items-start gap-2.5">
+          <RadioGroupItem
+            id={`${id}-${role.name}`}
+            value={role.name}
+            disabled={Boolean(role.reason)}
+            aria-describedby={
+              role.reason ? `${id}-${role.name}-reason` : undefined
+            }
+            className="mt-0.5"
+          />
+          <div className="flex flex-col gap-0.5">
+            <label htmlFor={`${id}-${role.name}`}>{role.name}</label>
+            {role.reason && (
+              <p
+                id={`${id}-${role.name}-reason`}
+                className="text-small text-destructive-text"
+              >
+                {role.reason}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </RadioGroup>
   );
 }
 

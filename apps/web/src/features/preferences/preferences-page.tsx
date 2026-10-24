@@ -9,6 +9,7 @@ import {
   Language,
   type MeResponse,
   ProblemDetailsError,
+  problemOf,
   type RenameMeRequest,
   renameMe,
   schemas,
@@ -16,6 +17,7 @@ import {
 import { PreferencesForm } from "@repo/ui/components/preferences-form";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -23,7 +25,6 @@ import { z } from "zod";
 import { setLocale } from "@/i18n/set-locale";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { SettingsNav } from "@/shared/settings-nav";
-import { useFailureText } from "@/shared/use-failure-text";
 
 // The generated schemas of RenameMe and ChangePreferences (F11). The API trims each name and needs 1 to 100 characters (A7);
 // the generated schema has the limit only, so the form adds the trim and the minimum.
@@ -121,7 +122,7 @@ function Preferences({ me }: { me: MeResponse }) {
           });
         showToast({
           title: t("preferencesForm.notSaved"),
-          description: failureText(error),
+          description: failureText(problemOf(error)),
           tone: "destructive",
         });
       }}
