@@ -154,6 +154,9 @@ describe("PreferencesPage", () => {
       screen.getByText("Your name shows in the platform’s Activity."),
     ).toBeInTheDocument();
     expect(
+      screen.getByText("These follow you to every device."),
+    ).toBeInTheDocument();
+    expect(
       screen.queryByText(/can change your language and time zone/),
     ).not.toBeInTheDocument();
   });
