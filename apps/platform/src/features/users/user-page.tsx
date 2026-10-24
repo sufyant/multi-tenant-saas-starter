@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  BuiltInRole,
-  builtInRoleOf,
   ErrorCode,
   getGetUserQueryOptions,
   schemas,
@@ -28,18 +26,11 @@ import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import { Avatar } from "./avatar";
 import { MakeOwnerDialog } from "./make-owner-dialog";
+import { isOwnerMembership } from "./owner-membership";
 import { useRoleName } from "./use-role-name";
 import { useUserActions } from "./use-user-actions";
 import { actionsOf, displayNameOf, nameOf, statuses } from "./user";
 import { AdminTags } from "./users-table";
-
-/**
- * Whether a membership is an Owner's, so Make Owner is disabled on it (the UserDetail board). The platform holds no tenant
- * permissions to compare (F51 is the tenant web's rule), and the API's own rule knows the Owner role the same way: by the
- * built-in Owner role, 409 `member.already_owner`.
- */
-const isOwner = (membership: UserMembershipResponse) =>
-  builtInRoleOf(membership.role) === BuiltInRole.Owner;
 
 /**
  * One user (the UserDetail, ReactivateUser and DeleteUser boards): the header with the System admin badge and the actions, the
@@ -235,8 +226,8 @@ function Memberships({
             items={[
               {
                 label: t("users.makeOwner"),
-                disabled: isOwner(membership),
-                reason: isOwner(membership)
+                disabled: isOwnerMembership(membership),
+                reason: isOwnerMembership(membership)
                   ? t("users.alreadyOwner")
                   : undefined,
                 onSelect: () => setMaking(membership),
