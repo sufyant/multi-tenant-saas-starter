@@ -145,6 +145,25 @@ describe("PlatformShell", () => {
     expect(crumbs.getByText("Users")).toBeInTheDocument();
   });
 
+  it("PlatformShell_SystemAdminsPage_ShowsSettingsAndSystemAdminsInTheBreadcrumb", async () => {
+    navigation.pathname = "/settings/system-admins";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(crumbs.getByText("Settings")).toBeInTheDocument();
+    expect(crumbs.getByText("System admins")).toBeInTheDocument();
+  });
+
   it("PlatformShell_UserPage_NamesTheUserInTheBreadcrumb", async () => {
     const userId = "0198f0a2-0000-7000-8000-0000000000a1";
     navigation.pathname = `/users/${userId}`;

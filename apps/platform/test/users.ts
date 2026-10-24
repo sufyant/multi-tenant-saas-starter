@@ -1,5 +1,6 @@
 import {
   BuiltInRole,
+  Language,
   type ListPageOfUserResponse,
   type UserDetailResponse,
   type UserMembershipResponse,
@@ -7,6 +8,10 @@ import {
   type UserResponse,
   UserResponseStatus,
 } from "@repo/api-client";
+import {
+  getGetMeMockHandler,
+  getGetMeResponseMock,
+} from "@repo/api-client/msw";
 import { HttpResponse, http } from "msw";
 import { atlas, northwind, shannon } from "./organisations";
 
@@ -211,3 +216,33 @@ export const userResponse =
   (value: UserResponse, values: Partial<UserResponse> = {}) =>
   () =>
     HttpResponse.json({ ...value, ...values });
+
+/** Tomás Ryan, a system admin who is neither root nor the viewer (the SystemAdmins board). */
+export const tomas = user(
+  "0198f0a2-0000-7000-8000-0000000000a7",
+  "Tomás",
+  "Ryan",
+  "tomas@starter.example",
+  {
+    isSystemAdmin: true,
+    systemAdminGrantedAt: "2026-03-02T10:00:00Z",
+    membershipCount: 0,
+  },
+);
+
+/** The system admins of the SystemAdmins board: a root, the viewer (Ciara) and another. */
+export const systemAdmins = [rory, ciara, tomas];
+
+/** GetMe of the signed-in system admin as a user of the list, in English and Dublin's time. */
+export const meAs = (value: UserResponse) =>
+  getGetMeMockHandler(
+    getGetMeResponseMock({
+      id: value.id,
+      firstName: value.firstName,
+      lastName: value.lastName,
+      email: value.email,
+      isSystemAdmin: true,
+      language: Language.En,
+      timeZone: "Europe/Dublin",
+    }),
+  );

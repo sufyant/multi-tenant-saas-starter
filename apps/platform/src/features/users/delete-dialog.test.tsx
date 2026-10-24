@@ -104,7 +104,7 @@ describe("DeleteUserDialog", () => {
     ).toBeVisible();
   });
 
-  it("Delete_SystemAdmin_SaysRemoveThemFirstWithoutALink", async () => {
+  it("Delete_SystemAdmin_SaysRemoveThemFirstAndLinksToSystemAdmins", async () => {
     server.use(
       meAnswer(),
       userAnswer(userDetailOf(ciara)),
@@ -122,7 +122,9 @@ describe("DeleteUserDialog", () => {
     expect(
       dialog.getByText("Remove them from System admins first."),
     ).toBeVisible();
-    expect(dialog.queryByRole("link")).toBeNull();
+    expect(
+      dialog.getByRole("link", { name: "Open System admins" }),
+    ).toHaveAttribute("href", "/settings/system-admins");
   });
 
   it("Delete_LastOwner_NamesEachOrganisationFromTheMemberships", async () => {
