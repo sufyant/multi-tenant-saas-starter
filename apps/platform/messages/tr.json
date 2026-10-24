@@ -24,7 +24,8 @@
     "preferences": "Tercihler",
     "you": "Siz",
     "language": "Dil",
-    "platform": "Platform"
+    "platform": "Platform",
+    "systemAdmins": "Sistem yöneticileri"
   },
   "preferences": {
     "title": "Tercihler",
@@ -284,6 +285,43 @@
     "cannotDeleteText": "{count} kuruluşun son Sahibi. Oralarda başka birini Sahip yapın ya da kuruluşları kapatın, sonra tekrar deneyin.",
     "openOrganisation": "Kuruluşu aç",
     "joinedMeanwhile": "{name} bu işlem sürerken bir kuruluşa katıldı.",
-    "joinedMeanwhileText": "Hiçbir şey silinmedi. Tekrar deneyin."
+    "joinedMeanwhileText": "Hiçbir şey silinmedi. Tekrar deneyin.",
+    "openSystemAdmins": "Sistem yöneticilerini aç"
+  },
+  "systemAdmins": {
+    "title": "Sistem yöneticileri",
+    "text": "Sistem yöneticileri platformdaki her kuruluşu ve kullanıcıyı yönetir. Her biri bir kimlik doğrulayıcı uygulamayla oturum açar.",
+    "add": "Sistem yöneticisi ekle",
+    "name": "Ad",
+    "added": "Eklenme",
+    "root": "Kök",
+    "you": "Siz",
+    "rootHint": "Kök yöneticiler platformun yapılandırmasından gelir.",
+    "actions": "İşlemler",
+    "actionsFor": "{name} için işlemler",
+    "remove": "Sistem yöneticisini kaldır",
+    "cannotRemoveSelf": "Kendinizi kaldıramazsınız. Başka bir sistem yöneticisinden isteyin.",
+    "loading": "Sistem yöneticileri yükleniyor",
+    "error": "Sistem yöneticileri yüklenemedi",
+    "addText": "Kişinin tam e-posta adresini yazın. Öneri gösterilmez.",
+    "email": "E-posta",
+    "continue": "Devam",
+    "memberOf": "{count} kuruluşun üyesi",
+    "noUser": "Bu e-postaya sahip bir kullanıcı yok. Önce bir kez oturum açmaları gerekir.",
+    "alreadyAdmin": "{name} zaten bir sistem yöneticisi.",
+    "confirmTitle": "{name} sistem yöneticisi yapılsın mı?",
+    "confirmText": "Platformdaki her kuruluşu ve kullanıcıyı yönetebilir. Bir sonraki oturum açışında bir kimlik doğrulayıcı uygulama kurar.",
+    "back": "Geri",
+    "confirmAction": "Sistem yöneticisi yap",
+    "granted": "{name} artık bir sistem yöneticisi.",
+    "alreadyAdminRaced": "{name} zaten bir sistem yöneticisi. Sayfa yenilendi.",
+    "removeTitle": "{name} sistem yöneticiliğinden kaldırılsın mı?",
+    "removeText": "Artık platformu açamaz. Kuruluşlardaki üyelikleri kalır.",
+    "removeAction": "Kaldır",
+    "noLongerAdmin": "{name} artık bir sistem yöneticisi değil.",
+    "rootCannotRemove": "Kök yöneticiler burada kaldırılamaz.",
+    "reverifyTitle": "Kimliğinizi doğrulayın",
+    "reverifyText": "Kimlik doğrulayıcı uygulamanızdaki 6 haneli kodu girin. Son doğrulamanızın üzerinden bir süre geçtiği için yeniden soruyoruz.",
+    "verify": "Doğrula ve devam et"
   }
 }

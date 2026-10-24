@@ -18,18 +18,19 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
+import { Avatar } from "@/shared/avatar";
 import { DetailList } from "@/shared/detail-list";
 import { Initial } from "@/shared/initial";
+import { nameOf } from "@/shared/name-of";
 import { NotFoundPage } from "@/shared/not-found-page";
 import { problemOf } from "@/shared/problem";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
-import { Avatar } from "./avatar";
 import { MakeOwnerDialog } from "./make-owner-dialog";
 import { isOwnerMembership } from "./owner-membership";
 import { useRoleName } from "./use-role-name";
 import { useUserActions } from "./use-user-actions";
-import { actionsOf, displayNameOf, nameOf, statuses } from "./user";
+import { actionsOf, displayNameOf, statuses } from "./user";
 import { AdminTags } from "./users-table";
 
 /**
@@ -120,8 +121,7 @@ function Detail({ user }: { user: UserDetailResponse }) {
             <Status tone={statuses[user.status].tone}>
               {t(statuses[user.status].label)}
             </Status>
-            {/* Plain text until Settings › System admins exists (step 22j); then the badge links there (the UserDetail board). */}
-            <AdminTags user={user} />
+            <AdminTags user={user} linked />
           </div>
           {user.email && (
             <bdi dir="ltr" className="text-muted-foreground">

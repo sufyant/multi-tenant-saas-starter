@@ -65,6 +65,63 @@ describe("Dialog", () => {
     expect(action).toHaveAttribute("aria-busy", "true");
   });
 
+  it("Dialog_SecondaryAction_ShowsTheActionAsASecondaryButton", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        action="secondary"
+        title="Make Mehmet Kaya a system admin?"
+        actionLabel="Make system admin"
+        cancelLabel="Cancel"
+      />,
+    );
+
+    const action = await screen.findByRole("button", {
+      name: "Make system admin",
+    });
+    expect(action).toHaveClass("bg-card");
+    expect(action).not.toHaveClass("bg-primary");
+  });
+
+  it("Dialog_ActionDisabled_DisablesTheAction", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        actionDisabled
+        title="Add system admin"
+        actionLabel="Continue"
+        cancelLabel="Cancel"
+      />,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Continue" }),
+    ).toBeDisabled();
+  });
+
+  it("Dialog_Back_GoesBackAndStaysOpen", async () => {
+    const onBack = vi.fn();
+    render(
+      <Dialog
+        defaultOpen
+        title="Make Mehmet Kaya a system admin?"
+        actionLabel="Make system admin"
+        cancelLabel="Cancel"
+        back={{ label: "Back", onBack }}
+      />,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Back" }));
+
+    expect(onBack).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    expect(
+      screen.getByRole("alertdialog", {
+        name: "Make Mehmet Kaya a system admin?",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("Dialog_InRtl_NamesTheObject", async () => {
     render(
       <div dir="rtl">

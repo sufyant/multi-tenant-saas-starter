@@ -24,7 +24,8 @@
     "preferences": "Preferences",
     "you": "You",
     "language": "Language",
-    "platform": "Platform"
+    "platform": "Platform",
+    "systemAdmins": "System admins"
   },
   "preferences": {
     "title": "Preferences",
@@ -284,6 +285,43 @@
     "cannotDeleteText": "They are the last Owner of {count, plural, one {# organisation} other {# organisations}}. Make someone else an Owner there, or close them, then try again.",
     "openOrganisation": "Open the organisation",
     "joinedMeanwhile": "{name} joined an organisation while this ran.",
-    "joinedMeanwhileText": "Nothing was deleted. Try again."
+    "joinedMeanwhileText": "Nothing was deleted. Try again.",
+    "openSystemAdmins": "Open System admins"
+  },
+  "systemAdmins": {
+    "title": "System admins",
+    "text": "System admins manage every organisation and user on the platform. Each one signs in with an authenticator app.",
+    "add": "Add system admin",
+    "name": "Name",
+    "added": "Added",
+    "root": "Root",
+    "you": "You",
+    "rootHint": "Root admins come from the platform’s configuration.",
+    "actions": "Actions",
+    "actionsFor": "Actions for {name}",
+    "remove": "Remove system admin",
+    "cannotRemoveSelf": "You can’t remove yourself. Ask another system admin.",
+    "loading": "Loading system admins",
+    "error": "Couldn’t load system admins",
+    "addText": "Type the person’s full email address. There are no suggestions.",
+    "email": "Email",
+    "continue": "Continue",
+    "memberOf": "Member of {count, plural, one {# organisation} other {# organisations}}",
+    "noUser": "No user has this email. They must sign in once first.",
+    "alreadyAdmin": "{name} is already a system admin.",
+    "confirmTitle": "Make {name} a system admin?",
+    "confirmText": "They can manage every organisation and user on the platform. They set up an authenticator app on their next sign-in.",
+    "back": "Back",
+    "confirmAction": "Make system admin",
+    "granted": "{name} is a system admin.",
+    "alreadyAdminRaced": "{name} is already a system admin. The page has been refreshed.",
+    "removeTitle": "Remove {name} as a system admin?",
+    "removeText": "They can no longer open the platform. Their memberships in organisations stay.",
+    "removeAction": "Remove",
+    "noLongerAdmin": "{name} is no longer a system admin.",
+    "rootCannotRemove": "Root admins can’t be removed here.",
+    "reverifyTitle": "Confirm it’s you",
+    "reverifyText": "Enter the 6-digit code from your authenticator app. We ask again because your last check was a while ago.",
+    "verify": "Verify and continue"
   }
 }

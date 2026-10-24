@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Initial } from "@/shared/initial";
 import { problemOf } from "@/shared/problem";
+import { settingsPages } from "@/shared/settings-nav";
 import { useFailureText } from "@/shared/use-failure-text";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
@@ -98,6 +99,10 @@ export function DeleteDialog({
       return {
         title: t("isSystemAdmin", { name }),
         text: t("isSystemAdminText"),
+        link: {
+          href: settingsPages.systemAdmins,
+          label: t("openSystemAdmins"),
+        },
       };
     if (problem?.code === ErrorCode.UserHasMemberships)
       return {
@@ -133,7 +138,20 @@ export function DeleteDialog({
       }
     >
       {failure && (
-        <Banner tone="destructive" title={failure.title}>
+        <Banner
+          tone="destructive"
+          title={failure.title}
+          action={
+            failure.link && (
+              <Link
+                href={failure.link.href}
+                className="shrink-0 font-medium underline"
+              >
+                {failure.link.label}
+              </Link>
+            )
+          }
+        >
           {failure.text}
         </Banner>
       )}

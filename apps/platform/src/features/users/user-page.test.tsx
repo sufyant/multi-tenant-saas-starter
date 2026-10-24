@@ -173,17 +173,18 @@ describe("UserPage", () => {
     expect(screen.getByText("Not a member of any organisation.")).toBeVisible();
   });
 
-  it("UserPage_RootSystemAdmin_ShowsBothBadgesAsPlainText", async () => {
+  it("UserPage_RootSystemAdmin_BothBadgesLinkToSystemAdmins", async () => {
     server.use(meAnswer(), userAnswer(userDetailOf(rory)));
 
     renderWithProviders(<UserPage userId={rory.id} />);
 
-    const badge = await screen.findByText("System admin");
-    const root = screen.getByText("Root");
-    expect(badge).toBeVisible();
-    expect(root).toBeVisible();
-    expect(badge.closest("a, button")).toBeNull();
-    expect(root.closest("a, button")).toBeNull();
+    expect(
+      await screen.findByRole("link", { name: "System admin" }),
+    ).toHaveAttribute("href", "/settings/system-admins");
+    expect(screen.getByRole("link", { name: "Root" })).toHaveAttribute(
+      "href",
+      "/settings/system-admins",
+    );
   });
 
   it("UserPage_Memberships_ShowEachOrganisationSlugRoleAndJoined", async () => {
