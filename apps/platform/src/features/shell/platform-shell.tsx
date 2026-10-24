@@ -5,11 +5,17 @@ import {
   ErrorCode,
   getGetMeQueryOptions,
   getGetTenantQueryOptions,
+  getGetUserQueryOptions,
   getListTenantsQueryOptions,
   ProblemDetailsError,
+  UserResponseStatus,
 } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
-import { BuildingIcon, SettingsIcon } from "@repo/ui/components/icon";
+import {
+  BuildingIcon,
+  SettingsIcon,
+  UsersIcon,
+} from "@repo/ui/components/icon";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { UserMenu } from "@repo/ui/components/user-menu";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +31,10 @@ import { ProblemScreen } from "@/shared/problem-screen";
 /** The tenant of an organisation's page, `/organisations/<id>`, or null on any other page. */
 const tenantIdOf = (pathname: string) =>
   /^\/organisations\/([^/]+)/.exec(pathname)?.[1] ?? null;
+
+/** The user of a user's page, `/users/<id>`, or null on any other page. */
+const userIdOf = (pathname: string) =>
+  /^\/users\/([^/]+)/.exec(pathname)?.[1] ?? null;
 
 const initialsOf = (...names: (string | null)[]) =>
   names
@@ -76,6 +86,13 @@ export function PlatformShell({
       query: { enabled: tenantId !== null && me.data?.isSystemAdmin === true },
     }),
   );
+  // The user's page reads the same GetUser, so their name in the breadcrumb comes from the cache.
+  const userId = userIdOf(pathname);
+  const user = useQuery(
+    getGetUserQueryOptions(userId ?? "", {
+      query: { enabled: userId !== null && me.data?.isSystemAdmin === true },
+    }),
+  );
   const { refetch } = me;
   useEffect(() => {
     if (doorAsked) return;
@@ -92,6 +109,12 @@ export function PlatformShell({
     preferences: "shell.preferences",
   } as const;
   const inSettings = pathname.startsWith("/settings");
+  const inUsers = pathname === "/users" || pathname.startsWith("/users/");
+  const userName =
+    user.data &&
+    (user.data.status === UserResponseStatus.Deleted
+      ? t("users.deletedUser")
+      : [user.data.firstName, user.data.lastName].filter(Boolean).join(" "));
   const crumbs = inSettings
     ? pathname
         .split("/")
@@ -99,10 +122,15 @@ export function PlatformShell({
           (segment): segment is keyof typeof sections => segment in sections,
         )
         .map((segment) => ({ label: t(sections[segment]) }))
-    : [
-        { label: t("shell.organisations") },
-        ...(tenantId && tenant.data ? [{ label: tenant.data.name }] : []),
-      ];
+    : inUsers
+      ? [
+          { label: t("shell.users") },
+          ...(userId && userName ? [{ label: userName }] : []),
+        ]
+      : [
+          { label: t("shell.organisations") },
+          ...(tenantId && tenant.data ? [{ label: tenant.data.name }] : []),
+        ];
 
   return (
     <>
@@ -116,6 +144,12 @@ export function PlatformShell({
             href: "/",
           },
           {
+            id: "users",
+            label: t("shell.users"),
+            icon: UsersIcon,
+            href: "/users",
+          },
+          {
             id: "settings",
             label: t("shell.settings"),
             icon: SettingsIcon,
@@ -123,7 +157,7 @@ export function PlatformShell({
             placement: "bottom",
           },
         ]}
-        current={inSettings ? "settings" : "organisations"}
+        current={inSettings ? "settings" : inUsers ? "users" : "organisations"}
         logo={t("shell.platform").charAt(0)}
         logoLabel={t("shell.home")}
         logoHref="/"

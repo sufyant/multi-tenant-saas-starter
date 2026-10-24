@@ -12,15 +12,15 @@ import { Freshness } from "@repo/ui/components/freshness";
 import { Icon, PlusIcon } from "@repo/ui/components/icon";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs } from "@repo/ui/components/tabs";
-import { Input as InputBase } from "@repo/ui/components/ui/input";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ListError } from "@/shared/list-error";
+import { Search } from "@/shared/search";
+import { useDates } from "@/shared/use-dates";
 import { CreateOrganisationDialog } from "./create-organisation-dialog";
 import { OrganisationsTable } from "./organisations-table";
-import { useDates } from "./use-dates";
-import { searchDelay, type Tab, tabs, useListParams } from "./use-list-params";
+import { type Tab, tabs, useListParams } from "./use-list-params";
 import { useOrganisationActions } from "./use-organisation-actions";
 
 const all = "all";
@@ -173,6 +173,7 @@ export function OrganisationsPage() {
           <Search
             value={q}
             label={t("organisations.search")}
+            maxLength={schemas.listTenantsQueryQMax}
             onSearch={onSearch}
           />
         </div>
@@ -183,35 +184,5 @@ export function OrganisationsPage() {
       )}
       {actions.dialog}
     </section>
-  );
-}
-
-/** The search field: it sends the text 300 ms after the last key, and follows the URL on back and forward. */
-function Search({
-  value,
-  label,
-  onSearch,
-}: {
-  value: string;
-  label: string;
-  onSearch: (q: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-  useEffect(() => setDraft(value), [value]);
-  useEffect(() => {
-    if (draft === value) return;
-    const timer = setTimeout(() => onSearch(draft), searchDelay);
-    return () => clearTimeout(timer);
-  }, [draft, value, onSearch]);
-  return (
-    <InputBase
-      type="search"
-      aria-label={label}
-      placeholder={label}
-      maxLength={schemas.listTenantsQueryQMax}
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      className="h-control-md w-full rounded-md bg-card px-3 text-body pointer-coarse:h-control-lg tablet:w-64"
-    />
   );
 }

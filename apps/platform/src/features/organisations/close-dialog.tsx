@@ -11,13 +11,13 @@ import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { problemOf } from "@/shared/problem";
+import { useDates } from "@/shared/use-dates";
 import { useFailureText } from "@/shared/use-failure-text";
 import {
   afterRefusal,
   type Organisation,
   refreshOrganisation,
 } from "./organisation";
-import { useDates } from "./use-dates";
 
 /**
  * Close an organisation (the CloseOrg and PhoneClose boards): red, and the slug typed to confirm. The text names no period, because
