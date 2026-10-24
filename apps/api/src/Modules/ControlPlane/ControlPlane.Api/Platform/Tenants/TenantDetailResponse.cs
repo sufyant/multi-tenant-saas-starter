@@ -10,6 +10,7 @@ public sealed record TenantDetailResponse(
     string Name,
     string Slug,
     TenantResponseStatus Status,
+    DateTimeOffset CreatedAt,
     string? SuspensionReason,
     DateTimeOffset? ClosedAt,
     DateTimeOffset? PurgedAt,
