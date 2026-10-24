@@ -55,9 +55,11 @@ export function SuspendDialog({
           ]
         : lastOwnerOf,
     )
-    .map((part) =>
+    .map((part, index) =>
       part.type === "element" && lastOwnerOf.includes(part.value) ? (
-        <bdi key={part.value}>{part.value}</bdi>
+        // Two organisations may share a name; a part's place in the one formatted list never changes.
+        // biome-ignore lint/suspicious/noArrayIndexKey: the parts of a formatted list have no id of their own.
+        <bdi key={index}>{part.value}</bdi>
       ) : (
         part.value
       ),
