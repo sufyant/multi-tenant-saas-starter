@@ -8,15 +8,16 @@ const tooLong = (error: string) =>
 
 /** The name: too long, else empty (`tenant.name_invalid`, `required`). */
 export const nameText = (error: string | undefined) =>
-  error && (tooLong(error) ? "nameTooLong" : "nameRequired");
+  error ? (tooLong(error) ? "nameTooLong" : "nameRequired") : undefined;
 
 /** The slug: every refusal of its shape is `slug_invalid`; `tenant.slug_taken` comes as its own key. */
 export const slugText = (error: string | undefined) =>
-  error && (error === "slugTaken" ? "slugTaken" : "slugInvalid");
+  error ? (error === "slugTaken" ? "slugTaken" : "slugInvalid") : undefined;
 
 /** An email address: missing, malformed or too long. */
-export const emailText = (error: string | undefined) => error && "emailInvalid";
+export const emailText = (error: string | undefined) =>
+  error ? "emailInvalid" : undefined;
 
 /** A suspension's reason: too long, else missing. */
 export const reasonText = (error: string | undefined) =>
-  error && (tooLong(error) ? "reasonTooLong" : "reasonRequired");
+  error ? (tooLong(error) ? "reasonTooLong" : "reasonRequired") : undefined;

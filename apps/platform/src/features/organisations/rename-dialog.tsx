@@ -118,9 +118,11 @@ export function RenameDialog({
       >
         <Input
           label={t("name")}
-          hint={t("nameHint")}
+          hint={t("nameHint", { max: schemas.renameTenantBodyNameMax })}
           autoComplete="off"
-          error={nameError && t(nameError)}
+          error={
+            nameError && t(nameError, { max: schemas.renameTenantBodyNameMax })
+          }
           {...form.register("name")}
         />
         {failure && (

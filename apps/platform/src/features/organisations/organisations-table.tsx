@@ -25,7 +25,7 @@ import {
   statuses,
   waitingInvitation,
 } from "./organisation";
-import type { useOrganisationActions } from "./organisation-actions";
+import type { useOrganisationActions } from "./use-organisation-actions";
 
 /** The columns a person can sort by, and the API's sort field of each (K5). */
 const sorts = {

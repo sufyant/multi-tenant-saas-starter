@@ -4,6 +4,7 @@ import {
   getListTenantsQueryOptions,
   ListTenantsSort,
   schemas,
+  TenantResponseStatus,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
@@ -17,27 +18,27 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { ListError } from "@/shared/list-error";
 import { CreateOrganisationDialog } from "./create-organisation-dialog";
-import { useOrganisationActions } from "./organisation-actions";
 import { OrganisationsTable } from "./organisations-table";
 import { useDates } from "./use-dates";
 import { searchDelay, type Tab, tabs, useListParams } from "./use-list-params";
+import { useOrganisationActions } from "./use-organisation-actions";
 
 const all = "all";
 
 /** The tab's label key: All, then the statuses (the Main board). */
 const tabLabels = {
-  active: "organisations.tabActive",
-  suspended: "organisations.tabSuspended",
-  closed: "organisations.tabClosed",
-  purged: "organisations.tabDeleted",
+  [TenantResponseStatus.Active]: "organisations.tabActive",
+  [TenantResponseStatus.Suspended]: "organisations.tabSuspended",
+  [TenantResponseStatus.Closed]: "organisations.tabClosed",
+  [TenantResponseStatus.Purged]: "organisations.tabDeleted",
 } as const satisfies Record<Tab, string>;
 
 /** The title of an empty tab (the ListStates board). */
 const noMatchLabels = {
-  active: "organisations.noMatchActive",
-  suspended: "organisations.noMatchSuspended",
-  closed: "organisations.noMatchClosed",
-  purged: "organisations.noMatchPurged",
+  [TenantResponseStatus.Active]: "organisations.noMatchActive",
+  [TenantResponseStatus.Suspended]: "organisations.noMatchSuspended",
+  [TenantResponseStatus.Closed]: "organisations.noMatchClosed",
+  [TenantResponseStatus.Purged]: "organisations.noMatchPurged",
 } as const satisfies Record<Tab, string>;
 
 /**

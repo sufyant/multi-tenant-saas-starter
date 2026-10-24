@@ -131,7 +131,9 @@ export function SuspendDialog({
               reasonError ? "text-destructive-text" : "text-muted-foreground",
             )}
           >
-            {reasonError ? t(reasonError) : t("reasonHint")}
+            {t(reasonError ?? "reasonHint", {
+              max: schemas.suspendTenantBodyReasonMax,
+            })}
           </p>
         </div>
         {failure && (

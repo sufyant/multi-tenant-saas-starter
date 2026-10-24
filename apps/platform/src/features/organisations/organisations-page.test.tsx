@@ -321,6 +321,43 @@ describe("OrganisationsPage", () => {
     );
   });
 
+  it("OrganisationsPage_RenameFromARow_ReadsTheListAgain", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(pageOf([northwind]), requests),
+      http.patch(`*/v1/platform/tenants/${northwind.id}`, () =>
+        HttpResponse.json({
+          id: northwind.id,
+          name: "Northwind Traders Ltd",
+          slug: northwind.slug,
+          status: TenantResponseStatus.Active,
+          suspensionReason: null,
+          closedAt: null,
+          purgedAt: null,
+        }),
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    await menuOf("Northwind Traders");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Rename Northwind Traders",
+      }),
+    );
+    await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), " Ltd");
+    await userEvent.click(
+      dialog.getByRole("button", { name: "Rename organisation" }),
+    );
+
+    expect(
+      await screen.findByText("Renamed to Northwind Traders Ltd."),
+    ).toBeVisible();
+    await waitFor(() => expect(requests).toHaveLength(2));
+  });
+
   it("OrganisationsPage_Loading_ShowsTheSkeleton", async () => {
     server.use(
       meAnswer(),

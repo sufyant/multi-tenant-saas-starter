@@ -28,9 +28,9 @@ import {
   waitingInvitation,
   waitsForOwner,
 } from "./organisation";
-import { useOrganisationActions } from "./organisation-actions";
 import { Initial } from "./organisations-table";
 import { useDates } from "./use-dates";
+import { useOrganisationActions } from "./use-organisation-actions";
 
 const nameOf = (owner: TenantOwnerResponse) =>
   [owner.firstName, owner.lastName].filter(Boolean).join(" ") || null;

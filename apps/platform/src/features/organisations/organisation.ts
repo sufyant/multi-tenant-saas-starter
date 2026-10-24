@@ -137,11 +137,11 @@ const changedMeanwhile = new Set<string>([
 
 /**
  * What a refused command means beyond its dialog (F4, F47): a 401 goes to sign-in; a suspended or deleted user reads GetMe again,
- * and the shell shows the account's screen; a conflict reads the organisation and the list again.
+ * and the shell shows the account's screen; a conflict reads the organisation and the list again. A create has no organisation yet.
  */
 export function afterRefusal(
   queryClient: QueryClient,
-  id: string,
+  id: string | null,
   error: unknown,
 ): void {
   if (!(error instanceof ProblemDetailsError)) return;
@@ -149,7 +149,7 @@ export function afterRefusal(
   if (kind === "sign-in") window.location.assign("/sign-in");
   if (kind === "account-suspended" || kind === "account-deleted")
     void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-  if (error.problem && changedMeanwhile.has(error.problem.code))
+  if (id && error.problem && changedMeanwhile.has(error.problem.code))
     void refreshOrganisation(queryClient, id);
 }
 

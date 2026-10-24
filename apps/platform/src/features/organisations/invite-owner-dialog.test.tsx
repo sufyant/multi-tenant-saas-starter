@@ -149,6 +149,47 @@ describe("InviteOwnerDialog", () => {
     expect(new Set(calls.map((call) => call.key)).size).toBe(1);
   });
 
+  it("InviteOwner_SentAgainAfterARefusal_SendsANewKey", async () => {
+    const calls: Call[] = [];
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(liffey)),
+      inviteAnswer(
+        [() => problem(409, ErrorCode.TenantNotActive), sent],
+        calls,
+      ),
+    );
+
+    const dialog = await open();
+    await send(dialog);
+    await dialog.findByText("Liffey Design is not active.");
+    await send(dialog);
+
+    expect(await screen.findByText("Invitation sent")).toBeVisible();
+    expect(new Set(calls.map((call) => call.key)).size).toBe(2);
+  });
+
+  it.each([
+    ["KeyInProgress", () => problem(409, ErrorCode.IdempotencyKeyInProgress)],
+    ["ServerError", () => problem(500, ErrorCode.ServerError)],
+  ])("InviteOwner_SentAgainAfter%s_SendsTheSameKey", async (_, answer) => {
+    const calls: Call[] = [];
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(liffey)),
+      inviteAnswer([answer, sent], calls),
+    );
+
+    const dialog = await open();
+    await send(dialog);
+    await waitFor(() => expect(calls).toHaveLength(1));
+    await dialog.findByText("Liffey Design did not change.");
+    await send(dialog);
+
+    expect(await screen.findByText("Invitation sent")).toBeVisible();
+    expect(new Set(calls.map((call) => call.key)).size).toBe(1);
+  });
+
   it("InviteOwner_HasOwner_SaysSoAndReadsAgain", async () => {
     const reads = { count: 0 };
     server.use(

@@ -224,6 +224,34 @@ describe("CreateOrganisationDialog", () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it("Create_SuspendedUser_ReadsGetMeAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      http.get("*/v1/me", () => {
+        reads.count += 1;
+        return HttpResponse.json({
+          id: "0198f0a2-0000-7000-8000-0000000000a9",
+          email: "ciara@platform.example",
+          firstName: "Ciara",
+          lastName: "Byrne",
+          isSystemAdmin: true,
+          language: Language.En,
+          timeZone: "Europe/Dublin",
+        });
+      }),
+      listAnswer(pageOf([northwind])),
+      createAnswer([() => problem(403, ErrorCode.UserSuspended)]),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    const dialog = await openCreate();
+    await fill(dialog, {});
+    const before = reads.count;
+    await send(dialog);
+
+    await waitFor(() => expect(reads.count).toBe(before + 1));
+  });
+
   it("Create_SlugTakenThenAnotherSlug_SendsANewKey", async () => {
     const calls: Call[] = [];
     server.use(

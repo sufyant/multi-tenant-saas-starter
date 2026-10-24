@@ -26,7 +26,7 @@ import { problemOf } from "@/shared/problem";
 import { useFailureText } from "@/shared/use-failure-text";
 import { emailText, nameText, slugText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
-import { savedUnderKey } from "./organisation";
+import { afterRefusal, savedUnderKey } from "./organisation";
 
 // The generated schema of CreateTenant (F11). The API trims the name and needs 1 to 100 characters; the generated schema has the
 // limit only, so the form adds the trim and the minimum.
@@ -82,6 +82,7 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: getListTenantsQueryKey() }),
     onError: (error) => {
+      afterRefusal(queryClient, null, error);
       if (savedUnderKey(error)) renew();
       if (!(error instanceof ProblemDetailsError)) return;
       const code = error.problem?.code;
@@ -152,7 +153,9 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
         <Input
           label={t("name")}
           autoComplete="off"
-          error={nameError && t(nameError)}
+          error={
+            nameError && t(nameError, { max: schemas.createTenantBodyNameMax })
+          }
           {...form.register("name")}
         />
         <Input
