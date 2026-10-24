@@ -25,7 +25,7 @@ import type {
 } from '../endpoints.schemas.gen';
 
 
-export const getGetMyTenantResponseMock = (overrideResponse: Partial<Extract<MyTenantDetailResponse, object>> = {}): MyTenantDetailResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, permissions: faker.helpers.arrayElements(Object.values(Permission)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getGetMyTenantResponseMock = (overrideResponse: Partial<Extract<MyTenantDetailResponse, object>> = {}): MyTenantDetailResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, permissions: faker.helpers.arrayElements(Object.values(Permission)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', maxCustomRoles: faker.number.int(), ...overrideResponse})
 
 
 export const getGetMyTenantMockHandler = (overrideResponse?: MyTenantDetailResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<MyTenantDetailResponse> | MyTenantDetailResponse), options?: RequestHandlerOptions) => {

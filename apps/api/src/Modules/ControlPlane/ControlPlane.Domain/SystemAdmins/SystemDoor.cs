@@ -1,4 +1,5 @@
 using ControlPlane.Domain.EmailAddresses;
+using SharedKernel;
 
 namespace ControlPlane.Domain.SystemAdmins;
 
@@ -8,6 +9,16 @@ internal static class SystemDoor
     /// <summary>The platform permissions the user holds behind the door, or null when the door stays closed to them.</summary>
     public static IReadOnlySet<string>? PermissionsFor(bool isSystemAdmin, bool secondFactorVerified) =>
         isSystemAdmin && secondFactorVerified ? PermissionPools.PlatformPool : null;
+
+    /// <summary>
+    /// Whether the second factor is fresh enough for an operation that requires reverification (A6): verified less than the window ago,
+    /// as Clerk's own check counts it. A factor as old as the window, or none, is refused with one code and nothing more, so the client
+    /// asks the person to verify again (OWASP ASVS 4.3; Clerk, "Add reverification for sensitive actions").
+    /// </summary>
+    public static Result CheckReverification(TimeSpan? secondFactorAge, TimeSpan window) =>
+        secondFactorAge is { } age && age < window
+            ? Result.Success()
+            : Error.Forbidden(ControlPlaneErrorCodes.SystemAdminReverificationRequired, "Verify the second factor again.");
 
     /// <summary>
     /// The root address of the person at the door, or none (docs/flows/system-admins.md): one of the addresses the identity provider

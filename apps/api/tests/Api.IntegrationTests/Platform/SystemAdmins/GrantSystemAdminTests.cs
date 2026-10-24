@@ -41,6 +41,8 @@ public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
         (body.GetProperty("id").GetGuid(), body.GetProperty("firstName").GetString(), body.GetProperty("status").GetString())
             .ShouldBe((id, "Ada", "active"));
         (body.GetProperty("isSystemAdmin").GetBoolean(), body.GetProperty("isRootSystemAdmin").GetBoolean()).ShouldBe((true, false));
+        body.GetProperty("systemAdminGrantedAt").GetDateTimeOffset().UtcDateTime
+            .ShouldBe(await database.ScalarAsync<DateTime>($"SELECT granted_at FROM control_plane.system_admins WHERE user_id = '{id}'"), TimeSpan.FromMicroseconds(1));
     }
 
     [Fact]
@@ -158,6 +160,78 @@ public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
         (await IsSystemAdminAsync(user)).ShouldBeFalse();
     }
 
+    // Step-up (A6, decision A of 2026-10-23): a grant asks for a second factor verified less than the reverification window ago, as
+    // Clerk's own check does (a factor is fresh while the window is longer than its age). fva gives the age in whole minutes, and -1 for
+    // none. The refusal says only that the person must verify again.
+    [Theory]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(-1)]
+    public async Task GrantSystemAdmin_ASecondFactorAsOldAsTheWindowOrNone_IsForbiddenAskingForReverificationAndChangesNothing(int minutes)
+    {
+        var user = await _testData.AddUserAsync();
+        var id = await _testData.UserIdOfAsync(user);
+        var client = ClientWithSecondFactorAge(await _testData.AddSystemAdminAsync(), minutes);
+        var key = Guid.NewGuid().ToString();
+
+        var response = await _api.WaitingForMessagesAsync(() => GrantAsync(client, id, key));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(response)).ShouldBe("system_admin.reverification_required");
+        (await IsSystemAdminAsync(user)).ShouldBeFalse();
+        (await _audit.PlatformLogAsync(id)).ShouldBeNull();
+        (await database.ScalarAsync<long>($"SELECT count(*) FROM api.idempotency_keys WHERE key = '{key}'")).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task GrantSystemAdmin_ASecondFactorJustInsideTheWindow_Grants()
+    {
+        var user = await _testData.AddUserAsync();
+
+        var response = await GrantAsync(ClientWithSecondFactorAge(await _testData.AddSystemAdminAsync(), 9), await _testData.UserIdOfAsync(user));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await IsSystemAdminAsync(user)).ShouldBeTrue();
+    }
+
+    // The window is a setting: with five minutes, a factor of four minutes passes and one of five does not.
+    [Theory]
+    [InlineData(4, HttpStatusCode.Created)]
+    [InlineData(5, HttpStatusCode.Forbidden)]
+    public async Task GrantSystemAdmin_AShorterWindow_AsksForReverificationFromItsEnd(int minutes, HttpStatusCode expected)
+    {
+        await using var api = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            settings: new Dictionary<string, string?> { ["ControlPlane:SystemAdmins:ReverificationWindow"] = "00:05:00" });
+        var user = await _testData.AddUserAsync();
+        var client = api.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", TestTokens.WithSecondFactorAge(await _testData.AddSystemAdminAsync(), minutes));
+
+        var response = await GrantAsync(client, await _testData.UserIdOfAsync(user));
+
+        response.StatusCode.ShouldBe(expected);
+    }
+
+    // The refusal is not replayed (I5, I6): it comes before the key is claimed, so the client's retry with the same key after the person
+    // verified again runs the grant and answers 201, and the grant is recorded once.
+    [Fact]
+    public async Task GrantSystemAdmin_RefusedForAnOldSecondFactorThenTheSameKeyWithAFreshOne_Grants()
+    {
+        var user = await _testData.AddUserAsync();
+        var id = await _testData.UserIdOfAsync(user);
+        var admin = await _testData.AddSystemAdminAsync();
+        var key = Guid.NewGuid().ToString();
+
+        var refused = await GrantAsync(ClientWithSecondFactorAge(admin, 30), id, key);
+        var granted = await _api.WaitingForMessagesAsync(() => GrantAsync(ClientWithSecondFactorAge(admin, 0), id, key));
+
+        refused.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        granted.StatusCode.ShouldBe(HttpStatusCode.Created);
+        granted.Headers.Contains("Idempotent-Replayed").ShouldBeFalse();
+        (await IsSystemAdminAsync(user)).ShouldBeTrue();
+        (await _audit.PlatformLogAsync(id)).ShouldBe($"system_admin.granted|User|{await _testData.UserIdOfAsync(admin)}|User|{id}|-");
+    }
+
     // A grant with an idempotency key (I1): the given one, or a new one.
     private static Task<HttpResponseMessage> GrantAsync(HttpClient client, Guid userId, string? key = null)
     {
@@ -170,6 +244,13 @@ public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+    private HttpClient ClientWithSecondFactorAge(string userId, int minutes)
+    {
+        var client = _api.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", TestTokens.WithSecondFactorAge(userId, minutes));
+        return client;
+    }
 
     private async Task<bool> IsSystemAdminAsync(string externalId) =>
         await database.ScalarAsync<bool>(

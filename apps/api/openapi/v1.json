@@ -1542,6 +1542,13 @@
             "schema": {
               "$ref": "#/components/schemas/UserResponseStatus"
             }
+          },
+          {
+            "name": "isSystemAdmin",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5405,6 +5412,9 @@
             "$ref": "#/components/schemas/TenantOwnerMadeDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantPurgeWarnedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantRenamedDetailsResponse"
           },
           {
@@ -5422,6 +5432,7 @@
             "role.updated": "#/components/schemas/RoleUpdatedDetailsResponse",
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
             "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
+            "tenant.purge_warned": "#/components/schemas/TenantPurgeWarnedDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
           }
@@ -5757,6 +5768,7 @@
           "system_admin.cannot_revoke_self",
           "system_admin.exists",
           "system_admin.not_found",
+          "system_admin.reverification_required",
           "system_admin.root",
           "tenant.closed",
           "tenant.has_owner",
@@ -5829,6 +5841,7 @@
           "SystemAdminCannotRevokeSelf",
           "SystemAdminExists",
           "SystemAdminNotFound",
+          "SystemAdminReverificationRequired",
           "SystemAdminRoot",
           "TenantClosed",
           "TenantHasOwner",
@@ -6456,7 +6469,8 @@
           "status",
           "role",
           "permissions",
-          "createdAt"
+          "createdAt",
+          "maxCustomRoles"
         ],
         "type": "object",
         "properties": {
@@ -6485,9 +6499,13 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "maxCustomRoles": {
+            "type": "integer",
+            "format": "int32"
           }
         },
-        "description": "The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself."
+        "description": "The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the most custom roles the tenant may have, the limit CreateRole enforces,\nfor Settings › Roles: the list of roles holds nothing beside its page (K5)."
       },
       "MyTenantResponse": {
         "required": [
@@ -6795,7 +6813,9 @@
           "id",
           "name",
           "builtIn",
-          "permissions"
+          "permissions",
+          "memberCount",
+          "pendingInvitationCount"
         ],
         "type": "object",
         "properties": {
@@ -6814,9 +6834,17 @@
             "items": {
               "$ref": "#/components/schemas/Permission"
             }
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingInvitationCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
-        "description": "A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role's\npermissions, in ordinal order."
+        "description": "A role of the tenant as the role endpoints answer it: what RoleResponse holds, the names of the role's permissions, in\nordinal order, and how many members have the role and how many pending invitations give it, an expired one included. DeleteRole\nrefuses a role while either count is above zero (role.in_use)."
       },
       "RoleResponse": {
         "required": [
@@ -6901,6 +6929,7 @@
           "closedAt",
           "purgedAt",
           "reopenableUntil",
+          "purgeWarningAt",
           "memberCount",
           "ownerCount",
           "owners",
@@ -6948,6 +6977,13 @@
             ],
             "format": "date-time"
           },
+          "purgeWarningAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "memberCount": {
             "type": "integer",
             "format": "int32"
@@ -6973,7 +7009,7 @@
             ]
           }
         },
-        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first."
+        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise)."
       },
       "TenantListItemResponse": {
         "required": [
@@ -7142,6 +7178,28 @@
         },
         "description": "An Owner of a tenant: the user's id, names and address."
       },
+      "TenantPurgeWarnedDetailsResponse": {
+        "required": [
+          "purgesAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.purge_warned"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPurgeWarned"
+            ]
+          },
+          "purgesAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The details of `tenant.purge_warned`: the moment of the purge that the Owners were warned of."
+      },
       "TenantRenamedDetailsResponse": {
         "required": [
           "oldName",
@@ -7283,6 +7341,7 @@
           "status",
           "isSystemAdmin",
           "isRootSystemAdmin",
+          "systemAdminGrantedAt",
           "membershipCount",
           "createdAt",
           "suspendedAt",
@@ -7321,6 +7380,13 @@
           },
           "isRootSystemAdmin": {
             "type": "boolean"
+          },
+          "systemAdminGrantedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "membershipCount": {
             "type": "integer",
@@ -7445,6 +7511,7 @@
           "status",
           "isSystemAdmin",
           "isRootSystemAdmin",
+          "systemAdminGrantedAt",
           "membershipCount",
           "createdAt"
         ],
@@ -7481,6 +7548,13 @@
           "isRootSystemAdmin": {
             "type": "boolean"
           },
+          "systemAdminGrantedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "membershipCount": {
             "type": "integer",
             "format": "int32"
@@ -7490,7 +7564,7 @@
             "format": "date-time"
           }
         },
-        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user."
+        "description": "A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user."
       },
       "UserResponseStatus": {
         "enum": [

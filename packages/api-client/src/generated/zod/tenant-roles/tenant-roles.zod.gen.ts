@@ -64,8 +64,10 @@ export const ListRolesResponse = zod.object({
   TenantRolesDelete: 'tenant.roles.delete',
   TenantRolesRead: 'tenant.roles.read',
   TenantRolesUpdate: 'tenant.roles.update',
-}).describe('A name of the permission list. Every endpoint checks its own permission.'))
-}).describe('A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role\'s\npermissions, in ordinal order.')),
+}).describe('A name of the permission list. Every endpoint checks its own permission.')),
+  "memberCount": zod.int(),
+  "pendingInvitationCount": zod.int()
+}).describe('A role of the tenant as the role endpoints answer it: what RoleResponse holds, the names of the role\'s permissions, in\nordinal order, and how many members have the role and how many pending invitations give it, an expired one included. DeleteRole\nrefuses a role while either count is above zero (role.in_use).')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
@@ -163,8 +165,10 @@ export const CreateRoleResponse = zod.object({
   TenantRolesDelete: 'tenant.roles.delete',
   TenantRolesRead: 'tenant.roles.read',
   TenantRolesUpdate: 'tenant.roles.update',
-}).describe('A name of the permission list. Every endpoint checks its own permission.'))
-}).describe('A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role\'s\npermissions, in ordinal order.')
+}).describe('A name of the permission list. Every endpoint checks its own permission.')),
+  "memberCount": zod.int(),
+  "pendingInvitationCount": zod.int()
+}).describe('A role of the tenant as the role endpoints answer it: what RoleResponse holds, the names of the role\'s permissions, in\nordinal order, and how many members have the role and how many pending invitations give it, an expired one included. DeleteRole\nrefuses a role while either count is above zero (role.in_use).')
 
 export const UpdateRoleParams = zod.object({
   "roleId": zod.uuid(),
@@ -246,8 +250,10 @@ export const UpdateRoleResponse = zod.object({
   TenantRolesDelete: 'tenant.roles.delete',
   TenantRolesRead: 'tenant.roles.read',
   TenantRolesUpdate: 'tenant.roles.update',
-}).describe('A name of the permission list. Every endpoint checks its own permission.'))
-}).describe('A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role\'s\npermissions, in ordinal order.')
+}).describe('A name of the permission list. Every endpoint checks its own permission.')),
+  "memberCount": zod.int(),
+  "pendingInvitationCount": zod.int()
+}).describe('A role of the tenant as the role endpoints answer it: what RoleResponse holds, the names of the role\'s permissions, in\nordinal order, and how many members have the role and how many pending invitations give it, an expired one included. DeleteRole\nrefuses a role while either count is above zero (role.in_use).')
 
 export const DeleteRoleParams = zod.object({
   "roleId": zod.uuid(),

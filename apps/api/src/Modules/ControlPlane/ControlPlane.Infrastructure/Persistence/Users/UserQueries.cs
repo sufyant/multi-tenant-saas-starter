@@ -32,7 +32,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
         return new MeView(user.Id, user.Email, user.FirstName, user.LastName, await IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
     }
 
-    // The user, the system admin who suspended them, whether they are a system admin, and their memberships: the four queries, in the
+    // The user, the system admin who suspended them, when they were granted system admin, and their memberships: the four queries, in the
     // order of the read before the views.
     async Task<UserDetailView?> IUserQueries.FindUserDetailAsync(Guid userId, CancellationToken cancellationToken)
     {
@@ -42,9 +42,12 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
         }
 
         var suspendedBy = user.SuspendedBy is { } suspenderId ? await FindAsync(suspenderId, cancellationToken) : null;
-        var isSystemAdmin = await IsSystemAdminAsync(user.Id, cancellationToken);
+        var systemAdminGrantedAt = await controlPlane.SystemAdmins
+            .Where(admin => admin.UserId == user.Id)
+            .Select(admin => (DateTimeOffset?)admin.GrantedAt)
+            .SingleOrDefaultAsync(cancellationToken);
         return new UserDetailView(
-            UserView.Of(user, isSystemAdmin, systemAdmins),
+            UserView.Of(user, systemAdminGrantedAt, systemAdmins),
             user.SuspendedAt,
             suspendedBy is null ? null : UserNameView.Of(suspendedBy),
             await ListMembershipsAsync(user.Id, cancellationToken));
@@ -66,9 +69,14 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
     async Task<ListPage<UserView>> IUserQueries.ListUsersAsync(
         ListRequest<ListUsersSort> list,
         UserStatus? status,
+        bool? isSystemAdmin,
         CancellationToken cancellationToken)
     {
         var users = status is { } chosen ? controlPlane.Users.Where(User.InStatus(chosen)) : controlPlane.Users;
+        if (isSystemAdmin is { } admins)
+        {
+            users = users.Where(user => controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) == admins);
+        }
 
         if (list.Search is { } search)
         {
@@ -89,11 +97,15 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             .ThenBy(user => user.Id)
             .Skip(list.Paging.Skip)
             .Take(list.Paging.PageSize)
-            .Select(user => new { User = user, IsSystemAdmin = controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) })
+            .Select(user => new
+            {
+                User = user,
+                GrantedAt = controlPlane.SystemAdmins.Where(admin => admin.UserId == user.Id).Select(admin => (DateTimeOffset?)admin.GrantedAt).SingleOrDefault(),
+            })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.IsSystemAdmin, systemAdmins))], list.Paging, total);
+        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.GrantedAt, systemAdmins))], list.Paging, total);
     }
 
     private Task<User?> FindAsync(Guid userId, CancellationToken cancellationToken) =>

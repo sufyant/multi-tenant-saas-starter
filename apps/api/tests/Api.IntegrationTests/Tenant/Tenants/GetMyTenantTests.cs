@@ -45,7 +45,34 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
             .ShouldBe((tenant.Id, "Profile Ltd", tenant.Slug, "active"));
         RoleAnswers.Of(found).ShouldBe(RoleAnswers.BuiltIn(name));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(createdAt);
-        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt"], ignoreOrder: true);
+        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "maxCustomRoles"], ignoreOrder: true);
+    }
+
+    // Settings › Roles shows how many custom roles the tenant may have, beside the list of roles (step r12): the list contract holds
+    // nothing beside the page (K5). The limit is the setting ControlPlane:Roles:MaxCustomRolesPerTenant that CreateRole enforces.
+    [Fact]
+    public async Task GetMyTenant_AnyMember_AnswersTheMostCustomRolesTheTenantMayHave()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+
+        var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("maxCustomRoles").GetInt32().ShouldBe(20);
+    }
+
+    [Fact]
+    public async Task GetMyTenant_AnotherLimitOfCustomRoles_AnswersThatLimit()
+    {
+        await using var api = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            settings: new Dictionary<string, string?> { ["ControlPlane:Roles:MaxCustomRolesPerTenant"] = "3" });
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+
+        var found = await api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("maxCustomRoles").GetInt32().ShouldBe(3);
     }
 
     // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner holds the tenant pool, an Admin all of it but

@@ -36,6 +36,8 @@ public sealed class HostConfigurationTests(Database database)
     {
         { "ControlPlane:SystemAdmins:RootEmails:0", "not an email" },
         { "ControlPlane:SystemAdmins:RootEmails:0", "" },
+        { "ControlPlane:SystemAdmins:ReverificationWindow", "00:00:59" },
+        { "ControlPlane:SystemAdmins:ReverificationWindow", "00:10:01" },
         { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
         { "ControlPlane:Invitations:Lifetime", "23:59:59" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },

@@ -45,6 +45,7 @@ public static class UserEndpoints
         ResponseStatus.OfUser(user.Status),
         user.IsSystemAdmin,
         user.IsRootSystemAdmin,
+        user.SystemAdminGrantedAt,
         user.MembershipCount,
         user.CreatedAt);
 
@@ -64,6 +65,7 @@ public static class UserEndpoints
         ListSort<ListUsersSort>? sort,
         string? q,
         ListFilter<UserResponseStatus>? status,
+        bool? isSystemAdmin,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -80,7 +82,7 @@ public static class UserEndpoints
         }
 
         var users = await bus.InvokeAsync<Result<ListPage<UserView>>>(
-            new ListUsersQuery(list.Value, filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null),
+            new ListUsersQuery(list.Value, filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null, isSystemAdmin),
             cancellationToken);
         return users.Map(found => found.Map(ToResponse));
     }
@@ -153,6 +155,7 @@ public static class UserEndpoints
         ResponseStatus.OfUser(user.User.Status),
         user.User.IsSystemAdmin,
         user.User.IsRootSystemAdmin,
+        user.User.SystemAdminGrantedAt,
         user.User.MembershipCount,
         user.User.CreatedAt,
         user.SuspendedAt,

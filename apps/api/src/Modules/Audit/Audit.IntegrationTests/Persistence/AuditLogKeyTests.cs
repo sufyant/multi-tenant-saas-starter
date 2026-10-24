@@ -20,7 +20,7 @@ public sealed class AuditLogKeyTests(Database database)
     [Fact]
     public async Task RecordEntry_TheTenantsEventWithAMomentBetweenTwoMicrosecondsArrivesTwice_WritesOneEntry()
     {
-        var warned = new TenantPurgeWarnedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd");
+        var warned = new TenantPurgeWarnedEvent(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", OccurredAt.AddDays(7));
 
         await InTenant.RunAsync(database.Services, warned.TenantId, scope => RecordTenantPurgeWarnedAsync(scope, warned));
         await InTenant.RunAsync(database.Services, warned.TenantId, scope => RecordTenantPurgeWarnedAsync(scope, warned));

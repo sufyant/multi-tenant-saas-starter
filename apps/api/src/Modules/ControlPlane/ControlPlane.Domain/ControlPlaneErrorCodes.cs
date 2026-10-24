@@ -67,6 +67,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode SystemAdminNotFound = ErrorCode.Declare("system_admin.not_found");
 
+    public static readonly ErrorCode SystemAdminReverificationRequired = ErrorCode.Declare("system_admin.reverification_required");
+
     public static readonly ErrorCode SystemAdminRoot = ErrorCode.Declare("system_admin.root");
 
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");

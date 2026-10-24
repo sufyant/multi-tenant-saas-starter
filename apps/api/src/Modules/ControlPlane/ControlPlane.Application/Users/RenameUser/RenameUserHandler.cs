@@ -21,17 +21,17 @@ public static class RenameUserHandler
             return (Errors.UserNotFound, []);
         }
 
-        var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
+        var systemAdminGrantedAt = await users.FindSystemAdminGrantedAtAsync(user.Id, cancellationToken);
         var renamed = user.Rename(command.FirstName, command.LastName);
         if (!renamed.IsSuccess || renamed.Value == StateChange.Unchanged)
         {
-            return (renamed.Map(_ => UserView.Of(user, isSystemAdmin, systemAdmins)), []);
+            return (renamed.Map(_ => UserView.Of(user, systemAdminGrantedAt, systemAdmins)), []);
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (UserView.Of(user, isSystemAdmin, systemAdmins), [new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
+        return (UserView.Of(user, systemAdminGrantedAt, systemAdmins), [new UserRenamedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

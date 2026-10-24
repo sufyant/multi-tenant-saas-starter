@@ -34,6 +34,6 @@ public static class GrantSystemAdminHandler
             ?? throw new InvalidOperationException("A system actor is always a user.");
         users.AddSystemAdmin(granted.Value);
         await users.SaveChangesAsync(cancellationToken);
-        return (UserView.Of(user, isSystemAdmin: true, systemAdmins), [new SystemAdminGrantedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
+        return (UserView.Of(user, granted.Value.GrantedAt, systemAdmins), [new SystemAdminGrantedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

@@ -52,6 +52,9 @@ public static class ControlPlaneInfrastructure
             .BindConfiguration(SystemAdminOptions.Section)
             .Validate(settings => settings.RootEmails.Count > 0, $"{SystemAdminOptions.Section}:RootEmails must list the email address of at least one root system admin.")
             .Validate(settings => settings.RootEmails.All(IsEmailAddress), $"{SystemAdminOptions.Section}:RootEmails must list only email addresses.")
+            .Validate(
+                settings => settings.ReverificationWindow >= SystemAdminOptions.MinReverificationWindow && settings.ReverificationWindow <= SystemAdminOptions.MaxReverificationWindow,
+                $"{SystemAdminOptions.Section}:ReverificationWindow must be from {SystemAdminOptions.MinReverificationWindow} to {SystemAdminOptions.MaxReverificationWindow}.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<SystemAdminOptions>>().Value);
 

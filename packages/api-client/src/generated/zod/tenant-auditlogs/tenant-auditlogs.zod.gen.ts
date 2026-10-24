@@ -146,6 +146,11 @@ export const ListAuditEntriesResponse = zod.object({
 }).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).')
 }).describe('The details of `tenant.owner_made`: the member who became an Owner, and the role they had.'),zod.object({
   "operation": zod.enum({
+  TenantPurgeWarned: 'tenant.purge_warned',
+}),
+  "purgesAt": zod.iso.datetime({"offset":true})
+}).describe('The details of `tenant.purge_warned`: the moment of the purge that the Owners were warned of.'),zod.object({
+  "operation": zod.enum({
   TenantRenamed: 'tenant.renamed',
 }),
   "oldName": zod.string(),

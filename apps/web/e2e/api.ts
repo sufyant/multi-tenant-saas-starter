@@ -52,7 +52,14 @@ const builtIn = (
   id: string,
   name: BuiltInRole,
   permissions: Permission[],
-): RoleDetailResponse => ({ id, name, builtIn: true, permissions });
+): RoleDetailResponse => ({
+  id,
+  name,
+  builtIn: true,
+  permissions,
+  memberCount: 0,
+  pendingInvitationCount: 0,
+});
 
 /** Northwind's roles, as ListRoles answers them. A request gives a role by its id. */
 export const roles: Record<BuiltInRole, RoleDetailResponse> = {
@@ -77,7 +84,14 @@ const custom = (
   id: string,
   name: string,
   permissions: Permission[],
-): RoleDetailResponse => ({ id, name, builtIn: false, permissions });
+): RoleDetailResponse => ({
+  id,
+  name,
+  builtIn: false,
+  permissions,
+  memberCount: 0,
+  pendingInvitationCount: 0,
+});
 
 /** Northwind's custom roles of the boards. An Admin lacks `tenant.roles.update`, so cannot give Billing lead (F51). */
 export const customRoles: RoleDetailResponse[] = [

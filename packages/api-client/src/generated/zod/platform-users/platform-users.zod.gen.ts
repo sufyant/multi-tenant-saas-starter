@@ -28,7 +28,8 @@ export const ListUsersQueryParams = zod.object({
   Active: 'active',
   Suspended: 'suspended',
   Deleted: 'deleted',
-}).optional()
+}).optional(),
+  "isSystemAdmin": zod.boolean().optional()
 })
 
 export const ListUsersResponse = zod.object({
@@ -44,9 +45,10 @@ export const ListUsersResponse = zod.object({
 }).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "isRootSystemAdmin": zod.boolean(),
+  "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user.')),
+}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
@@ -68,6 +70,7 @@ export const GetUserResponse = zod.object({
 }).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "isRootSystemAdmin": zod.boolean(),
+  "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "suspendedAt": zod.iso.datetime({"offset":true}).nullable(),
@@ -123,9 +126,10 @@ export const RenameUserResponse = zod.object({
 }).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "isRootSystemAdmin": zod.boolean(),
+  "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 
 export const DeleteUserParams = zod.object({
   "userId": zod.uuid()
@@ -149,9 +153,10 @@ export const SuspendUserResponse = zod.object({
 }).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "isRootSystemAdmin": zod.boolean(),
+  "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 
 export const ReactivateUserParams = zod.object({
   "userId": zod.uuid()
@@ -169,7 +174,8 @@ export const ReactivateUserResponse = zod.object({
 }).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.'),
   "isSystemAdmin": zod.boolean(),
   "isRootSystemAdmin": zod.boolean(),
+  "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, how many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 

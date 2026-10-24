@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using ControlPlane.Application.Tenants.StartTenantPurge;
 using ControlPlane.Application.Tenants.WarnTenantPurge;
 using Microsoft.Extensions.DependencyInjection;
@@ -163,6 +165,40 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 
         _api.Email.Sent.Count(email => email.To == "ada@acme.test").ShouldBe(1);
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
+        (await PlatformEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
+    }
+
+    // The platform's Activity of the tenant shows the warning too (step r12): Audit writes it in both logs from one event, by the platform,
+    // with the tenant as the target, so the platform's log filtered by the tenant finds it. Both entries name the moment of the deletion.
+    [Fact]
+    public async Task WarnTenantPurge_AClosedTenantAtItsClosure_RecordsItInBothLogsWithTheMomentOfThePurge()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+
+        await WarnAsync(tenant.Id, ClosedAt);
+
+        (await PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.closed|User, tenant.purge_warned|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT details::text FROM audit.platform_entries WHERE target_id = '{tenant.Id}' AND operation = 'tenant.purge_warned'", _databaseName))
+            .ShouldBe("""{"purgesAt": "2026-10-01T09:00:00+00:00"}""");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT details::text FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.purge_warned'", _databaseName))
+            .ShouldBe("""{"purgesAt": "2026-10-01T09:00:00+00:00"}""");
+    }
+
+    // GetTenant's purgeWarningAt is computed, not stored: the same moment the warning's entries carry (R18), from the same settings.
+    [Fact]
+    public async Task WarnTenantPurge_AClosedTenant_IsRecordedAtThePurgeWarningAtOfGetTenant()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Acme Ltd");
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        await WarnAsync(tenant.Id, ClosedAt);
+        var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("purgeWarningAt").GetDateTimeOffset().UtcDateTime.ShouldBe(
+            await database.ScalarAsSuperuserAsync<DateTime>(
+                $"SELECT occurred_at FROM audit.platform_entries WHERE target_id = '{tenant.Id}' AND operation = 'tenant.purge_warned'", _databaseName));
     }
 
     // R18: the audit logs are keyed by the moment and the id, so every copy of a warning carries the same moment: the moment the closure
@@ -179,6 +215,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<string>(
             $"SELECT string_agg(to_char(occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS.US'), ', ') FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.purge_warned'",
             _databaseName)).ShouldBe("2026-09-24 09:00:00.000000");
+        (await PlatformEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
     }
 
     // A reopening cancels no scheduled message: the warning of a reopened tenant, or of an earlier closure, does nothing (K4).

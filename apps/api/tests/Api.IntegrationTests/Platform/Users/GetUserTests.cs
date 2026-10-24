@@ -52,7 +52,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
+            ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
             ignoreOrder: true);
         (found.GetProperty("id").GetGuid(), found.GetProperty("email").GetString(), found.GetProperty("firstName").GetString(), found.GetProperty("lastName").GetString())
             .ShouldBe((id, email, "Ada", "Lovelace"));
@@ -154,10 +154,12 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     {
         var admin = await _testData.AddSystemAdminAsync();
         var id = await _testData.UserIdOfAsync(admin);
+        var granted = await database.ScalarAsync<DateTime>($"SELECT granted_at FROM control_plane.system_admins WHERE user_id = '{id}'");
 
         var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
         found.GetProperty("isSystemAdmin").GetBoolean().ShouldBeTrue();
+        found.GetProperty("systemAdminGrantedAt").GetDateTimeOffset().UtcDateTime.ShouldBe(granted);
     }
 
     [Fact]

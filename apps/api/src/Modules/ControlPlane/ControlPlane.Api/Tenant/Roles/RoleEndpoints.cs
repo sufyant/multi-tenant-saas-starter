@@ -88,5 +88,5 @@ public static class RoleEndpoints
     private static async Task<Result> DeleteRole(Guid roleId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         await bus.InvokeAsync<Result>(new DeleteRoleCommand(user.Id(), roleId), cancellationToken);
 
-    private static RoleDetailResponse ToResponse(RoleDetailView role) => new(role.Id, role.Name, role.BuiltIn, role.Permissions);
+    private static RoleDetailResponse ToResponse(RoleDetailView role) => new(role.Id, role.Name, role.BuiltIn, role.Permissions, role.MemberCount, role.PendingInvitationCount);
 }

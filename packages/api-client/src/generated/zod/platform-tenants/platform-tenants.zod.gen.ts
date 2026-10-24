@@ -139,6 +139,7 @@ export const GetTenantResponse = zod.object({
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "purgedAt": zod.iso.datetime({"offset":true}).nullable(),
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
+  "purgeWarningAt": zod.iso.datetime({"offset":true}).nullable(),
   "memberCount": zod.int(),
   "ownerCount": zod.int(),
   "owners": zod.array(zod.object({
@@ -162,7 +163,7 @@ export const GetTenantResponse = zod.object({
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.')
 }).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back.')])
-}).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first.')
+}).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise).')
 
 export const RenameTenantParams = zod.object({
   "tenantId": zod.uuid()

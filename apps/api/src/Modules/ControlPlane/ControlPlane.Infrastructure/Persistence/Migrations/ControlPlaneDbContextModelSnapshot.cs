@@ -414,7 +414,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_status", "owner_invitation_status IN ('Pending', 'Accepted', 'Cancelled')");
 
-                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_together", "(owner_invitation_status IS NULL) = (owner_invitation_expires_at IS NULL) AND (owner_invitation_status IS NOT NULL OR (owner_invitation_email IS NULL AND owner_invitation_language IS NULL))");
+                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_together", "(owner_invitation_status IS NULL) = (owner_invitation_expires_at IS NULL) AND (owner_invitation_status IS NULL) = (owner_invitation_language IS NULL) AND (owner_invitation_status IS NOT NULL OR owner_invitation_email IS NULL)");
 
                             t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_without_owner", "owner_count = 0 OR owner_invitation_status IS NULL");
 

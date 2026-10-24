@@ -1,6 +1,7 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Roles;
+using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
 using Wolverine;
@@ -40,7 +41,7 @@ public static class CreateRoleHandler
         var role = created.Value;
         await tenants.AddRoleAsync(role, cancellationToken);
 
-        var view = RoleDetailView.Of(role);
+        var view = RoleDetailView.Of(role, RoleUse.None);
         return (view, [new RoleCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, role.Id, actor.Id, role.Name, view.Permissions)]);
     }
 }

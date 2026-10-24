@@ -26,7 +26,16 @@ internal sealed class Role : ITenantEntity
 
     private static readonly Error RolesReadRequired = Error.Validation(
         ControlPlaneErrorCodes.RoleRolesReadRequired,
-        "A role that invites people or changes a member's role holds tenant.roles.read, because it reads the roles it gives.");
+        "A role that acts on a member's or an invitation's role holds tenant.roles.read, because it reads the target's role.");
+
+    // The permissions that act on a member's or an invitation's role, so the escalation rule reads the target's role.
+    private static readonly string[] ActOnARole =
+    [
+        PermissionPools.TenantInvitationsCreate,
+        PermissionPools.TenantMembersUpdate,
+        PermissionPools.TenantMembersDelete,
+        PermissionPools.TenantInvitationsDelete,
+    ];
 
     private readonly List<RolePermission> _grants = [];
 
@@ -101,9 +110,11 @@ internal sealed class Role : ITenantEntity
 
     /// <summary>
     /// The permissions a custom role needs with the others it holds (the maintainer's decision on finding 7 in step r4b): every role
-    /// reads its tenant, so it holds <c>tenant.profile.read</c>, and a role that gives a role (<c>tenant.invitations.create</c>,
-    /// <c>tenant.members.update</c>) reads the roles it gives, so it holds <c>tenant.roles.read</c>. Every built-in role keeps the same
-    /// rule. Source: GitHub, "Custom repository roles" (every custom role starts from a base role).
+    /// reads its tenant, so it holds <c>tenant.profile.read</c>, and a role that acts on a member's or an invitation's role
+    /// (<c>tenant.invitations.create</c>, <c>tenant.members.update</c>, <c>tenant.members.delete</c>, <c>tenant.invitations.delete</c>;
+    /// step r12 added the last two) reads the roles, because the escalation rule makes the screen read the target's role, so it holds
+    /// <c>tenant.roles.read</c>. Every built-in role keeps the same rule. It runs on create and update only, so an existing role keeps
+    /// its permissions. Source: GitHub, "Custom repository roles" (every custom role starts from a base role).
     /// </summary>
     public static Result CheckRequiredPermissions(IReadOnlyCollection<string> permissions)
     {
@@ -112,8 +123,8 @@ internal sealed class Role : ITenantEntity
             return ProfileReadRequired;
         }
 
-        var givesARole = permissions.Contains(PermissionPools.TenantInvitationsCreate) || permissions.Contains(PermissionPools.TenantMembersUpdate);
-        return givesARole && !permissions.Contains(PermissionPools.TenantRolesRead) ? RolesReadRequired : Result.Success();
+        var actsOnARole = ActOnARole.Any(permissions.Contains);
+        return actsOnARole && !permissions.Contains(PermissionPools.TenantRolesRead) ? RolesReadRequired : Result.Success();
     }
 
     /// <summary>Whether the role holds the permission. A rule asks this, never which role it is (A1).</summary>

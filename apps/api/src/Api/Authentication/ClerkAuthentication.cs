@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -12,8 +13,8 @@ namespace Api.Authentication;
 // a token without one is refused (API2).
 internal static class ClerkAuthentication
 {
-    // Set only by the host, when the token's fva shows a second factor verified in the session.
-    public const string SecondFactorClaim = "second_factor_verified";
+    // Set only by the host, when the token's fva shows a second factor verified in the session: the minutes since it was verified.
+    public const string SecondFactorAgeClaim = "second_factor_age";
 
     public static WebApplicationBuilder AddClerkAuthentication(this WebApplicationBuilder builder)
     {
@@ -51,8 +52,15 @@ internal static class ClerkAuthentication
         return builder;
     }
 
-    /// <summary>Whether the session verified a second factor: a neutral fact the host hands on, not a rule (A6).</summary>
-    public static bool HasVerifiedSecondFactor(this ClaimsPrincipal user) => user.HasClaim(claim => claim.Type == SecondFactorClaim);
+    /// <summary>
+    /// How long ago the session verified a second factor, in whole minutes as fva gives it, or null when it verified none: a neutral fact
+    /// the host hands on, not a rule (A6).
+    /// </summary>
+    public static TimeSpan? SecondFactorAge(this ClaimsPrincipal user) =>
+        user.FindFirstValue(SecondFactorAgeClaim) is { } minutes ? TimeSpan.FromMinutes(int.Parse(minutes, CultureInfo.InvariantCulture)) : null;
+
+    /// <summary>Whether the session verified a second factor at all.</summary>
+    public static bool HasVerifiedSecondFactor(this ClaimsPrincipal user) => user.SecondFactorAge() is not null;
 
     private static Task CheckClerkClaimsAsync(TokenValidatedContext context)
     {
@@ -73,7 +81,7 @@ internal static class ClerkAuthentication
         // the reading of fva below may set it.
         foreach (var identity in context.Principal?.Identities ?? [])
         {
-            foreach (var claimed in identity.FindAll(SecondFactorClaim).ToList())
+            foreach (var claimed in identity.FindAll(SecondFactorAgeClaim).ToList())
             {
                 identity.RemoveClaim(claimed);
             }
@@ -89,9 +97,9 @@ internal static class ClerkAuthentication
         }
 
         // fva holds the minutes since the first and the second factor were verified; -1 means never.
-        if (token.TryGetPayloadValue<int[]>("fva", out var verificationAge) && verificationAge is [_, >= 0])
+        if (token.TryGetPayloadValue<int[]>("fva", out var verificationAge) && verificationAge is [_, >= 0 and var minutes])
         {
-            context.Principal?.Identities.First().AddClaim(new(SecondFactorClaim, "true"));
+            context.Principal?.Identities.First().AddClaim(new(SecondFactorAgeClaim, minutes.ToString(CultureInfo.InvariantCulture)));
         }
 
         return Task.CompletedTask;

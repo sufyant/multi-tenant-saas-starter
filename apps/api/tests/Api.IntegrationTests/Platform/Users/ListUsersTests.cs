@@ -59,7 +59,9 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             (Guid.Parse($"f{random[1..]}"), null, null, null, "deleted", false),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "membershipCount", "createdAt"], ignoreOrder: true);
+            .ShouldBe(
+                ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt"],
+                ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(5);
@@ -143,6 +145,52 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(count);
     }
 
+    // The system admins page (decision of 2026-10-24): the filter takes the value of the field isSystemAdmin. The admin who asks is one.
+    [Theory]
+    [InlineData("true", 2)]
+    [InlineData("false", 1)]
+    public async Task ListUsers_AnIsSystemAdminFilter_ReturnsTheUsersWithThatValueOnly(string value, int count)
+    {
+        await UseADatabaseOfItsOwnAsync();
+        await _testData.AddUserAsync(email: "user@example.com");
+        await _testData.AddSystemAdminAsync(email: "admin@example.com");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?isSystemAdmin={value}", Cancellation);
+
+        Users(page).Select(user => user.IsSystemAdmin).ShouldAllBe(isSystemAdmin => isSystemAdmin == bool.Parse(value));
+        page.GetProperty("total").GetInt32().ShouldBe(count);
+    }
+
+    // A system admin's grant keeps when it was granted, and the list answers it; a user who is no system admin has none.
+    [Fact]
+    public async Task ListUsers_ASystemAdminAndAUser_AnswersWhenTheSystemAdminWasGranted()
+    {
+        var admin = await _testData.AddSystemAdminAsync(email: $"a{_marker}@example.com");
+        await _testData.AddUserAsync(email: $"b{_marker}@example.com");
+        var granted = await database.ScalarAsync<DateTime>(
+            $"SELECT granted_at FROM control_plane.system_admins WHERE user_id = '{await _testData.UserIdOfAsync(admin)}'");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}", Cancellation);
+
+        var items = page.GetProperty("items").EnumerateArray().ToList();
+        items[0].GetProperty("systemAdminGrantedAt").GetDateTimeOffset().UtcDateTime.ShouldBe(granted);
+        items[1].GetProperty("systemAdminGrantedAt").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    // A root system admin who has never entered the platform has no grant yet, so the system admins page does not list them.
+    [Fact]
+    public async Task ListUsers_ARootWhoNeverEnteredThePlatform_IsNoSystemAdminInTheFilter()
+    {
+        var root = RootEmail();
+        await _testData.AddUserAsync(email: root.ToLowerInvariant());
+        await using var api = WithRoots(root);
+
+        var page = await api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
+            .GetFromJsonAsync<JsonElement>($"/v1/platform/users?isSystemAdmin=true&q={Uri.EscapeDataString(root.ToLowerInvariant())}", Cancellation);
+
+        page.GetProperty("total").GetInt32().ShouldBe(0);
+    }
+
     // A user without a last name comes last in both directions, as a user without an email address does.
     [Theory]
     [InlineData("email", "al, bea, cy")]
@@ -198,6 +246,8 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     [InlineData("sort=firstName", "paging.sort_invalid")]
     [InlineData("status=Active", "paging.filter_invalid")]
     [InlineData("status=banned", "paging.filter_invalid")]
+    [InlineData("isSystemAdmin=yes", "request.invalid")]
+    [InlineData("isSystemAdmin=", "request.invalid")]
     [InlineData("q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "paging.q_invalid")]
     public async Task ListUsers_AnUnknownSortOrFilterValueOrALongSearch_IsRejected(string query, string code)
     {

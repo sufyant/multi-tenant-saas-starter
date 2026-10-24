@@ -58,6 +58,7 @@ export const GetMyTenantResponse = zod.object({
   TenantRolesRead: 'tenant.roles.read',
   TenantRolesUpdate: 'tenant.roles.update',
 }).describe('A name of the permission list. Every endpoint checks its own permission.')),
-  "createdAt": zod.iso.datetime({"offset":true})
-}).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself.')
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "maxCustomRoles": zod.int()
+}).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the most custom roles the tenant may have, the limit CreateRole enforces,\nfor Settings › Roles: the list of roles holds nothing beside its page (K5).')
 

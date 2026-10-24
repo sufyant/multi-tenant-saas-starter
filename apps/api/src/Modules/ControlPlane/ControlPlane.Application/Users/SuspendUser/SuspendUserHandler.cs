@@ -32,10 +32,10 @@ public static class SuspendUserHandler
         var now = time.GetUtcNow();
         if (user.Suspend(now, actor) == StateChange.Unchanged)
         {
-            return (UserView.Of(user, isSystemAdmin: false, systemAdmins), []);
+            return (UserView.Of(user, systemAdminGrantedAt: null, systemAdmins), []);
         }
 
         await users.SaveChangesAsync(cancellationToken);
-        return (UserView.Of(user, isSystemAdmin: false, systemAdmins), [new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
+        return (UserView.Of(user, systemAdminGrantedAt: null, systemAdmins), [new UserSuspendedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

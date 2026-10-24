@@ -34,6 +34,10 @@ internal static class TestTokens
             options.Configuration.SigningKeys.Add(Key);
         });
 
+    // A token whose second factor was verified these minutes ago; -1 means never (fva).
+    public static string WithSecondFactorAge(string userId, int minutes) =>
+        For(userId, extraClaims: new Dictionary<string, object> { ["fva"] = new[] { 0, minutes } });
+
     // fva holds the minutes since the first and the second factor were verified; -1 means no second factor.
     public static string For(
         string userId,

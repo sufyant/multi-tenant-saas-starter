@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using ControlPlane.Contracts.Tenants;
+using ControlPlane.Domain.Tenants;
 using Wolverine;
 
 namespace ControlPlane.Application.Tenants.WarnTenantPurge;
@@ -29,7 +30,12 @@ public static class WarnTenantPurgeHandler
         var owners = await tenants.FindOwnerAddressesAsync(cancellationToken);
         return
         [
-            new TenantPurgeWarnedEvent(WarningId(tenant.Id, warn.ClosedAt), purgesAt - settings.PurgeWarningLead, tenant.Id, tenant.Name),
+            new TenantPurgeWarnedEvent(
+                WarningId(tenant.Id, warn.ClosedAt),
+                Tenant.PurgeWarningMomentOf(warn.ClosedAt, settings.ReopenPeriod, settings.PurgeWarningLead),
+                tenant.Id,
+                tenant.Name,
+                purgesAt),
             .. owners.Select(owner =>
                 new TenantPurgeWarningReadyEvent(
                     Guid.CreateVersion7(now), now, tenant.Id, owner.UserId, owner.Email, tenant.Name, owner.Language, purgesAt, owner.TimeZone)),

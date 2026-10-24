@@ -32,6 +32,8 @@ public sealed class TenantTests
 
     private const string InvitationsDelete = PermissionPools.TenantInvitationsDelete;
 
+    private const string RolesRead = PermissionPools.TenantRolesRead;
+
     private const string AuditRead = PermissionPools.TenantAuditRead;
 
     private static readonly Guid Id = new("0199a8f0-0000-7000-8000-000000000001");
@@ -628,6 +630,28 @@ public sealed class TenantTests
         var tenant = InStatus(status);
 
         tenant.ReopenableUntil(ReopenPeriod).ShouldBeNull();
+    }
+
+    // The warning comes at the closure plus the reopen period, less the warning's lead, for a closed tenant and for one whose purge began.
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    public void ReadPurgeWarningAt_AClosedOrAPurgingTenant_IsItsClosurePlusThePeriodLessTheLead(string status)
+    {
+        var tenant = InStatus(status);
+
+        tenant.PurgeWarningAt(ReopenPeriod, TimeSpan.FromDays(7)).ShouldBe(Now + TimeSpan.FromDays(23));
+    }
+
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    [InlineData("Purged")]
+    public void ReadPurgeWarningAt_ATenantThatIsNeitherClosedNorPurging_IsNone(string status)
+    {
+        var tenant = InStatus(status);
+
+        tenant.PurgeWarningAt(ReopenPeriod, TimeSpan.FromDays(7)).ShouldBeNull();
     }
 
     [Fact]
@@ -1579,8 +1603,8 @@ public sealed class TenantTests
         updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
     }
 
-    // Finding 7 of step r4b: every custom role reads its tenant, and a role that gives a role reads the roles. The rule comes before the
-    // escalation rule, so even an Owner gets it.
+    // Finding 7 of step r4b and step r12: every custom role reads its tenant, and a role that acts on a role reads the roles. The rule
+    // comes before the escalation rule, so even an Owner gets it.
     [Fact]
     public void CreateRole_NoProfileRead_IsInvalid()
     {
@@ -1593,12 +1617,26 @@ public sealed class TenantTests
     [Theory]
     [InlineData(InvitationsCreate)]
     [InlineData(MembersUpdate)]
-    public void CreateRole_APermissionThatGivesARoleWithoutRolesRead_IsInvalid(string gives)
+    [InlineData(MembersDelete)]
+    [InlineData(InvitationsDelete)]
+    public void CreateRole_APermissionThatActsOnARoleWithoutRolesRead_IsInvalid(string actsOnARole)
     {
-        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Recruiter", ProfileRead, MembersRead, gives), RoleFacts(), RoleLimit);
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Recruiter", ProfileRead, MembersRead, actsOnARole), RoleFacts(), RoleLimit);
 
         created.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleRolesReadRequired);
         created.Error.Type.ShouldBe(ErrorType.Validation);
+    }
+
+    [Theory]
+    [InlineData(InvitationsCreate)]
+    [InlineData(MembersUpdate)]
+    [InlineData(MembersDelete)]
+    [InlineData(InvitationsDelete)]
+    public void CreateRole_APermissionThatActsOnARoleWithRolesRead_CreatesIt(string actsOnARole)
+    {
+        var created = Active().CreateRole(RoleOf("Owner"), NewRole("Recruiter", ProfileRead, MembersRead, RolesRead, actsOnARole), RoleFacts(), RoleLimit);
+
+        created.Value.Permissions.ShouldBe([ProfileRead, MembersRead, RolesRead, actsOnARole], ignoreOrder: true);
     }
 
     [Fact]
@@ -1612,15 +1650,34 @@ public sealed class TenantTests
         role.Permissions.ShouldBe([ProfileRead, MembersRead], ignoreOrder: true);
     }
 
-    [Fact]
-    public void UpdateRole_APermissionThatGivesARoleWithoutRolesRead_IsInvalidAndChangesNothing()
+    [Theory]
+    [InlineData(InvitationsCreate)]
+    [InlineData(MembersUpdate)]
+    [InlineData(MembersDelete)]
+    [InlineData(InvitationsDelete)]
+    public void UpdateRole_APermissionThatActsOnARoleWithoutRolesRead_IsInvalidAndChangesNothing(string actsOnARole)
     {
         var role = Custom("Billing", ProfileRead, MembersRead);
 
-        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [ProfileRead, MembersRead, MembersUpdate], RoleFacts(role));
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [ProfileRead, MembersRead, actsOnARole], RoleFacts(role));
 
         updated.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleRolesReadRequired);
         role.Permissions.ShouldBe([ProfileRead, MembersRead], ignoreOrder: true);
+    }
+
+    [Theory]
+    [InlineData(InvitationsCreate)]
+    [InlineData(MembersUpdate)]
+    [InlineData(MembersDelete)]
+    [InlineData(InvitationsDelete)]
+    public void UpdateRole_APermissionThatActsOnARoleWithRolesRead_ChangesIt(string actsOnARole)
+    {
+        var role = Custom("Billing", ProfileRead, MembersRead);
+
+        var updated = Active().UpdateRole(RoleOf("Owner"), "Billing", [ProfileRead, MembersRead, RolesRead, actsOnARole], RoleFacts(role));
+
+        updated.IsSuccess.ShouldBeTrue();
+        role.Permissions.ShouldBe([ProfileRead, MembersRead, RolesRead, actsOnARole], ignoreOrder: true);
     }
 
     [Fact]
@@ -1884,7 +1941,7 @@ public sealed class TenantTests
     private static NewRole NewRole(string name, params string[] permissions) => new(Guid.NewGuid(), name, permissions);
 
     private static RoleFacts RoleFacts(Role? target = null, int customRoles = 0, bool nameTaken = false, bool inUse = false) =>
-        new(target, customRoles, nameTaken, inUse);
+        new(target, customRoles, nameTaken, inUse ? new RoleUse(1, 0) : RoleUse.None);
 
     private static Membership Membership(Role role) => new(Id, Guid.NewGuid(), role.Id, DateTimeOffset.UnixEpoch);
 }

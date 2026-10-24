@@ -18,16 +18,21 @@ public interface ITenantQueries
     internal Task<TenantView?> FindTenantAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// The active tenant for the platform, with its summary (R12), until when it can be reopened, and its Owners in the order they
-    /// joined, then by user id; null when no tenant has the active tenant's id.
+    /// The active tenant for the platform, with its summary (R12), until when it can be reopened, when its Owners are warned of its purge,
+    /// and its Owners in the order they joined, then by user id; null when no tenant has the active tenant's id.
     /// </summary>
-    internal Task<TenantDetailView?> FindTenantDetailAsync(TimeSpan reopenPeriod, DateTimeOffset now, CancellationToken cancellationToken);
+    internal Task<TenantDetailView?> FindTenantDetailAsync(
+        TimeSpan reopenPeriod,
+        TimeSpan purgeWarningLead,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// The active tenant as the member with this identity provider id sees it, with their role and its permissions; null when no tenant
-    /// has the active tenant's id, the person is not a user, or they are no member of it (T3).
+    /// has the active tenant's id, the person is not a user, or they are no member of it (T3). It carries the most custom roles the tenant
+    /// may have, as given.
     /// </summary>
-    internal Task<MyTenantDetailView?> FindMyTenantAsync(string externalUserId, CancellationToken cancellationToken);
+    internal Task<MyTenantDetailView?> FindMyTenantAsync(string externalUserId, int maxCustomRoles, CancellationToken cancellationToken);
 
     /// <summary>
     /// A page of every tenant whose name or slug contains the search, in the status or every status, by the sort field, then id. It

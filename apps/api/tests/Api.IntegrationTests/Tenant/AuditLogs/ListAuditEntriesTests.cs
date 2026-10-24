@@ -240,6 +240,10 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         "tenant.suspended",
         """{"reason":"Unpaid invoices"}""",
         """{"operation":"tenant.suspended","reason":"Unpaid invoices"}""")]
+    [InlineData(
+        "tenant.purge_warned",
+        """{"purgesAt":"2026-10-01T09:00:00+00:00"}""",
+        """{"operation":"tenant.purge_warned","purgesAt":"2026-10-01T09:00:00+00:00"}""")]
     public async Task ListAuditEntries_AStoredShapeOfDetails_AnswersTheShapeOfItsOperation(string operation, string stored, string answered)
     {
         var tenant = await _testData.AddTenantAsync();
