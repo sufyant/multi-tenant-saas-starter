@@ -50,6 +50,7 @@ export function TenantShell({
     settings: "shell.settings",
     general: "settings.general",
     members: "shell.members",
+    roles: "settings.roles",
     activity: "settings.activity",
     preferences: "shell.preferences",
   } as const;

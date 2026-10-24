@@ -17,7 +17,7 @@ const links = async () =>
     .map((link) => [link.textContent, link.getAttribute("href")]);
 
 describe("SettingsNav", () => {
-  it("SettingsNav_Owner_ShowsGeneralMembersActivityAndPreferences", async () => {
+  it("SettingsNav_Owner_ShowsGeneralMembersRolesActivityAndPreferences", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<SettingsNav current="general" />);
@@ -25,6 +25,7 @@ describe("SettingsNav", () => {
     expect(await links()).toEqual([
       ["General", "/northwind/settings/general"],
       ["Members", "/northwind/settings/members"],
+      ["Roles", "/northwind/settings/roles"],
       ["Activity", "/northwind/settings/activity"],
       ["Preferences", "/northwind/settings/preferences"],
     ]);
@@ -40,7 +41,18 @@ describe("SettingsNav", () => {
     ).toHaveAttribute("aria-current", "page");
   });
 
-  it("SettingsNav_Member_LeavesOutActivity", async () => {
+  it("SettingsNav_Admin_ShowsRolesByItsReadPermission", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Admin));
+
+    renderInTenant(<SettingsNav current="roles" />);
+
+    expect(await screen.findByRole("link", { name: "Roles" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("SettingsNav_Member_LeavesOutRolesAndActivity", async () => {
     server.use(...tenantAnswers(BuiltInRole.Member));
 
     renderInTenant(<SettingsNav current="general" />);

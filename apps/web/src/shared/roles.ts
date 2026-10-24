@@ -32,6 +32,21 @@ export const inListOrder = <T extends Role>(roles: readonly T[]): T[] => {
   return [...roles].sort((a, b) => rank(a) - rank(b));
 };
 
+/**
+ * Whether another role of the tenant has this name, as the API counts it (409 `role.name_taken`): trimmed, without regard to
+ * case, the built-in names included. A name's uniqueness is a fact of names; it gives no role any access (F51).
+ */
+export const nameTaken = (
+  roles: readonly (Role & { id: string })[],
+  name: string,
+  exceptId?: string,
+) => {
+  const wanted = name.trim().toLowerCase();
+  return roles.some(
+    (role) => role.id !== exceptId && role.name.toLowerCase() === wanted,
+  );
+};
+
 /** The role the invite dialog starts with: the built-in Member, the role with the least access. */
 export const firstInviteRole = <T extends Role>(roles: readonly T[]) =>
   roles.find((role) => builtInRoleOf(role) === BuiltInRole.Member);
