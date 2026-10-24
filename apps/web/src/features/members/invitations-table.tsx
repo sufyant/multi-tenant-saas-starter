@@ -17,7 +17,6 @@ import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { isOwner } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
 import { useRoleName } from "@/shared/use-role-name";
@@ -30,6 +29,7 @@ import { nameOf } from "./person";
 import { afterRefusal, refreshInvitations } from "./refresh";
 import { RevokeInvitationDialog } from "./revoke-invitation-dialog";
 import { sortFrom, sortOf } from "./table-sort";
+import { useRoleReach } from "./use-role-reach";
 
 const sorts = {
   email: {
@@ -51,7 +51,8 @@ const tones: Record<InvitationStatus, StatusTone> = {
 /**
  * The Invitations tab's table (the Invitations board): Email, Role, Invited by, Expires, Status. An expired invitation stays and
  * can be cancelled (decision 3 of step 21c). "Invite again" is a new InviteMember with a new Idempotency-Key, which replaces the
- * pending one (K2, F48).
+ * pending one (K2, F48). "Invite again" needs `tenant.invitations.create`, revoking and cancelling `tenant.invitations.delete`,
+ * and each only for an invitation whose role the viewer's role fully holds (F51); a disabled item says why.
  */
 export function InvitationsTable({
   page,
@@ -71,11 +72,11 @@ export function InvitationsTable({
   const can = useCan();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const { tenant, detail } = useTenant();
+  const { tenant } = useTenant();
+  const reach = useRoleReach();
   const [revoking, setRevoking] = useState<InvitationResponse | null>(null);
   const now = new Date();
   const locale = t("locale.format");
-  const viewerIsOwner = isOwner(detail.role);
   const canInvite = can(Permission.TenantInvitationsCreate);
   const canRevoke = can(Permission.TenantInvitationsDelete);
 
@@ -153,12 +154,17 @@ export function InvitationsTable({
 
   const itemsFor = (invitation: InvitationResponse): RowMenuItem[] => {
     const expired = statusOf(invitation) === InvitationResponseState.Expired;
+    const inviteReason = reach(invitation.role.id, t("members.inviteOwner"));
+    const revokeReason = reach(
+      invitation.role.id,
+      t("members.revokeOwnerHint"),
+    );
     const items: RowMenuItem[] = [];
     if (canInvite)
       items.push({
         label: t("members.inviteAgain"),
-        disabled: isOwner(invitation.role) && !viewerIsOwner,
-        reason: t("members.inviteRoleHintAdmin"),
+        disabled: inviteReason !== null,
+        reason: inviteReason ?? undefined,
         onSelect: () =>
           inviteAgain.mutate(
             {
@@ -183,9 +189,8 @@ export function InvitationsTable({
       items.push({
         label: expired ? t("members.cancelInvitation") : t("members.revoke"),
         tone: "destructive",
-        // The API's escalation rule (step r4b): nobody revokes an invitation to a role stronger than their own.
-        disabled: isOwner(invitation.role) && !viewerIsOwner,
-        reason: t("members.revokeOwnerHint"),
+        disabled: revokeReason !== null,
+        reason: revokeReason ?? undefined,
         onSelect: () => setRevoking(invitation),
       });
     return items;

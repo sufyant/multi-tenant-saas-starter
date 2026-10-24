@@ -22,21 +22,21 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { problemOf } from "@/shared/problem";
-import { BuiltInRole, builtInRoleOf, isOwner } from "@/shared/roles";
+import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
+import { useCanActOn, useTenantRoles } from "@/shared/use-can-act-on";
 import { useFailureText } from "@/shared/use-failure-text";
-import { useRoleName } from "@/shared/use-role-name";
 import { daysLeft } from "./invitation-status";
 import { afterRefusal, refreshInvitations } from "./refresh";
-import { listRolesOptions, rolesFor } from "./role-choice";
+import { RoleChoice } from "./role-choice";
 import { useIntentKey } from "./use-intent-key";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
 
 /**
  * Invite a member (the Invitations board): Email, Role, Email language, with the generated schema of InviteMember (F11). The
- * roles are the tenant's (ListRoles), and Owner is in the list only for an Owner (K1). The role starts as Member, and the language
- * as the viewer's own (GetMe). One Idempotency-Key per intent (F48):
+ * role list holds every role of the tenant (ListRoles); a role the viewer's role does not fully hold is disabled, with its reason
+ * (F51). The role starts as Member, and the language as the viewer's own (GetMe). One Idempotency-Key per intent (F48):
  * a new key when the dialog opens and when the email, the role or the language changes; the same key for a retry.
  */
 export function InviteDialog({ onClose }: { onClose: () => void }) {
@@ -44,16 +44,13 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const locale = useLocale();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const { tenant, detail } = useTenant();
+  const { tenant } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
   const { key, renew } = useIntentKey();
-  const roleName = useRoleName();
-  const viewerIsOwner = isOwner(detail.role);
-  const tenantRoles = useQuery(listRolesOptions(tenant.id));
-  const roles = rolesFor(tenantRoles.data?.items ?? [], viewerIsOwner);
-  const memberRole = roles.find(
-    (role) => builtInRoleOf(role) === BuiltInRole.Member,
-  );
+  const canActOn = useCanActOn();
+  const tenantRoles = useTenantRoles();
+  const roles = tenantRoles.data?.items ?? [];
+  const memberRole = firstInviteRole(roles);
   const languages = Object.values(Language);
   const form = useForm<Invitation>({
     resolver: zodResolver(schemas.InviteMemberBody),
@@ -68,9 +65,9 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   });
   // The role list comes after the form opens: the role starts as Member once it is there.
   useEffect(() => {
-    if (memberRole && !form.getValues("roleId"))
+    if (memberRole && !form.getValues("roleId") && canActOn(memberRole.id))
       form.setValue("roleId", memberRole.id);
-  }, [form, memberRole]);
+  }, [form, memberRole, canActOn]);
   // Another email, role or language is another intent: it gets a new key.
   useEffect(
     () => form.subscribe({ formState: { values: true }, callback: renew }),
@@ -125,6 +122,16 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
       return {
         title: t("members.inviteOwner"),
         text: t("members.inviteOwnerText"),
+      };
+    if (code === ErrorCode.RoleEscalation)
+      return {
+        title: t("members.roleOutOfReach"),
+        text: t("members.roleOutOfReachText"),
+      };
+    if (code === ErrorCode.RoleNotFound)
+      return {
+        title: t("members.roleGone"),
+        text: t("members.roleGoneText"),
       };
     return { title: t("members.notSent"), text: failureText(invite.error) };
   })();
@@ -181,30 +188,18 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
           }
           {...form.register("email")}
           onKeyDown={(event) => {
-            // The Comboboxes are fields too, so the browser does not send the form on Enter; the email field does.
+            // The language Combobox is a field too, so the browser does not send the form on Enter; the email field does.
             if (event.key !== "Enter") return;
             event.preventDefault();
             void submit();
           }}
         />
-        <Combobox
+        <RoleChoice
           label={t("members.role")}
+          roles={roles}
           value={form.watch("roleId")}
-          options={roles.map((role) => ({
-            id: role.id,
-            label: roleName(role),
-          }))}
-          onValueChange={(id) => {
-            const role = roles.find((choice) => choice.id === id);
-            if (role) form.setValue("roleId", role.id);
-          }}
-          hint={
-            viewerIsOwner
-              ? t("members.inviteRoleHintOwner")
-              : t("members.inviteRoleHintAdmin")
-          }
-          searchPlaceholder={t("members.roleSearch")}
-          emptyLabel={t("members.roleEmpty")}
+          onChange={(roleId) => form.setValue("roleId", roleId)}
+          ownerReason={t("members.inviteOwner")}
         />
         <Combobox
           label={t("members.inviteLanguage")}

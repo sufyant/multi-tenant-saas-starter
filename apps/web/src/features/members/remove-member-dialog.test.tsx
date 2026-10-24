@@ -94,6 +94,12 @@ describe("RemoveMemberDialog", () => {
       "Couldn’t remove John Byrne",
       "You cannot remove yourself.",
     ],
+    [
+      403,
+      ErrorCode.RoleEscalation,
+      "This role has permissions your role doesn’t have.",
+      "Ask an Owner of Northwind Traders to do this.",
+    ],
   ])(
     "RemoveMember_Refused%s_%s_ShowsTheBoardsTextInTheDialog",
     async (status, code, title, text) => {

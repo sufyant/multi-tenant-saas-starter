@@ -202,9 +202,7 @@
     "inviteTitle": "Üye davet edin",
     "inviteText": "Katılmak için bir bağlantı içeren e-posta alır. Bu adrese bekleyen bir davet varsa yenisi onun yerini alır.",
     "inviteEmailPlaceholder": "ad@sirket.com",
-    "inviteRoleHintOwner": "Sahipler Sahip rolünü de verebilir.",
-    "inviteRoleHintAdmin": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
-    "revokeOwnerHint": "Bir Sahibin davetini yalnızca bir Sahip iptal edebilir.",
+    "revokeOwnerHint": "Bu daveti yalnızca bir Sahip geri çekebilir.",
     "inviteLanguage": "E-posta dili",
     "inviteLanguageHint": "Davet e-postası ve ilk ekranlar bu dilde olur. Kişi daha sonra değiştirebilir.",
     "languageSearch": "Dil ara",
@@ -218,7 +216,15 @@
     "dailyLimit": "Günlük sınıra ulaşıldı",
     "dailyLimitText": "{organisation} son 24 saatte izin verilen en fazla daveti gönderdi. Daha sonra yeniden deneyin.",
     "inviteOwner": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
-    "inviteOwnerText": "Yönetici veya Üye seçin ya da bu daveti bir Sahibin göndermesini isteyin."
+    "inviteOwnerText": "Yönetici veya Üye seçin ya da bu daveti bir Sahibin göndermesini isteyin.",
+    "permissionCount": "{count} izin",
+    "giveOwner": "Sahip rolünü yalnızca bir Sahip verebilir.",
+    "roleOutOfReach": "Bu rolde sizin rolünüzde olmayan izinler var.",
+    "roleOutOfReachText": "Başka bir rol seçin ya da bir Sahibe sorun.",
+    "roleOutOfReachAsk": "Bunu {organisation} kuruluşunun bir Sahibinden isteyin.",
+    "roleGone": "Bu rol artık yok.",
+    "roleGoneText": "Liste yenilendi.",
+    "filteredBy": "Rol: {role}"
   },
   "general": {
     "title": "Genel",

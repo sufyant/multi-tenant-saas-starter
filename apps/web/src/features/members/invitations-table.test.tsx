@@ -3,6 +3,7 @@ import {
   type InvitationResponse,
   InvitationResponseState,
   Language,
+  Permission,
 } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -20,7 +21,9 @@ import {
 import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
+  customRole,
   northwind,
+  permissionsOf,
   pickFromRowMenu,
   problem,
   renderInTenant,
@@ -164,6 +167,59 @@ describe("InvitationsTable", () => {
     const item = await screen.findByRole("menuitem", { name: /Invite again/ });
     expect(item).toHaveAttribute("aria-disabled", "true");
     expect(item).toHaveTextContent("Only an Owner can invite an Owner.");
+  });
+
+  it("Invitations_AdminOnAnOwnerInvitation_CannotRevokeAndSaysWhy", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Admin), listAnswer());
+
+    renderInTenant(<MembersPage />, { url });
+    await userEvent.click(
+      within((await rowOf("fatma@northwind.io")) as HTMLElement).getByRole(
+        "button",
+        { name: "Actions for fatma@northwind.io" },
+      ),
+    );
+
+    const item = await screen.findByRole("menuitem", {
+      name: /Revoke invitation/,
+    });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveTextContent("Only an Owner can revoke this invitation.");
+  });
+
+  it("Invitations_AdminOnACustomRoleItDoesNotFullyHold_DisablesBothWithTheEscalationText", async () => {
+    const roleEditor = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c3",
+      "Role editor",
+      [Permission.TenantProfileRead, Permission.TenantRolesUpdate],
+    );
+    const niall = invitation("inv-06", "niall@northwind.io", 3 * 24, {
+      role: roleEditor,
+    });
+    server.use(
+      ...tenantAnswers(BuiltInRole.Admin, permissionsOf.admin, [roleEditor]),
+      listAnswer([niall]),
+    );
+
+    renderInTenant(<MembersPage />, { url });
+    await userEvent.click(
+      within((await rowOf("niall@northwind.io")) as HTMLElement).getByRole(
+        "button",
+        { name: "Actions for niall@northwind.io" },
+      ),
+    );
+
+    const items = [
+      await screen.findByRole("menuitem", { name: /Invite again/ }),
+      screen.getByRole("menuitem", { name: /Revoke invitation/ }),
+    ];
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual([
+      "true",
+      "true",
+    ]);
+    expect(items[1]).toHaveTextContent(
+      "This role has permissions your role doesn’t have.",
+    );
   });
 
   it("Invitations_InviteAgain_SendsANewInvitationWithANewKeyEachTime", async () => {
@@ -312,6 +368,37 @@ describe("InvitationsTable", () => {
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
+  });
+
+  it("Invitations_RevokeRefusedEscalation_SaysWhyAndRefreshes", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      listAnswer(undefined, requests),
+      http.delete(`*/v1/tenants/${northwind.id}/invitations/${ali.id}`, () =>
+        problem(403, ErrorCode.RoleEscalation),
+      ),
+    );
+
+    renderInTenant(<MembersPage />, { url });
+    await pickFromRowMenu(
+      "Invitations",
+      "ali@northwind.io",
+      "Revoke invitation",
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Revoke invitation" }),
+    );
+
+    const banner = await within(dialog).findByRole("status");
+    expect(banner).toHaveTextContent(
+      "This role has permissions your role doesn’t have.",
+    );
+    expect(banner).toHaveTextContent(
+      "Ask an Owner of Northwind Traders to do this.",
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
   });
 
   it("Invitations_None_SaysSoAndOffersToInvite", async () => {

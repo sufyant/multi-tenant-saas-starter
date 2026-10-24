@@ -91,11 +91,16 @@ export function RevokeInvitationDialog({
         })
       }
     >
-      {revoke.error && (
-        <Banner tone="destructive" title={t("members.revokeFailed")}>
-          {failureText(revoke.error)}
-        </Banner>
-      )}
+      {revoke.error &&
+        (problemOf(revoke.error)?.code === ErrorCode.RoleEscalation ? (
+          <Banner tone="destructive" title={t("members.roleOutOfReach")}>
+            {t("members.roleOutOfReachAsk", { organisation: tenant.name })}
+          </Banner>
+        ) : (
+          <Banner tone="destructive" title={t("members.revokeFailed")}>
+            {failureText(revoke.error)}
+          </Banner>
+        ))}
     </Dialog>
   );
 }

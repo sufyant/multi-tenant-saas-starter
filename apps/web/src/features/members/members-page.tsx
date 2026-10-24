@@ -24,11 +24,11 @@ import { PermissionDenied } from "@/shared/permission-denied";
 import { inListOrder } from "@/shared/roles";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
 import { MembersTable } from "./members-table";
-import { listRolesOptions } from "./role-choice";
 import {
   searchDelay,
   sortValue,
@@ -55,7 +55,7 @@ export function MembersPage() {
   const readsMembers = can(Permission.TenantMembersRead);
   // The role filter's choices are the tenant's roles, for whom may read them.
   const readsRoles = can(Permission.TenantRolesRead);
-  const roles = useQuery(listRolesOptions(tenant.id, readsRoles));
+  const roles = useTenantRoles();
   // A person without the Invitations tab who opens ?tab=invitations sees the Members tab.
   const tab: Tab = seesInvitations ? params.tab : "members";
   const { q, roleId, page, sort } = params;
@@ -107,6 +107,8 @@ export function MembersPage() {
     );
 
   const filtered = Boolean(q || roleId);
+  // The empty state of a filtered list offers its own clear button.
+  const emptyFiltered = filtered && list.data?.items.length === 0;
   const clear = () => void setParams({ q: null, roleId: null, page: null });
   const timeZone = me.data?.timeZone;
 
@@ -243,7 +245,7 @@ export function MembersPage() {
                 { id: allRoles, label: t("members.allRoles") },
                 ...inListOrder(roles.data?.items ?? []).map((choice) => ({
                   id: choice.id,
-                  label: roleName(choice),
+                  label: t("members.filteredBy", { role: roleName(choice) }),
                 })),
               ]}
               onValueChange={(id) =>
@@ -257,6 +259,14 @@ export function MembersPage() {
               searchPlaceholder={t("members.roleSearch")}
               emptyLabel={t("members.roleEmpty")}
             />
+          )}
+          {roleId && !emptyFiltered && (
+            <Button
+              variant="ghost"
+              onClick={() => void setParams({ roleId: null, page: null })}
+            >
+              {t("members.clearFilter")}
+            </Button>
           )}
           <Search
             key={tab}

@@ -1,4 +1,4 @@
-import { ErrorCode } from "@repo/api-client";
+import { ErrorCode, Permission } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -14,7 +14,10 @@ import {
 } from "vitest";
 import {
   ayse,
+  billingLead,
+  customRole,
   john,
+  mehmet,
   membersAnswer,
   northwind,
   people,
@@ -23,7 +26,9 @@ import {
   problem,
   renderInTenant,
   roleOf,
+  supportLead,
   tenantAnswers,
+  viewerAnswers,
 } from "../../../test/tenant";
 
 /** GetMyTenant for an Owner, counted: a second read means the screen refreshed the caller's permissions. */
@@ -94,7 +99,7 @@ describe("ChangeRoleDialog", () => {
     );
   });
 
-  it("ChangeRole_Owner_OffersTheThreeRolesWithTheirDescriptions", async () => {
+  it("ChangeRole_Owner_OffersEveryRoleWithItsDescription", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
@@ -107,16 +112,117 @@ describe("ChangeRoleDialog", () => {
     expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
   });
 
-  it("ChangeRole_Admin_OffersNoOwner", async () => {
+  it("ChangeRole_Admin_ListsTheOwnerDisabledWithItsReason", async () => {
     server.use(...tenantAnswers(BuiltInRole.Admin), membersAnswer());
 
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
 
+    const owner = within(dialog).getByRole("radio", { name: "Owner" });
+    expect(owner).toBeDisabled();
+    expect(owner).toHaveAccessibleDescription(
+      expect.stringContaining("Only an Owner can give the Owner role."),
+    );
+    expect(within(dialog).getByRole("radio", { name: "Admin" })).toBeEnabled();
+  });
+
+  it("ChangeRole_CustomRoles_ListedAfterTheBuiltInRolesWithTheirPermissionCount", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, permissionsOf.owner, [billingLead]),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+
     expect(
-      within(dialog).queryByRole("radio", { name: "Owner" }),
-    ).not.toBeInTheDocument();
-    expect(within(dialog).getAllByRole("radio")).toHaveLength(2);
+      within(dialog)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual([
+      roleOf.owner.id,
+      roleOf.admin.id,
+      roleOf.member.id,
+      billingLead.id,
+    ]);
+    expect(
+      within(dialog).getByRole("radio", { name: "Billing lead" }),
+    ).toHaveAccessibleDescription("3 permissions");
+  });
+
+  it("ChangeRole_RoleTheViewerDoesNotFullyHold_DisabledWithTheEscalationText", async () => {
+    const roleEditor = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c3",
+      "Role editor",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantRolesRead,
+        Permission.TenantRolesUpdate,
+      ],
+    );
+    server.use(
+      ...tenantAnswers(BuiltInRole.Admin, permissionsOf.admin, [roleEditor]),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+
+    const radio = within(dialog).getByRole("radio", { name: "Role editor" });
+    expect(radio).toBeDisabled();
+    expect(radio).toHaveAccessibleDescription(
+      expect.stringContaining(
+        "This role has permissions your role doesn’t have.",
+      ),
+    );
+  });
+
+  it("ChangeRole_CustomViewer_GivesOnlyTheRolesItFullyHolds", async () => {
+    server.use(
+      ...viewerAnswers(
+        supportLead,
+        supportLead.permissions,
+        { ...mehmet, role: supportLead },
+        [supportLead, billingLead],
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+
+    expect(
+      within(dialog)
+        .getAllByRole("radio")
+        .filter((radio) => !(radio as HTMLInputElement).disabled)
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual([roleOf.member.id, supportLead.id]);
+  });
+
+  it("ChangeRole_RefusedRoleNotFound_ReadsTheRolesAgain", async () => {
+    const reads: string[] = [];
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}/roles`, () => {
+        reads.push("read");
+        const items = Object.values(BuiltInRole).map((name) => ({
+          ...roleOf[name],
+          permissions: permissionsOf[name],
+        }));
+        return HttpResponse.json({ items, page: 1, pageSize: 100, total: 3 });
+      }),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      changeAnswer(() => problem(404, ErrorCode.RoleNotFound)),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+    const before = reads.length;
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Change role" }),
+    );
+
+    await waitFor(() => expect(reads.length).toBeGreaterThan(before));
   });
 
   it.each([
@@ -137,6 +243,18 @@ describe("ChangeRoleDialog", () => {
       ErrorCode.MemberNotFound,
       "John Byrne is no longer a member.",
       "Someone removed them while this dialog was open. The list has been refreshed.",
+    ],
+    [
+      403,
+      ErrorCode.RoleEscalation,
+      "This role has permissions your role doesn’t have.",
+      "Choose another role, or ask an Owner.",
+    ],
+    [
+      404,
+      ErrorCode.RoleNotFound,
+      "This role no longer exists.",
+      "The list has been refreshed.",
     ],
   ])(
     "ChangeRole_Refused%s_%s_ShowsTheBoardsTextInTheDialog",

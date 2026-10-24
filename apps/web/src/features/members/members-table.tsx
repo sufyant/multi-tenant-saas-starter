@@ -12,13 +12,13 @@ import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { isOwner } from "@/shared/roles";
-import { useCan, useTenant } from "@/shared/tenant-context";
+import { useCan } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { initialsOf, nameOf } from "./person";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 import { sortFrom, sortOf } from "./table-sort";
+import { useRoleReach } from "./use-role-reach";
 
 /** The columns a person can sort by, and the API's sort field of each (K5). */
 const sorts = {
@@ -31,8 +31,9 @@ const sorts = {
 
 /**
  * The Members tab's table (the MembersOwner, MembersAdmin and MembersMember boards): Name with the email, Role, Joined. The row
- * menu follows K1 and the viewer's permissions: an Admin cannot change or remove an Owner, nobody removes themselves, and a Member
- * sees no menu. A disabled item says why.
+ * menu follows the viewer's permissions: `tenant.members.update` changes a role and `tenant.members.delete` removes, each only
+ * for a member whose role the viewer's role fully holds (F51); nobody removes themselves. A viewer without either sees no menu. A
+ * disabled item says why.
  */
 export function MembersTable({
   page,
@@ -52,10 +53,9 @@ export function MembersTable({
   const t = useTranslations();
   const roleName = useRoleName();
   const can = useCan();
-  const { detail } = useTenant();
+  const reach = useRoleReach();
   const [changing, setChanging] = useState<MemberResponse | null>(null);
   const [removing, setRemoving] = useState<MemberResponse | null>(null);
-  const viewerIsOwner = isOwner(detail.role);
   const canChange = can(Permission.TenantMembersUpdate);
   const canRemove = can(Permission.TenantMembersDelete);
   const nameText = (member: MemberResponse) =>
@@ -125,14 +125,17 @@ export function MembersTable({
 
   const itemsFor = (member: MemberResponse): RowMenuItem[] => {
     const self = member.userId === meId;
-    const ownerOutOfReach = !viewerIsOwner && isOwner(member.role);
+    const changeReason = reach(member.role.id, t("members.changeOwner"));
+    const removeReason = self
+      ? t("members.removeSelf")
+      : reach(member.role.id, t("members.removeOwner"));
     const items: RowMenuItem[] = [];
     if (canChange)
       items.push({
         label: t("members.changeRole"),
         onSelect: () => setChanging(member),
-        disabled: ownerOutOfReach,
-        reason: t("members.changeOwner"),
+        disabled: changeReason !== null,
+        reason: changeReason ?? undefined,
       });
     if (canChange && canRemove) items.push({ separator: true });
     if (canRemove)
@@ -140,8 +143,8 @@ export function MembersTable({
         label: t("members.remove"),
         tone: "destructive",
         onSelect: () => setRemoving(member),
-        disabled: self || ownerOutOfReach,
-        reason: self ? t("members.removeSelf") : t("members.removeOwner"),
+        disabled: removeReason !== null,
+        reason: removeReason ?? undefined,
       });
     return items;
   };
