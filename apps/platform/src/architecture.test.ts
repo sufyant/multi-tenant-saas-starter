@@ -8,6 +8,7 @@ import {
   enumValues,
   messageKeySets,
   physicalDirectionClasses,
+  roleNameDecisions,
   testFolders,
   testsBesideTheirFile,
   userFacingLiterals,
@@ -54,6 +55,10 @@ describe("architecture of apps/platform", () => {
 
   it("F18_AppsPlatform_FormatsDatesOnlyInFormatDateTime", () => {
     expect(dateFormattingOutsideFormatter(src)).toEqual([]);
+  });
+
+  it("F51_AppsPlatform_DecidesNothingByARolesName", () => {
+    expect(roleNameDecisions(src)).toEqual([]);
   });
 
   it("F3_AppsPlatform_WritesNoEnumValueAsALiteral", () => {

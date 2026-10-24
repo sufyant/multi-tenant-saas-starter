@@ -13,14 +13,20 @@ import {
   it,
   vi,
 } from "vitest";
-import { meAnswer, problem } from "../../../test/organisations";
+import { meAnswer, northwind, problem } from "../../../test/organisations";
 import { renderWithProviders } from "../../../test/render";
 import {
   ayse,
+  ayseMemberships,
   ciara,
   erased,
   john,
+  membershipOf,
+  platformCommand,
   rory,
+  userAnswer,
+  userDetailOf,
+  userResponse,
   usersAnswer,
   usersPageOf,
 } from "../../../test/users";
@@ -137,6 +143,89 @@ describe("UsersPage", () => {
       "Reactivate",
       "Delete user",
     ]);
+  });
+
+  it("UsersPage_SuspendFromARow_ReadsTheUserForTheLastOwnerWarning", async () => {
+    const reads = { count: 0 };
+    server.use(
+      meAnswer(),
+      usersAnswer(usersPageOf([ayse])),
+      userAnswer(userDetailOf(ayse, { memberships: ayseMemberships }), reads),
+    );
+
+    renderWithProviders(<UsersPage />);
+    await menuOf("Ayşe Yılmaz");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Suspend" }));
+
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Suspend Ayşe Yılmaz?" }),
+    );
+    expect(
+      await dialog.findByText(
+        "Ayşe Yılmaz is the last Owner of Northwind Traders.",
+      ),
+    ).toBeVisible();
+    expect(reads.count).toBe(1);
+  });
+
+  it("UsersPage_DeleteFromARow_NamesTheLastOwnersOrganisationsFromGetUser", async () => {
+    server.use(
+      meAnswer(),
+      usersAnswer(usersPageOf([ayse])),
+      userAnswer(
+        userDetailOf(ayse, {
+          memberships: [membershipOf(northwind, { lastOwner: true })],
+        }),
+      ),
+      platformCommand("delete", `users/${ayse.id}`, [
+        () => problem(409, ErrorCode.UserLastOwner, undefined, [northwind.id]),
+      ]),
+    );
+
+    renderWithProviders(<UsersPage />);
+    await menuOf("Ayşe Yılmaz");
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Delete user" }),
+    );
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Delete Ayşe Yılmaz?" }),
+    );
+    await userEvent.type(
+      dialog.getByRole("textbox", {
+        name: "Type ayse@northwind.example to confirm",
+      }),
+      "ayse@northwind.example",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Delete user" }));
+
+    expect(
+      await screen.findByRole("link", { name: /Northwind Traders/ }),
+    ).toHaveAttribute("href", `/organisations/${northwind.id}`);
+  });
+
+  it("UsersPage_RenameFromARow_ReadsTheListAgain", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      usersAnswer(usersPageOf([ayse]), requests),
+      platformCommand("patch", `users/${ayse.id}`, [
+        userResponse(ayse, { lastName: "Demir" }),
+      ]),
+    );
+
+    renderWithProviders(<UsersPage />);
+    await menuOf("Ayşe Yılmaz");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Rename Ayşe Yılmaz" }),
+    );
+    const lastName = dialog.getByRole("textbox", { name: "Last name" });
+    await userEvent.clear(lastName);
+    await userEvent.type(lastName, "Demir");
+    await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
+
+    expect(await screen.findByText("Renamed to Ayşe Demir.")).toBeVisible();
+    await waitFor(() => expect(requests).toHaveLength(2));
   });
 
   it("UsersPage_FirstRead_SendsNoIsSystemAdminAndNoStatus", async () => {

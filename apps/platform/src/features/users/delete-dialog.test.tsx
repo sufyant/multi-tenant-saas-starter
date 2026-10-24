@@ -12,7 +12,12 @@ import {
   it,
   vi,
 } from "vitest";
-import { atlas, meAnswer, northwind } from "../../../test/organisations";
+import {
+  atlas,
+  meAnswer,
+  northwind,
+  problem,
+} from "../../../test/organisations";
 import { openUserAction } from "../../../test/user-page";
 import {
   ayse,
@@ -25,9 +30,8 @@ import {
   userDetailOf,
 } from "../../../test/users";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -168,6 +172,35 @@ describe("DeleteUserDialog", () => {
       screen.getByRole("link", { name: /Atlas Logistics/ }),
     ).toHaveAttribute("href", `/organisations/${atlas.id}`);
     await waitFor(() => expect(reads.count).toBe(2));
+  });
+
+  it("Delete_LastOwnerOpenTheOrganisation_OpensTheFirstOneNamed", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(
+        userDetailOf(ayse, {
+          memberships: [
+            membershipOf(northwind, { lastOwner: true }),
+            membershipOf(atlas, { lastOwner: true }),
+          ],
+        }),
+      ),
+      platformCommand("delete", `users/${ayse.id}`, [
+        () =>
+          problem(409, ErrorCode.UserLastOwner, undefined, [
+            northwind.id,
+            atlas.id,
+          ]),
+      ]),
+    );
+
+    const dialog = await open();
+    await confirm(dialog);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Open the organisation" }),
+    );
+
+    expect(router.push).toHaveBeenCalledWith(`/organisations/${northwind.id}`);
   });
 
   it("Delete_JoinedMeanwhile_SaysNothingWasDeletedAndReadsAgain", async () => {

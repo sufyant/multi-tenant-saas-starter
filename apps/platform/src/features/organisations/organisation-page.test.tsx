@@ -92,6 +92,19 @@ describe("OrganisationPage", () => {
     ).toHaveAttribute("href", "/users?q=niamh%40liffeydesign.example");
   });
 
+  it("OrganisationPage_WaitingWithoutAnInvitation_LinksTheHintToTheUsersList", async () => {
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf({ ...liffey, ownerInvitation: null })),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={liffey.id} />);
+
+    expect(
+      await screen.findByRole("link", { name: "open their user page" }),
+    ).toHaveAttribute("href", "/users");
+  });
+
   it("OrganisationPage_WaitingAfterAnExpiredInvitation_LinksTheHintToTheInvitedEmail", async () => {
     server.use(meAnswer(), detailAnswer(detailOf(burren)));
 

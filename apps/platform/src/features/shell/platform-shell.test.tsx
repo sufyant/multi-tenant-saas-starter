@@ -1,7 +1,9 @@
-import { ErrorCode } from "@repo/api-client";
+import { ErrorCode, Language, UserResponseStatus } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
+  getGetUserMockHandler,
+  getGetUserResponseMock,
   getListTenantsMockHandler,
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
@@ -178,6 +180,34 @@ describe("PlatformShell", () => {
     );
     expect(await crumbs.findByText("Ayşe Yılmaz")).toBeInTheDocument();
     expect(crumbs.getByText("Users")).toBeInTheDocument();
+  });
+
+  it("PlatformShell_DeletedUsersPage_SaysDeletedUserInTheBreadcrumb", async () => {
+    const userId = "0198f0a2-0000-7000-8000-0000000000a6";
+    navigation.pathname = `/users/${userId}`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: Language.En }),
+      ),
+      getGetUserMockHandler(
+        getGetUserResponseMock({
+          id: userId,
+          firstName: null,
+          lastName: null,
+          email: null,
+          status: UserResponseStatus.Deleted,
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("Deleted user")).toBeInTheDocument();
   });
 
   it("PlatformShell_OrganisationPage_NamesTheOrganisationInTheBreadcrumb", async () => {
