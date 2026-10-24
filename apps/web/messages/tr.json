@@ -357,7 +357,7 @@
     "seeMembers": "Üyelerini gör",
     "seeInvitations": "Davetlerini gör",
     "counter": "{count} / {max} özel rol",
-    "limitReached": "Kuruluşunuzda olabilecek en fazla sayıda, {max} özel rol var. Yenisini oluşturmak için birini silin.",
+    "limitReached": "Kuruluşunuz {max} özel rol sınırına ulaştı. Yenisini oluşturmak için birini silin.",
     "builtIn": "Yerleşik",
     "actions": "İşlemler",
     "actionsFor": "{name} için işlemler",

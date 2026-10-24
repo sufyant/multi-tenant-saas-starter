@@ -357,7 +357,7 @@
     "seeMembers": "See its members",
     "seeInvitations": "See its invitations",
     "counter": "{count} of {max, plural, one {# custom role} other {# custom roles}}",
-    "limitReached": "Your organisation has {max, plural, one {# custom role} other {# custom roles}}, the most it can have. Delete one to create another.",
+    "limitReached": "Your organisation has reached its limit of {max, plural, one {# custom role} other {# custom roles}}. Delete one to create another.",
     "builtIn": "Built in",
     "actions": "Actions",
     "actionsFor": "Actions for {name}",
