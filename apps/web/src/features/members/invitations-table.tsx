@@ -11,7 +11,12 @@ import {
 } from "@repo/api-client";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
 import { Status, type StatusTone } from "@repo/ui/components/status";
-import { Table, type TableColumn } from "@repo/ui/components/table";
+import {
+  sortFrom,
+  sortOf,
+  Table,
+  type TableColumn,
+} from "@repo/ui/components/table";
 import { Time } from "@repo/ui/components/time";
 import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,7 +33,6 @@ import {
 import { nameOf } from "./person";
 import { afterRefusal, refreshInvitations } from "./refresh";
 import { RevokeInvitationDialog } from "./revoke-invitation-dialog";
-import { sortFrom, sortOf } from "./table-sort";
 import { useRoleReach } from "./use-role-reach";
 
 const sorts = {

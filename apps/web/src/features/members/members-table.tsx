@@ -7,7 +7,12 @@ import {
   Permission,
 } from "@repo/api-client";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
-import { Table, type TableColumn } from "@repo/ui/components/table";
+import {
+  sortFrom,
+  sortOf,
+  Table,
+  type TableColumn,
+} from "@repo/ui/components/table";
 import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import { useTranslations } from "next-intl";
@@ -17,7 +22,6 @@ import { useRoleName } from "@/shared/use-role-name";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { initialsOf, nameOf } from "./person";
 import { RemoveMemberDialog } from "./remove-member-dialog";
-import { sortFrom, sortOf } from "./table-sort";
 import { useRoleReach } from "./use-role-reach";
 
 /** The columns a person can sort by, and the API's sort field of each (K5). */
