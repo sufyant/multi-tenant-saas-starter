@@ -21,6 +21,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { problemOf } from "@/shared/problem";
+import { savedUnderKey } from "@/shared/saved-under-key";
 import { useDates } from "@/shared/use-dates";
 import { useFailureText } from "@/shared/use-failure-text";
 import { emailText } from "./field-text";
@@ -29,7 +30,6 @@ import {
   afterRefusal,
   type Organisation,
   refreshOrganisation,
-  savedUnderKey,
 } from "./organisation";
 
 type Invitation = z.infer<typeof schemas.InviteOwnerBody>;

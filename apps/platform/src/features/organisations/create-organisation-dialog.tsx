@@ -23,10 +23,11 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { problemOf } from "@/shared/problem";
+import { savedUnderKey } from "@/shared/saved-under-key";
 import { useFailureText } from "@/shared/use-failure-text";
 import { emailText, nameText, slugText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
-import { afterRefusal, savedUnderKey } from "./organisation";
+import { afterRefusal } from "./organisation";
 
 // The generated schema of CreateTenant (F11). The API trims the name and needs 1 to 100 characters; the generated schema has the
 // limit only, so the form adds the trim and the minimum.

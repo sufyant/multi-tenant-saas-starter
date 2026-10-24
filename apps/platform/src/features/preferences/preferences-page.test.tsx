@@ -6,7 +6,7 @@ import {
   type RenameMeRequest,
 } from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -138,7 +138,7 @@ const save = async () =>
   );
 
 const renderPage = (locale: "en" | "ar" = "en") =>
-  renderWithProviders(<PreferencesPage settingsBase="/settings" />, locale);
+  renderWithProviders(<PreferencesPage />, locale);
 
 describe("PreferencesPage", () => {
   it("PreferencesPage_GetMe_ShowsTheNameTheLanguageAndTheTimeZoneToChange", async () => {
@@ -159,6 +159,25 @@ describe("PreferencesPage", () => {
     expect(
       screen.queryByText(/can change your language and time zone/),
     ).not.toBeInTheDocument();
+  });
+
+  it("PreferencesPage_SettingsNav_LinksToSystemAdminsUnderPlatform", async () => {
+    server.use(...preferencesAnswers(me));
+
+    renderPage();
+
+    const nav = within(
+      await screen.findByRole("navigation", { name: "Settings" }),
+    );
+    expect(nav.getByText("Platform")).toBeInTheDocument();
+    expect(nav.getByRole("link", { name: "System admins" })).toHaveAttribute(
+      "href",
+      "/settings/system-admins",
+    );
+    expect(nav.getByRole("link", { name: "Preferences" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("PreferencesPage_Email_IsReadOnly", async () => {

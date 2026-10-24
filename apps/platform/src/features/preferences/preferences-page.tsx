@@ -15,14 +15,12 @@ import {
 } from "@repo/api-client";
 import { PreferencesForm } from "@repo/ui/components/preferences-form";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { SubNav } from "@repo/ui/components/sub-nav";
 import { showToast } from "@repo/ui/components/toast";
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@repo/ui/components/ui/toggle-group";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
@@ -30,6 +28,7 @@ import { useId } from "react";
 import { z } from "zod";
 import { setLocale } from "@/i18n/set-locale";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { SettingsNav } from "@/shared/settings-nav";
 
 // The generated schemas of RenameMe and ChangePreferences (F11). The API trims each name and needs 1 to 100 characters (A7);
 // the generated schema has the limit only, so the form adds the trim and the minimum.
@@ -47,7 +46,7 @@ const actionOf = (error: unknown) =>
  * Settings > Preferences (F31, the platform's Preferences boards): the form of the tenant web for the signed-in user's name, language and time
  * zone, then the email address, read-only, and the theme, which is saved on the device.
  */
-export function PreferencesPage({ settingsBase }: { settingsBase: string }) {
+export function PreferencesPage() {
   const t = useTranslations();
   const me = useQuery(getGetMeQueryOptions());
 
@@ -55,23 +54,7 @@ export function PreferencesPage({ settingsBase }: { settingsBase: string }) {
 
   return (
     <div className="flex flex-col gap-6 tablet:flex-row">
-      <SubNav
-        label={t("shell.settings")}
-        current="preferences"
-        groups={[
-          {
-            label: t("shell.you"),
-            items: [
-              {
-                id: "preferences",
-                label: t("shell.preferences"),
-                href: `${settingsBase}/preferences`,
-              },
-            ],
-          },
-        ]}
-        linkComponent={Link}
-      />
+      <SettingsNav current="preferences" />
       <section className="flex min-w-0 max-w-[640px] flex-1 flex-col gap-4">
         <div>
           <h1 className="text-page-title">{t("preferences.title")}</h1>

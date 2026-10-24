@@ -26,10 +26,12 @@ export function TwoStepPage() {
   const [phase, setPhase] = useState<Phase>();
   const [codes, setCodes] = useState<string[]>([]);
 
-  // The proxy reads the session's token, so the page waits for a token that holds the new factor before it leaves.
+  const go = () => window.location.assign("/");
+  // The proxy reads the session's token, so the page waits for a token that holds the new factor before it leaves. After the
+  // challenge, `useReverification` has asked for it already.
   const enter = async () => {
     await session?.getToken({ skipCache: true });
-    window.location.assign("/");
+    go();
   };
 
   const verified = hasVerifiedSecondFactor(session?.factorVerificationAge);
@@ -75,11 +77,7 @@ export function TwoStepPage() {
         <BackupCodes codes={codes} onContinue={() => void afterBackupCodes()} />
       )}
       {current === "challenge" && (
-        <TotpChallenge
-          session={session}
-          onVerified={() => void enter()}
-          onSignOut={leave}
-        />
+        <TotpChallenge session={session} onVerified={go} onSignOut={leave} />
       )}
     </AuthLayout>
   );
