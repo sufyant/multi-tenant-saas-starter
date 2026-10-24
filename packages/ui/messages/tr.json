@@ -106,7 +106,7 @@
       "permission_owner_only": "Özel bir rol, yalnızca Sahip rolünün taşıdığı bir izni taşıyamaz.",
       "permissions_required": "En az bir izin seçin.",
       "profile_read_required": "Bir rol kuruluşun profilini okuyabilmelidir.",
-      "roles_read_required": "Kişi davet eden ya da bir üyenin rolünü değiştiren bir rol, rolleri okuyabilmelidir."
+      "roles_read_required": "Kişi davet eden, bir üyenin rolünü değiştiren ya da üyeyi çıkaran veya bir daveti iptal eden bir rol, rolleri okuyabilmelidir."
     },
     "route": {
       "method_not_allowed": "Bu işlem burada kullanılamaz.",

@@ -192,11 +192,14 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(created)).ShouldBe("role.permissions_required");
     }
 
-    // Finding 7 of step r4b: every custom role reads its tenant, and a role that gives a role reads the roles it gives.
+    // Finding 7 of step r4b and step r12: every custom role reads its tenant, and a role that acts on a member's or an invitation's role
+    // reads the roles.
     [Theory]
     [InlineData(new[] { "tenant.members.read" }, "role.profile_read_required")]
     [InlineData(new[] { "tenant.profile.read", "tenant.invitations.create" }, "role.roles_read_required")]
     [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.members.update" }, "role.roles_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.members.delete" }, "role.roles_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.invitations.delete" }, "role.roles_read_required")]
     public async Task CreateRole_WithoutAPermissionItsOthersNeed_IsABadRequest(string[] permissions, string code)
     {
         var (tenantId, owner) = await OwnerAsync();
@@ -206,6 +209,19 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(created)).ShouldBe(code);
         (await CustomRolesOfAsync(tenantId)).ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("tenant.members.delete")]
+    [InlineData("tenant.invitations.delete")]
+    public async Task CreateRole_APermissionThatActsOnARoleWithRolesRead_CreatesIt(string permission)
+    {
+        var (tenantId, owner) = await OwnerAsync();
+
+        var created = await owner.CreateRoleAsync(tenantId, "Recruiter", ["tenant.profile.read", "tenant.members.read", "tenant.roles.read", permission]);
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await CustomRolesOfAsync(tenantId)).ShouldBe(1);
     }
 
     // A permission that is null is a validation problem, never a fault.

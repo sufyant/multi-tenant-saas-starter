@@ -65,13 +65,16 @@ public sealed class RoleTests
         allowed.Error.Type.ShouldBe(ErrorType.Validation);
     }
 
-    // Finding 7 of step r4b: a role that gives a role reads the roles it gives.
+    // Finding 7 of step r4b and step r12: a role that acts on a member's or an invitation's role reads the roles, because the
+    // escalation rule makes the screen read the target's role.
     [Theory]
     [InlineData(PermissionPools.TenantInvitationsCreate)]
     [InlineData(PermissionPools.TenantMembersUpdate)]
-    public void CheckRequiredPermissions_APermissionThatGivesARoleWithoutRolesRead_IsInvalid(string gives)
+    [InlineData(PermissionPools.TenantMembersDelete)]
+    [InlineData(PermissionPools.TenantInvitationsDelete)]
+    public void CheckRequiredPermissions_APermissionThatActsOnARoleWithoutRolesRead_IsInvalid(string actsOnARole)
     {
-        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead, gives]);
+        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead, actsOnARole]);
 
         allowed.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleRolesReadRequired);
         allowed.Error.Type.ShouldBe(ErrorType.Validation);
@@ -80,9 +83,11 @@ public sealed class RoleTests
     [Theory]
     [InlineData(PermissionPools.TenantInvitationsCreate)]
     [InlineData(PermissionPools.TenantMembersUpdate)]
-    public void CheckRequiredPermissions_APermissionThatGivesARoleWithRolesRead_IsAllowed(string gives)
+    [InlineData(PermissionPools.TenantMembersDelete)]
+    [InlineData(PermissionPools.TenantInvitationsDelete)]
+    public void CheckRequiredPermissions_APermissionThatActsOnARoleWithRolesRead_IsAllowed(string actsOnARole)
     {
-        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead, PermissionPools.TenantRolesRead, gives]);
+        var allowed = Role.CheckRequiredPermissions([PermissionPools.TenantProfileRead, PermissionPools.TenantRolesRead, actsOnARole]);
 
         allowed.IsSuccess.ShouldBeTrue();
     }

@@ -180,10 +180,13 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(updated)).ShouldBe("role.permissions_required");
     }
 
-    // Finding 7 of step r4b: every custom role reads its tenant, and a role that gives a role reads the roles it gives.
+    // Finding 7 of step r4b and step r12: every custom role reads its tenant, and a role that acts on a member's or an invitation's role
+    // reads the roles.
     [Theory]
     [InlineData(new[] { "tenant.members.read" }, "role.profile_read_required")]
     [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.invitations.create" }, "role.roles_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.members.delete" }, "role.roles_read_required")]
+    [InlineData(new[] { "tenant.profile.read", "tenant.members.read", "tenant.invitations.delete" }, "role.roles_read_required")]
     public async Task UpdateRole_WithoutAPermissionItsOthersNeed_IsABadRequestAndChangesNothing(string[] permissions, string code)
     {
         var tenant = await _testData.AddTenantAsync();
@@ -195,6 +198,21 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         updated.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(updated)).ShouldBe(code);
         (await PermissionsOfAsync(roleId)).ShouldBe("tenant.members.read, tenant.profile.read");
+    }
+
+    [Theory]
+    [InlineData("tenant.members.delete", "tenant.members.delete, tenant.members.read, tenant.profile.read, tenant.roles.read")]
+    [InlineData("tenant.invitations.delete", "tenant.invitations.delete, tenant.members.read, tenant.profile.read, tenant.roles.read")]
+    public async Task UpdateRole_APermissionThatActsOnARoleWithRolesRead_ChangesIt(string permission, string stored)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read", "tenant.members.read");
+
+        var updated = await _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Billing", ["tenant.profile.read", "tenant.members.read", "tenant.roles.read", permission]);
+
+        updated.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await PermissionsOfAsync(roleId)).ShouldBe(stored);
     }
 
     // Decision 2 of step r4b, before: an actor never changes a role that holds a permission their own role does not hold.
