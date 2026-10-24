@@ -7,10 +7,15 @@ import { useTranslations } from "next-intl";
 import { useCan, useTenant } from "./tenant-context";
 
 /** The settings pages of the SubNav. Each organisation page needs its read permission, and Preferences none (F5). */
-export type SettingsPage = "general" | "members" | "activity" | "preferences";
+export type SettingsPage =
+  | "general"
+  | "members"
+  | "roles"
+  | "activity"
+  | "preferences";
 
 /**
- * The SubNav of Settings (the Settings boards): Organisation (General, Members, Activity) and You (Preferences). An item shows
+ * The SubNav of Settings (the Settings boards): Organisation (General, Members, Roles, Activity) and You (Preferences). An item shows
  * only with its read permission (F5), and a group without items does not show.
  */
 export function SettingsNav({ current }: { current: SettingsPage }) {
@@ -28,6 +33,11 @@ export function SettingsNav({ current }: { current: SettingsPage }) {
       id: "members",
       label: t("settings.members"),
       permission: Permission.TenantMembersRead,
+    },
+    {
+      id: "roles",
+      label: t("settings.roles"),
+      permission: Permission.TenantRolesRead,
     },
     {
       id: "activity",

@@ -23,12 +23,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { problemOf } from "@/shared/problem";
+import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useCanActOn, useTenantRoles } from "@/shared/use-can-act-on";
 import { useFailureText } from "@/shared/use-failure-text";
 import { daysLeft } from "./invitation-status";
-import { afterRefusal, refreshInvitations } from "./refresh";
 import { RoleChoice } from "./role-choice";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;

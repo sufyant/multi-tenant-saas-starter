@@ -35,7 +35,7 @@ export const refreshTenant = (queryClient: QueryClient, tenantId: string) =>
   ]);
 
 /** The roles, their permissions and the lists that show them: after a refusal that says the roles changed meanwhile (F51). */
-const refreshRoles = (queryClient: QueryClient, tenantId: string) =>
+export const refreshRoles = (queryClient: QueryClient, tenantId: string) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: getListRolesQueryKey(tenantId) }),
     queryClient.invalidateQueries({
