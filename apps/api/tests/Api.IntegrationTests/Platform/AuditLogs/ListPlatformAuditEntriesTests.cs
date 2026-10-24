@@ -155,6 +155,20 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe("""{"operation":"tenant.suspended","reason":"Unpaid invoices"}""");
     }
 
+    // The platform's Activity of a tenant shows the purge warning with the moment of the deletion (step r12): the stored shape, as
+    // RecordTenantPurgeWarnedHandler writes it, answers the shape of tenant.purge_warned.
+    [Fact]
+    public async Task ListPlatformAuditEntries_AStoredPurgeWarning_AnswersTheShapeOfTenantPurgeWarned()
+    {
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = Guid.CreateVersion7();
+        await _audit.AddPlatformEntryAsync(_start, "Platform", null, "Tenant", tenant, "tenant.purge_warned", "Acme Ltd", """{"purgesAt":"2026-10-01T09:00:00+00:00"}""");
+
+        var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
+
+        page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe("""{"operation":"tenant.purge_warned","purgesAt":"2026-10-01T09:00:00+00:00"}""");
+    }
+
     // Owner recovery (docs/flows/owner-recovery.md): the platform's log keeps tenant.owner_made, as RecordOwnerMadeHandler writes it, and answers its shape:
     // the member's id and the role they had.
     [Fact]
