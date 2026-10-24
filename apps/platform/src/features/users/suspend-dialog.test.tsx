@@ -19,7 +19,7 @@ import {
   problem,
   shannon,
 } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   ayse,
@@ -84,7 +84,9 @@ describe("SuspendUserDialog", () => {
     expect(dialog.queryByText(/is the last Owner of/)).toBeNull();
     await suspend(dialog);
 
-    expect(await screen.findByText("Mehmet Kaya suspended")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Mehmet Kaya suspended")),
+    ).toBeVisible();
     expect(
       screen.getByText("They are refused on their next request."),
     ).toBeVisible();
@@ -107,7 +109,9 @@ describe("SuspendUserDialog", () => {
 
     const dialog = await open();
     expect(
-      dialog.getByText("Ayşe Yılmaz is the last Owner of Northwind Traders."),
+      dialog.getByText(
+        sentence("Ayşe Yılmaz is the last Owner of Northwind Traders."),
+      ),
     ).toBeVisible();
     expect(
       dialog.getByText(
@@ -117,7 +121,9 @@ describe("SuspendUserDialog", () => {
     expect(dialog.getByRole("button", { name: "Suspend user" })).toBeEnabled();
     await suspend(dialog);
 
-    expect(await screen.findByText("Ayşe Yılmaz suspended")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Ayşe Yılmaz suspended")),
+    ).toBeVisible();
     expect(calls).toHaveLength(1);
   });
 
@@ -133,7 +139,9 @@ describe("SuspendUserDialog", () => {
 
     expect(
       dialog.getByText(
-        "Ayşe Yılmaz is the last Owner of Northwind Traders and Atlas Logistics.",
+        sentence(
+          "Ayşe Yılmaz is the last Owner of Northwind Traders and Atlas Logistics.",
+        ),
       ),
     ).toBeVisible();
   });
@@ -152,7 +160,9 @@ describe("SuspendUserDialog", () => {
 
     expect(
       dialog.getByText(
-        "Ayşe Yılmaz is the last Owner of Northwind Traders, Atlas Logistics, Shannon Studio and 1 more.",
+        sentence(
+          "Ayşe Yılmaz is the last Owner of Northwind Traders, Atlas Logistics, Shannon Studio and 1 more.",
+        ),
       ),
     ).toBeVisible();
   });
@@ -170,7 +180,7 @@ describe("SuspendUserDialog", () => {
     await suspend(dialog);
 
     expect(
-      await dialog.findByText("Ciara Byrne is a system admin."),
+      await dialog.findByText(sentence("Ciara Byrne is a system admin.")),
     ).toBeVisible();
     expect(
       dialog.getByText("Remove them from System admins first."),

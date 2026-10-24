@@ -14,7 +14,7 @@ import {
   vi,
 } from "vitest";
 import { meAnswer, northwind, problem } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import {
   ayse,
   ayseMemberships,
@@ -162,7 +162,7 @@ describe("UsersPage", () => {
     );
     expect(
       await dialog.findByText(
-        "Ayşe Yılmaz is the last Owner of Northwind Traders.",
+        sentence("Ayşe Yılmaz is the last Owner of Northwind Traders."),
       ),
     ).toBeVisible();
     expect(reads.count).toBe(1);
@@ -224,7 +224,9 @@ describe("UsersPage", () => {
     await userEvent.type(lastName, "Demir");
     await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
 
-    expect(await screen.findByText("Renamed to Ayşe Demir.")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Renamed to Ayşe Demir.")),
+    ).toBeVisible();
     await waitFor(() => expect(requests).toHaveLength(2));
   });
 

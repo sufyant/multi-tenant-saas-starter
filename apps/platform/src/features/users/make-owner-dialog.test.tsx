@@ -13,6 +13,7 @@ import {
   vi,
 } from "vitest";
 import { meAnswer, northwind, problem } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 import { openMakeOwner } from "../../../test/user-page";
 import {
   mehmet,
@@ -56,13 +57,17 @@ describe("MakeOwnerDialog", () => {
     const dialog = await open();
     expect(
       dialog.getByText(
-        "They get every permission in Northwind Traders. The organisation’s Activity shows that the platform did this.",
+        sentence(
+          "They get every permission in Northwind Traders. The organisation’s Activity shows that the platform did this.",
+        ),
       ),
     ).toBeVisible();
     await makeOwner(dialog);
 
     expect(
-      await screen.findByText("Mehmet Kaya is an Owner of Northwind Traders."),
+      await screen.findByText(
+        sentence("Mehmet Kaya is an Owner of Northwind Traders."),
+      ),
     ).toBeVisible();
     expect(calls).toEqual([{ key: null, body: { userId: mehmet.id } }]);
     await waitFor(() => expect(reads.count).toBe(2));
@@ -102,7 +107,7 @@ describe("MakeOwnerDialog", () => {
       const dialog = await open();
       await makeOwner(dialog);
 
-      expect(await dialog.findByText(text)).toBeVisible();
+      expect(await dialog.findByText(sentence(text))).toBeVisible();
       await waitFor(() => expect(reads.count).toBe(2));
     },
   );
@@ -120,7 +125,7 @@ describe("MakeOwnerDialog", () => {
     await makeOwner(dialog);
 
     expect(
-      await dialog.findByText("Mehmet Kaya did not change."),
+      await dialog.findByText(sentence("Mehmet Kaya did not change.")),
     ).toBeVisible();
   });
 });

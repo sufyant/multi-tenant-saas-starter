@@ -21,7 +21,7 @@ import {
   problem,
   tenantAnswer,
 } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { OrganisationPage } from "./organisation-page";
 
 vi.mock("next/navigation", () => ({
@@ -67,7 +67,7 @@ describe("RenameDialog", () => {
     await rename(dialog, "Northwind Traders Ltd");
 
     expect(
-      await screen.findByText("Renamed to Northwind Traders Ltd."),
+      await screen.findByText(sentence("Renamed to Northwind Traders Ltd.")),
     ).toBeVisible();
     expect(calls.map((call) => call.body)).toEqual([
       { name: "Northwind Traders Ltd" },
@@ -116,9 +116,13 @@ describe("RenameDialog", () => {
     await rename(dialog, "Northwind");
 
     expect(
-      await dialog.findByText("Northwind Traders cannot be renamed now."),
+      await dialog.findByText(
+        sentence("Northwind Traders cannot be renamed now."),
+      ),
     ).toBeVisible();
-    expect(dialog.getByText("It is closed or being deleted.")).toBeVisible();
+    expect(
+      dialog.getByText(sentence("It is closed or being deleted.")),
+    ).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });
 

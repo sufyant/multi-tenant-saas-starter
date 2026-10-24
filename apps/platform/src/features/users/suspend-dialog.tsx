@@ -12,6 +12,7 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { isolated } from "@/shared/isolated";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 /** A list names at most three, then "and n more" (the Messages board, F15). */
@@ -42,16 +43,25 @@ export function SuspendDialog({
     .filter((membership) => membership.lastOwner)
     .map((membership) => membership.tenantName);
   const more = lastOwnerOf.length - named;
+  // Each organisation's name is isolated in the list, as in the sentence around it; the list's words stay text.
   const organisations = new Intl.ListFormat(locale, {
     type: "conjunction",
-  }).format(
-    more > 0
-      ? [
-          ...lastOwnerOf.slice(0, named),
-          t("moreOrganisations", { count: more }),
-        ]
-      : lastOwnerOf,
-  );
+  })
+    .formatToParts(
+      more > 0
+        ? [
+            ...lastOwnerOf.slice(0, named),
+            t("moreOrganisations", { count: more }),
+          ]
+        : lastOwnerOf,
+    )
+    .map((part) =>
+      part.type === "element" && lastOwnerOf.includes(part.value) ? (
+        <bdi key={part.value}>{part.value}</bdi>
+      ) : (
+        part.value
+      ),
+    );
 
   const suspend = useMutation({
     mutationFn: () => suspendUser(user.id),
@@ -64,13 +74,13 @@ export function SuspendDialog({
     const code = problemOf(suspend.error)?.code;
     if (code === ErrorCode.UserIsSystemAdmin)
       return {
-        title: t("isSystemAdmin", { name }),
+        title: t.rich("isSystemAdmin", { name, ...isolated }),
         text: t("isSystemAdminText"),
       };
     if (code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(suspend.error)),
     };
   })();
@@ -80,7 +90,7 @@ export function SuspendDialog({
       open
       tone="destructive"
       onOpenChange={(open) => !open && onClose()}
-      title={t("suspendTitle", { name })}
+      title={t.rich("suspendTitle", { name, ...isolated })}
       description={t("suspendText")}
       actionLabel={t("suspendAction")}
       cancelLabel={common("cancel")}
@@ -91,7 +101,7 @@ export function SuspendDialog({
           onSuccess: () => {
             onClose();
             showToast({
-              title: t("suspendedDone", { name }),
+              title: t.rich("suspendedDone", { name, ...isolated }),
               description: t("suspendedToast"),
             });
           },
@@ -101,7 +111,11 @@ export function SuspendDialog({
       {lastOwnerOf.length > 0 && (
         <Banner
           tone="warning"
-          title={t("lastOwnerWarning", { name, organisations })}
+          title={t.rich("lastOwnerWarning", {
+            name,
+            ...isolated,
+            list: () => organisations,
+          })}
         >
           {t("lastOwnerWarningText")}
         </Banner>

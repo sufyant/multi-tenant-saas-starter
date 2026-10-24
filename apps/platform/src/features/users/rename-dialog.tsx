@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { nameOf } from "@/shared/name-of";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
@@ -88,7 +89,7 @@ export function RenameDialog({
     if (code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(rename.error)),
     };
   })();
@@ -100,7 +101,10 @@ export function RenameDialog({
         onSuccess: (renamed) => {
           onClose();
           showToast({
-            title: t("renamed", { name: nameOf(renamed) ?? name }),
+            title: t.rich("renamed", {
+              name: nameOf(renamed) ?? name,
+              ...isolated,
+            }),
           });
         },
       }),
@@ -115,7 +119,7 @@ export function RenameDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("renameTitle", { name })}
+      title={t.rich("renameTitle", { name, ...isolated })}
       description={t("renameText")}
       actionLabel={t("renameAction")}
       cancelLabel={common("cancel")}

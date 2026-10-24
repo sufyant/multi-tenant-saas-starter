@@ -12,6 +12,7 @@ import {
   vi,
 } from "vitest";
 import { meAnswer, problem } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   john,
@@ -64,7 +65,9 @@ describe("ReactivateUserDialog", () => {
     ).toBeVisible();
     await reactivate(dialog);
 
-    expect(await screen.findByText("John Byrne reactivated.")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("John Byrne reactivated.")),
+    ).toBeVisible();
     expect(calls).toEqual([{ key: null, body: null }]);
     await waitFor(() => expect(reads.count).toBe(2));
   });

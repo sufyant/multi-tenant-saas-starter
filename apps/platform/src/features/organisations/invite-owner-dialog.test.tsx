@@ -27,6 +27,7 @@ import {
   meAnswer,
   problem,
 } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -162,7 +163,7 @@ describe("InviteOwnerDialog", () => {
 
     const dialog = await open();
     await send(dialog);
-    await dialog.findByText("Liffey Design is not active.");
+    await dialog.findByText(sentence("Liffey Design is not active."));
     await send(dialog);
 
     expect(await screen.findByText("Invitation sent")).toBeVisible();
@@ -183,7 +184,7 @@ describe("InviteOwnerDialog", () => {
     const dialog = await open();
     await send(dialog);
     await waitFor(() => expect(calls).toHaveLength(1));
-    await dialog.findByText("Liffey Design did not change.");
+    await dialog.findByText(sentence("Liffey Design did not change."));
     await send(dialog);
 
     expect(await screen.findByText("Invitation sent")).toBeVisible();
@@ -202,7 +203,7 @@ describe("InviteOwnerDialog", () => {
     await send(dialog);
 
     expect(
-      await dialog.findByText("Liffey Design already has an Owner."),
+      await dialog.findByText(sentence("Liffey Design already has an Owner.")),
     ).toBeVisible();
     expect(
       dialog.getByText(
@@ -224,9 +225,11 @@ describe("InviteOwnerDialog", () => {
     await send(dialog);
 
     expect(
-      await dialog.findByText("Liffey Design is not active."),
+      await dialog.findByText(sentence("Liffey Design is not active.")),
     ).toBeVisible();
-    expect(dialog.getByText("Reactivate or reopen it first.")).toBeVisible();
+    expect(
+      dialog.getByText(sentence("Reactivate or reopen it first.")),
+    ).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });
 

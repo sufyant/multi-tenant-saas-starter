@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Initial } from "@/shared/initial";
+import { isolated } from "@/shared/isolated";
 import { settingsPages } from "@/shared/settings-nav";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
@@ -62,7 +63,7 @@ export function DeleteDialog({
       <Dialog
         open
         onOpenChange={close}
-        title={t("cannotDelete", { name })}
+        title={t.rich("cannotDelete", { name, ...isolated })}
         description={t("cannotDeleteText", { count: tenantIds.length })}
         actionLabel={t("openOrganisation")}
         cancelLabel={common("close")}
@@ -97,7 +98,7 @@ export function DeleteDialog({
     if (!remove.error) return null;
     if (problem?.code === ErrorCode.UserIsSystemAdmin)
       return {
-        title: t("isSystemAdmin", { name }),
+        title: t.rich("isSystemAdmin", { name, ...isolated }),
         text: t("isSystemAdminText"),
         link: {
           href: settingsPages.systemAdmins,
@@ -106,13 +107,13 @@ export function DeleteDialog({
       };
     if (problem?.code === ErrorCode.UserHasMemberships)
       return {
-        title: t("joinedMeanwhile", { name }),
+        title: t.rich("joinedMeanwhile", { name, ...isolated }),
         text: t("joinedMeanwhileText"),
       };
     if (problem?.code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(remove.error)),
     };
   })();
@@ -123,7 +124,7 @@ export function DeleteDialog({
       open
       tone="destructive"
       onOpenChange={close}
-      title={t("deleteTitle", { name })}
+      title={t.rich("deleteTitle", { name, ...isolated })}
       description={t("deleteText")}
       actionLabel={t("deleteAction")}
       cancelLabel={common("cancel")}
@@ -135,7 +136,7 @@ export function DeleteDialog({
         remove.mutate(undefined, {
           onSuccess: () => {
             onClose();
-            showToast({ title: t("deletedDone", { name }) });
+            showToast({ title: t.rich("deletedDone", { name, ...isolated }) });
           },
         })
       }

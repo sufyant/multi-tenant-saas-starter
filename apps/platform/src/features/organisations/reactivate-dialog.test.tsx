@@ -21,6 +21,7 @@ import {
   problem,
   tenantAnswer,
 } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -62,7 +63,7 @@ describe("ReactivateDialog", () => {
     await confirm(dialog);
 
     expect(
-      await screen.findByText("Atlas Logistics reactivated"),
+      await screen.findByText(sentence("Atlas Logistics reactivated")),
     ).toBeVisible();
     expect(screen.getByText("Its 9 members can sign in again.")).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
@@ -81,7 +82,9 @@ describe("ReactivateDialog", () => {
     const dialog = await open();
     await confirm(dialog);
 
-    expect(await dialog.findByText("Atlas Logistics is closed.")).toBeVisible();
+    expect(
+      await dialog.findByText(sentence("Atlas Logistics is closed.")),
+    ).toBeVisible();
     expect(
       dialog.getByText(
         "A closed organisation is reopened, not reactivated. Use Reopen before its deletion date.",

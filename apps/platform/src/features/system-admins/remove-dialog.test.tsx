@@ -13,7 +13,7 @@ import {
   vi,
 } from "vitest";
 import { problem } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { fakeSession } from "../../../test/session";
 import {
   ciara,
@@ -92,7 +92,9 @@ describe("RemoveSystemAdminDialog", () => {
     await remove();
 
     expect(
-      await screen.findByText("Tomás Ryan is no longer a system admin."),
+      await screen.findByText(
+        sentence("Tomás Ryan is no longer a system admin."),
+      ),
     ).toBeVisible();
     expect(calls.count).toBe(1);
     await vi.waitFor(() => expect(requests).toHaveLength(2));
@@ -154,7 +156,7 @@ describe("RemoveSystemAdminDialog", () => {
 
     const dialog = await remove();
 
-    expect(await dialog.findByText(text)).toBeVisible();
+    expect(await dialog.findByText(sentence(text))).toBeVisible();
   });
 
   it("Remove_RightCodeAfterAnOldSecondFactor_RevokesAgainWithAFreshToken", async () => {
@@ -185,7 +187,9 @@ describe("RemoveSystemAdminDialog", () => {
     );
 
     expect(
-      await screen.findByText("Tomás Ryan is no longer a system admin."),
+      await screen.findByText(
+        sentence("Tomás Ryan is no longer a system admin."),
+      ),
     ).toBeVisible();
     expect(log).toEqual(["revoke", "token", "revoke"]);
     expect(calls.count).toBe(2);

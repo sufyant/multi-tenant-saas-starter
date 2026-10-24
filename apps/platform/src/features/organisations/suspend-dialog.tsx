@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { reasonText } from "./field-text";
 import {
   afterRefusal,
@@ -75,11 +76,11 @@ export function SuspendDialog({
       return null;
     if (code === ErrorCode.TenantNotActive)
       return {
-        title: t("suspendNotActive", { name }),
+        title: t.rich("suspendNotActive", { name, ...isolated }),
         text: t("notActiveText"),
       };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(suspend.error)),
     };
   })();
@@ -91,7 +92,7 @@ export function SuspendDialog({
         onSuccess: () => {
           onClose();
           showToast({
-            title: t("suspendedDone", { name }),
+            title: t.rich("suspendedDone", { name, ...isolated }),
             description: t("suspendedToast", { count }),
           });
         },
@@ -103,7 +104,7 @@ export function SuspendDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("suspendTitle", { name })}
+      title={t.rich("suspendTitle", { name, ...isolated })}
       description={t("suspendText", { count })}
       actionLabel={t("suspendAction")}
       cancelLabel={common("cancel")}

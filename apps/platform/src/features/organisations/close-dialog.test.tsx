@@ -23,6 +23,7 @@ import {
   problem,
   tenantAnswer,
 } from "../../../test/organisations";
+import { sentence } from "../../../test/render";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -79,7 +80,9 @@ describe("CloseDialog", () => {
     );
     await userEvent.click(button);
 
-    expect(await screen.findByText("Atlas Logistics closed")).toBeVisible();
+    expect(
+      await screen.findByText(sentence("Atlas Logistics closed")),
+    ).toBeVisible();
     expect(
       screen.getByText(
         `You can reopen it until ${dateOf(reopenableUntil)}. Pending invitations were cancelled.`,
@@ -112,9 +115,9 @@ describe("CloseDialog", () => {
     );
 
     expect(
-      await dialog.findByText("Atlas Logistics cannot be closed."),
+      await dialog.findByText(sentence("Atlas Logistics cannot be closed.")),
     ).toBeVisible();
-    expect(dialog.getByText("It is being deleted.")).toBeVisible();
+    expect(dialog.getByText(sentence("It is being deleted."))).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });
 });

@@ -22,6 +22,7 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { savedUnderKey } from "@/shared/saved-under-key";
 import { useDates } from "@/shared/use-dates";
 import { emailText } from "./field-text";
@@ -94,15 +95,18 @@ export function InviteOwnerDialog({
       case ErrorCode.RequestValidationFailed:
         return null;
       case ErrorCode.TenantHasOwner:
-        return { title: t("hasOwner", { name }), text: t("hasOwnerText") };
+        return {
+          title: t.rich("hasOwner", { name, ...isolated }),
+          text: t("hasOwnerText"),
+        };
       case ErrorCode.TenantNotActive:
         return {
-          title: t("inviteNotActive", { name }),
+          title: t.rich("inviteNotActive", { name, ...isolated }),
           text: t("inviteNotActiveText"),
         };
       default:
         return {
-          title: t("notDone", { name }),
+          title: t.rich("notDone", { name, ...isolated }),
           text: failureText(problemOf(invite.error)),
         };
     }
@@ -135,7 +139,7 @@ export function InviteOwnerDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("inviteTitle", { name })}
+      title={t.rich("inviteTitle", { name, ...isolated })}
       description={t("inviteText")}
       actionLabel={t("inviteAction")}
       cancelLabel={common("cancel")}

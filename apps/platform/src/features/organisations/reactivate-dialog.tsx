@@ -7,6 +7,7 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { isolated } from "@/shared/isolated";
 import {
   afterRefusal,
   type Organisation,
@@ -37,11 +38,11 @@ export function ReactivateDialog({
     if (!reactivate.error) return null;
     if (problemOf(reactivate.error)?.code === ErrorCode.TenantNotActive)
       return {
-        title: t("reactivateClosed", { name }),
+        title: t.rich("reactivateClosed", { name, ...isolated }),
         text: t("reactivateClosedText"),
       };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(reactivate.error)),
     };
   })();
@@ -50,7 +51,7 @@ export function ReactivateDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("reactivateTitle", { name })}
+      title={t.rich("reactivateTitle", { name, ...isolated })}
       description={t("reactivateText", { count })}
       actionLabel={t("reactivateAction")}
       cancelLabel={common("cancel")}
@@ -60,7 +61,7 @@ export function ReactivateDialog({
           onSuccess: () => {
             onClose();
             showToast({
-              title: t("reactivated", { name }),
+              title: t.rich("reactivated", { name, ...isolated }),
               description: t("signInAgain", { count }),
             });
           },

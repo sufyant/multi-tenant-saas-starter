@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { nameText } from "./field-text";
 import {
   afterRefusal,
@@ -76,11 +77,11 @@ export function RenameDialog({
       return null;
     if (code === ErrorCode.TenantNotActive)
       return {
-        title: t("renameNotActive", { name }),
+        title: t.rich("renameNotActive", { name, ...isolated }),
         text: t("notActiveText"),
       };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(rename.error)),
     };
   })();
@@ -91,7 +92,9 @@ export function RenameDialog({
       rename.mutate(body, {
         onSuccess: (renamed) => {
           onClose();
-          showToast({ title: t("renamed", { name: renamed.name }) });
+          showToast({
+            title: t.rich("renamed", { name: renamed.name, ...isolated }),
+          });
         },
       }),
   );
@@ -101,7 +104,7 @@ export function RenameDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={t("renameTitle", { name })}
+      title={t.rich("renameTitle", { name, ...isolated })}
       description={t.rich("renameText", {
         slug: () => (
           <bdi dir="ltr" className="font-mono">

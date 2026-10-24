@@ -27,7 +27,7 @@ import {
   problem,
   shannon,
 } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { OrganisationsPage } from "./organisations-page";
 
 vi.mock("next/navigation", () => ({
@@ -353,7 +353,7 @@ describe("OrganisationsPage", () => {
     );
 
     expect(
-      await screen.findByText("Renamed to Northwind Traders Ltd."),
+      await screen.findByText(sentence("Renamed to Northwind Traders Ltd.")),
     ).toBeVisible();
     await waitFor(() => expect(requests).toHaveLength(2));
   });

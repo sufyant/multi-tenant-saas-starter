@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { savedUnderKey } from "@/shared/saved-under-key";
 import { emailText, nameText, slugText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
@@ -125,7 +126,7 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
             renew();
             onClose();
             showToast({
-              title: t("created", { name: created.name }),
+              title: t.rich("created", { name: created.name, ...isolated }),
               description: t("createdText", { email: body.ownerEmail }),
             });
             if (location) router.push(pageOf(location));

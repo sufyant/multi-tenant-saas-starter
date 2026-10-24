@@ -13,7 +13,7 @@ import {
   vi,
 } from "vitest";
 import { problem } from "../../../test/organisations";
-import { renderWithProviders } from "../../../test/render";
+import { renderWithProviders, sentence } from "../../../test/render";
 import { fakeSession, wrongCode } from "../../../test/session";
 import {
   ciara,
@@ -170,7 +170,9 @@ describe("AddSystemAdminDialog", () => {
     const dialog = await find("tomas@starter.example");
 
     expect(
-      await dialog.findByText("Tomás Ryan is already a system admin."),
+      await dialog.findByText(
+        sentence("Tomás Ryan is already a system admin."),
+      ),
     ).toBeVisible();
     expect(dialog.getByRole("button", { name: "Continue" })).toBeDisabled();
   });
@@ -212,7 +214,7 @@ describe("AddSystemAdminDialog", () => {
     await makeSystemAdmin();
 
     expect(
-      await screen.findByText("Mehmet Kaya is a system admin."),
+      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
     ).toBeVisible();
     expect(keys).toHaveLength(1);
     expect(keys[0]).toMatch(/^[\da-f-]{36}$/);
@@ -242,7 +244,7 @@ describe("AddSystemAdminDialog", () => {
 
     const dialog = await makeSystemAdmin();
 
-    expect(await dialog.findByText(text)).toBeVisible();
+    expect(await dialog.findByText(sentence(text))).toBeVisible();
   });
 
   it("Add_BackAfterAFailedConnectionThenTheSamePerson_KeepsTheKey", async () => {
@@ -254,7 +256,7 @@ describe("AddSystemAdminDialog", () => {
     );
 
     const dialog = await makeSystemAdmin();
-    await dialog.findByText("Mehmet Kaya did not change.");
+    await dialog.findByText(sentence("Mehmet Kaya did not change."));
     await userEvent.click(dialog.getByRole("button", { name: "Back" }));
     const first = within(
       await screen.findByRole("alertdialog", { name: "Add system admin" }),
@@ -270,7 +272,7 @@ describe("AddSystemAdminDialog", () => {
     );
 
     expect(
-      await screen.findByText("Mehmet Kaya is a system admin."),
+      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
     ).toBeVisible();
     expect(keys).toHaveLength(2);
     expect(keys[1]).toBe(keys[0]);
@@ -286,7 +288,9 @@ describe("AddSystemAdminDialog", () => {
 
     const dialog = await makeSystemAdmin();
     await dialog.findByText(
-      "Mehmet Kaya is already a system admin. The page has been refreshed.",
+      sentence(
+        "Mehmet Kaya is already a system admin. The page has been refreshed.",
+      ),
     );
 
     await vi.waitFor(() =>
@@ -326,13 +330,13 @@ describe("AddSystemAdminDialog", () => {
     );
 
     const dialog = await makeSystemAdmin();
-    await dialog.findByText("Reactivate Mehmet Kaya first.");
+    await dialog.findByText(sentence("Reactivate Mehmet Kaya first."));
     await userEvent.click(
       dialog.getByRole("button", { name: "Make system admin" }),
     );
 
     expect(
-      await screen.findByText("Mehmet Kaya is a system admin."),
+      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
     ).toBeVisible();
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
@@ -392,7 +396,7 @@ describe("AddSystemAdminDialog", () => {
     );
 
     expect(
-      await screen.findByText("Mehmet Kaya is a system admin."),
+      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
     ).toBeVisible();
     expect(session.startVerification).toHaveBeenCalledWith({
       level: "second_factor",
@@ -465,7 +469,7 @@ describe("AddSystemAdminDialog", () => {
     );
 
     expect(
-      await screen.findByText("Mehmet Kaya is a system admin."),
+      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
     ).toBeVisible();
     expect(session.attemptSecondFactorVerification).toHaveBeenCalledWith({
       strategy: "backup_code",
@@ -495,6 +499,8 @@ describe("AddSystemAdminDialog", () => {
     );
     expect(keys).toHaveLength(1);
     expect(session.attemptSecondFactorVerification).not.toHaveBeenCalled();
-    expect(screen.queryByText("Mehmet Kaya is a system admin.")).toBeNull();
+    expect(
+      screen.queryByText(sentence("Mehmet Kaya is a system admin.")),
+    ).toBeNull();
   });
 });

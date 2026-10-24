@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { isolated } from "@/shared/isolated";
 import { savedUnderKey } from "@/shared/saved-under-key";
 import { ReverifyStep } from "./reverify-step";
 import {
@@ -101,7 +102,9 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         onSuccess: () => {
           renew();
           onClose();
-          showToast({ title: t("granted", { name: adminNameOf(user) }) });
+          showToast({
+            title: t.rich("granted", { name: adminNameOf(user), ...isolated }),
+          });
         },
       },
     );
@@ -126,16 +129,22 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
       if (!grant.error || needsReverification(grant.error)) return null;
       switch (problemOf(grant.error)?.code) {
         case ErrorCode.SystemAdminExists:
-          return { title: t("alreadyAdminRaced", { name }), text: null };
+          return {
+            title: t.rich("alreadyAdminRaced", { name, ...isolated }),
+            text: null,
+          };
         case ErrorCode.UserSuspended:
-          return { title: users("reactivateFirst", { name }), text: null };
+          return {
+            title: users.rich("reactivateFirst", { name, ...isolated }),
+            text: null,
+          };
         case ErrorCode.UserDeleted:
           return { title: users("wasDeleted"), text: null };
         case ErrorCode.UserNotFound:
           return { title: users("notFound"), text: null };
         default:
           return {
-            title: users("notDone", { name }),
+            title: users.rich("notDone", { name, ...isolated }),
             text: failureText(problemOf(grant.error)),
           };
       }
@@ -144,7 +153,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
       <Dialog
         open
         onOpenChange={close}
-        title={t("confirmTitle", { name })}
+        title={t.rich("confirmTitle", { name, ...isolated })}
         description={t("confirmText")}
         action="secondary"
         actionLabel={t("confirmAction")}
@@ -203,7 +212,10 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         {person?.isSystemAdmin && (
           <Banner
             tone="info"
-            title={t("alreadyAdmin", { name: adminNameOf(person) })}
+            title={t.rich("alreadyAdmin", {
+              name: adminNameOf(person),
+              ...isolated,
+            })}
           />
         )}
       </form>

@@ -12,6 +12,7 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { isolated } from "@/shared/isolated";
 import { useDates } from "@/shared/use-dates";
 import {
   afterRefusal,
@@ -55,7 +56,7 @@ export function CloseDialog({
       )
       .then((until) =>
         showToast({
-          title: t("closedDone", { name }),
+          title: t.rich("closedDone", { name, ...isolated }),
           description: until
             ? t("closedText", { date: date(until) })
             : undefined,
@@ -66,11 +67,11 @@ export function CloseDialog({
     if (!close.error) return null;
     if (problemOf(close.error)?.code === ErrorCode.TenantNotActive)
       return {
-        title: t("closeNotActive", { name }),
+        title: t.rich("closeNotActive", { name, ...isolated }),
         text: t("closeNotActiveText"),
       };
     return {
-      title: t("notDone", { name }),
+      title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(close.error)),
     };
   })();
@@ -80,7 +81,7 @@ export function CloseDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       tone="destructive"
-      title={t("closeTitle", { name })}
+      title={t.rich("closeTitle", { name, ...isolated })}
       description={t("closeText", { count })}
       actionLabel={t("close")}
       cancelLabel={common("cancel")}
