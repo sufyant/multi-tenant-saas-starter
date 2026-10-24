@@ -21,3 +21,4 @@ export {
   isProblemDetails,
   type ProblemAction,
 } from "./problem-details";
+export { retryUnlessClientError } from "./query-retry";

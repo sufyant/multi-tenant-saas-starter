@@ -1,6 +1,6 @@
 "use client";
 
-import { configureApiClient } from "@repo/api-client";
+import { configureApiClient, retryUnlessClientError } from "@repo/api-client";
 import { Toaster } from "@repo/ui/components/toast";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 import type { Direction } from "@repo/ui/lib/locale";
@@ -11,11 +11,18 @@ import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { type ReactNode, useState } from "react";
 import { z } from "zod";
-import { retryUnlessClientError } from "@/shared/problem";
 
 // The browser calls the API only through the BFF on this origin (F6). The one Zod error map gives message keys (F12).
 configureApiClient({ baseUrl: "/api" });
 z.config({ customError: zodErrorMap });
+
+/** The browser's QueryClient: data stays fresh for 60 s, and a 4xx is never retried (F8). */
+export const newQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { staleTime: 60_000, retry: retryUnlessClientError },
+    },
+  });
 
 /** The client providers of the root layout: theme, server data, URL state, tooltips and toasts (F8, F9, F23, F24). */
 export function Providers({
@@ -26,15 +33,8 @@ export function Providers({
   children: ReactNode;
 }) {
   const t = useTranslations("common");
-  // One QueryClient per browser, made once (TanStack Query, "Advanced Server Rendering"). A 4xx is never retried (F8).
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: { staleTime: 60_000, retry: retryUnlessClientError },
-        },
-      }),
-  );
+  // One QueryClient per browser, made once (TanStack Query, "Advanced Server Rendering").
+  const [queryClient] = useState(newQueryClient);
   return (
     <ThemeProvider
       attribute="class"
