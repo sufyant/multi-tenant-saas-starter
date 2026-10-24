@@ -6,6 +6,7 @@ using ControlPlane.Application.Users.GetMe;
 using ControlPlane.Application.Users.GetUser;
 using ControlPlane.Application.Users.ListUsers;
 using ControlPlane.Domain;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -70,12 +71,20 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
         ListRequest<ListUsersSort> list,
         UserStatus? status,
         bool? isSystemAdmin,
+        EmailAddress? email,
         CancellationToken cancellationToken)
     {
         var users = status is { } chosen ? controlPlane.Users.Where(User.InStatus(chosen)) : controlPlane.Users;
         if (isSystemAdmin is { } admins)
         {
             users = users.Where(user => controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) == admins);
+        }
+
+        // Plain equality on the stored address, which is in its one form too, through the B-tree on users.email (section 6, "Rules
+        // without an id").
+        if (email is { Value: var address })
+        {
+            users = users.Where(user => user.Email == address);
         }
 
         if (list.Search is { } search)

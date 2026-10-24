@@ -1,3 +1,4 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Users;
 using SharedKernel;
 
@@ -9,5 +10,10 @@ public static class ListUsersHandler
         ListUsersQuery query,
         IUserQueries users,
         CancellationToken cancellationToken) =>
-        await users.ListUsersAsync(query.List, query.Status is { } status ? Enum.Parse<UserStatus>(status) : null, query.IsSystemAdmin, cancellationToken);
+        await users.ListUsersAsync(
+            query.List,
+            query.Status is { } status ? Enum.Parse<UserStatus>(status) : null,
+            query.IsSystemAdmin,
+            query.Email is { } email ? EmailAddress.Create(email) : null,
+            cancellationToken);
 }

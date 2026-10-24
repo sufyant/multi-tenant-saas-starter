@@ -161,6 +161,97 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(count);
     }
 
+    // The System admins "Add" dialog finds a person by the whole address: ali@ is found, and kali@, which contains it, is not.
+    [Fact]
+    public async Task ListUsers_AnEmailFilter_ReturnsTheUserWithExactlyThatAddress()
+    {
+        var ali = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+        await _testData.AddUserAsync(email: $"kali{_marker}@northwind.example");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/users?email={Uri.EscapeDataString($"ali{_marker}@northwind.example")}", Cancellation);
+
+        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(ali)]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    // The filter takes the address's one form, as every address that enters the system does: trimmed, in lower case.
+    [Fact]
+    public async Task ListUsers_AnEmailFilterInAnotherCaseWithSpaces_ReturnsTheUserWithThatAddress()
+    {
+        var ali = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/users?email={Uri.EscapeDataString($"  ALI{_marker}@Northwind.Example ")}", Cancellation);
+
+        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(ali)]);
+    }
+
+    [Fact]
+    public async Task ListUsers_AnEmailFilterThatNoUserHas_ReturnsNone()
+    {
+        await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/users?email={Uri.EscapeDataString($"ali{_marker}@southwind.example")}", Cancellation);
+
+        Users(page).ShouldBeEmpty();
+        page.GetProperty("total").GetInt32().ShouldBe(0);
+    }
+
+    // users.email is not unique (review of 2026-10-21), so the filter answers every user with the address, never "at most one".
+    [Fact]
+    public async Task ListUsers_AnEmailFilterThatTwoUsersHave_ReturnsBoth()
+    {
+        var first = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+        var second = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/users?email={Uri.EscapeDataString($"ali{_marker}@northwind.example")}", Cancellation);
+
+        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(first), await _testData.UserIdOfAsync(second)], ignoreOrder: true);
+    }
+
+    // An address is checked as the other email inputs are (CreateTenant, InviteMember, InviteOwner).
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("@northwind.example")]
+    [InlineData("ali@")]
+    public async Task ListUsers_AnEmailFilterThatIsNoAddress_IsAValidationFailure(string email)
+    {
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/users?email={Uri.EscapeDataString(email)}", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
+        problem.GetProperty("errors").GetProperty("email").EnumerateArray().Select(code => code.GetString()).ShouldBe(["email_invalid"]);
+    }
+
+    // An empty filter is no filter, as an empty status, sort or q is (K5 in api-catalog).
+    [Fact]
+    public async Task ListUsers_AnEmptyEmailFilter_IsNoFilter()
+    {
+        await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+        await _testData.AddUserAsync(email: $"kali{_marker}@northwind.example");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&email=", Cancellation);
+
+        page.GetProperty("total").GetInt32().ShouldBe(2);
+    }
+
+    // The "Add" dialog's search combines with the other filters: of two users with the address, only the system admin is listed.
+    [Fact]
+    public async Task ListUsers_AnEmailFilterWithIsSystemAdmin_ReturnsTheSystemAdminWithThatAddressOnly()
+    {
+        var admin = await _testData.AddSystemAdminAsync(email: $"ali{_marker}@northwind.example");
+        await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/users?isSystemAdmin=true&email={Uri.EscapeDataString($"ali{_marker}@northwind.example")}", Cancellation);
+
+        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(admin)]);
+    }
+
     // A system admin's grant keeps when it was granted, and the list answers it; a user who is no system admin has none.
     [Fact]
     public async Task ListUsers_ASystemAdminAndAUser_AnswersWhenTheSystemAdminWasGranted()

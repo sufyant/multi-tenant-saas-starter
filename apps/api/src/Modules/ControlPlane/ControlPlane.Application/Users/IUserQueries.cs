@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations.GetInvitationPreview;
 using ControlPlane.Application.Users.GetMe;
 using ControlPlane.Application.Users.GetUser;
 using ControlPlane.Application.Users.ListUsers;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Users;
 using SharedKernel;
 
@@ -32,12 +33,14 @@ public interface IUserQueries
     internal Task<InviterNameView?> FindInviterNameAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of every user in the status or every status, on the system admin list, off it or either, whose email address or name
-    /// contains the search, with when each was granted system admin: by the sort field, users without a value for it last, then by id.
+    /// A page of every user in the status or every status, on the system admin list, off it or either, with the email address or any,
+    /// whose email address or name contains the search, with when each was granted system admin: by the sort field, users without a
+    /// value for it last, then by id.
     /// </summary>
     internal Task<ListPage<UserView>> ListUsersAsync(
         ListRequest<ListUsersSort> list,
         UserStatus? status,
         bool? isSystemAdmin,
+        EmailAddress? email,
         CancellationToken cancellationToken);
 }

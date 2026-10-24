@@ -59,6 +59,8 @@ public static class UserEndpoints
         membership.JoinedAt,
         membership.LastOwner);
 
+    // An empty email filter is no filter, as an empty status or q is (K5 in api-catalog). A given address is checked as the other email
+    // inputs are, and takes its one form in the handler.
     private static async Task<Result<ListPage<UserResponse>>> ListUsers(
         int? page,
         int? pageSize,
@@ -66,6 +68,7 @@ public static class UserEndpoints
         string? q,
         ListFilter<UserResponseStatus>? status,
         bool? isSystemAdmin,
+        string? email,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -82,7 +85,11 @@ public static class UserEndpoints
         }
 
         var users = await bus.InvokeAsync<Result<ListPage<UserView>>>(
-            new ListUsersQuery(list.Value, filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null, isSystemAdmin),
+            new ListUsersQuery(
+                list.Value,
+                filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null,
+                isSystemAdmin,
+                string.IsNullOrWhiteSpace(email) ? null : email),
             cancellationToken);
         return users.Map(found => found.Map(ToResponse));
     }
