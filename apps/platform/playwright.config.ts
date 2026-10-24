@@ -15,6 +15,9 @@ export default defineConfig({
       ? `pnpm start --port ${port}`
       : `pnpm dev --port ${port}`,
     url: `http://localhost:${port}/sign-in`,
+    // The dev server leaves out Next.js's indicator, which covers the rail's toggle (next.config.ts). A server that is already
+    // running keeps its own settings.
+    env: { E2E_DEV_SERVER: "1" },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

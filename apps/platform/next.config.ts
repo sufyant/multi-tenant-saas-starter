@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     process.env.NODE_ENV === "production"
       ? ["ts", "tsx"]
       : ["ts", "tsx", "dev.tsx"],
+  // Playwright's dev server sets E2E_DEV_SERVER (playwright.config.ts): Next.js's indicator sits at the foot of the rail and
+  // covers the rail's toggle. The compile and runtime errors still show.
+  ...(process.env.E2E_DEV_SERVER && { devIndicators: false }),
   async headers() {
     return [
       {

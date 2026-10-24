@@ -21,4 +21,20 @@ describe("next.config", () => {
 
     expect(config.pageExtensions).toContain("dev.tsx");
   });
+
+  it("DevIndicators_PlaywrightDevServer_AreOff", async () => {
+    vi.stubEnv("E2E_DEV_SERVER", "1");
+
+    const { default: config } = await import("./next.config");
+
+    expect(config.devIndicators).toBe(false);
+  });
+
+  it("DevIndicators_Development_AreNextJsDefault", async () => {
+    vi.stubEnv("E2E_DEV_SERVER", "");
+
+    const { default: config } = await import("./next.config");
+
+    expect(config.devIndicators).toBeUndefined();
+  });
 });
