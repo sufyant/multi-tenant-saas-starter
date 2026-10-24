@@ -8,7 +8,7 @@ The look and the shared parts of every frontend app: the design tokens of the St
 - `scripts/build-tokens.mjs` writes `src/styles/tokens.gen.css` from it: light colours and shadows on `:root`, dark ones on `.dark`, every other token on `:root`, and the breakpoints in a Tailwind `@theme` block (F20).
 - `src/styles/globals.css` imports `tokens.gen.css` and maps the tokens into Tailwind's theme, so `bg-primary`, `text-muted-foreground`, `rounded-md`, `h-control-md`, `shadow-md` and `tablet:` work.
 - `src/components/<name>/` holds each of the 20 components of the design system's `components/index.d.ts`, with its test and an `index.ts`: `app-shell`, `banner`, `button`, `combobox`, `dialog`, `empty-state`, `freshness`, `icon`, `input`, `org-menu`, `row-menu`, `skeleton`, `status`, `sub-nav`, `table`, `tabs`, `tag`, `time`, `toast`, `user-menu`. The README of each component in the design system is its specification. Import one as `@repo/ui/components/button`.
-- `src/components/` also holds the parts of our own sign-in, which both apps share (step 21b): `code-input`, `provider-buttons`, `auth-layout` and `sign-in` (`SignIn`, its email, code and second-factor steps, `SsoCallback`, the Clerk error map and the redirect rule). They are not components of the design system; the D5 boards are their specification. Only `sign-in` imports Clerk; `sign-in` and the dev page import next-intl.
+- `src/components/` also holds the parts of our own sign-in, which both apps share (step 21b): `code-input`, `provider-buttons`, `auth-layout` and `sign-in` (`SignIn`, its email, code and second-factor steps, `SsoCallback`, the Clerk error map and the redirect rule). They are not components of the design system; the D5 boards are their specification. `src/components/preferences-form/` holds the Preferences form of both apps (step 22e, the T11 and P7 boards): the name, the language and the time zone, with one Save; each app gives it the generated schema and calls. Only `sign-in` imports Clerk; `sign-in`, `preferences-form` and the dev page import next-intl.
 - `src/components/ui/` holds the shadcn/ui primitives on Base UI (`components.json`: `base-nova`, `rtl`). Add one with `pnpm dlx shadcn@<version> add <name>` from this folder; then point its imports at `./`, `../../lib/utils` and `../icon/icons`, and pass every text as a prop.
 - `src/components/dev-components-page.tsx` renders every component for `/dev/components` (F33).
 - `src/lib/rail-state.ts` names the rail's cookie and reads its value, for `AppShell` and each app's layout (F49).
@@ -35,7 +35,9 @@ Run from this folder, or with `pnpm --filter @repo/ui` from the root.
 | `cmdk` | The command palette of `AppShell` (F28) | MIT |
 | `input-otp` | The six slots of `CodeInput`, through shadcn's `InputOTP` | MIT |
 | `@clerk/nextjs` | The hooks of `SignIn` and `SsoCallback` (Clerk's custom flows, Core 3). A peer: the apps give it, so one Clerk context serves the app and `SignIn` | MIT |
-| `next-intl` | The texts of `SignIn` and its steps, from the shared messages. A peer: the apps give it | MIT |
+| `next-intl` | The texts of `SignIn`, its steps and `PreferencesForm`, from the shared messages. A peer: the apps give it | MIT |
+| `react-hook-form` | The state and the validation of `PreferencesForm` (F11) | MIT |
+| `@hookform/resolvers` | The Zod resolver of `PreferencesForm`, for the schema the app gives (F11) | MIT |
 | `sonner` | The `Toast` component (F23) | MIT |
 | `next-themes` | The theme of `Toaster` and of the dev page (F24) | MIT |
 | `lucide-react` | The icons, only through the `Icon` component (F22) | ISC |

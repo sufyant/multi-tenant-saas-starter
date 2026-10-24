@@ -1,4 +1,4 @@
-import { type MyTenantResponse, Permission } from "@repo/api-client";
+import { ErrorCode, type MyTenantResponse, Permission } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
@@ -26,7 +26,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
   usePathname: () => "/northwind/settings/preferences",
 }));
-vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ signOut: vi.fn() }) }));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({ signOut: vi.fn() }),
+  useUser: () => ({
+    user: { primaryEmailAddress: { emailAddress: "ayse@northwind.io" } },
+  }),
+}));
 vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
 
 const server = setupServer();
@@ -111,4 +116,31 @@ describe("TenantShell", () => {
       await screen.findByRole("button", { name: "Northwind Traders" }),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    [ErrorCode.UserSuspended, "Your account is suspended", "Sign out"],
+    [ErrorCode.UserDeleted, "This account was deleted", "Use another email"],
+  ])(
+    "TenantShell_GetMeSays_%s_ShowsTheAccountPageInPlaceOfTheShell",
+    async (code, title, action) => {
+      server.use(
+        ...answers(1).slice(0, 2),
+        http.get("*/v1/me", () =>
+          HttpResponse.json(
+            { status: 403, title: "Refused", code, traceId: "00-trace-01" },
+            { status: 403 },
+          ),
+        ),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: action })).toBeInTheDocument();
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+      expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    },
+  );
 });

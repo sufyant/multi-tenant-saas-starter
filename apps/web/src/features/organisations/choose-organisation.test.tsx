@@ -1,4 +1,4 @@
-import type { MyTenantResponse } from "@repo/api-client";
+import { ErrorCode, type MyTenantResponse } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
@@ -51,6 +51,10 @@ const page = (items: MyTenantResponse[]) =>
   http.get("*/v1/me/tenants", () =>
     HttpResponse.json({ items, page: 1, pageSize: 100, total: items.length }),
   );
+
+/** A line of text that spans several elements, such as the slug and the role. */
+const line = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === "SPAN" && element.textContent === text;
 
 describe("ChooseOrganisation", () => {
   it("ChooseOrganisation_ManyOrganisations_ListsEachOne", async () => {
@@ -154,6 +158,37 @@ describe("ChooseOrganisation", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("ChooseOrganisation_Row_ShowsTheSlugAndTheRoleOnOneLine", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Liffey Design", "liffey-design"), status: "purging" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByText(line("northwind · Owner")),
+    ).toBeInTheDocument();
+    expect(screen.getByText(line("liffey-design · Owner"))).toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_PurgingInArabic_SaysBeingDeleted", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "ar" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Liffey Design", "liffey-design"), status: "purging" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />, "ar");
+
+    expect(await screen.findByText("قيد الحذف")).toBeInTheDocument();
+  });
+
   it("ChooseOrganisation_NoOrganisation_ShowsWhoIsSignedInAndSignOut", async () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
@@ -170,4 +205,29 @@ describe("ChooseOrganisation", () => {
       screen.getByRole("button", { name: "Sign out" }),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    [ErrorCode.UserSuspended, "Your account is suspended"],
+    [ErrorCode.UserDeleted, "This account was deleted"],
+  ])(
+    "ChooseOrganisation_GetMeSays_%s_ShowsTheAccountPage",
+    async (code, title) => {
+      server.use(
+        http.get("*/v1/me", () =>
+          HttpResponse.json(
+            { status: 403, title: "Refused", code, traceId: "00-trace-01" },
+            { status: 403 },
+          ),
+        ),
+        page([tenant("Northwind Traders", "northwind")]),
+      );
+
+      renderWithProviders(<ChooseOrganisation />);
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("ali.kaya@gmail.com")).toBeInTheDocument();
+    },
+  );
 });

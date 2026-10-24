@@ -69,6 +69,23 @@ describe("RemoveMemberDialog", () => {
     );
   });
 
+  it("RemoveMember_RefusedEscalation_ReadsTheListAgain", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(people, requests),
+      removeAnswer(() => problem(403, ErrorCode.RoleEscalation)),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openRemove();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Remove member" }),
+    );
+
+    await waitFor(() => expect(requests).toHaveLength(2));
+  });
+
   it.each([
     [
       409,
@@ -93,6 +110,12 @@ describe("RemoveMemberDialog", () => {
       ErrorCode.MemberCannotRemoveSelf,
       "Couldn’t remove John Byrne",
       "You cannot remove yourself.",
+    ],
+    [
+      403,
+      ErrorCode.RoleEscalation,
+      "This role has permissions your role doesn’t have.",
+      "Ask an Owner of Northwind Traders to do this.",
     ],
   ])(
     "RemoveMember_Refused%s_%s_ShowsTheBoardsTextInTheDialog",

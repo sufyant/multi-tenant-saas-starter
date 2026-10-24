@@ -5,6 +5,7 @@
 import { NextIntlClientProvider } from "next-intl";
 import { useTheme } from "next-themes";
 import { type ReactNode, useState } from "react";
+import { z } from "zod";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import tr from "../../messages/tr.json";
@@ -28,6 +29,7 @@ import {
 } from "./icon";
 import { Input } from "./input";
 import { OrgMenu } from "./org-menu";
+import { PreferencesForm } from "./preferences-form";
 import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
 import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
@@ -44,6 +46,16 @@ import { UserMenu } from "./user-menu";
 const at = "2026-10-16T13:32:00Z";
 const messages = { en, tr, ar };
 const noop = () => {};
+const resolved = async () => {};
+
+// The preview's schema has the shape of the generated RenameMe and ChangePreferences, which the apps give (F11).
+const previewName = z.string().trim().min(1).max(100);
+const preferencesSchema = z.object({
+  firstName: previewName,
+  lastName: previewName,
+  language: z.enum(Object.keys(messages) as [keyof typeof messages]),
+  timeZone: z.string().nullable(),
+});
 const now = "2026-10-16T15:40:00Z";
 
 const samples = {
@@ -75,6 +87,8 @@ const samples = {
     settings: "Settings",
     overview: "Overview",
     you: "You",
+    nameNote:
+      "Your name shows to the members of every organisation you belong to.",
   },
   tr: {
     dir: "ltr" as const,
@@ -104,6 +118,7 @@ const samples = {
     settings: "Ayarlar",
     overview: "Genel bakış",
     you: "Siz",
+    nameNote: "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür.",
   },
   ar: {
     dir: "rtl" as const,
@@ -131,6 +146,7 @@ const samples = {
     settings: "الإعدادات",
     overview: "نظرة عامة",
     you: "أنت",
+    nameNote: "يظهر اسمك لأعضاء كل مؤسسة تنتمي إليها.",
   },
 };
 
@@ -412,6 +428,38 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
             </div>
           </NextIntlClientProvider>
         </>
+      ),
+    },
+    {
+      name: "PreferencesForm",
+      render: ({ sample, language }) => (
+        <NextIntlClientProvider
+          locale={language}
+          messages={{
+            ...messages[language],
+            locale: { format: sample.locale },
+          }}
+          timeZone={sample.timeZone}
+        >
+          <div className="w-[640px] max-w-full">
+            <PreferencesForm
+              values={{
+                firstName: "Ayşe",
+                lastName: "Yılmaz",
+                language,
+                timeZone: sample.timeZone,
+              }}
+              schema={preferencesSchema}
+              languages={Object.keys(messages) as (keyof typeof messages)[]}
+              nameNote={sample.nameNote}
+              rename={resolved}
+              changePreferences={resolved}
+              fieldCodesOf={() => null}
+              onSaved={resolved}
+              onFailed={noop}
+            />
+          </div>
+        </NextIntlClientProvider>
       ),
     },
     {

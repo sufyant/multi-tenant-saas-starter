@@ -58,6 +58,11 @@ export function RemoveMemberDialog({
           title: t("members.memberGone", { name }),
           text: t("members.memberGoneRemove"),
         };
+      case ErrorCode.RoleEscalation:
+        return {
+          title: t("members.roleOutOfReach"),
+          text: t("members.roleOutOfReachAsk", { organisation }),
+        };
       default:
         return {
           title: t("members.removeFailed", { name }),

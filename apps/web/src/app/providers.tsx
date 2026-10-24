@@ -11,6 +11,7 @@ import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { type ReactNode, useState } from "react";
 import { z } from "zod";
+import { retryUnlessClientError } from "@/shared/problem";
 
 // The browser calls the API only through the BFF on this origin (F6). The one Zod error map gives message keys (F12).
 configureApiClient({ baseUrl: "/api" });
@@ -25,10 +26,14 @@ export function Providers({
   children: ReactNode;
 }) {
   const t = useTranslations("common");
-  // One QueryClient per browser, made once (TanStack Query, "Advanced Server Rendering").
+  // One QueryClient per browser, made once (TanStack Query, "Advanced Server Rendering"). A 4xx is never retried (F8).
   const [queryClient] = useState(
     () =>
-      new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } }),
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 60_000, retry: retryUnlessClientError },
+        },
+      }),
   );
   return (
     <ThemeProvider

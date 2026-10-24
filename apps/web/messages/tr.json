@@ -48,19 +48,8 @@
   },
   "preferences": {
     "title": "Tercihler",
-    "language": "Dil",
-    "timeZone": "Saat dilimi",
     "text": "Bunlar sizi her kuruluşta ve her cihazda izler.",
-    "languageHint": "Tarihler ve sayılar bu dilin biçimini kullanır.",
-    "languageSearch": "Dil ara",
-    "languageEmpty": "Dil bulunamadı",
-    "timeZoneHint": "Ekrandaki her saat bu dilimde gösterilir.",
-    "timeZoneSearch": "Şehir veya dilim ara",
-    "timeZoneEmpty": "Saat dilimi bulunamadı",
-    "thisDevice": "{zone} (bu cihaz)",
-    "save": "Tercihleri kaydet",
-    "saved": "Tercihler kaydedildi",
-    "notSaved": "Tercihler kaydedilmedi"
+    "nameNote": "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür."
   },
   "signInPage": {
     "title": "Starter'a giriş yapın"
@@ -102,7 +91,12 @@
     "wrongEmailTitle": "Bu davet başka bir e-posta için",
     "wrongEmailText": "<email></email> olarak giriş yaptınız. Daveti alan e-postayla giriş yapın.",
     "switchAccount": "Hesap değiştir",
-    "backHome": "Ana sayfaya dön"
+    "backHome": "Ana sayfaya dön",
+    "systemAdminStatus": "Mümkün değil",
+    "systemAdminTitle": "Sistem yöneticileri bir kuruluşa katılamaz",
+    "systemAdminText": "Başka bir hesap kullanın.",
+    "tenantSuspendedTitle": "Bu kuruluş askıya alındı",
+    "tenantSuspendedText": "Yeniden etkin olduğunda katılabilirsiniz."
   },
   "settings": {
     "organisation": "Kuruluş",
@@ -202,9 +196,7 @@
     "inviteTitle": "Üye davet edin",
     "inviteText": "Katılmak için bir bağlantı içeren e-posta alır. Bu adrese bekleyen bir davet varsa yenisi onun yerini alır.",
     "inviteEmailPlaceholder": "ad@sirket.com",
-    "inviteRoleHintOwner": "Sahipler Sahip rolünü de verebilir.",
-    "inviteRoleHintAdmin": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
-    "revokeOwnerHint": "Bir Sahibin davetini yalnızca bir Sahip iptal edebilir.",
+    "revokeOwnerHint": "Bu daveti yalnızca bir Sahip geri çekebilir.",
     "inviteLanguage": "E-posta dili",
     "inviteLanguageHint": "Davet e-postası ve ilk ekranlar bu dilde olur. Kişi daha sonra değiştirebilir.",
     "languageSearch": "Dil ara",
@@ -218,7 +210,16 @@
     "dailyLimit": "Günlük sınıra ulaşıldı",
     "dailyLimitText": "{organisation} son 24 saatte izin verilen en fazla daveti gönderdi. Daha sonra yeniden deneyin.",
     "inviteOwner": "Bir Sahibi yalnızca bir Sahip davet edebilir.",
-    "inviteOwnerText": "Yönetici veya Üye seçin ya da bu daveti bir Sahibin göndermesini isteyin."
+    "inviteOwnerText": "Yönetici veya Üye seçin ya da bu daveti bir Sahibin göndermesini isteyin.",
+    "permissionCount": "{count} izin",
+    "giveOwner": "Sahip rolünü yalnızca bir Sahip verebilir.",
+    "roleOutOfReach": "Bu rolde sizin rolünüzde olmayan izinler var.",
+    "roleOutOfReachText": "Başka bir rol seçin ya da bir Sahibe sorun.",
+    "roleOutOfReachAsk": "Bunu {organisation} kuruluşunun bir Sahibinden isteyin.",
+    "roleGone": "Bu rol artık yok.",
+    "roleGoneText": "Liste yenilendi.",
+    "filteredBy": "Rol: {role}",
+    "rolesUnreadable": "Rolünüz rolleri okuyamadığı için bunu yapamaz."
   },
   "general": {
     "title": "Genel",
@@ -248,15 +249,15 @@
         "revoked": "<actor></actor> bir daveti geri aldı."
       },
       "member": {
-        "invited": "<actor></actor> birini {role} rolüyle davet etti.",
+        "invited": "<actor></actor> birini <role></role> rolüyle davet etti.",
         "joined": "<target></target> kuruluşa katıldı.",
-        "removed": "<actor></actor>, <target></target> adlı üyeyi ({role}) kuruluştan çıkardı.",
-        "role_changed": "<actor></actor>, <target></target> adlı üyenin rolünü {oldRole} rolünden {newRole} rolüne değiştirdi."
+        "removed": "<actor></actor>, <target></target> adlı üyeyi (<role></role>) kuruluştan çıkardı.",
+        "role_changed": "<actor></actor>, <target></target> kişisinin rolünü <oldRole></oldRole> rolünden <newRole></newRole> rolüne değiştirdi."
       },
       "role": {
         "created": "<actor></actor>, <target></target> rolünü oluşturdu.",
         "deleted": "<actor></actor>, <target></target> rolünü sildi.",
-        "updated": "<actor></actor>, <target></target> rolünü değiştirdi."
+        "updated": "<actor></actor>, <target></target> rolünü değiştirdi{change, select, both {: <added></added> eklendi, <removed></removed> kaldırıldı} added {: <added></added> eklendi} removed {: <removed></removed> kaldırıldı} other {}}."
       },
       "system_admin": {
         "granted": "<actor></actor>, <target></target> adlı kullanıcıyı sistem yöneticisi yaptı.",
@@ -267,7 +268,7 @@
         "created": "<actor></actor> bu kuruluşu oluşturdu.",
         "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
         "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
-        "purge_warned": "<actor></actor> Sahipleri bu kuruluşun silineceği konusunda uyardı.",
+        "purge_warned": "Sahiplere <target></target> kuruluşunun silineceği bildirildi.",
         "purged": "<actor></actor> bu kuruluşu ve verilerini sildi.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
         "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",
@@ -281,7 +282,9 @@
         "renamed": "<actor></actor>, <target></target> adlı kullanıcının adını değiştirdi.",
         "suspended": "<actor></actor>, <target></target> adlı kullanıcının hesabını askıya aldı."
       }
-    }
+    },
+    "morePermissions": "{count} izin daha",
+    "roleRenamed": "<actor></actor>, <name>{oldName}</name> rolünün adını <name>{newName}</name> olarak değiştirdi."
   },
   "blocked": {
     "suspendedTitle": "{organisation} askıya alındı",
@@ -290,5 +293,50 @@
     "closedText": "Bu kuruluş kapatıldı ve açılamaz. Verileriniz şimdilik korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
     "organisation": "Kuruluş",
     "chooseAnother": "Başka bir kuruluş seçin"
+  },
+  "account": {
+    "user": {
+      "suspended": {
+        "status": "Askıda",
+        "title": "Hesabınız askıya alındı",
+        "text": "Şu anda oturum açamazsınız. Destek ekibiyle iletişime geçin.",
+        "action": "Oturumu kapat"
+      },
+      "deleted": {
+        "status": "Silindi",
+        "title": "Bu hesap silindi",
+        "text": "Başka bir e-postayla oturum açın.",
+        "action": "Başka bir e-posta kullan"
+      }
+    }
+  },
+  "permissions": {
+    "tenant": {
+      "audit": {
+        "read": "Etkinliği görebilir"
+      },
+      "invitations": {
+        "create": "Kişileri davet edebilir",
+        "delete": "Davetleri geri çekebilir ve iptal edebilir",
+        "read": "Davetleri görebilir"
+      },
+      "members": {
+        "delete": "Üyeleri çıkarabilir",
+        "read": "Üyeleri görebilir",
+        "update": "Üyelerin rollerini değiştirebilir"
+      },
+      "owners": {
+        "manage": "Sahipleri yönetebilir"
+      },
+      "profile": {
+        "read": "Kuruluşun bilgilerini görebilir"
+      },
+      "roles": {
+        "create": "Rol oluşturabilir",
+        "delete": "Rolleri silebilir",
+        "read": "Rolleri görebilir",
+        "update": "Rolleri düzenleyebilir"
+      }
+    }
   }
 }

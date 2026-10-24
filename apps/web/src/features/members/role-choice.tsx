@@ -1,83 +1,99 @@
 "use client";
 
-import {
-  getListRolesQueryOptions,
-  type RoleResponse,
-  schemas,
-} from "@repo/api-client";
+import type { RoleDetailResponse } from "@repo/api-client";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
-import { builtInRoleOf, inListOrder, isOwner } from "@/shared/roles";
-import { useRoleName } from "@/shared/use-role-name";
+import { inListOrder } from "@/shared/roles";
+import { useRoleDescription, useRoleName } from "@/shared/use-role-name";
+import { useRoleReach } from "./use-role-reach";
 
-/** The tenant's roles (ListRoles) on one page: the built-in roles and the few custom roles a tenant may have. */
-export const listRolesOptions = (tenantId: string, enabled = true) =>
-  getListRolesQueryOptions(
-    tenantId,
-    { pageSize: schemas.listRolesQueryPageSizeMax },
-    { query: { enabled } },
-  );
-
-/** The roles a viewer may give, in list order: Owner only from an Owner (K1). */
-export const rolesFor = <T extends RoleResponse>(
-  roles: readonly T[],
-  viewerIsOwner: boolean,
-) => inListOrder(roles).filter((role) => viewerIsOwner || !isOwner(role));
-
-/** The roles of the ChangeRole board: one radio for each, with its line of description for a built-in role. */
+/**
+ * The role list of the ChangeRole and Invitations boards: every role of the organisation in list order, one radio each, with its
+ * description or its permission count. A role the viewer cannot give stays, disabled, with its reason under it (F51). A long list
+ * scrolls, so the dialog's buttons stay in view.
+ */
 export function RoleChoice({
   roles,
   value,
   onChange,
+  ownerReason,
+  label,
 }: {
-  roles: RoleResponse[];
+  roles: readonly RoleDetailResponse[];
   /** The id of the chosen role. */
   value: string;
   onChange: (roleId: string) => void;
+  /** Why the viewer cannot give the Owner role: the K1 text of this dialog. */
+  ownerReason: string;
+  /** A visible label above the list; without it the legend is for screen readers only. */
+  label?: string;
 }) {
   const t = useTranslations();
   const roleName = useRoleName();
+  const roleDescription = useRoleDescription();
+  const reach = useRoleReach();
   const id = useId();
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="sr-only">{t("members.role")}</legend>
-      {roles.map((role) => {
-        const builtIn = builtInRoleOf(role);
-        return (
-          <label
-            key={role.id}
-            className={cn(
-              "flex cursor-pointer items-start gap-2.5 rounded-md border border-border px-3 py-2.5",
-              role.id === value && "border-primary ring-1 ring-primary",
-            )}
-          >
-            <input
-              type="radio"
-              name="role"
-              value={role.id}
-              checked={role.id === value}
-              onChange={() => onChange(role.id)}
-              aria-labelledby={`${id}-${role.id}-name`}
-              aria-describedby={builtIn ? `${id}-${role.id}` : undefined}
-              className="mt-0.5 size-4 shrink-0 accent-primary"
-            />
-            <span className="flex flex-col">
-              <span id={`${id}-${role.id}-name`} className="font-medium">
-                {roleName(role)}
-              </span>
-              {builtIn && (
+    <fieldset className="flex min-w-0 flex-col gap-1.5">
+      <legend
+        className={cn(label ? "mb-1.5 text-body font-medium" : "sr-only")}
+      >
+        {label ?? t("members.role")}
+      </legend>
+      <div className="flex max-h-85 flex-col gap-2 overflow-y-auto p-0.5 max-sm:max-h-65">
+        {inListOrder(roles).map((role) => {
+          const reason = reach(role.id, ownerReason);
+          const off = reason !== null;
+          return (
+            <label
+              key={role.id}
+              className={cn(
+                "flex items-start gap-2.5 rounded-md border border-border px-3 py-2.5",
+                off ? "cursor-not-allowed" : "cursor-pointer",
+                role.id === value && "border-primary ring-1 ring-primary",
+              )}
+            >
+              <input
+                type="radio"
+                name={`${id}-role`}
+                value={role.id}
+                checked={role.id === value}
+                disabled={off}
+                onChange={() => onChange(role.id)}
+                aria-labelledby={`${id}-${role.id}-name`}
+                aria-describedby={cn(
+                  `${id}-${role.id}`,
+                  reason && `${id}-${role.id}-reason`,
+                )}
+                className="mt-0.5 size-4 shrink-0 accent-primary"
+              />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span
+                  id={`${id}-${role.id}-name`}
+                  className={cn("font-medium", off && "text-muted-foreground")}
+                >
+                  <bdi>{roleName(role)}</bdi>
+                </span>
                 <span
                   id={`${id}-${role.id}`}
                   className="text-small text-muted-foreground"
                 >
-                  {t(`members.roleDescriptions.${builtIn}`)}
+                  {roleDescription(role)}
                 </span>
-              )}
-            </span>
-          </label>
-        );
-      })}
+                {reason && (
+                  <span
+                    id={`${id}-${role.id}-reason`}
+                    className="text-small text-destructive-text"
+                  >
+                    {reason}
+                  </span>
+                )}
+              </span>
+            </label>
+          );
+        })}
+      </div>
     </fieldset>
   );
 }

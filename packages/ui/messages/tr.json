@@ -192,5 +192,26 @@
       "signInAgain": "Güvenliğiniz için çıkış yapıp yeniden giriş yapın, sonra bir kez daha deneyin.",
       "generic": "Giriş yapılamadı. Yeniden deneyin."
     }
+  },
+  "preferencesForm": {
+    "yourName": "Adınız",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "firstNameRequired": "Adınızı girin.",
+    "lastNameRequired": "Soyadınızı girin.",
+    "nameTooLong": "1 ile 100 karakter arasında yazın.",
+    "languageAndTimeZone": "Dil ve saat dilimi",
+    "language": "Dil",
+    "languageHint": "Tarihler ve sayılar bu dilin biçimini kullanır.",
+    "languageSearch": "Dil ara",
+    "languageEmpty": "Dil bulunamadı",
+    "timeZone": "Saat dilimi",
+    "timeZoneHint": "Ekrandaki her saat bu dilimde gösterilir.",
+    "timeZoneSearch": "Şehir veya dilim ara",
+    "timeZoneEmpty": "Saat dilimi bulunamadı",
+    "thisDevice": "{zone} (bu cihaz)",
+    "save": "Tercihleri kaydet",
+    "saved": "Tercihler kaydedildi",
+    "notSaved": "Tercihler kaydedilmedi"
   }
 }

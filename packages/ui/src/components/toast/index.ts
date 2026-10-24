@@ -1,4 +1,5 @@
 export {
+  dismissToasts,
   showToast,
   Toaster,
   type ToasterProps,

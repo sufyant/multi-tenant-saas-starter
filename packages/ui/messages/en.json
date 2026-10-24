@@ -192,5 +192,26 @@
       "signInAgain": "For your safety, sign out and sign in again, then try once more.",
       "generic": "Sign-in did not work. Try again."
     }
+  },
+  "preferencesForm": {
+    "yourName": "Your name",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "firstNameRequired": "Enter your first name.",
+    "lastNameRequired": "Enter your last name.",
+    "nameTooLong": "Use 1 to 100 characters.",
+    "languageAndTimeZone": "Language and time zone",
+    "language": "Language",
+    "languageHint": "Dates and numbers use this language’s format.",
+    "languageSearch": "Search languages",
+    "languageEmpty": "No language found",
+    "timeZone": "Time zone",
+    "timeZoneHint": "Every time on screen is shown in this zone.",
+    "timeZoneSearch": "Search cities or zones",
+    "timeZoneEmpty": "No time zone found",
+    "thisDevice": "{zone} (this device)",
+    "save": "Save preferences",
+    "saved": "Preferences saved",
+    "notSaved": "Preferences not saved"
   }
 }

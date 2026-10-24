@@ -16,6 +16,6 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - The routes have no tenant segment. Today the app has `/` (the Overview), `/settings/preferences`, `/two-step` and the sign-in routes `/sign-in` and `/sso-callback`. Its sections Organisations, Users and Activity come in later steps; a tenant is then a record the platform lists.
 - An ink "Platform" label starts the top bar on every page and every screen size. There is no OrgMenu.
 - A session without a verified second factor goes to `/two-step` first: the enrolment or the challenge (F42). Only then does the shell read `GetMe`.
-- A signed-in user whose `GetMe.isSystemAdmin` is false sees "You don't have access". The first system admin has no user until their first platform request; on `GetMe` 404 the shell asks the door once (F42).
+- A signed-in user whose `GetMe.isSystemAdmin` is false sees "You don't have access". A root system admin has no grant until their first platform request; on `GetMe` 404, or a user who is no system admin, the shell asks the door once (F42).
 - The platform runs on its own origin, so the API accepts its tokens through `Host__Authentication__AuthorizedParties__1` (`apps/api/docs/configuration.md`, `.railway/railway.ts`).
 - The dev server runs on port 3001, so both apps run side by side.

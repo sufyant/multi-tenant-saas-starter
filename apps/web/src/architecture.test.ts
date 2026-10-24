@@ -8,6 +8,7 @@ import {
   enumValues,
   messageKeySets,
   physicalDirectionClasses,
+  roleNameDecisions,
   testFolders,
   testsBesideTheirFile,
   userFacingLiterals,
@@ -54,6 +55,14 @@ describe("architecture of apps/web", () => {
 
   it("F18_AppsWeb_FormatsDatesOnlyInFormatDateTime", () => {
     expect(dateFormattingOutsideFormatter(src)).toEqual([]);
+  });
+
+  it("F51_AppsWeb_DecidesNothingByARolesName", () => {
+    expect(
+      roleNameDecisions(src, {
+        ignore: ["shared/roles.ts", "shared/use-role-name.ts"],
+      }),
+    ).toEqual([]);
   });
 
   it("F3_AppsWeb_WritesNoEnumValueAsALiteral", () => {

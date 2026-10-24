@@ -5,8 +5,7 @@ import { AuthCard } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
 import { formatRelative } from "@repo/ui/lib/format-date-time";
 import { useTranslations } from "next-intl";
-import { builtInRoleOf } from "@/shared/roles";
-import { useRoleName } from "@/shared/use-role-name";
+import { roleSelect, useRoleName } from "@/shared/use-role-name";
 import { type Inviter, inviterOf } from "./inviter";
 
 /** The organisation, who invited and the role: the head of both accept screens. */
@@ -25,7 +24,7 @@ export function InvitationHeading({
         ? inviter.name
         : t(`invitations.inviterSubject.${inviter.kind}`),
     tenant: preview.tenantName,
-    role: (preview.role && builtInRoleOf(preview.role)) ?? "other",
+    role: preview.role ? roleSelect(preview.role) : "other",
     roleName: preview.role?.name ?? "",
   };
   return (

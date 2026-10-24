@@ -15,14 +15,21 @@ import {
 import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
+  billingLead,
+  customRole,
+  ibrahim,
   john,
+  mehmet,
   membersAnswer,
   northwind,
   people,
+  permissionsOf,
   problem,
   renderInTenant,
   roleOf,
+  supportLead,
   tenantAnswers,
+  viewerAnswers,
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
 
@@ -111,6 +118,151 @@ describe("MembersPage", () => {
     expect(
       screen.getByRole("menuitem", { name: /Remove from organisation/ }),
     ).toHaveTextContent("Only an Owner can remove an Owner.");
+  });
+
+  it("MembersPage_CustomViewer_ActsOnlyOnMembersWhoseRoleItFullyHolds", async () => {
+    const dara = {
+      ...john,
+      firstName: "Dara",
+      lastName: "Quinn",
+      role: billingLead,
+    };
+    server.use(
+      ...viewerAnswers(
+        supportLead,
+        supportLead.permissions,
+        { ...mehmet, role: supportLead },
+        [supportLead, billingLead],
+      ),
+      membersAnswer([ayse, { ...mehmet, role: supportLead }, ibrahim, dara]),
+    );
+
+    renderInTenant(<MembersPage />);
+    await openMenu("Dara Quinn");
+
+    const change = await screen.findByRole("menuitem", { name: /Change role/ });
+    expect(change).toHaveAttribute("aria-disabled", "true");
+    expect(change).toHaveTextContent(
+      "This role has permissions your role doesn’t have.",
+    );
+    expect(
+      screen.queryByRole("menuitem", { name: /Remove from organisation/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_CustomViewerOnAMember_CanChangeTheRole", async () => {
+    server.use(
+      ...viewerAnswers(
+        supportLead,
+        supportLead.permissions,
+        { ...mehmet, role: supportLead },
+        [supportLead, billingLead],
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    await openMenu("John Byrne");
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Change role" }),
+    ).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("MembersPage_ViewerWhoCannotReadRoles_DisablesRemoveAndSaysWhy", async () => {
+    const remover = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c4",
+      "Remover",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantMembersRead,
+        Permission.TenantMembersDelete,
+      ],
+    );
+    server.use(
+      ...viewerAnswers(
+        remover,
+        remover.permissions,
+        { ...mehmet, role: remover },
+        [remover],
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    await openMenu("John Byrne");
+
+    const remove = await screen.findByRole("menuitem", {
+      name: /Remove from organisation/,
+    });
+    expect(remove).toHaveAttribute("aria-disabled", "true");
+    expect(remove).toHaveTextContent(
+      "Your role can’t read roles, so it can’t do this.",
+    );
+  });
+
+  it("MembersPage_ARoleTheListNoLongerHas_DisablesTheActionsAndSaysSo", async () => {
+    const gone = {
+      ...john,
+      role: {
+        id: "0198f0a2-0000-7000-8000-0000000000ff",
+        name: "Retired role",
+        builtIn: false,
+      },
+    };
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([ayse, gone]),
+    );
+
+    renderInTenant(<MembersPage />);
+    await openMenu("John Byrne");
+
+    const change = await screen.findByRole("menuitem", { name: /Change role/ });
+    expect(change).toHaveAttribute("aria-disabled", "true");
+    expect(change).toHaveTextContent("This role no longer exists.");
+  });
+
+  it("MembersPage_FilteredByRole_SendsTheRoleIdAndNamesTheRole", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, permissionsOf.owner, [billingLead]),
+      membersAnswer([], requests),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: `/northwind/settings/members?roleId=${billingLead.id}`,
+    });
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.get("roleId")).toBe(billingLead.id),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Role" })).toHaveTextContent(
+        "Role: Billing lead",
+      ),
+    );
+  });
+
+  it("MembersPage_ClearTheRoleFilter_RemovesItFromTheUrlAndTheRequest", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, permissionsOf.owner, [billingLead]),
+      membersAnswer(people, requests),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: `/northwind/settings/members?roleId=${billingLead.id}`,
+    });
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Clear filter" }),
+    );
+
+    await waitFor(() => expect(window.location.search).toBe(""));
+    await waitFor(() => expect(requests.at(-1)?.has("roleId")).toBe(false));
+    expect(
+      screen.queryByRole("button", { name: "Clear filter" }),
+    ).not.toBeInTheDocument();
   });
 
   it("MembersPage_Member_SeesAReadOnlyListWithoutTabsOrInvite", async () => {

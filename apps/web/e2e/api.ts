@@ -19,6 +19,7 @@ import {
   type MyTenantResponse,
   type MyTenantResponseStatus,
   Permission,
+  type RenameMeRequest,
   type RoleDetailResponse,
   type RoleResponse,
 } from "@repo/api-client";
@@ -29,6 +30,17 @@ import { BuiltInRole } from "../src/shared/roles";
 
 const tenantPermissions = Object.values(Permission).filter((name) =>
   name.startsWith("tenant."),
+);
+
+// An Admin holds the Owner's permissions but the Owner's own and the management of roles (the API's BuiltInRoles).
+const ownerOnly = new Set<Permission>([
+  Permission.TenantOwnersManage,
+  Permission.TenantRolesCreate,
+  Permission.TenantRolesUpdate,
+  Permission.TenantRolesDelete,
+]);
+const adminPermissions = tenantPermissions.filter(
+  (name) => !ownerOnly.has(name),
 );
 
 const memberPermissions = [
@@ -59,7 +71,7 @@ export const roles: Record<BuiltInRole, RoleDetailResponse> = {
   admin: builtIn(
     "0198f0a2-0000-7000-8000-0000000000f2",
     BuiltInRole.Admin,
-    tenantPermissions,
+    adminPermissions,
   ),
   member: builtIn(
     "0198f0a2-0000-7000-8000-0000000000f3",
@@ -67,6 +79,37 @@ export const roles: Record<BuiltInRole, RoleDetailResponse> = {
     memberPermissions,
   ),
 };
+
+const custom = (
+  id: string,
+  name: string,
+  permissions: Permission[],
+): RoleDetailResponse => ({ id, name, builtIn: false, permissions });
+
+/** Northwind's custom roles of the boards. An Admin lacks `tenant.roles.update`, so cannot give Billing lead (F51). */
+export const customRoles: RoleDetailResponse[] = [
+  custom("0198f0a2-0000-7000-8000-0000000000c1", "Billing lead", [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantMembersUpdate,
+    Permission.TenantInvitationsRead,
+    Permission.TenantInvitationsCreate,
+    Permission.TenantRolesRead,
+    Permission.TenantRolesUpdate,
+    Permission.TenantAuditRead,
+  ]),
+  custom("0198f0a2-0000-7000-8000-0000000000c2", "Support", [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantInvitationsRead,
+    Permission.TenantAuditRead,
+  ]),
+  custom("0198f0a2-0000-7000-8000-0000000000c3", "Reviewer", [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantAuditRead,
+  ]),
+];
 
 /** A role as a member, an invitation or a tenant holds it. */
 const roleOf = ({ id, name, builtIn }: RoleDetailResponse): RoleResponse => ({
@@ -77,7 +120,7 @@ const roleOf = ({ id, name, builtIn }: RoleDetailResponse): RoleResponse => ({
 
 /** The role of an id, from the list that ListRoles answers. */
 const roleById = (id: string) =>
-  Object.values(roles).find((role) => role.id === id);
+  [...Object.values(roles), ...customRoles].find((role) => role.id === id);
 
 export const northwind: MyTenantResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
@@ -119,7 +162,7 @@ export async function mockApi(
     }),
   );
   await page.route(`**/api/v1/tenants/${northwind.id}/roles*`, (route) => {
-    const items = Object.values(roles);
+    const items = [...Object.values(roles), ...customRoles];
     return route.fulfill({
       json: { items, page: 1, pageSize: 100, total: items.length },
     });
@@ -222,6 +265,16 @@ export const members: MemberResponse[] = [
     BuiltInRole.Member,
     "2026-03-09T08:00:00Z",
   ),
+  {
+    ...person(
+      "0198f0a2-0000-7000-8000-000000000007",
+      "Dara",
+      "Quinn",
+      BuiltInRole.Member,
+      "2026-09-01T09:30:00Z",
+    ),
+    role: roleOf(customRoles[0] as RoleDetailResponse),
+  },
 ];
 
 const inDays = (days: number) =>
@@ -266,6 +319,12 @@ export const invitations: InvitationResponse[] = [
   ),
   invited("0198f0a2-0000-7000-8000-0000000000a3", "conor@northwind.io", 0.5),
   invited("0198f0a2-0000-7000-8000-0000000000a4", "padraig@northwind.io", -4),
+  invited(
+    "0198f0a2-0000-7000-8000-0000000000a6",
+    "niall@northwind.io",
+    5,
+    customRoles[0],
+  ),
 ];
 
 /**
@@ -457,5 +516,23 @@ export async function mockPreferences(
     const body = route.request().postDataJSON() as ChangePreferencesRequest;
     bodies.push(body);
     return route.fulfill({ json: body });
+  });
+}
+
+/** RenameMe saves the names, and GetMe answers them from then on, as the API does. It records each body. */
+export async function mockRename(
+  page: Page,
+  language: Language,
+  bodies: RenameMeRequest[] = [],
+): Promise<void> {
+  await mockApi(page, language);
+  let person = me(language);
+  await page.route("**/api/v1/me", (route) => {
+    const body = route.request().postDataJSON() as RenameMeRequest | null;
+    if (body) {
+      bodies.push(body);
+      person = { ...person, ...body };
+    }
+    return route.fulfill({ json: person });
   });
 }
