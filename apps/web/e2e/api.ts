@@ -19,6 +19,7 @@ import {
   type MyTenantResponse,
   type MyTenantResponseStatus,
   Permission,
+  type RenameMeRequest,
   type RoleDetailResponse,
   type RoleResponse,
 } from "@repo/api-client";
@@ -508,5 +509,23 @@ export async function mockPreferences(
     const body = route.request().postDataJSON() as ChangePreferencesRequest;
     bodies.push(body);
     return route.fulfill({ json: body });
+  });
+}
+
+/** RenameMe saves the names, and GetMe answers them from then on, as the API does. It records each body. */
+export async function mockRename(
+  page: Page,
+  language: Language,
+  bodies: RenameMeRequest[] = [],
+): Promise<void> {
+  await mockApi(page, language);
+  let person = me(language);
+  await page.route("**/api/v1/me", (route) => {
+    const body = route.request().postDataJSON() as RenameMeRequest | null;
+    if (body) {
+      bodies.push(body);
+      person = { ...person, ...body };
+    }
+    return route.fulfill({ json: person });
   });
 }

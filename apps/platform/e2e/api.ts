@@ -1,5 +1,9 @@
 import type { Page } from "@playwright/test";
-import { Language, type MeResponse } from "@repo/api-client";
+import {
+  Language,
+  type MeResponse,
+  type RenameMeRequest,
+} from "@repo/api-client";
 
 // The API at the browser's door: the page's calls to /api/v1 get these answers, so a page test needs no API and no database.
 // The BFF has its own tests (src/app/api/[...path]/route.test.ts).
@@ -20,4 +24,21 @@ export async function mockApi(
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({ json: me(language) }),
   );
+}
+
+/** RenameMe saves the names, and GetMe answers them from then on, as the API does. It records each body. */
+export async function mockRename(
+  page: Page,
+  language: Language,
+  bodies: RenameMeRequest[] = [],
+): Promise<void> {
+  let person = me(language);
+  await page.route("**/api/v1/me", (route) => {
+    const body = route.request().postDataJSON() as RenameMeRequest | null;
+    if (body) {
+      bodies.push(body);
+      person = { ...person, ...body };
+    }
+    return route.fulfill({ json: person });
+  });
 }
