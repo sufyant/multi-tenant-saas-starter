@@ -13,7 +13,8 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { isolated } from "@/shared/isolated";
-import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
+import { userNameOf } from "@/shared/name-of";
+import { afterRefusal, refreshUser, type User } from "./user";
 
 /** A list names at most three, then "and n more" (the Messages board, F15). */
 const named = 3;
@@ -34,7 +35,7 @@ export function SuspendDialog({
   const common = useTranslations("common");
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const name = displayNameOf(user, t("deletedUser"));
+  const name = userNameOf(user, t("deletedUser"));
   // The list's row has no memberships. The user's page has read them already, so the dialog takes them from the cache there.
   const detail = useQuery(
     getGetUserQueryOptions(user.id, { query: { refetchOnMount: false } }),

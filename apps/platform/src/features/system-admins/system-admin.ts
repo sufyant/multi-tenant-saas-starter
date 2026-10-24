@@ -6,15 +6,8 @@ import {
   getListUsersQueryKey,
   ProblemDetailsError,
   problemOf,
-  type UserResponse,
 } from "@repo/api-client";
 import type { QueryClient } from "@tanstack/react-query";
-import { nameOf } from "@/shared/name-of";
-
-/** The name of a system admin, or their email: a root admin whom the door added has no names yet (A7). */
-export const adminNameOf = (
-  user: Pick<UserResponse, "firstName" | "lastName" | "email">,
-) => nameOf(user) ?? user.email ?? "";
 
 /** The API asks for a fresh second factor before a grant or a revoke (A6a): the dialog asks for the code, then sends again. */
 export const needsReverification = (error: unknown) =>

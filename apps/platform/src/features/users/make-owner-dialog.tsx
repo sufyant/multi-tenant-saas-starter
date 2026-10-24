@@ -13,7 +13,8 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { isolated } from "@/shared/isolated";
-import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
+import { userNameOf } from "@/shared/name-of";
+import { afterRefusal, refreshUser, type User } from "./user";
 
 /**
  * Make a member an Owner of an organisation (the MakeOwner board), the platform's Owner recovery (the API's K13). It works with or
@@ -33,7 +34,7 @@ export function MakeOwnerDialog({
   const common = useTranslations("common");
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const name = displayNameOf(user, t("deletedUser"));
+  const name = userNameOf(user, t("deletedUser"));
   const organisation = membership.tenantName;
 
   const make = useMutation({

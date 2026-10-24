@@ -29,6 +29,7 @@ import {
   mehmetMemberships,
   membershipOf,
   platformCommand,
+  unnamed,
   userAnswer,
   userDetailOf,
   userResponse,
@@ -226,6 +227,16 @@ describe("SuspendUserDialog", () => {
 
     expect(
       within(dialog).getByText("Mehmet Kaya", { selector: "bdi" }),
+    ).toBeVisible();
+  });
+
+  it("Suspend_ActiveUserWithoutNames_NamesThemByTheirEmail", async () => {
+    server.use(meAnswer(), userAnswer(userDetailOf(unnamed)));
+
+    const dialog = await open(unnamed, "root@starter.example");
+
+    expect(
+      dialog.getByText("root@starter.example", { selector: "bdi" }),
     ).toBeVisible();
   });
 });

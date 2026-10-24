@@ -257,6 +257,35 @@ describe("PlatformShell", () => {
     expect(await crumbs.findByText("Deleted user")).toBeInTheDocument();
   });
 
+  it("PlatformShell_ActiveUserWithoutNames_NamesThemByTheirEmailInTheBreadcrumb", async () => {
+    const userId = "0198f0a2-0000-7000-8000-0000000000a8";
+    navigation.pathname = `/users/${userId}`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: Language.En }),
+      ),
+      getGetUserMockHandler(
+        getGetUserResponseMock({
+          id: userId,
+          firstName: null,
+          lastName: null,
+          email: "root@starter.example",
+          status: UserResponseStatus.Active,
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("root@starter.example")).toBeInTheDocument();
+    expect(crumbs.queryByText("Deleted user")).toBeNull();
+  });
+
   it("PlatformShell_OrganisationPage_NamesTheOrganisationInTheBreadcrumb", async () => {
     const tenantId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f";
     navigation.pathname = `/organisations/${tenantId}`;

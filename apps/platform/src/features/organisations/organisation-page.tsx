@@ -18,7 +18,6 @@ import { Status } from "@repo/ui/components/status";
 import { Tabs } from "@repo/ui/components/tabs";
 import { Time } from "@repo/ui/components/time";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { ReactNode } from "react";
@@ -31,6 +30,7 @@ import {
   usePlatformActivity,
 } from "@/shared/platform-activity";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { TextLink } from "@/shared/text-link";
 import { useDates } from "@/shared/use-dates";
 import {
   actionsOf,
@@ -292,12 +292,9 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
         <p className="text-small text-muted-foreground">
           {t.rich("organisations.ownerlessHint", {
             link: (chunks) => (
-              <Link
-                href={usersFoundBy(invitation?.email)}
-                className="text-primary underline-offset-4 hover:underline"
-              >
+              <TextLink href={usersFoundBy(invitation?.email)}>
                 {chunks}
-              </Link>
+              </TextLink>
             ),
           })}
         </p>

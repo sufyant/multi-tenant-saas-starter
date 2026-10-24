@@ -20,8 +20,8 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { isolated } from "@/shared/isolated";
-import { nameOf } from "@/shared/name-of";
-import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
+import { nameOf, userNameOf } from "@/shared/name-of";
+import { afterRefusal, refreshUser, type User } from "./user";
 
 // The generated schema of RenameUser (F11). The API trims both names and needs 1 to 100 characters each (A7); the generated schema
 // has the limits only, so the form adds the trim and the minimum.
@@ -56,7 +56,7 @@ export function RenameDialog({
   const common = useTranslations("common");
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const name = displayNameOf(user, t("deletedUser"));
+  const name = userNameOf(user, t("deletedUser"));
   const form = useForm<Renaming>({
     resolver: zodResolver(renaming),
     defaultValues: {

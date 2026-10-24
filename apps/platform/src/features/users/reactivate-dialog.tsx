@@ -8,7 +8,8 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { isolated } from "@/shared/isolated";
-import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
+import { userNameOf } from "@/shared/name-of";
+import { afterRefusal, refreshUser, type User } from "./user";
 
 /** Reactivate a suspended user (the ReactivateUser board). A refusal shows its text in the dialog (F47). */
 export function ReactivateDialog({
@@ -22,7 +23,7 @@ export function ReactivateDialog({
   const common = useTranslations("common");
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const name = displayNameOf(user, t("deletedUser"));
+  const name = userNameOf(user, t("deletedUser"));
 
   const reactivate = useMutation({
     mutationFn: () => reactivateUser(user.id),

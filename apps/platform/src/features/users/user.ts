@@ -10,7 +10,6 @@ import {
 } from "@repo/api-client";
 import type { StatusTone } from "@repo/ui/components/status";
 import type { QueryClient } from "@tanstack/react-query";
-import { nameOf } from "@/shared/name-of";
 
 /** What the list and the user's page both know of a user: an item of ListUsers, or the answer of GetUser. */
 export type User = Pick<
@@ -33,10 +32,6 @@ export const statuses = {
   UserResponseStatus,
   { label: string; tone: StatusTone }
 >;
-
-/** A deleted user takes no action and has no name (A8). */
-export const isDeleted = (user: Pick<User, "status">) =>
-  user.status === UserResponseStatus.Deleted;
 
 export type Action = "rename" | "suspend" | "reactivate" | "delete";
 
@@ -97,7 +92,3 @@ export function afterRefusal(
   if (error.problem && changedMeanwhile.has(error.problem.code))
     void refreshUser(queryClient, id);
 }
-
-/** The name a screen shows for a user: "Deleted user" once the user is deleted, whatever names an answer still holds (A8). */
-export const displayNameOf = (user: User, deletedUser: string) =>
-  (!isDeleted(user) && nameOf(user)) || deletedUser;

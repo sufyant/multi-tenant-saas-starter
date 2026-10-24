@@ -15,9 +15,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { isolated } from "@/shared/isolated";
+import { userNameOf } from "@/shared/name-of";
 import { ReverifyStep } from "./reverify-step";
 import {
-  adminNameOf,
   afterRefusal,
   needsReverification,
   refreshSystemAdmin,
@@ -42,7 +42,7 @@ export function RemoveDialog({
   const queryClient = useQueryClient();
   const { session } = useSession();
   const [reverifying, setReverifying] = useState(false);
-  const name = adminNameOf(user);
+  const name = userNameOf(user, users("deletedUser"));
 
   const revoke = useMutation({
     mutationFn: () => revokeSystemAdmin(user.id),

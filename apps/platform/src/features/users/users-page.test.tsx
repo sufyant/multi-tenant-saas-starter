@@ -24,6 +24,7 @@ import {
   membershipOf,
   platformCommand,
   rory,
+  unnamed,
   userAnswer,
   userDetailOf,
   userResponse,
@@ -119,6 +120,16 @@ describe("UsersPage", () => {
     const row = await rowOf("Deleted user");
     expect(row.getByText("Deleted")).toBeVisible();
     expect(row.queryByRole("button", { name: /Actions for/ })).toBeNull();
+  });
+
+  it("UsersPage_ActiveUserWithoutNames_ShowsTheEmail", async () => {
+    server.use(meAnswer(), usersAnswer(usersPageOf([unnamed])));
+
+    renderWithProviders(<UsersPage />);
+
+    const row = await rowOf("root@starter.example");
+    expect(row.getByText("Active")).toBeVisible();
+    expect(row.queryByText("Deleted user")).toBeNull();
   });
 
   it("UsersPage_Active_OffersRenameSuspendDelete", async () => {

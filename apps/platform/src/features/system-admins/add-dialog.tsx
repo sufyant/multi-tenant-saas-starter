@@ -21,10 +21,10 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { isolated } from "@/shared/isolated";
+import { userNameOf } from "@/shared/name-of";
 import { savedUnderKey } from "@/shared/saved-under-key";
 import { ReverifyStep } from "./reverify-step";
 import {
-  adminNameOf,
   afterRefusal,
   needsReverification,
   refreshSystemAdmin,
@@ -103,7 +103,10 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
           renew();
           onClose();
           showToast({
-            title: t.rich("granted", { name: adminNameOf(user), ...isolated }),
+            title: t.rich("granted", {
+              name: userNameOf(user, users("deletedUser")),
+              ...isolated,
+            }),
           });
         },
       },
@@ -124,7 +127,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
     );
 
   if (step !== "find" && person) {
-    const name = adminNameOf(person);
+    const name = userNameOf(person, users("deletedUser"));
     const failure = (() => {
       if (!grant.error || needsReverification(grant.error)) return null;
       switch (problemOf(grant.error)?.code) {
@@ -213,7 +216,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
           <Banner
             tone="info"
             title={t.rich("alreadyAdmin", {
-              name: adminNameOf(person),
+              name: userNameOf(person, users("deletedUser")),
               ...isolated,
             })}
           />
@@ -226,6 +229,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
 /** The person the email found (the MakeSystemAdmin board): the name, the email and how many organisations they belong to. */
 function PersonCard({ person }: { person: UserResponse }) {
   const t = useTranslations("systemAdmins");
+  const users = useTranslations("users");
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
       <Avatar
@@ -233,7 +237,9 @@ function PersonCard({ person }: { person: UserResponse }) {
         className="size-10"
       />
       <div className="flex min-w-0 flex-col">
-        <bdi className="truncate font-medium">{adminNameOf(person)}</bdi>
+        <bdi className="truncate font-medium">
+          {userNameOf(person, users("deletedUser"))}
+        </bdi>
         <span className="text-small text-muted-foreground">
           <bdi dir="ltr">{person.email}</bdi>
           {" · "}
