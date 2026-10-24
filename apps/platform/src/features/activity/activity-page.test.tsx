@@ -188,7 +188,7 @@ describe("ActivityPage", () => {
 
     expect(await findSentence("Corrib Press was deleted.")).toBeInTheDocument();
     expect(
-      screen.getByText("Ciara Byrne suspended the user", { exact: false }),
+      await findSentence("Ciara Byrne suspended the user John Byrne."),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Load older activity" }),

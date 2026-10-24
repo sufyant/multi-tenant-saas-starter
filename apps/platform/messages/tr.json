@@ -24,7 +24,8 @@
     "preferences": "Tercihler",
     "you": "Siz",
     "language": "Dil",
-    "platform": "Platform"
+    "platform": "Platform",
+    "activity": "Etkinlik"
   },
   "preferences": {
     "title": "Tercihler",
@@ -190,7 +191,8 @@
     "hasOwnerText": "Sahip az önce katıldı. Sayfa yenilendi.",
     "inviteNotActive": "{name} etkin değil.",
     "inviteNotActiveText": "Önce yeniden etkinleştirin ya da yeniden açın.",
-    "notDone": "{name} değişmedi."
+    "notDone": "{name} değişmedi.",
+    "activity": "Etkinlik"
   },
   "users": {
     "title": "Kullanıcılar",
@@ -285,5 +287,47 @@
     "openOrganisation": "Kuruluşu aç",
     "joinedMeanwhile": "{name} bu işlem sürerken bir kuruluşa katıldı.",
     "joinedMeanwhileText": "Hiçbir şey silinmedi. Tekrar deneyin."
+  },
+  "activity": {
+    "title": "Etkinlik",
+    "today": "Bugün, {date}",
+    "yesterday": "Dün, {date}",
+    "older": "Daha eski etkinlikleri yükle",
+    "loading": "Etkinlik yükleniyor",
+    "empty": "Henüz etkinlik yok",
+    "emptyText": "Kuruluşlardaki, kullanıcılardaki ve sistem yöneticilerindeki değişiklikler burada görünür.",
+    "tenantText": "Platformun bu kuruluşla ilgili kayıtları.",
+    "error": "Etkinlik yüklenemedi",
+    "olderError": "Eski etkinlikler yüklenemedi",
+    "restarted": "En yeni etkinlikten başlanıyor.",
+    "thePlatform": "Platform",
+    "deletedUser": "Silinmiş kullanıcı",
+    "unnamedUser": "Adsız kullanıcı",
+    "operations": {
+      "unknown": "<actor></actor> bir değişiklik yaptı (<code>{operation}</code>).",
+      "tenant": {
+        "created": "<actor></actor>, <target></target> kuruluşunu oluşturdu ve Sahibini davet etti.",
+        "renamed": "<actor></actor>, <link>{oldName}</link> kuruluşunun adını <name>{newName}</name> olarak değiştirdi.",
+        "suspended": "<actor></actor>, <target></target> kuruluşunu askıya aldı. Neden: <name>{reason}</name>.",
+        "reactivated": "<actor></actor>, <target></target> kuruluşunu yeniden etkinleştirdi.",
+        "closed": "<actor></actor>, <target></target> kuruluşunu kapattı.",
+        "reopened": "<actor></actor>, <target></target> kuruluşunu yeniden açtı.",
+        "owner_invited": "<actor></actor>, <target></target> kuruluşuna yeni bir Sahip davet etti.",
+        "owner_made": "<actor></actor>, <member>bir üyeyi</member> <target></target> kuruluşunda Sahip yaptı.",
+        "purge_warned": "<target></target> kuruluşunun Sahiplerine kuruluşun {date} tarihinde silineceği bildirildi.",
+        "purged": "<target></target> silindi."
+      },
+      "user": {
+        "suspended": "<actor></actor>, <target></target> kullanıcısını askıya aldı.",
+        "reactivated": "<actor></actor>, <target></target> kullanıcısını yeniden etkinleştirdi.",
+        "renamed": "{self, select, yes {<actor></actor> adını değiştirdi.} other {<actor></actor>, <target></target> kullanıcısını yeniden adlandırdı.}}",
+        "deleted": "{actorKind, select, platform {Bir kullanıcı silindi.} other {<actor></actor> bir kullanıcıyı sildi.}}",
+        "preferences_changed": "<actor></actor> tercihlerini değiştirdi."
+      },
+      "system_admin": {
+        "granted": "<actor></actor>, <target></target> kullanıcısını sistem yöneticisi yaptı.",
+        "revoked": "<actor></actor>, <target></target> kullanıcısını sistem yöneticiliğinden kaldırdı."
+      }
+    }
   }
 }

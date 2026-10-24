@@ -24,7 +24,8 @@
     "preferences": "Preferences",
     "you": "You",
     "language": "Language",
-    "platform": "Platform"
+    "platform": "Platform",
+    "activity": "Activity"
   },
   "preferences": {
     "title": "Preferences",
@@ -190,7 +191,8 @@
     "hasOwnerText": "The Owner joined just now. The page has been refreshed.",
     "inviteNotActive": "{name} is not active.",
     "inviteNotActiveText": "Reactivate or reopen it first.",
-    "notDone": "{name} did not change."
+    "notDone": "{name} did not change.",
+    "activity": "Activity"
   },
   "users": {
     "title": "Users",
@@ -285,5 +287,47 @@
     "openOrganisation": "Open the organisation",
     "joinedMeanwhile": "{name} joined an organisation while this ran.",
     "joinedMeanwhileText": "Nothing was deleted. Try again."
+  },
+  "activity": {
+    "title": "Activity",
+    "today": "Today, {date}",
+    "yesterday": "Yesterday, {date}",
+    "older": "Load older activity",
+    "loading": "Loading activity",
+    "empty": "No activity yet",
+    "emptyText": "Changes to organisations, users and system admins appear here.",
+    "tenantText": "The platform’s entries about this organisation.",
+    "error": "Couldn’t load activity",
+    "olderError": "Couldn’t load older activity",
+    "restarted": "Starting from the newest activity.",
+    "thePlatform": "The platform",
+    "deletedUser": "Deleted user",
+    "unnamedUser": "Unnamed user",
+    "operations": {
+      "unknown": "<actor></actor> made a change (<code>{operation}</code>).",
+      "tenant": {
+        "created": "<actor></actor> created <target></target> and invited its Owner.",
+        "renamed": "<actor></actor> renamed <link>{oldName}</link> to <name>{newName}</name>.",
+        "suspended": "<actor></actor> suspended <target></target>. Reason: <name>{reason}</name>.",
+        "reactivated": "<actor></actor> reactivated <target></target>.",
+        "closed": "<actor></actor> closed <target></target>.",
+        "reopened": "<actor></actor> reopened <target></target>.",
+        "owner_invited": "<actor></actor> invited a new Owner of <target></target>.",
+        "owner_made": "<actor></actor> made <member>a member</member> an Owner of <target></target>.",
+        "purge_warned": "The Owners of <target></target> were warned that it will be deleted on {date}.",
+        "purged": "<target></target> was deleted."
+      },
+      "user": {
+        "suspended": "<actor></actor> suspended the user <target></target>.",
+        "reactivated": "<actor></actor> reactivated the user <target></target>.",
+        "renamed": "{self, select, yes {<actor></actor> changed their name.} other {<actor></actor> renamed the user <target></target>.}}",
+        "deleted": "{actorKind, select, platform {A user was deleted.} other {<actor></actor> deleted a user.}}",
+        "preferences_changed": "<actor></actor> changed their preferences."
+      },
+      "system_admin": {
+        "granted": "<actor></actor> made <target></target> a system admin.",
+        "revoked": "<actor></actor> removed <target></target> as a system admin."
+      }
+    }
   }
 }
