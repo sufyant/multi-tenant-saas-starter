@@ -8,6 +8,8 @@ import {
 import { localeCookie } from "@repo/ui/lib/locale";
 import { railCookieName } from "@repo/ui/lib/rail-state";
 import {
+  roles as builtInRoles,
+  customRoles,
   me,
   mockApi,
   mockAuditLog,
@@ -376,3 +378,44 @@ for (const shot of pages) {
     });
   });
 }
+
+// The roles pages of step 22i, in the four variants of a review: English light and dark on a desktop, Turkish on a tablet and
+// Arabic on a phone.
+const roles = `${settings}/roles`;
+const reviewVariants = [
+  { language: Language.En, scheme: "light", size: "desktop" },
+  { language: Language.En, scheme: "dark", size: "desktop" },
+  { language: Language.Tr, scheme: "light", size: "tablet" },
+  { language: Language.Ar, scheme: "light", size: "phone" },
+] as const;
+const rolePages = [
+  ["roles", roles],
+  ["new-role", `${roles}/new`],
+  ["custom-role", `${roles}/${customRoles[0]?.id}`],
+  ["built-in-role", `${roles}/${builtInRoles.admin.id}`],
+] as const;
+
+for (const { language, scheme, size } of reviewVariants)
+  for (const [name, path] of rolePages)
+    test(`Screenshot_${name}-${language}-${scheme}-${size}`, async ({
+      page,
+      context,
+      baseURL,
+    }) => {
+      await setupClerkTestingToken({ page });
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.setViewportSize(sizes[size]);
+      await context.addCookies([
+        { name: localeCookie, value: language, url: baseURL },
+      ]);
+      await mockMembers(page, { language });
+
+      await page.goto(path);
+      await page.getByRole("heading", { level: 1 }).waitFor();
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
+      await page.screenshot({
+        path: `${folder}/${name}-${language}-${scheme}-${size}.png`,
+        fullPage: true,
+      });
+    });
