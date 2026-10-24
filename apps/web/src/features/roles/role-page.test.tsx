@@ -31,7 +31,7 @@ const states = () =>
     .getAllByRole<HTMLInputElement>("checkbox")
     .map((box) => [box.labels?.[0]?.textContent, box.checked, box.disabled]);
 
-const open = (roleId: string, role = BuiltInRole.Owner) => {
+const open = (roleId: string, role: BuiltInRole = BuiltInRole.Owner) => {
   server.use(
     ...tenantAnswers(role, undefined, [
       customRole("0198f0a2-0000-7000-8000-0000000000c3", "Reviewer", [
