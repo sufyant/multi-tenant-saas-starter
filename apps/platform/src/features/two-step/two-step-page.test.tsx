@@ -200,6 +200,23 @@ describe("TwoStepPage", () => {
     expect(user.createTOTP).not.toHaveBeenCalled();
   });
 
+  it("TwoStepPage_RightCodeAtTheChallenge_AsksForAFreshTokenOnce", async () => {
+    const { session } = fakeClerk({ totpEnabled: true });
+    const person = userEvent.setup();
+    renderWithProviders(<TwoStepPage />);
+
+    await person.type(
+      await screen.findByRole("textbox", { name: "Code" }),
+      "654321",
+    );
+    await person.click(screen.getByRole("button", { name: "Continue" }));
+
+    await vi.waitFor(() =>
+      expect(session.getToken).toHaveBeenCalledWith({ skipCache: true }),
+    );
+    expect(session.getToken).toHaveBeenCalledTimes(1);
+  });
+
   it("TwoStepPage_BackupCodeAtTheChallenge_VerifiesTheBackupCode", async () => {
     const { session } = fakeClerk({ totpEnabled: true });
     const person = userEvent.setup();

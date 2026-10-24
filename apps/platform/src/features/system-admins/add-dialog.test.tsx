@@ -245,6 +245,78 @@ describe("AddSystemAdminDialog", () => {
     expect(await dialog.findByText(text)).toBeVisible();
   });
 
+  it("Add_BackAfterAFailedConnectionThenTheSamePerson_KeepsTheKey", async () => {
+    const keys: (string | null)[] = [];
+    server.use(
+      meAs(ciara),
+      users([mehmet]),
+      grant([() => HttpResponse.error(), granted], keys),
+    );
+
+    const dialog = await makeSystemAdmin();
+    await dialog.findByText("Mehmet Kaya did not change.");
+    await userEvent.click(dialog.getByRole("button", { name: "Back" }));
+    const first = within(
+      await screen.findByRole("alertdialog", { name: "Add system admin" }),
+    );
+    await userEvent.click(first.getByRole("button", { name: "Continue" }));
+    const again = within(
+      await screen.findByRole("alertdialog", {
+        name: "Make Mehmet Kaya a system admin?",
+      }),
+    );
+    await userEvent.click(
+      again.getByRole("button", { name: "Make system admin" }),
+    );
+
+    expect(
+      await screen.findByText("Mehmet Kaya is a system admin."),
+    ).toBeVisible();
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it("Add_Conflict_ReadsTheListAgain", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAs(ciara),
+      users([mehmet], requests),
+      grant([() => problem(409, ErrorCode.SystemAdminExists)], []),
+    );
+
+    const dialog = await makeSystemAdmin();
+    await dialog.findByText(
+      "Mehmet Kaya is already a system admin. The page has been refreshed.",
+    );
+
+    await vi.waitFor(() =>
+      expect(
+        requests.filter((params) => params.get("isSystemAdmin") === "true"),
+      ).toHaveLength(2),
+    );
+  });
+
+  it("Add_CallerSuspended_ReadsGetMeAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      http.get("*/v1/me", () => {
+        reads.count += 1;
+        return HttpResponse.json({
+          ...ciara,
+          isSystemAdmin: true,
+          language: "en",
+          timeZone: "Europe/Dublin",
+        });
+      }),
+      users([mehmet]),
+      grant([() => problem(403, ErrorCode.UserSuspended)], []),
+    );
+
+    await makeSystemAdmin();
+
+    await vi.waitFor(() => expect(reads.count).toBe(2));
+  });
+
   it("Add_RefusalThenAgain_SendsANewKey", async () => {
     const keys: (string | null)[] = [];
     server.use(
