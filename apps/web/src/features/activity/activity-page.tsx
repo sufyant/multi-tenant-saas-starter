@@ -148,7 +148,7 @@ export function ActivityPage() {
                         timeZone={timeZone}
                       />
                     </span>
-                    <ActivitySentence entry={entry} />
+                    <ActivitySentence entry={entry} timeZone={timeZone} />
                   </li>
                 ))}
               </ul>
