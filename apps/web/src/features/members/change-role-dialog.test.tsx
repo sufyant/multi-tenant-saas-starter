@@ -106,10 +106,54 @@ describe("ChangeRoleDialog", () => {
     const dialog = await openChangeRole();
 
     expect(within(dialog).getAllByRole("radio")).toHaveLength(3);
-    expect(dialog).toHaveTextContent(
-      "Everything an Admin can do, and can give or take the Owner role.",
+    // The descriptions of the ChangeRole board.
+    expect(
+      within(dialog).getByRole("radio", { name: "Owner" }),
+    ).toHaveAccessibleDescription(
+      "Everything, including giving and taking the Owner role.",
+    );
+    expect(
+      within(dialog).getByRole("radio", { name: "Admin" }),
+    ).toHaveAccessibleDescription(
+      "Invites members, changes roles, removes members, reads Activity.",
+    );
+    expect(
+      within(dialog).getByRole("radio", { name: "Member" }),
+    ).toHaveAccessibleDescription(
+      "Uses the product. Sees the member list, not Activity or Invitations.",
     );
     expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
+  });
+
+  it("ChangeRole_OwnerInArabic_DescribesEachRoleAsTheBoardDoes", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />, { locale: "ar" });
+    const table = within(await screen.findByRole("table", { name: "الأعضاء" }));
+    await userEvent.click(
+      await table.findByRole("button", { name: "إجراءات John Byrne" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "تغيير الدور" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "تغيير دور John Byrne",
+    });
+
+    // The descriptions of the ChangeRoleAr board.
+    expect(
+      within(dialog).getByRole("radio", { name: "مالك" }),
+    ).toHaveAccessibleDescription("كل شيء، بما في ذلك منح دور المالك وسحبه.");
+    expect(
+      within(dialog).getByRole("radio", { name: "مشرف" }),
+    ).toHaveAccessibleDescription(
+      "يدعو الأعضاء ويغيّر الأدوار ويزيل الأعضاء ويقرأ النشاط.",
+    );
+    expect(
+      within(dialog).getByRole("radio", { name: "عضو" }),
+    ).toHaveAccessibleDescription(
+      "يستخدم المنتج. يرى قائمة الأعضاء، لا النشاط ولا الدعوات.",
+    );
   });
 
   it("ChangeRole_Admin_ListsTheOwnerDisabledWithItsReason", async () => {
