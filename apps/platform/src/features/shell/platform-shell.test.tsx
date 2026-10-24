@@ -3,6 +3,7 @@ import {
   getGetMeMockHandler,
   getGetMeResponseMock,
   getListTenantsMockHandler,
+  getListTenantsResponseMock,
 } from "@repo/api-client/msw";
 import { screen } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
@@ -38,6 +39,13 @@ const notAUser = {
   traceId: "00-trace-01",
 };
 
+const refused = {
+  status: 403,
+  title: "Forbidden",
+  code: ErrorCode.AuthForbidden,
+  traceId: "00-trace-02",
+};
+
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
@@ -58,11 +66,39 @@ describe("PlatformShell", () => {
     expect(await screen.findByRole("banner")).toHaveTextContent(/^Platform/);
   });
 
-  it("PlatformShell_NoSystemAdmin_SaysYouDontHaveAccess", async () => {
+  it("PlatformShell_SystemAdminFromTheStart_DoesNotAskTheDoor", async () => {
+    const doorCalls = vi.fn();
     server.use(
       getGetMeMockHandler(
-        getGetMeResponseMock({ isSystemAdmin: false, language: "en" }),
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
       ),
+      getListTenantsMockHandler(() => {
+        doorCalls();
+        return getListTenantsResponseMock();
+      }),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    expect(await screen.findByText("Content")).toBeInTheDocument();
+    expect(doorCalls).not.toHaveBeenCalled();
+  });
+
+  it("PlatformShell_NoSystemAdminAndTheDoorRefuses_SaysYouDontHaveAccessAfterOneDoorCall", async () => {
+    const consoleError = vi.spyOn(console, "error");
+    const meCalls = vi.fn();
+    const doorCalls = vi.fn();
+    server.use(
+      getGetMeMockHandler(() => {
+        meCalls();
+        return getGetMeResponseMock({ isSystemAdmin: false, language: "en" });
+      }),
+      http.get("*/v1/platform/tenants", () => {
+        doorCalls();
+        return HttpResponse.json(refused, { status: 403 });
+      }),
     );
 
     renderWithProviders(
@@ -77,10 +113,60 @@ describe("PlatformShell", () => {
       "ltr",
     );
     expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    expect(doorCalls).toHaveBeenCalledOnce();
+    expect(meCalls).toHaveBeenCalledOnce();
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
-  it("PlatformShell_FirstSystemAdminAtTheFirstVisit_AsksTheDoorThenReadsGetMeAgain", async () => {
-    // The door writes the first system admin's user at their first platform request (SystemAdminDirectory), so GetMe answers
+  it("PlatformShell_RootSystemAdminAlreadyAUser_AsksTheDoorThenReadsGetMeAgain", async () => {
+    // A root system admin who is already a user, for example a member of a tenant, has no grant until the door writes it
+    // (SystemAdminDirectory), so GetMe answers isSystemAdmin false until then.
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: false, language: "en" }),
+        { once: true },
+      ),
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      getListTenantsMockHandler(),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    expect(await screen.findByText("Content")).toBeInTheDocument();
+  });
+
+  it("PlatformShell_DoorLetsInButGetMeStillNoSystemAdmin_SaysYouDontHaveAccessAfterOneDoorCall", async () => {
+    const meCalls = vi.fn();
+    const doorCalls = vi.fn();
+    server.use(
+      getGetMeMockHandler(() => {
+        meCalls();
+        return getGetMeResponseMock({ isSystemAdmin: false, language: "en" });
+      }),
+      getListTenantsMockHandler(() => {
+        doorCalls();
+        return getListTenantsResponseMock();
+      }),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "You don’t have access" }),
+    ).toBeInTheDocument();
+    expect(doorCalls).toHaveBeenCalledOnce();
+    expect(meCalls).toHaveBeenCalledTimes(2);
+  });
+
+  it("PlatformShell_RootSystemAdminNotAUserYet_AsksTheDoorThenReadsGetMeAgain", async () => {
+    // The door writes the root system admin's user at their first platform request (SystemAdminDirectory), so GetMe answers
     // 404 until then.
     server.use(
       http.get("*/v1/me", () => HttpResponse.json(notAUser, { status: 404 }), {
@@ -118,15 +204,7 @@ describe("PlatformShell", () => {
     server.use(
       http.get("*/v1/me", () => HttpResponse.json(notAUser, { status: 404 })),
       http.get("*/v1/platform/tenants", () =>
-        HttpResponse.json(
-          {
-            status: 403,
-            title: "Forbidden",
-            code: ErrorCode.AuthForbidden,
-            traceId: "00-trace-02",
-          },
-          { status: 403 },
-        ),
+        HttpResponse.json(refused, { status: 403 }),
       ),
     );
 
