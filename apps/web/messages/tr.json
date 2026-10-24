@@ -328,7 +328,7 @@
       },
       "invitations": {
         "create": "Kişileri davet edebilir",
-        "delete": "Davetleri geri çekebilir",
+        "delete": "Davetleri geri çekebilir ve iptal edebilir",
         "read": "Davetleri görebilir"
       },
       "members": {

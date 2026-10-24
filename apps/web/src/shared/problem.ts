@@ -13,7 +13,7 @@ export function referenceOf(traceId: string): string {
 
 /**
  * Whether the API refuses the user on every request (A9): 403 `user.suspended` or `user.deleted` (F4). These are expected answers,
- * so no screen shows a toast, retries or logs them.
+ * so no screen shows a toast or logs them.
  */
 export function accountBlockOf(error: unknown): AccountBlock | null {
   if (!(error instanceof ProblemDetailsError)) return null;
@@ -23,10 +23,17 @@ export function accountBlockOf(error: unknown): AccountBlock | null {
   return null;
 }
 
-/** The queries' retry rule: TanStack Query's three retries, but none for an account the API refuses, as its answer is final. */
-export function retryUnlessAccountBlocked(
+/**
+ * The queries' retry rule (F8): up to three retries for a network error or a 5xx. A 4xx is the API's answer to this request, and
+ * the same request gets it again (TanStack Query, "Query Retries").
+ */
+export function retryUnlessClientError(
   failureCount: number,
   error: unknown,
 ): boolean {
-  return failureCount < 3 && !accountBlockOf(error);
+  const clientError =
+    error instanceof ProblemDetailsError &&
+    error.status >= 400 &&
+    error.status < 500;
+  return failureCount < 3 && !clientError;
 }

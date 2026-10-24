@@ -328,7 +328,7 @@
       },
       "invitations": {
         "create": "Invite people",
-        "delete": "Revoke invitations",
+        "delete": "Revoke and cancel invitations",
         "read": "See invitations"
       },
       "members": {

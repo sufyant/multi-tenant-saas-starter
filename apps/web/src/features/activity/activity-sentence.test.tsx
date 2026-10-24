@@ -464,7 +464,7 @@ describe("ActivitySentence", () => {
     );
 
     expect(
-      shown("المنصة غيّرت المنصة دور Khalid Al-Harbi من عضو إلى مسؤول."),
+      shown("المنصة غيّرت المنصة دور Khalid Al-Harbi من عضو إلى مشرف."),
     ).toBeInTheDocument();
   });
 
