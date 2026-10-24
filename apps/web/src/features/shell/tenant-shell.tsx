@@ -3,6 +3,7 @@
 import { useClerk } from "@clerk/nextjs";
 import { getGetMeQueryOptions } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
+import { initialsOf } from "@repo/ui/components/avatar";
 import { HomeIcon, SettingsIcon } from "@repo/ui/components/icon";
 import { OrgMenu } from "@repo/ui/components/org-menu";
 import { UserMenu } from "@repo/ui/components/user-menu";
@@ -16,12 +17,6 @@ import { LocaleSync } from "@/shared/locale-sync";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useTenant } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
-
-const initialsOf = (...names: (string | null)[]) =>
-  names
-    .filter((name): name is string => Boolean(name))
-    .map((name) => name.charAt(0))
-    .join("");
 
 /**
  * The tenant web's AppShell (F28, F30): Overview and Settings in the rail, the breadcrumb that starts with the organisation, the
@@ -113,7 +108,10 @@ export function TenantShell({
                 .filter(Boolean)
                 .join(" ")}
               email={me.data.email ?? ""}
-              initials={initialsOf(me.data.firstName, me.data.lastName)}
+              initials={initialsOf({
+                firstName: me.data.firstName,
+                lastName: me.data.lastName,
+              })}
               label={t("common.account")}
               languageName={t(`languages.${me.data.language}`)}
               languageLabel={t("shell.language")}

@@ -10,7 +10,7 @@ import { ListError } from "./list-error";
 // Each app holds the locale's format; the list error reads it as the app's pages do.
 const messages = { ...en, locale: { format: "en-IE" } };
 const at = Date.parse("2026-10-16T13:32:00Z");
-const traceId = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+const reference = "4bf92f3577b34da6a3ce929d0e0e4736";
 
 function renderError(
   props: Partial<Parameters<typeof ListError>[0]> & { leave?: ReactNode } = {},
@@ -24,7 +24,7 @@ function renderError(
     >
       <ListError
         title="Couldn’t load members"
-        problem={{ code: ErrorCode.TenantNotFound, traceId }}
+        problem={{ code: ErrorCode.TenantNotFound, reference }}
         at={at}
         onRetry={onRetry}
         {...props}

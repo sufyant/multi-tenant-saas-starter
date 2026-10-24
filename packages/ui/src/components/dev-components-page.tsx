@@ -11,6 +11,7 @@ import en from "../../messages/en.json";
 import tr from "../../messages/tr.json";
 import { ActivityLog } from "./activity-log";
 import { AppShell } from "./app-shell";
+import { Avatar } from "./avatar";
 import { Banner } from "./banner";
 import { Button } from "./button";
 import { CodeInput } from "./code-input";
@@ -29,10 +30,12 @@ import {
   UsersIcon,
 } from "./icon";
 import { Input } from "./input";
+import { ListError } from "./list-error";
 import { OrgMenu } from "./org-menu";
 import { PreferencesForm } from "./preferences-form";
 import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
+import { Search } from "./search";
 import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
 import { Skeleton } from "./skeleton";
 import { Status } from "./status";
@@ -468,6 +471,58 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
               fieldCodesOf={() => null}
               onSaved={resolved}
               onFailed={noop}
+            />
+          </div>
+        </NextIntlClientProvider>
+      ),
+    },
+    {
+      name: "Avatar",
+      render: () => (
+        <>
+          <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />
+          <Avatar
+            person={{
+              firstName: null,
+              lastName: null,
+              email: "kemal@northwind.example",
+            }}
+          />
+          <Avatar
+            person={{ firstName: "Mehmet", lastName: "Kaya" }}
+            className="size-11"
+          />
+        </>
+      ),
+    },
+    {
+      name: "Search",
+      render: ({ sample }) => (
+        <Search
+          value=""
+          label={sample.members}
+          maxLength={200}
+          onSearch={noop}
+        />
+      ),
+    },
+    {
+      name: "ListError",
+      render: ({ sample, language }) => (
+        <NextIntlClientProvider
+          locale={language}
+          messages={{
+            ...messages[language],
+            locale: { format: sample.locale },
+          }}
+          timeZone={sample.timeZone}
+        >
+          <div className="w-full max-w-xl">
+            <ListError
+              title="Couldn’t load members"
+              problem={null}
+              at={Date.parse(at)}
+              onRetry={noop}
             />
           </div>
         </NextIntlClientProvider>

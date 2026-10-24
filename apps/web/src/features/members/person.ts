@@ -10,13 +10,3 @@ export function nameOf(person: Named | UserNameResponse): string | null {
   const name = [person.firstName, person.lastName].filter(Boolean).join(" ");
   return name || ("email" in person ? (person.email ?? null) : null);
 }
-
-/** The avatar's letters: the first letter of each name, else of the email. */
-export function initialsOf(person: Named): string {
-  const names = [person.firstName, person.lastName].filter(
-    (name): name is string => Boolean(name),
-  );
-  return names.length > 0
-    ? names.map((name) => name.charAt(0)).join("")
-    : (person.email ?? "").charAt(0).toLocaleUpperCase();
-}

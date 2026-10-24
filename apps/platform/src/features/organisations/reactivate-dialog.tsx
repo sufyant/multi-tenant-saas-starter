@@ -1,13 +1,12 @@
 "use client";
 
-import { ErrorCode, reactivateTenant } from "@repo/api-client";
+import { ErrorCode, problemOf, reactivateTenant } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
 import {
   afterRefusal,
   type Organisation,
@@ -43,7 +42,7 @@ export function ReactivateDialog({
       };
     return {
       title: t("notDone", { name }),
-      text: failureText(reactivate.error),
+      text: failureText(problemOf(reactivate.error)),
     };
   })();
 

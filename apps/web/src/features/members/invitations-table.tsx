@@ -8,6 +8,7 @@ import {
   ListInvitationsSort,
   type ListPageOfInvitationResponse,
   Permission,
+  problemOf,
 } from "@repo/api-client";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
 import { Status, type StatusTone } from "@repo/ui/components/status";
@@ -19,12 +20,12 @@ import {
 } from "@repo/ui/components/table";
 import { Time } from "@repo/ui/components/time";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { useCan, useTenant } from "@/shared/tenant-context";
-import { useFailureText } from "@/shared/use-failure-text";
 import { useRoleName } from "@/shared/use-role-name";
 import {
   daysLeft,
@@ -95,7 +96,7 @@ export function InvitationsTable({
       showToast({
         tone: "destructive",
         title: t("members.notSent"),
-        description: failureText(error),
+        description: failureText(problemOf(error)),
       });
     },
   });

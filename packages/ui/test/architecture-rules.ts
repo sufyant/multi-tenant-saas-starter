@@ -594,11 +594,7 @@ export function nativeChoiceControls(
 ): Finding[] {
   const findings: Finding[] = [];
   for (const path of filesUnder(root)) {
-    if (
-      !path.endsWith(".tsx") ||
-      isTest(path) ||
-      ignored(root, path, options)
-    )
+    if (!path.endsWith(".tsx") || isTest(path) || ignored(root, path, options))
       continue;
     const file = sourceFile(path);
     const visit = (node: ts.Node) => {

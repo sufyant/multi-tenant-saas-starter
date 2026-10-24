@@ -8,22 +8,22 @@ import {
   inviteOwner,
   Language,
   ProblemDetailsError,
+  problemOf,
   schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-import { problemOf } from "@/shared/problem";
 import { savedUnderKey } from "@/shared/saved-under-key";
 import { useDates } from "@/shared/use-dates";
-import { useFailureText } from "@/shared/use-failure-text";
 import { emailText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
 import {
@@ -103,7 +103,7 @@ export function InviteOwnerDialog({
       default:
         return {
           title: t("notDone", { name }),
-          text: failureText(invite.error),
+          text: failureText(problemOf(invite.error)),
         };
     }
   })();

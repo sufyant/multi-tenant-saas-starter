@@ -3,15 +3,15 @@
 import {
   ErrorCode,
   makeOwner,
+  problemOf,
   type UserMembershipResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 /**
@@ -80,7 +80,7 @@ export function MakeOwnerDialog({
     >
       {make.error && (
         <Banner tone="destructive" title={failure ?? t("notDone", { name })}>
-          {failure ? null : failureText(make.error)}
+          {failure ? null : failureText(problemOf(make.error))}
         </Banner>
       )}
     </Dialog>

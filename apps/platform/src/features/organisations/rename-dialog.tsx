@@ -6,6 +6,7 @@ import {
   ErrorCode,
   FieldErrorCode,
   ProblemDetailsError,
+  problemOf,
   renameTenant,
   schemas,
 } from "@repo/api-client";
@@ -13,12 +14,11 @@ import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
 import { nameText } from "./field-text";
 import {
   afterRefusal,
@@ -79,7 +79,10 @@ export function RenameDialog({
         title: t("renameNotActive", { name }),
         text: t("notActiveText"),
       };
-    return { title: t("notDone", { name }), text: failureText(rename.error) };
+    return {
+      title: t("notDone", { name }),
+      text: failureText(problemOf(rename.error)),
+    };
   })();
 
   const submit = form.handleSubmit(

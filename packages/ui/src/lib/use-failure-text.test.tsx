@@ -8,7 +8,7 @@ import { useFailureText } from "./use-failure-text";
 
 // Each app holds the locale's format; the hook reads it as the app's pages do.
 const messages = { ...en, locale: { format: "en-IE" } };
-const traceId = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+const reference = "4bf92f3577b34da6a3ce929d0e0e4736";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -30,7 +30,7 @@ describe("useFailureText", () => {
   it("UseFailureText_Problem_IsItsCodesMessageAndItsReference", () => {
     const { result } = renderHook(() => useFailureText(), { wrapper });
 
-    expect(result.current({ code: ErrorCode.TenantNotFound, traceId })).toBe(
+    expect(result.current({ code: ErrorCode.TenantNotFound, reference })).toBe(
       "This organisation does not exist, or you are not a member of it. Ref 4bf92f3577b34da6a3ce929d0e0e4736 · 13:32 UTC",
     );
   });

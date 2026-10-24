@@ -5,11 +5,11 @@ import {
   getGetUserQueryKey,
   getListUsersQueryKey,
   ProblemDetailsError,
+  problemOf,
   type UserResponse,
 } from "@repo/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import { nameOf } from "@/shared/name-of";
-import { problemOf } from "@/shared/problem";
 
 /** The name of a system admin, or their email: a root admin whom the door added has no names yet (A7). */
 export const adminNameOf = (

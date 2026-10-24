@@ -11,6 +11,7 @@ import {
   UserResponseStatus,
 } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
+import { initialsOf } from "@repo/ui/components/avatar";
 import {
   BuildingIcon,
   HistoryIcon,
@@ -36,12 +37,6 @@ const tenantIdOf = (pathname: string) =>
 /** The user of a user's page, `/users/<id>`, or null on any other page. */
 const userIdOf = (pathname: string) =>
   /^\/users\/([^/]+)/.exec(pathname)?.[1] ?? null;
-
-const initialsOf = (...names: (string | null)[]) =>
-  names
-    .filter((name): name is string => Boolean(name))
-    .map((name) => name.charAt(0))
-    .join("");
 
 const notAUserYet = (error: Error | null) =>
   error instanceof ProblemDetailsError &&
@@ -188,7 +183,10 @@ export function PlatformShell({
               .filter(Boolean)
               .join(" ")}
             email={me.data.email ?? ""}
-            initials={initialsOf(me.data.firstName, me.data.lastName)}
+            initials={initialsOf({
+              firstName: me.data.firstName,
+              lastName: me.data.lastName,
+            })}
             label={t("common.account")}
             languageName={t(`languages.${me.data.language}`)}
             languageLabel={t("shell.language")}

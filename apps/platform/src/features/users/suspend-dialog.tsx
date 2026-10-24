@@ -3,15 +3,15 @@
 import {
   ErrorCode,
   getGetUserQueryOptions,
+  problemOf,
   suspendUser,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 /** A list names at most three, then "and n more" (the Messages board, F15). */
@@ -69,7 +69,10 @@ export function SuspendDialog({
       };
     if (code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
-    return { title: t("notDone", { name }), text: failureText(suspend.error) };
+    return {
+      title: t("notDone", { name }),
+      text: failureText(problemOf(suspend.error)),
+    };
   })();
 
   return (

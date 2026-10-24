@@ -9,12 +9,14 @@ import {
   getListTenantsQueryKey,
   Language,
   ProblemDetailsError,
+  problemOf,
   schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -22,9 +24,7 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { problemOf } from "@/shared/problem";
 import { savedUnderKey } from "@/shared/saved-under-key";
-import { useFailureText } from "@/shared/use-failure-text";
 import { emailText, nameText, slugText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
 import { afterRefusal } from "./organisation";
@@ -109,7 +109,10 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
       code === ErrorCode.TenantSlugTaken
     )
       return null;
-    return { title: t("notCreated"), text: failureText(create.error) };
+    return {
+      title: t("notCreated"),
+      text: failureText(problemOf(create.error)),
+    };
   })();
 
   const submit = form.handleSubmit(

@@ -5,6 +5,7 @@ import {
   actionFor,
   ErrorCode,
   ProblemDetailsError,
+  problemOf,
   schemas,
   suspendTenant,
 } from "@repo/api-client";
@@ -12,14 +13,13 @@ import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { Textarea } from "@repo/ui/components/ui/textarea";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { cn } from "@repo/ui/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { problemOf } from "@/shared/problem";
-import { useFailureText } from "@/shared/use-failure-text";
 import { reasonText } from "./field-text";
 import {
   afterRefusal,
@@ -78,7 +78,10 @@ export function SuspendDialog({
         title: t("suspendNotActive", { name }),
         text: t("notActiveText"),
       };
-    return { title: t("notDone", { name }), text: failureText(suspend.error) };
+    return {
+      title: t("notDone", { name }),
+      text: failureText(problemOf(suspend.error)),
+    };
   })();
 
   const submit = form.handleSubmit(

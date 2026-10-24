@@ -3,19 +3,21 @@
 import {
   getListUsersQueryOptions,
   ListUsersSort,
+  problemOf,
   schemas,
   UserResponseStatus,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { Freshness } from "@repo/ui/components/freshness";
+import { ListError } from "@repo/ui/components/list-error";
+import { Search } from "@repo/ui/components/search";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs } from "@repo/ui/components/tabs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
-import { ListError } from "@/shared/list-error";
-import { Search } from "@/shared/search";
+import { leaveOf } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import { type Tab, tabs, useListParams } from "./use-list-params";
 import { useUserActions } from "./use-user-actions";
@@ -71,7 +73,8 @@ export function UsersPage() {
       return (
         <ListError
           title={t("users.error")}
-          error={list.error}
+          problem={problemOf(list.error)}
+          leave={leaveOf(list.error)}
           at={list.errorUpdatedAt}
           onRetry={() => void list.refetch()}
         />

@@ -4,6 +4,7 @@ import {
   ErrorCode,
   getGetTenantQueryOptions,
   InvitationResponseState,
+  problemOf,
   schemas,
   type TenantDetailResponse,
   type TenantOwnerResponse,
@@ -28,7 +29,6 @@ import {
   PlatformActivity,
   usePlatformActivity,
 } from "@/shared/platform-activity";
-import { problemOf } from "@/shared/problem";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import {

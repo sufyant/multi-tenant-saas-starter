@@ -4,18 +4,18 @@ import {
   deleteUser,
   ErrorCode,
   getGetUserQueryOptions,
+  problemOf,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Initial } from "@/shared/initial";
-import { problemOf } from "@/shared/problem";
 import { settingsPages } from "@/shared/settings-nav";
-import { useFailureText } from "@/shared/use-failure-text";
 import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 const organisationPage = (tenantId: string) => `/organisations/${tenantId}`;
@@ -111,7 +111,10 @@ export function DeleteDialog({
       };
     if (problem?.code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
-    return { title: t("notDone", { name }), text: failureText(remove.error) };
+    return {
+      title: t("notDone", { name }),
+      text: failureText(problemOf(remove.error)),
+    };
   })();
   const email = user.email ?? "";
 

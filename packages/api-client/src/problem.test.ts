@@ -9,10 +9,13 @@ import {
 const traceId = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
 
 describe("problemOf", () => {
-  it("ProblemOf_ProblemDetailsError_IsItsProblem", () => {
+  it("ProblemOf_ProblemDetailsError_IsItsProblemWithItsReference", () => {
     const problem = { code: ErrorCode.TenantNotFound, traceId };
 
-    expect(problemOf(new ProblemDetailsError(404, problem))).toEqual(problem);
+    expect(problemOf(new ProblemDetailsError(404, problem))).toEqual({
+      ...problem,
+      reference: "4bf92f3577b34da6a3ce929d0e0e4736",
+    });
   });
 
   it("ProblemOf_AnswerThatIsNoProblemDetails_IsNull", () => {

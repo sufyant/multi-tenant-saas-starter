@@ -3,18 +3,18 @@
 import {
   ErrorCode,
   getGetTenantQueryOptions,
+  problemOf,
   reopenTenant,
   TenantResponseStatus,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { problemOf } from "@/shared/problem";
 import { useDates } from "@/shared/use-dates";
-import { useFailureText } from "@/shared/use-failure-text";
 import {
   afterRefusal,
   type Organisation,
@@ -80,13 +80,13 @@ export function ReopenDialog({
         if (found === "unread")
           return {
             title: t("notDone", { name }),
-            text: failureText(reopen.error),
+            text: failureText(problemOf(reopen.error)),
           };
         return { title: t("beingDeleted", { name }), text: undefined };
       default:
         return {
           title: t("notDone", { name }),
-          text: failureText(reopen.error),
+          text: failureText(problemOf(reopen.error)),
         };
     }
   })();

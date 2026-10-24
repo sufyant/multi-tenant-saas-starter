@@ -5,22 +5,22 @@ import {
   ErrorCode,
   getListUsersQueryOptions,
   grantSystemAdmin,
+  problemOf,
   schemas,
   type UserResponse,
 } from "@repo/api-client";
+import { Avatar } from "@repo/ui/components/avatar";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Avatar } from "@/shared/avatar";
-import { problemOf } from "@/shared/problem";
 import { savedUnderKey } from "@/shared/saved-under-key";
-import { useFailureText } from "@/shared/use-failure-text";
 import { ReverifyStep } from "./reverify-step";
 import {
   adminNameOf,
@@ -136,7 +136,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         default:
           return {
             title: users("notDone", { name }),
-            text: failureText(grant.error),
+            text: failureText(problemOf(grant.error)),
           };
       }
     })();
@@ -216,7 +216,10 @@ function PersonCard({ person }: { person: UserResponse }) {
   const t = useTranslations("systemAdmins");
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-      <Avatar user={person} className="size-10" />
+      <Avatar
+        person={{ firstName: person.firstName, lastName: person.lastName }}
+        className="size-10"
+      />
       <div className="flex min-w-0 flex-col">
         <bdi className="truncate font-medium">{adminNameOf(person)}</bdi>
         <span className="text-small text-muted-foreground">

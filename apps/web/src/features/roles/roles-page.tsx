@@ -3,12 +3,14 @@
 import {
   getGetMeQueryOptions,
   Permission,
+  problemOf,
   type RoleDetailResponse,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { Freshness } from "@repo/ui/components/freshness";
 import { Icon, LockIcon } from "@repo/ui/components/icon";
+import { ListError } from "@repo/ui/components/list-error";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Table, type TableColumn } from "@repo/ui/components/table";
@@ -18,8 +20,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
-import { ListError } from "@/shared/list-error";
 import { PermissionDenied } from "@/shared/permission-denied";
+import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
@@ -200,7 +202,8 @@ export function RolesPage() {
       return (
         <ListError
           title={t("roles.loadError")}
-          error={roles.error}
+          problem={problemOf(roles.error)}
+          leave={leaveOf(roles.error)}
           at={roles.errorUpdatedAt}
           onRetry={() => void roles.refetch()}
         />
