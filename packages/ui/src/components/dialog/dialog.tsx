@@ -22,6 +22,12 @@ export type DialogProps = {
   /** What happens next and what stays. */
   description?: ReactNode;
   tone?: "default" | "destructive";
+  /** The confirm's button when the tone is default: primary, or secondary for a grant that must not invite a quick click. */
+  action?: "primary" | "secondary";
+  /** The confirm cannot run yet, for example before a step has found what it needs. */
+  actionDisabled?: boolean;
+  /** A step after the first: Back in place of Cancel, which returns to the step before and keeps the dialog open. */
+  back?: { label: string; onBack: () => void };
   /** The confirm button repeats the verb: "Remove member". */
   actionLabel: string;
   cancelLabel: string;
@@ -48,6 +54,9 @@ export function Dialog({
   title,
   description,
   tone = "default",
+  action = "primary",
+  actionDisabled = false,
+  back,
   actionLabel,
   cancelLabel,
   confirmText,
@@ -62,7 +71,8 @@ export function Dialog({
 }: DialogProps) {
   const [typed, setTyped] = useState("");
   const fieldId = useId();
-  const blocked = confirmText !== undefined && typed !== confirmText;
+  const blocked =
+    actionDisabled || (confirmText !== undefined && typed !== confirmText);
   return (
     <AlertDialog
       open={open}
@@ -107,11 +117,17 @@ export function Dialog({
           </div>
         )}
         <AlertDialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0 max-sm:flex-col-reverse max-sm:*:w-full">
-          <AlertDialogCancel render={<Button />}>
-            {cancelLabel}
-          </AlertDialogCancel>
+          {back ? (
+            <Button variant="ghost" onClick={back.onBack}>
+              {back.label}
+            </Button>
+          ) : (
+            <AlertDialogCancel render={<Button />}>
+              {cancelLabel}
+            </AlertDialogCancel>
+          )}
           <Button
-            variant={tone === "destructive" ? "destructive" : "primary"}
+            variant={tone === "destructive" ? "destructive" : action}
             disabled={blocked || pending}
             aria-busy={pending || undefined}
             onClick={onConfirm}
