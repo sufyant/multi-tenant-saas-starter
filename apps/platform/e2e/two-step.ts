@@ -37,7 +37,8 @@ export function enrolledUser(): { email: string; backupCode: string } {
 }
 
 const period = 30;
-let lastStep = -1;
+// The window of the last code, in a file: the setup and the System admins test run in different workers.
+const stepFile = "playwright/.clerk/totp-step";
 
 /**
  * The authenticator app's code. Clerk may refuse a code a second time in the same 30 seconds, so after a code was used the next
@@ -45,9 +46,13 @@ let lastStep = -1;
  */
 export async function totpCode(secret: string): Promise<string> {
   const step = () => Math.floor(Date.now() / 1000 / period);
+  const lastStep = existsSync(stepFile)
+    ? Number(readFileSync(stepFile, "utf8"))
+    : -1;
   while (step() <= lastStep)
     await new Promise((resolve) => setTimeout(resolve, 1000));
-  lastStep = step();
+  mkdirSync(dirname(stepFile), { recursive: true });
+  writeFileSync(stepFile, String(step()));
   return new TOTP({ secret: Secret.fromBase32(secret), period }).generate();
 }
 
