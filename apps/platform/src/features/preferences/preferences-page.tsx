@@ -44,7 +44,7 @@ const actionOf = (error: unknown) =>
     : null;
 
 /**
- * Settings > Preferences (F31, the P7 boards): the form of the tenant web for the signed-in user's name, language and time
+ * Settings > Preferences (F31, the platform's Preferences boards): the form of the tenant web for the signed-in user's name, language and time
  * zone, then the email address, read-only, and the theme, which is saved on the device.
  */
 export function PreferencesPage({ settingsBase }: { settingsBase: string }) {

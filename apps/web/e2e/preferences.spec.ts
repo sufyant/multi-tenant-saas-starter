@@ -67,8 +67,8 @@ test("Preferences_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await page.getByRole("button", { name: "Save preferences" }).click();
 
   await expect(page.getByText("Preferences saved")).toBeVisible();
+  await expectAccessible(page);
   expect(bodies).toEqual([{ firstName: "Ayla", lastName: "Kaya" }]);
   await page.getByRole("button", { name: "AK Account" }).click();
   await expect(page.getByText("Ayla Kaya")).toBeVisible();
-  await expectAccessible(page);
 });
