@@ -9,6 +9,7 @@ import { z } from "zod";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import tr from "../../messages/tr.json";
+import { ActivityLog } from "./activity-log";
 import { AppShell } from "./app-shell";
 import { Banner } from "./banner";
 import { Button } from "./button";
@@ -522,6 +523,37 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
             stale
           />
         </>
+      ),
+    },
+    {
+      name: "ActivityLog",
+      render: ({ sample }) => (
+        <div className="flex w-full max-w-[960px] flex-col gap-1">
+          <ActivityLog
+            entries={[
+              { id: "1", occurredAt: "2026-10-16T12:50:00Z" },
+              { id: "2", occurredAt: "2026-10-16T09:12:00Z" },
+              { id: "3", occurredAt: "2026-10-15T16:20:00Z" },
+              { id: "4", occurredAt: "2026-10-14T07:00:00Z" },
+            ]}
+            sentence={(entry) => (
+              <p>
+                <bdi className="font-medium">Ciara Byrne</bdi> changed Northwind
+                Traders ({entry.id}).
+              </p>
+            )}
+            locale={sample.locale}
+            timeZone={sample.timeZone}
+            labels={{
+              today: (date) => `Today, ${date}`,
+              yesterday: (date) => `Yesterday, ${date}`,
+              older: "Load older activity",
+            }}
+            hasOlder
+            loadingOlder={false}
+            onOlder={noop}
+          />
+        </div>
       ),
     },
     {

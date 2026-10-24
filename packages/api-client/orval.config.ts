@@ -34,6 +34,9 @@ export default defineConfig({
           ListAuditEntries: {
             query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
           },
+          ListPlatformAuditEntries: {
+            query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
+          },
         },
       },
     },

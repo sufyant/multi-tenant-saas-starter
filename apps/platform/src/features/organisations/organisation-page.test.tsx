@@ -1,16 +1,19 @@
-import { ErrorCode } from "@repo/api-client";
+import { AuditOperation, ErrorCode } from "@repo/api-client";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
   afterEach,
   beforeAll,
+  beforeEach,
   describe,
   expect,
   it,
   vi,
 } from "vitest";
+import { auditLogAnswer, entry, tenantTarget } from "../../../test/activity";
 import {
   atlas,
   burren,
@@ -35,6 +38,9 @@ vi.mock("next/navigation", () => ({
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
+beforeEach(() =>
+  window.history.replaceState(null, "", `/organisations/${northwind.id}`),
+);
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
@@ -55,7 +61,7 @@ describe("OrganisationPage", () => {
       screen.getByRole("button", { name: "Actions for Northwind Traders" }),
     ).toBeVisible();
     expect(screen.getByRole("tab", { name: "Overview" })).toBeVisible();
-    expect(screen.queryByRole("tab", { name: "Activity" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Activity" })).toBeVisible();
   });
 
   it("OrganisationPage_WaitingForAPendingOwner_SaysUntilWhenTheLinkWorks", async () => {
@@ -248,5 +254,101 @@ describe("OrganisationPage", () => {
     renderWithProviders(<OrganisationPage tenantId="northwind" />);
 
     expect(await screen.findByText("Page not found")).toBeVisible();
+  });
+
+  it("OrganisationPage_ActivityTab_ReadsThePlatformsEntriesAboutTheOrganisation", async () => {
+    const requests: URL[] = [];
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      auditLogAnswer(
+        {
+          "": {
+            items: [
+              entry({
+                operation: AuditOperation.TenantReactivated,
+                target: tenantTarget(),
+              }),
+            ],
+            nextCursor: null,
+          },
+        },
+        requests,
+      ),
+    );
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    await userEvent.click(await screen.findByRole("tab", { name: "Activity" }));
+
+    expect(
+      await screen.findByText(
+        (_, element) =>
+          element?.tagName === "P" &&
+          element.textContent === "Ciara Byrne reactivated Northwind Traders.",
+      ),
+    ).toBeVisible();
+    expect(requests.map((url) => url.searchParams.get("tenantId"))).toEqual([
+      northwind.id,
+    ]);
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe(
+      "activity",
+    );
+    expect(screen.queryByText("Members")).toBeNull();
+  });
+
+  it("OrganisationPage_ActivityInTheUrl_OpensTheActivityTab", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=activity`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      auditLogAnswer({ "": { items: [], nextCursor: null } }),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByRole("heading", { name: "No activity yet" }),
+    ).toBeVisible();
+    expect(
+      screen.getByText("The platform’s entries about this organisation."),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Activity" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("OrganisationPage_DeletedOrganisation_KeepsItsActivityTab", async () => {
+    const requests: URL[] = [];
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(corrib)),
+      auditLogAnswer(
+        {
+          "": {
+            items: [
+              entry({
+                operation: AuditOperation.TenantPurged,
+                target: tenantTarget(corrib),
+              }),
+            ],
+            nextCursor: null,
+          },
+        },
+        requests,
+      ),
+    );
+    renderWithProviders(<OrganisationPage tenantId={corrib.id} />);
+
+    await userEvent.click(await screen.findByRole("tab", { name: "Activity" }));
+
+    expect(await screen.findByRole("listitem")).toBeVisible();
+    expect(requests.map((url) => url.searchParams.get("tenantId"))).toEqual([
+      corrib.id,
+    ]);
   });
 });

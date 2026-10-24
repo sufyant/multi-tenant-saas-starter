@@ -13,6 +13,7 @@ import {
 import { AppShell } from "@repo/ui/components/app-shell";
 import {
   BuildingIcon,
+  HistoryIcon,
   SettingsIcon,
   UsersIcon,
 } from "@repo/ui/components/icon";
@@ -110,6 +111,7 @@ export function PlatformShell({
   } as const;
   const inSettings = pathname.startsWith("/settings");
   const inUsers = pathname === "/users" || pathname.startsWith("/users/");
+  const inActivity = pathname === "/activity";
   const userName =
     user.data &&
     (user.data.status === UserResponseStatus.Deleted
@@ -122,15 +124,17 @@ export function PlatformShell({
           (segment): segment is keyof typeof sections => segment in sections,
         )
         .map((segment) => ({ label: t(sections[segment]) }))
-    : inUsers
-      ? [
-          { label: t("shell.users") },
-          ...(userId && userName ? [{ label: userName }] : []),
-        ]
-      : [
-          { label: t("shell.organisations") },
-          ...(tenantId && tenant.data ? [{ label: tenant.data.name }] : []),
-        ];
+    : inActivity
+      ? [{ label: t("shell.activity") }]
+      : inUsers
+        ? [
+            { label: t("shell.users") },
+            ...(userId && userName ? [{ label: userName }] : []),
+          ]
+        : [
+            { label: t("shell.organisations") },
+            ...(tenantId && tenant.data ? [{ label: tenant.data.name }] : []),
+          ];
 
   return (
     <>
@@ -150,6 +154,12 @@ export function PlatformShell({
             href: "/users",
           },
           {
+            id: "activity",
+            label: t("shell.activity"),
+            icon: HistoryIcon,
+            href: "/activity",
+          },
+          {
             id: "settings",
             label: t("shell.settings"),
             icon: SettingsIcon,
@@ -157,7 +167,15 @@ export function PlatformShell({
             placement: "bottom",
           },
         ]}
-        current={inSettings ? "settings" : inUsers ? "users" : "organisations"}
+        current={
+          inSettings
+            ? "settings"
+            : inActivity
+              ? "activity"
+              : inUsers
+                ? "users"
+                : "organisations"
+        }
         logo={t("shell.platform").charAt(0)}
         logoLabel={t("shell.home")}
         logoHref="/"
