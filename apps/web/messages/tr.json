@@ -306,14 +306,20 @@
     "chooseAnother": "Başka bir kuruluş seçin"
   },
   "account": {
-    "suspendedStatus": "Askıda",
-    "suspendedTitle": "Hesabınız askıya alındı",
-    "suspendedText": "Şu anda oturum açamazsınız. Destek ekibiyle iletişime geçin.",
-    "suspendedAction": "Oturumu kapat",
-    "deletedStatus": "Silindi",
-    "deletedTitle": "Bu hesap silindi",
-    "deletedText": "Başka bir e-postayla oturum açın.",
-    "deletedAction": "Başka bir e-posta kullan"
+    "user": {
+      "suspended": {
+        "status": "Askıda",
+        "title": "Hesabınız askıya alındı",
+        "text": "Şu anda oturum açamazsınız. Destek ekibiyle iletişime geçin.",
+        "action": "Oturumu kapat"
+      },
+      "deleted": {
+        "status": "Silindi",
+        "title": "Bu hesap silindi",
+        "text": "Başka bir e-postayla oturum açın.",
+        "action": "Başka bir e-posta kullan"
+      }
+    }
   },
   "permissions": {
     "tenant": {

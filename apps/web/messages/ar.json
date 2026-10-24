@@ -306,14 +306,20 @@
     "chooseAnother": "اختر مؤسسة أخرى"
   },
   "account": {
-    "suspendedStatus": "معلّق",
-    "suspendedTitle": "حسابك معلّق",
-    "suspendedText": "لا يمكنك تسجيل الدخول الآن. تواصل مع الدعم.",
-    "suspendedAction": "تسجيل الخروج",
-    "deletedStatus": "محذوف",
-    "deletedTitle": "حُذف هذا الحساب",
-    "deletedText": "سجّل الدخول ببريد إلكتروني آخر.",
-    "deletedAction": "استخدام بريد آخر"
+    "user": {
+      "suspended": {
+        "status": "معلّق",
+        "title": "حسابك معلّق",
+        "text": "لا يمكنك تسجيل الدخول الآن. تواصل مع الدعم.",
+        "action": "تسجيل الخروج"
+      },
+      "deleted": {
+        "status": "محذوف",
+        "title": "حُذف هذا الحساب",
+        "text": "سجّل الدخول ببريد إلكتروني آخر.",
+        "action": "استخدام بريد آخر"
+      }
+    }
   },
   "permissions": {
     "tenant": {

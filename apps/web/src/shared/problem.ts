@@ -1,4 +1,4 @@
-import { actionFor, ProblemDetailsError } from "@repo/api-client";
+import { actionFor, ErrorCode, ProblemDetailsError } from "@repo/api-client";
 import type { AccountBlock } from "./account-blocked";
 
 /** The code and the trace id of a failed call, or null when the answer was no Problem Details (a dropped connection). */
@@ -18,8 +18,8 @@ export function referenceOf(traceId: string): string {
 export function accountBlockOf(error: unknown): AccountBlock | null {
   if (!(error instanceof ProblemDetailsError)) return null;
   const { kind } = actionFor(error.status, error.problem);
-  if (kind === "account-suspended") return "suspended";
-  if (kind === "account-deleted") return "deleted";
+  if (kind === "account-suspended") return ErrorCode.UserSuspended;
+  if (kind === "account-deleted") return ErrorCode.UserDeleted;
   return null;
 }
 

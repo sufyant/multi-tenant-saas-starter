@@ -418,7 +418,7 @@ describe("TenantProvider", () => {
   );
 
   it.each(blocked)(
-    "TenantProvider_CommandSays_%s_ShowsTheAccountPage",
+    "TenantProvider_CommandSays_%s_ReadsGetMeAgainAndShowsTheAccountPage",
     async (code, title) => {
       server.use(
         countsTheReads({ count: 0 }),
@@ -428,6 +428,8 @@ describe("TenantProvider", () => {
             permissions: [Permission.TenantMembersRead],
           }),
         ),
+        // A9 refuses every request, so GetMe, read again after the command, answers the same.
+        http.get("*/v1/me", () => problem(403, code)),
         http.delete(`*/v1/tenants/${northwind.id}/members/:userId`, () =>
           problem(403, code),
         ),

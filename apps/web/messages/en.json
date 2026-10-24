@@ -306,14 +306,20 @@
     "chooseAnother": "Choose another organisation"
   },
   "account": {
-    "suspendedStatus": "Suspended",
-    "suspendedTitle": "Your account is suspended",
-    "suspendedText": "You cannot sign in right now. Contact support.",
-    "suspendedAction": "Sign out",
-    "deletedStatus": "Deleted",
-    "deletedTitle": "This account was deleted",
-    "deletedText": "Sign in with another email.",
-    "deletedAction": "Use another email"
+    "user": {
+      "suspended": {
+        "status": "Suspended",
+        "title": "Your account is suspended",
+        "text": "You cannot sign in right now. Contact support.",
+        "action": "Sign out"
+      },
+      "deleted": {
+        "status": "Deleted",
+        "title": "This account was deleted",
+        "text": "Sign in with another email.",
+        "action": "Use another email"
+      }
+    }
   },
   "permissions": {
     "tenant": {
