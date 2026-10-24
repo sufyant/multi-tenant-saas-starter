@@ -1,9 +1,12 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { Language, MyTenantResponseStatus } from "@repo/api-client";
+import {
+  BuiltInRole,
+  Language,
+  MyTenantResponseStatus,
+} from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { railCookieName } from "@repo/ui/lib/rail-state";
-import { BuiltInRole } from "../src/shared/roles";
 import {
   me,
   mockApi,

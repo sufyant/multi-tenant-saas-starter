@@ -1,6 +1,7 @@
 import {
   AuditActorResponseKind,
   AuditOperation,
+  BuiltInRole,
   ErrorCode,
 } from "@repo/api-client";
 import { screen, within } from "@testing-library/react";
@@ -17,7 +18,6 @@ import {
   it,
   vi,
 } from "vitest";
-import { BuiltInRole } from "@/shared/roles";
 import { auditLogAnswer, detailsOf, entry } from "../../../test/activity";
 import {
   meOf,

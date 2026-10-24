@@ -7,6 +7,7 @@ import {
   contractEnumValues,
   crossFeatureImports,
   dateFormattingOutsideFormatter,
+  declarationsOf,
   enumLiterals,
   errorCodeMessages,
   generatedFileNames,
@@ -220,6 +221,33 @@ describe("architecture rules", () => {
     expect(roleNameDecisions(root, { ignore: ["shared/roles.ts"] })).toEqual(
       [],
     );
+  });
+
+  it("DeclarationsOf_OwnCopyOfAName_IsAFinding", () => {
+    const root = folder({
+      "shared/roles.ts": [
+        'export const BuiltInRole = { Owner: "owner" } as const;',
+        "export type BuiltInRole = string;",
+        "export function builtInRoleOf() { return null; }",
+      ].join("\n"),
+    });
+
+    expect(declarationsOf(root, ["BuiltInRole", "builtInRoleOf"])).toEqual([
+      "shared/roles.ts:1: declares BuiltInRole; import it from @repo/api-client (F3)",
+      "shared/roles.ts:2: declares BuiltInRole; import it from @repo/api-client (F3)",
+      "shared/roles.ts:3: declares builtInRoleOf; import it from @repo/api-client (F3)",
+    ]);
+  });
+
+  it("DeclarationsOf_ImportAndOtherNames_AreNoFinding", () => {
+    const root = folder({
+      "a.ts": [
+        'import { BuiltInRole, builtInRoleOf } from "@repo/api-client";',
+        "export const inListOrder = () => [BuiltInRole, builtInRoleOf];",
+      ].join("\n"),
+    });
+
+    expect(declarationsOf(root, ["BuiltInRole", "builtInRoleOf"])).toEqual([]);
   });
 
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {

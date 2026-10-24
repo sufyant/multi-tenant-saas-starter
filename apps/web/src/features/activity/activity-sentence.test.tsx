@@ -2,10 +2,12 @@ import {
   type AuditActorResponse,
   AuditActorResponseKind,
   AuditOperation,
+  type AuditTargetResponse,
   AuditTargetResponseKind,
   MemberRoleChangedDetailsResponseOperation,
   Permission,
   RoleUpdatedDetailsResponseOperation,
+  TenantPurgeWarnedDetailsResponseOperation,
 } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -49,6 +51,29 @@ const thePlatform: AuditActorResponse = {
   displayName: null,
   deleted: null,
 };
+
+/** Northwind as the target of an entry about the organisation. */
+const northwindTarget: AuditTargetResponse = {
+  kind: AuditTargetResponseKind.Tenant,
+  id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
+  name: "Northwind Traders",
+  deleted: null,
+};
+
+/** The platform warned the Owners of Northwind's purge. */
+const purgeWarned = entry({
+  operation: AuditOperation.TenantPurgeWarned,
+  actor: thePlatform,
+  target: northwindTarget,
+  details: {
+    operation: TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned,
+    // 9 Oct in UTC, 10 Oct in Dublin: the sentence names the day in the viewer's zone.
+    purgesAt: "2026-10-09T23:30:00Z",
+  },
+});
+
+/** The badge before a sentence of the platform, in each language. */
+const platformBadge = { en: "Platform", tr: "Platform", ar: "المنصة" };
 
 /** A `role.updated` entry of Billing lead: its old name, and the permissions added and removed. */
 const roleUpdated = (
@@ -249,6 +274,30 @@ describe("ActivitySentence", () => {
 
     expect(shown("Ayşe Yılmaz ألغى دعوة.")).toBeInTheDocument();
   });
+
+  it.each([
+    [
+      "en",
+      "The Owners were told that Northwind Traders will be deleted on 10 Oct 2026.",
+    ],
+    [
+      "tr",
+      "Sahiplere Northwind Traders kuruluşunun 10 Eki 2026 tarihinde silineceği bildirildi.",
+    ],
+    ["ar", "أُبلغ المالكون بأن Northwind Traders ستُحذف في 10 أكتوبر 2026."],
+  ] as const)(
+    "ActivitySentence_PurgeWarnedIn%s_NamesTheDayInTheViewersZone",
+    (language, sentence) => {
+      renderWithProviders(
+        <ActivitySentence entry={purgeWarned} timeZone="Europe/Dublin" />,
+        language,
+      );
+
+      expect(
+        shown(`${platformBadge[language]} ${sentence}`),
+      ).toBeInTheDocument();
+    },
+  );
 
   it.each(Object.keys(messages) as (keyof typeof messages)[])(
     "Messages_EveryTenantPermissionIn%s_HasALabel",

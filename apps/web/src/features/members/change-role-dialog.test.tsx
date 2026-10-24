@@ -42,7 +42,7 @@ const countedTenant = (reads: string[]) =>
     });
   });
 
-import { BuiltInRole } from "@/shared/roles";
+import { BuiltInRole } from "@repo/api-client";
 import { MembersPage } from "./members-page";
 
 vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ signOut: vi.fn() }) }));

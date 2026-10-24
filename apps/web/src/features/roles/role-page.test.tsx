@@ -1,4 +1,4 @@
-import { Permission } from "@repo/api-client";
+import { BuiltInRole, Permission } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import {
@@ -10,7 +10,6 @@ import {
   it,
   vi,
 } from "vitest";
-import { BuiltInRole } from "@/shared/roles";
 import {
   customRole,
   renderInTenant,

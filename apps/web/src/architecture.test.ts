@@ -4,6 +4,7 @@ import {
   contractEnumValues,
   crossFeatureImports,
   dateFormattingOutsideFormatter,
+  declarationsOf,
   enumLiterals,
   enumValues,
   messageKeySets,
@@ -63,6 +64,10 @@ describe("architecture of apps/web", () => {
         ignore: ["shared/roles.ts", "shared/use-role-name.ts"],
       }),
     ).toEqual([]);
+  });
+
+  it("F3_AppsWeb_TakesTheBuiltInRoleNamesFromTheClient", () => {
+    expect(declarationsOf(src, ["BuiltInRole", "builtInRoleOf"])).toEqual([]);
   });
 
   it("F3_AppsWeb_WritesNoEnumValueAsALiteral", () => {
