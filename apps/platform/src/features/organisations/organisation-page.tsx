@@ -52,7 +52,7 @@ const nameOf = (owner: TenantOwnerResponse) =>
 
 /**
  * One organisation (the OrgDetail, OrgOwnerless, OrgClosed and OrgPurged boards): the header with the actions, the banner of its
- * state, and two tabs. Overview holds its details from GetTenant; Activity holds the platform's entries about it (P3.2), also for a
+ * state, and two tabs. Overview holds its details from GetTenant; Activity holds the platform's entries about it (the organisation's Activity tab boards), also for a
  * deleted organisation. Every date comes from the answer, never a fixed period.
  */
 export function OrganisationPage({ tenantId }: { tenantId: string }) {

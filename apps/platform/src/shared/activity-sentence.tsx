@@ -65,7 +65,7 @@ function detailValues(
 }
 
 /**
- * One entry of the platform's log as a sentence (the Activity board, P6): who acted, what they did and to what, from the message
+ * One entry of the platform's log as a sentence (the platform's Activity boards): who acted, what they did and to what, from the message
  * of the operation. It names people by their name, never an email (K3). An entry the platform wrote itself has no person. A target
  * organisation or user links to its page; a deleted user does not. An operation the platform does not know says so, with its name.
  */

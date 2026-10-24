@@ -10,7 +10,7 @@ import {
 import { getListPlatformAuditEntriesMockHandler } from "@repo/api-client/msw";
 import { northwind } from "./organisations";
 
-// The platform log's entries of the Activity board (P6), and the answers of ListPlatformAuditEntries.
+// The platform log's entries of the platform's Activity boards, and the answers of ListPlatformAuditEntries.
 
 /** Ciara Byrne, the system admin who acts on the boards. */
 export const ciara: AuditActorResponse = {

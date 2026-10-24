@@ -9,7 +9,7 @@ import {
   usePlatformActivity,
 } from "@/shared/platform-activity";
 
-/** Activity (the Activity board, P6): the whole platform log, with the time it was read. */
+/** Activity (the platform's Activity boards): the whole platform log, with the time it was read. */
 export function ActivityPage() {
   const t = useTranslations();
   const me = useQuery(getGetMeQueryOptions());
