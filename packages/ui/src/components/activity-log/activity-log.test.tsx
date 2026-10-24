@@ -16,7 +16,7 @@ const entries: Entry[] = [
   { id: "1", occurredAt: "2026-10-16T08:40:00Z", text: "Today's entry." },
   {
     id: "2",
-    occurredAt: "2026-10-15T23:30:00Z",
+    occurredAt: "2026-10-15T22:30:00Z",
     text: "Yesterday's late entry.",
   },
   { id: "3", occurredAt: "2026-10-01T09:00:00Z", text: "An older entry." },
