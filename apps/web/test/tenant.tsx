@@ -127,7 +127,14 @@ export const customRole = (
   id: string,
   name: string,
   permissions: Permission[],
-): RoleDetailResponse => ({ id, name, builtIn: false, permissions });
+): RoleDetailResponse => ({
+  id,
+  name,
+  builtIn: false,
+  permissions,
+  memberCount: 0,
+  pendingInvitationCount: 0,
+});
 
 /** Mehmet's custom role in the task: it changes roles but neither invites nor reads Activity. */
 export const supportLead = customRole(

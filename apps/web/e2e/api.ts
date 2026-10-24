@@ -84,7 +84,14 @@ const custom = (
   id: string,
   name: string,
   permissions: Permission[],
-): RoleDetailResponse => ({ id, name, builtIn: false, permissions });
+): RoleDetailResponse => ({
+  id,
+  name,
+  builtIn: false,
+  permissions,
+  memberCount: 0,
+  pendingInvitationCount: 0,
+});
 
 /** Northwind's custom roles of the boards. An Admin lacks `tenant.roles.update`, so cannot give Billing lead (F51). */
 export const customRoles: RoleDetailResponse[] = [
