@@ -88,6 +88,7 @@ const refusesEveryCursor = (cursors: (string | null)[], status: number) =>
           {
             400: ErrorCode.PagingCursorInvalid,
             401: ErrorCode.AuthUnauthenticated,
+            403: ErrorCode.UserSuspended,
           }[status] ?? ErrorCode.ServerError,
         )
       : HttpResponse.json({ items: [suspendedJohn], nextCursor: "page-2" });
@@ -256,6 +257,34 @@ describe("ActivityPage", () => {
 
     await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/sign-in"));
     vi.unstubAllGlobals();
+  });
+
+  // A refusal of the caller's account is final (F47): no toast; GetMe's answer decides what the shell shows.
+  it("ActivityPage_OlderPageAccountSuspended_ShowsNoToastAndReadsGetMeAgain", async () => {
+    const cursors: (string | null)[] = [];
+    let meReads = 0;
+    server.use(
+      getGetMeMockHandler(() => {
+        meReads += 1;
+        return getGetMeResponseMock({
+          isSystemAdmin: true,
+          language: "en",
+          timeZone: "Europe/Dublin",
+        });
+      }),
+      refusesEveryCursor(cursors, 403),
+    );
+    renderWithProviders(<ActivityPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load older activity" }),
+    );
+
+    await vi.waitFor(() => expect(meReads).toBe(2));
+    expect(cursors).toEqual([null, "page-2"]);
+    expect(
+      screen.queryByText("Couldn’t load older activity"),
+    ).not.toBeInTheDocument();
   });
 
   it("ActivityPage_NoEntries_SaysNoActivityYet", async () => {
