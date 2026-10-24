@@ -3,6 +3,7 @@
 import {
   actionFor,
   ErrorCode,
+  getGetMeQueryKey,
   getGetMeQueryOptions,
   getListPlatformAuditEntriesInfiniteQueryOptions,
   ProblemDetailsError,
@@ -63,12 +64,16 @@ export function PlatformActivity({
   const loadOlder = async () => {
     const result = await log.fetchNextPage();
     if (!result.isFetchNextPageError) return;
-    // A 401 goes to sign-in (F4).
-    if (
-      result.error instanceof ProblemDetailsError &&
-      actionFor(result.error.status, result.error.problem).kind === "sign-in"
-    )
-      return window.location.assign("/sign-in");
+    // A 401 goes to sign-in (F4). A refusal of the caller's account is final: GetMe's answer decides what the shell shows (F47).
+    const action =
+      result.error instanceof ProblemDetailsError
+        ? actionFor(result.error.status, result.error.problem).kind
+        : null;
+    if (action === "sign-in") return window.location.assign("/sign-in");
+    if (action === "account-suspended" || action === "account-deleted") {
+      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      return;
+    }
     if (problemOf(result.error)?.code === ErrorCode.PagingCursorInvalid) {
       showToast({ title: t("activity.restarted"), tone: "info" });
       await queryClient.resetQueries({ queryKey });

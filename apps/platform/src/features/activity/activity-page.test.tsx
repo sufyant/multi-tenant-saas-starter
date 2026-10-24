@@ -276,11 +276,13 @@ describe("ActivityPage", () => {
     );
     renderWithProviders(<ActivityPage />);
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Load older activity" }),
-    );
+    const older = await screen.findByRole("button", {
+      name: "Load older activity",
+    });
+    const readsBefore = meReads;
+    await userEvent.click(older);
 
-    await vi.waitFor(() => expect(meReads).toBe(2));
+    await vi.waitFor(() => expect(meReads).toBe(readsBefore + 1));
     expect(cursors).toEqual([null, "page-2"]);
     expect(
       screen.queryByText("Couldn’t load older activity"),
