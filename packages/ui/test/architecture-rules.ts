@@ -498,12 +498,17 @@ function isRoleName(node: ts.Expression, file: ts.SourceFile): boolean {
 
 /**
  * Rule F3: a piece of the contract that `packages/api-client` writes has no second copy in an app. A declaration of one of the names
- * (a variable, a function or a type) is a finding: the app imports it from the client.
+ * (a variable, a function or a type) is a finding: the app imports it from the client. Rule F29 uses it for the parts both apps share:
+ * `from` names their package and `rule` the rule.
  */
 export function declarationsOf(
   root: string,
   names: readonly string[],
-  options: Options = {},
+  {
+    from = "@repo/api-client",
+    rule = "F3",
+    ...options
+  }: Options & { from?: string; rule?: string } = {},
 ): Finding[] {
   const findings: Finding[] = [];
   for (const path of filesUnder(root)) {
@@ -525,7 +530,7 @@ export function declarationsOf(
         names.includes(node.name.text)
       )
         findings.push(
-          `${relative(root, path)}:${lineOf(file, node)}: declares ${node.name.text}; import it from @repo/api-client (F3)`,
+          `${relative(root, path)}:${lineOf(file, node)}: declares ${node.name.text}; import it from ${from} (${rule})`,
         );
       ts.forEachChild(node, visit);
     };
@@ -573,6 +578,47 @@ export function roleNameDecisions(
           node,
           "imports builtInRoleOf; a role's name is only its text (F51)",
         );
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+  }
+  return findings;
+}
+
+const choiceTypes = new Set(["checkbox", "radio"]);
+
+/** Rule F52: no native checkbox or radio. A choice is `Checkbox` or `RadioGroup` of `packages/ui`, which follow the tokens. */
+export function nativeChoiceControls(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const path of filesUnder(root)) {
+    if (
+      !path.endsWith(".tsx") ||
+      isTest(path) ||
+      ignored(root, path, options)
+    )
+      continue;
+    const file = sourceFile(path);
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isJsxAttribute(node) &&
+        node.name.getText(file) === "type" &&
+        node.initializer
+      ) {
+        const value = ts.isJsxExpression(node.initializer)
+          ? node.initializer.expression
+          : node.initializer;
+        if (
+          value &&
+          ts.isStringLiteralLike(value) &&
+          choiceTypes.has(value.text)
+        )
+          findings.push(
+            `${relative(root, path)}:${lineOf(file, node)}: a native type="${value.text}"; use Checkbox or RadioGroup of @repo/ui (F52)`,
+          );
+      }
       ts.forEachChild(node, visit);
     };
     visit(file);

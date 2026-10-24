@@ -1,6 +1,7 @@
 "use client";
 
 import type { RoleDetailResponse } from "@repo/api-client";
+import { RadioGroup, RadioGroupItem } from "@repo/ui/components/ui/radio-group";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
@@ -37,36 +38,41 @@ export function RoleChoice({
   return (
     <fieldset className="flex min-w-0 flex-col gap-1.5">
       <legend
+        id={`${id}-legend`}
         className={cn(label ? "mb-1.5 text-body font-medium" : "sr-only")}
       >
         {label ?? t("members.role")}
       </legend>
-      <div className="flex max-h-85 flex-col gap-2 overflow-y-auto p-0.5 max-sm:max-h-65">
+      <RadioGroup
+        name={`${id}-role`}
+        value={value}
+        onValueChange={(roleId) => onChange(String(roleId))}
+        aria-labelledby={`${id}-legend`}
+        className="flex max-h-85 flex-col gap-2 overflow-y-auto p-0.5 max-sm:max-h-65"
+      >
         {inListOrder(roles).map((role) => {
           const reason = reach(role.id, ownerReason);
           const off = reason !== null;
           return (
             <label
               key={role.id}
+              htmlFor={`${id}-${role.id}-item`}
               className={cn(
                 "flex items-start gap-2.5 rounded-md border border-border px-3 py-2.5",
                 off ? "cursor-not-allowed" : "cursor-pointer",
                 role.id === value && "border-primary ring-1 ring-primary",
               )}
             >
-              <input
-                type="radio"
-                name={`${id}-role`}
+              <RadioGroupItem
+                id={`${id}-${role.id}-item`}
                 value={role.id}
-                checked={role.id === value}
                 disabled={off}
-                onChange={() => onChange(role.id)}
                 aria-labelledby={`${id}-${role.id}-name`}
                 aria-describedby={cn(
                   `${id}-${role.id}`,
                   reason && `${id}-${role.id}-reason`,
                 )}
-                className="mt-0.5 size-4 shrink-0 accent-primary"
+                className="mt-0.5"
               />
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span
@@ -93,7 +99,7 @@ export function RoleChoice({
             </label>
           );
         })}
-      </div>
+      </RadioGroup>
     </fieldset>
   );
 }

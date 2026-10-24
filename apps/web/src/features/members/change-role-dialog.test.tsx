@@ -135,16 +135,11 @@ describe("ChangeRoleDialog", () => {
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
 
-    expect(
-      within(dialog)
-        .getAllByRole("radio")
-        .map((radio) => radio.getAttribute("value")),
-    ).toEqual([
-      roleOf.owner.id,
-      roleOf.admin.id,
-      roleOf.member.id,
-      billingLead.id,
-    ]);
+    // A radio is the RadioGroup item of packages/ui, a button without a value: the order is read by each role's name.
+    const radio = (name: string) => within(dialog).getByRole("radio", { name });
+    expect(within(dialog).getAllByRole("radio")).toEqual(
+      ["Owner", "Admin", "Member", billingLead.name].map(radio),
+    );
     expect(
       within(dialog).getByRole("radio", { name: "Billing lead" }),
     ).toHaveAccessibleDescription("3 permissions");
@@ -191,12 +186,13 @@ describe("ChangeRoleDialog", () => {
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
 
+    // A radio is the RadioGroup item of packages/ui, a button without a value: the roles are read by their names.
+    const radio = (name: string) => within(dialog).getByRole("radio", { name });
     expect(
       within(dialog)
-        .getAllByRole("radio")
-        .filter((radio) => !(radio as HTMLInputElement).disabled)
-        .map((radio) => radio.getAttribute("value")),
-    ).toEqual([roleOf.member.id, supportLead.id]);
+        .getAllByRole<HTMLButtonElement>("radio")
+        .filter((radio) => !radio.disabled),
+    ).toEqual(["Member", supportLead.name].map(radio));
   });
 
   it("ChangeRole_RefusedRoleNotFound_ReadsTheRolesAgain", async () => {
