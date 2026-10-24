@@ -562,6 +562,30 @@ describe("AcceptInvitationPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("AcceptInvitationPage_JoinAsADeletedUser_ShowsTheDeletedAccountPage", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler(pending),
+      http.post("*/v1/me/invitations/accept", () =>
+        problem(403, ErrorCode.UserDeleted),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "This account was deleted" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Use another email" }),
+    ).toBeInTheDocument();
+  });
+
   it("AcceptInvitationPage_ExpiredTicket_SaysToAskForANewInvitation", async () => {
     setUp();
     clerk.isSignedIn = false;

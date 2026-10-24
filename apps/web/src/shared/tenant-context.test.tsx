@@ -7,6 +7,7 @@ import {
   removeMember,
 } from "@repo/api-client";
 import {
+  getGetMeMockHandler,
   getGetMyTenantMockHandler,
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
@@ -452,4 +453,39 @@ describe("TenantProvider", () => {
       ).not.toBeInTheDocument();
     },
   );
+
+  it("TenantProvider_CommandSaysSuspendedButGetMeAnswers_ShowsNoAccountPage", async () => {
+    server.use(
+      countsTheReads({ count: 0 }),
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantMembersRead],
+        }),
+      ),
+      getGetMeMockHandler(),
+      http.delete(`*/v1/tenants/${northwind.id}/members/:userId`, () =>
+        problem(403, ErrorCode.UserSuspended),
+      ),
+    );
+    const me = { read: false };
+    server.events.on("response:mocked", ({ request }) => {
+      me.read ||= new URL(request.url).pathname === "/api/v1/me";
+    });
+    renderWithProviders(
+      <TenantProvider slug="northwind">
+        <RemoveButton />
+      </TenantProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Remove" }),
+    );
+
+    await vi.waitFor(() => expect(me.read).toBe(true));
+    expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Your account is suspended" }),
+    ).not.toBeInTheDocument();
+  });
 });

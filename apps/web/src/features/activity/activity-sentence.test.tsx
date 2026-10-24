@@ -505,4 +505,18 @@ describe("ActivitySentence", () => {
       shown("Platform The platform reopened this organisation."),
     ).toBeInTheDocument();
   });
+
+  it("ActivitySentence_TenantReopenedInArabic_UsesTheFeminineVerbOfThePlatform", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantReopened,
+          actor: thePlatform,
+        })}
+      />,
+      "ar",
+    );
+
+    expect(shown("المنصة أعادت المنصة فتح هذه المؤسسة.")).toBeInTheDocument();
+  });
 });
