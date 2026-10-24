@@ -39,9 +39,9 @@ const sorts = {
 type Row = TenantListItemResponse;
 
 /**
- * The list of organisations (the Main board): Organisation with its slug, Owner, Members and Status. The Owner column counts the
- * Owners and never names one (`ownerCount`); with none, it shows the Owner invitation that waits. A row whose purge has begun has
- * no menu.
+ * The list of organisations (the Main board): Organisation with its slug, Owner, Members, Status and Created. The Owner column
+ * counts the Owners and never names one (`ownerCount`); with none, it shows the Owner invitation that waits. A row whose purge has
+ * begun has no menu. Created does not sort: ListTenants sorts by name and slug only.
  */
 export function OrganisationsTable({
   page,
@@ -159,6 +159,20 @@ export function OrganisationsTable({
       header: t("organisations.status"),
       card: "end",
       render: status,
+    },
+    {
+      key: "created",
+      header: t("organisations.createdTerm"),
+      secondary: true,
+      card: "hide",
+      render: (row) => (
+        <Time
+          at={row.createdAt}
+          show="date"
+          locale={locale}
+          timeZone={timeZone}
+        />
+      ),
     },
   ];
 

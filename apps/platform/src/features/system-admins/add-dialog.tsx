@@ -34,15 +34,15 @@ import {
 const lookupDelay = 300;
 
 const email = z.email();
-const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
 type Step = "find" | "confirm" | "reverify";
 
 /**
  * Add a system admin (the MakeSystemAdmin board). Step 1 takes the full email, with no suggestions: the screen reads ListUsers
- * with `q` and keeps only the user whose email equals the typed one, case ignored. Step 2 warns and confirms with a secondary
- * button. GrantSystemAdmin sends one Idempotency-Key per intent (F48); after a stale second factor (403, A6a) the code step
- * checks it again and the dialog sends the same request with the same key, which the refused request never claimed (I4).
+ * with the `email` filter, which keeps the users whose whole address equals it, case ignored. Addresses are not unique, so more
+ * than one user has no step 2 (the API's catalog). Step 2 warns and confirms with a secondary button. GrantSystemAdmin sends one
+ * Idempotency-Key per intent (F48); after a stale second factor (403, A6a) the code step checks it again and the dialog sends the
+ * same request with the same key, which the refused request never claimed (I4).
  */
 export function AddDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations("systemAdmins");
@@ -68,15 +68,18 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
 
   const lookup = useQuery(
     getListUsersQueryOptions(
-      { q: looked, pageSize: schemas.listUsersQueryPageSizeMax },
+      { email: looked },
       { query: { enabled: looked !== "" } },
     ),
   );
-  const current = looked !== "" && same(looked, address);
-  const person = current
-    ? lookup.data?.items.find((user) => user.email && same(user.email, looked))
-    : undefined;
-  const noUser = current && lookup.isSuccess && !person;
+  // An empty value is no filter, so the dialog sends none until the address is well formed.
+  const found =
+    looked !== "" && looked === address && lookup.isSuccess
+      ? lookup.data.items
+      : undefined;
+  const person = found?.length === 1 ? found[0] : undefined;
+  const noUser = found?.length === 0;
+  const manyUsers = found !== undefined && found.length > 1;
   // Another person is another intent: it gets a new key (F48).
   const personId = person?.id;
   // biome-ignore lint/correctness/useExhaustiveDependencies: the key follows the person the email found.
@@ -206,10 +209,10 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
           dir="ltr"
           autoComplete="off"
           spellCheck={false}
-          maxLength={schemas.listUsersQueryQMax}
+          maxLength={schemas.listUsersQueryEmailMax}
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
-          error={noUser ? t("noUser") : undefined}
+          error={noUser ? t("noUser") : manyUsers ? t("manyUsers") : undefined}
         />
         {person && <PersonCard person={person} />}
         {person?.isSystemAdmin && (

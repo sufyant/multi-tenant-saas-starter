@@ -11,9 +11,9 @@ import {
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
 } from "@repo/api-client";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { TextLink } from "./text-link";
 import { useDates } from "./use-dates";
 
 /** The page of a target: an organisation's or a user's. A deleted user, an invitation and a role have none. */
@@ -26,16 +26,11 @@ function hrefOf(target: AuditTargetResponse): string | null {
   return null;
 }
 
-const linkClass = "font-medium text-primary underline-offset-4 hover:underline";
-
-const linked = (href: string | null, content: ReactNode) =>
-  href ? (
-    <Link href={href} className={linkClass}>
-      <bdi>{content}</bdi>
-    </Link>
-  ) : (
-    <bdi className="font-medium">{content}</bdi>
-  );
+/** A name in a sentence: its weight marks a name, and the underline of `TextLink` marks a link (WCAG 2.2, 1.4.1). */
+const linked = (href: string | null, content: ReactNode) => {
+  const name = <bdi className="font-medium">{content}</bdi>;
+  return href ? <TextLink href={href}>{name}</TextLink> : name;
+};
 
 type Rich = Record<string, string | ((chunks: ReactNode) => ReactNode)>;
 
@@ -54,11 +49,20 @@ function detailValues(
       return { reason: details.reason };
     case TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned:
       return { date: date(details.purgesAt) };
-    case TenantOwnerMadeDetailsResponseOperation.TenantOwnerMade:
-      // The details name the member by id only; the API adds no name (section 10 of the frontend architecture).
+    case TenantOwnerMadeDetailsResponseOperation.TenantOwnerMade: {
+      // The new Owner has the actor's shape (the API's step r13). A deleted user has no page, and the sentence of each language
+      // names them, as it names a member whose name is null.
+      if (details.deleted)
+        return {
+          owner: "deletedUser",
+          member: (chunks) => linked(null, chunks),
+        };
       return {
-        member: (chunks) => linked(`/users/${details.userId}`, chunks),
+        owner: details.displayName === null ? "unnamed" : "named",
+        member: (chunks) =>
+          linked(`/users/${details.userId}`, details.displayName ?? chunks),
       };
+    }
     default:
       return {};
   }

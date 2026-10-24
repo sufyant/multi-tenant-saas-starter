@@ -98,6 +98,16 @@ const ownerMade: AuditDetailsResponse = {
     builtIn: true,
   },
 };
+/** Make Owner with the new Owner's name, as the read side resolves it (the API's step r13). */
+const ownerMadeNamed: AuditDetailsResponse = {
+  ...ownerMade,
+  userId: mehmet.id,
+  displayName: "Mehmet Kaya",
+};
+const ownerMadeDeleted: AuditDetailsResponse = {
+  ...ownerMade,
+  deleted: true,
+};
 const purgeWarned: AuditDetailsResponse = {
   operation: TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned,
   purgesAt: "2026-10-22T09:00:00Z",
@@ -183,6 +193,22 @@ const cases: Case[] = [
   ],
   [
     "TenantOwnerMade",
+    AuditOperation.TenantOwnerMade,
+    ciara,
+    tenantTarget(),
+    ownerMadeNamed,
+    "Ciara Byrne made Mehmet Kaya an Owner of Northwind Traders.",
+  ],
+  [
+    "TenantOwnerMadeDeletedOwner",
+    AuditOperation.TenantOwnerMade,
+    ciara,
+    tenantTarget(),
+    ownerMadeDeleted,
+    "Ciara Byrne made Deleted user an Owner of Northwind Traders.",
+  ],
+  [
+    "TenantOwnerMadeUnnamedOwner",
     AuditOperation.TenantOwnerMade,
     ciara,
     tenantTarget(),
@@ -414,7 +440,7 @@ describe("ActivitySentence", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("ActivitySentence_OwnerMade_LinksTheMemberToTheUsersPage", async () => {
+  it("ActivitySentence_OwnerMadeUnnamed_LinksTheMemberToTheUsersPage", async () => {
     renderEntry(
       entry({
         operation: AuditOperation.TenantOwnerMade,
@@ -426,6 +452,96 @@ describe("ActivitySentence", () => {
     expect(
       await screen.findByRole("link", { name: "a member" }),
     ).toHaveAttribute("href", "/users/0198f0a2-0000-7000-8000-0000000000d2");
+  });
+
+  it("ActivitySentence_OwnerMade_LinksTheNewOwnerToTheirPage", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantOwnerMade,
+        target: tenantTarget(),
+        details: ownerMadeNamed,
+      }),
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "Mehmet Kaya" }),
+    ).toHaveAttribute("href", `/users/${mehmet.id}`);
+  });
+
+  it("ActivitySentence_OwnerMadeDeletedOwner_DoesNotLinkTheOwner", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantOwnerMade,
+        target: tenantTarget(),
+        details: ownerMadeDeleted,
+      }),
+    );
+
+    expect(await screen.findByText("Deleted user")).toBeInTheDocument();
+    expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(
+      ["Northwind Traders"],
+    );
+  });
+
+  it.each([
+    [
+      "tr",
+      "Named",
+      ownerMadeNamed,
+      "Ciara Byrne, Mehmet Kaya kullanıcısını Northwind Traders kuruluşunda Sahip yaptı.",
+    ],
+    [
+      "ar",
+      "Named",
+      ownerMadeNamed,
+      "جعل Ciara Byrne Mehmet Kaya مالكًا في Northwind Traders.",
+    ],
+    [
+      "tr",
+      "Deleted",
+      ownerMadeDeleted,
+      "Ciara Byrne, silinmiş bir kullanıcıyı Northwind Traders kuruluşunda Sahip yaptı.",
+    ],
+    [
+      "ar",
+      "Deleted",
+      ownerMadeDeleted,
+      "جعل Ciara Byrne مستخدمًا محذوفًا مالكًا في Northwind Traders.",
+    ],
+  ] as const)(
+    "ActivitySentence_OwnerMadeIn%s_Says%sNewOwner",
+    async (locale, _, details, text) => {
+      renderEntry(
+        entry({
+          operation: AuditOperation.TenantOwnerMade,
+          target: tenantTarget(),
+          details,
+        }),
+        locale,
+      );
+
+      expect(await findSentence(text)).toBeInTheDocument();
+    },
+  );
+
+  it("ActivitySentence_Links_AreTextLinksUnderlinedInsideTheSentence", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantOwnerMade,
+        target: tenantTarget(),
+        details: ownerMadeNamed,
+      }),
+    );
+
+    await screen.findByRole("link", { name: "Mehmet Kaya" });
+    const links = screen.getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual([
+      "Mehmet Kaya",
+      "Northwind Traders",
+    ]);
+    expect(
+      links.filter((link) => !link.classList.contains("underline")),
+    ).toEqual([]);
   });
 
   it("ActivitySentence_InArabic_IsolatesTheLatinNames", async () => {

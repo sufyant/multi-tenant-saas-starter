@@ -21,7 +21,7 @@ const open = async (page: Page) => {
 /** Types an address into Add's email step, and waits for the lookup that follows it. */
 const typeEmail = async (page: Page, email: string) => {
   const lookup = page.waitForResponse((response) =>
-    response.url().includes(`q=${encodeURIComponent(email)}`),
+    response.url().includes(`email=${encodeURIComponent(email)}`),
   );
   await page
     .getByRole("alertdialog")
@@ -34,7 +34,7 @@ const typeEmail = async (page: Page, email: string) => {
 const findJohn = async (page: Page) => {
   await page.getByRole("button", { name: "Add system admin" }).click();
   const dialog = page.getByRole("alertdialog");
-  // An address that only starts John's finds nobody: the lookup keeps the exact email alone.
+  // The email filter compares the whole address: one that only starts John's finds nobody.
   await typeEmail(page, "john@kestrel.exampl");
   await expect(
     dialog.getByText("No user has this email. They must sign in once first."),
