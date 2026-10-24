@@ -6,7 +6,7 @@ namespace ControlPlane.Domain.SystemAdmins;
 /// <summary>
 /// A grant that makes a user a system admin: a person who works for the provider. It is an extra grant on the single identity,
 /// recorded with when it was granted. The system door grants a root system admin, whom the configuration names; a system admin grants
-/// and revokes any other (section 6, "Root system admins").
+/// and revokes any other (docs/flows/system-admins.md).
 /// </summary>
 internal sealed class SystemAdmin(Guid userId, DateTimeOffset grantedAt)
 {

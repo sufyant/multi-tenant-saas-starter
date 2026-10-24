@@ -6,8 +6,8 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.SystemAdmins;
 
-// POST /v1/platform/users/{userId}/system-admin: a system admin makes an existing user a system admin (section 6, "Root system
-// admins"). The new system admin enters the system door with a second factor (A6), and the platform's log names the system admin who
+// POST /v1/platform/users/{userId}/system-admin: a system admin makes an existing user a system admin
+// (docs/flows/system-admins.md). The new system admin enters the system door with a second factor (A6), and the platform's log names the system admin who
 // granted it (K3).
 public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
 {

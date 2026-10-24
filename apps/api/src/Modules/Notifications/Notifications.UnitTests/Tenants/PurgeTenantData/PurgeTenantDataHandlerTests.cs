@@ -4,7 +4,7 @@ using Notifications.Application.Tenants.PurgeTenantData;
 namespace Notifications.UnitTests.Tenants.PurgeTenantData;
 
 // Notifications holds no data of a tenant today, and still takes part in the tenant purge: it answers at once, so a module that adds
-// data of a tenant later deletes it here (section 6, "Tenant purge").
+// data of a tenant later deletes it here (docs/flows/tenant-purge.md).
 public sealed class PurgeTenantDataHandlerTests
 {
     [Fact]

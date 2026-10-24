@@ -7,7 +7,7 @@ namespace Api.ArchitectureTests;
 // S13: a saga shares no message with another handler. It hears its steps through replies and faults sent to it, not through events
 // meant for other modules. Read from Wolverine's own handler graph of the application composed as a worker: the handlers of a
 // message type are its chain's own and those Wolverine separated onto endpoints of their own (W4). The template's one saga is its
-// reference use, the tenant purge (section 6, "Tenant purge"); a product's saga is held to the same rules.
+// reference use, the tenant purge (docs/flows/tenant-purge.md); a product's saga is held to the same rules.
 public sealed class SagaMessageTests : IAsyncLifetime
 {
     private const string WhyNot =
@@ -32,7 +32,7 @@ public sealed class SagaMessageTests : IAsyncLifetime
         shared.ShouldBeEmpty(WhyNot);
     }
 
-    // Tenant creation is one transaction (section 6). The template's one saga is the tenant purge; a product's saga adds itself here.
+    // Tenant creation is one transaction (docs/flows/tenant-creation.md). The template's one saga is the tenant purge; a product's saga adds itself here.
     [Fact]
     public void ReadTheHandlerGraph_Sagas_AreTheTenantPurgeOnly()
     {

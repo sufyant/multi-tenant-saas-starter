@@ -31,7 +31,7 @@ public sealed class SystemDoorTests
         permissions.ShouldBeNull();
     }
 
-    // Section 6, "Root system admins": a person with a second factor and a verified address in the list becomes a system admin.
+    // docs/flows/system-admins.md: a person with a second factor and a verified address in the list becomes a system admin.
     [Fact]
     public void BecomeRootSystemAdmin_AListedEmailIsVerifiedWithASecondFactor_AnswersThatEmail()
     {

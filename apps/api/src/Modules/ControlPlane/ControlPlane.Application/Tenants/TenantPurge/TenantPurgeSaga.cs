@@ -12,7 +12,7 @@ namespace ControlPlane.Application.Tenants.TenantPurge;
 // module's handler on a queue of its own (W4), and each replies with its name (S13).
 
 /// <summary>
-/// The tenant purge of section 6, the template's reference use of a saga (S1 to S13). It is a forward recovery saga: its pivot, the
+/// The tenant purge (docs/flows/tenant-purge.md), the template's reference use of a saga (S1 to S13). It is a forward recovery saga: its pivot, the
 /// tenant's move to <c>Purging</c>, comes first, and every step after it only retries; nothing is undone (S5; Richardson, Microservices
 /// Patterns, chapter 4). Its id is the tenant's id, and its record belongs to the tenant. It only decides: from its state and a message
 /// it chooses its next state and the messages to send, and it calls nothing (S12). A message that does not fit its state is ignored

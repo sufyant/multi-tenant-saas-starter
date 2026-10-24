@@ -6,7 +6,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.Users.DeleteUserWithoutTenant;
 
-// The erasure step of a user's deletion (section 6, "User deletion", step 3), which the platform takes for a user that a tenant's purge
+// The erasure step of a user's deletion (docs/flows/user-deletion.md, step 3), which the platform takes for a user that a tenant's purge
 // left without a tenant. It locks the user row and checks again under the lock: a system admin stays, a user who joined another tenant
 // meanwhile stays, and a user already deleted changes nothing. Otherwise it erases the user as DeleteUser does (User.Delete), records
 // user.deleted by the platform, and after the commit deletes the user at the identity provider and erases the user's address in each

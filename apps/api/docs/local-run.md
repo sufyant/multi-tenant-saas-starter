@@ -10,7 +10,7 @@ These steps take an empty machine to a created tenant and an accepted invitation
   - its issuer URL (`Host:Authentication:Issuer`), its Backend API URL and its secret key (`ControlPlane:Clerk:*`);
   - a way to get a session token for a user. The token carries `sub`, `sid`, `iss`, `exp` and `nbf`; a token without `sid`, such as a JWT template's token, is refused. A token for the system door also carries `fva` with a verified second factor (for example `[0,0]`).
   - invite-only sign-up (Restricted), as `.clerk/config.json` sets it. The application lets an invited address without an account sign up through Clerk's invitation, and reads a user's verified email addresses when they accept an invitation (`docs/setup.md`).
-  - a user whose verified email address is one you put in `ControlPlane:SystemAdmins:RootEmails`. In Restricted mode you create that account yourself (`docs/setup.md`, "Root system admins"). That user becomes a root system admin on their first request to `/v1/platform/...` with a second factor (section 6, "Root system admins").
+  - a user whose verified email address is one you put in `ControlPlane:SystemAdmins:RootEmails`. In Restricted mode you create that account yourself (`docs/setup.md`, "Root system admins"). That user becomes a root system admin on their first request to `/v1/platform/...` with a second factor (`flows/system-admins.md`).
 
 ## 2. Database
 
@@ -139,7 +139,7 @@ As the owner, signed in with the invited email address verified. A person who is
 ```sh
 curl -X POST http://127.0.0.1:5080/v1/me/invitations/accept \
   -H "Authorization: Bearer <owner token>" -H "Content-Type: application/json" \
-  -d '{"code":"<tenantId>.<secret>","firstName":"Ada","lastName":"Lovelace"}'
+  -d '{"code":"<tenantId>.<secret>","firstName":"Ayşe","lastName":"Yılmaz"}'
 curl http://127.0.0.1:5080/v1/me/tenants -H "Authorization: Bearer <owner token>"
 curl http://127.0.0.1:5080/v1/tenants/<tenantId>/members -H "Authorization: Bearer <owner token>"
 ```

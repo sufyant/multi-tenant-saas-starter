@@ -776,6 +776,6 @@ After the delivery, check:
 
 - The `migrate` step of the staging deploy logs one migration for each module: `Migrated the control_plane schema: 1 migrations applied`, the same for `audit` and `api`, and `Migration finished`.
 - The staging deploy of `deploy.yml` succeeds: Railway's health check passes for `api-web` and `api-worker`. The web apps load.
-- A person on `ControlPlane:SystemAdmins:RootEmails` signs in to the platform app with a second factor and becomes a system admin again: the door adds the user row (`apps/api/docs/ARCHITECTURE.md`, section 6, "Root system admins"). No other user row, tenant or invitation is left: create the test tenants again, and invite their members again.
+- A person on `ControlPlane:SystemAdmins:RootEmails` signs in to the platform app with a second factor and becomes a system admin again: the door adds the user row (`apps/api/docs/flows/system-admins.md`). No other user row, tenant or invitation is left: create the test tenants again, and invite their members again.
 
 A rollback of staging to a version from before the squash does not work after the reset (section 6, "The database").

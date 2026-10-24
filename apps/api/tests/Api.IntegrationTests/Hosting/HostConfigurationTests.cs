@@ -8,7 +8,7 @@ namespace Api.IntegrationTests.Hosting;
 // Section 7, configuration rule 2: every setting is checked while the application starts. A required setting that is missing, or
 // a value that is wrong, stops the start, and the error names the setting's full key. Each case without a required setting runs on a
 // database of its own. The check of the root system admins reads no database: the list is required in every environment, whatever
-// the system admin list holds (section 6, "Root system admins").
+// the system admin list holds (docs/flows/system-admins.md).
 public sealed class HostConfigurationTests(Database database)
 {
     // The factory's short retries left out, so each module's default retries apply.
