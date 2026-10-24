@@ -39,18 +39,33 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   vi.clearAllMocks();
+  vi.useRealTimers();
 });
 afterAll(() => server.close());
 
-/** ListUsers: the page's list without `q`, the people a search by email finds with it. Each request is recorded. */
+/**
+ * ListUsers: the page's list without `email`, and the users whose address equals the `email` filter with it. The API compares the
+ * whole address, case ignored, so `found` is its answer. Each request is recorded.
+ */
 const users = (found: UserResponse[], requests: URLSearchParams[] = []) =>
   http.get("*/v1/platform/users", ({ request }) => {
     const params = new URL(request.url).searchParams;
     requests.push(params);
     return HttpResponse.json(
-      usersPageOf(params.has("q") ? found : systemAdmins),
+      usersPageOf(params.has("email") ? found : systemAdmins),
     );
   });
+
+/** The lookups of the dialog: the requests with the `email` filter. */
+const lookups = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.has("email"));
+
+/** Mehmet's address on a second account: addresses are not unique (the API's catalog, ListUsers). */
+const mehmetAgain = {
+  ...mehmet,
+  id: "0198f0a2-0000-7000-8000-0000000000b9",
+  membershipCount: 1,
+};
 
 /** GrantSystemAdmin for Mehmet: it records each key, writes "grant" into the log, and gives the answers in order. */
 const grant = (
@@ -122,7 +137,61 @@ describe("AddSystemAdminDialog", () => {
     expect(dialog.getByText("mehmet@northwind.example")).toBeVisible();
     expect(dialog.getByText("Member of 2 organisations")).toBeVisible();
     expect(dialog.getByRole("button", { name: "Continue" })).toBeEnabled();
-    expect(requests.at(-1)?.get("q")).toBe("mehmet@northwind.example");
+  });
+
+  it("Add_WellFormedAddress_SendsTheEmailFilterAndNeverQ", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(meAs(ciara), users([mehmet], requests));
+
+    const dialog = await find("mehmet@northwind.example");
+    await dialog.findByText("Mehmet Kaya");
+
+    expect(lookups(requests).map((params) => params.get("email"))).toEqual([
+      "mehmet@northwind.example",
+    ]);
+    expect(requests.filter((params) => params.has("q"))).toEqual([]);
+  });
+
+  it("Add_AddressNotYetWellFormed_SendsNothing", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const requests: URLSearchParams[] = [];
+    server.use(meAs(ciara), users([mehmet], requests));
+
+    const dialog = await openAdd();
+    const field = dialog.getByRole("textbox", { name: "Email" });
+    await user.type(field, "mehmet@northwind");
+    // The test's clock passes the lookup's delay; then the full address sends the first lookup.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(dialog.getByRole("button", { name: "Continue" })).toBeDisabled();
+    await user.type(field, ".example");
+    await dialog.findByText("Mehmet Kaya");
+
+    expect(lookups(requests).map((params) => params.get("email"))).toEqual([
+      "mehmet@northwind.example",
+    ]);
+  });
+
+  it("Add_AddressCleared_SendsNoEmptyFilter", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const requests: URLSearchParams[] = [];
+    server.use(meAs(ciara), users([mehmet], requests));
+
+    const dialog = await openAdd();
+    const field = dialog.getByRole("textbox", { name: "Email" });
+    await user.type(field, "mehmet@northwind.example");
+    await dialog.findByText("Mehmet Kaya");
+    await user.clear(field);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(dialog.queryByText("Mehmet Kaya")).toBeNull();
+    await user.type(field, "kaya@northwind.example");
+    await dialog.findByText("Mehmet Kaya");
+
+    expect(lookups(requests).map((params) => params.get("email"))).toEqual([
+      "mehmet@northwind.example",
+      "kaya@northwind.example",
+    ]);
   });
 
   it("Add_EmailField_OffersNoSuggestions", async () => {
@@ -141,8 +210,8 @@ describe("AddSystemAdminDialog", () => {
     ).toBeVisible();
   });
 
-  it("Add_PartialMatch_SaysNoUser", async () => {
-    server.use(meAs(ciara), users([mehmet]));
+  it("Add_NoUser_SaysNoUser", async () => {
+    server.use(meAs(ciara), users([]));
 
     const dialog = await find("mehmet@northwind.ex");
 
@@ -156,12 +225,39 @@ describe("AddSystemAdminDialog", () => {
   });
 
   it("Add_OtherCase_FindsTheUser", async () => {
-    server.use(meAs(ciara), users([mehmet]));
+    const requests: URLSearchParams[] = [];
+    server.use(meAs(ciara), users([mehmet], requests));
 
     const dialog = await find("MEHMET@Northwind.Example");
 
     expect(await dialog.findByText("Mehmet Kaya")).toBeVisible();
     expect(dialog.getByRole("button", { name: "Continue" })).toBeEnabled();
+    expect(lookups(requests).at(-1)?.get("email")).toBe(
+      "MEHMET@Northwind.Example",
+    );
+  });
+
+  it("Add_TwoUsersWithTheEmail_SaysSoWithoutAStepTwo", async () => {
+    server.use(meAs(ciara), users([mehmet, mehmetAgain]));
+
+    const dialog = await find("mehmet@northwind.example");
+
+    expect(
+      await dialog.findByText(
+        "More than one user has this email. Ask a developer to check the accounts.",
+      ),
+    ).toBeVisible();
+    expect(dialog.queryByText("Mehmet Kaya")).toBeNull();
+    expect(dialog.getByRole("button", { name: "Continue" })).toBeDisabled();
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Email" }),
+      "{Enter}",
+    );
+    expect(
+      screen.queryByRole("alertdialog", {
+        name: "Make Mehmet Kaya a system admin?",
+      }),
+    ).toBeNull();
   });
 
   it("Add_AlreadyASystemAdmin_SaysSoWithoutAStepTwo", async () => {

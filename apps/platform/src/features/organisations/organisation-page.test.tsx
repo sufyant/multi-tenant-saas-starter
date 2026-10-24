@@ -44,7 +44,45 @@ beforeEach(() =>
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+/** The value of a term of the details: a term has no accessible name, so the value is the definition at the term's place. */
+const term = async (name: string) => {
+  const terms = await screen.findAllByRole("term");
+  const place = terms.findIndex((element) => element.textContent === name);
+  return screen.getAllByRole("definition")[place];
+};
+
 describe("OrganisationPage", () => {
+  it.each([
+    ["en", "Created", "3 Mar 2026"],
+    ["tr", "Oluşturulma", "3 Mar 2026"],
+    ["ar", "تاريخ الإنشاء", "3 مارس 2026"],
+  ] as const)(
+    "OrganisationPage_CreatedIn%s_ShowsTheDateInTheDetails",
+    async (locale, label, date) => {
+      server.use(meAnswer(), detailAnswer(detailOf(northwind)));
+
+      renderWithProviders(<OrganisationPage tenantId={northwind.id} />, locale);
+
+      expect(await term(label)).toHaveTextContent(date);
+    },
+  );
+
+  it.each([
+    ["en", "Created", "4 Nov 2025", "Deleted"],
+    ["tr", "Oluşturulma", "4 Kas 2025", "Silinme"],
+    ["ar", "تاريخ الإنشاء", "4 نوفمبر 2025", "تاريخ الحذف"],
+  ] as const)(
+    "OrganisationPage_DeletedIn%s_ShowsWhenItWasCreatedAndDeleted",
+    async (locale, created, date, deleted) => {
+      server.use(meAnswer(), detailAnswer(detailOf(corrib)));
+
+      renderWithProviders(<OrganisationPage tenantId={corrib.id} />, locale);
+
+      expect(await term(created)).toHaveTextContent(date);
+      expect(await term(deleted)).toBeVisible();
+    },
+  );
+
   it("OrganisationPage_Active_ShowsItsOwnersMembersAndActions", async () => {
     server.use(meAnswer(), detailAnswer(detailOf(northwind)));
 
@@ -216,18 +254,17 @@ describe("OrganisationPage", () => {
 
     renderWithProviders(<OrganisationPage tenantId={corrib.id} />);
 
-    expect(
-      await screen.findByText(
-        `Deleted on ${dateOf(corrib.purgedAt as string)}.`,
-      ),
-    ).toBeVisible();
+    expect(await term("Deleted")).toHaveTextContent(
+      dateOf(corrib.purgedAt as string),
+    );
     expect(
       screen.getByText(
         "Its members, invitations and data are gone. Activity keeps what happened.",
       ),
     ).toBeVisible();
     expect(screen.getByText("corrib-press")).toBeVisible();
-    expect(screen.getByText("Deleted")).toBeVisible();
+    // The status and the term of the details.
+    expect(screen.getAllByText("Deleted")).toHaveLength(2);
     expect(screen.queryByText("Members")).toBeNull();
     expect(screen.queryByText("Owner")).toBeNull();
     expect(

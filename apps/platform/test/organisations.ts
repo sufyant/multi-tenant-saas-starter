@@ -50,6 +50,7 @@ export const northwind = item(
   "0198f0a2-0000-7000-8000-000000000001",
   "Northwind Traders",
   "northwind",
+  { createdAt: "2026-03-03T09:14:00Z" },
 );
 export const shannon = item(
   "0198f0a2-0000-7000-8000-000000000003",
@@ -124,6 +125,7 @@ export const corrib = item(
   "corrib-press",
   {
     status: TenantResponseStatus.Purged,
+    createdAt: "2025-11-04T14:00:00Z",
     purgedAt: inDays(-7),
     memberCount: 0,
     ownerCount: 0,

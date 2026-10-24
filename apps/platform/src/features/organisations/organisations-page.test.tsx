@@ -76,6 +76,58 @@ describe("OrganisationsPage", () => {
     expect((await rowOf("Corrib Press")).getByText("Deleted")).toBeVisible();
   });
 
+  it.each([
+    ["en", "Organisations", "Created", "3 Mar 2026"],
+    ["tr", "Kuruluşlar", "Oluşturulma", "3 Mar 2026"],
+    ["ar", "المؤسسات", "تاريخ الإنشاء", "3 مارس 2026"],
+  ] as const)(
+    "OrganisationsPage_CreatedIn%s_ShowsTheDateInItsColumn",
+    async (locale, label, header, date) => {
+      server.use(meAnswer(), listAnswer(pageOf([northwind, corrib])));
+
+      renderWithProviders(<OrganisationsPage />, locale);
+
+      const list = within(await screen.findByRole("table", { name: label }));
+      const cell = await list.findByText(date);
+      expect(cell.closest("tr")).toHaveTextContent("Northwind Traders");
+      expect(
+        list.getAllByRole("columnheader").map((column) => column.textContent),
+      ).toContain(header);
+    },
+  );
+
+  it("OrganisationsPage_Created_ShowsTheTombstonesDate", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([corrib])));
+
+    renderWithProviders(<OrganisationsPage />);
+
+    expect((await rowOf("Corrib Press")).getByText("4 Nov 2025")).toBeVisible();
+  });
+
+  it("OrganisationsPage_CreatedHeader_DoesNotSort", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([northwind])));
+
+    renderWithProviders(<OrganisationsPage />);
+
+    const header = (await table()).getByRole("columnheader", {
+      name: "Created",
+    });
+    expect(within(header).queryByRole("button")).toBeNull();
+  });
+
+  it("OrganisationsPage_PhoneCard_LeavesTheCreatedDateOut", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([northwind])));
+
+    renderWithProviders(<OrganisationsPage />);
+    await table();
+
+    const card = within(
+      screen.getByRole("list", { name: "Organisations" }),
+    ).getByRole("listitem");
+    expect(card).toHaveTextContent("Northwind Traders");
+    expect(card).not.toHaveTextContent("3 Mar 2026");
+  });
+
   it("OrganisationsPage_Closed_CountsTheDaysFromReopenableUntil", async () => {
     server.use(meAnswer(), listAnswer(pageOf([kestrel])));
 

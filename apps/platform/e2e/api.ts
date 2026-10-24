@@ -396,9 +396,12 @@ export async function mockPlatform(
   await page.route("**/api/v1/platform/users*", (route) => {
     const params = new URL(route.request().url()).searchParams;
     const q = params.get("q")?.toLocaleLowerCase("en");
+    // The email filter keeps the whole address, case ignored (the API's catalog, ListUsers).
+    const email = params.get("email")?.toLocaleLowerCase("en");
     const items = Object.values(users).filter(
       (user) =>
         (params.get("isSystemAdmin") !== "true" || user.isSystemAdmin) &&
+        (!email || user.email?.toLocaleLowerCase("en") === email) &&
         (!q ||
           [user.firstName, user.lastName, user.email].some((text) =>
             text?.toLocaleLowerCase("en").includes(q),

@@ -132,7 +132,7 @@ test("Organisation_Deleted_ShowsWhenAndNoActions", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Liffey Design" }),
   ).toBeVisible();
-  await expect(page.getByText(/^Deleted on .+\.$/)).toBeVisible();
+  await expect(page.getByRole("term")).toHaveText(["Created", "Deleted"]);
   await expect(
     page.getByText("Its members, invitations and data are gone."),
   ).toBeVisible();
