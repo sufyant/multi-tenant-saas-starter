@@ -18,6 +18,8 @@ export function useLeaveGuard(dirty: boolean) {
   const [leaving, setLeaving] = useState<Leaving | null>(null);
   const released = useRef(false);
   const guarded = useRef(false);
+  const dirtyNow = useRef(dirty);
+  dirtyNow.current = dirty;
 
   const guardBack = useCallback(() => {
     window.history.pushState(window.history.state, "", window.location.href);
@@ -55,24 +57,28 @@ export function useLeaveGuard(dirty: boolean) {
       event.stopPropagation();
       setLeaving({ href: `${url.pathname}${url.search}${url.hash}` });
     };
-    const onPopState = () => {
-      if (released.current || !guarded.current) return;
-      guarded.current = false;
-      setLeaving({ back: true });
-    };
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!released.current) event.preventDefault();
     };
     if (!guarded.current) guardBack();
     document.addEventListener("click", onClick, true);
-    window.addEventListener("popstate", onPopState);
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       document.removeEventListener("click", onClick, true);
-      window.removeEventListener("popstate", onPopState);
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
   }, [dirty, guardBack]);
+
+  // Back always takes the added entry: with changes the page asks; without them the entry is spent, and the next change adds one.
+  useEffect(() => {
+    const onPopState = () => {
+      if (released.current || !guarded.current) return;
+      guarded.current = false;
+      if (dirtyNow.current) setLeaving({ back: true });
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const discard = () => {
     if (!leaving) return;

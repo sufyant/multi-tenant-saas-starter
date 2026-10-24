@@ -1,5 +1,5 @@
 import { ErrorCode, Permission } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -440,6 +440,76 @@ describe("UpdateRole", () => {
   });
 });
 
+describe("Editor pages", () => {
+  it("RoleEditor_DeleteFromTheEditor_GoesToTheListWithoutAsking", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
+      http.delete(
+        `*/v1/tenants/${northwind.id}/roles/${reviewer.id}`,
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    await openReviewer();
+
+    await userEvent.click(await box("See Activity"));
+    await userEvent.click(screen.getByRole("button", { name: "Delete role" }));
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Delete Reviewer?",
+    });
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Delete role" }),
+    );
+
+    expect(await screen.findByText("Role deleted")).toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith(list);
+    expect(
+      screen.queryByRole("alertdialog", {
+        name: "Discard changes to Reviewer?",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("RolePage_CustomRoleOutOfReach_ReadsWithoutAForm", async () => {
+    const roleEditor = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c4",
+      "Role editor",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantMembersRead,
+        Permission.TenantRolesRead,
+        Permission.TenantRolesUpdate,
+      ],
+    );
+    server.use(
+      ...viewerAnswers(roleEditor, roleEditor.permissions, mehmet, [
+        roleEditor,
+        billingLead,
+      ]),
+    );
+
+    renderInTenant(<RolePage roleId={billingLead.id} />, {
+      url: `${list}/${billingLead.id}`,
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Billing lead" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(await box("See Activity")).toBeDisabled();
+  });
+
+  it("NewRolePage_WithoutRolesCreate_ShowsPermissionDenied", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Admin));
+
+    renderInTenant(<NewRolePage />, { url: `${list}/new` });
+
+    expect(
+      await screen.findByRole("heading", { name: "You can’t open New role" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+});
+
 describe("Leaving with changes", () => {
   it("LeaveEditor_LinkWithChanges_AsksAndDiscardGoesOn", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
@@ -477,6 +547,27 @@ describe("Leaving with changes", () => {
     );
     expect(push).not.toHaveBeenCalled();
     expect(await box("See Activity")).toBeChecked();
+  });
+
+  it("LeaveEditor_BackAfterAnUndoThenNewChanges_StillAsks", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
+    await openReviewer();
+    const activity = await box("See Activity");
+
+    await userEvent.click(activity);
+    await userEvent.click(activity);
+    window.history.back();
+    await new Promise((settled) =>
+      window.addEventListener("popstate", settled, { once: true }),
+    );
+    await userEvent.click(activity);
+    window.history.back();
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Discard changes to Reviewer?",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("LeaveEditor_BackWithChanges_Asks", async () => {

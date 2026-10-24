@@ -1,4 +1,8 @@
-import { ErrorCode, Permission } from "@repo/api-client";
+import {
+  ErrorCode,
+  Permission,
+  type RoleDetailResponse,
+} from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -188,12 +192,15 @@ describe("DeleteRoleDialog", () => {
 
   it("DeleteRole_Success_ClosesToastsAndReadsTheRolesAgain", async () => {
     let reads = 0;
+    const page = (items: RoleDetailResponse[]) => () => {
+      reads += 1;
+      return HttpResponse.json({ items, page: 1, pageSize: 100, total: 1 });
+    };
     server.use(
-      http.get(`*/v1/tenants/${northwind.id}/roles`, () => {
-        reads += 1;
-        const items = reads === 1 ? [reviewer] : [];
-        return HttpResponse.json({ items, page: 1, pageSize: 100, total: 1 });
+      http.get(`*/v1/tenants/${northwind.id}/roles`, page([reviewer]), {
+        once: true,
       }),
+      http.get(`*/v1/tenants/${northwind.id}/roles`, page([])),
       ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
       deleteAnswer(() => new HttpResponse(null, { status: 204 })),
     );
