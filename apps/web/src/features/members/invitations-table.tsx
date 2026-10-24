@@ -22,6 +22,7 @@ import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
 import { useRoleName } from "@/shared/use-role-name";
@@ -31,7 +32,6 @@ import {
   invitationStatus,
 } from "./invitation-status";
 import { nameOf } from "./person";
-import { afterRefusal, refreshInvitations } from "./refresh";
 import { RevokeInvitationDialog } from "./revoke-invitation-dialog";
 import { useRoleReach } from "./use-role-reach";
 

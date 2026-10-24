@@ -7,10 +7,10 @@ import { showToast } from "@repo/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { problemOf } from "@/shared/problem";
+import { afterRefusal, refreshMembers } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
 import { useFailureText } from "@/shared/use-failure-text";
 import { nameOf } from "./person";
-import { afterRefusal, refreshMembers } from "./refresh";
 
 /**
  * Remove a member (the RemoveMember and PhoneRemove boards): it names the person and the organisation. The API decides; each
