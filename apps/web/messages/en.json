@@ -153,8 +153,8 @@
     "changeOwner": "Only an Owner can change an Owner.",
     "removeOwner": "Only an Owner can remove an Owner.",
     "roleDescriptions": {
-      "owner": "Everything an Admin can do, and can give or take the Owner role.",
-      "admin": "Invites members, changes roles up to Admin, removes members, reads Activity.",
+      "owner": "Everything, including giving and taking the Owner role.",
+      "admin": "Invites members, changes roles, removes members, reads Activity.",
       "member": "Uses the product. Sees the member list, not Activity or Invitations."
     },
     "changeRoleTitle": "Change {name}’s role",

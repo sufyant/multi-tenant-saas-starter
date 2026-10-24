@@ -153,8 +153,8 @@
     "changeOwner": "Bir Sahibi yalnızca bir Sahip değiştirebilir.",
     "removeOwner": "Bir Sahibi yalnızca bir Sahip çıkarabilir.",
     "roleDescriptions": {
-      "owner": "Yöneticinin yapabildiği her şeyi yapar, ayrıca Sahip rolünü verebilir veya geri alabilir.",
-      "admin": "Üye davet eder, rolleri Yönetici düzeyine kadar değiştirir, üye çıkarır, Etkinlik'i okur.",
+      "owner": "Her şey; Sahip rolünü vermek ve geri almak da dahil.",
+      "admin": "Üye davet eder, rolleri değiştirir, üye çıkarır, Etkinlik'i okur.",
       "member": "Ürünü kullanır. Üye listesini görür, Etkinlik'i ve Davetler'i görmez."
     },
     "changeRoleTitle": "{name} adlı kişinin rolünü değiştirin",
