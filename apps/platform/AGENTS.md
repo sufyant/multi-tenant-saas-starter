@@ -13,7 +13,7 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 # The platform app
 
 - The system admins use this app. On screen it is "Platform"; in code, routes and the API it is `platform` (N5). "Admin" is only a role of the tenant web.
-- The routes have no tenant segment. Today the app has `/` (the Organisations list, the start page), `/organisations/[tenantId]` (one organisation), `/users` (the Users list), `/users/[userId]` (one user), `/settings/preferences`, `/settings/system-admins` (Settings › System admins), `/two-step` and the sign-in routes `/sign-in` and `/sso-callback`. A tenant is a record the platform lists. Activity comes in a later step; the rail shows only the sections whose pages exist.
+- The routes have no tenant segment. Today the app has `/` (the Organisations list, the start page), `/organisations/[tenantId]` (one organisation), `/users` (the Users list), `/users/[userId]` (one user), `/activity` (the platform's log), `/settings/preferences`, `/settings/system-admins` (Settings › System admins), `/two-step` and the sign-in routes `/sign-in` and `/sso-callback`. A tenant is a record the platform lists. An organisation's page keeps its tab in the URL (`?tab=activity`). The rail shows only the sections whose pages exist.
 - An ink "Platform" label starts the top bar on every page and every screen size. There is no OrgMenu.
 - A session without a verified second factor goes to `/two-step` first: the enrolment or the challenge (F42). Only then does the shell read `GetMe`.
 - A signed-in user whose `GetMe.isSystemAdmin` is false sees "You don't have access". A root system admin has no grant until their first platform request; on `GetMe` 404, or a user who is no system admin, the shell asks the door once (F42).
