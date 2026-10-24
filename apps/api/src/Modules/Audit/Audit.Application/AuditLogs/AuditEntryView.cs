@@ -12,6 +12,12 @@ public sealed record AuditEntryView(
     AuditActorView Actor,
     AuditTargetView Target)
 {
-    /// <summary>The user the details point to, named now; null for details that point to no user, or before the names are read.</summary>
-    public AuditUserView? DetailsUser { get; init; }
+    /// <summary>
+    /// The real name now of the user the details point to, such as the new Owner of <c>tenant.owner_made</c>, or null: for details that
+    /// point to no user, and for a user without a name, a deleted user or an unknown user, as for an actor (K3).
+    /// </summary>
+    public string? DetailsUserName { get; init; }
+
+    /// <summary>Whether the user the details point to was deleted; null for details that point to no user, or before the names are read.</summary>
+    public bool? DetailsUserDeleted { get; init; }
 }

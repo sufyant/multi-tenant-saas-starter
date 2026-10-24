@@ -44,7 +44,8 @@ internal static class AuditEntryViews
             Target = entry.Target is { Kind: nameof(AuditTargetKind.User) } target
                 ? target with { Name = NameOf(target.Id, names), Deleted = IsDeleted(target.Id, names) }
                 : entry.Target,
-            DetailsUser = UserOf(entry.Details) is { } user ? new AuditUserView(user, NameOf(user, names), IsDeleted(user, names)) : null,
+            DetailsUserName = UserOf(entry.Details) is { } user ? NameOf(user, names) : null,
+            DetailsUserDeleted = UserOf(entry.Details) is { } named ? IsDeleted(named, names) : null,
         });
     }
 

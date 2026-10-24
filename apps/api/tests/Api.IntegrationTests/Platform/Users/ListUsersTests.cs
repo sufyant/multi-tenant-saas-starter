@@ -227,14 +227,30 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         problem.GetProperty("errors").GetProperty("email").EnumerateArray().Select(code => code.GetString()).ShouldBe(["email_invalid"]);
     }
 
-    // An empty filter is no filter, as an empty status, sort or q is (K5 in api-catalog).
+    // An address longer than a column holds (EmailAddress.MaxLength) is refused as the other email inputs refuse it.
     [Fact]
-    public async Task ListUsers_AnEmptyEmailFilter_IsNoFilter()
+    public async Task ListUsers_AnEmailFilterLongerThanAnAddress_IsAValidationFailure()
+    {
+        var email = $"{new string('a', 310)}@northwind.example";
+
+        var response = await (await SystemAdminAsync()).GetAsync($"/v1/platform/users?email={Uri.EscapeDataString(email)}", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
+        problem.GetProperty("errors").GetProperty("email").EnumerateArray().Select(code => code.GetString()).ShouldBe(["too_long"]);
+    }
+
+    // An empty or blank filter is no filter, as an empty status, sort or q is (K5 in api-catalog).
+    [Theory]
+    [InlineData("")]
+    [InlineData("%20%20")]
+    public async Task ListUsers_AnEmptyOrBlankEmailFilter_IsNoFilter(string email)
     {
         await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
         await _testData.AddUserAsync(email: $"kali{_marker}@northwind.example");
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&email=", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&email={email}", Cancellation);
 
         page.GetProperty("total").GetInt32().ShouldBe(2);
     }

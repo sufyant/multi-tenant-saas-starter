@@ -651,6 +651,35 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         unread.ShouldBe(known, ignoreOrder: true);
     }
 
+    // N11k for a query (step r13): the validator of XQuery describes the query parameters of the operation X. Each of its rules names a
+    // parameter of that operation, and the document shows it: a length rule as maxLength, an email rule as format email. A rule that
+    // needs a value says nothing the document can show. Any other kind of rule fails until someone decides how the document shows it,
+    // and a rule with the too_long code is a length rule, as for a request.
+    [Fact]
+    public void BuildOpenApiDocument_RuleOfAQueryValidator_IsShownOnItsQueryParameter()
+    {
+        var parameters = Operations()
+            .SelectMany(operation => QueryParametersOf(operation.Value)
+                .Select(parameter => (Key: $"{OperationIdOf(operation.Value)}.{parameter.GetProperty("name").GetString()}", Schema: parameter.GetProperty("schema"))))
+            .ToDictionary(parameter => parameter.Key, parameter => parameter.Schema);
+        var rules = QueryValidators()
+            .SelectMany(type => ((IValidator)Activator.CreateInstance(type)!).CreateDescriptor().GetMembersWithValidators()
+                .SelectMany(member => member.Select(rule => (
+                    Parameter: $"{type.BaseType!.GetGenericArguments()[0].Name[..^"Query".Length]}.{JsonNamingPolicy.CamelCase.ConvertName(member.Key)}",
+                    rule.Validator,
+                    rule.Options.ErrorCode))))
+            .ToList();
+
+        var unshown = rules
+            .Where(rule => !parameters.TryGetValue(rule.Parameter, out var schema) || !Shows(schema, rule.Validator))
+            .Select(rule => $"{rule.Parameter} {rule.Validator.Name}");
+        var tooLong = rules.Where(rule => rule.ErrorCode == "TooLong" && rule.Validator is not ILengthValidator).Select(rule => rule.Parameter);
+
+        rules.ShouldNotBeEmpty();
+        unshown.ShouldBeEmpty();
+        tooLong.ShouldBeEmpty();
+    }
+
     // Decision 4 of audit fix 09: the limits of a list's query are the constants that the API checks, and the search says that the API
     // trims it.
     [Fact]
@@ -721,6 +750,22 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
             .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
             .Where(type => type.BaseType!.GetGenericArguments()[0].Name.EndsWith("Command", StringComparison.Ordinal));
+
+    // The validators of the queries: XQuery's describes the query parameters of the operation X (step r13).
+    private static IEnumerable<Type> QueryValidators() =>
+        Solution.Modules
+            .SelectMany(module => Solution.Load($"{module}.Application").GetExportedTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+            .Where(type => type.BaseType!.GetGenericArguments()[0].Name.EndsWith("Query", StringComparison.Ordinal));
+
+    // What the document shows of a rule on a query parameter.
+    private static bool Shows(JsonElement schema, IPropertyValidator rule) => rule switch
+    {
+        ILengthValidator length => LengthOf(schema, "maxLength") == length.Max,
+        IEmailValidator => FormatOf(schema) == "email",
+        INotNullValidator or INotEmptyValidator => true,
+        _ => false,
+    };
 
     // N8: the command XCommand is carried by the request XRequest, as OpenApiContract maps them.
     private static string RequestOf(Type command) => $"{command.Name[..^"Command".Length]}Request";
