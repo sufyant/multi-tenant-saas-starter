@@ -39,7 +39,7 @@ const lastName = async (
 ) => {
   const field = dialog.getByRole("textbox", { name: "Last name" });
   await userEvent.clear(field);
-  if (value) await userEvent.type(field, value);
+  await userEvent.type(field, value);
   await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
 };
 

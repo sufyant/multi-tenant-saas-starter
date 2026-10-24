@@ -158,7 +158,7 @@ describe("PlatformShell", () => {
           email: "ayse@northwind.example",
           firstName: "Ayşe",
           lastName: "Yılmaz",
-          status: "active",
+          status: UserResponseStatus.Active,
           isSystemAdmin: false,
           isRootSystemAdmin: false,
           systemAdminGrantedAt: null,

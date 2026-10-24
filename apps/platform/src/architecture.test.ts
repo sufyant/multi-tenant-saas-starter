@@ -58,7 +58,15 @@ describe("architecture of apps/platform", () => {
   });
 
   it("F51_AppsPlatform_DecidesNothingByARolesName", () => {
-    expect(roleNameDecisions(src)).toEqual([]);
+    // A role's text, and Make Owner disabled on an Owner membership: the platform's one exception (F3).
+    expect(
+      roleNameDecisions(src, {
+        ignore: [
+          "features/users/use-role-name.ts",
+          "features/users/user-page.tsx",
+        ],
+      }),
+    ).toEqual([]);
   });
 
   it("F3_AppsPlatform_WritesNoEnumValueAsALiteral", () => {

@@ -1,4 +1,5 @@
 import {
+  BuiltInRole,
   type ListPageOfUserResponse,
   type UserDetailResponse,
   type UserMembershipResponse,
@@ -109,12 +110,12 @@ export const usersAnswer = (
 
 const ownerRole = {
   id: "0198f0a2-0000-7000-8000-0000000000r1",
-  name: "owner",
+  name: BuiltInRole.Owner,
   builtIn: true,
 };
 const adminRole = {
   id: "0198f0a2-0000-7000-8000-0000000000r2",
-  name: "admin",
+  name: BuiltInRole.Admin,
   builtIn: true,
 };
 

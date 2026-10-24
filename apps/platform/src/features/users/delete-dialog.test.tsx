@@ -54,19 +54,6 @@ const confirm = async (
   await userEvent.click(dialog.getByRole("button", { name: "Delete user" }));
 };
 
-/** A refusal of DeleteUser: Problem Details with the tenants it names. */
-const refusal = (code: ErrorCode, tenantIds?: string[]) => () =>
-  HttpResponse.json(
-    {
-      status: 409,
-      title: "Refused",
-      code,
-      traceId: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
-      ...(tenantIds ? { tenantIds } : {}),
-    },
-    { status: 409 },
-  );
-
 describe("DeleteUserDialog", () => {
   it("Delete_TheEmailNotTyped_KeepsTheButtonDisabled", async () => {
     server.use(meAnswer(), userAnswer(detail));
@@ -122,7 +109,7 @@ describe("DeleteUserDialog", () => {
       meAnswer(),
       userAnswer(userDetailOf(ciara)),
       platformCommand("delete", `users/${ciara.id}`, [
-        refusal(ErrorCode.UserIsSystemAdmin),
+        () => problem(409, ErrorCode.UserIsSystemAdmin),
       ]),
     );
 
@@ -152,7 +139,11 @@ describe("DeleteUserDialog", () => {
         reads,
       ),
       platformCommand("delete", `users/${ayse.id}`, [
-        refusal(ErrorCode.UserLastOwner, [northwind.id, atlas.id]),
+        () =>
+          problem(409, ErrorCode.UserLastOwner, undefined, [
+            northwind.id,
+            atlas.id,
+          ]),
       ]),
     );
 
@@ -209,7 +200,7 @@ describe("DeleteUserDialog", () => {
       meAnswer(),
       userAnswer(detail, reads),
       platformCommand("delete", `users/${ayse.id}`, [
-        refusal(ErrorCode.UserHasMemberships),
+        () => problem(409, ErrorCode.UserHasMemberships),
       ]),
     );
 
