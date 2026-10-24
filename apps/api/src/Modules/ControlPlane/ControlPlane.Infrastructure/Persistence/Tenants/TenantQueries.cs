@@ -53,7 +53,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
     // The tenant, the person and their membership's role with its permissions, in three queries; row level security keeps the membership
     // and the role's permissions to the active tenant. A custom role's permissions are its rows (A3).
-    async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, CancellationToken cancellationToken)
+    async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, int maxCustomRoles, CancellationToken cancellationToken)
     {
         if (await FindAsync(cancellationToken) is not { } tenant
             || await controlPlane.Users.AsNoTracking().SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken) is not { } user
@@ -69,7 +69,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             return null;
         }
 
-        return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt);
+        return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt, maxCustomRoles);
     }
 
     // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. The page joins

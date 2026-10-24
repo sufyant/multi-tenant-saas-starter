@@ -3,6 +3,7 @@ using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Infrastructure.Persistence.Roles;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.Tenants;
@@ -61,10 +62,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
                     WHERE lower(name) = lower({name}) AND id IS DISTINCT FROM {roleId}
                     """)
                 .AnyAsync(cancellationToken);
-        var inUse = roleId is { } used
-            && (await Memberships.AnyAsync(membership => membership.RoleId == used, cancellationToken)
-                || await controlPlane.TenantInvitations.AnyAsync(invitation => invitation.RoleId == used && invitation.Status == InvitationStatus.Pending, cancellationToken));
-        return new RoleFacts(target, await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken), nameTaken, inUse);
+        var use = target is not null ? (await controlPlane.OfAsync([target.Id], cancellationToken))[target.Id] : RoleUse.None;
+        return new RoleFacts(target, await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken), nameTaken, use);
     }
 
     async Task ITenantRepository.AddRoleAsync(Role role, CancellationToken cancellationToken)

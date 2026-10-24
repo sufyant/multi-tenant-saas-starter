@@ -30,5 +30,6 @@ public static class TenantProfileEndpoints
         ResponseStatus.OfMyTenant(tenant.Tenant.Status),
         RoleEndpoints.ToResponse(tenant.Tenant.Role),
         tenant.Permissions,
-        tenant.CreatedAt);
+        tenant.CreatedAt,
+        tenant.MaxCustomRoles);
 }

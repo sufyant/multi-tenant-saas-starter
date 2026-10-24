@@ -14,7 +14,8 @@ namespace ControlPlane.Infrastructure.Persistence.Roles;
 public sealed class RoleQueries(ControlPlaneDbContext controlPlane) : IRoleQueries
 {
     // Row level security keeps the list to the active tenant; the query names no tenant. The page reads each role's permissions with it,
-    // so no query runs for each role. Two roles never share a name in a tenant, and the id breaks every tie (K5).
+    // and one more query counts what uses each role of the page (RoleUses), so no query runs for each role. Two roles never share a name
+    // in a tenant, and the id breaks every tie (K5).
     async Task<ListPage<RoleDetailView>> IRoleQueries.ListRolesAsync(ListRequest<ListRolesSort> list, CancellationToken cancellationToken)
     {
         var roles = controlPlane.TenantRoles;
@@ -34,6 +35,7 @@ public sealed class RoleQueries(ControlPlaneDbContext controlPlane) : IRoleQueri
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(RoleDetailView.Of)], list.Paging, total);
+        var uses = await controlPlane.OfAsync([.. page.Select(role => role.Id)], cancellationToken);
+        return ListPage.Of([.. page.Select(role => RoleDetailView.Of(role, uses[role.Id]))], list.Paging, total);
     }
 }

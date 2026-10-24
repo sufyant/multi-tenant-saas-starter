@@ -594,7 +594,7 @@ internal sealed class Tenant
             return escalation.Error;
         }
 
-        return facts.InUse
+        return facts.Use.InUse
             ? Error.Conflict(ControlPlaneErrorCodes.RoleInUse, "A member or a pending invitation has the role.")
             : found.Value;
     }

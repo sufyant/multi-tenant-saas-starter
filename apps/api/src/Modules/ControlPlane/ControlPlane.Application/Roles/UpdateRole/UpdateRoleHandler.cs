@@ -35,7 +35,7 @@ public static class UpdateRoleHandler
         }
 
         var (role, oldName, added, removed, change) = updated.Value;
-        var view = RoleDetailView.Of(role);
+        var view = RoleDetailView.Of(role, facts.Use);
         if (change == StateChange.Unchanged)
         {
             return (view, []);

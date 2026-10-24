@@ -1884,7 +1884,7 @@ public sealed class TenantTests
     private static NewRole NewRole(string name, params string[] permissions) => new(Guid.NewGuid(), name, permissions);
 
     private static RoleFacts RoleFacts(Role? target = null, int customRoles = 0, bool nameTaken = false, bool inUse = false) =>
-        new(target, customRoles, nameTaken, inUse);
+        new(target, customRoles, nameTaken, inUse ? new RoleUse(1, 0) : RoleUse.None);
 
     private static Membership Membership(Role role) => new(Id, Guid.NewGuid(), role.Id, DateTimeOffset.UnixEpoch);
 }

@@ -43,7 +43,67 @@ public sealed class ListRolesTests(Database database) : IAsyncLifetime
         items[2].GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.members.read", "tenant.profile.read"]);
         items[2].GetProperty("id").GetGuid().ShouldBe(await _testData.RoleIdOfAsync(tenant.Id, "Member"));
         page.GetProperty("total").GetInt32().ShouldBe(4);
-        items[0].EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "builtIn", "permissions"], ignoreOrder: true);
+        items[0].EnumerateObject().Select(field => field.Name)
+            .ShouldBe(["id", "name", "builtIn", "permissions", "memberCount", "pendingInvitationCount"], ignoreOrder: true);
+    }
+
+    // The counts follow the rule of role.in_use: every membership with the role, and every pending invitation that gives it, an expired
+    // one included. A finished invitation counts nothing. So the screen disables "Delete role" exactly when DeleteRole refuses it.
+    [Fact]
+    public async Task ListRoles_ARoleWithAMemberAndPendingInvitations_CountsThemAsDeleteRoleDoes()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var billing = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+        await _testData.AddMemberWithRoleAsync(tenant.Id, billing);
+        await _testData.AddInvitationAsync(tenant.Id, roleId: billing);
+        await _testData.AddInvitationAsync(tenant.Id, roleId: billing, expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
+        await _testData.AddInvitationAsync(tenant.Id, roleId: billing, status: "Cancelled");
+        await _testData.AddInvitationAsync(tenant.Id, roleId: billing, status: "Accepted");
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/roles?q=billing", Cancellation);
+
+        var role = page.GetProperty("items")[0];
+        role.GetProperty("memberCount").GetInt32().ShouldBe(1);
+        role.GetProperty("pendingInvitationCount").GetInt32().ShouldBe(2);
+    }
+
+    // A role that only an expired pending invitation gives counts one invitation, and DeleteRole refuses it: both read one rule.
+    [Fact]
+    public async Task ListRoles_ARoleOnlyAnExpiredInvitationGives_CountsItAndDeleteRoleRefusesIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var billing = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.members.read");
+        await _testData.AddInvitationAsync(tenant.Id, roleId: billing, expiresAt: DateTimeOffset.UtcNow.AddDays(-1));
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/roles?q=billing", Cancellation);
+        var deleted = await _api.CreateClient(owner).DeleteRoleAsync(tenant.Id, billing);
+
+        var role = page.GetProperty("items")[0];
+        role.GetProperty("memberCount").GetInt32().ShouldBe(0);
+        role.GetProperty("pendingInvitationCount").GetInt32().ShouldBe(1);
+        deleted.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    // A built-in role counts its members too; another tenant's members and invitations never count (R1).
+    [Fact]
+    public async Task ListRoles_ABuiltInRole_CountsOnlyThisTenantsMembersAndInvitations()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id);
+        await _testData.AddMemberAsync(tenant.Id);
+        await _testData.AddInvitationAsync(tenant.Id);
+        var other = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(other.Id);
+        await _testData.AddInvitationAsync(other.Id);
+
+        var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/roles?q=member", Cancellation);
+
+        var member = page.GetProperty("items")[0];
+        member.GetProperty("memberCount").GetInt32().ShouldBe(2);
+        member.GetProperty("pendingInvitationCount").GetInt32().ShouldBe(1);
     }
 
     [Fact]

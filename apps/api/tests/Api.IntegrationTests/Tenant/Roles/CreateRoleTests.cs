@@ -46,6 +46,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var body = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         var roleId = body.GetProperty("id").GetGuid();
         (body.GetProperty("name").GetString(), body.GetProperty("builtIn").GetBoolean()).ShouldBe(("Billing", false));
+        (body.GetProperty("memberCount").GetInt32(), body.GetProperty("pendingInvitationCount").GetInt32()).ShouldBe((0, 0));
         body.GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.audit.read", "tenant.members.read", "tenant.profile.read"]);
         (await PermissionsOfAsync(roleId)).ShouldBe("tenant.audit.read, tenant.members.read, tenant.profile.read");
         (await _audit.TenantLogAsync(roleId)).ShouldBe($"{tenant.Id}:role.created|User|{await _testData.UserIdOfAsync(owner)}|Role|{roleId}|Billing");

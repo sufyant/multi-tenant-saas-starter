@@ -47,6 +47,23 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
             .ShouldBe("""{"newName": "Finance", "oldName": "Billing", "permissionsAdded": ["tenant.audit.read"], "permissionsRemoved": ["tenant.invitations.read"]}""");
     }
 
+    // Every RoleDetailResponse counts who uses the role, as ListRoles does.
+    [Fact]
+    public async Task UpdateRole_ARoleInUse_AnswersItsMembersAndPendingInvitations()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var roleId = await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read", "tenant.members.read");
+        await _testData.AddMemberWithRoleAsync(tenant.Id, roleId);
+        await _testData.AddInvitationAsync(tenant.Id, roleId: roleId);
+
+        var updated = await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).UpdateRoleAsync(tenant.Id, roleId, "Finance", ["tenant.profile.read", "tenant.members.read"]));
+
+        updated.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await updated.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (body.GetProperty("memberCount").GetInt32(), body.GetProperty("pendingInvitationCount").GetInt32()).ShouldBe((1, 1));
+    }
+
     [Fact]
     public async Task UpdateRole_TheNameAndPermissionsItHas_AnswersTheRoleAndRecordsNothing()
     {
