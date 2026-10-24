@@ -10,7 +10,7 @@ namespace Api.IntegrationTests.Persistence;
 // before it still serves, on the rows that version wrote (docs/deployment.md, section 8). So each new migration gets a test here: it
 // takes a database back to the migration before it (Database.CreateDatabaseBeforeControlPlaneMigrationAsync, or the Audit one), writes
 // rows of every kind the migration touches, migrates, and proves that the rows survive (ControlPlaneRowsAsync, AuditRowsAsync) and
-// that the new rule holds. Each module starts from one initial migration (step r11a), so no such test is here yet.
+// that the new rule holds. Each module started from one initial migration (step r11a).
 public sealed class MigrationStepTests(Database database)
 {
     private const string ControlPlaneExists = "SELECT to_regclass('control_plane.tenants') IS NOT NULL";
@@ -168,9 +168,46 @@ public sealed class MigrationStepTests(Database database)
         crossing.ShouldBeEmpty();
     }
 
+    // R15, step r12: the summary of a tenant's Owner invitation holds its language whenever it holds its status. The rows the version
+    // before wrote survive: a tenant without an Owner invitation, one with a pending and one with a cancelled Owner invitation. After the
+    // migration, a status without a language is refused.
+    [Fact]
+    public async Task Migrate_RequireOwnerInvitationLanguage_KeepsTheRowsAndRefusesAStatusWithoutALanguage()
+    {
+        var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("RequireOwnerInvitationLanguage");
+        var testData = new TestData(database, before);
+        await testData.AddTenantAsync();
+        var pending = await testData.AddTenantAsync();
+        await testData.AddInvitationAsync(pending.Id, role: "Owner", language: "tr");
+        await SummarizeOwnerInvitationAsync(pending.Id, before);
+        var cancelled = await testData.AddTenantAsync(status: "Suspended", suspensionReason: "Unpaid invoices");
+        await testData.AddInvitationAsync(cancelled.Id, role: "Owner", status: "Cancelled", language: "ar");
+        await SummarizeOwnerInvitationAsync(cancelled.Id, before);
+        var rowsBefore = await ControlPlaneRowsAsync(before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await ControlPlaneRowsAsync(before)).ShouldBe(rowsBefore);
+        var refused = await Should.ThrowAsync<PostgresException>(() => database.ScalarAsSuperuserAsync<object>(
+            $"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{pending.Id}'", before));
+        refused.SqlState.ShouldBe(PostgresErrorCodes.CheckViolation);
+        refused.ConstraintName.ShouldBe("ck_tenant_summaries_owner_invitation_together");
+    }
+
     // Every row of ControlPlane's tables, as the superuser reads them, as one hash for each table: equal hashes, equal rows.
     private Task<string?> ControlPlaneRowsAsync(string databaseName) =>
         RowsOfAsync(databaseName, "control_plane", "tenants", "tenant_summaries", "users", "memberships", "roles", "role_permissions", "invitations", "system_admins", "tenant_purge_sagas");
+
+    // The summary of the tenant's Owner invitation, as ControlPlane writes it from the invitation (R12).
+    private async Task SummarizeOwnerInvitationAsync(Guid tenantId, string databaseName) =>
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenant_summaries AS summary SET owner_invitation_email = invitation.email, owner_invitation_expires_at = invitation.expires_at,
+                owner_invitation_status = invitation.status, owner_invitation_language = invitation.language
+            FROM control_plane.invitations AS invitation WHERE summary.tenant_id = '{tenantId}' AND invitation.tenant_id = '{tenantId}'
+            """,
+            databaseName);
 
     private Task<string?> AuditRowsAsync(string databaseName) => RowsOfAsync(databaseName, "audit", "entries", "platform_entries");
 
