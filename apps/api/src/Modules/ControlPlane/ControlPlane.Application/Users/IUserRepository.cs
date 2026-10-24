@@ -46,6 +46,9 @@ public interface IUserRepository
     /// <summary>Whether the user is on the system admin list. The system admin list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>When the user's grant on the system admin list was made; null when the user is not on it.</summary>
+    internal Task<DateTimeOffset?> FindSystemAdminGrantedAtAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>
     /// The user's grant on the system admin list, locked for the rest of the transaction, to revoke it; none when the user is no system
     /// admin.

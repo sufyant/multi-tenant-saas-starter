@@ -41,6 +41,8 @@ public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
         (body.GetProperty("id").GetGuid(), body.GetProperty("firstName").GetString(), body.GetProperty("status").GetString())
             .ShouldBe((id, "Ada", "active"));
         (body.GetProperty("isSystemAdmin").GetBoolean(), body.GetProperty("isRootSystemAdmin").GetBoolean()).ShouldBe((true, false));
+        body.GetProperty("systemAdminGrantedAt").GetDateTimeOffset().UtcDateTime
+            .ShouldBe(await database.ScalarAsync<DateTime>($"SELECT granted_at FROM control_plane.system_admins WHERE user_id = '{id}'"), TimeSpan.FromMicroseconds(1));
     }
 
     [Fact]

@@ -3,8 +3,8 @@ using System.Text.Json;
 namespace Api.ArchitectureTests;
 
 // K5: every list uses one contract, read from the committed OpenAPI document. A List operation takes page, pageSize, sort and q, and
-// only filters whose values are an enum or an id (a uuid, such as the role filter of the member and the invitation lists, step r4b); its
-// sort is an enum; its answer holds exactly items, page, pageSize and total. The audit logs
+// only filters whose values are an enum, an id (a uuid, such as the role filter of the member and the invitation lists, step r4b) or a
+// boolean field of the response (isSystemAdmin of the user list, step r12); its sort is an enum; its answer holds exactly items, page, pageSize and total. The audit logs
 // are the one exception: a List operation with a cursor takes exactly cursor and limit, and the platform's log also the tenant it is
 // about, and answers exactly items and nextCursor, and only those two operations may.
 public sealed class ListContractTests : IAsyncLifetime
@@ -39,10 +39,10 @@ public sealed class ListContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public void BuildOpenApiDocument_EveryOtherQueryParameterOfAList_IsAnEnumOrAnIdFilter()
+    public void BuildOpenApiDocument_EveryOtherQueryParameterOfAList_IsAnEnumAnIdOrABooleanFilter()
     {
         var notEnums = PageLists().SelectMany(list => QueryParametersOf(list.Operation)
-            .Where(parameter => !ContractParameters.Contains(parameter.Name) && !IsEnum(parameter.Schema) && !IsId(parameter.Schema))
+            .Where(parameter => !ContractParameters.Contains(parameter.Name) && !IsEnum(parameter.Schema) && !IsId(parameter.Schema) && !IsBoolean(parameter.Schema))
             .Select(parameter => $"{list.Id}: {parameter.Name}"));
 
         PageLists().ShouldNotBeEmpty();
@@ -110,6 +110,9 @@ public sealed class ListContractTests : IAsyncLifetime
     // An id filter takes one id, which the same field of the response holds (roleId: role.id).
     private static bool IsId(JsonElement schema) =>
         schema.TryGetProperty("format", out var format) && format.GetString() == "uuid";
+
+    private static bool IsBoolean(JsonElement schema) =>
+        schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "boolean";
 
     private static bool TakesACursor(JsonElement operation) =>
         QueryParametersOf(operation).Any(parameter => CursorParameters.Contains(parameter.Name));

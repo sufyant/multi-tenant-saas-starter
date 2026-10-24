@@ -14,6 +14,7 @@ public sealed record UserDetailResponse(
     UserResponseStatus Status,
     bool IsSystemAdmin,
     bool IsRootSystemAdmin,
+    DateTimeOffset? SystemAdminGrantedAt,
     int MembershipCount,
     DateTimeOffset CreatedAt,
     DateTimeOffset? SuspendedAt,

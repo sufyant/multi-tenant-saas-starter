@@ -9,5 +9,5 @@ public static class ListUsersHandler
         ListUsersQuery query,
         IUserQueries users,
         CancellationToken cancellationToken) =>
-        await users.ListUsersAsync(query.List, query.Status is { } status ? Enum.Parse<UserStatus>(status) : null, cancellationToken);
+        await users.ListUsersAsync(query.List, query.Status is { } status ? Enum.Parse<UserStatus>(status) : null, query.IsSystemAdmin, cancellationToken);
 }

@@ -20,16 +20,16 @@ public static class ReactivateUserHandler
             return (Errors.UserNotFound, []);
         }
 
-        var isSystemAdmin = await users.IsSystemAdminAsync(user.Id, cancellationToken);
+        var systemAdminGrantedAt = await users.FindSystemAdminGrantedAtAsync(user.Id, cancellationToken);
         if (user.Reactivate() == StateChange.Unchanged)
         {
-            return (UserView.Of(user, isSystemAdmin, systemAdmins), []);
+            return (UserView.Of(user, systemAdminGrantedAt, systemAdmins), []);
         }
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         await users.SaveChangesAsync(cancellationToken);
         var now = time.GetUtcNow();
-        return (UserView.Of(user, isSystemAdmin, systemAdmins), [new UserReactivatedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
+        return (UserView.Of(user, systemAdminGrantedAt, systemAdmins), [new UserReactivatedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);
     }
 }

@@ -32,8 +32,12 @@ public interface IUserQueries
     internal Task<InviterNameView?> FindInviterNameAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of every user in the status or every status, whose email address or name contains the search, with whether each is a
-    /// system admin: by the sort field, users without a value for it last, then by id.
+    /// A page of every user in the status or every status, on the system admin list, off it or either, whose email address or name
+    /// contains the search, with when each was granted system admin: by the sort field, users without a value for it last, then by id.
     /// </summary>
-    internal Task<ListPage<UserView>> ListUsersAsync(ListRequest<ListUsersSort> list, UserStatus? status, CancellationToken cancellationToken);
+    internal Task<ListPage<UserView>> ListUsersAsync(
+        ListRequest<ListUsersSort> list,
+        UserStatus? status,
+        bool? isSystemAdmin,
+        CancellationToken cancellationToken);
 }
