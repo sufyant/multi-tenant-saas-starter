@@ -260,15 +260,15 @@
         "revoked": "<actor></actor> ألغى دعوة."
       },
       "member": {
-        "invited": "<actor></actor> دعا شخصًا بدور {role}.",
+        "invited": "<actor></actor> دعا شخصًا بدور <role></role>.",
         "joined": "<target></target> انضم إلى المؤسسة.",
-        "removed": "<actor></actor> أزال <target></target> ({role}) من المؤسسة.",
-        "role_changed": "<actor></actor> غيّر دور <target></target> من {oldRole} إلى {newRole}."
+        "removed": "<actor></actor> أزال <target></target> (<role></role>) من المؤسسة.",
+        "role_changed": "{actorKind, select, platform {غيّرت} other {غيّر}} <actor></actor> دور <target></target> من <oldRole></oldRole> إلى <newRole></newRole>."
       },
       "role": {
-        "created": "<actor></actor> أنشأ الدور <target></target>.",
-        "deleted": "<actor></actor> حذف الدور <target></target>.",
-        "updated": "<actor></actor> غيّر الدور <target></target>."
+        "created": "أنشأ <actor></actor> الدور <target></target>.",
+        "deleted": "حذف <actor></actor> الدور <target></target>.",
+        "updated": "غيّر <actor></actor> الدور <target></target>{change, select, both {: أضاف <added></added>، وأزال <removed></removed>} added {: أضاف <added></added>} removed {: أزال <removed></removed>} other {}}."
       },
       "system_admin": {
         "granted": "<actor></actor> جعل <target></target> مسؤول نظام.",
@@ -279,11 +279,11 @@
         "created": "<actor></actor> أنشأ هذه المؤسسة.",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
         "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
-        "purge_warned": "<actor></actor> نبّه المالكين إلى أن هذه المؤسسة ستُحذف.",
+        "purge_warned": "أُبلغ المالكون بأن <target></target> ستُحذف.",
         "purged": "<actor></actor> حذف هذه المؤسسة وبياناتها.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
-        "reopened": "<actor></actor> أعاد فتح هذه المؤسسة.",
+        "reopened": "أعادت <actor></actor> فتح هذه المؤسسة.",
         "suspended": "<actor></actor> أوقف هذه المؤسسة."
       },
       "user": {
@@ -293,7 +293,9 @@
         "renamed": "<actor></actor> غيّر اسم <target></target>.",
         "suspended": "<actor></actor> أوقف حساب <target></target>."
       }
-    }
+    },
+    "morePermissions": "{count, plural, one {صلاحية أخرى} two {صلاحيتان أخريان} few {# صلاحيات أخرى} other {# صلاحية أخرى}}",
+    "roleRenamed": "غيّر <actor></actor> اسم الدور <name>{oldName}</name> إلى <name>{newName}</name>."
   },
   "blocked": {
     "suspendedTitle": "{organisation} موقوفة",
@@ -312,5 +314,34 @@
     "deletedTitle": "حُذف هذا الحساب",
     "deletedText": "سجّل الدخول ببريد إلكتروني آخر.",
     "deletedAction": "استخدام بريد آخر"
+  },
+  "permissions": {
+    "tenant": {
+      "audit": {
+        "read": "عرض النشاط"
+      },
+      "invitations": {
+        "create": "دعوة الأشخاص",
+        "delete": "سحب الدعوات",
+        "read": "عرض الدعوات"
+      },
+      "members": {
+        "delete": "إزالة الأعضاء",
+        "read": "عرض الأعضاء",
+        "update": "تغيير أدوار الأعضاء"
+      },
+      "owners": {
+        "manage": "إدارة المالكين"
+      },
+      "profile": {
+        "read": "عرض بيانات المؤسسة"
+      },
+      "roles": {
+        "create": "إنشاء الأدوار",
+        "delete": "حذف الأدوار",
+        "read": "عرض الأدوار",
+        "update": "تعديل الأدوار"
+      }
+    }
   }
 }

@@ -260,15 +260,15 @@
         "revoked": "<actor></actor> revoked an invitation."
       },
       "member": {
-        "invited": "<actor></actor> invited someone as {role}.",
+        "invited": "<actor></actor> invited someone as <role></role>.",
         "joined": "<target></target> joined the organisation.",
-        "removed": "<actor></actor> removed <target></target> ({role}) from the organisation.",
-        "role_changed": "<actor></actor> changed the role of <target></target> from {oldRole} to {newRole}."
+        "removed": "<actor></actor> removed <target></target> (<role></role>) from the organisation.",
+        "role_changed": "<actor></actor> changed the role of <target></target> from <oldRole></oldRole> to <newRole></newRole>."
       },
       "role": {
         "created": "<actor></actor> created the role <target></target>.",
         "deleted": "<actor></actor> deleted the role <target></target>.",
-        "updated": "<actor></actor> changed the role <target></target>."
+        "updated": "<actor></actor> changed the role <target></target>{change, select, both {: added <added></added>, removed <removed></removed>} added {: added <added></added>} removed {: removed <removed></removed>} other {}}."
       },
       "system_admin": {
         "granted": "<actor></actor> made <target></target> a system admin.",
@@ -279,7 +279,7 @@
         "created": "<actor></actor> created this organisation.",
         "owner_invited": "<actor></actor> invited someone as Owner.",
         "owner_made": "<actor></actor> made a member an Owner.",
-        "purge_warned": "<actor></actor> warned the Owners that this organisation will be deleted.",
+        "purge_warned": "The Owners were told that <target></target> will be deleted.",
         "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",
         "renamed": "<actor></actor> renamed the organisation from <name>{oldName}</name> to <name>{newName}</name>.",
@@ -293,7 +293,9 @@
         "renamed": "<actor></actor> changed the name of <target></target>.",
         "suspended": "<actor></actor> suspended the account of <target></target>."
       }
-    }
+    },
+    "morePermissions": "{count} more",
+    "roleRenamed": "<actor></actor> renamed the role <name>{oldName}</name> to <name>{newName}</name>."
   },
   "blocked": {
     "suspendedTitle": "{organisation} is suspended",
@@ -312,5 +314,34 @@
     "deletedTitle": "This account was deleted",
     "deletedText": "Sign in with another email.",
     "deletedAction": "Use another email"
+  },
+  "permissions": {
+    "tenant": {
+      "audit": {
+        "read": "See Activity"
+      },
+      "invitations": {
+        "create": "Invite people",
+        "delete": "Revoke invitations",
+        "read": "See invitations"
+      },
+      "members": {
+        "delete": "Remove members",
+        "read": "See members",
+        "update": "Change members’ roles"
+      },
+      "owners": {
+        "manage": "Manage Owners"
+      },
+      "profile": {
+        "read": "See the organisation’s details"
+      },
+      "roles": {
+        "create": "Create roles",
+        "delete": "Delete roles",
+        "read": "See roles",
+        "update": "Edit roles"
+      }
+    }
   }
 }

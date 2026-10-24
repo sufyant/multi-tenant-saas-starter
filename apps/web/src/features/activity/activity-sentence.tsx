@@ -10,10 +10,13 @@ import {
   MemberInvitedDetailsResponseOperation,
   MemberRemovedDetailsResponseOperation,
   MemberRoleChangedDetailsResponseOperation,
+  type RoleUpdatedDetailsResponse,
+  RoleUpdatedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
+import { builtInRoleOf } from "@/shared/roles";
 import { useRoleName } from "@/shared/use-role-name";
 
 /** The words for a person the log cannot name. */
@@ -35,14 +38,17 @@ function targetName(target: AuditTargetResponse, t: Translate): string {
   return target.name ?? t("activity.unnamedUser");
 }
 
+type Rich = Record<string, string | ((chunks: ReactNode) => ReactNode)>;
+
 /**
  * The values of the details that a sentence shows: the roles and the names. The details' own `operation` narrows the union. The
  * reason of `tenant.suspended` never shows: a member never sees it (the Suspended board).
  */
 function detailValues(
   details: AuditDetailsResponse | null,
-  role: (role: AuditRoleResponse) => string,
-): Record<string, string> {
+  role: (role: AuditRoleResponse) => () => ReactNode,
+  permissions: (names: string[]) => () => ReactNode,
+): Rich {
   switch (details?.operation) {
     case MemberInvitedDetailsResponseOperation.MemberInvited:
     case MemberRemovedDetailsResponseOperation.MemberRemoved:
@@ -51,10 +57,28 @@ function detailValues(
       return { oldRole: role(details.oldRole), newRole: role(details.newRole) };
     case TenantRenamedDetailsResponseOperation.TenantRenamed:
       return { oldName: details.oldName, newName: details.newName };
+    case RoleUpdatedDetailsResponseOperation.RoleUpdated:
+      return {
+        change: changeOf(details),
+        added: permissions(details.permissionsAdded),
+        removed: permissions(details.permissionsRemoved),
+      };
     default:
       return {};
   }
 }
+
+/** Which sides of a role's permissions changed: the `select` of the sentence of `role.updated`. */
+function changeOf(details: RoleUpdatedDetailsResponse): string {
+  const added = details.permissionsAdded.length > 0;
+  const removed = details.permissionsRemoved.length > 0;
+  if (added && removed) return "both";
+  if (added) return "added";
+  return removed ? "removed" : "none";
+}
+
+/** A list shows this many permissions by name, and counts the rest (the Messages board). */
+const namedPermissions = 3;
 
 const person = (name: string) => () => (
   <bdi className="font-medium">{name}</bdi>
@@ -66,7 +90,48 @@ const person = (name: string) => () => (
  */
 export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const t = useTranslations();
-  const role = useRoleName();
+  const roleName = useRoleName();
+  // A built-in role by its translated name; a custom role by the name the entry keeps, isolated from the sentence's direction.
+  const role = (value: AuditRoleResponse) => () =>
+    builtInRoleOf(value) ? roleName(value) : <bdi>{roleName(value)}</bdi>;
+  // A permission by its label; a name the web does not know by itself, never a blank.
+  const label = (name: string) => {
+    const key = `permissions.${name}` as "permissions.tenant.audit.read";
+    return t.has(key) ? t(key) : <bdi dir="ltr">{name}</bdi>;
+  };
+  // The list follows the language's format (`locale.format`), as the dates do: "A, B and C" in en-IE.
+  const list = (items: ReactNode[]) =>
+    new Intl.ListFormat(t("locale.format"), { type: "conjunction" })
+      .formatToParts(items.map((_, index) => String(index)))
+      .map((part, index) =>
+        part.type === "element" ? (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one list never move.
+          <Fragment key={index}>{items[Number(part.value)]}</Fragment>
+        ) : (
+          part.value
+        ),
+      );
+  const permissions = (names: string[]) => () => {
+    const more = names.length - namedPermissions;
+    const named = more > 0 ? names.slice(0, namedPermissions) : names;
+    return list([
+      ...named.map(label),
+      ...(more > 0 ? [t("activity.morePermissions", { count: more })] : []),
+    ]);
+  };
+  const people = {
+    actor: person(actorName(entry.actor, t)),
+    target: person(targetName(entry.target, t)),
+    name: (chunks: ReactNode) => <bdi className="font-medium">{chunks}</bdi>,
+  };
+  const details = entry.details;
+  // A rename of a role has a sentence of its own, before the sentence of its permissions when both changed.
+  const renamed =
+    details?.operation === RoleUpdatedDetailsResponseOperation.RoleUpdated &&
+    details.oldName !== details.newName;
+  const permissionsChanged =
+    details?.operation !== RoleUpdatedDetailsResponseOperation.RoleUpdated ||
+    changeOf(details) !== "none";
   return (
     <p className="min-w-0">
       {entry.actor.kind === AuditActorResponseKind.Platform && (
@@ -76,14 +141,19 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
           </span>{" "}
         </>
       )}
-      {t.rich(`activity.operations.${entry.operation}`, {
-        ...detailValues(entry.details, role),
-        actor: person(actorName(entry.actor, t)),
-        target: person(targetName(entry.target, t)),
-        name: (chunks: ReactNode) => (
-          <bdi className="font-medium">{chunks}</bdi>
-        ),
-      })}
+      {renamed &&
+        t.rich("activity.roleRenamed", {
+          ...people,
+          oldName: details.oldName,
+          newName: details.newName,
+        })}
+      {renamed && permissionsChanged && " "}
+      {(!renamed || permissionsChanged) &&
+        t.rich(`activity.operations.${entry.operation}`, {
+          ...detailValues(details, role, permissions),
+          ...people,
+          actorKind: entry.actor.kind,
+        })}
     </p>
   );
 }
