@@ -1,7 +1,7 @@
+import { BuiltInRole } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { BuiltInRole } from "@/shared/roles";
 import { renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { GeneralPage } from "./general-page";
 

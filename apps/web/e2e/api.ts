@@ -4,6 +4,7 @@ import {
   type AuditEntryResponse,
   AuditOperation,
   AuditTargetResponseKind,
+  BuiltInRole,
   type ChangeMemberRoleRequest,
   type ChangePreferencesRequest,
   type CursorPageOfAuditEntryResponse,
@@ -23,7 +24,6 @@ import {
   type RoleDetailResponse,
   type RoleResponse,
 } from "@repo/api-client";
-import { BuiltInRole } from "../src/shared/roles";
 
 // The API at the browser's door: the page's calls to /api/v1 get these answers, so a page test needs no API and no database.
 // The BFF has its own tests (src/app/api/[...path]/route.test.ts).
@@ -61,6 +61,9 @@ const builtIn = (
   pendingInvitationCount: 0,
 });
 
+/** The most custom roles Northwind may have, as GetMyTenant answers it (the API's default). */
+export const maxCustomRoles = 20;
+
 /** Northwind's roles, as ListRoles answers them. A request gives a role by its id. */
 export const roles: Record<BuiltInRole, RoleDetailResponse> = {
   owner: builtIn(
@@ -84,27 +87,35 @@ const custom = (
   id: string,
   name: string,
   permissions: Permission[],
+  memberCount = 0,
+  pendingInvitationCount = 0,
 ): RoleDetailResponse => ({
   id,
   name,
   builtIn: false,
   permissions,
-  memberCount: 0,
-  pendingInvitationCount: 0,
+  memberCount,
+  pendingInvitationCount,
 });
 
 /** Northwind's custom roles of the boards. An Admin lacks `tenant.roles.update`, so cannot give Billing lead (F51). */
 export const customRoles: RoleDetailResponse[] = [
-  custom("0198f0a2-0000-7000-8000-0000000000c1", "Billing lead", [
-    Permission.TenantProfileRead,
-    Permission.TenantMembersRead,
-    Permission.TenantMembersUpdate,
-    Permission.TenantInvitationsRead,
-    Permission.TenantInvitationsCreate,
-    Permission.TenantRolesRead,
-    Permission.TenantRolesUpdate,
-    Permission.TenantAuditRead,
-  ]),
+  custom(
+    "0198f0a2-0000-7000-8000-0000000000c1",
+    "Billing lead",
+    [
+      Permission.TenantProfileRead,
+      Permission.TenantMembersRead,
+      Permission.TenantMembersUpdate,
+      Permission.TenantInvitationsRead,
+      Permission.TenantInvitationsCreate,
+      Permission.TenantRolesRead,
+      Permission.TenantRolesUpdate,
+      Permission.TenantAuditRead,
+    ],
+    1,
+    1,
+  ),
   custom("0198f0a2-0000-7000-8000-0000000000c2", "Support", [
     Permission.TenantProfileRead,
     Permission.TenantMembersRead,
@@ -164,6 +175,7 @@ export async function mockApi(
       json: {
         ...northwind,
         createdAt: "2026-01-05T09:00:00Z",
+        maxCustomRoles,
         permissions: tenantPermissions,
       },
     }),
@@ -364,6 +376,7 @@ export async function mockMembers(
         ...northwind,
         role: roleOf(roles[role]),
         createdAt: "2026-01-05T09:00:00Z",
+        maxCustomRoles,
         permissions: roles[role].permissions,
       },
     }),
