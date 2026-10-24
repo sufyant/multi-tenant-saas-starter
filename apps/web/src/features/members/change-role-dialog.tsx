@@ -8,20 +8,21 @@ import {
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { problemOf } from "@/shared/problem";
-import { builtInRoleOf, isOwner } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
+import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useFailureText } from "@/shared/use-failure-text";
+import { roleSelect } from "@/shared/use-role-name";
 import { nameOf } from "./person";
 import { afterRefusal, refreshMembers, refreshTenant } from "./refresh";
-import { listRolesOptions, RoleChoice, rolesFor } from "./role-choice";
+import { RoleChoice } from "./role-choice";
 
 /**
- * Change a member's role (the ChangeRole board): the tenant's roles (ListRoles), Owner only for an Owner (K1). The API decides; each refusal shows
- * its text in the dialog (F47).
+ * Change a member's role (the ChangeRole board): every role of the tenant (ListRoles); a role the viewer's role does not fully
+ * hold is disabled, with its reason (F51). The API decides; each refusal shows its text in the dialog (F47).
  */
 export function ChangeRoleDialog({
   member,
@@ -36,8 +37,8 @@ export function ChangeRoleDialog({
   const t = useTranslations();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const { tenant, detail } = useTenant();
-  const roles = useQuery(listRolesOptions(tenant.id));
+  const { tenant } = useTenant();
+  const roles = useTenantRoles();
   const [roleId, setRoleId] = useState(member.role.id);
   const name = nameOf(member) ?? t("members.deletedUser");
   const organisation = tenant.name;
@@ -74,6 +75,16 @@ export function ChangeRoleDialog({
           title: t("members.memberGone", { name }),
           text: t("members.memberGoneChange"),
         };
+      case ErrorCode.RoleEscalation:
+        return {
+          title: t("members.roleOutOfReach"),
+          text: t("members.roleOutOfReachText"),
+        };
+      case ErrorCode.RoleNotFound:
+        return {
+          title: t("members.roleGone"),
+          text: t("members.roleGoneText"),
+        };
       default:
         return {
           title: t("members.changeRoleFailed"),
@@ -90,7 +101,7 @@ export function ChangeRoleDialog({
       description={t("members.changeRoleText", {
         name,
         organisation,
-        role: builtInRoleOf(member.role) ?? "",
+        role: roleSelect(member.role),
         roleName: member.role.name,
       })}
       actionLabel={t("members.changeRole")}
@@ -104,7 +115,7 @@ export function ChangeRoleDialog({
               title: t("members.roleChanged"),
               description: t("members.roleChangedText", {
                 name,
-                role: builtInRoleOf(changed.role) ?? "",
+                role: roleSelect(changed.role),
                 roleName: changed.role.name,
               }),
             });
@@ -113,9 +124,10 @@ export function ChangeRoleDialog({
       }
     >
       <RoleChoice
-        roles={rolesFor(roles.data?.items ?? [], isOwner(detail.role))}
+        roles={roles.data?.items ?? []}
         value={roleId}
         onChange={setRoleId}
+        ownerReason={t("members.giveOwner")}
       />
       {failure && (
         <Banner tone="destructive" title={failure.title}>

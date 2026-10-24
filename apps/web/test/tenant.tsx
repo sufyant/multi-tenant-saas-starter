@@ -3,6 +3,7 @@ import {
   type MeResponse,
   type MyTenantResponse,
   Permission,
+  type RoleDetailResponse,
   type RoleResponse,
 } from "@repo/api-client";
 import { Toaster } from "@repo/ui/components/toast";
@@ -106,30 +107,77 @@ const tenantPermissions = Object.values(Permission).filter((name) =>
   name.startsWith("tenant."),
 );
 
+// An Admin holds the Owner's permissions but the Owner's own and the management of roles (the API's BuiltInRoles).
+const ownerOnly = new Set<Permission>([
+  Permission.TenantOwnersManage,
+  Permission.TenantRolesCreate,
+  Permission.TenantRolesUpdate,
+  Permission.TenantRolesDelete,
+]);
+
 /** The permissions of a built-in role, as GetMyTenant answers them. */
 export const permissionsOf: Record<BuiltInRole, Permission[]> = {
   owner: tenantPermissions,
-  admin: tenantPermissions,
+  admin: tenantPermissions.filter((name) => !ownerOnly.has(name)),
   member: [Permission.TenantMembersRead, Permission.TenantProfileRead],
 };
 
-export const meOf = (role: BuiltInRole): MeResponse => {
-  const person = viewerOf[role];
-  return {
-    id: person.userId,
-    email: person.email,
-    firstName: person.firstName,
-    lastName: person.lastName,
-    isSystemAdmin: false,
-    language: "en",
-    timeZone: "Europe/Dublin",
-  };
-};
+/** A custom role of Northwind: its own name and permissions. */
+export const customRole = (
+  id: string,
+  name: string,
+  permissions: Permission[],
+): RoleDetailResponse => ({ id, name, builtIn: false, permissions });
+
+/** Mehmet's custom role in the task: it changes roles but neither invites nor reads Activity. */
+export const supportLead = customRole(
+  "0198f0a2-0000-7000-8000-0000000000c1",
+  "Support lead",
+  [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantMembersUpdate,
+    Permission.TenantRolesRead,
+  ],
+);
+
+/** A custom role that holds Activity, which Support lead does not. */
+export const billingLead = customRole(
+  "0198f0a2-0000-7000-8000-0000000000c2",
+  "Billing lead",
+  [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantAuditRead,
+  ],
+);
+
+const meOfPerson = (person: MemberResponse): MeResponse => ({
+  id: person.userId,
+  email: person.email,
+  firstName: person.firstName,
+  lastName: person.lastName,
+  isSystemAdmin: false,
+  language: "en",
+  timeZone: "Europe/Dublin",
+});
+
+export const meOf = (role: BuiltInRole): MeResponse =>
+  meOfPerson(viewerOf[role]);
 
 /** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of the role. */
 export const tenantAnswers = (
   role: BuiltInRole,
   permissions: Permission[] = permissionsOf[role],
+  custom: RoleDetailResponse[] = [],
+) => viewerAnswers(roleOf[role], permissions, viewerOf[role], custom);
+
+/** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of any role, a custom one too. */
+export const viewerAnswers = (
+  role: RoleResponse,
+  permissions: Permission[],
+  person: MemberResponse,
+  custom: RoleDetailResponse[] = [],
 ) => [
   http.get("*/v1/me/tenants", () =>
     HttpResponse.json({ items: [northwind], page: 1, pageSize: 100, total: 1 }),
@@ -137,23 +185,23 @@ export const tenantAnswers = (
   http.get(`*/v1/tenants/${northwind.id}`, () =>
     HttpResponse.json({
       ...northwind,
-      role: roleOf[role],
+      role,
       createdAt: "2026-01-05T09:00:00Z",
       permissions,
     }),
   ),
-  http.get("*/v1/me", () => HttpResponse.json(meOf(role))),
-  rolesAnswer(),
+  http.get("*/v1/me", () => HttpResponse.json(meOfPerson(person))),
+  rolesAnswer(custom),
 ];
 
 /** ListRoles: Northwind's built-in roles with their permissions, and the custom roles given. */
-export function rolesAnswer(custom: RoleResponse[] = []) {
+export function rolesAnswer(custom: RoleDetailResponse[] = []) {
   const items = [
     ...Object.values(BuiltInRole).map((name) => ({
       ...roleOf[name],
       permissions: permissionsOf[name],
     })),
-    ...custom.map((role) => ({ ...role, permissions: [] })),
+    ...custom,
   ];
   return http.get(`*/v1/tenants/${northwind.id}/roles`, () =>
     HttpResponse.json({ items, page: 1, pageSize: 100, total: items.length }),

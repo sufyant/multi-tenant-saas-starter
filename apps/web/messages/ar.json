@@ -202,9 +202,7 @@
     "inviteTitle": "دعوة عضو",
     "inviteText": "يصله بريد إلكتروني فيه رابط للانضمام. إذا كانت لهذا العنوان دعوة معلّقة، تحل الجديدة محلها.",
     "inviteEmailPlaceholder": "name@company.com",
-    "inviteRoleHintOwner": "يمكن للمالكين منح دور المالك أيضًا.",
-    "inviteRoleHintAdmin": "لا يدعو المالك إلا مالك.",
-    "revokeOwnerHint": "لا يلغي دعوة المالك إلا مالك.",
+    "revokeOwnerHint": "لا يسحب هذه الدعوة إلا مالك.",
     "inviteLanguage": "لغة البريد",
     "inviteLanguageHint": "تستخدم رسالة الدعوة وشاشاته الأولى هذه اللغة. يمكنه تغييرها لاحقًا.",
     "languageSearch": "ابحث عن لغة",
@@ -218,7 +216,16 @@
     "dailyLimit": "تم بلوغ الحد اليومي",
     "dailyLimitText": "أرسلت {organisation} أكبر عدد مسموح من الدعوات خلال آخر 24 ساعة. حاول مرة أخرى لاحقًا.",
     "inviteOwner": "لا يدعو المالك إلا مالك.",
-    "inviteOwnerText": "اختر مسؤولًا أو عضوًا، أو اطلب من مالك إرسال هذه الدعوة."
+    "inviteOwnerText": "اختر مسؤولًا أو عضوًا، أو اطلب من مالك إرسال هذه الدعوة.",
+    "permissionCount": "{count, plural, zero {لا صلاحيات} one {صلاحية واحدة} two {صلاحيتان} few {# صلاحيات} many {# صلاحية} other {# صلاحية}}",
+    "giveOwner": "لا يمنح دور المالك إلا مالك.",
+    "roleOutOfReach": "لهذا الدور صلاحيات ليست في دورك.",
+    "roleOutOfReachText": "اختر دورًا آخر، أو اطلب من مالك.",
+    "roleOutOfReachAsk": "اطلب ذلك من مالك في {organisation}.",
+    "roleGone": "لم يعد هذا الدور موجودًا.",
+    "roleGoneText": "حُدّثت القائمة.",
+    "filteredBy": "الدور: {role}",
+    "rolesUnreadable": "لا يستطيع دورك قراءة الأدوار، لذلك لا يمكنه فعل ذلك."
   },
   "general": {
     "title": "عام",

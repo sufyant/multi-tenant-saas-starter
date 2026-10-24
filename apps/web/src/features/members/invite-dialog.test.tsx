@@ -20,13 +20,18 @@ import {
 import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
+  billingLead,
+  mehmet,
   membersAnswer,
   meOf,
   northwind,
+  permissionsOf,
   problem,
   renderInTenant,
   roleOf,
+  supportLead,
   tenantAnswers,
+  viewerAnswers,
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
 
@@ -129,22 +134,71 @@ describe("InviteDialog", () => {
     expect(dialog).toHaveTextContent("Türkçe");
   });
 
-  it("Invite_Admin_OffersNoOwnerAndSaysWhy", async () => {
+  it("Invite_Admin_ListsTheOwnerDisabledAndSaysWhy", async () => {
     server.use(...tenantAnswers(BuiltInRole.Admin), membersAnswer());
 
     renderInTenant(<MembersPage />);
     const dialog = await openInvite();
-    await userEvent.click(
-      within(dialog).getByRole("combobox", { name: "Role" }),
+
+    const owner = await within(dialog).findByRole("radio", { name: "Owner" });
+    expect(owner).toBeDisabled();
+    expect(owner).toHaveAccessibleDescription(
+      expect.stringContaining("Only an Owner can invite an Owner."),
+    );
+    expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
+  });
+
+  it("Invite_CustomRole_SendsItsIdAndShowsItsPermissionCount", async () => {
+    const calls: Call[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, permissionsOf.owner, [billingLead]),
+      membersAnswer(),
+      inviteAnswer(
+        [() => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 })],
+        calls,
+      ),
     );
 
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    const radio = await within(dialog).findByRole("radio", {
+      name: "Billing lead",
+    });
+    expect(radio).toHaveAccessibleDescription("3 permissions");
+    await typeEmail(dialog, "khalid@northwind.io");
+    await userEvent.click(radio);
+    await send(dialog);
+
+    await waitFor(() =>
+      expect(calls.map((call) => call.body)).toEqual([
+        {
+          email: "khalid@northwind.io",
+          roleId: billingLead.id,
+          language: Language.En,
+        },
+      ]),
+    );
+  });
+
+  it("Invite_CustomViewerWithoutInviting_SeesNoInviteButton", async () => {
+    server.use(
+      ...viewerAnswers(
+        supportLead,
+        supportLead.permissions,
+        { ...mehmet, role: supportLead },
+        [supportLead, billingLead],
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
     expect(
-      await screen.findByRole("option", { name: "Admin" }),
+      await screen.findByRole("table", { name: "Members" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("option", { name: "Owner" }),
+      screen.queryByRole("button", { name: "Invite member" }),
     ).not.toBeInTheDocument();
-    expect(dialog).toHaveTextContent("Only an Owner can invite an Owner.");
   });
 
   it("Invite_AlreadyAMember_SaysSoUnderTheEmail", async () => {
@@ -229,6 +283,18 @@ describe("InviteDialog", () => {
       ErrorCode.InvitationOwnerRequiresOwner,
       "Only an Owner can invite an Owner.",
       "Choose Admin or Member, or ask an Owner to send this invitation.",
+    ],
+    [
+      403,
+      ErrorCode.RoleEscalation,
+      "This role has permissions your role doesn’t have.",
+      "Choose another role, or ask an Owner.",
+    ],
+    [
+      404,
+      ErrorCode.RoleNotFound,
+      "This role no longer exists.",
+      "The list has been refreshed.",
     ],
   ])(
     "Invite_Refused%s_%s_ShowsTheBannerInTheDialog",

@@ -202,9 +202,7 @@
     "inviteTitle": "Invite a member",
     "inviteText": "They get an email with a link to join. If this address already has a pending invitation, the new one replaces it.",
     "inviteEmailPlaceholder": "name@company.com",
-    "inviteRoleHintOwner": "Owners can also give the Owner role.",
-    "inviteRoleHintAdmin": "Only an Owner can invite an Owner.",
-    "revokeOwnerHint": "Only an Owner can revoke an Owner's invitation.",
+    "revokeOwnerHint": "Only an Owner can revoke this invitation.",
     "inviteLanguage": "Email language",
     "inviteLanguageHint": "The invitation email and their first screens use this language. They can change it later.",
     "languageSearch": "Search languages",
@@ -218,7 +216,16 @@
     "dailyLimit": "Daily limit reached",
     "dailyLimitText": "{organisation} has sent the most invitations allowed in the last 24 hours. Try again later.",
     "inviteOwner": "Only an Owner can invite an Owner.",
-    "inviteOwnerText": "Choose Admin or Member, or ask an Owner to send this invitation."
+    "inviteOwnerText": "Choose Admin or Member, or ask an Owner to send this invitation.",
+    "permissionCount": "{count, plural, one {# permission} other {# permissions}}",
+    "giveOwner": "Only an Owner can give the Owner role.",
+    "roleOutOfReach": "This role has permissions your role doesn’t have.",
+    "roleOutOfReachText": "Choose another role, or ask an Owner.",
+    "roleOutOfReachAsk": "Ask an Owner of {organisation} to do this.",
+    "roleGone": "This role no longer exists.",
+    "roleGoneText": "The list has been refreshed.",
+    "filteredBy": "Role: {role}",
+    "rolesUnreadable": "Your role can’t read roles, so it can’t do this."
   },
   "general": {
     "title": "General",

@@ -65,6 +65,13 @@ test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
 });
 
 const members = `/${northwind.slug}/settings/members`;
+
+/** Opens a row's ⋯ menu and picks an item, so the dialog shows. */
+const rowAction = (menu: string, item: string) => async (page: Page) => {
+  await page.getByRole("button", { name: menu }).click();
+  await page.getByRole("menuitem", { name: item }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
 const shots: {
   name: string;
   file: string;
@@ -75,6 +82,8 @@ const shots: {
   height: number;
   query: string;
   rail: boolean;
+  /** A step after the page loads: open a dialog or a menu. */
+  open?: (page: Page) => Promise<void>;
 }[] = [
   {
     name: "Members_OwnerEnglishLightDesktop",
@@ -164,6 +173,103 @@ const shots: {
     query: "?tab=invitations",
     rail: false,
   },
+  {
+    name: "ChangeRole_AdminEnglishLightDesktop",
+    file: "change-role-admin-en-light-desktop",
+    role: BuiltInRole.Admin,
+    language: Language.En,
+    scheme: "light",
+    width: 1440,
+    height: 900,
+    query: "",
+    rail: false,
+    open: rowAction("Actions for John Byrne", "Change role"),
+  },
+  {
+    name: "ChangeRole_AdminArabicDarkDesktop",
+    file: "change-role-admin-ar-dark-desktop",
+    role: BuiltInRole.Admin,
+    language: Language.Ar,
+    scheme: "dark",
+    width: 1440,
+    height: 900,
+    query: "",
+    rail: false,
+    open: rowAction("إجراءات John Byrne", "تغيير الدور"),
+  },
+  {
+    name: "ChangeRole_AdminEnglishLightPhone",
+    file: "change-role-admin-en-light-phone",
+    role: BuiltInRole.Admin,
+    language: Language.En,
+    scheme: "light",
+    width: 390,
+    height: 844,
+    query: "",
+    rail: false,
+    open: rowAction("Actions for John Byrne", "Change role"),
+  },
+  {
+    name: "MembersMenu_AdminOnBillingLeadEnglishLightDesktop",
+    file: "members-menu-admin-en-light-desktop",
+    role: BuiltInRole.Admin,
+    language: Language.En,
+    scheme: "light",
+    width: 1440,
+    height: 900,
+    query: "",
+    rail: false,
+    open: (page) =>
+      page.getByRole("button", { name: "Actions for Dara Quinn" }).click(),
+  },
+  {
+    name: "Invite_AdminEnglishDarkDesktop",
+    file: "invite-admin-en-dark-desktop",
+    role: BuiltInRole.Admin,
+    language: Language.En,
+    scheme: "dark",
+    width: 1440,
+    height: 900,
+    query: "?tab=invitations",
+    rail: false,
+    open: (page) => page.getByRole("button", { name: "Invite member" }).click(),
+  },
+  {
+    name: "Invite_AdminTurkishLightPhone",
+    file: "invite-admin-tr-light-phone",
+    role: BuiltInRole.Admin,
+    language: Language.Tr,
+    scheme: "light",
+    width: 390,
+    height: 844,
+    query: "?tab=invitations",
+    rail: false,
+    open: (page) => page.getByRole("button", { name: "Üye davet et" }).click(),
+  },
+  {
+    name: "InvitationsMenu_AdminOnBillingLeadArabicLightDesktop",
+    file: "invitations-menu-admin-ar-light-desktop",
+    role: BuiltInRole.Admin,
+    language: Language.Ar,
+    scheme: "light",
+    width: 1440,
+    height: 900,
+    query: "?tab=invitations",
+    rail: false,
+    open: (page) =>
+      page.getByRole("button", { name: "إجراءات niall@northwind.io" }).click(),
+  },
+  {
+    name: "MembersByRole_OwnerEnglishLightDesktop",
+    file: "members-by-role-owner-en-light-desktop",
+    role: BuiltInRole.Owner,
+    language: Language.En,
+    scheme: "light",
+    width: 1440,
+    height: 900,
+    query: "?roleId=0198f0a2-0000-7000-8000-0000000000c1",
+    rail: false,
+  },
 ];
 
 for (const shot of shots) {
@@ -179,6 +285,7 @@ for (const shot of shots) {
     await page.goto(`${members}${shot.query}`);
     await page.getByRole("heading", { level: 1 }).waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
 
     await page.screenshot({
       path: `${folder}/${shot.file}.png`,

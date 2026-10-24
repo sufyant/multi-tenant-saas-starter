@@ -13,6 +13,21 @@ const toggle = (page: Page) =>
 const widthOf = (page: Page) =>
   rail(page).evaluate((element) => element.getBoundingClientRect().width);
 
+/** Reloads once Clerk has loaded and its dev browser cookie is there; an earlier reload can land on sign-in (F13). */
+const reload = async (page: Page) => {
+  await page.waitForFunction(
+    () => (window as { Clerk?: { loaded?: boolean } }).Clerk?.loaded === true,
+  );
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).some((cookie) =>
+        cookie.name.startsWith("__clerk_db_jwt"),
+      ),
+    )
+    .toBe(true);
+  await page.reload();
+};
+
 test.beforeEach(async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockMembers(page);
@@ -24,7 +39,7 @@ test("Rail_ExpandThenReload_StaysExpanded", async ({ page }) => {
 
   await toggle(page).click();
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
-  await page.reload();
+  await reload(page);
 
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
   await expect(rail(page).getByText("Overview")).toBeVisible();
@@ -46,7 +61,7 @@ test("Rail_CollapseThenReload_StaysCollapsed", async ({
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("ControlOrMeta+b");
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
-  await page.reload();
+  await reload(page);
 
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
   expect(await widthOf(page)).toBe(56);

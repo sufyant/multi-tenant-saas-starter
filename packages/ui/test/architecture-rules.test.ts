@@ -12,6 +12,7 @@ import {
   generatedFileNames,
   messageKeySets,
   physicalDirectionClasses,
+  roleNameDecisions,
   testFolders,
   testsBesideTheirFile,
   userFacingLiterals,
@@ -174,6 +175,51 @@ describe("architecture rules", () => {
     });
 
     expect(enumLiterals(root, new Set(["tr"]))).toEqual([]);
+  });
+
+  it("RoleNameDecisions_ComparisonOfARolesName_IsAFinding", () => {
+    const root = folder({
+      "a.ts": [
+        'export const a = (role: R) => role.name === "owner";',
+        "export const b = (m: M) => m.role.name !== BuiltInRole.Admin;",
+        "export const c = (role: R) => builtInRoleOf(role) === BuiltInRole.Owner;",
+        "export const d = (role: R) => { switch (role.name) { default: return 0; } };",
+        'export const e = (role: R) => roleSelect(role) === "owner";',
+      ].join("\n"),
+    });
+
+    expect(roleNameDecisions(root)).toEqual([
+      "a.ts:1: compares a role's name; decide by its permissions (F51)",
+      "a.ts:2: compares a role's name; decide by its permissions (F51)",
+      "a.ts:3: compares a role's name; decide by its permissions (F51)",
+      "a.ts:4: compares a role's name; decide by its permissions (F51)",
+      "a.ts:5: compares a role's name; decide by its permissions (F51)",
+    ]);
+  });
+
+  it("RoleNameDecisions_ImportOfBuiltInRoleOf_IsAFinding", () => {
+    const root = folder({
+      "a.ts": 'import { builtInRoleOf } from "@/shared/roles";',
+    });
+
+    expect(roleNameDecisions(root)).toEqual([
+      "a.ts:1: imports builtInRoleOf; a role's name is only its text (F51)",
+    ]);
+  });
+
+  it("RoleNameDecisions_IgnoredFileAndOtherNames_AreNoFinding", () => {
+    const root = folder({
+      "shared/roles.ts": 'export const a = (role: R) => role.name === "owner";',
+      "b.ts": [
+        "export const b = (person: P) => person.name === other.name;",
+        "export const c = (role: R) => role.id === roleId;",
+        "export const d = (role: R) => role.name;",
+      ].join("\n"),
+    });
+
+    expect(roleNameDecisions(root, { ignore: ["shared/roles.ts"] })).toEqual(
+      [],
+    );
   });
 
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {
