@@ -294,6 +294,24 @@ describe("ChangeRoleDialog", () => {
     await waitFor(() => expect(requests).toHaveLength(2));
   });
 
+  it("ChangeRole_RefusedEscalation_ReadsYourPermissionsAgain", async () => {
+    const reads: string[] = [];
+    server.use(
+      countedTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      changeAnswer(() => problem(403, ErrorCode.RoleEscalation)),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Change role" }),
+    );
+
+    await waitFor(() => expect(reads).toHaveLength(2));
+  });
+
   it("ChangeRole_YourOwnRole_RefreshesYourPermissions", async () => {
     const reads: string[] = [];
     server.use(

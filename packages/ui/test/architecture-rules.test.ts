@@ -184,6 +184,7 @@ describe("architecture rules", () => {
         "export const b = (m: M) => m.role.name !== BuiltInRole.Admin;",
         "export const c = (role: R) => builtInRoleOf(role) === BuiltInRole.Owner;",
         "export const d = (role: R) => { switch (role.name) { default: return 0; } };",
+        'export const e = (role: R) => roleSelect(role) === "owner";',
       ].join("\n"),
     });
 
@@ -192,6 +193,7 @@ describe("architecture rules", () => {
       "a.ts:2: compares a role's name; decide by its permissions (F51)",
       "a.ts:3: compares a role's name; decide by its permissions (F51)",
       "a.ts:4: compares a role's name; decide by its permissions (F51)",
+      "a.ts:5: compares a role's name; decide by its permissions (F51)",
     ]);
   });
 

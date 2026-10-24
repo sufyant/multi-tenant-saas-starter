@@ -51,8 +51,7 @@ const tones: Record<InvitationStatus, StatusTone> = {
 /**
  * The Invitations tab's table (the Invitations board): Email, Role, Invited by, Expires, Status. An expired invitation stays and
  * can be cancelled (decision 3 of step 21c). "Invite again" is a new InviteMember with a new Idempotency-Key, which replaces the
- * pending one (K2, F48). "Invite again" needs `tenant.invitations.create`, revoking and cancelling `tenant.invitations.delete`,
- * and each only for an invitation whose role the viewer's role fully holds (F51); a disabled item says why.
+ * pending one (K2, F48). The row menu follows F5 and F51; a disabled item says why.
  */
 export function InvitationsTable({
   page,

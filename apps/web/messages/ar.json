@@ -224,7 +224,8 @@
     "roleOutOfReachAsk": "اطلب ذلك من مالك في {organisation}.",
     "roleGone": "لم يعد هذا الدور موجودًا.",
     "roleGoneText": "حُدّثت القائمة.",
-    "filteredBy": "الدور: {role}"
+    "filteredBy": "الدور: {role}",
+    "rolesUnreadable": "لا يستطيع دورك قراءة الأدوار، لذلك لا يمكنه فعل ذلك."
   },
   "general": {
     "title": "عام",

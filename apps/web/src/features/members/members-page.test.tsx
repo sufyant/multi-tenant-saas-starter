@@ -16,6 +16,7 @@ import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
   billingLead,
+  customRole,
   ibrahim,
   john,
   mehmet,
@@ -166,6 +167,38 @@ describe("MembersPage", () => {
     expect(
       await screen.findByRole("menuitem", { name: "Change role" }),
     ).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("MembersPage_ViewerWhoCannotReadRoles_DisablesRemoveAndSaysWhy", async () => {
+    const remover = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c4",
+      "Remover",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantMembersRead,
+        Permission.TenantMembersDelete,
+      ],
+    );
+    server.use(
+      ...viewerAnswers(
+        remover,
+        remover.permissions,
+        { ...mehmet, role: remover },
+        [remover],
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    await openMenu("John Byrne");
+
+    const remove = await screen.findByRole("menuitem", {
+      name: /Remove from organisation/,
+    });
+    expect(remove).toHaveAttribute("aria-disabled", "true");
+    expect(remove).toHaveTextContent(
+      "Your role can’t read roles, so it can’t do this.",
+    );
   });
 
   it("MembersPage_ARoleTheListNoLongerHas_DisablesTheActionsAndSaysSo", async () => {

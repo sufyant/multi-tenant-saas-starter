@@ -224,7 +224,8 @@
     "roleOutOfReachAsk": "Ask an Owner of {organisation} to do this.",
     "roleGone": "This role no longer exists.",
     "roleGoneText": "The list has been refreshed.",
-    "filteredBy": "Role: {role}"
+    "filteredBy": "Role: {role}",
+    "rolesUnreadable": "Your role can’t read roles, so it can’t do this."
   },
   "general": {
     "title": "General",

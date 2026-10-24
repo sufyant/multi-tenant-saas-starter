@@ -224,7 +224,8 @@
     "roleOutOfReachAsk": "Bunu {organisation} kuruluşunun bir Sahibinden isteyin.",
     "roleGone": "Bu rol artık yok.",
     "roleGoneText": "Liste yenilendi.",
-    "filteredBy": "Rol: {role}"
+    "filteredBy": "Rol: {role}",
+    "rolesUnreadable": "Rolünüz rolleri okuyamadığı için bunu yapamaz."
   },
   "general": {
     "title": "Genel",

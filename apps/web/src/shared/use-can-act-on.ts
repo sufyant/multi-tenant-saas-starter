@@ -9,10 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useCan, useTenant } from "./tenant-context";
 
-/**
- * The escalation rule of the API (F51): the viewer acts on a role only when their own role holds every permission of it. It is
- * true for an empty role, and false for a role with one permission more than the viewer holds.
- */
+/** The escalation rule (F51): the viewer's permissions hold every permission of the role. */
 export const holdsAll = (
   viewerPermissions: readonly Permission[],
   role: Pick<RoleDetailResponse, "permissions">,
@@ -36,10 +33,7 @@ export function useTenantRoles() {
   return useQuery(listRolesOptions(tenant.id, can(Permission.TenantRolesRead)));
 }
 
-/**
- * `canActOn(roleId)`: the viewer may give the role, or act on a member or an invitation that has it (F51). It reads
- * GetMyTenant.permissions and the tenant's roles. A role id that ListRoles does not know answers false. The API still decides.
- */
+/** `canActOn(roleId)`: `holdsAll` for a role of the tenant's roles; false for an id they do not hold (F51). */
 export function useCanActOn(): (roleId: string) => boolean {
   const { detail } = useTenant();
   const roles = useTenantRoles();

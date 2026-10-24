@@ -478,7 +478,9 @@ const comparisons = new Set([
   ts.SyntaxKind.ExclamationEqualsToken,
 ]);
 
-/** A role's name: `role.name`, `member.role?.name`, a `BuiltInRole` member or the answer of `builtInRoleOf(...)`. */
+const roleNameFunctions = new Set(["builtInRoleOf", "roleSelect"]);
+
+/** A role's name: `role.name`, `member.role?.name`, a `BuiltInRole` member, or the answer of `builtInRoleOf(...)` or `roleSelect(...)`. */
 function isRoleName(node: ts.Expression, file: ts.SourceFile): boolean {
   const inner = ts.skipPartiallyEmittedExpressions(
     ts.isParenthesizedExpression(node) ? node.expression : node,
@@ -490,7 +492,7 @@ function isRoleName(node: ts.Expression, file: ts.SourceFile): boolean {
   }
   return (
     ts.isCallExpression(inner) &&
-    inner.expression.getText(file) === "builtInRoleOf"
+    roleNameFunctions.has(inner.expression.getText(file))
   );
 }
 

@@ -31,9 +31,8 @@ const sorts = {
 
 /**
  * The Members tab's table (the MembersOwner, MembersAdmin and MembersMember boards): Name with the email, Role, Joined. The row
- * menu follows the viewer's permissions: `tenant.members.update` changes a role and `tenant.members.delete` removes, each only
- * for a member whose role the viewer's role fully holds (F51); nobody removes themselves. A viewer without either sees no menu. A
- * disabled item says why.
+ * menu follows F5 and F51; nobody removes themselves. A viewer who may neither change nor remove sees no menu. A disabled item
+ * says why.
  */
 export function MembersTable({
   page,
