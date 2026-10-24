@@ -363,4 +363,91 @@ describe("TenantProvider", () => {
     expect(reads.count).toBe(2);
     expect(screen.queryByRole("heading")).not.toBeInTheDocument();
   });
+
+  // A suspended or deleted user gets 403 on every request (A9): the account's page, from the first read or a later one.
+  const blocked = [
+    [ErrorCode.UserSuspended, "Your account is suspended"],
+    [ErrorCode.UserDeleted, "This account was deleted"],
+  ];
+
+  it.each(blocked)(
+    "TenantProvider_ListMyTenantsSays_%s_ShowsTheAccountPage",
+    async (code, title) => {
+      server.use(http.get("*/v1/me/tenants", () => problem(403, code)));
+
+      renderWithProviders(
+        <TenantProvider slug="northwind">
+          <Probe />
+        </TenantProvider>,
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("ali.kaya@gmail.com")).toBeInTheDocument();
+    },
+  );
+
+  it.each(blocked)(
+    "TenantProvider_LaterReadSays_%s_ShowsTheAccountPageInPlaceOfTheContent",
+    async (code, title) => {
+      server.use(
+        countsTheReads({ count: 0 }),
+        getGetMyTenantMockHandler(
+          getGetMyTenantResponseMock({
+            ...northwind,
+            permissions: [Permission.TenantMembersRead],
+          }),
+        ),
+        http.get(`*/v1/tenants/${northwind.id}/members`, () =>
+          problem(403, code),
+        ),
+      );
+
+      renderWithProviders(
+        <TenantProvider slug="northwind">
+          <MembersReader />
+        </TenantProvider>,
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/^Members/)).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(blocked)(
+    "TenantProvider_CommandSays_%s_ShowsTheAccountPage",
+    async (code, title) => {
+      server.use(
+        countsTheReads({ count: 0 }),
+        getGetMyTenantMockHandler(
+          getGetMyTenantResponseMock({
+            ...northwind,
+            permissions: [Permission.TenantMembersRead],
+          }),
+        ),
+        http.delete(`*/v1/tenants/${northwind.id}/members/:userId`, () =>
+          problem(403, code),
+        ),
+      );
+      renderWithProviders(
+        <TenantProvider slug="northwind">
+          <RemoveButton />
+        </TenantProvider>,
+      );
+
+      await userEvent.click(
+        await screen.findByRole("button", { name: "Remove" }),
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Remove" }),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
