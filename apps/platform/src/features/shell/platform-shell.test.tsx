@@ -88,12 +88,96 @@ describe("PlatformShell", () => {
       "href",
       "/settings/preferences",
     );
-    expect(rail.queryByRole("link", { name: "Users" })).toBeNull();
+    expect(rail.getByRole("link", { name: "Users" })).toHaveAttribute(
+      "href",
+      "/users",
+    );
     expect(rail.queryByRole("link", { name: "Activity" })).toBeNull();
     expect(rail.getByRole("link", { name: "Organisations" })).toHaveAttribute(
       "aria-current",
       "page",
     );
+  });
+
+  it("PlatformShell_Rail_PutsUsersBetweenOrganisationsAndSettings", async () => {
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main" }),
+    );
+    expect(
+      rail.getAllByRole("link").map((link) => link.getAttribute("href")),
+    ).toEqual(["/", "/", "/users", "/settings/preferences"]);
+  });
+
+  it("PlatformShell_UsersPage_MarksUsersCurrent", async () => {
+    navigation.pathname = "/users";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main" }),
+    );
+    expect(rail.getByRole("link", { name: "Users" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(crumbs.getByText("Users")).toBeInTheDocument();
+  });
+
+  it("PlatformShell_UserPage_NamesTheUserInTheBreadcrumb", async () => {
+    const userId = "0198f0a2-0000-7000-8000-0000000000a1";
+    navigation.pathname = `/users/${userId}`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      http.get(`*/v1/platform/users/${userId}`, () =>
+        HttpResponse.json({
+          id: userId,
+          email: "ayse@northwind.example",
+          firstName: "Ayşe",
+          lastName: "Yılmaz",
+          status: "active",
+          isSystemAdmin: false,
+          isRootSystemAdmin: false,
+          systemAdminGrantedAt: null,
+          membershipCount: 0,
+          createdAt: "2026-03-03T09:20:00Z",
+          suspendedAt: null,
+          suspendedBy: null,
+          memberships: [],
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("Ayşe Yılmaz")).toBeInTheDocument();
+    expect(crumbs.getByText("Users")).toBeInTheDocument();
   });
 
   it("PlatformShell_OrganisationPage_NamesTheOrganisationInTheBreadcrumb", async () => {
