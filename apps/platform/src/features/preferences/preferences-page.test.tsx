@@ -138,7 +138,7 @@ const save = async () =>
   );
 
 const renderPage = (locale: "en" | "ar" = "en") =>
-  renderWithProviders(<PreferencesPage settingsBase="/settings" />, locale);
+  renderWithProviders(<PreferencesPage />, locale);
 
 describe("PreferencesPage", () => {
   it("PreferencesPage_GetMe_ShowsTheNameTheLanguageAndTheTimeZoneToChange", async () => {

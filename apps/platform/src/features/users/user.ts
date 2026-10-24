@@ -34,9 +34,6 @@ export const statuses = {
   { label: string; tone: StatusTone }
 >;
 
-/** Settings › System admins, where the system admins are managed (the UserDetail and DeleteUser boards). */
-export const systemAdminsPage = "/settings/system-admins";
-
 /** A deleted user takes no action and has no name (A8). */
 export const isDeleted = (user: Pick<User, "status">) =>
   user.status === UserResponseStatus.Deleted;

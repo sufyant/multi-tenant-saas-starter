@@ -18,8 +18,9 @@ import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Avatar } from "@/shared/avatar";
+import { settingsPages } from "@/shared/settings-nav";
 import type { useUserActions } from "./use-user-actions";
-import { actionsOf, displayNameOf, statuses, systemAdminsPage } from "./user";
+import { actionsOf, displayNameOf, statuses } from "./user";
 
 /** The column a person can sort by, and the API's sort field (K5). The email's sort works from the URL. */
 const sorts = {
@@ -40,7 +41,10 @@ export function AdminTags({
   const t = useTranslations("users");
   const tag = (label: string) =>
     linked ? (
-      <Link href={systemAdminsPage} className="rounded-md hover:underline">
+      <Link
+        href={settingsPages.systemAdmins}
+        className="rounded-md hover:underline"
+      >
         <Tag>{label}</Tag>
       </Link>
     ) : (

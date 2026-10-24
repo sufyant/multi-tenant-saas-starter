@@ -4,13 +4,16 @@ import { SubNav } from "@repo/ui/components/sub-nav";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
+/** The addresses of the Settings pages. */
+export const settingsPages = {
+  preferences: "/settings/preferences",
+  systemAdmins: "/settings/system-admins",
+} as const;
+
 /** The Settings SubNav of the platform (the Preferences and SystemAdmins boards): You › Preferences, Platform › System admins. */
 export function SettingsNav({
-  base,
   current,
 }: {
-  /** The address of Settings: `/settings`. */
-  base: string;
   current: "preferences" | "system-admins";
 }) {
   const t = useTranslations("shell");
@@ -25,7 +28,7 @@ export function SettingsNav({
             {
               id: "preferences",
               label: t("preferences"),
-              href: `${base}/preferences`,
+              href: settingsPages.preferences,
             },
           ],
         },
@@ -35,7 +38,7 @@ export function SettingsNav({
             {
               id: "system-admins",
               label: t("systemAdmins"),
-              href: `${base}/system-admins`,
+              href: settingsPages.systemAdmins,
             },
           ],
         },

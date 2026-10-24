@@ -76,6 +76,10 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
     ? lookup.data?.items.find((user) => user.email && same(user.email, looked))
     : undefined;
   const noUser = current && lookup.isSuccess && !person;
+  // Another person is another intent: it gets a new key (F48).
+  const personId = person?.id;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the key follows the person the email found.
+  useEffect(renew, [personId, renew]);
 
   const grant = useMutation({
     mutationFn: ({ user, key }: { user: UserResponse; key: string }) =>
@@ -149,7 +153,6 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
           label: t("back"),
           onBack: () => {
             grant.reset();
-            renew();
             setStep("find");
           },
         }}

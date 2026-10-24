@@ -152,7 +152,7 @@ export function SystemAdminsPage() {
 
   return (
     <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav base="/settings" current="system-admins" />
+      <SettingsNav current="system-admins" />
       <section className="flex min-w-0 max-w-[1160px] flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

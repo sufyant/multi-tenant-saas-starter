@@ -46,7 +46,7 @@ const actionOf = (error: unknown) =>
  * Settings > Preferences (F31, the platform's Preferences boards): the form of the tenant web for the signed-in user's name, language and time
  * zone, then the email address, read-only, and the theme, which is saved on the device.
  */
-export function PreferencesPage({ settingsBase }: { settingsBase: string }) {
+export function PreferencesPage() {
   const t = useTranslations();
   const me = useQuery(getGetMeQueryOptions());
 
@@ -54,7 +54,7 @@ export function PreferencesPage({ settingsBase }: { settingsBase: string }) {
 
   return (
     <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav base={settingsBase} current="preferences" />
+      <SettingsNav current="preferences" />
       <section className="flex min-w-0 max-w-[640px] flex-1 flex-col gap-4">
         <div>
           <h1 className="text-page-title">{t("preferences.title")}</h1>
