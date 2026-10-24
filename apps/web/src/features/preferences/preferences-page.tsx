@@ -109,10 +109,13 @@ function Preferences({ me }: { me: MeResponse }) {
       }}
       onFailed={(error) => {
         const action = actionOf(error);
-        // A 401 goes to sign-in; a suspended user reads GetMe again, and the shell shows the suspended screen (F4, F47).
+        // A 401 goes to sign-in; a suspended or deleted user reads GetMe again, and the shell shows its screen (F4, F47).
         if (action?.kind === "sign-in")
           return window.location.assign("/sign-in");
-        if (action?.kind === "account-suspended")
+        if (
+          action?.kind === "account-suspended" ||
+          action?.kind === "account-deleted"
+        )
           return void queryClient.invalidateQueries({
             queryKey: getGetMeQueryKey(),
           });
