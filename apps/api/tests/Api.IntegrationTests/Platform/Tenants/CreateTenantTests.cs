@@ -534,7 +534,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         _api.Email.LinkSentTo(owner).ShouldBe(FakeIdentityProvider.ClerkLink(signUp.InvitationId, signUp.AcceptLink));
     }
 
-    // Section 6: the tenant, its summary, the Owner's invitation and the outgoing messages are written in one transaction, so a failure
+    // docs/flows/tenant-creation.md: the tenant, its summary, the Owner's invitation and the outgoing messages are written in one transaction, so a failure
     // in it leaves nothing.
     [Fact]
     public async Task CreateTenant_TheInvitationCannotBeWritten_WritesNoTenantNoInvitationAndSendsNothing()

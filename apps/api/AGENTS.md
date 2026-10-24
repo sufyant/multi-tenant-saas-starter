@@ -4,7 +4,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
 
 ## Source of truth
 
-- `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`). It is authoritative. If this file and it disagree, it wins.
+- `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`), except the few in section 6, "Rules without an id". It is authoritative. If this file and it disagree, it wins.
 - Read the section of `ARCHITECTURE.md` for the area before you change anything in it. Cite a rule by its id; do not copy rules into code comments.
 - Read `ARCHITECTURE.md` and only the flow files of your task. A flow file in `docs/flows/` says what happens, step by step, and cites the rules by id; it defines no rule (`RuleIdTests`). The flow files:
   - `tenant-creation.md`: a system admin creates a tenant and invites its first Owner in one transaction.

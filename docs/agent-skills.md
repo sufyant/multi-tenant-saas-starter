@@ -6,7 +6,7 @@ An agent skill is a folder with a `SKILL.md` file. It gives a coding agent (Clau
 
 The skills of this repository live in `.claude/skills`. Each skill is a real folder, committed to the repository. The TanStack Table skills are the one exception: they ship inside their packages (section 3). A fresh clone, a cloud agent and CI get the same skills as the maintainer.
 
-One exception: a cloud thread of Claude Code Projects does not load `.claude/skills` from the repository. The skills a cloud thread needs are uploaded to the maintainer's account. A new skill in the repository is also uploaded there (section 4).
+A cloud thread of Claude Code Projects is different: it does not load `.claude/skills` from the repository. The skills a cloud thread needs are uploaded to the maintainer's account. A new skill in the repository is also uploaded there (section 4).
 
 `skills-lock.json` records the source, the path and the hash of each skill.
 
