@@ -1,4 +1,4 @@
-import type { TableSort } from "@repo/ui/components/table";
+import type { TableSort } from "./table";
 
 /** For each sortable column, the API's sort value up and down (K5). */
 export type SortFields = Record<string, { asc: string; desc: string }>;

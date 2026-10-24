@@ -21,6 +21,14 @@ export class ProblemDetailsError extends Error {
   }
 }
 
+/**
+ * The options of one call: the generated function's `RequestInit`, and `onResponseHeaders`, which receives the headers of a
+ * successful answer, such as the `Location` of a 201 (RFC 9110, section 10.2.2). It never goes into the request.
+ */
+export type ApiFetchInit = RequestInit & {
+  onResponseHeaders?: (headers: Headers) => void;
+};
+
 /** The error type of every generated function. Orval reads this name from the mutator. */
 export type ErrorType<_Error> = ProblemDetailsError;
 
@@ -37,12 +45,12 @@ export function configureApiClient(options: ApiClientOptions): void {
  */
 export const apiFetch = async <T>(
   path: string,
-  init?: RequestInit,
+  { onResponseHeaders, ...init }: ApiFetchInit = {},
 ): Promise<T> => {
   if (!configured)
     throw new Error("configureApiClient() must run before the first API call.");
   const headers = new Headers(configured.headers);
-  new Headers(init?.headers).forEach((value, name) => {
+  new Headers(init.headers).forEach((value, name) => {
     headers.set(name, value);
   });
 
@@ -56,6 +64,7 @@ export const apiFetch = async <T>(
       response.status,
       isProblemDetails(body) ? body : null,
     );
+  onResponseHeaders?.(response.headers);
   return body as T;
 };
 

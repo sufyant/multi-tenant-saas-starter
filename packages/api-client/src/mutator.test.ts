@@ -159,6 +159,64 @@ describe("apiFetch", () => {
     expect(requests[0]?.headers.get("Idempotency-Key")).toBe("key-1");
   });
 
+  it("CreateTenant_OnResponseHeaders_GivesTheLocationAndSendsNoSuchHeader", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.post("*/v1/platform/tenants", () =>
+        HttpResponse.json(
+          {
+            id: tenantId,
+            name: "Atlas Logistics",
+            slug: "atlas",
+            status: "active",
+            suspensionReason: null,
+            closedAt: null,
+            purgedAt: null,
+          },
+          {
+            status: 201,
+            headers: { Location: `/api/v1/platform/tenants/${tenantId}` },
+          },
+        ),
+      ),
+    );
+    const seen: Headers[] = [];
+
+    await createTenant(
+      {
+        name: "Atlas Logistics",
+        slug: "atlas",
+        ownerEmail: "owner@atlas.example",
+      },
+      { "Idempotency-Key": "key-1" },
+      { onResponseHeaders: (headers) => seen.push(headers) },
+    );
+
+    expect(seen.map((headers) => headers.get("Location"))).toEqual([
+      `/api/v1/platform/tenants/${tenantId}`,
+    ]);
+    expect(requests[0]?.headers.has("onResponseHeaders")).toBe(false);
+  });
+
+  it("GetMe_ErrorAnswer_GivesNoResponseHeaders", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.get("*/v1/me", () =>
+        HttpResponse.json(
+          { code: "user.not_found", traceId: "00-trace-01" },
+          { status: 404 },
+        ),
+      ),
+    );
+    const seen: Headers[] = [];
+
+    await getMe({ onResponseHeaders: (headers) => seen.push(headers) }).catch(
+      () => undefined,
+    );
+
+    expect(seen).toEqual([]);
+  });
+
   it("GetMe_ErrorAnswerThatIsNoProblemDetails_ThrowsWithoutAProblem", async () => {
     configureApiClient({ baseUrl });
     server.use(

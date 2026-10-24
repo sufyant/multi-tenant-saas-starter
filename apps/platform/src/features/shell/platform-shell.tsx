@@ -4,11 +4,12 @@ import { useClerk } from "@clerk/nextjs";
 import {
   ErrorCode,
   getGetMeQueryOptions,
+  getGetTenantQueryOptions,
   getListTenantsQueryOptions,
   ProblemDetailsError,
 } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
-import { HomeIcon, SettingsIcon } from "@repo/ui/components/icon";
+import { BuildingIcon, SettingsIcon } from "@repo/ui/components/icon";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { UserMenu } from "@repo/ui/components/user-menu";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,10 @@ import { type ReactNode, useEffect, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { NoAccess } from "@/shared/no-access";
 import { ProblemScreen } from "@/shared/problem-screen";
+
+/** The tenant of an organisation's page, `/organisations/<id>`, or null on any other page. */
+const tenantIdOf = (pathname: string) =>
+  /^\/organisations\/([^/]+)/.exec(pathname)?.[1] ?? null;
 
 const initialsOf = (...names: (string | null)[]) =>
   names
@@ -64,6 +69,13 @@ export function PlatformShell({
       { query: { enabled: askTheDoor, retry: false } },
     ),
   );
+  // The organisation's page reads the same GetTenant, so its name in the breadcrumb comes from the cache.
+  const tenantId = tenantIdOf(pathname);
+  const tenant = useQuery(
+    getGetTenantQueryOptions(tenantId ?? "", {
+      query: { enabled: tenantId !== null && me.data?.isSystemAdmin === true },
+    }),
+  );
   const { refetch } = me;
   useEffect(() => {
     if (doorAsked) return;
@@ -79,15 +91,18 @@ export function PlatformShell({
     settings: "shell.settings",
     preferences: "shell.preferences",
   } as const;
-  const crumbs = [
-    { label: t("shell.overview"), href: "/" },
-    ...pathname
-      .split("/")
-      .filter(
-        (segment): segment is keyof typeof sections => segment in sections,
-      )
-      .map((segment) => ({ label: t(sections[segment]) })),
-  ];
+  const inSettings = pathname.startsWith("/settings");
+  const crumbs = inSettings
+    ? pathname
+        .split("/")
+        .filter(
+          (segment): segment is keyof typeof sections => segment in sections,
+        )
+        .map((segment) => ({ label: t(sections[segment]) }))
+    : [
+        { label: t("shell.organisations") },
+        ...(tenantId && tenant.data ? [{ label: tenant.data.name }] : []),
+      ];
 
   return (
     <>
@@ -95,9 +110,9 @@ export function PlatformShell({
       <AppShell
         nav={[
           {
-            id: "overview",
-            label: t("shell.overview"),
-            icon: HomeIcon,
+            id: "organisations",
+            label: t("shell.organisations"),
+            icon: BuildingIcon,
             href: "/",
           },
           {
@@ -108,7 +123,7 @@ export function PlatformShell({
             placement: "bottom",
           },
         ]}
-        current={pathname.startsWith("/settings") ? "settings" : "overview"}
+        current={inSettings ? "settings" : "organisations"}
         logo={t("shell.platform").charAt(0)}
         logoLabel={t("shell.home")}
         logoHref="/"

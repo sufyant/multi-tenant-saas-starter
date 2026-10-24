@@ -5,7 +5,7 @@ import {
   getListTenantsMockHandler,
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
@@ -20,9 +20,10 @@ import {
 import { renderWithProviders } from "../../../test/render";
 import { PlatformShell } from "./platform-shell";
 
+const navigation = vi.hoisted(() => ({ pathname: "/" }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-  usePathname: () => "/",
+  usePathname: () => navigation.pathname,
 }));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ signOut: vi.fn() }),
@@ -48,7 +49,10 @@ const refused = {
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  navigation.pathname = "/";
+});
 afterAll(() => server.close());
 
 describe("PlatformShell", () => {
@@ -64,6 +68,69 @@ describe("PlatformShell", () => {
     );
 
     expect(await screen.findByRole("banner")).toHaveTextContent(/^Platform/);
+  });
+
+  it("PlatformShell_Rail_ShowsOnlyThePagesThatExist", async () => {
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main" }),
+    );
+    expect(rail.getByRole("link", { name: "Settings" })).toHaveAttribute(
+      "href",
+      "/settings/preferences",
+    );
+    expect(rail.queryByRole("link", { name: "Users" })).toBeNull();
+    expect(rail.queryByRole("link", { name: "Activity" })).toBeNull();
+    expect(rail.getByRole("link", { name: "Organisations" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("PlatformShell_OrganisationPage_NamesTheOrganisationInTheBreadcrumb", async () => {
+    const tenantId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f";
+    navigation.pathname = `/organisations/${tenantId}`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      http.get(`*/v1/platform/tenants/${tenantId}`, () =>
+        HttpResponse.json({
+          id: tenantId,
+          name: "Kestrel Labs",
+          slug: "kestrel",
+          status: "active",
+          suspensionReason: null,
+          closedAt: null,
+          purgedAt: null,
+          reopenableUntil: null,
+          purgeWarningAt: null,
+          memberCount: 4,
+          ownerCount: 1,
+          owners: [],
+          ownerInvitation: null,
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("Kestrel Labs")).toBeInTheDocument();
+    expect(crumbs.getByText("Organisations")).toBeInTheDocument();
   });
 
   it("PlatformShell_SystemAdminFromTheStart_DoesNotAskTheDoor", async () => {

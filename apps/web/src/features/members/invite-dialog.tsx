@@ -16,6 +16,7 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
 import { directionOf } from "@repo/ui/lib/locale";
+import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect } from "react";
@@ -29,7 +30,6 @@ import { useFailureText } from "@/shared/use-failure-text";
 import { daysLeft } from "./invitation-status";
 import { afterRefusal, refreshInvitations } from "./refresh";
 import { RoleChoice } from "./role-choice";
-import { useIntentKey } from "./use-intent-key";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
 

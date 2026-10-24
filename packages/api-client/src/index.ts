@@ -4,6 +4,7 @@ export * from "./generated/index.gen";
 export * as schemas from "./generated/zod/index.zod.gen";
 export {
   type ApiClientOptions,
+  type ApiFetchInit,
   apiFetch,
   configureApiClient,
   type ErrorType,
@@ -21,3 +22,4 @@ export {
   isProblemDetails,
   type ProblemAction,
 } from "./problem-details";
+export { retryUnlessClientError } from "./query-retry";

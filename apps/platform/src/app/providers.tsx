@@ -1,6 +1,6 @@
 "use client";
 
-import { configureApiClient } from "@repo/api-client";
+import { configureApiClient, retryUnlessClientError } from "@repo/api-client";
 import { Toaster } from "@repo/ui/components/toast";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 import type { Direction } from "@repo/ui/lib/locale";
@@ -16,6 +16,14 @@ import { z } from "zod";
 configureApiClient({ baseUrl: "/api" });
 z.config({ customError: zodErrorMap });
 
+/** The browser's QueryClient: data stays fresh for 60 s, and a 4xx is never retried (F8). */
+export const newQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { staleTime: 60_000, retry: retryUnlessClientError },
+    },
+  });
+
 /** The client providers of the root layout: theme, server data, URL state, tooltips and toasts (F8, F9, F23, F24). */
 export function Providers({
   dir,
@@ -26,10 +34,7 @@ export function Providers({
 }) {
   const t = useTranslations("common");
   // One QueryClient per browser, made once (TanStack Query, "Advanced Server Rendering").
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } }),
-  );
+  const [queryClient] = useState(newQueryClient);
   return (
     <ThemeProvider
       attribute="class"

@@ -1,5 +1,5 @@
-import { OverviewPage } from "@/features/overview/overview-page";
+import { OrganisationsPage } from "@/features/organisations/organisations-page";
 
-export default function PlatformOverviewPage() {
-  return <OverviewPage />;
+export default function PlatformOrganisationsPage() {
+  return <OrganisationsPage />;
 }
