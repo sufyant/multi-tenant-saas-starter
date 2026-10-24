@@ -93,6 +93,7 @@ export const ListTenantsResponse = zod.object({
   Purging: 'purging',
   Purged: 'purged',
 }).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
+  "createdAt": zod.iso.datetime({"offset":true}),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "purgedAt": zod.iso.datetime({"offset":true}).nullable(),
@@ -114,7 +115,7 @@ export const ListTenantsResponse = zod.object({
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.')
 }).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back.')])
-}).describe('A tenant in the platform\'s list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners\ncounted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member\nand no Owner: its purge deleted its summary with its members (K4).')),
+}).describe('A tenant in the platform\'s list: as TenantResponse, with when it was created, until when a closed tenant can be\nreopened, its members and Owners counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.\nA purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was\ncreated.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
@@ -135,6 +136,7 @@ export const GetTenantResponse = zod.object({
   Purging: 'purging',
   Purged: 'purged',
 }).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).'),
+  "createdAt": zod.iso.datetime({"offset":true}),
   "suspensionReason": zod.string().nullable(),
   "closedAt": zod.iso.datetime({"offset":true}).nullable(),
   "purgedAt": zod.iso.datetime({"offset":true}).nullable(),

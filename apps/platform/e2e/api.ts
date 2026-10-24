@@ -83,6 +83,7 @@ const tenant = (
   name,
   slug,
   status,
+  createdAt: inDays(-90),
   suspensionReason: null,
   closedAt: null,
   purgedAt: null,

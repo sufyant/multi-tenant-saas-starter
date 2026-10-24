@@ -136,12 +136,14 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantOwnerMade: 'tenant.owner_made',
 }),
   "userId": zod.uuid(),
+  "displayName": zod.string().nullable(),
+  "deleted": zod.boolean(),
   "oldRole": zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
   "builtIn": zod.boolean()
 }).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).')
-}).describe('The details of `tenant.owner_made`: the member who became an Owner, and the role they had.'),zod.object({
+}).describe('The details of `tenant.owner_made`: the member who became an Owner, and the role they had. The entry keeps the member by id only\n(K3); `displayName` and `deleted` name them now, as an actor is named: `displayName` is the real name, or null for a\nuser without a name, a deleted user and an unknown user, and `deleted` is true for a deleted user.'),zod.object({
   "operation": zod.enum({
   TenantPurgeWarned: 'tenant.purge_warned',
 }),

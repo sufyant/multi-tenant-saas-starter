@@ -204,11 +204,16 @@ export const TenantOwnerMadeDetailsResponseOperation = {
 } as const;
 
 /**
- * The details of `tenant.owner_made`: the member who became an Owner, and the role they had.
+ * The details of `tenant.owner_made`: the member who became an Owner, and the role they had. The entry keeps the member by id only
+ * (K3); `displayName` and `deleted` name them now, as an actor is named: `displayName` is the real name, or null for a
+ * user without a name, a deleted user and an unknown user, and `deleted` is true for a deleted user.
  */
 export interface TenantOwnerMadeDetailsResponse {
   operation: TenantOwnerMadeDetailsResponseOperation;
   userId: string;
+  /** @nullable */
+  displayName: string | null;
+  deleted: boolean;
   oldRole: AuditRoleResponse;
 }
 
@@ -732,15 +737,17 @@ export interface OwnerInvitationResponse {
 }
 
 /**
- * A tenant in the platform's list: as TenantResponse, with until when a closed tenant can be reopened, its members and Owners
- * counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply. A purged tenant counts no member
- * and no Owner: its purge deleted its summary with its members (K4).
+ * A tenant in the platform's list: as TenantResponse, with when it was created, until when a closed tenant can be
+ * reopened, its members and Owners counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+ * A purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was
+ * created.
  */
 export interface TenantListItemResponse {
   id: string;
   name: string;
   slug: string;
   status: TenantResponseStatus;
+  createdAt: string;
   /** @nullable */
   suspensionReason: string | null;
   /** @nullable */
@@ -949,6 +956,7 @@ export interface TenantDetailResponse {
   name: string;
   slug: string;
   status: TenantResponseStatus;
+  createdAt: string;
   /** @nullable */
   suspensionReason: string | null;
   /** @nullable */
@@ -1108,6 +1116,10 @@ sort?: ListUsersSort;
 q?: string;
 status?: UserResponseStatus;
 isSystemAdmin?: boolean;
+/**
+ * @maxLength 320
+ */
+email?: string;
 };
 
 export type ListUsersSort = typeof ListUsersSort[keyof typeof ListUsersSort];
