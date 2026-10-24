@@ -277,7 +277,7 @@ describe("CreateRole", () => {
     [
       400,
       ErrorCode.RoleRolesReadRequired,
-      "A role that invites people or changes a member's role must be able to read the roles.",
+      "A role that invites people, changes or removes a member, or revokes an invitation must be able to read the roles.",
     ],
     [
       422,
