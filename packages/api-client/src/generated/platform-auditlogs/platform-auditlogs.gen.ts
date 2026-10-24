@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -78,11 +83,81 @@ export const listPlatformAuditEntries = async (params?: ListPlatformAuditEntries
 
 
 
+export const getListPlatformAuditEntriesInfiniteQueryKey = (params?: ListPlatformAuditEntriesParams,) => {
+    return [
+    'infinite', "listPlatformAuditEntries", ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListPlatformAuditEntriesQueryKey = (params?: ListPlatformAuditEntriesParams,) => {
     return [
     "listPlatformAuditEntries", ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListPlatformAuditEntriesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listPlatformAuditEntries>>, ListPlatformAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlatformAuditEntriesInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlatformAuditEntries>>, QueryKey, ListPlatformAuditEntriesParams['cursor']> = ({ signal, pageParam }) => listPlatformAuditEntries({...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPlatformAuditEntriesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listPlatformAuditEntries>>>
+export type ListPlatformAuditEntriesInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListPlatformAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformAuditEntries>>, ListPlatformAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params: undefined |  ListPlatformAuditEntriesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformAuditEntries>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformAuditEntries>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformAuditEntries>>, ListPlatformAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformAuditEntries>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformAuditEntries>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformAuditEntries>>, ListPlatformAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPlatformAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformAuditEntries>>, ListPlatformAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPlatformAuditEntriesInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListPlatformAuditEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError = ErrorType<ProblemDetails>>(params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}

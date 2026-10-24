@@ -19,10 +19,15 @@ import { Time } from "@repo/ui/components/time";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type { ReactNode } from "react";
 import { DetailList } from "@/shared/detail-list";
 import { Initial } from "@/shared/initial";
 import { NotFoundPage } from "@/shared/not-found-page";
+import {
+  PlatformActivity,
+  usePlatformActivity,
+} from "@/shared/platform-activity";
 import { problemOf } from "@/shared/problem";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
@@ -38,13 +43,17 @@ import { useOrganisationActions } from "./use-organisation-actions";
 const usersFoundBy = (email: string | undefined) =>
   email ? `/users?${new URLSearchParams({ q: email })}` : "/users";
 
+/** The tabs of an organisation (the OrgDetail and OrgActivity boards). The tab lives in the URL, as every tab of the app (F9). */
+const views = ["overview", "activity"] as const;
+const viewParser = parseAsStringLiteral(views).withDefault("overview");
+
 const nameOf = (owner: TenantOwnerResponse) =>
   [owner.firstName, owner.lastName].filter(Boolean).join(" ") || null;
 
 /**
- * One organisation, its Overview tab (the OrgDetail, OrgOwnerless, OrgClosed and OrgPurged boards): the header with the actions,
- * the banner of its state, and its details from GetTenant. Who created it and its last change are on the Activity tab, which comes
- * in a later step. Every date comes from the answer, never a fixed period.
+ * One organisation (the OrgDetail, OrgOwnerless, OrgClosed and OrgPurged boards): the header with the actions, the banner of its
+ * state, and two tabs. Overview holds its details from GetTenant; Activity holds the platform's entries about it (the organisation's Activity tab boards), also for a
+ * deleted organisation. Every date comes from the answer, never a fixed period.
  */
 export function OrganisationPage({ tenantId }: { tenantId: string }) {
   const known =
@@ -70,6 +79,10 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
   const actions = useOrganisationActions();
   const locale = t("locale.format");
   const { name, status } = organisation;
+  const [view, setView] = useQueryState(
+    "tab",
+    viewParser.withOptions({ history: "push" }),
+  );
   const items = actions.itemsFor(organisation);
   const invitation = waitingInvitation(organisation);
   const email = (address: string) => <bdi dir="ltr">{address}</bdi>;
@@ -244,10 +257,18 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
       </div>
       <Tabs
         label={t("organisations.organisation")}
-        current="overview"
-        items={[{ id: "overview", label: t("organisations.overview") }]}
+        current={view}
+        items={[
+          { id: "overview", label: t("organisations.overview") },
+          { id: "activity", label: t("organisations.activity") },
+        ]}
+        onValueChange={(next) =>
+          void setView(views.find((candidate) => candidate === next) ?? null)
+        }
       />
-      {status === TenantResponseStatus.Purged ? (
+      {view === "activity" ? (
+        <OrganisationActivity tenantId={organisation.id} />
+      ) : status === TenantResponseStatus.Purged ? (
         <div className="flex max-w-[640px] flex-col gap-2 rounded-lg border border-border bg-card px-5 py-4 text-body">
           {organisation.purgedAt && (
             <p>
@@ -263,7 +284,7 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
       ) : (
         <DetailList rows={rows} />
       )}
-      {waitsForOwner(organisation) && (
+      {view === "overview" && waitsForOwner(organisation) && (
         <p className="text-small text-muted-foreground">
           {t.rich("organisations.ownerlessHint", {
             link: (chunks) => (
@@ -279,5 +300,16 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
       )}
       {actions.dialog}
     </section>
+  );
+}
+
+function OrganisationActivity({ tenantId }: { tenantId: string }) {
+  const t = useTranslations();
+  const activity = usePlatformActivity(tenantId);
+  return (
+    <PlatformActivity
+      activity={activity}
+      emptyText={t("activity.tenantText")}
+    />
   );
 }

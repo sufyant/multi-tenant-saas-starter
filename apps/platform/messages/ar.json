@@ -25,7 +25,8 @@
     "you": "أنت",
     "language": "اللغة",
     "platform": "Platform",
-    "systemAdmins": "مسؤولو النظام"
+    "systemAdmins": "مسؤولو النظام",
+    "activity": "النشاط"
   },
   "preferences": {
     "title": "التفضيلات",
@@ -191,7 +192,8 @@
     "hasOwnerText": "انضم المالك قبل لحظات. حُدّثت الصفحة.",
     "inviteNotActive": "{name} ليست نشطة.",
     "inviteNotActiveText": "أعد تفعيلها أو أعد فتحها أولًا.",
-    "notDone": "لم تتغيّر {name}."
+    "notDone": "لم تتغيّر {name}.",
+    "activity": "النشاط"
   },
   "users": {
     "title": "المستخدمون",
@@ -323,5 +325,47 @@
     "reverifyTitle": "تأكيد هويتك",
     "reverifyText": "أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة. نطلبه مرة أخرى لأن آخر تحقّق كان منذ مدة.",
     "verify": "تحقّق وتابِع"
+  },
+  "activity": {
+    "title": "النشاط",
+    "today": "اليوم، {date}",
+    "yesterday": "أمس، {date}",
+    "older": "عرض النشاط الأقدم",
+    "loading": "جارٍ تحميل النشاط",
+    "empty": "لا يوجد نشاط بعد",
+    "emptyText": "تظهر هنا التغييرات على المؤسسات والمستخدمين ومسؤولي النظام.",
+    "tenantText": "مدخلات المنصة عن هذه المؤسسة.",
+    "error": "تعذّر تحميل النشاط",
+    "olderError": "تعذّر تحميل النشاط الأقدم",
+    "restarted": "البدء من أحدث نشاط.",
+    "thePlatform": "المنصة",
+    "deletedUser": "مستخدم محذوف",
+    "unnamedUser": "مستخدم بلا اسم",
+    "operations": {
+      "unknown": "أجرى <actor></actor> تغييرًا (<code>{operation}</code>).",
+      "tenant": {
+        "created": "أنشأ <actor></actor> <target></target> ودعا مالكها.",
+        "renamed": "غيّر <actor></actor> اسم <link>{oldName}</link> إلى <name>{newName}</name>.",
+        "suspended": "أوقف <actor></actor> <target></target>. السبب: <name>{reason}</name>.",
+        "reactivated": "أعاد <actor></actor> تفعيل <target></target>.",
+        "closed": "أغلق <actor></actor> <target></target>.",
+        "reopened": "أعاد <actor></actor> فتح <target></target>.",
+        "owner_invited": "دعا <actor></actor> مالكًا جديدًا إلى <target></target>.",
+        "owner_made": "جعل <actor></actor> <member>عضوًا</member> مالكًا في <target></target>.",
+        "purge_warned": "أُبلغ مالكو <target></target> بأنها ستُحذف في {date}.",
+        "purged": "حُذفت <target></target>."
+      },
+      "user": {
+        "suspended": "أوقف <actor></actor> المستخدم <target></target>.",
+        "reactivated": "أعاد <actor></actor> تفعيل المستخدم <target></target>.",
+        "renamed": "{self, select, yes {غيّر <actor></actor> اسمه.} other {غيّر <actor></actor> اسم المستخدم <target></target>.}}",
+        "deleted": "{actorKind, select, platform {حُذف مستخدم.} other {حذف <actor></actor> مستخدمًا.}}",
+        "preferences_changed": "غيّر <actor></actor> تفضيلاته."
+      },
+      "system_admin": {
+        "granted": "جعل <actor></actor> <target></target> مسؤول نظام.",
+        "revoked": "أزال <actor></actor> <target></target> من مسؤولي النظام."
+      }
+    }
   }
 }

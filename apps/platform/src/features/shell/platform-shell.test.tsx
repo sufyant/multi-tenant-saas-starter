@@ -94,14 +94,17 @@ describe("PlatformShell", () => {
       "href",
       "/users",
     );
-    expect(rail.queryByRole("link", { name: "Activity" })).toBeNull();
+    expect(rail.getByRole("link", { name: "Activity" })).toHaveAttribute(
+      "href",
+      "/activity",
+    );
     expect(rail.getByRole("link", { name: "Organisations" })).toHaveAttribute(
       "aria-current",
       "page",
     );
   });
 
-  it("PlatformShell_Rail_PutsUsersBetweenOrganisationsAndSettings", async () => {
+  it("PlatformShell_Rail_PutsActivityBetweenUsersAndSettings", async () => {
     server.use(
       getGetMeMockHandler(
         getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
@@ -117,7 +120,32 @@ describe("PlatformShell", () => {
     );
     expect(
       rail.getAllByRole("link").map((link) => link.getAttribute("href")),
-    ).toEqual(["/", "/", "/users", "/settings/preferences"]);
+    ).toEqual(["/", "/", "/users", "/activity", "/settings/preferences"]);
+  });
+
+  it("PlatformShell_ActivityPage_MarksActivityCurrent", async () => {
+    navigation.pathname = "/activity";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main" }),
+    );
+    expect(rail.getByRole("link", { name: "Activity" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(crumbs.getByText("Activity")).toBeInTheDocument();
   });
 
   it("PlatformShell_UsersPage_MarksUsersCurrent", async () => {
