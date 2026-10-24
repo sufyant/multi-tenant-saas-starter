@@ -36,11 +36,14 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const memberships = async () =>
-  within(await screen.findByRole("table", { name: "Organisations and roles" }));
+const memberships = async (name: string) =>
+  within(await screen.findByRole("table", { name }));
 
-const membershipRow = async (organisation: string) => {
-  const link = await (await memberships()).findByRole("link", {
+const membershipRow = async (
+  organisation: string,
+  table = "Organisations and roles",
+) => {
+  const link = await (await memberships(table)).findByRole("link", {
     name: organisation,
   });
   return within(link.closest("tr") as HTMLElement);
@@ -215,7 +218,9 @@ describe("UserPage", () => {
     renderWithProviders(<UserPage userId={mehmet.id} />, "tr");
 
     expect(
-      (await membershipRow("Northwind Traders")).getByText("Yönetici"),
+      (
+        await membershipRow("Northwind Traders", "Kuruluşlar ve roller")
+      ).getByText("Yönetici"),
     ).toBeVisible();
   });
 

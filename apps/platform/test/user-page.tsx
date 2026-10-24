@@ -25,8 +25,12 @@ export async function openMakeOwner(
   dialog: string,
 ) {
   renderWithProviders(<UserPage userId={user.id} />);
+  // The table and the phone's card list both hold the row's menu; jsdom has no container query to hide one.
+  const table = within(
+    await screen.findByRole("table", { name: "Organisations and roles" }),
+  );
   await userEvent.click(
-    await screen.findByRole("button", { name: `Actions for ${organisation}` }),
+    await table.findByRole("button", { name: `Actions for ${organisation}` }),
   );
   await userEvent.click(
     await screen.findByRole("menuitem", { name: "Make Owner" }),

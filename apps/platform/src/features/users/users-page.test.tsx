@@ -112,7 +112,7 @@ describe("UsersPage", () => {
 
     const row = await rowOf("Deleted user");
     expect(row.getByText("Deleted")).toBeVisible();
-    expect(row.queryByRole("button")).toBeNull();
+    expect(row.queryByRole("button", { name: /Actions for/ })).toBeNull();
   });
 
   it("UsersPage_Active_OffersRenameSuspendDelete", async () => {

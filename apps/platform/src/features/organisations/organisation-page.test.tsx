@@ -74,7 +74,10 @@ describe("OrganisationPage", () => {
     expect(screen.getByRole("button", { name: "Invite Owner" })).toBeVisible();
     expect(
       screen.getByText(
-        "If the Owner joined as a member, open their user page and make them an Owner.",
+        (_, element) =>
+          element?.tagName === "P" &&
+          element.textContent ===
+            "If the Owner joined as a member, open their user page and make them an Owner.",
       ),
     ).toBeVisible();
   });
