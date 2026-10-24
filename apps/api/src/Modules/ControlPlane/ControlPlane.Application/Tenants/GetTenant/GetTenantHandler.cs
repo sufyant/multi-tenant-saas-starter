@@ -10,5 +10,7 @@ public static class GetTenantHandler
         TenantOptions settings,
         TimeProvider time,
         CancellationToken cancellationToken) =>
-        await tenants.FindTenantDetailAsync(settings.ReopenPeriod, time.GetUtcNow(), cancellationToken) is { } tenant ? tenant : Errors.TenantNotFound;
+        await tenants.FindTenantDetailAsync(settings.ReopenPeriod, settings.PurgeWarningLead, time.GetUtcNow(), cancellationToken) is { } tenant
+            ? tenant
+            : Errors.TenantNotFound;
 }

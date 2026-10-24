@@ -107,6 +107,13 @@ internal sealed class Tenant
             : Result.Success();
 
     /// <summary>
+    /// When the Owners of a tenant closed at this moment are warned of its purge: the purge's moment, the closure plus the reopen period,
+    /// less the warning's lead (docs/flows/tenant-purge.md). The warning's message is scheduled for it, and its audit entries carry it.
+    /// </summary>
+    public static DateTimeOffset PurgeWarningMomentOf(DateTimeOffset closedAt, TimeSpan reopenPeriod, TimeSpan purgeWarningLead) =>
+        closedAt + reopenPeriod - purgeWarningLead;
+
+    /// <summary>
     /// Suspends an active tenant for the reason, kept without the spaces around it: its members are refused at the tenant door until it
     /// is reactivated. Returns whether the status changed; a suspended tenant stays suspended and keeps its first reason. A closed tenant is
     /// rejected. The caller checked the reason's length.
@@ -601,6 +608,13 @@ internal sealed class Tenant
 
     /// <summary>Until when a closed tenant can be reopened: the moment of its closure plus the reopen period (K4). None unless closed.</summary>
     public DateTimeOffset? ReopenableUntil(TimeSpan period) => Status == TenantStatus.Closed ? ClosedAt + period : null;
+
+    /// <summary>
+    /// When the tenant's Owners are, or were, warned of its purge: for a closed tenant, and for one whose purge has begun, which keeps its
+    /// closure. None otherwise: a purged tenant keeps no closure. Computed from the settings, never stored.
+    /// </summary>
+    public DateTimeOffset? PurgeWarningAt(TimeSpan reopenPeriod, TimeSpan purgeWarningLead) =>
+        Status is TenantStatus.Closed or TenantStatus.Purging && ClosedAt is { } closedAt ? PurgeWarningMomentOf(closedAt, reopenPeriod, purgeWarningLead) : null;
 
     /// <summary>
     /// Invites someone into the tenant under the rules of the inviter (K1, K2), and replaces the pending invitations the new one ends. A

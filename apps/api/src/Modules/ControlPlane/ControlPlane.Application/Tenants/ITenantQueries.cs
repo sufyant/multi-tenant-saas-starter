@@ -18,10 +18,14 @@ public interface ITenantQueries
     internal Task<TenantView?> FindTenantAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// The active tenant for the platform, with its summary (R12), until when it can be reopened, and its Owners in the order they
-    /// joined, then by user id; null when no tenant has the active tenant's id.
+    /// The active tenant for the platform, with its summary (R12), until when it can be reopened, when its Owners are warned of its purge,
+    /// and its Owners in the order they joined, then by user id; null when no tenant has the active tenant's id.
     /// </summary>
-    internal Task<TenantDetailView?> FindTenantDetailAsync(TimeSpan reopenPeriod, DateTimeOffset now, CancellationToken cancellationToken);
+    internal Task<TenantDetailView?> FindTenantDetailAsync(
+        TimeSpan reopenPeriod,
+        TimeSpan purgeWarningLead,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// The active tenant as the member with this identity provider id sees it, with their role and its permissions; null when no tenant

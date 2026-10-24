@@ -26,7 +26,11 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
     // Two queries, as before the views: the tenant with its summary joined (R12), then its Owners from its own rows. A purged tenant has
     // no summary, so the summary is joined where it exists, and a tombstone counts nothing (K4).
-    async Task<TenantDetailView?> ITenantQueries.FindTenantDetailAsync(TimeSpan reopenPeriod, DateTimeOffset now, CancellationToken cancellationToken)
+    async Task<TenantDetailView?> ITenantQueries.FindTenantDetailAsync(
+        TimeSpan reopenPeriod,
+        TimeSpan purgeWarningLead,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
     {
         var found = await (
                 from tenant in controlPlane.Tenants
@@ -45,6 +49,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         return new TenantDetailView(
             TenantView.Of(found.Tenant),
             found.Tenant.ReopenableUntil(reopenPeriod),
+            found.Tenant.PurgeWarningAt(reopenPeriod, purgeWarningLead),
             found.Summary?.MemberCount ?? 0,
             found.Summary?.OwnerCount ?? 0,
             [.. owners.Select(TenantOwnerView.Of)],

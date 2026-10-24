@@ -48,7 +48,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Admin View Ltd", tenant.Slug, answered));
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "owners", "ownerInvitation"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "ownerCount", "owners", "ownerInvitation"],
             ignoreOrder: true);
     }
 
@@ -83,6 +83,62 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
 
         (found.GetProperty("suspensionReason").GetString(), found.GetProperty("closedAt").GetDateTimeOffset()).ShouldBe(("Unpaid invoices", closedAt));
         found.GetProperty("reopenableUntil").GetDateTimeOffset().ShouldBe(closedAt.AddDays(30));
+    }
+
+    // The platform shows when the Owners of a closed tenant are or were warned (decision A of 2026-10-24): the closure plus ReopenPeriod
+    // less PurgeWarningLead, computed on each read, the moment the warning's entries carry. A purging tenant keeps its closure, so it
+    // answers the moment too.
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    public async Task GetTenant_AClosedOrAPurgingTenant_AnswersWhenItsOwnersAreWarned(string status)
+    {
+        var closedAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantAsync(status: status, closedAt: closedAt);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("purgeWarningAt").GetDateTimeOffset().ShouldBe(closedAt.AddDays(23));
+    }
+
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    public async Task GetTenant_AnActiveOrASuspendedTenant_AnswersNoWarning(string status)
+    {
+        var tenant = await _testData.AddTenantAsync(status: status);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("purgeWarningAt").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    // A purged tenant's tombstone keeps no closure (K4), so it answers no warning.
+    [Fact]
+    public async Task GetTenant_APurgedTenant_AnswersNoWarning()
+    {
+        var tenant = await _testData.AddTenantRowAsync(status: "Purged");
+        await database.ScalarAsync<object>($"UPDATE control_plane.tenants SET purged_at = now() WHERE id = '{tenant.Id}'");
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("purgeWarningAt").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    // The moment follows the same settings as the purge.
+    [Fact]
+    public async Task GetTenant_OtherPurgeSettings_AnswersTheWarningFromThem()
+    {
+        var closedAt = new DateTimeOffset(2026, 10, 1, 9, 30, 0, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantAsync(status: "Closed", closedAt: closedAt);
+        await using var api = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            settings: new Dictionary<string, string?> { ["ControlPlane:Tenants:ReopenPeriod"] = "10.00:00:00", ["ControlPlane:Tenants:PurgeWarningLead"] = "2.00:00:00" });
+
+        var found = await api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
+            .GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("purgeWarningAt").GetDateTimeOffset().ShouldBe(closedAt.AddDays(8));
     }
 
     [Fact]

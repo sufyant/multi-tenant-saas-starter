@@ -154,6 +154,7 @@ public static class TenantEndpoints
         tenant.Tenant.ClosedAt,
         tenant.Tenant.PurgedAt,
         tenant.ReopenableUntil,
+        tenant.PurgeWarningAt,
         tenant.MemberCount,
         tenant.OwnerCount,
         [.. tenant.Owners.Select(ToResponse)],

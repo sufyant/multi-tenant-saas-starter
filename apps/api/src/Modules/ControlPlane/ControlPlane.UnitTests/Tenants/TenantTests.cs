@@ -630,6 +630,28 @@ public sealed class TenantTests
         tenant.ReopenableUntil(ReopenPeriod).ShouldBeNull();
     }
 
+    // The warning comes at the closure plus the reopen period, less the warning's lead, for a closed tenant and for one whose purge began.
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    public void ReadPurgeWarningAt_AClosedOrAPurgingTenant_IsItsClosurePlusThePeriodLessTheLead(string status)
+    {
+        var tenant = InStatus(status);
+
+        tenant.PurgeWarningAt(ReopenPeriod, TimeSpan.FromDays(7)).ShouldBe(Now + TimeSpan.FromDays(23));
+    }
+
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    [InlineData("Purged")]
+    public void ReadPurgeWarningAt_ATenantThatIsNeitherClosedNorPurging_IsNone(string status)
+    {
+        var tenant = InStatus(status);
+
+        tenant.PurgeWarningAt(ReopenPeriod, TimeSpan.FromDays(7)).ShouldBeNull();
+    }
+
     [Fact]
     public void InviteOwner_AnActiveTenantWithoutAnOwner_CreatesAPendingOwnerInvitation()
     {
