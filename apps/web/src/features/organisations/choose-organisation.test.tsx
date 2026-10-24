@@ -52,6 +52,10 @@ const page = (items: MyTenantResponse[]) =>
     HttpResponse.json({ items, page: 1, pageSize: 100, total: items.length }),
   );
 
+/** A line of text that spans several elements, such as the slug and the role. */
+const line = (text: string) => (_: string, element: Element | null) =>
+  element?.tagName === "SPAN" && element.textContent === text;
+
 describe("ChooseOrganisation", () => {
   it("ChooseOrganisation_ManyOrganisations_ListsEachOne", async () => {
     server.use(
@@ -152,6 +156,37 @@ describe("ChooseOrganisation", () => {
     expect(
       screen.queryByRole("link", { name: /Atlas Logistics/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_Row_ShowsTheSlugAndTheRoleOnOneLine", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Liffey Design", "liffey-design"), status: "purging" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByText(line("northwind · Owner")),
+    ).toBeInTheDocument();
+    expect(screen.getByText(line("liffey-design · Owner"))).toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_PurgingInArabic_SaysBeingDeleted", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "ar" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        { ...tenant("Liffey Design", "liffey-design"), status: "purging" },
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />, "ar");
+
+    expect(await screen.findByText("قيد الحذف")).toBeInTheDocument();
   });
 
   it("ChooseOrganisation_NoOrganisation_ShowsWhoIsSignedInAndSignOut", async () => {
