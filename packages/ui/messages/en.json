@@ -119,6 +119,7 @@
       "cannot_revoke_self": "You cannot revoke your own system admin access.",
       "exists": "This user is a system admin already.",
       "not_found": "This user is not a system admin.",
+      "reverification_required": "Verify your second factor again to continue.",
       "root": "A root system admin cannot be revoked. The configuration names them."
     },
     "tenant": {

@@ -40,7 +40,14 @@ const builtIn = (
   id: string,
   name: BuiltInRole,
   permissions: Permission[],
-): RoleDetailResponse => ({ id, name, builtIn: true, permissions });
+): RoleDetailResponse => ({
+  id,
+  name,
+  builtIn: true,
+  permissions,
+  memberCount: 0,
+  pendingInvitationCount: 0,
+});
 
 /** Northwind's roles, as ListRoles answers them. A request gives a role by its id. */
 export const roles: Record<BuiltInRole, RoleDetailResponse> = {

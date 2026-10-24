@@ -119,6 +119,7 @@
       "cannot_revoke_self": "Kendi sistem yöneticisi erişiminizi geri alamazsınız.",
       "exists": "Bu kullanıcı zaten bir sistem yöneticisi.",
       "not_found": "Bu kullanıcı bir sistem yöneticisi değil.",
+      "reverification_required": "Devam etmek için ikinci doğrulama adımınızı yeniden doğrulayın.",
       "root": "Kök sistem yöneticisinin erişimi geri alınamaz. Yapılandırma onu adlandırır."
     },
     "tenant": {
