@@ -8,14 +8,13 @@ namespace Audit.Application.Tenants.RecordTenantPurgeWarned;
 
 // The audit entries of the warning before a tenant's purge, written when ControlPlane announces it, under that tenant, in one
 // transaction (K3). No person acted: both logs name the platform. The platform's log shows a system admin which tenants were warned, and
-// the tenant's own log shows its Owners and Admins. Both hold the moment of the purge they were warned of. An event of the version before
-// step r12 has no moment; its entries keep no details rather than a wrong moment, as an entry never changes (R14).
+// the tenant's own log shows its Owners and Admins. Both hold the moment of the purge they were warned of.
 public static class RecordTenantPurgeWarnedHandler
 {
     public static Task HandleAsync(TenantPurgeWarnedEvent warned, IAuditLog log, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(warned.TenantId, warned.TenantName);
-        var details = warned.PurgesAt is { } purgesAt ? JsonSerializer.Serialize(new TenantPurgeWarnedDetails(purgesAt), JsonSerializerOptions.Web) : null;
+        var details = JsonSerializer.Serialize(new TenantPurgeWarnedDetails(warned.PurgesAt), JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(warned.EventId, warned.OccurredAt, AuditActor.Platform, AuditOperations.TenantPurgeWarned, tenant, details),
             new TenantAuditEntry(warned.EventId, warned.OccurredAt, AuditActor.Platform, AuditOperations.TenantPurgeWarned, tenant, details),

@@ -45,19 +45,6 @@ public sealed class RecordTenantPurgeWarnedTests(Database database)
         (await Logs.CountAsync(database.Services, Logs.Platform, null, warned.EventId)).ShouldBe(1);
     }
 
-    // An event that the version before published during a deploy carries no moment of the purge. Both entries are written without
-    // details rather than with a wrong moment, as an entry is never changed afterwards (R14).
-    [Fact]
-    public async Task RecordTenantPurgeWarned_AnEventOfTheVersionBefore_WritesBothEntriesWithoutDetails()
-    {
-        var warned = Warned() with { PurgesAt = null };
-
-        await InTenant.RunAsync(database.Services, warned.TenantId, scope => RecordAsync(scope, warned));
-
-        (await Logs.DetailsAsync(database.Services, Logs.Platform, null, warned.EventId)).ShouldBeNull();
-        (await Logs.DetailsAsync(database.Services, Logs.Tenant, warned.TenantId, warned.EventId)).ShouldBeNull();
-    }
-
     private static TenantPurgeWarnedEvent Warned() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", PurgesAt);
 
     private static Task RecordAsync(IServiceProvider scope, TenantPurgeWarnedEvent warned) =>

@@ -9,10 +9,6 @@ namespace ControlPlane.Contracts.Tenants;
 /// </summary>
 /// <param name="EventId">The warning's own id, the same for every copy of one warning, so a warning that arrives twice records one entry.</param>
 /// <param name="TenantName">The tenant's name at that moment, for its audit entries.</param>
-/// <param name="PurgesAt">
-/// The moment of the purge that the Owners were warned of: the closure plus the reopen period. Null only in an event of the version
-/// before step r12, which a worker of that version can still publish during the deploy (docs/deployment.md, section 8). Expand first:
-/// a later release makes it required.
-/// </param>
+/// <param name="PurgesAt">The moment of the purge that the Owners were warned of: the closure plus the reopen period.</param>
 [MessageName("tenant-purge-warned")]
-public sealed record TenantPurgeWarnedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string TenantName, DateTimeOffset? PurgesAt);
+public sealed record TenantPurgeWarnedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string TenantName, DateTimeOffset PurgesAt);
