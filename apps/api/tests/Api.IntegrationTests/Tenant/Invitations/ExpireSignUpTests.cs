@@ -10,7 +10,7 @@ using Wolverine.Tracking;
 namespace Api.IntegrationTests.Tenant.Invitations;
 
 // ExpireSignUpCommand: when an invitation's lifetime is over, ControlPlane withdraws its Clerk invitation, so nobody signs up with its
-// link (section 6, "Invitation sign-up"). Clerk is a fake at our port; the adapter's own requests are pinned down in
+// link (docs/flows/invitations.md, section 1, "Invitation sign-up"). Clerk is a fake at our port; the adapter's own requests are pinned down in
 // ClerkIdentityProviderTests.
 public sealed class ExpireSignUpTests(Database database) : IAsyncLifetime
 {

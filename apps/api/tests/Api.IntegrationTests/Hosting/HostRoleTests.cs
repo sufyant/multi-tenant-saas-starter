@@ -80,7 +80,7 @@ namespace Api.IntegrationTests.Hosting;
 [RuntimeHandlerCode("The hosts have the test policy RecordHandlerRuns and the probe handlers of ProbePinged, ProbeAnnounced and FailProbe.")]
 public sealed class HostRoleTests(Database database)
 {
-    // The handlers of every message the tenant creation sends, as section 6 lists them.
+    // The handlers of every message the tenant creation sends, as docs/flows/tenant-creation.md lists them.
     private static readonly HandlerRun[] HandlersAfterTheCreation =
     [
         new(typeof(TenantCreatedEvent), typeof(RecordTenantCreatedHandler)),
@@ -91,7 +91,7 @@ public sealed class HostRoleTests(Database database)
 
     private static readonly HandlerRun Creation = new(typeof(CreateTenantCommand), typeof(CreateTenantHandler));
 
-    // The handlers of every message a closure sends once its reopen period ends, as section 6, "Tenant purge", lists them: the warning,
+    // The handlers of every message a closure sends once its reopen period ends, as docs/flows/tenant-purge.md, lists them: the warning,
     // the purge's pivot, each module's purge and its reply to the saga, ControlPlane's last step and its reply, the platform's entry, and
     // the deletion of the user left without a tenant.
     private static readonly HandlerRun[] HandlersOfThePurge =
@@ -637,7 +637,7 @@ public sealed class HostRoleTests(Database database)
         (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
     }
 
-    // Owner recovery (section 6): the platform's new Owner is accepted by the web host, and its records in both logs run in the worker,
+    // Owner recovery (docs/flows/owner-recovery.md): the platform's new Owner is accepted by the web host, and its records in both logs run in the worker,
     // once: tenant.owner_made in the platform's log and member.role_changed in the tenant's.
     [Fact]
     public async Task MakeOwner_OnAWebAndAWorkerHost_RecordsInBothLogsOnceInTheWorker()

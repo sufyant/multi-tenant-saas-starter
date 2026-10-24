@@ -10,7 +10,7 @@ internal static class SystemDoor
         isSystemAdmin && secondFactorVerified ? PermissionPools.PlatformPool : null;
 
     /// <summary>
-    /// The root address of the person at the door, or none (section 6, "Root system admins"): one of the addresses the identity provider
+    /// The root address of the person at the door, or none (docs/flows/system-admins.md): one of the addresses the identity provider
     /// has verified for them is in the configuration's list, both in their one form, and the session verified a second factor.
     /// </summary>
     public static EmailAddress? RootEmailOf(IEnumerable<EmailAddress> rootEmails, bool secondFactorVerified, IEnumerable<EmailAddress> verifiedEmails) =>

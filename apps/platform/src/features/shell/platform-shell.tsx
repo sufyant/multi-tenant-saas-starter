@@ -36,7 +36,7 @@ const notAUserYet = (error: Error | null) =>
  * signed-in user who is no system admin sees "You don't have access"; the API refuses them anyway.
  *
  * The first system admin is no user until their first request to the platform door with a verified second factor: the door
- * writes their user and their grant then (`SystemAdminDirectory`, the API's section 6). So when GetMe answers 404, the shell asks
+ * writes their user and their grant then (`SystemAdminDirectory`, `apps/api/docs/flows/system-admins.md`). So when GetMe answers 404, the shell asks
  * the door once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
  */
 export function PlatformShell({

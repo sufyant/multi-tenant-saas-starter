@@ -5,8 +5,8 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.SystemAdmins;
 
-// DELETE /v1/platform/users/{userId}/system-admin: a system admin takes the grant away from another system admin (section 6, "Root
-// system admins"). The user stays a user, with every membership. A root system admin, whom the configuration names, cannot be revoked
+// DELETE /v1/platform/users/{userId}/system-admin: a system admin takes the grant away from another system admin
+// (docs/flows/system-admins.md). The user stays a user, with every membership. A root system admin, whom the configuration names, cannot be revoked
 // while the list names them, and nobody revokes themself. The platform's log names the system admin who revoked it (K3).
 public sealed class RevokeSystemAdminTests(Database database) : IAsyncLifetime
 {

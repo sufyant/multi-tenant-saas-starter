@@ -8,7 +8,7 @@ namespace ControlPlane.Application.Invitations.OpenSignUp;
 // the identity provider to open the sign-up and answer its link, another records the identity provider's invitation on ours and hands
 // the link to Notifications, and a third withdraws the identity provider's invitation when ours ends. Each runs in the invitation's
 // tenant, which the envelope carries. A tenant's first Owner, an Owner the platform invites and a person a member invites take the same
-// path (section 6, "Invitation sign-up").
+// path (docs/flows/invitations.md, section 1, "Invitation sign-up").
 /// <summary>Opens the sign-up for an invited address. Sent with the invitation.</summary>
 [MessageName("open-sign-up")]
 public sealed record OpenSignUpCommand(Guid TenantId, Guid InvitationId, string Email, string TenantName, Uri AcceptLink, DateTimeOffset ExpiresAt)

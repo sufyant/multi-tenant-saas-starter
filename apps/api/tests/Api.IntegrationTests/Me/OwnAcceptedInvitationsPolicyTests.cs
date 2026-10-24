@@ -4,7 +4,7 @@ namespace Api.IntegrationTests.Me;
 
 // R11: with no tenant declared and a user declared, the user reads the invitations they accepted, in every tenant, also where no
 // membership is left, and no other invitation; the extra policy lets them read and never write. A user's deletion finds the tenants they
-// joined so (section 6, "User deletion"). Plain SQL as the application account, so only the database decides.
+// joined so (docs/flows/user-deletion.md). Plain SQL as the application account, so only the database decides.
 public sealed class OwnAcceptedInvitationsPolicyTests(Database database)
 {
     private readonly TestData _testData = new(database);

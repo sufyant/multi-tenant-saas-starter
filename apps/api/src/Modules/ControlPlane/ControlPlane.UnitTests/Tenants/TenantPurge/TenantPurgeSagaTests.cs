@@ -5,7 +5,7 @@ using ControlPlane.Contracts.Tenants;
 
 namespace ControlPlane.UnitTests.Tenants.TenantPurge;
 
-// The tenant purge of section 6, without a host (S12): from its state and a message the saga chooses its next state and the messages to
+// The tenant purge (docs/flows/tenant-purge.md), without a host (S12): from its state and a message the saga chooses its next state and the messages to
 // send. It asks every participating module to purge the tenant's data, waits for each reply, raises an alarm that names the modules
 // still waiting when its timeout comes, and finishes the tenant last. A message that does not fit its state is ignored (S7).
 public sealed class TenantPurgeSagaTests

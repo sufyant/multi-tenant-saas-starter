@@ -1,0 +1,25 @@
+# Reading the audit logs
+
+This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
+
+An Owner or an Admin reads the tenant's log, "Activity" on the screen (`tenant.audit.read`). A system admin reads the platform's log (`platform.audit.read`), or only its entries about one tenant (`tenantId`), for the Activity tab of the tenant; the platform never reads a tenant's own log, which would be support access. The endpoints are in `Audit.Api`, in the audience folders (N7): `Tenant/AuditLogs/AuditLogEndpoints.cs` and `Platform/AuditLogs/PlatformAuditLogEndpoints.cs`.
+
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `ListAuditEntriesQuery` | `GET /v1/tenants/{tenantId}/audit-log` | Audit, `ListAuditEntriesHandler` | Yes, the tenant's (R1) |
+| `ListPlatformAuditEntriesQuery` | `GET /v1/platform/audit-log` | Audit, `ListPlatformAuditEntriesHandler` | Yes; it declares neither a tenant nor a user (R11) |
+| `GetAuditEntryNamesQuery` | both endpoints, after the page | Audit, `GetAuditEntryNamesHandler` (`IUserDirectory`) | Yes, ControlPlane's |
+
+- The lists page by a cursor, newest first, by `occurred_at` and then `id`, both descending (api-catalog, K5). The cursor holds the last item's pair, so an entry written between two requests moves no item to another page. A query selects one more entry than the limit; when it finds it, the answer's `nextCursor` points after the last item, else it is null.
+- The cursor is base64url of a version, the moment in UTC ticks, the id and a 4-byte SHA-256 checksum of those. A cursor that does not decode, or whose checksum does not match, answers 400 `paging.cursor_invalid`. The checksum is not a secret: a forged cursor only moves the page within what row level security lets the caller read.
+- The names come from ControlPlane, in one call for each page (K3, API composition). The endpoint sends two queries, because Wolverine gives a handler the transaction of one DbContext and the entries and the names live in two modules (W1). Wolverine builds `UserDirectory` in the second handler, on ControlPlane's DbContext, so it is public and sealed: the one contract implementation that is not internal (`ARCHITECTURE.md`, section 2, W9; `ContractsShapeTests`).
+- An actor is a user or the platform (`kind`).
+- `displayName` and a user target's `name` hold only a person's real name, else null. The API writes no label: the web speaks English, Turkish and Arabic, and a client could not tell a label from a real name. A client names the platform from `kind`, and a user without a name from `deleted`, as it does for `ListMembers`.
+- A user actor and a user target carry `deleted`: true for a user a system admin deleted (A8). Any other actor or target has `deleted` null. An unknown id has no name and `deleted` false. The answer holds no email address.
+- The endpoints read the two names from the permission list (`ControlPlane.Contracts/Permissions.g.cs`). `Audit.Api` may use only the shared response types of `ControlPlane.Contracts` (`ARCHITECTURE.md`, section 2), so `Audit.Application`, which sees the whole project, gives the names to it (`AuditLogs/AuditLogPermissions.cs`). `EndpointAccessTests` fails for an endpoint whose permission the permission list does not hold.
+- The `operation` of an entry in both logs is the schema `AuditOperation` of the document (N11). A client so knows every operation, and a new one changes the generated type.
+- `details` is the shape of the entry's operation, or null for an operation without details. `AuditDetailsResponse` is polymorphic: each shape is a `...DetailsResponse` in `Tenant/AuditLogs/`, and System.Text.Json writes the operation into it as its discriminator, `operation`. The discriminator values are the constants of `AuditOperations`, which `AuditDetailsTypes` gives to `Audit.Api`. So a generated client narrows `details` by `operation` without a cast. A role in the details is `AuditRoleResponse` (N7k). A stored object that its operation has no type for answers 500: it is a fault, not an answer.
+- .NET writes the shapes as `anyOf` with a `discriminator`, not `oneOf` (the maintainer's decision in audit-10). The host gives each shape its own name and requires its `operation` (N11y).
+- Tests: `ListAuditEntriesTests` and `ListPlatformAuditEntriesTests` (with each stored shape of the details, as its handler writes it), `CursorRequestTests`, `ListContractTests`, `AuditOperationTests` (a decision about the details of every operation, one operation for each type of details, one response shape for each), `OpenApiContractTests` (the shapes in the document).
+
+Source: Richardson, *Microservices Patterns*, "API composition". Kleppmann, Chapter 3 (index order). PostgreSQL documentation, "Row Constructor Comparison".

@@ -6,7 +6,7 @@ using SharedKernel;
 namespace Notifications.UnitTests.Tenants.SendTenantPurgeWarningEmail;
 
 // The Notifications module warns each Owner of a closed tenant before its purge, in the Owner's own language: the tenant will be deleted
-// with its data on a date, in a number of days (section 6, "Tenant purge"). It hears TenantPurgeWarningReadyEvent, which only it hears, so
+// with its data on a date, in a number of days (docs/flows/tenant-purge.md). It hears TenantPurgeWarningReadyEvent, which only it hears, so
 // the email's retries may be scheduled (W5). The moment is in the Owner's own time zone, named with its offset as the UI names it; without
 // a zone, or with one the image does not know, it is in UTC (section 7).
 public sealed class SendTenantPurgeWarningEmailHandlerTests

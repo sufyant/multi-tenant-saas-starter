@@ -8,7 +8,7 @@ using Wolverine;
 
 namespace Audit.IntegrationTests.Tenants;
 
-// The tenant purge asks Audit to delete the tenant's log, the Activity log, in the tenant's transaction (section 6, "Tenant purge").
+// The tenant purge asks Audit to delete the tenant's log, the Activity log, in the tenant's transaction (docs/flows/tenant-purge.md).
 // The application still cannot change or delete a single entry: only audit.purge_tenant_entries(), a SECURITY DEFINER function of the
 // migration role, deletes the entries of the declared tenant, all of them, and the application may only execute it (R14). The
 // platform's log keeps its entries about the tenant (K3). ChangeAuditEntry_AsTheApplication_IsRefused keeps proving that the application

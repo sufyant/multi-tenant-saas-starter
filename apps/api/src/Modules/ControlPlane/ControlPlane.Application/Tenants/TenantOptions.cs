@@ -11,7 +11,7 @@ public sealed class TenantOptions
     public TimeSpan ReopenPeriod { get; set; } = TimeSpan.FromDays(30);
 
     /// <summary>
-    /// How long before the purge the closed tenant's Owners are warned (section 6, "Tenant purge"). Positive and shorter than the reopen
+    /// How long before the purge the closed tenant's Owners are warned (docs/flows/tenant-purge.md). Positive and shorter than the reopen
     /// period, so the warning comes after the closure.
     /// </summary>
     public TimeSpan PurgeWarningLead { get; set; } = TimeSpan.FromDays(7);

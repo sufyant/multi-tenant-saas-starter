@@ -9,7 +9,7 @@ using Wolverine;
 
 namespace ControlPlane.Infrastructure.Persistence.SystemAdmins;
 
-// Section 6, "Root system admins": a person with a second factor who is no system admin is checked against the list. A known user's
+// docs/flows/system-admins.md: a person with a second factor who is no system admin is checked against the list. A known user's
 // address is ControlPlane's own (A7): the door compares it with the list, as SystemDoor.IsRoot does, and asks the identity provider
 // nothing. Only a person who is no user yet is checked by the addresses the identity provider verified, read from its server before any
 // transaction (section 3). A root system admin's grant is a command, so it is written in its own transaction with its audit event (O1).

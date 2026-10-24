@@ -3,7 +3,7 @@ using Wolverine;
 
 namespace Notifications.Application.Tenants.PurgeTenantData;
 
-// Notifications stores no data of a tenant: it sends an email and keeps nothing (section 6, "Tenant purge"). It still takes part in the
+// Notifications stores no data of a tenant: it sends an email and keeps nothing (docs/flows/tenant-purge.md). It still takes part in the
 // tenant purge, so the purge waits for it, and the module that adds data of a tenant later deletes it here, in the tenant's transaction,
 // before it replies. The handler takes no DbContext today, so Wolverine opens no transaction.
 public static class PurgeTenantDataHandler

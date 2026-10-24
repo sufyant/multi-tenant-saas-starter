@@ -67,7 +67,7 @@ internal sealed class Tenant
     /// <summary>When the purge ended and left the tenant as its tombstone (K4). None unless purged.</summary>
     public DateTimeOffset? PurgedAt { get; private set; }
 
-    /// <summary>A new tenant is active at once (section 6, "Tenant creation process"). The name is stored without the spaces around it.</summary>
+    /// <summary>A new tenant is active at once (docs/flows/tenant-creation.md). The name is stored without the spaces around it.</summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
@@ -307,7 +307,7 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// The platform makes the target member an Owner, whether or not the tenant has one (section 6, "Owner recovery"): the member's role
+    /// The platform makes the target member an Owner, whether or not the tenant has one (docs/flows/owner-recovery.md): the member's role
     /// becomes the tenant's Owner role, which the caller found by its kind (A1), and any other Owner keeps theirs. The checks, in this order: the tenant is active, by
     /// the rule of the platform's Owner invitation; the user is a member of the tenant; the member's role does not hold
     /// <c>tenant.owners.manage</c> yet (A1); the user is neither suspended nor deleted. The escalation rule of step r4b does not apply:
@@ -377,7 +377,7 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// A system admin's deletion of the user takes the target's membership away (section 6, "User deletion"), under the rule of
+    /// A system admin's deletion of the user takes the target's membership away (docs/flows/user-deletion.md), under the rule of
     /// <see cref="CheckUserDeletion"/>, asked again under the tenant's lock (K6l). A user who became the tenant's last Owner since the check
     /// stays, and the error names this tenant. The user's address goes from the tenant's invitations of the user, those the user accepted
     /// or that went to one of their addresses (A8). A pending one among them, expired or not, is cancelled first, as a closure cancels it
@@ -401,7 +401,7 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// A system admin's or a purge's deletion of a user who left this tenant before (section 6, "User deletion"): the user's address goes
+    /// A system admin's or a purge's deletion of a user who left this tenant before (docs/flows/user-deletion.md): the user's address goes
     /// from the tenant's invitations of the user, by the rule of <see cref="RemoveForUserDeletion"/>, with no membership to remove (A8).
     /// A pending one among them is cancelled first. Returns the invitations it cancelled; a second call cancels none. A deleted user is a
     /// member of no tenant, so a membership is an error.
@@ -424,7 +424,7 @@ internal sealed class Tenant
         invitation.TenantId == Id && invitation.Status != InvitationStatus.Cancelled ? Result.Success() : Invitation.NotFound;
 
     /// <summary>
-    /// Whether the person may accept the invitation now, in the order of section 6, "Tenant lifecycle": a deleted user never joins (A8),
+    /// Whether the person may accept the invitation now, in the order of docs/flows/tenant-lifecycle.md: a deleted user never joins (A8),
     /// a system admin never joins (T5), a member does not join twice, then the invitation's own checks, and only then a suspended tenant,
     /// so only the invited person with a live invitation learns that it is suspended (T3). It changes nothing, so a caller can check
     /// more after it and still refuse without a change; <see cref="Accept"/> asks it again.
@@ -645,7 +645,7 @@ internal sealed class Tenant
     private static bool ManagesOwners(Role role) => role.Holds(PermissionPools.TenantOwnersManage);
 
     // A member's invitation: the role rules first, the Owner's and then the escalation rule, then a member's address, then the daily limit
-    // (section 6, "Member invitation").
+    // (docs/flows/invitations.md, section 2, "Member invitation").
     private static Result CheckMemberInvitation(Role inviter, Role role, InvitationFacts facts, int dailyLimit)
     {
         var allowed = Invitation.CheckInviter(inviter, role);

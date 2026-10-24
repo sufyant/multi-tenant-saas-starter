@@ -9,7 +9,7 @@ namespace Api.IntegrationTests.Fixtures;
 // into the main database unless the test names a database of its own.
 internal sealed class TestData(Database database, string databaseName = Database.MainDatabase)
 {
-    // The invitation code of a link: the tenant id, a dot and the secret (section 6).
+    // The invitation code of a link: the tenant id, a dot and the secret (ARCHITECTURE.md, section 6, "Rules without an id").
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
     // Every tenant has its summary from its creation on, empty until a command writes it (R12), and its own Owner, Admin and Member roles

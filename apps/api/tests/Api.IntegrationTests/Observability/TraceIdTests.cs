@@ -18,7 +18,7 @@ namespace Api.IntegrationTests.Observability;
 // too. Here the request reaches a web host and every later step runs in a worker, so the trace crosses the PostgreSQL queue.
 public sealed class TraceIdTests(Database database)
 {
-    // Every handler of the tenant creation, as section 6 lists them, by the name of the message it handles (W12).
+    // Every handler of the tenant creation, as docs/flows/tenant-creation.md lists them, by the name of the message it handles (W12).
     private static readonly string[] TenantCreationHandlers =
     [
         NameOf(typeof(CreateTenantCommand)),

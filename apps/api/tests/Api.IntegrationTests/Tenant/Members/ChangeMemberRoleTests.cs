@@ -84,7 +84,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Owner");
     }
 
-    // section 6, "Member management", check 4: an Admin does not touch an Owner, whatever role it would give.
+    // docs/flows/member-management.md, check 4: an Admin does not touch an Owner, whatever role it would give.
     [Theory]
     [InlineData("admin")]
     [InlineData("member")]
@@ -132,7 +132,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
-    // section 6, "Member management", check 5: the last Owner keeps the role.
+    // docs/flows/member-management.md, check 5: the last Owner keeps the role.
     [Fact]
     public async Task ChangeMemberRole_TheLastOwnerStepsDown_IsAConflictAndKeepsTheRole()
     {
@@ -249,7 +249,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
     }
 
     // K6j: the only two Owners demote each other at the same moment. The tenant row lock runs the two changes one after the other. The
-    // second runs as an Admin, who may not touch an Owner (section 6, "Member management", check 4), so one Owner remains.
+    // second runs as an Admin, who may not touch an Owner (docs/flows/member-management.md, check 4), so one Owner remains.
     [Fact]
     public async Task ChangeMemberRole_TheOnlyTwoOwnersDemoteEachOtherAtOnce_LeaveOneOwner()
     {
@@ -270,7 +270,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
     }
 
-    // Section 6, "Member management", check 1: an Owner removes another Owner while that Owner's role change waits for the tenant's lock.
+    // docs/flows/member-management.md, check 1: an Owner removes another Owner while that Owner's role change waits for the tenant's lock.
     // The change then runs for a user who is no longer a member, to whom the tenant does not exist (T3).
     [Fact]
     public async Task ChangeMemberRole_ByAnOwnerRemovedWhileItWaited_IsNotFoundAndChangesNothing()

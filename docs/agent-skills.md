@@ -6,6 +6,8 @@ An agent skill is a folder with a `SKILL.md` file. It gives a coding agent (Clau
 
 The skills of this repository live in `.claude/skills`. Each skill is a real folder, committed to the repository. The TanStack Table skills are the one exception: they ship inside their packages (section 3). A fresh clone, a cloud agent and CI get the same skills as the maintainer.
 
+A cloud thread of Claude Code Projects is different: it does not load `.claude/skills` from the repository. The skills a cloud thread needs are uploaded to the maintainer's account. A new skill in the repository is also uploaded there (section 4).
+
 `skills-lock.json` records the source, the path and the hash of each skill.
 
 ## 2. Rules
@@ -95,5 +97,6 @@ After the command:
 2. Check the license of a new skill (section 2), and add a row to the table in section 3.
 3. Run `scripts/ci/check-agent-skills.sh`.
 4. Commit the folder, `skills-lock.json` and this document in one pull request.
+5. The maintainer uploads a new skill to the account too, so a cloud thread of Claude Code Projects gets it (section 1).
 
 To remove a skill, delete its folder and its entry in `skills-lock.json`, and remove its row from section 3.

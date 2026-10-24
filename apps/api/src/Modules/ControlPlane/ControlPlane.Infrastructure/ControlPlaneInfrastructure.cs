@@ -46,7 +46,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
 
-        // Section 6, "Root system admins": the list must name at least one address, so the platform always has a way in. Each item is an
+        // docs/flows/system-admins.md: the list must name at least one address, so the platform always has a way in. Each item is an
         // address in the form the validators accept, and the same text as .NET reads it, so no item is left out of the list's one form.
         services.AddOptions<SystemAdminOptions>()
             .BindConfiguration(SystemAdminOptions.Section)

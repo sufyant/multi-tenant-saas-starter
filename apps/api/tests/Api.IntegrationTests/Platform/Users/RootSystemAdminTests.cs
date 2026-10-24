@@ -3,7 +3,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Users;
 
-// Section 6, "Root system admins": ControlPlane:SystemAdmins:RootEmails names the root system admins. A person whose verified email
+// docs/flows/system-admins.md: ControlPlane:SystemAdmins:RootEmails names the root system admins. A person whose verified email
 // address is in the list becomes a system admin at their first visit to the system door with a second factor (A6), at any time, also
 // while other system admins exist. The platform granted it, so the platform's log names the platform as the actor (K3). Whether a
 // system admin is a root is read from the list on each request; nothing stores it. Each test names its own root addresses, so the

@@ -4,7 +4,7 @@ namespace ControlPlane.Contracts.Tenants;
 
 /// <summary>
 /// One Owner of a closed tenant is to be warned that the tenant will be deleted with its data at the moment of the purge, in the Owner's
-/// own language (section 6, "Tenant purge"). Notifications writes the email; it is this message's one handler, so its retries may be
+/// own language (docs/flows/tenant-purge.md). Notifications writes the email; it is this message's one handler, so its retries may be
 /// scheduled (W5). Published through the outbox, in the tenant.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>

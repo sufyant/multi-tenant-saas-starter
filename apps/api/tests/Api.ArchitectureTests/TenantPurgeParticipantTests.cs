@@ -4,7 +4,7 @@ using Wolverine.Runtime.Handlers;
 
 namespace Api.ArchitectureTests;
 
-// Section 6, "Tenant purge": the purge waits for a reply from each module the host names as a participant, and knows no module. A module
+// docs/flows/tenant-purge.md: the purge waits for a reply from each module the host names as a participant, and knows no module. A module
 // that handles PurgeTenantDataCommand and is not named would keep its data while the purge ends; a module named without a handler would
 // keep the purge waiting until its alarm. So the two lists are the same. Read from Wolverine's own handler graph of the application
 // composed as a worker, and from its services.

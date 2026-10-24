@@ -4,7 +4,7 @@ namespace ControlPlane.Application.SystemAdmins;
 
 /// <summary>
 /// The root system admins (section <c>ControlPlane:SystemAdmins</c>), checked on start: the email addresses of the people the system door
-/// lets in as system admins, and whom no system admin can revoke (section 6, "Root system admins"). Public because a handler takes it (W9).
+/// lets in as system admins, and whom no system admin can revoke (docs/flows/system-admins.md). Public because a handler takes it (W9).
 /// </summary>
 public sealed class SystemAdminOptions
 {

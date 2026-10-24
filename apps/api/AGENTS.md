@@ -4,8 +4,22 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
 
 ## Source of truth
 
-- `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`). It is authoritative. If this file and it disagree, it wins.
+- `docs/ARCHITECTURE.md` holds every architectural rule, each with an id (`R4`, `W2`, `S13`), except the few in section 6, "Rules without an id". It is authoritative. If this file and it disagree, it wins.
 - Read the section of `ARCHITECTURE.md` for the area before you change anything in it. Cite a rule by its id; do not copy rules into code comments.
+- Read `ARCHITECTURE.md` and only the flow files of your task. A flow file in `docs/flows/` says what happens, step by step, and cites the rules by id; it defines no rule (`RuleIdTests`). The flow files:
+  - `tenant-creation.md`: a system admin creates a tenant and invites its first Owner in one transaction.
+  - `invitations.md`: the identity provider's sign-up of every invitation, a member's invitation, and the platform's invitation of an Owner.
+  - `tenant-lifecycle.md`: a system admin renames, suspends, reactivates, closes and reopens a tenant.
+  - `tenant-purge.md`: the saga that deletes a closed tenant's data when its reopen period ends.
+  - `owner-recovery.md`: the platform makes an existing member of a tenant an Owner.
+  - `tenant-summary.md`: the summary row that the platform's tenant list reads across tenants.
+  - `what-the-screens-read.md`: the fields and the endpoints that the tenant web and the platform app read.
+  - `user-deletion.md`: a system admin deletes a user, in steps across the user's tenants.
+  - `system-admins.md`: the root system admins from configuration, the system door, and the grant and revocation of system admins.
+  - `member-management.md`: an Owner or an Admin changes a member's role and removes a member.
+  - `custom-roles.md`: a tenant creates, updates and deletes its own roles.
+  - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
+  - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
@@ -24,10 +38,10 @@ Run from `apps/api/`.
 
 These were decided with the maintainer, with their sources. Do not reopen one, and do not propose to, unless the maintainer asks or you have new information. Then say what the new information is.
 
-- Tenant creation is one transaction, not a saga: its first write and its pivot are both writes in ControlPlane's own database, and only retryable steps follow. It takes the path of `InviteOwner`. The template's reference use of a saga is the tenant purge (step r7). (The maintainer's decision D1 in step r3; section 6, "Tenant creation process"; rules S1 to S13 in section 3)
+- Tenant creation is one transaction, not a saga: its first write and its pivot are both writes in ControlPlane's own database, and only retryable steps follow. It takes the path of `InviteOwner`. The template's reference use of a saga is the tenant purge (step r7). (The maintainer's decision D1 in step r3; `docs/flows/tenant-creation.md`; rules S1 to S13 in section 3)
 - The tenant id is in the API path and is proven by membership. It never comes from the token, the body, the query or a header. (T1, T2, Deviations)
 - The identity provider only authenticates. Tenants, roles and permissions live in our tables. (T6, A1 to A6)
-- The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. ControlPlane owns the names; the API sends the provider none and reads none, and no webhook flows back. (A7, A8; section 6, "Invitation sign-up"; the maintainer's decisions in step 20i)
+- The identity provider only signs people in. It is invite-only: the API lets an invited address without an account sign up through the provider's invitation, and the Owner signs up like any invited person. Tenant creation creates no tenant, role or user in the provider. ControlPlane owns the names; the API sends the provider none and reads none, and no webhook flows back. (A7, A8; `docs/flows/invitations.md`, section 1, "Invitation sign-up"; the maintainer's decisions in step 20i)
 - RLS is the only tenant filter. No EF Core query filters as a second layer. (R1 to R11)
 - Wolverine is used as it is: dispatcher, EF Core transactions, outbox, PostgreSQL transport, saga. No custom transaction wrapper, mediator, outbox or saga store. No Wolverine.Http. (Section 3, W1 to W10)
 - One build output, two process roles: web and worker. (Section 1, W5)

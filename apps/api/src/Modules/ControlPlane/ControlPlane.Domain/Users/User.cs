@@ -107,7 +107,7 @@ internal sealed class User(Guid id, string externalId)
 
     /// <summary>
     /// The user changes their own preferences, which follow them to every tenant and device. Changed when they changed. The API keeps
-    /// the IANA name the web chose, and null means the web uses the browser's. Only the purge warning reads the zone (section 6). A deleted user is
+    /// the IANA name the web chose, and null means the web uses the browser's. Only the purge warning reads the zone (docs/flows/language-and-time-zone.md). A deleted user is
     /// refused, as on every me endpoint (A9).
     /// </summary>
     public Result<StateChange> ChangePreferences(Language language, string? timeZone)

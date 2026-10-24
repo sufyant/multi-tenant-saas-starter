@@ -14,7 +14,7 @@ using Wolverine;
 namespace ControlPlane.Api.Platform.SystemAdmins;
 
 /// <summary>
-/// The system admin list, which a system admin changes for an existing user: a grant and a revocation (section 6, "Root system admins").
+/// The system admin list, which a system admin changes for an existing user: a grant and a revocation (docs/flows/system-admins.md).
 /// The routes sit under the user they change, and the grant answers the user (UserResponse, N7g).
 /// </summary>
 public static class SystemAdminEndpoints

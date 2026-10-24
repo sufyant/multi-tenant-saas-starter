@@ -155,7 +155,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe("""{"operation":"tenant.suspended","reason":"Unpaid invoices"}""");
     }
 
-    // Owner recovery (section 6): the platform's log keeps tenant.owner_made, as RecordOwnerMadeHandler writes it, and answers its shape:
+    // Owner recovery (docs/flows/owner-recovery.md): the platform's log keeps tenant.owner_made, as RecordOwnerMadeHandler writes it, and answers its shape:
     // the member's id and the role they had.
     [Fact]
     public async Task ListPlatformAuditEntries_AStoredOwnerMade_AnswersTheShapeOfTenantOwnerMade()
