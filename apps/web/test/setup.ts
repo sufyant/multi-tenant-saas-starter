@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import { dismissToasts } from "@repo/ui/components/toast";
 import { zodErrorMap } from "@repo/ui/lib/zod-error-map";
 import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
@@ -6,6 +7,7 @@ import { z } from "zod";
 
 afterEach(() => {
   cleanup();
+  dismissToasts();
 });
 
 // A test has one time limit: testTimeout in vitest.config.mts. Testing Library's findBy and waitFor stop after 1 s by default,
