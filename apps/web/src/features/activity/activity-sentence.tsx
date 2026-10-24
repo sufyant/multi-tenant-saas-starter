@@ -16,7 +16,6 @@ import {
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
-import { builtInRoleOf } from "@/shared/roles";
 import { useRoleName } from "@/shared/use-role-name";
 
 /** The words for a person the log cannot name. */
@@ -91,9 +90,10 @@ const person = (name: string) => () => (
 export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const t = useTranslations();
   const roleName = useRoleName();
-  // A built-in role by its translated name; a custom role by the name the entry keeps, isolated from the sentence's direction.
+  // A built-in role by its translated name; a custom role by the name the entry keeps, isolated from the sentence's direction. The
+  // entry's `builtIn` decides, never the name (F51).
   const role = (value: AuditRoleResponse) => () =>
-    builtInRoleOf(value) ? roleName(value) : <bdi>{roleName(value)}</bdi>;
+    value.builtIn ? roleName(value) : <bdi>{roleName(value)}</bdi>;
   // A permission by its label; a name the web does not know by itself, never a blank.
   const label = (name: string) => {
     const key = `permissions.${name}` as "permissions.tenant.audit.read";
