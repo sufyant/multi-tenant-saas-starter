@@ -1,5 +1,5 @@
-import type { ComboboxOption } from "@repo/ui/components/combobox";
-import { formatTime, utcOffset, zoneName } from "@repo/ui/lib/format-date-time";
+import { formatTime, utcOffset, zoneName } from "../../lib/format-date-time";
+import type { ComboboxOption } from "../combobox";
 
 /**
  * The time zones a person can choose, from the browser (`Intl.supportedValuesOf`), each labelled with its city and its name in

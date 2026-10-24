@@ -48,19 +48,8 @@
   },
   "preferences": {
     "title": "Tercihler",
-    "language": "Dil",
-    "timeZone": "Saat dilimi",
     "text": "Bunlar sizi her kuruluşta ve her cihazda izler.",
-    "languageHint": "Tarihler ve sayılar bu dilin biçimini kullanır.",
-    "languageSearch": "Dil ara",
-    "languageEmpty": "Dil bulunamadı",
-    "timeZoneHint": "Ekrandaki her saat bu dilimde gösterilir.",
-    "timeZoneSearch": "Şehir veya dilim ara",
-    "timeZoneEmpty": "Saat dilimi bulunamadı",
-    "thisDevice": "{zone} (bu cihaz)",
-    "save": "Tercihleri kaydet",
-    "saved": "Tercihler kaydedildi",
-    "notSaved": "Tercihler kaydedilmedi"
+    "nameNote": "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür."
   },
   "signInPage": {
     "title": "Starter'a giriş yapın"
