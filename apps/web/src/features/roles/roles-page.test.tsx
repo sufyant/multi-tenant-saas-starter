@@ -28,6 +28,7 @@ import {
   problem,
   renderInTenant,
   roleOf,
+  supportLead,
   tenantAnswers,
   viewerAnswers,
 } from "../../../test/tenant";
@@ -376,19 +377,30 @@ describe("RolesPage", () => {
 
   it.each([
     [
+      "AtTheLimit",
       2,
-      "Your organisation has 2 custom roles, the most it can have. Delete one to create another.",
+      [billingLead, reviewer],
+      "Your organisation has reached its limit of 2 custom roles. Delete one to create another.",
     ],
     [
+      // A limit lowered after the tenant made its roles: 3 custom roles against a limit of 2.
+      "OverTheLimit",
+      2,
+      [billingLead, reviewer, supportLead],
+      "Your organisation has reached its limit of 2 custom roles. Delete one to create another.",
+    ],
+    [
+      "OverALimitOfOne",
       1,
-      "Your organisation has 1 custom role, the most it can have. Delete one to create another.",
+      [billingLead, reviewer],
+      "Your organisation has reached its limit of 1 custom role. Delete one to create another.",
     ],
   ])(
-    "RolesPage_LimitOf%sWithTwoCustomRoles_DisablesCreateWithTheReason",
-    async (max, reason) => {
+    "RolesPage_%s_DisablesCreateWithTheLimit",
+    async (_, max, custom, reason) => {
       server.use(
         limitOf(max),
-        ...tenantAnswers(BuiltInRole.Owner, undefined, [billingLead, reviewer]),
+        ...tenantAnswers(BuiltInRole.Owner, undefined, custom),
       );
 
       renderInTenant(<RolesPage />, { url });
@@ -399,7 +411,9 @@ describe("RolesPage", () => {
       await waitFor(() => expect(create).toBeDisabled());
       expect(create).not.toHaveAttribute("href");
       expect(create).toHaveAccessibleDescription(reason);
-      expect(screen.queryByText(/custom roles$/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/ of \d+ custom roles?$/),
+      ).not.toBeInTheDocument();
     },
   );
 
