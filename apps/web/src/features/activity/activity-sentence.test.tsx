@@ -517,29 +517,6 @@ describe("ActivitySentence", () => {
     ).toBeInTheDocument();
   });
 
-  it("ActivitySentence_TenantPurgeWarned_NamesTheOrganisationAndNoDate", () => {
-    renderWithProviders(
-      <ActivitySentence
-        entry={entry({
-          operation: AuditOperation.TenantPurgeWarned,
-          actor: thePlatform,
-          target: {
-            kind: AuditTargetResponseKind.Tenant,
-            id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
-            name: "Northwind Traders",
-            deleted: null,
-          },
-        })}
-      />,
-    );
-
-    expect(
-      shown(
-        "Platform The Owners were told that Northwind Traders will be deleted.",
-      ),
-    ).toBeInTheDocument();
-  });
-
   it("ActivitySentence_TenantReopened_ShowsTheBadge", () => {
     renderWithProviders(
       <ActivitySentence

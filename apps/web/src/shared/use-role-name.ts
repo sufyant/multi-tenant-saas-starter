@@ -1,8 +1,11 @@
 "use client";
 
-import type { RoleDetailResponse, RoleResponse } from "@repo/api-client";
+import {
+  builtInRoleOf,
+  type RoleDetailResponse,
+  type RoleResponse,
+} from "@repo/api-client";
 import { useTranslations } from "next-intl";
-import { builtInRoleOf } from "./roles";
 
 /** The name of a role in the user's language: a built-in role from the messages, a custom role by its own name. */
 export function useRoleName() {
