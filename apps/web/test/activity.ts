@@ -6,6 +6,7 @@ import {
   type AuditRoleResponse,
   type AuditTargetResponse,
   AuditTargetResponseKind,
+  BuiltInRole,
   type CursorPageOfAuditEntryResponse,
   MemberInvitedDetailsResponseOperation,
   MemberRemovedDetailsResponseOperation,
@@ -14,11 +15,11 @@ import {
   RoleCreatedDetailsResponseOperation,
   RoleUpdatedDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
+  TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
 } from "@repo/api-client";
 import { getListAuditEntriesMockHandler } from "@repo/api-client/msw";
-import { BuiltInRole } from "@/shared/roles";
 
 // The tenant log's entries of the Activity board, and the answers of ListAuditEntries.
 
@@ -101,6 +102,11 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation: TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited,
       invitationId: "0198f0a2-0000-7000-8000-0000000000a1",
       replacedInvitationId: null,
+    },
+    [AuditOperation.TenantPurgeWarned]: {
+      operation: TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned,
+      // 9 Oct in UTC, 10 Oct in Dublin: the sentence names the day in the viewer's zone.
+      purgesAt: "2026-10-09T23:30:00Z",
     },
     [AuditOperation.TenantRenamed]: {
       operation: TenantRenamedDetailsResponseOperation.TenantRenamed,

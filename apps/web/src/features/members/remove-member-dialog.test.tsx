@@ -1,4 +1,4 @@
-import { ErrorCode } from "@repo/api-client";
+import { BuiltInRole, ErrorCode } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -12,7 +12,6 @@ import {
   it,
   vi,
 } from "vitest";
-import { BuiltInRole } from "@/shared/roles";
 import {
   john,
   membersAnswer,

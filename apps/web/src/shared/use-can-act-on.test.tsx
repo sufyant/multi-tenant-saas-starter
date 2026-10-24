@@ -1,4 +1,4 @@
-import { Permission } from "@repo/api-client";
+import { BuiltInRole, Permission } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import {
@@ -21,7 +21,6 @@ import {
   tenantAnswers,
   viewerAnswers,
 } from "../../test/tenant";
-import { BuiltInRole } from "./roles";
 import { holdsAll, useCanActOn } from "./use-can-act-on";
 
 vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ signOut: vi.fn() }) }));

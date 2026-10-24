@@ -1,4 +1,5 @@
 import {
+  BuiltInRole,
   ErrorCode,
   type InvitationResponse,
   InvitationResponseState,
@@ -17,7 +18,6 @@ import {
   it,
   vi,
 } from "vitest";
-import { BuiltInRole } from "@/shared/roles";
 import {
   ayse,
   billingLead,

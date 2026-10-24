@@ -12,8 +12,10 @@ import {
   MemberRoleChangedDetailsResponseOperation,
   type RoleUpdatedDetailsResponse,
   RoleUpdatedDetailsResponseOperation,
+  TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
 } from "@repo/api-client";
+import { formatDate } from "@repo/ui/lib/format-date-time";
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
 import { useRoleName } from "@/shared/use-role-name";
@@ -40,13 +42,14 @@ function targetName(target: AuditTargetResponse, t: Translate): string {
 type Rich = Record<string, string | ((chunks: ReactNode) => ReactNode)>;
 
 /**
- * The values of the details that a sentence shows: the roles and the names. The details' own `operation` narrows the union. The
- * reason of `tenant.suspended` never shows: a member never sees it (the Suspended board).
+ * The values of the details that a sentence shows: the roles, the names and the day of a purge. The details' own `operation`
+ * narrows the union. The reason of `tenant.suspended` never shows: a member never sees it (the Suspended board).
  */
 function detailValues(
   details: AuditDetailsResponse | null,
   role: (role: AuditRoleResponse) => () => ReactNode,
   permissions: (names: string[]) => () => ReactNode,
+  date: (at: string) => string,
 ): Rich {
   switch (details?.operation) {
     case MemberInvitedDetailsResponseOperation.MemberInvited:
@@ -56,6 +59,8 @@ function detailValues(
       return { oldRole: role(details.oldRole), newRole: role(details.newRole) };
     case TenantRenamedDetailsResponseOperation.TenantRenamed:
       return { oldName: details.oldName, newName: details.newName };
+    case TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned:
+      return { date: date(details.purgesAt) };
     case RoleUpdatedDetailsResponseOperation.RoleUpdated:
       return {
         change: changeOf(details),
@@ -85,10 +90,19 @@ const person = (name: string) => () => (
 
 /**
  * One entry of the tenant log as a sentence (the Activity board): the actor, what they did and to whom, from the message of the
- * operation. It holds no email address: an invitation is "someone" or "an invitation" (K3).
+ * operation. It holds no email address: an invitation is "someone" or "an invitation" (K3). A date in it follows the viewer's
+ * zone (`timeZone`, from GetMe) and the language's format, as the other dates of Activity do (F18).
  */
-export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
+export function ActivitySentence({
+  entry,
+  timeZone,
+}: {
+  entry: AuditEntryResponse;
+  timeZone?: string | null;
+}) {
   const t = useTranslations();
+  const date = (at: string) =>
+    formatDate(at, { locale: t("locale.format"), timeZone });
   const roleName = useRoleName();
   // A built-in role by its translated name; a custom role by the name the entry keeps, isolated from the sentence's direction. The
   // entry's `builtIn` decides, never the name (F51).
@@ -150,7 +164,7 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
       {renamed && permissionsChanged && " "}
       {(!renamed || permissionsChanged) &&
         t.rich(`activity.operations.${entry.operation}`, {
-          ...detailValues(details, role, permissions),
+          ...detailValues(details, role, permissions, date),
           ...people,
           actorKind: entry.actor.kind,
         })}
