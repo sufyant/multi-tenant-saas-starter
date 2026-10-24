@@ -212,6 +212,21 @@ export interface TenantOwnerMadeDetailsResponse {
   oldRole: AuditRoleResponse;
 }
 
+export type TenantPurgeWarnedDetailsResponseOperation = typeof TenantPurgeWarnedDetailsResponseOperation[keyof typeof TenantPurgeWarnedDetailsResponseOperation];
+
+
+export const TenantPurgeWarnedDetailsResponseOperation = {
+  TenantPurgeWarned: 'tenant.purge_warned',
+} as const;
+
+/**
+ * The details of `tenant.purge_warned`: the moment of the purge that the Owners were warned of.
+ */
+export interface TenantPurgeWarnedDetailsResponse {
+  operation: TenantPurgeWarnedDetailsResponseOperation;
+  purgesAt: string;
+}
+
 export type TenantRenamedDetailsResponseOperation = typeof TenantRenamedDetailsResponseOperation[keyof typeof TenantRenamedDetailsResponseOperation];
 
 
@@ -247,7 +262,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -447,6 +462,7 @@ export const ErrorCode = {
   SystemAdminCannotRevokeSelf: 'system_admin.cannot_revoke_self',
   SystemAdminExists: 'system_admin.exists',
   SystemAdminNotFound: 'system_admin.not_found',
+  SystemAdminReverificationRequired: 'system_admin.reverification_required',
   SystemAdminRoot: 'system_admin.root',
   TenantClosed: 'tenant.closed',
   TenantHasOwner: 'tenant.has_owner',
@@ -668,14 +684,17 @@ export interface ListPageOfMyTenantResponse {
 }
 
 /**
- * A role of the tenant as the role endpoints answer it: what RoleResponse holds, and the names of the role's
- * permissions, in ordinal order.
+ * A role of the tenant as the role endpoints answer it: what RoleResponse holds, the names of the role's permissions, in
+ * ordinal order, and how many members have the role and how many pending invitations give it, an expired one included. DeleteRole
+ * refuses a role while either count is above zero (role.in_use).
  */
 export interface RoleDetailResponse {
   id: string;
   name: string;
   builtIn: boolean;
   permissions: Permission[];
+  memberCount: number;
+  pendingInvitationCount: number;
 }
 
 export interface ListPageOfRoleDetailResponse {
@@ -757,7 +776,8 @@ export const UserResponseStatus = {
 /**
  * A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or
  * deleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin
- * can revoke, how many tenants they are a member of, and when they became a user.
+ * can revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),
+ * how many tenants they are a member of, and when they became a user.
  */
 export interface UserResponse {
   id: string;
@@ -770,6 +790,8 @@ export interface UserResponse {
   status: UserResponseStatus;
   isSystemAdmin: boolean;
   isRootSystemAdmin: boolean;
+  /** @nullable */
+  systemAdminGrantedAt: string | null;
   membershipCount: number;
   createdAt: string;
 }
@@ -810,7 +832,8 @@ export interface MeResponse {
 /**
  * The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
  * permissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every
- * endpoint still checks the permission itself.
+ * endpoint still checks the permission itself. It also holds the most custom roles the tenant may have, the limit CreateRole enforces,
+ * for Settings › Roles: the list of roles holds nothing beside its page (K5).
  */
 export interface MyTenantDetailResponse {
   id: string;
@@ -820,6 +843,7 @@ export interface MyTenantDetailResponse {
   role: RoleResponse;
   permissions: Permission[];
   createdAt: string;
+  maxCustomRoles: number;
 }
 
 /**
@@ -916,7 +940,9 @@ export interface TenantOwnerResponse {
 }
 
 /**
- * One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the first.
+ * One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the
+ * first. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or
+ * were, warned of the purge (null otherwise).
  */
 export interface TenantDetailResponse {
   id: string;
@@ -931,6 +957,8 @@ export interface TenantDetailResponse {
   purgedAt: string | null;
   /** @nullable */
   reopenableUntil: string | null;
+  /** @nullable */
+  purgeWarningAt: string | null;
   memberCount: number;
   ownerCount: number;
   owners: TenantOwnerResponse[];
@@ -1005,6 +1033,8 @@ export interface UserDetailResponse {
   status: UserResponseStatus;
   isSystemAdmin: boolean;
   isRootSystemAdmin: boolean;
+  /** @nullable */
+  systemAdminGrantedAt: string | null;
   membershipCount: number;
   createdAt: string;
   /** @nullable */
@@ -1077,6 +1107,7 @@ sort?: ListUsersSort;
  */
 q?: string;
 status?: UserResponseStatus;
+isSystemAdmin?: boolean;
 };
 
 export type ListUsersSort = typeof ListUsersSort[keyof typeof ListUsersSort];
