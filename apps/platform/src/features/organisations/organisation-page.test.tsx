@@ -1,5 +1,4 @@
-import { ErrorCode } from "@repo/api-client";
-import { AuditOperation } from "@repo/api-client";
+import { AuditOperation, ErrorCode } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http } from "msw";
@@ -14,6 +13,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { auditLogAnswer, entry, tenantTarget } from "../../../test/activity";
 import {
   atlas,
   burren,
@@ -30,7 +30,6 @@ import {
   problem,
 } from "../../../test/organisations";
 import { renderWithProviders } from "../../../test/render";
-import { auditLogAnswer, entry, tenantTarget } from "../../../test/activity";
 import { OrganisationPage } from "./organisation-page";
 
 vi.mock("next/navigation", () => ({
