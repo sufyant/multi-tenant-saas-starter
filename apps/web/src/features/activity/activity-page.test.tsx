@@ -3,6 +3,7 @@ import {
   AuditOperation,
   BuiltInRole,
   ErrorCode,
+  TenantPurgeWarnedDetailsResponseOperation,
 } from "@repo/api-client";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -177,6 +178,34 @@ describe("ActivityPage", () => {
       "datetime",
       "2026-10-16T08:40:00.000Z",
     );
+  });
+
+  // 02:00 UTC on 10 Oct is still 9 Oct in New York: the page gives the sentence the viewer's zone, not the runtime's.
+  it("ActivityPage_PurgeWarned_NamesTheDayInTheViewersZone", async () => {
+    server.use(
+      ...answer(BuiltInRole.Owner, "America/New_York"),
+      auditLogAnswer({
+        "": {
+          items: [
+            entry({
+              operation: AuditOperation.TenantPurgeWarned,
+              details: {
+                operation:
+                  TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned,
+                purgesAt: "2026-10-10T02:00:00Z",
+              },
+            }),
+          ],
+          nextCursor: null,
+        },
+      }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    expect(
+      await screen.findByText(/will be deleted on 9 Oct 2026\./),
+    ).toBeInTheDocument();
   });
 
   // 22:30 and 23:30 UTC on the 15th: before and after Dublin's midnight; 20:30 and 21:30 UTC: before and after Riyadh's.

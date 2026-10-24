@@ -308,6 +308,56 @@ describe("RolesPage", () => {
     ]);
   });
 
+  it("RolesPage_ViewerWithoutMembersRead_OffersNoMembersLink", async () => {
+    const viewer = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c5",
+      "Role keeper",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantRolesRead,
+        Permission.TenantRolesUpdate,
+        Permission.TenantRolesDelete,
+      ],
+    );
+    const profileOnly = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c6",
+      "Profile only",
+      [Permission.TenantProfileRead],
+    );
+    server.use(
+      ...viewerAnswers(viewer, viewer.permissions, mehmet, [
+        viewer,
+        usedBy(profileOnly, 4, 1),
+      ]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Profile only")).toEqual([
+      ["Edit role", false],
+      [
+        "Delete roleGive its 4 members and 1 pending invitation another role first.",
+        true,
+      ],
+    ]);
+  });
+
+  it("RolesPage_ViewerWithoutInvitationsRead_OffersNoInvitationsLink", async () => {
+    server.use(
+      ...viewerAnswers(roleEditor, roleEditor.permissions, mehmet, [
+        roleEditor,
+        usedBy(reviewer, 0, 2),
+      ]),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Reviewer")).toEqual([
+      ["Edit role", false],
+      ["Delete roleGive its 2 pending invitations another role first.", true],
+    ]);
+  });
+
   it("RolesPage_UnderTheLimit_CountsTheCustomRoles", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Owner, undefined, [billingLead, reviewer]),
