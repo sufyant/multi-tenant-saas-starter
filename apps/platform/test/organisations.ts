@@ -208,6 +208,7 @@ export const problem = (
   status: number,
   code: ErrorCode,
   errors?: Record<string, FieldErrorCode[]>,
+  tenantIds?: string[],
 ) =>
   HttpResponse.json(
     {
@@ -216,6 +217,7 @@ export const problem = (
       code,
       traceId: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
       ...(errors ? { errors } : {}),
+      ...(tenantIds ? { tenantIds } : {}),
     },
     { status },
   );

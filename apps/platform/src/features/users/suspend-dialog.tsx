@@ -1,0 +1,113 @@
+"use client";
+
+import {
+  ErrorCode,
+  getGetUserQueryOptions,
+  suspendUser,
+} from "@repo/api-client";
+import { Banner } from "@repo/ui/components/banner";
+import { Dialog } from "@repo/ui/components/dialog";
+import { showToast } from "@repo/ui/components/toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { problemOf } from "@/shared/problem";
+import { useFailureText } from "@/shared/use-failure-text";
+import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
+
+/** A list names at most three, then "and n more" (the Messages board, F15). */
+const named = 3;
+
+/**
+ * Suspend a user (the SuspendUser board). Where the user is the last Owner of an organisation (`memberships[].lastOwner`), it
+ * warns by the organisation's name; the warning never blocks. A refusal shows its text in the dialog (F47).
+ */
+export function SuspendDialog({
+  user,
+  onClose,
+}: {
+  user: User;
+  onClose: () => void;
+}) {
+  const t = useTranslations("users");
+  const locale = useTranslations("locale")("format");
+  const common = useTranslations("common");
+  const failureText = useFailureText();
+  const queryClient = useQueryClient();
+  const name = displayNameOf(user, t("deletedUser"));
+  // The list's row has no memberships. The user's page has read them already, so the dialog takes them from the cache there.
+  const detail = useQuery(
+    getGetUserQueryOptions(user.id, { query: { refetchOnMount: false } }),
+  );
+  const lastOwnerOf = (detail.data?.memberships ?? [])
+    .filter((membership) => membership.lastOwner)
+    .map((membership) => membership.tenantName);
+  const more = lastOwnerOf.length - named;
+  const organisations = new Intl.ListFormat(locale, {
+    type: "conjunction",
+  }).format(
+    more > 0
+      ? [
+          ...lastOwnerOf.slice(0, named),
+          t("moreOrganisations", { count: more }),
+        ]
+      : lastOwnerOf,
+  );
+
+  const suspend = useMutation({
+    mutationFn: () => suspendUser(user.id),
+    onSuccess: () => refreshUser(queryClient, user.id),
+    onError: (error) => afterRefusal(queryClient, user.id, error),
+  });
+
+  const failure = (() => {
+    if (!suspend.error) return null;
+    const code = problemOf(suspend.error)?.code;
+    if (code === ErrorCode.UserIsSystemAdmin)
+      return {
+        title: t("isSystemAdmin", { name }),
+        text: t("isSystemAdminText"),
+      };
+    if (code === ErrorCode.UserNotFound)
+      return { title: t("notFound"), text: null };
+    return { title: t("notDone", { name }), text: failureText(suspend.error) };
+  })();
+
+  return (
+    <Dialog
+      open
+      tone="destructive"
+      onOpenChange={(open) => !open && onClose()}
+      title={t("suspendTitle", { name })}
+      description={t("suspendText")}
+      actionLabel={t("suspendAction")}
+      cancelLabel={common("cancel")}
+      pending={suspend.isPending}
+      onConfirm={() =>
+        suspend.isPending ||
+        suspend.mutate(undefined, {
+          onSuccess: () => {
+            onClose();
+            showToast({
+              title: t("suspendedDone", { name }),
+              description: t("suspendedToast"),
+            });
+          },
+        })
+      }
+    >
+      {lastOwnerOf.length > 0 && (
+        <Banner
+          tone="warning"
+          title={t("lastOwnerWarning", { name, organisations })}
+        >
+          {t("lastOwnerWarningText")}
+        </Banner>
+      )}
+      {failure && (
+        <Banner tone="destructive" title={failure.title}>
+          {failure.text}
+        </Banner>
+      )}
+    </Dialog>
+  );
+}

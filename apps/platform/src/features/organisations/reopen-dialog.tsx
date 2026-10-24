@@ -13,13 +13,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { problemOf } from "@/shared/problem";
+import { useDates } from "@/shared/use-dates";
 import { useFailureText } from "@/shared/use-failure-text";
 import {
   afterRefusal,
   type Organisation,
   refreshOrganisation,
 } from "./organisation";
-import { useDates } from "./use-dates";
 
 /**
  * Reopen a closed organisation (the ReopenOrg board). `tenant.not_closed` covers an organisation someone reopened already and one

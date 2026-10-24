@@ -17,20 +17,26 @@ import { Status } from "@repo/ui/components/status";
 import { Tabs } from "@repo/ui/components/tabs";
 import { Time } from "@repo/ui/components/time";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { DetailList } from "@/shared/detail-list";
+import { Initial } from "@/shared/initial";
 import { NotFoundPage } from "@/shared/not-found-page";
 import { problemOf } from "@/shared/problem";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { useDates } from "@/shared/use-dates";
 import {
   actionsOf,
   statuses,
   waitingInvitation,
   waitsForOwner,
 } from "./organisation";
-import { Initial } from "./organisations-table";
-import { useDates } from "./use-dates";
 import { useOrganisationActions } from "./use-organisation-actions";
+
+/** The Users list, searched by the invited email: an Owner who joined as a member is made an Owner from their user page. */
+const usersFoundBy = (email: string | undefined) =>
+  email ? `/users?${new URLSearchParams({ q: email })}` : "/users";
 
 const nameOf = (owner: TenantOwnerResponse) =>
   [owner.firstName, owner.lastName].filter(Boolean).join(" ") || null;
@@ -259,35 +265,19 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
       )}
       {waitsForOwner(organisation) && (
         <p className="text-small text-muted-foreground">
-          {t("organisations.ownerlessHint")}
+          {t.rich("organisations.ownerlessHint", {
+            link: (chunks) => (
+              <Link
+                href={usersFoundBy(invitation?.email)}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       )}
       {actions.dialog}
     </section>
-  );
-}
-
-/** A read-only card of terms and their values (the OrgDetail board): one row for each term. */
-function DetailList({ rows }: { rows: { term: string; value: ReactNode }[] }) {
-  return (
-    <dl className="grid max-w-[640px] grid-cols-[minmax(0,9rem)_minmax(0,1fr)] rounded-lg border border-border bg-card px-5 py-1 text-body">
-      {rows.map(({ term, value }, index) => (
-        <div
-          key={term}
-          className={
-            index > 0
-              ? "col-span-2 grid grid-cols-subgrid border-t border-border"
-              : "col-span-2 grid grid-cols-subgrid"
-          }
-        >
-          <dt className="flex items-center py-3.5 text-muted-foreground">
-            {term}
-          </dt>
-          <dd className="flex min-w-0 flex-wrap items-center gap-2 py-3.5">
-            {value}
-          </dd>
-        </div>
-      ))}
-    </dl>
   );
 }

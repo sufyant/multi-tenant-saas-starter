@@ -74,10 +74,45 @@ describe("OrganisationPage", () => {
     expect(screen.getByRole("button", { name: "Invite Owner" })).toBeVisible();
     expect(
       screen.getByText(
-        "If the Owner joined as a member, open their user page and make them an Owner.",
+        (_, element) =>
+          element?.tagName === "P" &&
+          element.textContent ===
+            "If the Owner joined as a member, open their user page and make them an Owner.",
       ),
     ).toBeVisible();
-    expect(screen.queryByRole("link", { name: /user page/ })).toBeNull();
+  });
+
+  it("OrganisationPage_WaitingForAnOwner_LinksTheHintToTheUsersFoundByTheInvitedEmail", async () => {
+    server.use(meAnswer(), detailAnswer(detailOf(liffey)));
+
+    renderWithProviders(<OrganisationPage tenantId={liffey.id} />);
+
+    expect(
+      await screen.findByRole("link", { name: "open their user page" }),
+    ).toHaveAttribute("href", "/users?q=niamh%40liffeydesign.example");
+  });
+
+  it("OrganisationPage_WaitingWithoutAnInvitation_LinksTheHintToTheUsersList", async () => {
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf({ ...liffey, ownerInvitation: null })),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={liffey.id} />);
+
+    expect(
+      await screen.findByRole("link", { name: "open their user page" }),
+    ).toHaveAttribute("href", "/users");
+  });
+
+  it("OrganisationPage_WaitingAfterAnExpiredInvitation_LinksTheHintToTheInvitedEmail", async () => {
+    server.use(meAnswer(), detailAnswer(detailOf(burren)));
+
+    renderWithProviders(<OrganisationPage tenantId={burren.id} />);
+
+    expect(
+      await screen.findByRole("link", { name: "open their user page" }),
+    ).toHaveAttribute("href", "/users?q=orla%40burren.example");
   });
 
   it("OrganisationPage_WaitingAfterAnExpiredInvitation_SaysItExpired", async () => {
