@@ -190,4 +190,27 @@ describe("RemoveSystemAdminDialog", () => {
     expect(log).toEqual(["revoke", "token", "revoke"]);
     expect(calls.count).toBe(2);
   });
+
+  // In Arabic a Latin name reorders the punctuation around it unless it is isolated (W3C, "Inline markup and bidirectional text").
+  it("Remove_Arabic_IsolatesTheAdminsNameInTheTitle", async () => {
+    server.use(meAs(ciara), usersAnswer(usersPageOf([tomas])));
+    renderWithProviders(<SystemAdminsPage />, "ar");
+    const table = within(
+      await screen.findByRole("table", { name: "مسؤولو النظام" }),
+    );
+
+    await userEvent.click(
+      await table.findByRole("button", { name: "إجراءات Tomás Ryan" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "إزالة مسؤول النظام" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "إزالة Tomás Ryan من مسؤولي النظام؟",
+    });
+
+    expect(
+      within(dialog).getByText("Tomás Ryan", { selector: "bdi" }),
+    ).toBeVisible();
+  });
 });
