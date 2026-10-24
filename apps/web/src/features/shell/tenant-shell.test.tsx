@@ -1,8 +1,4 @@
-import {
-  ErrorCode,
-  type MyTenantResponse,
-  Permission,
-} from "@repo/api-client";
+import { ErrorCode, type MyTenantResponse, Permission } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,

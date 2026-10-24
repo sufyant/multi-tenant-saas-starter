@@ -15,12 +15,13 @@ import {
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { createContext, type ReactNode, use, useEffect } from "react";
+import { createContext, type ReactNode, use, useEffect, useState } from "react";
 import {
   BlockedOrganisation,
   type BlockedStatus,
 } from "./blocked-organisation";
 import { NoAccess } from "./no-access";
+import { accountBlockOf } from "./problem";
 import { ProblemScreen } from "./problem-screen";
 
 export type TenantContext = {
@@ -63,7 +64,8 @@ function holds(value: unknown, id: string): boolean {
 /**
  * Turns the route's slug into the tenant (F30), through the cached ListMyTenants: the API path keeps the id. A slug that is not
  * in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell. When a call
- * of this organisation answers that it stopped, the list is read again, so the page follows (F47).
+ * of this organisation answers that it stopped, the list is read again, so the page follows (F47). When any call answers that the
+ * user is suspended or deleted (A9), the account's page shows in place of the shell at once.
  */
 export function TenantProvider({
   slug,
@@ -89,12 +91,14 @@ export function TenantProvider({
     }),
   );
 
+  const [accountError, setAccountError] = useState<Error | null>(null);
   const tenantId = tenant?.id;
   useEffect(() => {
-    if (!tenantId) return;
-    // Only a call of this organisation counts: its query key or its command's variables hold the tenant's id.
-    const reread = (error: unknown, call: unknown) => {
-      if (blockedBy(error) && holds(call, tenantId))
+    // Any call counts for the user's account. Only a call of this organisation counts for the organisation: its query key or its
+    // command's variables hold the tenant's id.
+    const reread = (error: Error, call: unknown) => {
+      if (accountBlockOf(error)) setAccountError(error);
+      if (tenantId && blockedBy(error) && holds(call, tenantId))
         void queryClient.invalidateQueries({
           queryKey: getListMyTenantsQueryKey(),
         });
@@ -113,6 +117,7 @@ export function TenantProvider({
     };
   }, [queryClient, tenantId]);
 
+  if (accountError) return <ProblemScreen error={accountError} />;
   const error = matching.error ?? all.error;
   if (error) return <ProblemScreen error={error} />;
   if (matching.data && !tenant) return <NoAccess />;

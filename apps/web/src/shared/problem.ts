@@ -22,3 +22,11 @@ export function accountBlockOf(error: unknown): AccountBlock | null {
   if (kind === "account-deleted") return "deleted";
   return null;
 }
+
+/** The queries' retry rule: TanStack Query's three retries, but none for an account the API refuses, as its answer is final. */
+export function retryUnlessAccountBlocked(
+  failureCount: number,
+  error: unknown,
+): boolean {
+  return failureCount < 3 && !accountBlockOf(error);
+}

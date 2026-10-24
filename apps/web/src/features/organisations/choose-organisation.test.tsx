@@ -1,4 +1,4 @@
-import type { MyTenantResponse } from "@repo/api-client";
+import { ErrorCode, type MyTenantResponse } from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
@@ -170,4 +170,29 @@ describe("ChooseOrganisation", () => {
       screen.getByRole("button", { name: "Sign out" }),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    [ErrorCode.UserSuspended, "Your account is suspended"],
+    [ErrorCode.UserDeleted, "This account was deleted"],
+  ])(
+    "ChooseOrganisation_GetMeSays_%s_ShowsTheAccountPage",
+    async (code, title) => {
+      server.use(
+        http.get("*/v1/me", () =>
+          HttpResponse.json(
+            { status: 403, title: "Refused", code, traceId: "00-trace-01" },
+            { status: 403 },
+          ),
+        ),
+        page([tenant("Northwind Traders", "northwind")]),
+      );
+
+      renderWithProviders(<ChooseOrganisation />);
+
+      expect(
+        await screen.findByRole("heading", { name: title }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("ali.kaya@gmail.com")).toBeInTheDocument();
+    },
+  );
 });

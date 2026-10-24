@@ -304,7 +304,10 @@ describe("AcceptInvitationPage", () => {
 
   it("AcceptInvitationPage_Pending_ShowsTheExpiryRelativeToExpiresAt", async () => {
     setUp();
-    vi.useFakeTimers({ now: new Date("2026-10-16T13:32:00Z"), toFake: ["Date"] });
+    vi.useFakeTimers({
+      now: new Date("2026-10-16T13:32:00Z"),
+      toFake: ["Date"],
+    });
     server.use(
       knownUser,
       getGetInvitationPreviewMockHandler({
@@ -554,7 +557,9 @@ describe("AcceptInvitationPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Your account is suspended" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("You cannot sign in right now. Contact support.")).toBeInTheDocument();
+    expect(
+      screen.getByText("You cannot sign in right now. Contact support."),
+    ).toBeInTheDocument();
   });
 
   it("AcceptInvitationPage_ExpiredTicket_SaysToAskForANewInvitation", async () => {
