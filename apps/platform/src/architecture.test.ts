@@ -63,7 +63,7 @@ describe("architecture of apps/platform", () => {
       roleNameDecisions(src, {
         ignore: [
           "features/users/use-role-name.ts",
-          "features/users/user-page.tsx",
+          "features/users/owner-membership.ts",
         ],
       }),
     ).toEqual([]);
