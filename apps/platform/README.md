@@ -1,6 +1,6 @@
 # Platform
 
-The provider's app of the multi-tenant SaaS starter template: the system admins sign in. On screen it is "Platform". Today it holds the Overview and Settings > Preferences; the sections Organisations, Users and Activity come in later steps. The browser calls the API only through the app's own BFF route.
+The provider's app of the multi-tenant SaaS starter template: the system admins sign in. On screen it is "Platform". Today it holds Organisations, its start page, and Settings > Preferences; the sections Users and Activity come in later steps. The browser calls the API only through the app's own BFF route.
 
 - [AGENTS.md](AGENTS.md): what differs in this app. [docs/frontend/AGENTS.md](../../docs/frontend/AGENTS.md) and [docs/frontend/ARCHITECTURE.md](../../docs/frontend/ARCHITECTURE.md) hold the rules of both apps.
 - [.env.example](.env.example): every environment variable. `src/env.ts` checks them at start.
@@ -24,6 +24,7 @@ pnpm --filter @repo/platform build
 | `@tanstack/react-query` | Server data in the browser (F8) | MIT |
 | `next-intl` | Messages and the locale (F13) | MIT |
 | `nuqs` | Filters, tabs, paging and sort in the URL (F9) | MIT |
+| `react-hook-form`, `@hookform/resolvers` | The create and the lifecycle dialogs of Organisations, with the generated Zod schemas (F11) | MIT |
 | `qrcode.react` | The QR code of the authenticator app's enrolment, drawn in the browser (F42) | ISC |
 | `next-themes` | Light, dark and system (F24) | MIT |
 | `zod` | `src/env.ts` and the Zod error map (F7, F12) | MIT |
