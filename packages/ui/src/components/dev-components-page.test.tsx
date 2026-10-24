@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { DevComponentGroup, devComponentGroups } from "./dev-components-page";
 
-// The 20 components of the design system's components/index.d.ts, and the sign-in parts of step 21b.
+// The 20 components of the design system's components/index.d.ts, the sign-in parts of step 21b and the preferences form of step 22e.
 const names = [
   "AppShell",
   "Banner",
@@ -16,6 +16,7 @@ const names = [
   "Icon",
   "Input",
   "OrgMenu",
+  "PreferencesForm",
   "ProviderButtons",
   "RowMenu",
   "SignIn",

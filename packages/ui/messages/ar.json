@@ -191,5 +191,26 @@
       "signInAgain": "حفاظًا على أمانك، سجّل الخروج ثم سجّل الدخول مرة أخرى، وبعدها حاول من جديد.",
       "generic": "لم ينجح تسجيل الدخول. حاول مرة أخرى."
     }
+  },
+  "preferencesForm": {
+    "yourName": "اسمك",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "firstNameRequired": "أدخل اسمك الأول.",
+    "lastNameRequired": "أدخل اسم العائلة.",
+    "nameTooLong": "استخدم من 1 إلى 100 حرف.",
+    "languageAndTimeZone": "اللغة والمنطقة الزمنية",
+    "language": "اللغة",
+    "languageHint": "تستخدم التواريخ والأرقام تنسيق هذه اللغة.",
+    "languageSearch": "ابحث عن لغة",
+    "languageEmpty": "لم يتم العثور على لغة",
+    "timeZone": "المنطقة الزمنية",
+    "timeZoneHint": "يُعرض كل وقت على الشاشة بهذه المنطقة.",
+    "timeZoneSearch": "ابحث عن مدينة أو منطقة",
+    "timeZoneEmpty": "لم يتم العثور على منطقة زمنية",
+    "thisDevice": "{zone} (هذا الجهاز)",
+    "save": "حفظ التفضيلات",
+    "saved": "تم حفظ التفضيلات",
+    "notSaved": "لم يتم حفظ التفضيلات"
   }
 }

@@ -3,6 +3,7 @@ import {
   ErrorCode,
   Language,
   type MeResponse,
+  type RenameMeRequest,
 } from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
 import { screen } from "@testing-library/react";
@@ -46,46 +47,60 @@ const me = getGetMeResponseMock({
   timeZone: "Europe/Istanbul",
 });
 
-/** GetMe, which counts its reads, and ChangePreferences, which records each body and answers it back. */
-function preferencesAnswers(
-  person: MeResponse,
-  bodies: ChangePreferencesRequest[] = [],
-  reads: { count: number } = { count: 0 },
-) {
+/** What the page sent: the bodies of RenameMe and of ChangePreferences, and how often it read GetMe. */
+type Sent = {
+  names: RenameMeRequest[];
+  preferences: ChangePreferencesRequest[];
+  reads: number;
+};
+const nothingSent = (): Sent => ({ names: [], preferences: [], reads: 0 });
+
+/** GetMe, which counts its reads, and RenameMe and ChangePreferences, which record each body and answer it back. */
+function preferencesAnswers(person: MeResponse, sent: Sent = nothingSent()) {
   return [
     http.get("*/v1/me", () => {
-      reads.count += 1;
+      sent.reads += 1;
       return HttpResponse.json(person);
+    }),
+    http.patch("*/v1/me", async ({ request }) => {
+      const body = (await request.json()) as RenameMeRequest;
+      sent.names.push(body);
+      return HttpResponse.json({ ...person, ...body });
     }),
     http.patch("*/v1/me/preferences", async ({ request }) => {
       const body = (await request.json()) as ChangePreferencesRequest;
-      bodies.push(body);
+      sent.preferences.push(body);
       return HttpResponse.json(body);
     }),
     ...tenantAnswers(BuiltInRole.Member),
   ];
 }
 
-/** ChangePreferences refuses the time zone: 400 request.validation_failed with time_zone_invalid. */
-const refusesTheTimeZone = () =>
-  http.patch("*/v1/me/preferences", () =>
-    HttpResponse.json(
-      {
-        status: 400,
-        title: "Refused",
-        code: ErrorCode.RequestValidationFailed,
-        traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
-        errors: { timeZone: ["time_zone_invalid"] },
-      },
-      { status: 400 },
-    ),
+/** 400 request.validation_failed with the field codes, as the API answers a refused body. */
+const validationFailed = (errors: Record<string, string[]>) =>
+  HttpResponse.json(
+    {
+      status: 400,
+      title: "Refused",
+      code: ErrorCode.RequestValidationFailed,
+      traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      errors,
+    },
+    { status: 400 },
   );
+
+const renameRefuses = (errors: Record<string, string[]>) =>
+  http.patch("*/v1/me", () => validationFailed(errors));
+
+const changeRefuses = (errors: Record<string, string[]>) =>
+  http.patch("*/v1/me/preferences", () => validationFailed(errors));
 
 /** ChangePreferences refuses with the status and the code. */
 const refuses = (status: number, code: ErrorCode) =>
   http.patch("*/v1/me/preferences", () => problem(status, code));
 
 const field = (name: string) => screen.findByRole("combobox", { name });
+const textbox = (name: string) => screen.findByRole("textbox", { name });
 
 async function pick(fieldName: string, search: string, option: RegExp) {
   await userEvent.click(await field(fieldName));
@@ -101,21 +116,34 @@ async function pick(fieldName: string, search: string, option: RegExp) {
   await userEvent.click(await screen.findByRole("option", { name: option }));
 }
 
+async function retype(name: string, text: string) {
+  const box = await textbox(name);
+  await userEvent.clear(box);
+  await userEvent.type(box, text);
+}
+
 const save = async () =>
   userEvent.click(
     await screen.findByRole("button", { name: "Save preferences" }),
   );
 
 describe("PreferencesPage", () => {
-  it("PreferencesPage_GetMe_ShowsTheLanguageAndTheTimeZone", async () => {
+  it("PreferencesPage_GetMe_ShowsTheNameTheLanguageAndTheTimeZone", async () => {
     server.use(...preferencesAnswers(me));
 
     renderInTenant(<PreferencesPage />, { url });
 
+    expect(await textbox("First name")).toHaveValue("Ayşe");
+    expect(await textbox("Last name")).toHaveValue("Yılmaz");
     expect(await field("Language")).toHaveTextContent("English");
     expect(await field("Time zone")).toHaveTextContent(/^Istanbul/);
     expect(
       screen.getByText("These follow you to every organisation and device."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your name shows to the members of every organisation you belong to.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -160,26 +188,72 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("PreferencesPage_Save_SendsBothValuesReadsGetMeAgainAndSaysSaved", async () => {
-    const bodies: ChangePreferencesRequest[] = [];
-    const reads = { count: 0 };
-    server.use(...preferencesAnswers(me, bodies, reads));
+  it("PreferencesPage_NameChanged_SendsRenameMeOnlyReadsGetMeAgainAndSaysSaved", async () => {
+    const sent = nothingSent();
+    server.use(...preferencesAnswers(me, sent));
+    renderInTenant(<PreferencesPage />, { url });
+
+    await retype("First name", "  Ayla ");
+    await save();
+
+    expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
+    expect(sent.names).toEqual([{ firstName: "Ayla", lastName: "Yılmaz" }]);
+    expect(sent.preferences).toEqual([]);
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+  });
+
+  it("PreferencesPage_TimeZoneChanged_SendsChangePreferencesOnlyAndSaysSaved", async () => {
+    const sent = nothingSent();
+    server.use(...preferencesAnswers(me, sent));
     renderInTenant(<PreferencesPage />, { url });
 
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
     expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
-    expect(bodies).toEqual([
+    expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Asia/Riyadh" },
     ]);
-    await vi.waitFor(() => expect(reads.count).toBe(2));
+    expect(sent.names).toEqual([]);
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
     expect(setLocale).not.toHaveBeenCalled();
   });
 
+  it("PreferencesPage_NameAndTimeZoneChanged_SendsBothAndSaysSavedOnce", async () => {
+    const sent = nothingSent();
+    server.use(...preferencesAnswers(me, sent));
+    renderInTenant(<PreferencesPage />, { url });
+
+    await retype("Last name", "Kaya");
+    await pick("Time zone", "Riyadh", /^Riyadh/);
+    await save();
+
+    expect(await screen.findAllByText("Preferences saved")).toHaveLength(1);
+    expect(sent.names).toEqual([{ firstName: "Ayşe", lastName: "Kaya" }]);
+    expect(sent.preferences).toEqual([
+      { language: Language.En, timeZone: "Asia/Riyadh" },
+    ]);
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+  });
+
+  it("PreferencesPage_NothingChanged_SendsNothing", async () => {
+    const sent = nothingSent();
+    server.use(...preferencesAnswers({ ...me, timeZone: null }, sent));
+    renderInTenant(<PreferencesPage />, { url });
+
+    expect(await field("Time zone")).toHaveTextContent(/\(this device\)$/);
+    await retype("First name", " Ayşe ");
+    await save();
+
+    expect(await textbox("First name")).not.toHaveAttribute("aria-invalid");
+    expect(sent.names).toEqual([]);
+    expect(sent.preferences).toEqual([]);
+    expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
+  });
+
   it("PreferencesPage_LanguageChanged_SetsTheLocaleCookieAndRefreshes", async () => {
-    const bodies: ChangePreferencesRequest[] = [];
-    server.use(...preferencesAnswers(me, bodies));
+    const sent = nothingSent();
+    server.use(...preferencesAnswers(me, sent));
     renderInTenant(<PreferencesPage />, { url });
 
     await pick("Language", "Türk", /Türkçe/);
@@ -187,28 +261,101 @@ describe("PreferencesPage", () => {
 
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(setLocale).toHaveBeenCalledWith(Language.Tr);
-    expect(bodies).toEqual([
+    expect(sent.preferences).toEqual([
       { language: Language.Tr, timeZone: "Europe/Istanbul" },
     ]);
   });
 
-  it("PreferencesPage_NoTimeZone_ShowsThisDevicesZoneAndSavesNull", async () => {
-    const bodies: ChangePreferencesRequest[] = [];
-    server.use(...preferencesAnswers({ ...me, timeZone: null }, bodies));
+  it.each([
+    ["firstName", "First name", "Enter your first name."],
+    ["lastName", "Last name", "Enter your last name."],
+  ])(
+    "PreferencesPage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
+    async (_json, name, message) => {
+      const sent = nothingSent();
+      server.use(...preferencesAnswers(me, sent));
+      renderInTenant(<PreferencesPage />, { url });
+
+      await retype(name, "   ");
+      await save();
+
+      await vi.waitFor(async () =>
+        expect(await textbox(name)).toHaveAccessibleDescription(message),
+      );
+      expect(sent.names).toEqual([]);
+    },
+  );
+
+  it.each([
+    ["firstName", "required", "First name", "Enter your first name."],
+    ["lastName", "required", "Last name", "Enter your last name."],
+    ["firstName", "too_long", "First name", "Use 1 to 100 characters."],
+    ["lastName", "too_long", "Last name", "Use 1 to 100 characters."],
+  ])(
+    "PreferencesPage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
+    async (json, code, name, message) => {
+      server.use(renameRefuses({ [json]: [code] }), ...preferencesAnswers(me));
+      renderInTenant(<PreferencesPage />, { url });
+
+      await retype(name, "Kaya");
+      await save();
+
+      const box = await textbox(name);
+      await vi.waitFor(() => expect(box).toHaveAccessibleDescription(message));
+      expect(box).toHaveAttribute("aria-invalid", "true");
+    },
+  );
+
+  it("PreferencesPage_NameTooLong_SaysUse1To100CharactersAndSendsNothing", async () => {
+    const sent = nothingSent();
+    server.use(...preferencesAnswers(me, sent));
     renderInTenant(<PreferencesPage />, { url });
 
-    expect(await field("Time zone")).toHaveTextContent(/\(this device\)$/);
+    const box = await textbox("Last name");
+    await userEvent.clear(box);
+    await userEvent.click(box);
+    await userEvent.paste("a".repeat(101));
     await save();
 
     await vi.waitFor(() =>
-      expect(bodies).toEqual([{ language: Language.En, timeZone: null }]),
+      expect(box).toHaveAccessibleDescription("Use 1 to 100 characters."),
     );
+    expect(sent.names).toEqual([]);
   });
 
-  it("PreferencesPage_TimeZoneInvalid_ShowsTheErrorUnderTheField", async () => {
-    server.use(refusesTheTimeZone(), ...preferencesAnswers(me));
+  it("PreferencesPage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
+    const sent = nothingSent();
+    server.use(
+      renameRefuses({ lastName: ["too_long"] }),
+      ...preferencesAnswers(me, sent),
+    );
     renderInTenant(<PreferencesPage />, { url });
 
+    await retype("Last name", "Kaya");
+    await pick("Time zone", "Riyadh", /^Riyadh/);
+    await save();
+
+    const box = await textbox("Last name");
+    await vi.waitFor(() =>
+      expect(box).toHaveAccessibleDescription("Use 1 to 100 characters."),
+    );
+    expect(sent.preferences).toEqual([
+      { language: Language.En, timeZone: "Asia/Riyadh" },
+    ]);
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+    expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
+  });
+
+  it("PreferencesPage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
+    const sent = nothingSent();
+    server.use(
+      changeRefuses({ timeZone: ["time_zone_invalid"] }),
+      ...preferencesAnswers(me, sent),
+    );
+    renderInTenant(<PreferencesPage />, { url });
+
+    await retype("First name", "Ayla");
+    await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
     const timeZone = await field("Time zone");
@@ -218,6 +365,9 @@ describe("PreferencesPage", () => {
       ),
     );
     expect(timeZone).toHaveAttribute("aria-invalid", "true");
+    expect(sent.names).toEqual([{ firstName: "Ayla", lastName: "Yılmaz" }]);
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+    expect(await textbox("First name")).not.toHaveAttribute("aria-invalid");
   });
 
   it("PreferencesPage_InArabic_ShowsArabicTexts", async () => {
@@ -229,25 +379,43 @@ describe("PreferencesPage", () => {
       await screen.findByRole("heading", { name: "التفضيلات" }),
     ).toBeInTheDocument();
     expect(await field("اللغة")).toHaveTextContent("العربية");
+    expect(await textbox("الاسم الأول")).toHaveValue("Ayşe");
   });
 
   it("PreferencesPage_UserSuspended_ReadsGetMeAgain", async () => {
-    const reads = { count: 0 };
+    const sent = nothingSent();
     server.use(
       refuses(403, ErrorCode.UserSuspended),
-      ...preferencesAnswers(me, [], reads),
+      ...preferencesAnswers(me, sent),
     );
     renderInTenant(<PreferencesPage />, { url });
 
+    await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
-    await vi.waitFor(() => expect(reads.count).toBe(2));
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+  });
+
+  it("PreferencesPage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
+    const sent = nothingSent();
+    server.use(
+      refuses(403, ErrorCode.UserDeleted),
+      ...preferencesAnswers(me, sent),
+    );
+    renderInTenant(<PreferencesPage />, { url });
+
+    await pick("Time zone", "Riyadh", /^Riyadh/);
+    await save();
+
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+    expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
   });
 
   it("PreferencesPage_ServerError_SaysNotSavedWithTheReference", async () => {
     server.use(refuses(500, ErrorCode.ServerError), ...preferencesAnswers(me));
     renderInTenant(<PreferencesPage />, { url });
 
+    await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
     expect(

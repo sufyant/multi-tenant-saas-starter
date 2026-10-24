@@ -32,13 +32,9 @@
   },
   "preferences": {
     "title": "Tercihler",
-    "readOnly": "Dilinizi ve saat diliminizi sonraki bir sürümde değiştirebilirsiniz.",
-    "name": "Ad",
+    "text": "Bunlar sizi her cihazda izler.",
+    "nameNote": "Adınız platformun Etkinliğinde görünür.",
     "email": "E-posta",
-    "language": "Dil",
-    "timeZone": "Saat dilimi",
-    "browserTimeZone": "Ayarlanmadı: bu cihazın saat dilimi",
-    "now": "Şu an",
     "theme": "Tema",
     "themeHint": "Bu cihazda saklanır."
   },

@@ -32,13 +32,9 @@
   },
   "preferences": {
     "title": "Preferences",
-    "readOnly": "You can change your language and time zone in a later version.",
-    "name": "Name",
+    "text": "These follow you to every device.",
+    "nameNote": "Your name shows in the platform’s Activity.",
     "email": "Email",
-    "language": "Language",
-    "timeZone": "Time zone",
-    "browserTimeZone": "Not set: this device's time zone",
-    "now": "Now",
     "theme": "Theme",
     "themeHint": "Saved on this device."
   },

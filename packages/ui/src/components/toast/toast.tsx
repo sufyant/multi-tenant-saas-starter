@@ -39,6 +39,11 @@ export function showToast({
   });
 }
 
+/** Closes every toast. A test calls it after each test: sonner shows the toasts still open to the next Toaster that mounts. */
+export function dismissToasts(): void {
+  toast.dismiss();
+}
+
 export type ToasterProps = {
   /** The document's direction; toasts sit at the bottom end. */
   dir: "ltr" | "rtl";

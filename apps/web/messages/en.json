@@ -48,19 +48,8 @@
   },
   "preferences": {
     "title": "Preferences",
-    "language": "Language",
-    "timeZone": "Time zone",
     "text": "These follow you to every organisation and device.",
-    "languageHint": "Dates and numbers use this language’s format.",
-    "languageSearch": "Search languages",
-    "languageEmpty": "No language found",
-    "timeZoneHint": "Every time on screen is shown in this zone.",
-    "timeZoneSearch": "Search cities or zones",
-    "timeZoneEmpty": "No time zone found",
-    "thisDevice": "{zone} (this device)",
-    "save": "Save preferences",
-    "saved": "Preferences saved",
-    "notSaved": "Preferences not saved"
+    "nameNote": "Your name shows to the members of every organisation you belong to."
   },
   "signInPage": {
     "title": "Sign in to Starter"
