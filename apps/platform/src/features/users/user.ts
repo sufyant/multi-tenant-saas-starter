@@ -10,6 +10,7 @@ import {
 } from "@repo/api-client";
 import type { StatusTone } from "@repo/ui/components/status";
 import type { QueryClient } from "@tanstack/react-query";
+import { nameOf } from "@/shared/name-of";
 
 /** What the list and the user's page both know of a user: an item of ListUsers, or the answer of GetUser. */
 export type User = Pick<
@@ -33,14 +34,8 @@ export const statuses = {
   { label: string; tone: StatusTone }
 >;
 
-/**
- * A person's names as one, or null when they have none: a deleted user's names are erased (A8), and the screen shows "Deleted
- * user" in its own language (K3).
- */
-export const nameOf = (person: {
-  firstName: string | null;
-  lastName: string | null;
-}) => [person.firstName, person.lastName].filter(Boolean).join(" ") || null;
+/** Settings › System admins, where the system admins are managed (the UserDetail and DeleteUser boards). */
+export const systemAdminsPage = "/settings/system-admins";
 
 /** A deleted user takes no action and has no name (A8). */
 export const isDeleted = (user: Pick<User, "status">) =>

@@ -107,6 +107,7 @@ export function PlatformShell({
   const sections = {
     settings: "shell.settings",
     preferences: "shell.preferences",
+    "system-admins": "shell.systemAdmins",
   } as const;
   const inSettings = pathname.startsWith("/settings");
   const inUsers = pathname === "/users" || pathname.startsWith("/users/");

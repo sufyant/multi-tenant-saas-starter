@@ -1,12 +1,11 @@
 import { cn } from "@repo/ui/lib/utils";
-import type { User } from "./user";
 
 /** A person's round avatar with their initials (the boards); a deleted user has none. An organisation's is square. */
 export function Avatar({
   user,
   className,
 }: {
-  user: Pick<User, "firstName" | "lastName">;
+  user: { firstName: string | null; lastName: string | null };
   className?: string;
 }) {
   const initials = [user.firstName, user.lastName]

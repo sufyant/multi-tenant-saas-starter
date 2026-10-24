@@ -17,26 +17,39 @@ import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Avatar } from "./avatar";
+import { Avatar } from "@/shared/avatar";
 import type { useUserActions } from "./use-user-actions";
-import { actionsOf, displayNameOf, statuses } from "./user";
+import { actionsOf, displayNameOf, statuses, systemAdminsPage } from "./user";
 
 /** The column a person can sort by, and the API's sort field (K5). The email's sort works from the URL. */
 const sorts = {
   user: { asc: ListUsersSort.LastName, desc: ListUsersSort.LastNameDescending },
 };
 
-/** The System admin tag, and Root beside it (the Users board). They are information only: no button and no link. */
+/**
+ * The System admin tag, and Root beside it. In the list they are information only (the Users board); on a user's page each one
+ * links to System admins (the UserDetail board).
+ */
 export function AdminTags({
   user,
+  linked = false,
 }: {
   user: Pick<UserResponse, "isSystemAdmin" | "isRootSystemAdmin">;
+  linked?: boolean;
 }) {
   const t = useTranslations("users");
+  const tag = (label: string) =>
+    linked ? (
+      <Link href={systemAdminsPage} className="rounded-md hover:underline">
+        <Tag>{label}</Tag>
+      </Link>
+    ) : (
+      <Tag>{label}</Tag>
+    );
   return (
     <>
-      {user.isSystemAdmin && <Tag>{t("systemAdmin")}</Tag>}
-      {user.isRootSystemAdmin && <Tag>{t("root")}</Tag>}
+      {user.isSystemAdmin && tag(t("systemAdmin"))}
+      {user.isRootSystemAdmin && tag(t("root"))}
     </>
   );
 }

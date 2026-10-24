@@ -17,15 +17,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { nameOf } from "@/shared/name-of";
 import { problemOf } from "@/shared/problem";
 import { useFailureText } from "@/shared/use-failure-text";
-import {
-  afterRefusal,
-  displayNameOf,
-  nameOf,
-  refreshUser,
-  type User,
-} from "./user";
+import { afterRefusal, displayNameOf, refreshUser, type User } from "./user";
 
 // The generated schema of RenameUser (F11). The API trims both names and needs 1 to 100 characters each (A7); the generated schema
 // has the limits only, so the form adds the trim and the minimum.

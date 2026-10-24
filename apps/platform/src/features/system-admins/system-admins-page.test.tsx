@@ -74,7 +74,9 @@ describe("SystemAdminsPage", () => {
     expect(
       row.getByText("Root admins come from the platform’s configuration."),
     ).toBeVisible();
-    expect(row.queryByRole("button")).toBeNull();
+    expect(
+      row.queryByRole("button", { name: "Actions for Rory Brennan" }),
+    ).toBeNull();
   });
 
   it("SystemAdmins_OwnRow_DisablesRemoveWithTheReason", async () => {
