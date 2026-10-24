@@ -204,6 +204,32 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
     );
   })();
 
+  const created = {
+    term: t("organisations.createdTerm"),
+    value: (
+      <Time
+        at={organisation.createdAt}
+        show="date"
+        locale={locale}
+        timeZone={timeZone}
+      />
+    ),
+  };
+  // The tombstone keeps when it was created (K4): the OrgPurged board's details, with the row of its creation.
+  const tombstone: { term: string; value: ReactNode }[] = [created];
+  if (organisation.purgedAt)
+    tombstone.push({
+      term: t("organisations.purgedTerm"),
+      value: (
+        <Time
+          at={organisation.purgedAt}
+          show="date"
+          locale={locale}
+          timeZone={timeZone}
+        />
+      ),
+    });
+
   const rows: { term: string; value: ReactNode }[] = [
     {
       term: t("organisations.ownersTerm", {
@@ -212,6 +238,7 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
       value: owners,
     },
     { term: t("organisations.members"), value: organisation.memberCount },
+    created,
   ];
   if (organisation.closedAt)
     rows.push({
@@ -273,15 +300,9 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
       {view === "activity" ? (
         <OrganisationActivity tenantId={organisation.id} />
       ) : status === TenantResponseStatus.Purged ? (
-        <div className="flex max-w-[640px] flex-col gap-2 rounded-lg border border-border bg-card px-5 py-4 text-body">
-          {organisation.purgedAt && (
-            <p>
-              {t("organisations.purgedOn", {
-                date: date(organisation.purgedAt),
-              })}
-            </p>
-          )}
-          <p className="text-muted-foreground">
+        <div className="flex max-w-[640px] flex-col gap-3">
+          <DetailList rows={tombstone} />
+          <p className="text-body text-muted-foreground">
             {t("organisations.purgedText")}
           </p>
         </div>
