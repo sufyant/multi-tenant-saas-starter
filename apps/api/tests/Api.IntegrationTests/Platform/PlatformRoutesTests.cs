@@ -41,11 +41,24 @@ public sealed class PlatformRoutesTests(Database database) : IAsyncLifetime
     public async Task EnterSystemDoor_SecondFactorClaimedByTheTokenItself_IsForbidden()
     {
         var admin = await _testData.AddSystemAdminAsync();
-        var token = TestTokens.For(admin, secondFactor: false, extraClaims: new Dictionary<string, object> { ["second_factor_verified"] = "true" });
+        var token = TestTokens.For(admin, secondFactor: false, extraClaims: new Dictionary<string, object> { ["second_factor_age"] = "0" });
 
         var response = await _host.CreateClientWith(token).GetAsync("/v1/platform/ping", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    // The door asks for a second factor of any age. Only the grant and the revocation of a system admin ask for a fresh one (decision A
+    // of 2026-10-23).
+    [Fact]
+    public async Task EnterSystemDoor_ASecondFactorOlderThanTheReverificationWindow_IsLetIn()
+    {
+        var admin = await _testData.AddSystemAdminAsync();
+        var token = TestTokens.WithSecondFactorAge(admin, 600);
+
+        var response = await _host.CreateClientWith(token).GetAsync("/v1/platform/ping", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]

@@ -22,14 +22,18 @@ public static class SystemAdminEndpoints
     private const string NoLocation =
         "Answers 201 with the user and without Location: the API has no GET for one grant, so the request's target URI identifies it (RFC 9110, section 15.3.2).";
 
+    // Both change who holds every platform permission, so both ask for a second factor verified within the reverification window, not
+    // only one verified in the session (A6). The host checks it before the idempotency key is claimed, so a refusal is never replayed.
     public static void Map(RouteGroupBuilder platform)
     {
         platform.MapPost("/users/{userId:guid}/system-admin", GrantSystemAdmin)
-            .WithMetadata(new IdempotencyKeyRequired())
+            .WithMetadata(new IdempotencyKeyRequired(), new ReverificationRequired())
             .WithDescription(NoLocation)
             .RequireAuthorization(Permissions.PlatformSystemAdminsCreate)
             .Produces<UserResponse>(StatusCodes.Status201Created);
-        platform.MapDelete("/users/{userId:guid}/system-admin", RevokeSystemAdmin).RequireAuthorization(Permissions.PlatformSystemAdminsDelete);
+        platform.MapDelete("/users/{userId:guid}/system-admin", RevokeSystemAdmin)
+            .WithMetadata(new ReverificationRequired())
+            .RequireAuthorization(Permissions.PlatformSystemAdminsDelete);
     }
 
     // A grant creates the user's row on the system admin list, so it takes an idempotency key (I1): a retry with the same key replays the

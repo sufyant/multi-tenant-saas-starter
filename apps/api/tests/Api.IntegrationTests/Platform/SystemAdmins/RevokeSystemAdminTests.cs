@@ -130,10 +130,46 @@ public sealed class RevokeSystemAdminTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(response)).ShouldBe("user.not_found");
     }
 
+    // Step-up (A6, decision A of 2026-10-23): a revocation asks for a second factor verified less than the reverification window ago,
+    // as a grant does.
+    [Theory]
+    [InlineData(10)]
+    [InlineData(-1)]
+    public async Task RevokeSystemAdmin_ASecondFactorAsOldAsTheWindowOrNone_IsForbiddenAskingForReverificationAndChangesNothing(int minutes)
+    {
+        var systemAdmin = await _testData.AddSystemAdminAsync();
+        var client = ClientWithSecondFactorAge(await _testData.AddSystemAdminAsync(), minutes);
+
+        var response = await client.DeleteAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(systemAdmin)}/system-admin", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await CodeOfAsync(response)).ShouldBe("system_admin.reverification_required");
+        (await IsSystemAdminAsync(systemAdmin)).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task RevokeSystemAdmin_ASecondFactorJustInsideTheWindow_Revokes()
+    {
+        var systemAdmin = await _testData.AddSystemAdminAsync();
+        var client = ClientWithSecondFactorAge(await _testData.AddSystemAdminAsync(), 9);
+
+        var response = await client.DeleteAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(systemAdmin)}/system-admin", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await IsSystemAdminAsync(systemAdmin)).ShouldBeFalse();
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+    private HttpClient ClientWithSecondFactorAge(string userId, int minutes)
+    {
+        var client = _api.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", TestTokens.WithSecondFactorAge(userId, minutes));
+        return client;
+    }
 
     private async Task<bool> IsSystemAdminAsync(string externalId) =>
         await database.ScalarAsync<bool>(

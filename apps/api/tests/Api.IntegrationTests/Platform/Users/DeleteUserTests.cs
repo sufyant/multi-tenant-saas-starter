@@ -61,6 +61,22 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(second.Id);
     }
 
+    // Only the grant and the revocation of a system admin ask for a fresh second factor (decision A of 2026-10-23): a deletion takes a
+    // second factor of any age.
+    [Fact]
+    public async Task DeleteUser_ASecondFactorOlderThanTheReverificationWindow_Deletes()
+    {
+        var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
+        var client = _api.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new(
+            "Bearer",
+            TestTokens.WithSecondFactorAge(await _testData.AddSystemAdminAsync(), 60));
+
+        var deleted = await _api.WaitingForMessagesAsync(() => client.DeleteAsync($"/v1/platform/users/{id}", Cancellation));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
     // A8, GDPR Article 17: an invitation keeps its address as a historical fact, until its invited person is deleted. Each tenant the user
     // leaves erases the address from its invitations the user accepted and from its invitations to the user's address. A tenant that only
     // invited the address, and that the user never joined, keeps it: that is the tenant's data, which goes with the tenant's purge.

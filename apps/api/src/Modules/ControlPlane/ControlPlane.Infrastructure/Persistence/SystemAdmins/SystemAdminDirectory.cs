@@ -5,6 +5,7 @@ using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.SystemAdmins;
 using Microsoft.EntityFrameworkCore;
+using SharedKernel;
 using Wolverine;
 
 namespace ControlPlane.Infrastructure.Persistence.SystemAdmins;
@@ -44,6 +45,8 @@ internal sealed class SystemAdminDirectory(
         await bus.InvokeAsync(new GrantRootSystemAdminCommand(externalUserId, rootEmail.Value), cancellationToken);
         return SystemDoor.PermissionsFor(await IsSystemAdminAsync(externalUserId, cancellationToken), secondFactorVerified);
     }
+
+    public Result CheckReverification(TimeSpan? secondFactorAge) => SystemDoor.CheckReverification(secondFactorAge, settings.ReverificationWindow);
 
     private Task<bool> IsSystemAdminAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => controlPlane.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);

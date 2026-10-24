@@ -31,6 +31,35 @@ public sealed class SystemDoorTests
         permissions.ShouldBeNull();
     }
 
+    // A6a: a change of the system admin list needs a second factor verified less than the window ago, as Clerk counts it.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(9)]
+    public void CheckReverification_ASecondFactorYoungerThanTheWindow_Passes(int minutes)
+    {
+        var checkedAge = SystemDoor.CheckReverification(TimeSpan.FromMinutes(minutes), TimeSpan.FromMinutes(10));
+
+        checkedAge.IsSuccess.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(11)]
+    public void CheckReverification_ASecondFactorAsOldAsTheWindowOrOlder_AsksForReverification(int minutes)
+    {
+        var checkedAge = SystemDoor.CheckReverification(TimeSpan.FromMinutes(minutes), TimeSpan.FromMinutes(10));
+
+        checkedAge.Error.Code.ShouldBe(ControlPlaneErrorCodes.SystemAdminReverificationRequired);
+    }
+
+    [Fact]
+    public void CheckReverification_NoSecondFactor_AsksForReverification()
+    {
+        var checkedAge = SystemDoor.CheckReverification(null, TimeSpan.FromMinutes(10));
+
+        checkedAge.Error.Code.ShouldBe(ControlPlaneErrorCodes.SystemAdminReverificationRequired);
+    }
+
     // docs/flows/system-admins.md: a person with a second factor and a verified address in the list becomes a system admin.
     [Fact]
     public void BecomeRootSystemAdmin_AListedEmailIsVerifiedWithASecondFactor_AnswersThatEmail()

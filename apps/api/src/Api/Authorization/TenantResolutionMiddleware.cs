@@ -8,6 +8,7 @@ using ControlPlane.Contracts.Users;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
 using Serilog.Context;
+using SharedKernel;
 using Wolverine;
 
 namespace Api.Authorization;
@@ -16,7 +17,8 @@ namespace Api.Authorization;
 // ControlPlane first says whether the user may act at all: a suspended user is refused (A9). On a tenant route the tenant then comes
 // from the id in the path and the user's membership, with the permissions of the member's role, or ControlPlane's reason to refuse:
 // tenant.suspended to a member, tenant.not_found to anyone else (T3); on a platform route ControlPlane answers with the user's platform permissions, given whether the session verified a second
-// factor (A6). It rejects nothing: authorization turns away the callers it finds no access for.
+// factor (A6), and, on a route that requires reverification, whether the second factor is fresh enough. It rejects nothing:
+// authorization turns away the callers it finds no access for, before the endpoint runs and so before any idempotency key is claimed.
 internal sealed class TenantResolutionMiddleware(RequestDelegate next)
 {
     private const string TenantTag = "tenant.id";
@@ -42,6 +44,11 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
         {
             access.PlatformPermissions = await systemAdmins.FindPlatformPermissionsAsync(
                 userId, context.User.HasVerifiedSecondFactor(), context.RequestAborted);
+            if (metadata.GetMetadata<ReverificationRequired>() is not null)
+            {
+                var fresh = systemAdmins.CheckReverification(context.User.SecondFactorAge());
+                access.Refusal = fresh.IsSuccess ? null : fresh.Error;
+            }
         }
         else if (tenantScoped || metadata.GetMetadata<MeEndpoint>() is not null)
         {
