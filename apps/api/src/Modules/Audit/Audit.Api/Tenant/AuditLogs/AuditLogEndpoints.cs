@@ -23,12 +23,13 @@ public static class AuditLogEndpoints
         entry.Id,
         entry.OccurredAt,
         entry.Operation,
-        DetailsOf(entry.Details),
+        DetailsOf(entry.Details, entry.DetailsUser),
         new AuditActorResponse(ResponseStatus.OfActor(entry.Actor.Kind), entry.Actor.UserId, entry.Actor.DisplayName, entry.Actor.Deleted),
         new AuditTargetResponse(ResponseStatus.OfTarget(entry.Target.Kind), entry.Target.Id, entry.Target.Name, entry.Target.Deleted));
 
-    // Each stored shape answers its response. A shape the response has no type for is a fault, not an answer.
-    private static AuditDetailsResponse? DetailsOf(AuditDetails? details) => details switch
+    // Each stored shape answers its response. A shape the response has no type for is a fault, not an answer. The user the details point
+    // to is named on read; a page that was never named has no user, and answers no name, as for an id no user has.
+    private static AuditDetailsResponse? DetailsOf(AuditDetails? details, AuditUserView? user) => details switch
     {
         null => null,
         MemberInvitedDetails invited => new MemberInvitedDetailsResponse(RoleOf(invited.Role, invited.RoleId, invited.RoleBuiltIn), invited.ReplacedInvitationId),
@@ -39,7 +40,11 @@ public static class AuditLogEndpoints
         RoleCreatedDetails created => new RoleCreatedDetailsResponse(created.Permissions),
         RoleUpdatedDetails updated => new RoleUpdatedDetailsResponse(updated.OldName, updated.NewName, updated.PermissionsAdded, updated.PermissionsRemoved),
         TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId),
-        TenantOwnerMadeDetails made => new TenantOwnerMadeDetailsResponse(made.UserId, RoleOf(made.OldRole, made.OldRoleId, made.OldRoleBuiltIn)),
+        TenantOwnerMadeDetails made => new TenantOwnerMadeDetailsResponse(
+            made.UserId,
+            user?.DisplayName,
+            user?.Deleted ?? false,
+            RoleOf(made.OldRole, made.OldRoleId, made.OldRoleBuiltIn)),
         TenantPurgeWarnedDetails warned => new TenantPurgeWarnedDetailsResponse(warned.PurgesAt),
         TenantRenamedDetails renamed => new TenantRenamedDetailsResponse(renamed.OldName, renamed.NewName),
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),

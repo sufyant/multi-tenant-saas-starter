@@ -10,4 +10,8 @@ public sealed record AuditEntryView(
     string Operation,
     AuditDetails? Details,
     AuditActorView Actor,
-    AuditTargetView Target);
+    AuditTargetView Target)
+{
+    /// <summary>The user the details point to, named now; null for details that point to no user, or before the names are read.</summary>
+    public AuditUserView? DetailsUser { get; init; }
+}

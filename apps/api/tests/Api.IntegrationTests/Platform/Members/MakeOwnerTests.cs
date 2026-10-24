@@ -118,12 +118,13 @@ public sealed class MakeOwnerTests(Database database) : IAsyncLifetime
     }
 
     // The platform's Activity tab of the tenant reads the platform's log filtered by the tenant: it shows the new Owner, with the details'
-    // shape of tenant.owner_made.
+    // shape of tenant.owner_made, which names the new Owner now (step r13).
     [Fact]
     public async Task MakeOwner_AMember_ShowsInThePlatformsLogOfTheTenant()
     {
         var tenant = await _testData.AddTenantAsync();
-        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id, role: "Admin"));
+        var member = await _testData.UserIdOfAsync(
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Mehmet", lastName: "Kaya"), "Admin"));
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var adminRole = await _testData.RoleIdOfAsync(tenant.Id, "Admin");
 
@@ -133,7 +134,7 @@ public sealed class MakeOwnerTests(Database database) : IAsyncLifetime
         var entry = page.GetProperty("items").EnumerateArray().Single();
         entry.GetProperty("operation").GetString().ShouldBe("tenant.owner_made");
         entry.GetProperty("details").GetRawText().ShouldBe(
-            $$$"""{"operation":"tenant.owner_made","userId":"{{{member}}}","oldRole":{"id":"{{{adminRole}}}","name":"admin","builtIn":true}}""");
+            $$$"""{"operation":"tenant.owner_made","userId":"{{{member}}}","displayName":"Mehmet Kaya","deleted":false,"oldRole":{"id":"{{{adminRole}}}","name":"admin","builtIn":true}}""");
     }
 
     [Fact]

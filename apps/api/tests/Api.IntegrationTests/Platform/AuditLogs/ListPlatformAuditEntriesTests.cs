@@ -170,7 +170,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     }
 
     // Owner recovery (docs/flows/owner-recovery.md): the platform's log keeps tenant.owner_made, as RecordOwnerMadeHandler writes it, and answers its shape:
-    // the member's id and the role they had.
+    // the member's id, their name now and whether they were deleted (step r13), and the role they had. An id no user has has no name and
+    // is not known to be deleted, as for an actor.
     [Fact]
     public async Task ListPlatformAuditEntries_AStoredOwnerMade_AnswersTheShapeOfTenantOwnerMade()
     {
@@ -189,7 +190,58 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
 
         page.GetProperty("items")[0].GetProperty("details").GetRawText().ShouldBe(
-            """{"operation":"tenant.owner_made","userId":"0199f7a0-0000-7000-8000-000000000001","oldRole":{"id":"0199f7a0-0000-7000-8000-000000000004","name":"member","builtIn":true}}""");
+            """{"operation":"tenant.owner_made","userId":"0199f7a0-0000-7000-8000-000000000001","displayName":null,"deleted":false,"oldRole":{"id":"0199f7a0-0000-7000-8000-000000000004","name":"member","builtIn":true}}""");
+    }
+
+    // K3 and step r13: the entry stores the new Owner by id only, and the read side names them now, as it names the actor, so the
+    // screen writes "Ciara Byrne made Mehmet Kaya an Owner of Northwind Traders".
+    [Fact]
+    public async Task ListPlatformAuditEntries_AnOwnerMadeEntry_AnswersTheNewOwnersName()
+    {
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = Guid.CreateVersion7();
+        var mehmet = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Mehmet", lastName: "Kaya"));
+        await AddOwnerMadeAsync(_start, tenant, mehmet);
+
+        var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
+
+        NewOwnerOf(page.GetProperty("items")[0]).ShouldBe((mehmet, "Mehmet Kaya", false));
+    }
+
+    // A deletion erases the user's names (A8) and changes no entry (K3): the entry then reads the new Owner as deleted, with no name.
+    [Fact]
+    public async Task ListPlatformAuditEntries_AnOwnerMadeEntryAfterTheNewOwnersDeletion_AnswersDeletedAndNoName()
+    {
+        var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = Guid.CreateVersion7();
+        var user = await _testData.AddUserAsync(firstName: "Mehmet", lastName: "Kaya");
+        var mehmet = await _testData.UserIdOfAsync(user);
+        await AddOwnerMadeAsync(_start, tenant, mehmet);
+        await _testData.DeleteUserAsync(user);
+
+        var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
+
+        NewOwnerOf(page.GetProperty("items")[0]).ShouldBe((mehmet, (string?)null, true));
+    }
+
+    // The new Owners of a page are named in the one call that names the actors and the targets, so a longer page sends no more commands.
+    [Fact]
+    public async Task ListPlatformAuditEntries_ALongerPageOfOwnerMadeEntries_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        var admin = await _testData.AddSystemAdminAsync();
+        var tenant = Guid.CreateVersion7();
+        await AddOwnerMadeAsync(_start, tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Ada")));
+        await AddOwnerMadeAsync(_start.AddTicks(10), tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Bea")));
+        await AddOwnerMadeAsync(_start.AddTicks(20), tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Cem")));
+
+        var one = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/audit-log?tenantId={tenant}&limit=1", Cancellation));
+        var three = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/audit-log?tenantId={tenant}&limit=3", Cancellation));
+
+        three.ShouldBe(one);
+        one.ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -211,6 +263,25 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     }
 
     private static IEnumerable<Guid> Ids(JsonElement page) => page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid());
+
+    private static (Guid UserId, string? DisplayName, bool Deleted) NewOwnerOf(JsonElement entry) =>
+    (
+        entry.GetProperty("details").GetProperty("userId").GetGuid(),
+        entry.GetProperty("details").GetProperty("displayName").GetString(),
+        entry.GetProperty("details").GetProperty("deleted").GetBoolean()
+    );
+
+    // A tenant.owner_made entry as RecordOwnerMadeHandler writes it: the new Owner by id, and the role they had.
+    private Task<Guid> AddOwnerMadeAsync(DateTimeOffset occurredAt, Guid tenant, Guid newOwner) =>
+        _audit.AddPlatformEntryAsync(
+            occurredAt,
+            "User",
+            Guid.CreateVersion7(),
+            "Tenant",
+            tenant,
+            "tenant.owner_made",
+            "Northwind Traders",
+            $$"""{"userId":"{{newOwner}}","oldRole":"member","oldRoleId":"{{Guid.CreateVersion7()}}","oldRoleBuiltIn":true}""");
 
     private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>
         _audit.AddPlatformEntryAsync(occurredAt, "User", Guid.CreateVersion7(), "User", Guid.CreateVersion7());
