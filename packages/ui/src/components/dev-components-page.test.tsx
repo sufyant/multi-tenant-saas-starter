@@ -3,13 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { DevComponentGroup, devComponentGroups } from "./dev-components-page";
 
-// The 20 components of the design system's components/index.d.ts, the sign-in parts of step 21b, the preferences form of step 22e and
-// the activity log of step 22g.
+// The 20 components of the design system's components/index.d.ts, the sign-in parts of step 21b, the preferences form of step 22e,
+// the activity log of step 22g and the shared parts and controls of step 22k.
 const names = [
   "ActivityLog",
   "AppShell",
+  "Avatar",
   "Banner",
   "Button",
+  "Checkbox",
   "CodeInput",
   "Combobox",
   "Dialog",
@@ -17,10 +19,13 @@ const names = [
   "Freshness",
   "Icon",
   "Input",
+  "ListError",
   "OrgMenu",
   "PreferencesForm",
   "ProviderButtons",
+  "RadioGroup",
   "RowMenu",
+  "Search",
   "SignIn",
   "Skeleton",
   "Status",
@@ -56,5 +61,28 @@ describe("DevComponentsPage", () => {
       "aria-expanded",
       "true",
     );
+  });
+
+  it("DevComponentGroup_Checkbox_ShowsEachState", () => {
+    render(<DevComponentGroup name="Checkbox" />);
+
+    expect(screen.getByRole("checkbox", { name: "See members" })).toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "See the organisation’s details" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", { name: "Manage roles" }),
+    ).toHaveAccessibleDescription("Your role doesn’t have this permission.");
+  });
+
+  it("DevComponentGroup_RadioGroup_ShowsADisabledRoleWithItsReason", () => {
+    render(<DevComponentGroup name="RadioGroup" />);
+
+    expect(
+      screen.getByRole("radio", { name: "Owner" }),
+    ).toHaveAccessibleDescription(
+      expect.stringContaining("Only an Owner can give the Owner role."),
+    );
+    expect(screen.getByRole("radio", { name: "Member" })).toBeChecked();
   });
 });

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { UserMenu } from "./user-menu";
 
@@ -22,6 +23,22 @@ const props = {
 };
 
 describe("UserMenu", () => {
+  // The axe engine of the apps' Playwright check (F37). jsdom draws nothing, so the rules of colour and of page regions stay out.
+  it("UserMenu_Open_HasNoAxeViolation", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    await screen.findByRole("menu");
+    const result = await axe.run(document.body, {
+      rules: {
+        "color-contrast": { enabled: false },
+        region: { enabled: false },
+      },
+    });
+
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
   it("UserMenu_PickATheme_SavesItOnTheDevice", async () => {
     const onThemeChange = vi.fn();
     render(
