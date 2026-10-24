@@ -35,7 +35,7 @@ flowchart LR
 | A design token | `packages/ui/tokens/tokens.json`; the CSS is `packages/ui/src/styles/tokens.gen.css` | F20 |
 | A shared component | `packages/ui/src/components/<kebab-name>/` | F29, F31 |
 | A screen | `apps/<app>/src/features/<feature>/`; the route in `src/app/` renders one component of it | F29 |
-| Code that more than one feature of an app uses | `apps/<app>/src/shared/`: the tenant context, "No access yet", the account page of a suspended or deleted user, the problem screens, a list's error state, the locale sync | F29 |
+| Code that more than one feature of an app uses | `apps/<app>/src/shared/`: the tenant context, "No access yet", the account page of a suspended or deleted user, the problem screens, a list's error state, the locale sync, what follows a refused command in the tenant web (`refresh.ts`, `afterRefusal`) | F29, F47 |
 | Our own sign-in, the email code, Google, Microsoft and the second factor | `packages/ui/src/components/sign-in/` (`SignIn`, its steps, `SsoCallback`, the Clerk error map, the redirect rule), `code-input/`, `provider-buttons/`, `auth-layout/`; each app's `src/app/(public)/sign-in/` and `sso-callback/` render them | F41, F43, F45 |
 | The platform's two-step gate and its screens | `apps/platform/src/proxy.ts`, `apps/platform/src/features/two-step/` | F42 |
 | The platform's Organisations: the list, one organisation's Overview and their dialogs | `apps/platform/src/features/organisations/`, on the routes `/` and `/organisations/[tenantId]`; the list's error state and "Page not found" in `apps/platform/src/shared/` | F9, F11, F47, F48 |
