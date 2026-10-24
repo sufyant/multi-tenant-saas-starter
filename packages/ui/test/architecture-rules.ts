@@ -470,3 +470,72 @@ export function contractEnumValues(generatedSchemasFile: string): Set<string> {
     ),
   );
 }
+
+const comparisons = new Set([
+  ts.SyntaxKind.EqualsEqualsEqualsToken,
+  ts.SyntaxKind.ExclamationEqualsEqualsToken,
+  ts.SyntaxKind.EqualsEqualsToken,
+  ts.SyntaxKind.ExclamationEqualsToken,
+]);
+
+/** A role's name: `role.name`, `member.role?.name`, a `BuiltInRole` member or the answer of `builtInRoleOf(...)`. */
+function isRoleName(node: ts.Expression, file: ts.SourceFile): boolean {
+  const inner = ts.skipPartiallyEmittedExpressions(
+    ts.isParenthesizedExpression(node) ? node.expression : node,
+  );
+  if (ts.isPropertyAccessExpression(inner)) {
+    if (inner.name.text === "name")
+      return /role/i.test(inner.expression.getText(file));
+    return inner.expression.getText(file) === "BuiltInRole";
+  }
+  return (
+    ts.isCallExpression(inner) &&
+    inner.expression.getText(file) === "builtInRoleOf"
+  );
+}
+
+/**
+ * Rule F51: a role's name decides nothing; the permissions do. A comparison or a `switch` on a role's name is a finding, and so is
+ * an import of `builtInRoleOf`. The files that give a role its text and its list order are ignored by the caller.
+ */
+export function roleNameDecisions(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const path of filesUnder(root)) {
+    if (
+      !isCode(path) ||
+      isTest(path) ||
+      isGenerated(path) ||
+      ignored(root, path, options)
+    )
+      continue;
+    const file = sourceFile(path);
+    const finding = (node: ts.Node, what: string) =>
+      findings.push(`${relative(root, path)}:${lineOf(file, node)}: ${what}`);
+    const visit = (node: ts.Node) => {
+      if (
+        (ts.isBinaryExpression(node) &&
+          comparisons.has(node.operatorToken.kind) &&
+          (isRoleName(node.left, file) || isRoleName(node.right, file))) ||
+        (ts.isSwitchStatement(node) && isRoleName(node.expression, file))
+      )
+        finding(
+          node,
+          "compares a role's name; decide by its permissions (F51)",
+        );
+      if (
+        ts.isImportSpecifier(node) &&
+        (node.propertyName ?? node.name).text === "builtInRoleOf"
+      )
+        finding(
+          node,
+          "imports builtInRoleOf; a role's name is only its text (F51)",
+        );
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+  }
+  return findings;
+}
