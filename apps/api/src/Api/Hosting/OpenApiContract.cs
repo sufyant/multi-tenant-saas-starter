@@ -63,10 +63,13 @@ internal static partial class OpenApiContract
     // The validator of each command, by the name of the request that carries the command: the validator of XCommand describes XRequest
     // (N8). A command's validator sits in its module's Application project, which reaches SharedKernel, as each module's Domain project
     // does.
-    private static Dictionary<string, Type> RequestValidators { get; } = AssembliesThatReachSharedKernel
-        .SelectMany(assembly => assembly.GetTypes())
-        .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+    private static Dictionary<string, Type> RequestValidators { get; } = ValidatorsOf("Command")
         .ToDictionary(type => RequestOf(type.BaseType!.GetGenericArguments()[0]), StringComparer.Ordinal);
+
+    // The validator of each query, by the operation that sends the query: the validator of XQuery describes the query parameters of the
+    // operation X (N7e, N8), such as the email filter of ListUsers (step r13).
+    private static Dictionary<string, Type> QueryValidators { get; } = ValidatorsOf("Query")
+        .ToDictionary(type => type.BaseType!.GetGenericArguments()[0].Name[..^"Query".Length], StringComparer.Ordinal);
 
     // K5: each owner declares its codes in a static class whose name ends with ErrorCodes: SharedKernel, the host, and each module in its
     // Domain project. The document joins them into one enum. ErrorCodeTests checks that it finds every declared code.
@@ -115,6 +118,7 @@ internal static partial class OpenApiContract
                     .AddOperationTransformer(DeclarePathParameters)
                     .AddOperationTransformer(DescribeListParameters)
                     .AddOperationTransformer(DescribeListLimits)
+                    .AddOperationTransformer(DescribeQueryRules)
                     .AddOperationTransformer(DescribeIdempotency)
                     .AddOperationTransformer(DescribeResponseHeaders)
                     .AddSchemaTransformer(DescribeEnumValues)
@@ -371,24 +375,66 @@ internal static partial class OpenApiContract
 
             foreach (var (rule, _) in member)
             {
-                switch (rule)
-                {
-                    case ILengthValidator length:
-                        field.MinLength = length.Min > 0 ? length.Min : field.MinLength;
-                        field.MaxLength = length.Max >= 0 ? length.Max : field.MaxLength;
-                        break;
-                    case IEmailValidator:
-                        field.Format = "email";
-                        break;
-                    case IRegularExpressionValidator regex when !NotEcmaScript().IsMatch(regex.Expression):
-                        field.Pattern = regex.Expression;
-                        break;
-                }
+                DescribeRule(field, rule);
             }
         }
 
         return Task.CompletedTask;
     }
+
+    // Decision 1 of audit fix 09, for a query: the rules of XQuery's validator describe the query parameters of the operation X, each
+    // found by its name, as the query's property in camel case (step r13).
+    private static Task DescribeQueryRules(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (operation.OperationId is not { } id || !QueryValidators.TryGetValue(id, out var validatorType))
+        {
+            return Task.CompletedTask;
+        }
+
+        var parameters = (operation.Parameters ?? []).Where(parameter => parameter.In == ParameterLocation.Query).OfType<OpenApiParameter>().ToList();
+        var validator = (IValidator)ActivatorUtilities.CreateInstance(context.ApplicationServices, validatorType);
+        foreach (var member in validator.CreateDescriptor().GetMembersWithValidators())
+        {
+            var name = JsonNamingPolicy.CamelCase.ConvertName(member.Key);
+            if (parameters.SingleOrDefault(parameter => parameter.Name == name)?.Schema is not OpenApiSchema field)
+            {
+                continue;
+            }
+
+            foreach (var (rule, _) in member)
+            {
+                DescribeRule(field, rule);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // A length rule gives minLength and maxLength, an email rule format email, and a regex rule the pattern, where ECMAScript reads the
+    // regex as .NET does. Any other rule stays out of the document.
+    private static void DescribeRule(OpenApiSchema field, IPropertyValidator rule)
+    {
+        switch (rule)
+        {
+            case ILengthValidator length:
+                field.MinLength = length.Min > 0 ? length.Min : field.MinLength;
+                field.MaxLength = length.Max >= 0 ? length.Max : field.MaxLength;
+                break;
+            case IEmailValidator:
+                field.Format = "email";
+                break;
+            case IRegularExpressionValidator regex when !NotEcmaScript().IsMatch(regex.Expression):
+                field.Pattern = regex.Expression;
+                break;
+        }
+    }
+
+    // The validators of the messages whose names end with the role, a command or a query (N8).
+    private static IEnumerable<Type> ValidatorsOf(string role) =>
+        AssembliesThatReachSharedKernel
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: false, BaseType.IsGenericType: true } && type.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>))
+            .Where(type => type.BaseType!.GetGenericArguments()[0].Name.EndsWith(role, StringComparison.Ordinal));
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 

@@ -51,7 +51,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation", "createdAt"],
             ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
@@ -128,6 +128,41 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
         Names(page).ShouldBe([$"{_marker} {found}"]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
+    }
+
+    // The Organisations list has a Created column (step r13): the tenant's created_at, which every status keeps.
+    [Fact]
+    public async Task ListTenants_AnActiveTenant_AnswersWhenItWasCreated()
+    {
+        var created = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        await _testData.AddTenantAsync(name: $"{_marker} India", createdAt: created);
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single().GetProperty("createdAt").GetDateTimeOffset().ShouldBe(created);
+    }
+
+    [Fact]
+    public async Task ListTenants_AClosedTenant_AnswersWhenItWasCreated()
+    {
+        var created = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} India", closedAt: DateTimeOffset.UtcNow, createdAt: created);
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single().GetProperty("createdAt").GetDateTimeOffset().ShouldBe(created);
+    }
+
+    // K4: the tombstone keeps the moment of the tenant's creation.
+    [Fact]
+    public async Task ListTenants_APurgedTenant_AnswersWhenItWasCreated()
+    {
+        var created = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        await _testData.AddTenantRowAsync(status: "Purged", name: $"{_marker} Juliett", createdAt: created);
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single().GetProperty("createdAt").GetDateTimeOffset().ShouldBe(created);
     }
 
     // K4: a purged tenant has no summary, and the list still shows its tombstone, with nothing counted.

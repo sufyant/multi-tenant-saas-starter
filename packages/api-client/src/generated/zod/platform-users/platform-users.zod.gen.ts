@@ -12,6 +12,8 @@ export const listUsersQueryPageSizeMax = 100;
 
 export const listUsersQueryQMax = 100;
 
+export const listUsersQueryEmailMax = 320;
+
 
 
 export const ListUsersQueryParams = zod.object({
@@ -29,7 +31,8 @@ export const ListUsersQueryParams = zod.object({
   Suspended: 'suspended',
   Deleted: 'deleted',
 }).optional(),
-  "isSystemAdmin": zod.boolean().optional()
+  "isSystemAdmin": zod.boolean().optional(),
+  "email": zod.email().max(listUsersQueryEmailMax).optional()
 })
 
 export const ListUsersResponse = zod.object({

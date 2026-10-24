@@ -48,8 +48,43 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Admin View Ltd", tenant.Slug, answered));
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "ownerCount", "owners", "ownerInvitation"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "ownerCount", "owners", "ownerInvitation", "createdAt"],
             ignoreOrder: true);
+    }
+
+    // An organisation's page has a Created row (step r13): the tenant's created_at, which every status keeps.
+    [Fact]
+    public async Task GetTenant_AnActiveTenant_AnswersWhenItWasCreated()
+    {
+        var created = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantAsync(createdAt: created);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(created);
+    }
+
+    [Fact]
+    public async Task GetTenant_AClosedTenant_AnswersWhenItWasCreated()
+    {
+        var created = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow, createdAt: created);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(created);
+    }
+
+    // K4: the tombstone keeps the moment of the tenant's creation.
+    [Fact]
+    public async Task GetTenant_APurgedTenant_AnswersWhenItWasCreated()
+    {
+        var created = new DateTimeOffset(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantRowAsync(status: "Purged", createdAt: created);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(created);
     }
 
     // K4: the purge leaves a tombstone, the tenant row with its id, name, slug, status and the moments of its creation and its purge, and

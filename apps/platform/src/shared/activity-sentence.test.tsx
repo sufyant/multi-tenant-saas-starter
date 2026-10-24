@@ -90,6 +90,8 @@ const renamed: AuditDetailsResponse = {
 const ownerMade: AuditDetailsResponse = {
   operation: TenantOwnerMadeDetailsResponseOperation.TenantOwnerMade,
   userId: "0198f0a2-0000-7000-8000-0000000000d2",
+  displayName: null,
+  deleted: false,
   oldRole: {
     id: "0198f0a2-0000-7000-8000-0000000000f1",
     name: "member",

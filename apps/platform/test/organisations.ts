@@ -35,6 +35,7 @@ const item = (
   name,
   slug,
   status: TenantResponseStatus.Active,
+  createdAt: inDays(-90),
   suspensionReason: null,
   closedAt: null,
   purgedAt: null,

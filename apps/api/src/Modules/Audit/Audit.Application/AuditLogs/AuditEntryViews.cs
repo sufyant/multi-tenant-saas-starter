@@ -1,3 +1,4 @@
+using Audit.Application.Members;
 using Audit.Domain.AuditEntries;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
@@ -20,14 +21,19 @@ internal static class AuditEntryViews
                 ActorOf(entry),
                 TargetOf(entry)));
 
-    /// <summary>The page with each user, actor or target, named by ControlPlane now.</summary>
+    /// <summary>The page with each user, actor, target or the user the details point to, named by ControlPlane now.</summary>
     public static async Task<CursorPage<AuditEntryView>> NamedAsync(
         CursorPage<AuditEntryView> page,
         IUserDirectory users,
         CancellationToken cancellationToken)
     {
         var people = page.Items
-            .SelectMany(entry => new[] { entry.Actor.UserId, entry.Target is { Kind: nameof(AuditTargetKind.User) } target ? target.Id : null })
+            .SelectMany(entry => new[]
+            {
+                entry.Actor.UserId,
+                entry.Target is { Kind: nameof(AuditTargetKind.User) } target ? target.Id : null,
+                UserOf(entry.Details),
+            })
             .OfType<Guid>()
             .ToHashSet();
         var names = await users.FindNamesAsync(people, cancellationToken);
@@ -38,8 +44,13 @@ internal static class AuditEntryViews
             Target = entry.Target is { Kind: nameof(AuditTargetKind.User) } target
                 ? target with { Name = NameOf(target.Id, names), Deleted = IsDeleted(target.Id, names) }
                 : entry.Target,
+            DetailsUserName = UserOf(entry.Details) is { } user ? NameOf(user, names) : null,
+            DetailsUserDeleted = UserOf(entry.Details) is { } named ? IsDeleted(named, names) : null,
         });
     }
+
+    // The details that point to a user keep only the user's id (K3); the new Owner of tenant.owner_made is the one today.
+    private static Guid? UserOf(AuditDetails? details) => details is TenantOwnerMadeDetails made ? made.UserId : null;
 
     // The platform has no name here: a screen names it from its kind, in its own language.
     private static AuditActorView ActorOf(AuditEntry entry) => entry.ActorKind switch

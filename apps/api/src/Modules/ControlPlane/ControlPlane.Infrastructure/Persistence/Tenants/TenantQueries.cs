@@ -48,6 +48,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         var owners = await ListOwnersAsync(cancellationToken);
         return new TenantDetailView(
             TenantView.Of(found.Tenant),
+            found.Tenant.CreatedAt,
             found.Tenant.ReopenableUntil(reopenPeriod),
             found.Tenant.PurgeWarningAt(reopenPeriod, purgeWarningLead),
             found.Summary?.MemberCount ?? 0,
@@ -122,6 +123,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             [
                 .. page.Select(row => new TenantListItemView(
                     TenantView.Of(row.Tenant),
+                    row.Tenant.CreatedAt,
                     row.Tenant.ReopenableUntil(reopenPeriod),
                     row.Summary?.MemberCount ?? 0,
                     row.Summary?.OwnerCount ?? 0,
