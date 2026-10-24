@@ -396,6 +396,21 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
+  it("PreferencesPage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
+    const sent = nothingSent();
+    server.use(
+      refuses(403, ErrorCode.UserDeleted),
+      ...preferencesAnswers(me, sent),
+    );
+    renderInTenant(<PreferencesPage />, { url });
+
+    await pick("Time zone", "Riyadh", /^Riyadh/);
+    await save();
+
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+    expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
+  });
+
   it("PreferencesPage_ServerError_SaysNotSavedWithTheReference", async () => {
     server.use(refuses(500, ErrorCode.ServerError), ...preferencesAnswers(me));
     renderInTenant(<PreferencesPage />, { url });

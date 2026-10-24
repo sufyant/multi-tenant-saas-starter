@@ -357,6 +357,21 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
   });
 
+  it("PreferencesPage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
+    const sent = nothingSent();
+    server.use(
+      renameFails(403, ErrorCode.UserDeleted),
+      ...preferencesAnswers(me, sent),
+    );
+    renderPage();
+
+    await retype("First name", "Ciarán");
+    await save();
+
+    await vi.waitFor(() => expect(sent.reads).toBe(2));
+    expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
+  });
+
   it("PreferencesPage_SignedOut_GoesToSignIn", async () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });
