@@ -2,6 +2,7 @@
 
 import {
   actionFor,
+  getGetMeQueryOptions,
   getGetMyTenantQueryOptions,
   getListMyTenantsQueryKey,
   getListMyTenantsQueryOptions,
@@ -15,12 +16,13 @@ import {
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { createContext, type ReactNode, use, useEffect } from "react";
+import { createContext, type ReactNode, use, useEffect, useState } from "react";
 import {
   BlockedOrganisation,
   type BlockedStatus,
 } from "./blocked-organisation";
 import { NoAccess } from "./no-access";
+import { accountBlockOf } from "./problem";
 import { ProblemScreen } from "./problem-screen";
 
 export type TenantContext = {
@@ -63,7 +65,8 @@ function holds(value: unknown, id: string): boolean {
 /**
  * Turns the route's slug into the tenant (F30), through the cached ListMyTenants: the API path keeps the id. A slug that is not
  * in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell. When a call
- * of this organisation answers that it stopped, the list is read again, so the page follows (F47).
+ * of this organisation answers that it stopped, the list is read again, so the page follows (F47). When a read answers that the
+ * user is suspended or deleted (A9), the account's page shows in place of the shell; a refused command reads GetMe again first.
  */
 export function TenantProvider({
   slug,
@@ -89,23 +92,32 @@ export function TenantProvider({
     }),
   );
 
+  const [accountError, setAccountError] = useState<Error | null>(null);
   const tenantId = tenant?.id;
   useEffect(() => {
-    if (!tenantId) return;
-    // Only a call of this organisation counts: its query key or its command's variables hold the tenant's id.
-    const reread = (error: unknown, call: unknown) => {
-      if (blockedBy(error) && holds(call, tenantId))
+    // Only a call of this organisation counts for the organisation: its query key or its command's variables hold the tenant's id.
+    const reread = (error: Error, call: unknown) => {
+      if (tenantId && blockedBy(error) && holds(call, tenantId))
         void queryClient.invalidateQueries({
           queryKey: getListMyTenantsQueryKey(),
         });
     };
+    // Any read that refuses the user's account shows its page. A refused command reads GetMe again, and its answer decides (A9).
     const queries = queryClient.getQueryCache().subscribe((event) => {
-      if (event.type === "updated" && event.action.type === "error")
-        reread(event.action.error, event.query.queryKey);
+      if (event.type !== "updated" || event.action.type !== "error") return;
+      if (accountBlockOf(event.action.error))
+        setAccountError(event.action.error);
+      reread(event.action.error, event.query.queryKey);
     });
     const commands = queryClient.getMutationCache().subscribe((event) => {
-      if (event.type === "updated" && event.action.type === "error")
-        reread(event.action.error, event.mutation.state.variables);
+      if (event.type !== "updated" || event.action.type !== "error") return;
+      if (accountBlockOf(event.action.error))
+        queryClient
+          .fetchQuery({ ...getGetMeQueryOptions(), staleTime: 0 })
+          .catch(() => {
+            // The query cache holds the refusal, and the subscription above shows the page.
+          });
+      reread(event.action.error, event.mutation.state.variables);
     });
     return () => {
       queries();
@@ -113,6 +125,7 @@ export function TenantProvider({
     };
   }, [queryClient, tenantId]);
 
+  if (accountError) return <ProblemScreen error={accountError} />;
   const error = matching.error ?? all.error;
   if (error) return <ProblemScreen error={error} />;
   if (matching.data && !tenant) return <NoAccess />;

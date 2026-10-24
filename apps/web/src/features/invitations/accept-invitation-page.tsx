@@ -28,6 +28,7 @@ import { ProblemScreen } from "@/shared/problem-screen";
 import { InvitationEnded } from "./invitation-ended";
 import { InvitationFrame } from "./invitation-frame";
 import { JoinCard } from "./join-card";
+import { SystemAdminCannotJoin, TenantSuspended } from "./join-refused";
 import { type Names, NewPersonForm } from "./new-person-form";
 import { WrongEmail } from "./wrong-email";
 
@@ -208,13 +209,36 @@ export function AcceptInvitationPage({
       </InvitationFrame>
     );
 
-  // A failed join reads its answer as every screen does (F4): sign-in for a 401, the suspended screen, the form's fields, else
-  // the message of the code.
+  // A failed join reads its answer as every screen does (F4): sign-in for a 401, the account's page for a suspended or deleted
+  // user, the page of a system admin or a suspended organisation, the form's fields, else the message of the code.
   if (join.error instanceof ProblemDetailsError) {
     const kind = actionFor(join.error.status, join.error.problem).kind;
-    if (kind === "sign-in" || kind === "account-suspended")
+    if (
+      kind === "sign-in" ||
+      kind === "account-suspended" ||
+      kind === "account-deleted"
+    )
       return <ProblemScreen error={join.error} />;
   }
+  const joinCode = codeOf(join.error);
+  if (joinCode === ErrorCode.InvitationSystemAdminCannotJoin)
+    return (
+      <InvitationFrame>
+        <SystemAdminCannotJoin
+          onSwitchAccount={() => {
+            keepCode(code);
+            void signOut({ redirectUrl: signInAndBack });
+          }}
+          onSignOut={leave}
+        />
+      </InvitationFrame>
+    );
+  if (joinCode === ErrorCode.TenantSuspended)
+    return (
+      <InvitationFrame>
+        <TenantSuspended onSignOut={leave} />
+      </InvitationFrame>
+    );
   const action =
     join.error &&
     actionFor(

@@ -102,7 +102,12 @@
     "wrongEmailTitle": "Bu davet başka bir e-posta için",
     "wrongEmailText": "<email></email> olarak giriş yaptınız. Daveti alan e-postayla giriş yapın.",
     "switchAccount": "Hesap değiştir",
-    "backHome": "Ana sayfaya dön"
+    "backHome": "Ana sayfaya dön",
+    "systemAdminStatus": "Mümkün değil",
+    "systemAdminTitle": "Sistem yöneticileri bir kuruluşa katılamaz",
+    "systemAdminText": "Başka bir hesap kullanın.",
+    "tenantSuspendedTitle": "Bu kuruluş askıya alındı",
+    "tenantSuspendedText": "Yeniden etkin olduğunda katılabilirsiniz."
   },
   "settings": {
     "organisation": "Kuruluş",
@@ -255,15 +260,15 @@
         "revoked": "<actor></actor> bir daveti geri aldı."
       },
       "member": {
-        "invited": "<actor></actor> birini {role} rolüyle davet etti.",
+        "invited": "<actor></actor> birini <role></role> rolüyle davet etti.",
         "joined": "<target></target> kuruluşa katıldı.",
-        "removed": "<actor></actor>, <target></target> adlı üyeyi ({role}) kuruluştan çıkardı.",
-        "role_changed": "<actor></actor>, <target></target> adlı üyenin rolünü {oldRole} rolünden {newRole} rolüne değiştirdi."
+        "removed": "<actor></actor>, <target></target> adlı üyeyi (<role></role>) kuruluştan çıkardı.",
+        "role_changed": "<actor></actor>, <target></target> kişisinin rolünü <oldRole></oldRole> rolünden <newRole></newRole> rolüne değiştirdi."
       },
       "role": {
         "created": "<actor></actor>, <target></target> rolünü oluşturdu.",
         "deleted": "<actor></actor>, <target></target> rolünü sildi.",
-        "updated": "<actor></actor>, <target></target> rolünü değiştirdi."
+        "updated": "<actor></actor>, <target></target> rolünü değiştirdi{change, select, both {: <added></added> eklendi, <removed></removed> kaldırıldı} added {: <added></added> eklendi} removed {: <removed></removed> kaldırıldı} other {}}."
       },
       "system_admin": {
         "granted": "<actor></actor>, <target></target> adlı kullanıcıyı sistem yöneticisi yaptı.",
@@ -274,7 +279,7 @@
         "created": "<actor></actor> bu kuruluşu oluşturdu.",
         "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
         "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
-        "purge_warned": "<actor></actor> Sahipleri bu kuruluşun silineceği konusunda uyardı.",
+        "purge_warned": "Sahiplere <target></target> kuruluşunun silineceği bildirildi.",
         "purged": "<actor></actor> bu kuruluşu ve verilerini sildi.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
         "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",
@@ -288,7 +293,9 @@
         "renamed": "<actor></actor>, <target></target> adlı kullanıcının adını değiştirdi.",
         "suspended": "<actor></actor>, <target></target> adlı kullanıcının hesabını askıya aldı."
       }
-    }
+    },
+    "morePermissions": "{count} izin daha",
+    "roleRenamed": "<actor></actor>, <name>{oldName}</name> rolünün adını <name>{newName}</name> olarak değiştirdi."
   },
   "blocked": {
     "suspendedTitle": "{organisation} askıya alındı",
@@ -297,5 +304,50 @@
     "closedText": "Bu kuruluş kapatıldı ve açılamaz. Verileriniz şimdilik korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
     "organisation": "Kuruluş",
     "chooseAnother": "Başka bir kuruluş seçin"
+  },
+  "account": {
+    "user": {
+      "suspended": {
+        "status": "Askıda",
+        "title": "Hesabınız askıya alındı",
+        "text": "Şu anda oturum açamazsınız. Destek ekibiyle iletişime geçin.",
+        "action": "Oturumu kapat"
+      },
+      "deleted": {
+        "status": "Silindi",
+        "title": "Bu hesap silindi",
+        "text": "Başka bir e-postayla oturum açın.",
+        "action": "Başka bir e-posta kullan"
+      }
+    }
+  },
+  "permissions": {
+    "tenant": {
+      "audit": {
+        "read": "Etkinliği görebilir"
+      },
+      "invitations": {
+        "create": "Kişileri davet edebilir",
+        "delete": "Davetleri geri çekebilir ve iptal edebilir",
+        "read": "Davetleri görebilir"
+      },
+      "members": {
+        "delete": "Üyeleri çıkarabilir",
+        "read": "Üyeleri görebilir",
+        "update": "Üyelerin rollerini değiştirebilir"
+      },
+      "owners": {
+        "manage": "Sahipleri yönetebilir"
+      },
+      "profile": {
+        "read": "Kuruluşun bilgilerini görebilir"
+      },
+      "roles": {
+        "create": "Rol oluşturabilir",
+        "delete": "Rolleri silebilir",
+        "read": "Rolleri görebilir",
+        "update": "Rolleri düzenleyebilir"
+      }
+    }
   }
 }

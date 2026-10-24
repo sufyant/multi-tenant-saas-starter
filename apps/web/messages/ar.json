@@ -27,7 +27,7 @@
     "language": "اللغة",
     "roles": {
       "owner": "مالك",
-      "admin": "مسؤول",
+      "admin": "مشرف",
       "member": "عضو"
     }
   },
@@ -76,7 +76,7 @@
       "deletedUser": "الشخص الذي دعاك"
     },
     "invited": "دعاك {inviter} للانضمام إلى {tenant}",
-    "invitedAs": "دعاك {inviter} للانضمام إلى {tenant} بدور {role, select, owner {مالك} admin {مسؤول} member {عضو} other {{roleName}}}",
+    "invitedAs": "دعاك {inviter} للانضمام إلى {tenant} بدور {role, select, owner {مالك} admin {مشرف} member {عضو} other {{roleName}}}",
     "yourRole": "دورك",
     "expires": "تنتهي",
     "join": "انضم إلى {tenant}",
@@ -102,7 +102,12 @@
     "wrongEmailTitle": "هذه الدعوة لبريد إلكتروني آخر",
     "wrongEmailText": "أنت مسجّل الدخول باسم <email></email>. سجّل الدخول بالبريد الذي وصلته الدعوة.",
     "switchAccount": "تبديل الحساب",
-    "backHome": "العودة إلى الصفحة الرئيسية"
+    "backHome": "العودة إلى الصفحة الرئيسية",
+    "systemAdminStatus": "غير ممكن",
+    "systemAdminTitle": "لا يمكن لمسؤولي النظام الانضمام إلى مؤسسة",
+    "systemAdminText": "استخدم حسابًا آخر.",
+    "tenantSuspendedTitle": "هذه المؤسسة موقوفة",
+    "tenantSuspendedText": "يمكنك الانضمام عندما تعود نشطة."
   },
   "settings": {
     "organisation": "المؤسسة",
@@ -112,7 +117,7 @@
   },
   "permissionDenied": {
     "title": "لا يمكنك فتح {page}",
-    "text": "دورك في {organisation} هو {role}. يمكن للمالكين والمسؤولين قراءة {page}. اطلب من أحدهم إذا احتجت إلى شيء منها.",
+    "text": "دورك في {organisation} هو {role}. يمكن للمالكين والمشرفين قراءة {page}. اطلب من أحدهم إذا احتجت إلى شيء منها.",
     "back": "العودة إلى نظرة عامة"
   },
   "members": {
@@ -154,18 +159,18 @@
     "invitationsError": "تعذّر تحميل الدعوات",
     "changeRole": "تغيير الدور",
     "remove": "إزالة من المؤسسة",
-    "removeSelf": "لا يمكنك إزالة نفسك. اطلب ذلك من مالك أو مسؤول آخر.",
+    "removeSelf": "لا يمكنك إزالة نفسك. اطلب ذلك من مالك أو مشرف آخر.",
     "changeOwner": "لا يغيّر دور المالك إلا مالك.",
     "removeOwner": "لا يزيل المالك إلا مالك.",
     "roleDescriptions": {
-      "owner": "كل ما يفعله المسؤول، ويمكنه منح دور المالك أو سحبه.",
-      "admin": "يدعو الأعضاء، ويغيّر الأدوار حتى المسؤول، ويزيل الأعضاء، ويقرأ النشاط.",
+      "owner": "كل ما يفعله المشرف، ويمكنه منح دور المالك أو سحبه.",
+      "admin": "يدعو الأعضاء، ويغيّر الأدوار حتى المشرف، ويزيل الأعضاء، ويقرأ النشاط.",
       "member": "يستخدم المنتج. يرى قائمة الأعضاء، ولا يرى النشاط ولا الدعوات."
     },
     "changeRoleTitle": "تغيير دور {name}",
-    "changeRoleText": "{name} {role, select, owner {مالكًا} admin {مسؤولًا} member {عضوًا} other {{roleName}}} في {organisation}. يسري التغيير فورًا.",
+    "changeRoleText": "{name} {role, select, owner {مالكًا} admin {مشرفًا} member {عضوًا} other {{roleName}}} في {organisation}. يسري التغيير فورًا.",
     "roleChanged": "تم تغيير الدور",
-    "roleChangedText": "أصبح {name} {role, select, owner {مالكًا} admin {مسؤولًا} member {عضوًا} other {{roleName}}}.",
+    "roleChangedText": "أصبح {name} {role, select, owner {مالكًا} admin {مشرفًا} member {عضوًا} other {{roleName}}}.",
     "changeRoleFailed": "تعذّر تغيير الدور",
     "removeTitle": "إزالة {name} من {organisation}؟",
     "removeText": "يفقد الوصول فورًا. يبقى نشاطه السابق في السجل. يمكنك دعوته مرة أخرى لاحقًا.",
@@ -216,7 +221,7 @@
     "dailyLimit": "تم بلوغ الحد اليومي",
     "dailyLimitText": "أرسلت {organisation} أكبر عدد مسموح من الدعوات خلال آخر 24 ساعة. حاول مرة أخرى لاحقًا.",
     "inviteOwner": "لا يدعو المالك إلا مالك.",
-    "inviteOwnerText": "اختر مسؤولًا أو عضوًا، أو اطلب من مالك إرسال هذه الدعوة.",
+    "inviteOwnerText": "اختر مشرفًا أو عضوًا، أو اطلب من مالك إرسال هذه الدعوة.",
     "permissionCount": "{count, plural, zero {لا صلاحيات} one {صلاحية واحدة} two {صلاحيتان} few {# صلاحيات} many {# صلاحية} other {# صلاحية}}",
     "giveOwner": "لا يمنح دور المالك إلا مالك.",
     "roleOutOfReach": "لهذا الدور صلاحيات ليست في دورك.",
@@ -255,15 +260,15 @@
         "revoked": "<actor></actor> ألغى دعوة."
       },
       "member": {
-        "invited": "<actor></actor> دعا شخصًا بدور {role}.",
+        "invited": "<actor></actor> دعا شخصًا بدور <role></role>.",
         "joined": "<target></target> انضم إلى المؤسسة.",
-        "removed": "<actor></actor> أزال <target></target> ({role}) من المؤسسة.",
-        "role_changed": "<actor></actor> غيّر دور <target></target> من {oldRole} إلى {newRole}."
+        "removed": "<actor></actor> أزال <target></target> (<role></role>) من المؤسسة.",
+        "role_changed": "{actorKind, select, platform {غيّرت} other {غيّر}} <actor></actor> دور <target></target> من <oldRole></oldRole> إلى <newRole></newRole>."
       },
       "role": {
-        "created": "<actor></actor> أنشأ الدور <target></target>.",
-        "deleted": "<actor></actor> حذف الدور <target></target>.",
-        "updated": "<actor></actor> غيّر الدور <target></target>."
+        "created": "أنشأ <actor></actor> الدور <target></target>.",
+        "deleted": "حذف <actor></actor> الدور <target></target>.",
+        "updated": "غيّر <actor></actor> الدور <target></target>{change, select, both {: أضاف <added></added>، وأزال <removed></removed>} added {: أضاف <added></added>} removed {: أزال <removed></removed>} other {}}."
       },
       "system_admin": {
         "granted": "<actor></actor> جعل <target></target> مسؤول نظام.",
@@ -274,11 +279,11 @@
         "created": "<actor></actor> أنشأ هذه المؤسسة.",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
         "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
-        "purge_warned": "<actor></actor> نبّه المالكين إلى أن هذه المؤسسة ستُحذف.",
+        "purge_warned": "أُبلغ المالكون بأن <target></target> ستُحذف.",
         "purged": "<actor></actor> حذف هذه المؤسسة وبياناتها.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
-        "reopened": "<actor></actor> أعاد فتح هذه المؤسسة.",
+        "reopened": "أعادت <actor></actor> فتح هذه المؤسسة.",
         "suspended": "<actor></actor> أوقف هذه المؤسسة."
       },
       "user": {
@@ -288,7 +293,9 @@
         "renamed": "<actor></actor> غيّر اسم <target></target>.",
         "suspended": "<actor></actor> أوقف حساب <target></target>."
       }
-    }
+    },
+    "morePermissions": "{count, plural, one {صلاحية أخرى} two {صلاحيتان أخريان} few {# صلاحيات أخرى} other {# صلاحية أخرى}}",
+    "roleRenamed": "غيّر <actor></actor> اسم الدور <name>{oldName}</name> إلى <name>{newName}</name>."
   },
   "blocked": {
     "suspendedTitle": "{organisation} موقوفة",
@@ -297,5 +304,50 @@
     "closedText": "أُغلقت هذه المؤسسة ولا يمكن فتحها. بياناتك محفوظة حاليًا. تواصل مع مالك مؤسستك إذا احتجت إلى معرفة المزيد.",
     "organisation": "المؤسسة",
     "chooseAnother": "اختر مؤسسة أخرى"
+  },
+  "account": {
+    "user": {
+      "suspended": {
+        "status": "معلّق",
+        "title": "حسابك معلّق",
+        "text": "لا يمكنك تسجيل الدخول الآن. تواصل مع الدعم.",
+        "action": "تسجيل الخروج"
+      },
+      "deleted": {
+        "status": "محذوف",
+        "title": "حُذف هذا الحساب",
+        "text": "سجّل الدخول ببريد إلكتروني آخر.",
+        "action": "استخدام بريد آخر"
+      }
+    }
+  },
+  "permissions": {
+    "tenant": {
+      "audit": {
+        "read": "عرض النشاط"
+      },
+      "invitations": {
+        "create": "دعوة الأشخاص",
+        "delete": "سحب الدعوات وإلغاؤها",
+        "read": "عرض الدعوات"
+      },
+      "members": {
+        "delete": "إزالة الأعضاء",
+        "read": "عرض الأعضاء",
+        "update": "تغيير أدوار الأعضاء"
+      },
+      "owners": {
+        "manage": "إدارة المالكين"
+      },
+      "profile": {
+        "read": "عرض بيانات المؤسسة"
+      },
+      "roles": {
+        "create": "إنشاء الأدوار",
+        "delete": "حذف الأدوار",
+        "read": "عرض الأدوار",
+        "update": "تعديل الأدوار"
+      }
+    }
   }
 }

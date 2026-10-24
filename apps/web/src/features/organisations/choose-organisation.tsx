@@ -50,36 +50,47 @@ export function ChooseOrganisation() {
       <p className="text-body text-muted-foreground">
         {t("organisations.chooseText", { count: tenants.data.total })}
       </p>
-      <ul className="flex flex-col">
+      <ul className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs">
         {tenants.data.items.map((tenant) => {
+          const active = tenant.status === MyTenantResponseStatus.Active;
           const row = (
             <>
-              <span className="flex flex-1 flex-col">
-                <span className="font-medium">{tenant.name}</span>
-                <bdi
-                  dir="ltr"
-                  className="font-mono text-mono text-muted-foreground"
-                >
-                  {tenant.slug}
-                </bdi>
+              <span
+                aria-hidden="true"
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted font-semibold"
+              >
+                {tenant.name.charAt(0)}
               </span>
-              <span className="text-body text-muted-foreground">
-                {roleName(tenant.role)}
+              <span
+                className={`flex min-w-0 flex-1 flex-col ${active ? "" : "opacity-60"}`}
+              >
+                <span className="font-medium">{tenant.name}</span>
+                <span className="text-small text-muted-foreground">
+                  <bdi dir="ltr" className="font-mono">
+                    {tenant.slug}
+                  </bdi>
+                  {" · "}
+                  {roleName(tenant.role)}
+                </span>
               </span>
             </>
           );
-          // A suspended or closed organisation cannot be opened (the SelectTenant board): it shows its status and no link.
+          // An organisation that is not active cannot be opened (the SelectTenant board): it shows its status and no link. A purging
+          // one shows "Being deleted".
           return (
-            <li key={tenant.id} className="border-b border-border">
-              {tenant.status === MyTenantResponseStatus.Active ? (
+            <li
+              key={tenant.id}
+              className="border-b border-border last:border-b-0"
+            >
+              {active ? (
                 <Link
                   href={`/${tenant.slug}`}
-                  className="flex min-h-14 items-center gap-3 px-2 hover:bg-accent"
+                  className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-accent"
                 >
                   {row}
                 </Link>
               ) : (
-                <div className="flex min-h-14 items-center gap-3 px-2 opacity-60">
+                <div className="flex min-h-16 items-center gap-3 px-4 py-3">
                   {row}
                   <Status
                     tone={

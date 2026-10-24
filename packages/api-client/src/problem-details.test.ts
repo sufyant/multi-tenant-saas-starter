@@ -59,6 +59,19 @@ describe("actionFor", () => {
     });
   });
 
+  it("ActionFor_403UserDeleted_GoesToTheDeletedAccountPage", () => {
+    expect(actionFor(403, problem({ code: "user.deleted" }))).toEqual({
+      kind: "account-deleted",
+    });
+  });
+
+  it("ActionFor_409UserDeleted_ShowsTheMessageOfTheCode", () => {
+    expect(actionFor(409, problem({ code: "user.deleted" }))).toEqual({
+      kind: "message",
+      key: "errors.user.deleted",
+    });
+  });
+
   it("ActionFor_ValidationAnswer_GivesTheFieldErrorsToTheForm", () => {
     const answer = problem({
       code: "request.validation_failed",
