@@ -5,6 +5,7 @@ This is the frontend of a multi-tenant SaaS starter template: two Next.js apps (
 ## Source of truth
 
 - `docs/frontend/ARCHITECTURE.md` holds every frontend rule, each with an id (`F6`, `F17`). It is authoritative. If this file and it disagree, it wins.
+- A new F rule takes the next free number on `main` at the time of the merge. A pull request that loses the race renumbers its rule and every citation of it. `RuleIds_FrontendArchitecture_GivesEachRuleOneId` in `packages/ui/src/architecture.test.ts` fails for an id on two rows.
 - The API's contract is `apps/api/openapi/v1.json`, and its rules are in `apps/api/docs/ARCHITECTURE.md` and `apps/api/docs/api-catalog.md` (K5 the contract, K7 the permission names, K8 language and time zone). The frontend never contradicts them.
 - The look is the Starter design system: `packages/ui/tokens/tokens.json` and the README of each component, which is its specification.
 - Cite a rule by its id. Do not copy a rule into a code comment.
@@ -51,6 +52,7 @@ These were decided with the maintainer in step 21a, with their sources. Do not r
 - Clerk's custom flows are Core 3 in `@clerk/nextjs` 7: `useSignIn().signIn.emailCode.sendCode`, `signIn.mfa.verifyTOTP`, `signIn.finalize`, `HandleSSOCallback`. A method returns `{ error }`; the code of an API error is in `error.errors[0].code` (`clerkErrorCode`). The user's and the session's methods (`createTOTP`, `attemptSecondFactorVerification`) still throw.
 - jsdom has no `elementFromPoint`; input-otp calls it, so `test/setup.ts` stubs it too.
 - jsdom has no `matchMedia`, `ResizeObserver` or `scrollIntoView`; `test/setup.ts` of each package and app stubs them, because next-themes, sonner and cmdk read them.
+- sonner adds a toast at opacity 0 and shows it one render later. `findByText` finds it before that render, so `toBeVisible` after it fails when React's scheduler is late. Check a toast with `expectVisibleToast` of `@repo/ui/test/toast`.
 - `/dev/components` is a `page.dev.tsx`. `next.config.ts` adds the page extension `dev.tsx` only outside production, so `next build` has no such route and `next dev` has it.
 - A value of a contract enum is never a literal, even when it is a word of our own: the action of a suspended user is `account-suspended`, not `suspended`, which `TenantResponseStatus` holds.
 - A command palette in shadcn on Base UI puts `Command` inside `CommandDialog`; without it, cmdk throws.

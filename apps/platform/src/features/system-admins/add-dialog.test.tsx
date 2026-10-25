@@ -1,4 +1,5 @@
 import { ErrorCode, type UserResponse } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -309,9 +310,7 @@ describe("AddSystemAdminDialog", () => {
 
     await makeSystemAdmin();
 
-    expect(
-      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Mehmet Kaya is a system admin."));
     expect(keys).toHaveLength(1);
     expect(keys[0]).toMatch(/^[\da-f-]{36}$/);
     await vi.waitFor(() =>
@@ -367,9 +366,7 @@ describe("AddSystemAdminDialog", () => {
       again.getByRole("button", { name: "Make system admin" }),
     );
 
-    expect(
-      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Mehmet Kaya is a system admin."));
     expect(keys).toHaveLength(2);
     expect(keys[1]).toBe(keys[0]);
   });
@@ -431,9 +428,7 @@ describe("AddSystemAdminDialog", () => {
       dialog.getByRole("button", { name: "Make system admin" }),
     );
 
-    expect(
-      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Mehmet Kaya is a system admin."));
     expect(keys).toHaveLength(2);
     expect(keys[1]).not.toBe(keys[0]);
   });
@@ -491,9 +486,7 @@ describe("AddSystemAdminDialog", () => {
       step.getByRole("button", { name: "Verify and continue" }),
     );
 
-    expect(
-      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Mehmet Kaya is a system admin."));
     expect(session.startVerification).toHaveBeenCalledWith({
       level: "second_factor",
     });
@@ -564,9 +557,7 @@ describe("AddSystemAdminDialog", () => {
       step.getByRole("button", { name: "Verify and continue" }),
     );
 
-    expect(
-      await screen.findByText(sentence("Mehmet Kaya is a system admin.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Mehmet Kaya is a system admin."));
     expect(session.attemptSecondFactorVerification).toHaveBeenCalledWith({
       strategy: "backup_code",
       code: "code3",

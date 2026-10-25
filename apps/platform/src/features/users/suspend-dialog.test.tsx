@@ -1,4 +1,5 @@
 import { ErrorCode, UserResponseStatus } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
@@ -85,9 +86,7 @@ describe("SuspendUserDialog", () => {
     expect(dialog.queryByText(/is the last Owner of/)).toBeNull();
     await suspend(dialog);
 
-    expect(
-      await screen.findByText(sentence("Mehmet Kaya suspended")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Mehmet Kaya suspended"));
     expect(
       screen.getByText("They are refused on their next request."),
     ).toBeVisible();
@@ -122,9 +121,7 @@ describe("SuspendUserDialog", () => {
     expect(dialog.getByRole("button", { name: "Suspend user" })).toBeEnabled();
     await suspend(dialog);
 
-    expect(
-      await screen.findByText(sentence("Ayşe Yılmaz suspended")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Ayşe Yılmaz suspended"));
     expect(calls).toHaveLength(1);
   });
 

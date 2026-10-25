@@ -1,4 +1,5 @@
 import { ErrorCode, UserResponseStatus } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse } from "msw";
@@ -98,9 +99,7 @@ describe("DeleteUserDialog", () => {
     const dialog = await open();
     await confirm(dialog);
 
-    expect(
-      await screen.findByText(sentence("Ayşe Yılmaz deleted.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Ayşe Yılmaz deleted."));
     expect(calls).toEqual([{ key: null, body: null }]);
     expect(
       await screen.findByRole("heading", { level: 1, name: "Deleted user" }),
