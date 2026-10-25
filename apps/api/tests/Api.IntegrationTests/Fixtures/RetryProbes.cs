@@ -25,6 +25,17 @@ public static class SpecificRetryProbeHandler
     }
 }
 
+// A failure that Wolverine retries later rather than at once, as the module handlers do after their first pauses (GrowingRetries).
+public static class ScheduledRetryProbeHandler
+{
+    public static void Configure(HandlerChain chain) => chain.OnAnyException().ScheduleRetry(TimeSpan.FromMilliseconds(50)).Then.MoveToErrorQueue();
+    public static void Handle(ScheduledRetryProbe command, RetryAttempts attempts)
+    {
+        attempts.Record(command.Id);
+        throw new InvalidOperationException("The scheduled retry probe always fails.");
+    }
+}
+
 public sealed class RetryAttempts
 {
     private readonly ConcurrentDictionary<Guid, int> _counts = new();
@@ -35,3 +46,5 @@ public sealed class RetryAttempts
 public sealed record RetryProbe(Guid Id);
 
 public sealed record SpecificRetryProbe(Guid Id);
+
+public sealed record ScheduledRetryProbe(Guid Id);

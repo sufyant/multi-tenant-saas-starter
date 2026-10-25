@@ -65,6 +65,8 @@ internal sealed partial class UnknownMessages(
     [LoggerMessage(Level = LogLevel.Warning, Message = "No handler for {MessageType} on this node. It is put back for try {Try} of {Tries}, in {Delay}. Trace {TraceId}")]
     private partial void LogPutBack(string? messageType, int @try, int tries, TimeSpan delay, string? traceId);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "No node handled {MessageType} after {Tries} tries. It is moved to the dead letter queue. Trace {TraceId}")]
+    // Wolverine logs the move to the dead letter queue at Error; this adds the tries, so the failure is one alert (section 7, "Error
+    // tracking").
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No node handled {MessageType} after {Tries} tries. It is moved to the dead letter queue. Trace {TraceId}")]
     private partial void LogDeadLetter(string? messageType, int tries, string? traceId);
 }
