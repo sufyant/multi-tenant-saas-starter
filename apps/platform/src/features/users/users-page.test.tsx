@@ -103,6 +103,18 @@ describe("UsersPage", () => {
     expect(row.getByText("Root")).toBeVisible();
   });
 
+  it("UsersPage_RootTag_HasTheKeyIconAndTheNeutralTone", async () => {
+    server.use(meAnswer(), usersAnswer(usersPageOf([rory])));
+
+    renderWithProviders(<UsersPage />);
+
+    const row = await rowOf("Rory Brennan");
+    const root = row.getByText("Root");
+    expect(root.firstElementChild).toHaveClass("lucide-key");
+    expect(root).toHaveClass("bg-neutral/16", "text-neutral-text");
+    expect(row.getByText("System admin").querySelector("svg")).toBeNull();
+  });
+
   it("UsersPage_Tags_AreNoButtonsOrLinks", async () => {
     server.use(meAnswer(), usersAnswer(usersPageOf([rory])));
 

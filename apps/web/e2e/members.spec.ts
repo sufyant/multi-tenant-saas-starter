@@ -1,5 +1,5 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { BuiltInRole, Language } from "@repo/api-client";
 import { mockMembers, northwind } from "./api";
 import { expectAccessible } from "./axe";
@@ -93,6 +93,121 @@ test("Members_OpenTheUserMenu_ShowsItOverTheTopBar", async ({
     );
   });
   expect(onTop).toBe(true);
+  await expectAccessible(browser);
+});
+
+/** Opens the user menu and waits for its opening animation, so the boxes are the final ones. */
+const openUserMenu = async (browser: Page, name: string) => {
+  const avatar = browser.getByRole("button", { name });
+  await avatar.click();
+  const menu = browser.getByRole("menu");
+  await menu.evaluate((element) =>
+    Promise.all(element.getAnimations().map((each) => each.finished)),
+  );
+  return { avatar, menu };
+};
+
+/** The drawn box of an element. */
+const rect = (locator: Locator) =>
+  locator.evaluate((element) =>
+    element.getBoundingClientRect().toJSON(),
+  ) as Promise<DOMRect>;
+
+/** A token's value as the browser draws it: a colour as `rgb(...)`, a size in pixels. */
+const token = (browser: Page, name: string, property: "color" | "width") =>
+  browser.evaluate(
+    ([name, property]) => {
+      const probe = document.createElement("div");
+      probe.style.setProperty(property, `var(--${name})`);
+      document.body.append(probe);
+      const value = getComputedStyle(probe).getPropertyValue(property);
+      probe.remove();
+      return value;
+    },
+    [name, property] as const,
+  );
+
+// jsdom has no layout. The browser measures the boxes and the drawn colours against the tokens, so a drift from the UserMenu
+// boards fails here.
+test("Members_UserMenu_OpensSixPixelsBelowTheAvatarAtItsEndEdge", async ({
+  page: browser,
+}) => {
+  await open(browser);
+
+  const { avatar, menu } = await openUserMenu(browser, "AY Account");
+  const trigger = await rect(avatar);
+  const box = await rect(menu);
+  expect(box.top).toBeCloseTo(trigger.bottom + 6, 0);
+  expect(box.right).toBeCloseTo(trigger.right, 0);
+  expect(box.width).toBe(280);
+  await expectAccessible(browser);
+});
+
+test("Members_UserMenuInArabic_AlignsToTheAvatarsLeftEdge", async ({
+  page: browser,
+}) => {
+  await open(browser, { language: Language.Ar });
+
+  const { avatar, menu } = await openUserMenu(browser, "AY الحساب");
+  const trigger = await rect(avatar);
+  const box = await rect(menu);
+  expect(box.top).toBeCloseTo(trigger.bottom + 6, 0);
+  expect(box.left).toBeCloseTo(trigger.left, 0);
+  await expectAccessible(browser);
+});
+
+test("Members_UserMenuOnAPhone_FitsTheScreen", async ({ page: browser }) => {
+  await browser.setViewportSize({ width: 390, height: 844 });
+  await open(browser);
+
+  const { avatar, menu } = await openUserMenu(browser, "AY Account");
+  const box = await rect(menu);
+  expect(box.left).toBeGreaterThanOrEqual(16);
+  expect(box.right).toBeLessThanOrEqual(390 - 16);
+  expect(`${(await rect(avatar)).width}px`).toBe(
+    await token(browser, "control-lg", "width"),
+  );
+  await expectAccessible(browser);
+});
+
+test("Members_Avatar_IsAControlHighNeutralCircle", async ({
+  page: browser,
+}) => {
+  await open(browser);
+
+  const avatar = browser.getByRole("button", { name: "AY Account" });
+  await expect(avatar).toBeVisible();
+  expect(`${(await rect(avatar)).width}px`).toBe(
+    await token(browser, "control-md", "width"),
+  );
+  const fill = await avatar
+    .locator('[data-slot="avatar-fallback"]')
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(fill).toBe(await token(browser, "neutral-text", "color"));
+});
+
+test("Members_ChosenTheme_SitsOnPrimarySubtle", async ({ page: browser }) => {
+  await open(browser);
+
+  await openUserMenu(browser, "AY Account");
+  const chosen = browser.getByRole("menuitemradio", { checked: true });
+  const background = await chosen.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  expect(background).toBe(await token(browser, "primary-subtle", "color"));
+});
+
+test("Members_RoleFilter_IsAsHighAsTheSearchField", async ({
+  page: browser,
+}) => {
+  await open(browser);
+
+  const filter = browser.getByRole("combobox", { name: "Filter by role" });
+  await expect(filter).toHaveText("All roles");
+  const search = browser.getByRole("searchbox", {
+    name: "Search by name or email",
+  });
+  expect((await rect(filter)).height).toBe((await rect(search)).height);
   await expectAccessible(browser);
 });
 
