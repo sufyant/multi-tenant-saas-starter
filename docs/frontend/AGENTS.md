@@ -5,6 +5,7 @@ This is the frontend of a multi-tenant SaaS starter template: two Next.js apps (
 ## Source of truth
 
 - `docs/frontend/ARCHITECTURE.md` holds every frontend rule, each with an id (`F6`, `F17`). It is authoritative. If this file and it disagree, it wins.
+- A new F rule takes the next free number on `main` at the time of the merge. A pull request that loses the race renumbers its rule and every citation of it. `RuleIds_FrontendArchitecture_GivesEachRuleOneId` in `packages/ui/src/architecture.test.ts` fails for an id on two rows.
 - The API's contract is `apps/api/openapi/v1.json`, and its rules are in `apps/api/docs/ARCHITECTURE.md` and `apps/api/docs/api-catalog.md` (K5 the contract, K7 the permission names, K8 language and time zone). The frontend never contradicts them.
 - The look is the Starter design system: `packages/ui/tokens/tokens.json` and the README of each component, which is its specification.
 - Cite a rule by its id. Do not copy a rule into a code comment.
