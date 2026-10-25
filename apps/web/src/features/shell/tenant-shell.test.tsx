@@ -92,8 +92,9 @@ describe("TenantShell", () => {
 
     renderWithProviders(shell());
 
+    await screen.findByText("Northwind Traders");
     const crumbs = within(
-      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
     ).getAllByRole("listitem");
     expect(crumbs[0]).toHaveTextContent("Northwind Traders");
     expect(screen.getAllByText("Preferences").length).toBeGreaterThan(0);
@@ -104,7 +105,7 @@ describe("TenantShell", () => {
 
     renderWithProviders(shell());
 
-    await screen.findByRole("navigation", { name: "Breadcrumb" });
+    await screen.findByText("Northwind Traders");
     expect(
       screen.queryByRole("button", { name: "Northwind Traders" }),
     ).not.toBeInTheDocument();

@@ -13,9 +13,7 @@ import {
   ProblemDetailsError,
   schemas,
 } from "@repo/api-client";
-import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { createContext, type ReactNode, use, useEffect, useState } from "react";
 import {
   BlockedOrganisation,
@@ -70,12 +68,14 @@ function holds(value: unknown, id: string): boolean {
  */
 export function TenantProvider({
   slug,
+  pending = null,
   children,
 }: {
   slug: string;
+  /** What shows while the first reads come: the shell with what the route knows (the ListStates boards). */
+  pending?: ReactNode;
   children: ReactNode;
 }) {
-  const t = useTranslations("common");
   const queryClient = useQueryClient();
   const matching = useQuery(
     getListMyTenantsQueryOptions({
@@ -129,7 +129,7 @@ export function TenantProvider({
   const error = matching.error ?? all.error;
   if (error) return <ProblemScreen error={error} />;
   if (matching.data && !tenant) return <NoAccess />;
-  if (!tenant || !all.data) return <Skeleton label={t("loading")} />;
+  if (!tenant || !all.data) return pending;
   // The API refuses a member of an organisation whose deletion has started as it refuses a closed one's (403 `tenant.closed`).
   const blocked =
     tenant.status === MyTenantResponseStatus.Active
@@ -146,7 +146,7 @@ export function TenantProvider({
       />
     );
   if (detail.error) return <ProblemScreen error={detail.error} />;
-  if (!detail.data) return <Skeleton label={t("loading")} />;
+  if (!detail.data) return pending;
   return (
     <Context
       value={{ tenant, detail: detail.data, hasOthers: all.data.total > 1 }}
