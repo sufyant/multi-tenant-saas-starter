@@ -1,0 +1,44 @@
+{
+  "invitation": {
+    "subject": "دعوة من {inviterName} إلى {tenantName}",
+    "preheader": "انضم بصفة {roleName}. تنتهي صلاحية الدعوة في {expiresAt}.",
+    "heading": "لديك دعوة من {inviterName} للانضمام إلى {tenantName} بصفة {roleName}.",
+    "button": "قبول الدعوة",
+    "expiry": "تنتهي صلاحية الدعوة في {expiresAt}.",
+    "fallback": "إذا لم يعمل الزر، فانسخ هذا الرابط والصقه في متصفحك:",
+    "footer": "وصلتك هذه الرسالة لأن أحدهم دعا هذا العنوان. إذا لم تكن تتوقعها، فيمكنك تجاهلها."
+  },
+  "deletionWarning": {
+    "subject": "ستُحذف {tenantName} في {purgesOn}",
+    "preheader": "أُغلقت المؤسسة. تواصل معنا لإعادة فتحها قبل هذا التاريخ.",
+    "heading": "أُغلقت {tenantName}.",
+    "body": "ستُحذف مع جميع بياناتها في {purgesAt}.",
+    "contact": "<link>تواصل معنا</link> لإعادة فتحها قبل هذا التاريخ.",
+    "footer": "وصلتك هذه الرسالة لأنك مالك في {tenantName}."
+  },
+  "roles": {
+    "owner": "مالك",
+    "admin": "مشرف",
+    "member": "عضو"
+  },
+  "dates": {
+    "months": [
+      "يناير",
+      "فبراير",
+      "مارس",
+      "أبريل",
+      "مايو",
+      "يونيو",
+      "يوليو",
+      "أغسطس",
+      "سبتمبر",
+      "أكتوبر",
+      "نوفمبر",
+      "ديسمبر"
+    ],
+    "date": "{day} {month} {year}",
+    "moment": "{date} الساعة {time} {zone}",
+    "zone": "بتوقيت {city} ({offset})",
+    "utc": "بالتوقيت العالمي (UTC)"
+  }
+}

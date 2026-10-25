@@ -30,6 +30,10 @@ comment-summary-in-pr: never
 # - axe-core and @axe-core/playwright are MPL-2.0, a file-level copyleft license that is not commercial. They run only in the
 #   Playwright tests, for the WCAG 2.2 AA check of every page (F37 in docs/frontend/ARCHITECTURE.md), and no build ships them.
 #   The maintainer's decision in step 21a.
+# - json-schema-typed: GitHub's detection adds "JSON" to its license, but the package's LICENSE.md and every file of 8.0.2 say
+#   BSD-2-Clause. It comes with react-email through conf, which uses it for TypeScript types only (types.d.ts), and no build ships
+#   it. The maintainer's decision in step r14.
 allow-dependencies-licenses:
   - pkg:npm/axe-core
   - pkg:npm/%40axe-core/playwright
+  - pkg:npm/json-schema-typed

@@ -534,7 +534,8 @@ public sealed class HostRoleTests(Database database)
         _ = worker.Services;
         var testData = new TestData(database, name);
         var tenant = await testData.AddTenantAsync();
-        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(language: "tr"), role: "Owner"));
+        var owner = web.CreateClient(
+            await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace", language: "tr"), role: "Owner"));
 
         var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test", role: (await testData.RoleIdOfAsync(tenant.Id, "Member")).ToString());
         await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);
@@ -550,8 +551,8 @@ public sealed class HostRoleTests(Database database)
             ],
             ignoreOrder: true);
         var email = worker.Email.Sent.ShouldHaveSingleItem();
-        (email.To, email.Subject).ShouldBe(("grace@navy.test", "Acme Ltd adlı kuruluşa davet edildiniz"));
-        email.Text.ShouldEndWith("Bağlantı 7 gün geçerlidir.");
+        (email.To, email.Subject).ShouldBe(("grace@navy.test", "Ada Lovelace sizi Acme Ltd kuruluşuna davet etti"));
+        email.Text.Split("\n\n")[1].ShouldBe("Ada Lovelace sizi Acme Ltd kuruluşuna Üye olarak katılmaya davet etti.");
         (await AuditEntriesAsync(name, tenant.Id, "member.invited")).ShouldBe(1L);
     }
 

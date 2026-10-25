@@ -1,0 +1,44 @@
+{
+  "invitation": {
+    "subject": "{inviterName} sizi {tenantName} kuruluşuna davet etti",
+    "preheader": "{roleName} olarak katılın. Son geçerlilik: {expiresAt}.",
+    "heading": "{inviterName} sizi {tenantName} kuruluşuna {roleName} olarak katılmaya davet etti.",
+    "button": "Daveti kabul et",
+    "expiry": "Son geçerlilik: {expiresAt}.",
+    "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
+    "footer": "Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız görmezden gelebilirsiniz."
+  },
+  "deletionWarning": {
+    "subject": "{tenantName} {purgesOn} tarihinde silinecek",
+    "preheader": "Kuruluş kapatıldı. Bu tarihten önce yeniden açmak için bize ulaşın.",
+    "heading": "{tenantName} kapatıldı.",
+    "body": "{purgesAt} itibarıyla tüm verileriyle birlikte silinecek.",
+    "contact": "Bu tarihten önce yeniden açmak için <link>bize ulaşın</link>.",
+    "footer": "Bu e-postayı, {tenantName} kuruluşunun Sahibi olduğunuz için aldınız."
+  },
+  "roles": {
+    "owner": "Sahip",
+    "admin": "Yönetici",
+    "member": "Üye"
+  },
+  "dates": {
+    "months": [
+      "Oca",
+      "Şub",
+      "Mar",
+      "Nis",
+      "May",
+      "Haz",
+      "Tem",
+      "Ağu",
+      "Eyl",
+      "Eki",
+      "Kas",
+      "Ara"
+    ],
+    "date": "{day} {month} {year}",
+    "moment": "{date}, saat {time} {zone}",
+    "zone": "{city} ({offset})",
+    "utc": "UTC"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "en": {
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "dates": {
+      "months": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sept",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
+      "date": "{day} {month} {year}",
+      "moment": "{date} at {time} {zone}",
+      "zone": "{city} ({offset})",
+      "utc": "UTC"
+    }
+  },
+  "tr": {
+    "roles": {
+      "owner": "Sahip",
+      "admin": "Yönetici",
+      "member": "Üye"
+    },
+    "dates": {
+      "months": [
+        "Oca",
+        "Şub",
+        "Mar",
+        "Nis",
+        "May",
+        "Haz",
+        "Tem",
+        "Ağu",
+        "Eyl",
+        "Eki",
+        "Kas",
+        "Ara"
+      ],
+      "date": "{day} {month} {year}",
+      "moment": "{date}, saat {time} {zone}",
+      "zone": "{city} ({offset})",
+      "utc": "UTC"
+    }
+  },
+  "ar": {
+    "roles": {
+      "owner": "مالك",
+      "admin": "مشرف",
+      "member": "عضو"
+    },
+    "dates": {
+      "months": [
+        "يناير",
+        "فبراير",
+        "مارس",
+        "أبريل",
+        "مايو",
+        "يونيو",
+        "يوليو",
+        "أغسطس",
+        "سبتمبر",
+        "أكتوبر",
+        "نوفمبر",
+        "ديسمبر"
+      ],
+      "date": "{day} {month} {year}",
+      "moment": "{date} الساعة {time} {zone}",
+      "zone": "بتوقيت {city} ({offset})",
+      "utc": "بالتوقيت العالمي (UTC)"
+    }
+  }
+}

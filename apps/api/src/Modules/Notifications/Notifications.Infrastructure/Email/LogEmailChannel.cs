@@ -9,10 +9,10 @@ internal sealed partial class LogEmailChannel(ILogger<LogEmailChannel> logger) :
 {
     public Task SendAsync(EmailMessage email, CancellationToken cancellationToken)
     {
-        LogEmail(logger, email.To, email.Subject, email.Text);
+        LogEmail(logger, email.To, email.Subject, email.Text, email.Html);
         return Task.CompletedTask;
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Email to {To} is not sent in Development: {Subject}\n{Text}")]
-    private static partial void LogEmail(ILogger logger, string to, string subject, string text);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Email to {To} is not sent in Development: {Subject}\n{Text}\n{Html}")]
+    private static partial void LogEmail(ILogger logger, string to, string subject, string text, string html);
 }

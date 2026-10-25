@@ -60,6 +60,24 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant);
     }
 
+    // Step r14: a system admin invites as the platform, so the email names the brand, never the admin, and writes the expiry in the
+    // admin's own time zone (Asia/Kolkata keeps UTC+5:30). The exact date is the unit tests' (SendInvitationEmailHandlerTests).
+    [Fact]
+    public async Task InviteOwner_ASystemAdminWithATimeZone_EmailsFromTheBrandWithTheExpiryInTheAdminsZone()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(timeZone: "Asia/Kolkata"), secondFactor: true);
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email(), name: "Northwind Traders");
+        var owner = PlatformTenants.Email();
+
+        await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, owner));
+
+        var sent = _api.Email.Sent.Single(email => email.To == owner);
+        sent.Subject.ShouldBe("Starter invited you to Northwind Traders");
+        var parts = sent.Text.Split("\n\n");
+        parts[1].ShouldBe("Starter invited you to join Northwind Traders as Owner.");
+        parts[3].ShouldMatch(@"^Expires on \d{1,2} [A-Z][a-z]{2,3} \d{4} at \d{2}:\d{2} Kolkata \(UTC\+5:30\)\.$");
+    }
+
     // The invitation the tenant creation sent is the pending one; a new invitation to another address cancels it, and its link answers as a
     // cancelled one.
     [Fact]

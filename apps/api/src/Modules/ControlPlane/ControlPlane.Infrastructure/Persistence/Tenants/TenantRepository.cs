@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
@@ -205,6 +206,14 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
                 orderby user.Id
                 select new OwnerAddress(user.Id, user.Email!, user.Language, user.TimeZone))
             .ToListAsync(cancellationToken);
+
+    // Users and system admins are under no row level security (R6), so the tenant's transaction reads them by the user's id.
+    async Task<InvitingUser> ITenantRepository.FindInvitingUserAsync(Guid userId, CancellationToken cancellationToken) =>
+        await controlPlane.Users
+            .Where(user => user.Id == userId)
+            .Select(user => new InvitingUser(
+                controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id), user.FirstName, user.LastName, user.TimeZone))
+            .SingleAsync(cancellationToken);
 
     // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a
     // membership name a role (A2), a role's permissions go with it (A3), and the summary names the tenant (R12). The summary goes with the
