@@ -43,7 +43,7 @@ EXPOSE 8080
 EXPOSE 8081
 
 # The commit the image is built from. CI passes it, so the image it promotes to production keeps it. Each error event
-# names it as its release (Host:ErrorTracking:Release). A build without it leaves the release empty.
+# names it as its release (Host:ErrorTracking:Release). Without it, the SDK names the release from the assembly's version.
 ARG SOURCE_REVISION=""
 ENV Host__ErrorTracking__Release=$SOURCE_REVISION
 

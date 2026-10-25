@@ -111,7 +111,7 @@ Root system admins: `ControlPlane:SystemAdmins:RootEmails` lists their addresses
 
 - The error tracker is Better Stack (Errors). It takes events in the Sentry protocol, so the API sends them through the Sentry SDK (section 7 of `ARCHITECTURE.md`, "Error tracking"). Another tracker that speaks the protocol needs only another DSN.
 - Staging and production: copy the DSN from the Ingest tab of the API's Errors application into the shared variable `Host__ErrorTracking__Dsn` of each environment. `.railway/railway.ts` gives it to both API services. Each event names its environment (`staging` or `production`, from `ASPNETCORE_ENVIRONMENT`) and its release (the commit of the image), so one application serves both environments.
-- Local development, CI and the tests set no DSN, so nothing is sent.
+- Local development and CI set no DSN, so nothing is sent. The tests of error tracking use a DSN of no real project and keep the events in the process.
 - To see the logs, traces and metrics on a local machine, run the .NET Aspire Dashboard (MIT) and point the API at it. The dashboard keeps the data in memory only.
 
 ```sh

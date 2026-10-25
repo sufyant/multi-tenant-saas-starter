@@ -50,17 +50,15 @@ public sealed class UnknownMessageTests(Database database)
 
         await deploy.SendFromWebAsync(new RecordHandling(id));
         await deploy.WaitForDeadLetterAsync(id);
-        await deploy.WaitForLogAsync(RollingDeploy.Old, LogLevel.Warning, 3);
+        await deploy.WaitForLogAsync(RollingDeploy.Old, LogLevel.Error, 1);
 
-        // Wolverine logs the move to the dead letter queue at Error; this log adds the tries, at Warning, so the failure is one alert
-        // (section 7, "Error tracking").
-        deploy.LogOf(RollingDeploy.Old, LogLevel.Warning).Select(message => message[..message.IndexOf(". Trace", StringComparison.Ordinal)]).ShouldBe(
+        deploy.LogOf(RollingDeploy.Old, LogLevel.Warning).Select(message => message[..message.IndexOf(", in ", StringComparison.Ordinal)]).ShouldBe(
         [
-            $"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 1 of 2, in 00:00:00.2000000",
-            $"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 2 of 2, in 00:00:00.2000000",
-            $"No node handled \"{typeof(RecordHandling).FullName}\" after 2 tries. It is moved to the dead letter queue",
+            $"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 1 of 2",
+            $"No handler for \"{typeof(RecordHandling).FullName}\" on this node. It is put back for try 2 of 2",
         ]);
-        deploy.LogOf(RollingDeploy.Old, LogLevel.Error).ShouldBeEmpty();
+        deploy.LogOf(RollingDeploy.Old, LogLevel.Error).ShouldHaveSingleItem().ShouldStartWith(
+            $"No node handled \"{typeof(RecordHandling).FullName}\" after 2 tries. It is moved to the dead letter queue");
         deploy.LogOf(RollingDeploy.Old, LogLevel.Warning).ShouldAllBe(message => Regex.IsMatch(message, "Trace \"[0-9a-f]{32}\"$"));
         (await deploy.DeadLettersAsync()).ShouldBe(1);
     }
@@ -94,6 +92,6 @@ public sealed class UnknownMessageTests(Database database)
 
         var logs = api.Services.GetFakeLogCollector().GetSnapshot();
         logs.ShouldNotContain(record => record.Level == LogLevel.Warning && record.Message.StartsWith("No handler for", StringComparison.Ordinal));
-        logs.ShouldContain(record => record.Level == LogLevel.Warning && record.Message.StartsWith($"No node handled \"{typeof(RecordHandling).FullName}\" after 0 tries", StringComparison.Ordinal));
+        logs.ShouldContain(record => record.Level == LogLevel.Error && record.Message.StartsWith($"No node handled \"{typeof(RecordHandling).FullName}\" after 0 tries", StringComparison.Ordinal));
     }
 }

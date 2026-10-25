@@ -40,9 +40,9 @@ public sealed partial class ErrorTrackingTests(Database database)
         var response = await host.CreateClient().PostAsync("/v1/logged-throws", null, TestContext.Current.CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
-        await Waiting.UntilAsync(() => events.All.Count > 0);
+        await Waiting.UntilAsync(() => Of(events, "/v1/logged-throws").Count > 0);
         await ErrorEvents.FlushAsync();
-        events.Where(sentryEvent => sentryEvent.SentryExceptions?.Any(exception => exception.Value == ErrorEndpoints.Failure) == true).ShouldHaveSingleItem();
+        Of(events, "/v1/logged-throws").ShouldHaveSingleItem();
     }
 
     // EF Core logs the database's exception at Error, then throws its own exception, which holds the database's, to the code.
@@ -57,7 +57,7 @@ public sealed partial class ErrorTrackingTests(Database database)
         response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
         await RequestLoggedAsync(host, "/v1/failed-saves");
         await ErrorEvents.FlushAsync();
-        events.All.ShouldHaveSingleItem();
+        Of(events, "/v1/failed-saves").ShouldHaveSingleItem();
     }
 
     [Theory]
