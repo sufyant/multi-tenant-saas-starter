@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Api.IntegrationTests" />
+    <InternalsVisibleTo Include="Api.UnitTests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +24,7 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
     <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Sentry.AspNetCore" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="WolverineFx" />
     <PackageReference Include="WolverineFx.EntityFrameworkCore" />

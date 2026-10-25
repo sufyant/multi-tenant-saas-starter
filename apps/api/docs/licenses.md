@@ -133,6 +133,9 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Patched.DistributedLock.Postgres | MIT |
 | Polly.Core | BSD-3-Clause |
 | Scalar.AspNetCore | MIT |
+| Sentry | MIT |
+| Sentry.AspNetCore | MIT |
+| Sentry.Extensions.Logging | MIT |
 | Serilog | Apache-2.0 |
 | Serilog.AspNetCore | Apache-2.0 |
 | Serilog.Extensions.Hosting | Apache-2.0 |

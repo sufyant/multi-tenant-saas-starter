@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
+using Serilog.Events;
 using Tenancy;
 using JasperFx.CodeGeneration;
 using Wolverine;
@@ -67,11 +68,18 @@ internal static class ApiPipeline
         // The client address is settled first, so logging and rate limiting see the client rather than the proxy.
         app.UseTrustedProxies();
 
-        // Request logging sits outside the exception handler so it logs the 500 response, not the exception a second time.
-        // Health checks are polled every few seconds and would drown the log.
+        // Request logging sits outside the exception handler so it logs the 500 response, not the exception a second time. The
+        // exception handler logs the exception at Error, so the response is a Warning: each Error is one alert (section 7, "Error
+        // tracking"). Health checks are polled every few seconds and would drown the log.
         app.UseWhen(
             context => !context.Request.Path.StartsWithSegments(HealthPath),
-            requests => requests.UseSerilogRequestLogging(options => options.Logger = app.Services.GetRequiredService<Serilog.ILogger>()));
+            requests => requests.UseSerilogRequestLogging(options =>
+            {
+                options.Logger = app.Services.GetRequiredService<Serilog.ILogger>();
+                options.GetLevel = (context, _, exception) => exception is not null ? LogEventLevel.Error
+                    : context.Response.StatusCode >= StatusCodes.Status500InternalServerError ? LogEventLevel.Warning
+                    : LogEventLevel.Information;
+            }));
         // A request the server refuses while reading it, such as a body over its endpoint's size limit, keeps the status the server
         // gives it (413); any other exception is a 500.
         app.UseExceptionHandler(new ExceptionHandlerOptions
@@ -200,6 +208,10 @@ internal static class ApiPipeline
 
             // Each process logs every message it handled, at Information (Wolverine's default is Debug).
             options.Policies.MessageSuccessLogLevel(LogLevel.Information);
+
+            // A failed try that Wolverine repeats needs no person, so it is a Warning (Wolverine's default is Error). The move to the dead
+            // letter queue stays an Error, the one alert of a message that failed for good (section 7, "Error tracking").
+            options.Policies.MessageFailureLogLevel(LogLevel.Warning);
         });
     }
 }
