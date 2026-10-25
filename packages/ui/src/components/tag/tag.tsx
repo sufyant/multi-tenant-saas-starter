@@ -15,7 +15,12 @@ export type TagProps = {
  * A label after a name (the Tag README): a kind of record is a quiet, borderless badge in the neutral tone; the viewer's own row
  * is muted text without a box. It never carries a status.
  */
-export function Tag({ children, variant = "badge", icon, className }: TagProps) {
+export function Tag({
+  children,
+  variant = "badge",
+  icon,
+  className,
+}: TagProps) {
   if (variant === "text")
     return (
       <span
