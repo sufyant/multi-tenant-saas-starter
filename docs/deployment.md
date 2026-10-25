@@ -795,7 +795,7 @@ A rollback of staging to a version from before the squash does not work after th
 
 ## 16. Error tracking and alerts
 
-Better Stack collects the errors of the API, the web app and the platform app, checks their public routes and alerts the owner. The three apps send their errors through the Sentry SDK. `.betterstack/config.json` holds the settings that Better Stack's API can manage, and `.betterstack/README.md` says which ones it cannot and why. `scripts/betterstack/config.sh` plans and applies them, like Railway's and Clerk's settings (section 7).
+Better Stack collects the errors of the API, the web app and the platform app, checks their public routes, waits for the worker's heartbeat and alerts the owner. The three apps send their errors through the Sentry SDK. `.betterstack/config.json` holds the settings that Better Stack's API can manage, and `.betterstack/README.md` says which ones it cannot and why. `scripts/betterstack/config.sh` plans and applies them, like Railway's and Clerk's settings (section 7).
 
 What the file holds:
 
@@ -804,11 +804,12 @@ What the file holds:
 | Errors applications | `api`, `web`, `platform`, one per app, for every environment | The `environment` tag of each event separates staging and production: the API's `ASPNETCORE_ENVIRONMENT` in lower case, and the web apps' `ERROR_TRACKING_ENVIRONMENT` |
 | Monitor `<environment> api` | `GET <API_URL>/v1/me/tenants` must answer 401 | The public route of the smoke test (section 2, step 6). The health endpoints answer only on the management port |
 | Monitors `<environment> web` and `<environment> platform` | `GET <WEB_URL>/health` and `GET <PLATFORM_URL>/health` must answer 2xx | The health paths of `.railway/web.json` and `.railway/platform.json` (section 2, step 9) |
+| Heartbeat `<environment> api-worker` | Expects a call every 180 seconds (`period`), with 120 seconds of grace (`grace`) | `api-worker` answers no public route, so no monitor can call it. The worker calls the heartbeat's URL with GET every 60 seconds while it is ready. A lost call never alerts: the period holds three calls. A crash or a hang alerts about 5 minutes after the last call (180 + 120 seconds), as the monitors do |
 | Check interval | 180 seconds | The free plan's shortest interval |
 | Alert delay | 300 seconds of failure; resolved after 180 seconds up | A deploy's restart or a short network fault needs no person. Google, *Site Reliability Engineering*, chapter 6: alert on symptoms, and only when a person must act |
 | Alert channel | Email, no escalation policy | The free plan has email and Slack alerts only. Push, phone and SMS need a responder seat (step 47) |
 
-`plan` and `apply` compare only the monitors of one environment: those whose name starts with `<environment> `. `apply` deletes such a monitor when the file does not hold it. It never deletes an Errors application: deleting one deletes its errors, so `plan` prints that it leaves it.
+`plan` and `apply` compare only the monitors and heartbeats of one environment: those whose name starts with `<environment> `. `apply` deletes such a monitor or heartbeat when the file does not hold it. A heartbeat's URL holds its token, so the script never prints it. It never deletes an Errors application: deleting one deletes its errors, so `plan` prints that it leaves it.
 
 ### First setup
 
@@ -834,7 +835,7 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
    pnpm betterstack:apply <environment>
    ```
 
-   The first plan for staging creates the three Errors applications and the three monitors of staging. `apply` asks before it changes anything. Run the plan again: it prints `No difference.`
+   The first plan for staging creates the three Errors applications, the three monitors and the heartbeat `staging api-worker`. `apply` asks before it changes anything. Run the plan again: it prints `No difference.`
 5. **Set the DSN of each application in Railway.** In Better Stack, open Errors, then each application, then its "Ingest" tab. The DSN is `https://<application token>@<ingesting host>/<application id>` (Better Stack docs, "Sentry SDK"). In the Railway dashboard, set these shared variables of `<environment>`, the DSNs as sealed variables. Never paste a DSN into a file or a chat.
 
    | Shared variable | Value |
@@ -842,8 +843,9 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
    | `Host__ErrorTracking__Dsn` | the DSN of the application `api` |
    | `WEB_ERROR_TRACKING_DSN` | the DSN of the application `web` |
    | `PLATFORM_ERROR_TRACKING_DSN` | the DSN of the application `platform` |
+   | `Host__Heartbeat__Url` | the URL of the heartbeat `<environment> api-worker`: in Better Stack, open Uptime, then "Heartbeats", then the heartbeat, and copy its URL. It is a secret: its token is in the path |
 
-   `.railway/railway.ts` gives each service its own variable. It also sets the environment tag of the events from the linked Railway environment: `ASPNETCORE_ENVIRONMENT` for the API, `ERROR_TRACKING_ENVIRONMENT` for the web apps. You set neither. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
+   `.railway/railway.ts` gives each service its own variable, and `Host__Heartbeat__Url` to `api-worker` only. It also sets the environment tag of the events from the linked Railway environment: `ASPNETCORE_ENVIRONMENT` for the API, `ERROR_TRACKING_ENVIRONMENT` for the web apps. You set neither. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
 6. **Connect Slack to Errors (manual).** Better Stack's API cannot manage the Errors integrations (`.betterstack/README.md`).
    1. Choose a Slack channel for the alerts, such as `#alerts-<product>`.
    2. In Better Stack, open Errors, then "Integrations". Find "Slack" and click "Add".
@@ -860,13 +862,14 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
 After the next deploy, check:
 
 - In Better Stack, Uptime, the three monitors of the environment show "Up".
+- In Better Stack, Uptime, "Heartbeats", the heartbeat `<environment> api-worker` shows "Up". "Pending" means that no call came yet: check that `Host__Heartbeat__Url` is set and that `api-worker` is ready.
 - An error in an app shows in its Errors application with the right `environment`, and a new error posts to the Slack channel.
 
 ### When the plan prints something it cannot apply
 
 - `! Errors application "<name>" has platform ...`: the API cannot change an application's platform. Create a new application with the file's platform by hand, move the DSN in Railway to it (step 5), then delete the old one. Deleting it deletes its errors.
 - `! Errors application "<name>" is not in .betterstack/config.json`: the script leaves it. Add it to the file, or delete it by hand when its errors are not needed.
-- A monitor of another environment, or with a name that does not start with `<environment> `, is never in a plan. Uptime's free plan holds 10 monitors; the two environments use 6.
+- A monitor of another environment, or with a name that does not start with `<environment> `, is never in a plan. Uptime's free plan holds 10 monitors and 10 heartbeats; the two environments use 6 monitors and 2 heartbeats.
 
 ### Later steps
 

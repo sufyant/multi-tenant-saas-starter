@@ -1,6 +1,6 @@
 # Better Stack settings
 
-Better Stack holds the error tracking, the uptime checks and the alerts of the API and the web apps. `config.json` holds the settings that Better Stack's API can manage. `scripts/betterstack/config.sh` plans and applies them (`pnpm betterstack:plan`, `pnpm betterstack:apply`). `docs/deployment.md`, section 16, holds the first setup and the manual steps.
+Better Stack holds the error tracking, the uptime checks, the worker's heartbeat and the alerts of the API and the web apps. `config.json` holds the settings that Better Stack's API can manage. `scripts/betterstack/config.sh` plans and applies them (`pnpm betterstack:plan`, `pnpm betterstack:apply`). `docs/deployment.md`, section 16, holds the first setup and the manual steps.
 
 The file holds no value: no URL, no token and no email address. The URLs come from `API_URL`, `WEB_URL` and `PLATFORM_URL`, the GitHub environment variables that `deploy.yml` reads. Email alerts go to the members of the Better Stack team, so the owner comes from the account.
 
@@ -12,6 +12,7 @@ Checked on 2026-10-25 against Better Stack's API documentation and its Terraform
 | --- | --- | --- | --- |
 | Errors applications | Yes: list, create, update, delete. `platform` cannot change after creation | `config.json` | Better Stack docs, Errors API, "Applications" |
 | Uptime monitors | Yes: list, create, update, delete, with the URL, the expected status, the check interval, the confirmation period and the alert channels | `config.json` | Better Stack docs, Uptime API, "Monitors" |
+| Uptime heartbeats | Yes: list, create, update, delete, with the name, the period, the grace and the alert channels. The answer holds the heartbeat's URL, with its token in the path, so the script drops it and never prints it | `config.json` | Better Stack docs, Uptime API, "Heartbeats"; Terraform resource `betteruptime_heartbeat` |
 | Escalation policies and severities | Yes (`/api/v3/policies`, `/api/v2/urgencies`). Not used: the free plan has no escalations | none | Better Stack docs, Uptime API, "Escalation policies", "Severities" |
 | Error alerts: a new error, a spike | No. The Errors Slack integration and the Errors to Uptime integration have no API and no Terraform resource | Manual step (`docs/deployment.md`, section 16) | Better Stack docs, Errors, "Slack", "Reporting incidents" |
 | Spike protection (the baseline multiplier) | No. Errors, the application, "Advanced settings" | Better Stack's default, 10x | Better Stack docs, Errors, "Spike protection" |
@@ -19,7 +20,7 @@ Checked on 2026-10-25 against Better Stack's API documentation and its Terraform
 
 ## The plan
 
-The account is on the free plan. Better Stack's pricing page lists for it "Slack & e-mail alerts", 10 monitors and heartbeats, and 100,000 exceptions a month. Push notifications of the mobile app, escalations, phone calls and SMS need a paid responder seat. The free plan checks a monitor every 3 minutes at most (Better Stack docs, "Check frequency"). So:
+The account is on the free plan. Better Stack's pricing page lists for it "Slack & e-mail alerts", 10 monitors, 10 heartbeats, and 100,000 exceptions a month. Push notifications of the mobile app, escalations, phone calls and SMS need a paid responder seat. The free plan checks a monitor every 3 minutes at most (Better Stack docs, "Check frequency"). So:
 
 - Each monitor alerts by email, with no escalation policy.
 - Error alerts go to Slack, through the Errors Slack integration, set up by hand.
@@ -39,10 +40,13 @@ Keep both in a password manager. They never go into the repository, a GitHub sec
 - `errors.applications`: one Errors application per app, for every environment. The `environment` tag of each event separates staging and production (the Sentry SDK's `environment` option).
 - `uptime.monitors`: one monitor per app and environment. The script names each monitor `<environment> <name>`. `url_variable` names the variable that holds the app's public URL. `path` is the route, or `health_path_of` names the file whose `healthPath` is the route. The API's monitor calls the public route of `scripts/deploy/smoke-test.sh` and expects its 401 (`expected_status_code`), because the health endpoints answer only on the management port. The web apps' monitors call the health path of `.railway/web.json` and `.railway/platform.json`, which the smoke tests read too, and expect a 2xx (`status`).
 - `uptime.defaults`: the settings that every monitor shares.
+- `uptime.heartbeats`: one heartbeat per job that answers no public route, for each environment. The script names each heartbeat `<environment> <name>`. `period` is the time in seconds between two expected calls, and `grace` the time in seconds that a call can be late. The URL is not in the file: Better Stack makes it, and it goes into Railway as a sealed variable (`docs/deployment.md`, section 16).
+- `uptime.heartbeat_defaults`: the alert channels that every heartbeat shares.
 
 ## Decisions
 
 - **Check every 180 seconds.** The free plan's shortest interval. A staging outage has no users to hurt, so a shorter interval buys nothing.
 - **Alert after 300 seconds of failure** (`confirmation_period`). A deploy restarts a service, and a short network fault fails one check. Neither needs a person. Five minutes of failure is an outage that someone must look at. **Resolve after 180 seconds up** (`recovery_period`), one check. Source: Google, *Site Reliability Engineering*, chapter 6, "Monitoring Distributed Systems": alert on symptoms, and only when a person must act.
-- **Delete a monitor that is not in the file**, as Railway's `apply` deletes a variable that is not in `.railway/railway.ts`. Only the monitors of the environment are compared: those whose name starts with `<environment> `. A monitor of another environment, or with another name, is never touched.
+- **The worker's heartbeat: a period of 180 seconds and a grace of 120 seconds.** `api-worker` calls the URL every 60 seconds while it is ready (`Host:Heartbeat:Interval`). The period holds three calls, so one or two lost calls never alert. A crash or a hang alerts about 300 seconds after the last call, as the monitors' `confirmation_period`. The period equals the monitors' check interval. The API accepts a period of 30 seconds or more (Terraform resource `betteruptime_heartbeat`).
+- **Delete a monitor or a heartbeat that is not in the file**, as Railway's `apply` deletes a variable that is not in `.railway/railway.ts`. Only those of the environment are compared: those whose name starts with `<environment> `. One of another environment, or with another name, is never touched.
 - **Leave an Errors application that is not in the file**, and print that it is left. Deleting an application deletes its errors.
