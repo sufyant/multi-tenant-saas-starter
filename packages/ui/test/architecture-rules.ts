@@ -739,3 +739,21 @@ export function sdkImportRefusals(
     rmSync(folder, { recursive: true, force: true });
   }
 }
+
+/**
+ * The files that differ between two folders that must hold the same code, such as each app's `src/error-tracking/` (F55): a file
+ * of one folder that the other lacks, or whose text differs. The finding names the file by its path in the folder.
+ */
+export function differingFiles(first: string, second: string): Finding[] {
+  const names = (root: string) =>
+    filesUnder(root).map((file) => relative(root, file));
+  const all = [...new Set([...names(first), ...names(second)])].sort();
+  return all.flatMap((name) => {
+    const [a, b] = [join(first, name), join(second, name)];
+    if (!existsSync(a) || !existsSync(b))
+      return [`${name}: in one folder only; keep both copies the same`];
+    return readFileSync(a, "utf8") === readFileSync(b, "utf8")
+      ? []
+      : [`${name}: the two copies differ; keep them the same`];
+  });
+}
