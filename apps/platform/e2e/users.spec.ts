@@ -33,6 +33,29 @@ test("Users_List_ShowsTheSystemAdminAndRootTags", async ({ page }) => {
   await expectAccessible(page);
 });
 
+test("Users_HoverUpdated_ShowsTheTooltipOverTheTopBar", async ({ page }) => {
+  await open(page, "/users");
+
+  await page
+    .getByText(/^Updated/)
+    .locator("time")
+    .hover();
+  const tooltip = page.locator('[data-slot="tooltip-content"]');
+  await expect(tooltip).toBeVisible();
+
+  // jsdom cannot stack layers: the browser answers which element is on top just under the tooltip's top edge, where the top
+  // bar covered it (F53). The point is taken once the opening animation has ended.
+  const onTop = await tooltip.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((each) => each.finished));
+    const box = element.getBoundingClientRect();
+    return element.contains(
+      document.elementFromPoint(box.x + box.width / 2, box.y + 4),
+    );
+  });
+  expect(onTop).toBe(true);
+  await expectAccessible(page);
+});
+
 test("User_WithMemberships_ListsEachOrganisationAndRole", async ({ page }) => {
   await open(page, `/users/${users.ayse.id}`);
 

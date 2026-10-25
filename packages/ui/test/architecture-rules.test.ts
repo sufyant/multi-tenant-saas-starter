@@ -13,6 +13,7 @@ import {
   generatedFileNames,
   messageKeySets,
   nativeChoiceControls,
+  numericLayerClasses,
   physicalDirectionClasses,
   roleNameDecisions,
   testFolders,
@@ -68,6 +69,28 @@ describe("architecture rules", () => {
     expect(colorLiterals(root)).toEqual([
       'a.css:1: colour literal "#2747d8"; use a token',
     ]);
+  });
+
+  it("NumericLayerClasses_NumberAndArbitraryValue_AreFindings", () => {
+    const root = folder({
+      "a.tsx":
+        'export const A = () => <div className="isolate z-50 data-open:z-[60]" />;',
+    });
+
+    expect(numericLayerClasses(root)).toEqual([
+      'a.tsx:1: numeric layer class "z-50"; use a layer token',
+      'a.tsx:1: numeric layer class "z-[60]"; use a layer token',
+    ]);
+  });
+
+  it("NumericLayerClasses_LocalZ10AndLayerTokens_AreNoFinding", () => {
+    const root = folder({
+      "a.tsx":
+        'export const A = () => <div className="z-10 focus:z-10 z-sticky z-popover" />;',
+      "b.css": ".b { z-index: var(--z-dialog); }",
+    });
+
+    expect(numericLayerClasses(root)).toEqual([]);
   });
 
   it("UserFacingLiterals_JsxTextAndAriaLabel_AreFindings", () => {

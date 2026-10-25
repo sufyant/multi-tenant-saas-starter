@@ -9,6 +9,7 @@ import {
   errorCodeMessages,
   generatedFileNames,
   messageKeySets,
+  numericLayerClasses,
   physicalDirectionClasses,
   testFolders,
   testsBesideTheirFile,
@@ -32,6 +33,10 @@ describe("architecture of packages/ui", () => {
 
   it("F21_PackagesUi_UsesNoColourLiteral", () => {
     expect(colorLiterals(src)).toEqual([]);
+  });
+
+  it("F53_PackagesUi_UsesNoNumericLayerClass", () => {
+    expect(numericLayerClasses(src)).toEqual([]);
   });
 
   it("F25_PackagesUi_WritesNoUserFacingLiteral", () => {
