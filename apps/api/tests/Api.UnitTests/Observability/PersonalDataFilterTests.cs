@@ -78,17 +78,18 @@ public sealed class PersonalDataFilterTests
         sentryEvent.Request.QueryString.ShouldBe(filtered);
     }
 
-    // A request's headers go with its event. The SDK itself replaces the Authorization header, which carries the session token.
+    // A request's headers carry the client's address (X-Forwarded-For, from the proxy), its cookies and its tokens. The SDK replaces only
+    // the Authorization header, so the filter leaves every header out.
     [Fact]
-    public void Filter_RequestHeaders_ReplacesAddressesAndTokens()
+    public void Filter_RequestHeaders_LeavesThemOut()
     {
         var sentryEvent = new SentryEvent();
+        sentryEvent.Request.Headers["X-Forwarded-For"] = "203.0.113.7";
         sentryEvent.Request.Headers["Referer"] = $"https://app.test/invitations/accept?code={Code}";
-        sentryEvent.Request.Headers["X-Note"] = Address;
 
         PersonalDataFilter.Apply(sentryEvent);
 
-        sentryEvent.Request.Headers.ShouldBe(new Dictionary<string, string> { ["Referer"] = "https://app.test/invitations/accept?code=[token]", ["X-Note"] = "[email]" }, ignoreOrder: true);
+        sentryEvent.Request.Headers.ShouldBeEmpty();
     }
 
     // A log's values go with its event as extra data and tags.

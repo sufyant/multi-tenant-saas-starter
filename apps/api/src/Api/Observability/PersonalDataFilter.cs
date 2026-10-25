@@ -29,10 +29,10 @@ internal static partial class PersonalDataFilter
         var request = sentryEvent.Request;
         request.Url = Replace(request.Url);
         request.QueryString = Replace(request.QueryString);
-        foreach (var (name, value) in request.Headers.ToList())
-        {
-            request.Headers[name] = Replace(value);
-        }
+
+        // The headers carry the client's address (X-Forwarded-For from the proxy), cookies and tokens; the SDK replaces only the
+        // Authorization header.
+        request.Headers.Clear();
 
         foreach (var (key, value) in sentryEvent.Extra.Where(extra => extra.Value is string).ToList())
         {
