@@ -6,7 +6,7 @@ import {
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
-import { delay, HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -152,14 +152,19 @@ describe("TenantShell", () => {
   );
 
   describe("while the first reads come", () => {
-    const waiting = () =>
-      http.get("*/v1/me/tenants", async () => {
-        await delay("infinite");
-      });
-    const meWaits = () =>
-      http.get("*/v1/me", async () => {
-        await delay("infinite");
-      });
+    // A read that waits holds until its test ends, then fails: an answer that never comes would stay open and hold up the
+    // reads of the next tests.
+    let releases: (() => void)[] = [];
+    afterEach(() => {
+      for (const release of releases) release();
+      releases = [];
+    });
+    const held = async () => {
+      await new Promise<void>((resolve) => releases.push(resolve));
+      return HttpResponse.error();
+    };
+    const waiting = () => http.get("*/v1/me/tenants", held);
+    const meWaits = () => http.get("*/v1/me", held);
 
     it("TenantShell_ListMyTenantsWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
       server.use(waiting(), meWaits());
@@ -191,12 +196,26 @@ describe("TenantShell", () => {
       );
     });
 
+    it("TenantShell_ListMyTenantsWaits_HoldsTheNameWithASkeletonAfterTheDelay", async () => {
+      server.use(waiting(), meWaits());
+
+      renderWithProviders(shell());
+
+      const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+      const before = crumbs.querySelectorAll("[data-slot='skeleton']");
+      await screen.findByRole("status", { name: "Loading" });
+
+      expect(before).toHaveLength(0);
+      expect(crumbs.querySelector("[data-slot='skeleton']")).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+    });
+
     it("TenantShell_GetMyTenantWaits_KeepsTheShellAndWaitsInTheContent", async () => {
       server.use(
         tenantsOf(1),
-        http.get("*/v1/tenants/:tenantId", async () => {
-          await delay("infinite");
-        }),
+        http.get("*/v1/tenants/:tenantId", held),
         meWaits(),
       );
 

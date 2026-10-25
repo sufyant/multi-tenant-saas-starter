@@ -8,7 +8,7 @@ import {
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
-import { delay, HttpResponse, http } from "msw";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -475,10 +475,18 @@ describe("PlatformShell", () => {
   });
 
   describe("while the first reads come", () => {
-    const meWaits = () =>
-      http.get("*/v1/me", async () => {
-        await delay("infinite");
-      });
+    // A read that waits holds until its test ends, then fails: an answer that never comes would stay open and hold up the
+    // reads of the next tests.
+    let releases: (() => void)[] = [];
+    afterEach(() => {
+      for (const release of releases) release();
+      releases = [];
+    });
+    const held = async () => {
+      await new Promise<void>((resolve) => releases.push(resolve));
+      return HttpResponse.error();
+    };
+    const meWaits = () => http.get("*/v1/me", held);
 
     it("PlatformShell_GetMeWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
       navigation.pathname = "/users";
@@ -521,9 +529,7 @@ describe("PlatformShell", () => {
         getGetMeMockHandler(
           getGetMeResponseMock({ isSystemAdmin: false, language: "en" }),
         ),
-        http.get("*/v1/platform/tenants", async () => {
-          await delay("infinite");
-        }),
+        http.get("*/v1/platform/tenants", held),
       );
 
       renderWithProviders(

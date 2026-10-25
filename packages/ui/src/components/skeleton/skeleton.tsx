@@ -65,11 +65,12 @@ export function Skeleton({ rows = 3, label, delayed = false }: SkeletonProps) {
 
 /**
  * A short line where a name will be, inside a bar that is already drawn: the organisation's name in the top bar. It waits for the
- * skeleton delay. Assistive technology skips it, because the page's own Skeleton says what is loading.
+ * skeleton delay and holds its place until then. Assistive technology skips it, because the page's own Skeleton says what is loading.
  */
 export function InlineSkeleton() {
   const passed = useDelayPassed(true);
-  if (!passed) return null;
+  // Before the delay an empty box of the same size holds the place, so the bar does not move when the skeleton comes.
+  if (!passed) return <span aria-hidden="true" className="block h-3 w-24" />;
   return (
     <SkeletonBlock
       aria-hidden="true"
