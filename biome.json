@@ -60,6 +60,10 @@
                 "group": ["@repo/api-client"],
                 "importNamePattern": "use[A-Z].*",
                 "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
+              },
+              {
+                "group": ["@sentry/*"],
+                "message": "Report an error with reportError of the app's src/error-tracking. Only that folder and next.config.ts import the SDK (F55 in docs/frontend/ARCHITECTURE.md)."
               }
             ]
           }
@@ -134,6 +138,10 @@
                     "group": ["@repo/api-client"],
                     "importNamePattern": "use[A-Z].*",
                     "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
+                  },
+                  {
+                    "group": ["@sentry/*"],
+                    "message": "Report an error with reportError of the app's src/error-tracking. Only that folder and next.config.ts import the SDK (F55 in docs/frontend/ARCHITECTURE.md)."
                   }
                 ]
               }
@@ -176,6 +184,10 @@
                     "group": ["@repo/api-client"],
                     "importNamePattern": "use[A-Z].*",
                     "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
+                  },
+                  {
+                    "group": ["@sentry/*"],
+                    "message": "Report an error with reportError of the app's src/error-tracking. Only that folder and next.config.ts import the SDK (F55 in docs/frontend/ARCHITECTURE.md)."
                   }
                 ]
               }
@@ -205,6 +217,10 @@
                     "group": ["@repo/api-client"],
                     "importNamePattern": "use[A-Z].*",
                     "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
+                  },
+                  {
+                    "group": ["@sentry/*"],
+                    "message": "Report an error with reportError of the app's src/error-tracking. Only that folder and next.config.ts import the SDK (F55 in docs/frontend/ARCHITECTURE.md)."
                   }
                 ]
               }
@@ -224,6 +240,40 @@
                 "paths": {
                   "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
                   "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
+                  "@clerk/nextjs": {
+                    "importNames": ["SignIn", "SignUp", "UserProfile"],
+                    "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."
+                  }
+                },
+                "patterns": [
+                  {
+                    "group": ["@repo/api-client"],
+                    "importNamePattern": "use[A-Z].*",
+                    "message": "Call useQuery with the generated options, such as getListMembersQueryOptions (F2 in docs/frontend/ARCHITECTURE.md)."
+                  },
+                  {
+                    "group": ["@sentry/*"],
+                    "message": "Report an error with reportError of the app's src/error-tracking. Only that folder and next.config.ts import the SDK (F55 in docs/frontend/ARCHITECTURE.md)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/*/src/error-tracking/**", "apps/*/next.config.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "lucide-react": "Import an icon through the Icon component of @repo/ui (F22 in docs/frontend/ARCHITECTURE.md).",
+                  "sonner": "Use the Toast component of @repo/ui (F23 in docs/frontend/ARCHITECTURE.md).",
+                  "@tanstack/react-table": "Use the Table component of @repo/ui (F10 in docs/frontend/ARCHITECTURE.md).",
                   "@clerk/nextjs": {
                     "importNames": ["SignIn", "SignUp", "UserProfile"],
                     "message": "Clerk's prebuilt screens are not used. Render the SignIn of @repo/ui/components/sign-in, or build the screen in the app's features with Clerk's hooks (F43 in docs/frontend/ARCHITECTURE.md)."

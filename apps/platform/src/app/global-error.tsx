@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportError } from "@/error-tracking/report-error";
 import { messages } from "@/i18n/messages";
 import "./globals.css";
 
@@ -12,8 +13,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  // A browser error goes to error tracking. A server error comes here with only its digest; onRequestError sent it (F55).
   useEffect(() => {
     console.error(error);
+    if (!error.digest) reportError(error);
   }, [error]);
   const language =
     typeof document === "undefined" ? undefined : document.documentElement.lang;

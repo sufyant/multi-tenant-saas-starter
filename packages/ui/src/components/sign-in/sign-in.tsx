@@ -6,7 +6,11 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { AuthLayout } from "../auth-layout";
 import type { Provider } from "../provider-buttons";
-import { type SignInErrorKey, signInErrorKey } from "./clerk-errors";
+import {
+  type SignInErrorKey,
+  type SignInStep,
+  signInErrorKey,
+} from "./clerk-errors";
 import { CodeStep } from "./code-step";
 import { EmailStep } from "./email-step";
 import { LanguageSwitcher } from "./language-switcher";
@@ -23,6 +27,8 @@ export type SignInProps = {
   platformLabel?: string;
   /** The app's `setLocale` server action (F13). */
   onLanguageChange: (language: Language) => Promise<void>;
+  /** The app's error tracking: a Clerk error code without a message, once per code (F41, F55). */
+  onUnexpectedError?: (error: Error) => void;
 };
 
 /** The query parameter that `SsoCallback` sets when an SSO sign-in could not finish. */
@@ -46,6 +52,7 @@ export function SignIn({
   brand,
   platformLabel,
   onLanguageChange,
+  onUnexpectedError,
 }: SignInProps) {
   const t = useTranslations("signIn");
   const { signIn, fetchStatus } = useSignIn();
@@ -54,6 +61,8 @@ export function SignIn({
   const [error, setError] = useState<SignInErrorKey>();
   const [resent, setResent] = useState(false);
   const pending = fetchStatus === "fetching";
+  const keyOf = (error: unknown, step: SignInStep) =>
+    signInErrorKey(error, step, onUnexpectedError);
 
   // A sign-in that comes back from Google or Microsoft with a second factor to pass (SsoCallback), or a page loaded again.
   useEffect(() => {
@@ -70,7 +79,7 @@ export function SignIn({
         window.location.assign(decorateUrl(destination()));
       },
     });
-    if (error) setError(signInErrorKey(error, "code"));
+    if (error) setError(keyOf(error, "code"));
   };
 
   // After a factor: finish, or ask for the second factor. Any other status has no step here.
@@ -81,7 +90,7 @@ export function SignIn({
       setStep("secondFactor");
       return;
     }
-    setError(signInErrorKey(undefined, "code"));
+    setError(keyOf(undefined, "code"));
   };
 
   const sendCode = async (address: string) => {
@@ -89,7 +98,7 @@ export function SignIn({
     const { error } = await signIn.emailCode.sendCode({
       emailAddress: address,
     });
-    if (error) return setError(signInErrorKey(error, "email"));
+    if (error) return setError(keyOf(error, "email"));
     setEmail(address);
     setStep("code");
   };
@@ -98,14 +107,14 @@ export function SignIn({
     setError(undefined);
     setResent(false);
     const { error } = await signIn.emailCode.sendCode();
-    if (error) return setError(signInErrorKey(error, "code"));
+    if (error) return setError(keyOf(error, "code"));
     setResent(true);
   };
 
   const verifyCode = async (code: string) => {
     setResent(false);
     const { error } = await signIn.emailCode.verifyCode({ code });
-    if (error) return setError(signInErrorKey(error, "code"));
+    if (error) return setError(keyOf(error, "code"));
     await next();
   };
 
@@ -114,7 +123,7 @@ export function SignIn({
       factor === "totp"
         ? await signIn.mfa.verifyTOTP({ code })
         : await signIn.mfa.verifyBackupCode({ code });
-    if (error) return setError(signInErrorKey(error, factor));
+    if (error) return setError(keyOf(error, factor));
     await next();
   };
 
@@ -126,7 +135,7 @@ export function SignIn({
       redirectUrl: destination(),
       redirectCallbackUrl: `/sso-callback?${redirectParameter}=${back}`,
     });
-    if (error) setError(signInErrorKey(error, "email"));
+    if (error) setError(keyOf(error, "email"));
   };
 
   const startOver = async () => {

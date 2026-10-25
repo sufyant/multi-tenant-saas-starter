@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { reportError } from "@/error-tracking/report-error";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { InvitationEnded } from "./invitation-ended";
 import { InvitationFrame } from "./invitation-frame";
@@ -101,7 +102,8 @@ export function AcceptInvitationPage({
     signingUp.current = true;
     void (async () => {
       const { error } = await signUp.ticket({ ticket });
-      if (error) return setTicketError(signInErrorKey(error, "ticket"));
+      if (error)
+        return setTicketError(signInErrorKey(error, "ticket", reportError));
       if (signUp.status !== "complete") return setTicketError("generic");
       await signUp.finalize({
         navigate: ({ decorateUrl }) =>

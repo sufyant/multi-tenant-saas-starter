@@ -7,6 +7,7 @@ import {
   signInErrorKey,
 } from "@repo/ui/components/sign-in";
 import { useEffect, useRef, useState } from "react";
+import { reportError } from "@/error-tracking/report-error";
 
 export type Session = NonNullable<ReturnType<typeof useSession>["session"]>;
 
@@ -28,7 +29,9 @@ export function useReverification(session: Session, onVerified: () => void) {
     started.current = true;
     session
       .startVerification({ level: "second_factor" })
-      .catch((reason: unknown) => setError(signInErrorKey(reason, "totp")));
+      .catch((reason: unknown) =>
+        setError(signInErrorKey(reason, "totp", reportError)),
+      );
   }, [session]);
 
   const verify = async (code: string, factor: SecondFactor) => {
@@ -44,7 +47,7 @@ export function useReverification(session: Session, onVerified: () => void) {
       }
       setError("generic");
     } catch (reason) {
-      setError(signInErrorKey(reason, factor));
+      setError(signInErrorKey(reason, factor, reportError));
     }
     setPending(false);
   };

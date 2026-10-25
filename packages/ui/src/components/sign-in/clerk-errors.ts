@@ -87,13 +87,25 @@ export function clerkErrorCode(error: unknown): string | undefined {
   return undefined;
 }
 
+/** Whether an error is one that a sign-in screen shows as a message: its Clerk code has a key in some step. */
+export function isExpectedClerkError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code = clerkErrorCode(error);
+  return (
+    code !== undefined &&
+    (code in everywhere || Object.values(byStep).some((codes) => code in codes))
+  );
+}
+
 /**
  * The message key of an error in a step. An unknown code shows the generic message, and the code is logged once, so a new code of
- * Clerk shows up in the console without a flood. Only the code is logged: never the address or a code the person typed.
+ * Clerk shows up in the console without a flood. The app's error tracking gets it once too, through `onUnexpectedError` (F55). Only
+ * the code goes out: never the address or a code the person typed.
  */
 export function signInErrorKey(
   error: unknown,
   step: SignInStep,
+  onUnexpectedError?: (error: Error) => void,
 ): SignInErrorKey {
   const code = clerkErrorCode(error);
   const key = code && (byStep[step][code] ?? everywhere[code]);
@@ -101,7 +113,9 @@ export function signInErrorKey(
   const name = code ?? "none";
   if (!logged.has(name)) {
     logged.add(name);
-    console.warn(`Sign-in: no message for the Clerk error code "${name}".`);
+    const message = `Sign-in: no message for the Clerk error code "${name}".`;
+    console.warn(message);
+    onUnexpectedError?.(new Error(message));
   }
   return "generic";
 }
