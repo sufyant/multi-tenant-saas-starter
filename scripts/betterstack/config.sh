@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Plans and applies the Better Stack settings in .betterstack/config.json (.betterstack/README.md).
-# The Errors applications serve every environment. The uptime monitors belong to one environment:
-# the script names each one "<environment> <name>" and compares only the monitors with that prefix.
-# It calls Better Stack's API with curl and two team-based tokens. It never prints a token, and
+# The Errors applications serve every environment. The uptime monitors and heartbeats belong to one
+# environment: the script names each one "<environment> <name>" and compares only those with that
+# prefix. It calls Better Stack's API with curl and two team-based tokens. It never prints a token,
 # never prints an Errors application's attributes other than its name and platform, because the
-# API's answer holds the application's ingesting token.
+# API's answer holds the application's ingesting token, and drops a heartbeat's URL as soon as it
+# reads it, because the URL holds the heartbeat's token.
 #
 # Inputs: plan or apply, and an environment (staging or production); BETTERSTACK_UPTIME_TOKEN,
 # BETTERSTACK_TELEMETRY_TOKEN, and each URL variable that config.json names (API_URL, WEB_URL,
@@ -19,11 +20,12 @@ Usage: scripts/betterstack/config.sh plan staging|production
 
   plan   Change nothing. Print the difference between .betterstack/config.json
          and the live Better Stack team: the Errors applications, and the
-         uptime monitors of the environment.
+         uptime monitors and heartbeats of the environment.
   apply  Print the same difference, ask, then apply it.
 
 Requires: curl and jq, and these variables:
-  BETTERSTACK_UPTIME_TOKEN     the team's "Incidents API" token
+  BETTERSTACK_UPTIME_TOKEN     the team's "Incidents API" token, for the
+                               monitors and the heartbeats
   BETTERSTACK_TELEMETRY_TOKEN  the team's "Telemetry API" token
   API_URL, WEB_URL, PLATFORM_URL
                                the public URLs of the environment, the
@@ -103,6 +105,9 @@ list() {
 live_applications="$(list "$errors_api/applications?per_page=250" "$work/errors.header" \
   | jq -c 'map({id, name: .attributes.name, platform: .attributes.platform})')"
 live_monitors="$(list "$uptime_api/monitors?per_page=250" "$work/uptime.header")"
+# The live heartbeats, without their URL: the URL holds the heartbeat's token.
+live_heartbeats="$(list "$uptime_api/heartbeats?per_page=250" "$work/uptime.header" \
+  | jq -c 'map({id, attributes: (.attributes | del(.url))})')"
 
 # The monitors of the file, each with its name, the shared defaults, and its URL: the value of its
 # variable and its path, or the health path of the file that it names.
@@ -119,12 +124,19 @@ while IFS= read -r monitor; do
       + {pronounceable_name: $name, url: $url}]' <<<"$desired_monitors")"
 done < <(jq -c '.uptime.monitors[]' "$file")
 
+# The heartbeats of the file, each with its name and the shared defaults.
+desired_heartbeats="$(jq -c --arg environment "$environment" \
+  '.uptime.heartbeat_defaults as $defaults
+   | .uptime.heartbeats | map($defaults + . + {name: "\($environment) \(.name)"})' "$file")"
+
 # The difference, as a list of actions. Only the keys that the file sets are compared.
 actions="$(jq -c -n \
   --argjson want_apps "$(jq -c '.errors.applications' "$file")" \
   --argjson live_apps "$live_applications" \
   --argjson want_monitors "$desired_monitors" \
   --argjson live_monitors "$live_monitors" \
+  --argjson want_heartbeats "$desired_heartbeats" \
+  --argjson live_heartbeats "$live_heartbeats" \
   --arg prefix "$environment " '
   ([ $want_apps[] as $w
      | ($live_apps | map(select(.name == $w.name)) | first) as $l
@@ -147,7 +159,21 @@ actions="$(jq -c -n \
    + [ $live_monitors[]
        | select(.attributes.pronounceable_name | startswith($prefix))
        | select(.attributes.pronounceable_name as $n | $want_monitors | map(.pronounceable_name) | index($n) | not)
-       | {kind: "monitor", op: "delete", name: .attributes.pronounceable_name, id} ])')"
+       | {kind: "monitor", op: "delete", name: .attributes.pronounceable_name, id} ]
+   + [ $want_heartbeats[] as $w
+       | ($live_heartbeats | map(select(.attributes.name == $w.name)) | first) as $l
+       | if $l == null then {kind: "heartbeat", op: "create", name: $w.name, body: $w}
+         else
+           [ $w | to_entries[] | select(.value != $l.attributes[.key])
+             | {key, from: $l.attributes[.key], to: .value} ] as $changes
+           | if $changes == [] then empty
+             else {kind: "heartbeat", op: "update", name: $w.name, id: $l.id,
+                   changes: $changes, body: ($changes | map({(.key): .to}) | add)} end
+         end ]
+   + [ $live_heartbeats[]
+       | select(.attributes.name | startswith($prefix))
+       | select(.attributes.name as $n | $want_heartbeats | map(.name) | index($n) | not)
+       | {kind: "heartbeat", op: "delete", name: .attributes.name, id} ])')"
 
 echo "== Better Stack, $environment"
 if [[ "$(jq 'length' <<<"$actions")" == 0 ]]; then
@@ -158,11 +184,11 @@ jq -r '.[] |
   if .op == "create" and .kind == "application" then
     "+ create Errors application \"\(.name)\": platform \(.body.platform)"
   elif .op == "create" then
-    "+ create monitor \"\(.name)\": " + (.body | del(.pronounceable_name) | to_entries | map("\(.key) \(.value | tojson)") | join(", "))
+    "+ create \(.kind) \"\(.name)\": " + (.body | del(.pronounceable_name, .name) | to_entries | map("\(.key) \(.value | tojson)") | join(", "))
   elif .op == "update" then
-    "~ update monitor \"\(.name)\": " + (.changes | map("\(.key) \(.from | tojson) -> \(.to | tojson)") | join(", "))
+    "~ update \(.kind) \"\(.name)\": " + (.changes | map("\(.key) \(.from | tojson) -> \(.to | tojson)") | join(", "))
   elif .op == "delete" then
-    "- delete monitor \"\(.name)\": not in .betterstack/config.json"
+    "- delete \(.kind) \"\(.name)\": not in .betterstack/config.json"
   elif .op == "fixed" then
     "! Errors application \"\(.name)\" has platform \(.from), the file says \(.to). The API cannot change it: not applied. Change it by hand (docs/deployment.md, section 16)."
   else
@@ -188,6 +214,10 @@ while IFS= read -r action; do
     "monitor create") call POST "$uptime_api/monitors" "$work/uptime.header" "$body" >/dev/null ;;
     "monitor update") call PATCH "$uptime_api/monitors/$id" "$work/uptime.header" "$body" >/dev/null ;;
     "monitor delete") call DELETE "$uptime_api/monitors/$id" "$work/uptime.header" >/dev/null ;;
+    # The answer holds the heartbeat's URL, so it goes nowhere.
+    "heartbeat create") call POST "$uptime_api/heartbeats" "$work/uptime.header" "$body" >/dev/null ;;
+    "heartbeat update") call PATCH "$uptime_api/heartbeats/$id" "$work/uptime.header" "$body" >/dev/null ;;
+    "heartbeat delete") call DELETE "$uptime_api/heartbeats/$id" "$work/uptime.header" >/dev/null ;;
     *) continue ;;
   esac
   echo "Applied: $op $kind \"$name\"."
