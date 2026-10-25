@@ -47,10 +47,13 @@ const northwind: MyTenantResponse = {
   role: roleOf.owner,
 };
 
-const answers = (total: number) => [
+const tenantsOf = (total: number) =>
   http.get("*/v1/me/tenants", () =>
     HttpResponse.json({ items: [northwind], page: 1, pageSize: 100, total }),
-  ),
+  );
+
+const answers = (total: number) => [
+  tenantsOf(total),
   getGetMyTenantMockHandler(
     getGetMyTenantResponseMock({
       ...northwind,
@@ -190,7 +193,7 @@ describe("TenantShell", () => {
 
     it("TenantShell_GetMyTenantWaits_KeepsTheShellAndWaitsInTheContent", async () => {
       server.use(
-        answers(1)[0],
+        tenantsOf(1),
         http.get("*/v1/tenants/:tenantId", async () => {
           await delay("infinite");
         }),
@@ -253,7 +256,7 @@ describe("TenantShell", () => {
 
     it("TenantShell_GetMyTenantSaysClosed_ReplacesTheShellWithTheClosedPage", async () => {
       server.use(
-        answers(1)[0],
+        tenantsOf(1),
         http.get("*/v1/tenants/:tenantId", () =>
           problem(403, ErrorCode.TenantClosed),
         ),
