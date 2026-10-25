@@ -1,6 +1,6 @@
 # Architecture: multi-tenant SaaS starter template (frontend)
 
-This document is the single source of truth for the frontend: `apps/web`, `apps/platform`, `packages/api-client` and `packages/ui`. If the code does not agree with this document, the code changes. The API has its own document, `apps/api/docs/ARCHITECTURE.md`; this one follows its shape.
+This document is the single source of truth for the frontend: `apps/web`, `apps/platform`, `packages/api-client`, `packages/ui`, `packages/brand` and `packages/emails`. If the code does not agree with this document, the code changes. The API has its own document, `apps/api/docs/ARCHITECTURE.md`; this one follows its shape.
 
 Each rule has an id that starts with `F` (`F1`, `F2`), so it never collides with an API rule. Use the id when you refer to a rule in a review, a commit message or a comment. A rule of the API keeps its own id here (`D1`, `N9`).
 
@@ -55,7 +55,9 @@ flowchart LR
 | A date or a time on screen | `packages/ui/src/lib/format-date-time.ts` | F18 |
 | A test | Beside the file it tests: `x.test.tsx` beside `x.tsx`. Playwright tests in `apps/<app>/e2e/` | F35 |
 | A check | Biome in `biome.json`, or a rule in `packages/ui/test/architecture-rules.ts` that an `architecture.test.ts` runs | F36 |
-| A generated file | A file that ends in `.gen.ts` or `.gen.css` | F32, D1 |
+| The product's name and support contact | `packages/brand/brand.json`, with its typed export in `src/index.ts`. A product built from the template changes this one file; the emails read it, and the apps move to it in a later step | F53 |
+| An email the API sends: its template, its texts, its preview | `packages/emails`: the templates in `src/templates/`, the shared layout in `src/layout/`, the texts in `messages/{en,tr,ar}.json`, the previews in `src/previews/` (`pnpm --filter @repo/emails dev`), the render script in `scripts/render.tsx` | F53, F14 |
+| A generated file | A file that ends in `.gen.ts` or `.gen.css`; the rendered emails in the API's `Notifications.Application/Email/Generated/` | F32, F53, D1 |
 | A rule | This document, by its id | |
 
 ## Purpose and scope
@@ -72,6 +74,8 @@ The scope:
 | `apps/platform`: the provider's app, "Platform" on screen | The system admins (N5) |
 | One BFF route handler in each app | The browser never holds a token (F6) |
 | The checks in Biome and in the architecture tests | A rule without a check decays (Ford, Parsons, Kua, Chapter 2) |
+| `packages/brand`: the product's name and support contact | A product changes its identity in one file, so a merge from the template does not conflict (step r14) |
+| `packages/emails`: the emails the API sends, written with React Email | The emails share one look and one set of texts with the product, and the API runs no Node (step r14, F53) |
 
 Out of scope: a CSP (production preparation), Storybook, the mobile app, the marketing app.
 
@@ -140,6 +144,7 @@ The client is generated. No app writes an API type, an enum value, a permission 
 | F30 | The tenant web's routes are `/[tenantSlug]/...`. The slug becomes the tenant id through the cached `ListMyTenants`. A slug that is not in the user's list shows "No access yet". A tenant whose status is suspended or closed shows its page in place of the shell, with no reason (the Suspended and Closed boards); a purging tenant, whose purge has started, shows the Closed board, as the API refuses its members with `tenant.closed`; "Choose another organisation" shows only when the user has another one. The platform app has no tenant segment. The API path keeps the id (T1) | The API's section 12, "Slug in addresses" | `tenant-context.test.tsx`, `choose-organisation.test.tsx` |
 | F31 | Names: files in kebab case, components in PascalCase, hooks `use-x.ts`, tests `x.test.tsx`, message keys `feature.camelCase`. On screen: "organisation", "Activity" and "Platform"; in code, routes and the API: `tenant`, `audit`, `platform`. "Admin" is only a role (the API's glossary, section 10) | Evans, *Domain-Driven Design*, Chapter 2 (Ubiquitous Language) | Review |
 | F32 | A generated file ends in `.gen.ts` or `.gen.css`. Nobody edits one: change its source and run `pnpm generate`. Biome skips them, and `.gitattributes` folds them in a pull request | The API's D1 and "Generated files" | `generatedFileNames`; the `generated` CI job |
+| F53 | The emails the API sends are React Email templates in `packages/emails`, rendered at build time (the maintainer's decision in step r14, option A). `pnpm generate` runs `scripts/render.tsx`, which writes each email in each language of the contract into the API's `Notifications.Application/Email/Generated/`: `<email>.<lang>.html`, `<email>.<lang>.txt` and `<email>.<lang>.subject.txt`, each value a placeholder `{{name}}` that the API fills and HTML-encodes (the API's section 7, "Email"), with `languages.json` (the built-in role names, the month names and the date patterns, because the API's image has no ICU) and `brand.json`. A template passes each value as a prop; only the render script writes a placeholder (React Email's skill, "Behavioral Guidelines"). The layout follows the email boards: the brand as text at the top, one column of at most 600px with a card, a flat button 44px high, the link under it in `dir="ltr"`, the footer under a rule. Every cell names the system font stack; an email loads no web font and no image. Each colour comes from `tokens.json` (F20): light inline, dark in a `prefers-color-scheme` rule that a class names. Arabic is right to left with Western digits; `Html` and `Body` take the language's `lang` and `dir` (F13). The plain-text part has the same texts in the same order, the brand first, a button as its label, a colon and the link on the next line, and the contact sentence with the support address on the next line. The texts are in `messages/{en,tr,ar}.json` with the same keys (F14, F15). The brand comes from `packages/brand` | React Email documentation, "render" and "Html". Resend, "Send Email". W3C, "Structural markup and right-to-left text in HTML". Hunt and Thomas, Topic 9 (DRY) | The API's `EmailTemplateTests` and the two handlers' tests (every email in every language, every placeholder filled); the `generated` CI job; `pnpm --filter @repo/emails check-types` |
 | F33 | `/dev/components` renders every component, in each language and theme. It exists only outside production builds: the route is a `page.dev.tsx`, and `next.config.ts` adds the page extension `dev.tsx` outside production, so a production build has no such route | The design system's previews | `dev-components-page.test.tsx`; `next.config.test.ts` of each app (no `dev.tsx` page extension in production); Playwright |
 | F34 | No Storybook. `/dev/components` and the component tests serve its purpose | Ousterhout, *A Philosophy of Software Design* (do not add a tool without a need) | Review |
 
@@ -220,3 +225,5 @@ These parts are not in the frontend yet. Each one comes in when its written cond
 | A deletion of a user who was deleted already (204, nothing written) shows the same toast as a new one; the board's "was already deleted" needs to know which | The API says it in the answer |
 | The platform's Activity names a day before yesterday by its date, as the tenant web does; the boards add the weekday ("Wednesday, 14 Oct 2026") | A day label with the weekday in `ActivityLog`, for both apps |
 | While the first reads come, the tenant web draws `PendingTenantShell`, and then `TenantShell` in another place of the tree, so `AppShell` mounts again when the reads answer: a ⌘B pressed during the load and the focus in the rail are lost then (F26, F49). The maintainer accepted it in step 22o | A `TenantProvider` that gives the shell a tenant that may be missing |
+| The Turkish and Arabic texts of the emails (`packages/emails/messages/`, step r14) have no native speaker's review. The invitation's Turkish and Arabic expiry and the Arabic zone label follow the purge warning's words, not the boards' "UTC" (the inviter's zone, the maintainer's decision in step r14) | A translator's review |
+| An email writes the IANA city in English (`Istanbul`), where the boards write `İstanbul`: the API's image has no ICU | A localized city list in `packages/emails`, if a product needs it |

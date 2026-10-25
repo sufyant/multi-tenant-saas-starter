@@ -27,7 +27,8 @@ const output = new URL(
   import.meta.url,
 );
 
-// A placeholder for each value, in the props' own names: the API fills {{name}}.
+// A placeholder for each value, in the props' own names: the API fills {{name}}. It HTML-encodes each value in the HTML part and refuses
+// a link that is not an absolute https URL (apps/api/docs/ARCHITECTURE.md, section 7, "Email").
 const placeholders = <T extends string>(...names: T[]) =>
   Object.fromEntries(names.map((name) => [name, `{{${name}}}`])) as Record<
     T,
