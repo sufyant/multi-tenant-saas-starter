@@ -66,8 +66,11 @@ test("Members_InviteAMember_SendsItAndSaysSo", async ({ page: browser }) => {
   await expect(
     browser.getByText("Invitation sent", { exact: true }),
   ).toBeVisible();
+  // The date is the mock's expiresAt, seven days from now.
   await expect(
-    browser.getByText("khalid@northwind.io has 7 days to join."),
+    browser.getByText(
+      /^khalid@northwind\.io can join until \d{1,2} [A-Z][a-z]{2} \d{4}\.$/,
+    ),
   ).toBeVisible();
 });
 

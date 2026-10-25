@@ -56,6 +56,8 @@ const handWrittenThemeBlock = `@theme inline {
   --spacing-touch-target-tablet: var(--touch-target-tablet);
   --spacing-rail-width: var(--rail-width);
   --spacing-rail-expanded: var(--rail-expanded);
+  --spacing-code-slot-width: var(--code-slot-width);
+  --spacing-code-slot-height: var(--code-slot-height);
   --container-content-max: var(--content-max);
 
   --shadow-xs: var(--shadow-xs);

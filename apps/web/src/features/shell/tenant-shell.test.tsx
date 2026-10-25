@@ -19,8 +19,8 @@ import {
 } from "vitest";
 import { TenantProvider } from "@/shared/tenant-context";
 import { renderWithProviders } from "../../../test/render";
-import { roleOf } from "../../../test/tenant";
-import { TenantShell } from "./tenant-shell";
+import { problem, roleOf } from "../../../test/tenant";
+import { PendingTenantShell, TenantShell } from "./tenant-shell";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -47,10 +47,13 @@ const northwind: MyTenantResponse = {
   role: roleOf.owner,
 };
 
-const answers = (total: number) => [
+const tenantsOf = (total: number) =>
   http.get("*/v1/me/tenants", () =>
     HttpResponse.json({ items: [northwind], page: 1, pageSize: 100, total }),
-  ),
+  );
+
+const answers = (total: number) => [
+  tenantsOf(total),
   getGetMyTenantMockHandler(
     getGetMyTenantResponseMock({
       ...northwind,
@@ -67,7 +70,10 @@ const answers = (total: number) => [
 ];
 
 const shell = () => (
-  <TenantProvider slug="northwind">
+  <TenantProvider
+    slug="northwind"
+    pending={<PendingTenantShell slug="northwind" railExpanded={false} />}
+  >
     <TenantShell railExpanded={false}>Content</TenantShell>
   </TenantProvider>
 );
@@ -89,8 +95,9 @@ describe("TenantShell", () => {
 
     renderWithProviders(shell());
 
+    await screen.findByText("Northwind Traders");
     const crumbs = within(
-      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
     ).getAllByRole("listitem");
     expect(crumbs[0]).toHaveTextContent("Northwind Traders");
     expect(screen.getAllByText("Preferences").length).toBeGreaterThan(0);
@@ -101,7 +108,7 @@ describe("TenantShell", () => {
 
     renderWithProviders(shell());
 
-    await screen.findByRole("navigation", { name: "Breadcrumb" });
+    await screen.findByText("Northwind Traders");
     expect(
       screen.queryByRole("button", { name: "Northwind Traders" }),
     ).not.toBeInTheDocument();
@@ -143,4 +150,168 @@ describe("TenantShell", () => {
       expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     },
   );
+
+  describe("while the first reads come", () => {
+    // A read that waits holds until its test ends, then fails: an answer that never comes would stay open and hold up the
+    // reads of the next tests.
+    let releases: (() => void)[] = [];
+    afterEach(() => {
+      for (const release of releases) release();
+      releases = [];
+    });
+    const held = async () => {
+      await new Promise<void>((resolve) => releases.push(resolve));
+      return HttpResponse.error();
+    };
+    const waiting = () => http.get("*/v1/me/tenants", held);
+    const meWaits = () => http.get("*/v1/me", held);
+
+    it("TenantShell_ListMyTenantsWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
+      server.use(waiting(), meWaits());
+
+      renderWithProviders(shell());
+
+      const rail = screen.getByRole("navigation", { name: "Main" });
+      expect(
+        within(rail).getByRole("link", { name: "Settings" }),
+      ).toHaveAttribute("href", "/northwind/settings/general");
+      expect(screen.getByRole("banner")).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: "Breadcrumb" }),
+      ).toHaveTextContent("Preferences");
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_ListMyTenantsWaits_ShowsNoSkeletonBeforeTheDelayAndTheSkeletonAfterIt", async () => {
+      server.use(waiting(), meWaits());
+
+      renderWithProviders(shell());
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(
+        await screen.findByRole("status", { name: "Loading" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("main")).toContainElement(
+        screen.getByRole("status", { name: "Loading" }),
+      );
+    });
+
+    it("TenantShell_ListMyTenantsWaits_HoldsTheNameWithASkeletonAfterTheDelay", async () => {
+      server.use(waiting(), meWaits());
+
+      renderWithProviders(shell());
+
+      const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+      const before = crumbs.querySelectorAll("[data-slot='skeleton']");
+      await screen.findByRole("status", { name: "Loading" });
+
+      expect(before).toHaveLength(0);
+      expect(crumbs.querySelector("[data-slot='skeleton']")).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+    });
+
+    it("TenantShell_GetMyTenantWaits_KeepsTheShellAndWaitsInTheContent", async () => {
+      server.use(
+        tenantsOf(1),
+        http.get("*/v1/tenants/:tenantId", held),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("status", { name: "Loading" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: "Main" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_SlugNotInTheList_ReplacesTheShellWithNoAccessYet", async () => {
+      server.use(
+        http.get("*/v1/me/tenants", () =>
+          HttpResponse.json({ items: [], page: 1, pageSize: 100, total: 0 }),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", { name: "No access yet" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_SuspendedInTheList_ReplacesTheShellWithTheSuspendedPage", async () => {
+      server.use(
+        http.get("*/v1/me/tenants", () =>
+          HttpResponse.json({
+            items: [{ ...northwind, status: "suspended" }],
+            page: 1,
+            pageSize: 100,
+            total: 1,
+          }),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Northwind Traders is suspended",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_GetMyTenantSaysClosed_ReplacesTheShellWithTheClosedPage", async () => {
+      server.use(
+        tenantsOf(1),
+        http.get("*/v1/tenants/:tenantId", () =>
+          problem(403, ErrorCode.TenantClosed),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Northwind Traders is closed",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_ListMyTenantsSaysSuspendedUser_ReplacesTheShellWithTheAccountPage", async () => {
+      server.use(
+        http.get("*/v1/me/tenants", () =>
+          problem(403, ErrorCode.UserSuspended),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Your account is suspended",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+  });
 });

@@ -26,8 +26,3 @@ export function invitationStatus(
   const left = new Date(invitation.expiresAt).getTime() - now.getTime();
   return left < expiresSoonWithin ? "expiresSoon" : "invited";
 }
-
-/** Whole days from now until the expiry the API answered, for "has 7 days to join": never a literal. */
-export function daysLeft(expiresAt: string, now: Date): number {
-  return Math.round((new Date(expiresAt).getTime() - now.getTime()) / day);
-}

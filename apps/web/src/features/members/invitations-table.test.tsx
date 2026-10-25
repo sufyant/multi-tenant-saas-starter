@@ -234,7 +234,10 @@ describe("InvitationsTable", () => {
           keys.push(request.headers.get("Idempotency-Key"));
           bodies.push(await request.json());
           return HttpResponse.json(
-            invitation("inv-06", "ali@northwind.io", 7 * 24),
+            {
+              ...invitation("inv-06", "ali@northwind.io", 7 * 24),
+              expiresAt: "2026-11-02T10:00:00Z",
+            },
             { status: 201 },
           );
         },
@@ -244,7 +247,7 @@ describe("InvitationsTable", () => {
     renderInTenant(<MembersPage />, { url });
     await pickFromRowMenu("Invitations", "ali@northwind.io", "Invite again");
     expect(
-      await screen.findByText("ali@northwind.io has 7 days to join."),
+      await screen.findByText("ali@northwind.io can join until 2 Nov 2026."),
     ).toBeInTheDocument();
     await pickFromRowMenu("Invitations", "ali@northwind.io", "Invite again");
 

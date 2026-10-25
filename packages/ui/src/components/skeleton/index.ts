@@ -1,1 +1,6 @@
-export { Skeleton, type SkeletonProps } from "./skeleton";
+export {
+  InlineSkeleton,
+  Skeleton,
+  type SkeletonProps,
+  skeletonDelayMs,
+} from "./skeleton";

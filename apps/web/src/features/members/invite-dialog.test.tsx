@@ -9,6 +9,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
+import { createTranslator } from "next-intl";
 import {
   afterAll,
   afterEach,
@@ -18,6 +19,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { messages } from "@/i18n/messages";
 import {
   ayse,
   billingLead,
@@ -34,6 +36,41 @@ import {
   viewerAnswers,
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
+
+// The texts of a sent invitation and of the daily limit in each language (the Messages boards). The limit's window is the API's
+// setting, so no text names it; the expiry is the date the API answered.
+describe("InviteDialog texts", () => {
+  it.each([
+    [
+      "en",
+      "2 Nov 2026",
+      "ali@northwind.io can join until 2 Nov 2026.",
+      "You have reached today’s invitation limit.",
+    ],
+    [
+      "tr",
+      "2 Kas 2026",
+      "ali@northwind.io, 2 Kas 2026 tarihine kadar katılabilir.",
+      "Bugünkü davet sınırına ulaştınız.",
+    ],
+    [
+      "ar",
+      "2 نوفمبر 2026",
+      "يمكن لـ ali@northwind.io الانضمام حتى 2 نوفمبر 2026.",
+      "لقد بلغت حد الدعوات لهذا اليوم.",
+    ],
+  ] as const)(
+    "Texts_InLanguage_%s_SayTheDateAndNoWindow",
+    (locale, date, sentText, dailyLimitText) => {
+      const t = createTranslator({ locale, messages: messages[locale] });
+
+      expect(t("members.sentText", { email: "ali@northwind.io", date })).toBe(
+        sentText,
+      );
+      expect(t("members.dailyLimitText")).toBe(dailyLimitText);
+    },
+  );
+});
 
 vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ signOut: vi.fn() }) }));
 
@@ -87,13 +124,22 @@ const typeEmail = async (dialog: HTMLElement, email: string) => {
 };
 
 describe("InviteDialog", () => {
-  it("Invite_Success_SendsTheInvitationAndSaysHowLongItLasts", async () => {
+  it("Invite_Success_SendsTheInvitationAndSaysUntilWhenItWorks", async () => {
     const calls: Call[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
       inviteAnswer(
-        [() => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 })],
+        [
+          () =>
+            HttpResponse.json(
+              {
+                ...sent("khalid@northwind.io"),
+                expiresAt: "2026-11-02T10:00:00Z",
+              },
+              { status: 201 },
+            ),
+        ],
         calls,
       ),
     );
@@ -105,7 +151,7 @@ describe("InviteDialog", () => {
 
     expect(await screen.findByText("Invitation sent")).toBeInTheDocument();
     expect(
-      screen.getByText("khalid@northwind.io has 7 days to join."),
+      screen.getByText("khalid@northwind.io can join until 2 Nov 2026."),
     ).toBeInTheDocument();
     expect(calls.map((call) => call.body)).toEqual([
       {
@@ -276,7 +322,7 @@ describe("InviteDialog", () => {
       429,
       ErrorCode.InvitationDailyLimitReached,
       "Daily limit reached",
-      "Northwind Traders has sent the most invitations allowed in the last 24 hours. Try again later.",
+      "You have reached today’s invitation limit.",
     ],
     [
       403,
