@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text;
+using Api.Observability;
+using Api.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -127,6 +129,40 @@ public sealed partial class ErrorTrackingTests(Database database)
         Logged(events, marker).ShouldHaveSingleItem();
     }
 
+    // The web host and the worker share one application of the error tracker, so each event names the role that sent it.
+    [Theory]
+    [InlineData("web")]
+    [InlineData("worker")]
+    public async Task Log_AtError_EventNamesTheRole(string role)
+    {
+        var events = new ErrorEvents();
+        await using var host = await StartAsync(events, role: role);
+        var marker = Guid.NewGuid().ToString();
+
+        LogFailed(Logger(host), marker);
+
+        await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
+        Logged(events, marker).ShouldHaveSingleItem().Tags.ShouldContainKeyAndValue("role", role);
+    }
+
+    // The migration step runs no role; Program names its events by the command.
+    [Fact]
+    public async Task Log_AtErrorInTheMigrationStep_EventNamesTheCommand()
+    {
+        var events = new ErrorEvents();
+        await using var host = await PipelineHost.StartAsync(ErrorEvents.Settings(), services =>
+        {
+            events.SendTo(services);
+            services.NameErrorTrackingRole(MigrationStep.Command);
+        });
+        var marker = Guid.NewGuid().ToString();
+
+        LogFailed(Logger(host), marker);
+
+        await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
+        Logged(events, marker).ShouldHaveSingleItem().Tags.ShouldContainKeyAndValue("role", "migrate");
+    }
+
     // The host logs a hosted service that fails at Error. A test host ignores the failure, so it keeps running for the test.
     [Fact]
     public async Task RunHostedService_ItFails_SendsOneEvent()
@@ -184,7 +220,7 @@ public sealed partial class ErrorTrackingTests(Database database)
 
         await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
         var sentryEvent = Logged(events, marker).ShouldHaveSingleItem();
-        SentText(sentryEvent).ShouldNotContain(Address);
+        ErrorEvents.Text(sentryEvent).ShouldNotContain(Address);
         sentryEvent.Message!.Formatted.ShouldBe($"No invitation for \"[email]\": \"{marker}\"");
         sentryEvent.SentryExceptions.ShouldNotBeNull().ShouldHaveSingleItem().Value.ShouldBe("No account for [email]");
     }
@@ -242,18 +278,6 @@ public sealed partial class ErrorTrackingTests(Database database)
 
     private static List<SentryEvent> Logged(ErrorEvents events, string marker) =>
         events.Where(sentryEvent => sentryEvent.Message?.Formatted?.Contains(marker, StringComparison.Ordinal) == true);
-
-    // Every text of the event as the SDK writes it to the wire.
-    private static string SentText(SentryEvent sentryEvent)
-    {
-        using var stream = new MemoryStream();
-        using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
-        {
-            sentryEvent.WriteTo(writer, null);
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Something failed: {Marker}")]
     private static partial void LogFailed(ILogger logger, string marker);

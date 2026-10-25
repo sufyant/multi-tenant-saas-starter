@@ -33,7 +33,7 @@ internal static class PersistenceExtensions
             builder.Services.AddTenancy(_ => database);
         }
 
-        builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
+        builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: [ApiPipeline.ReadyTag]);
 
         return builder;
     }

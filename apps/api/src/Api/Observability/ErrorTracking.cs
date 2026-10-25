@@ -1,3 +1,4 @@
+using Api.Hosting;
 using Sentry.AspNetCore;
 using Sentry.Extensibility;
 using Sentry.Extensions.Logging;
@@ -15,6 +16,11 @@ internal static class ErrorTracking
     private const string WolverineRuntimeCategory = "Wolverine.Runtime.WolverineRuntime";
 
     private const int WolverineRescheduledEventId = 109;
+
+    private const string RoleTag = "role";
+
+    // The health check service's log of each check it runs: a check that fails is logged at Error.
+    private const string HealthCheckCategory = "Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService";
 
     private const string EfCoreCommandErrorEventName = "Microsoft.EntityFrameworkCore.Database.Command.CommandError";
 
@@ -36,6 +42,7 @@ internal static class ErrorTracking
         }
 
         var environment = builder.Environment.EnvironmentName.ToLowerInvariant();
+        var onWorker = builder.Configuration.Read().RoleOrNull is HostRole.Worker;
         builder.WebHost.UseSentry(sentry =>
         {
             sentry.Dsn = settings.Dsn;
@@ -59,14 +66,21 @@ internal static class ErrorTracking
             // A log at Error or above is an event; a log below it is a breadcrumb of the next event.
             sentry.MinimumEventLevel = LogLevel.Error;
 
-            // Two logs at Error that report no failure of their own. Wolverine logs each put-back and each scheduled retry of a message at
+            // Logs at Error that report no failure of their own. Wolverine logs each put-back and each scheduled retry of a message at
             // Error, and its level cannot be changed; the move to the dead letter queue is the alert. EF Core logs a command the database
             // refused, then throws an exception around the database's to the code, which reports it; the SDK leaves out EF Core's other
-            // such logs itself (SentryLogger).
+            // such logs itself (SentryLogger). On a worker, the health check service logs each check that fails: the heartbeat runs the
+            // checks every interval, and its missing call is the alert.
             sentry.AddLogEntryFilter((category, _, eventId, _) =>
                 (category == WolverineRuntimeCategory && eventId.Id == WolverineRescheduledEventId)
-                || eventId.Name == EfCoreCommandErrorEventName);
+                || eventId.Name == EfCoreCommandErrorEventName
+                || (onWorker && category == HealthCheckCategory));
         });
+
+        if (builder.Configuration.Read().Role is { Length: > 0 } role)
+        {
+            builder.Services.NameErrorTrackingRole(role);
+        }
 
         // The exception handler answers some exceptions with a 4xx, such as an invalid command (400); the caller caused them, so they are
         // no event. The SDK reports every exception the handler caught, so the answer's status decides.
@@ -76,6 +90,11 @@ internal static class ErrorTracking
 
         return builder;
     }
+
+    // The web host and the worker share one application of the error tracker, so each event names the process that sent it: the host's
+    // role, or the command it runs. A later name replaces an earlier one.
+    public static IServiceCollection NameErrorTrackingRole(this IServiceCollection services, string role) =>
+        services.Configure<SentryAspNetCoreOptions>(sentry => sentry.DefaultTags[RoleTag] = role);
 
     private static bool IsAnsweredBelow500(Sentry.SentryEvent sentryEvent, IHttpContextAccessor http) =>
         sentryEvent.SentryExceptions?.Any(exception => exception.Mechanism?.Type == ExceptionHandlerMechanism) == true

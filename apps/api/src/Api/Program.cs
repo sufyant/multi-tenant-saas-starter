@@ -1,6 +1,7 @@
 using System.Reflection;
 using Api;
 using Api.Hosting;
+using Api.Observability;
 using Api.Routing;
 using Api.Persistence;
 using Audit.Api;
@@ -25,6 +26,12 @@ try
     }
 
     var role = builder.AddApiWithModules();
+
+    // The migration step runs no role, so its events name the command (section 7, "Error tracking").
+    if (args is [MigrationStep.Command, ..])
+    {
+        builder.Services.NameErrorTrackingRole(MigrationStep.Command);
+    }
 
     app = builder.Build();
 
