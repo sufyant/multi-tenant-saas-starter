@@ -27,6 +27,8 @@
     "railway:apply": "railway config apply",
     "clerk:plan": "scripts/clerk/config.sh plan",
     "clerk:apply": "scripts/clerk/config.sh apply",
+    "betterstack:plan": "scripts/betterstack/config.sh plan",
+    "betterstack:apply": "scripts/betterstack/config.sh apply",
     "skills:update": "scripts/agent-skills/update.sh"
   },
   "devDependencies": {

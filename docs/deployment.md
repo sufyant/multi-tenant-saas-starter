@@ -107,6 +107,11 @@ The table holds names only. A value never goes into the repository.
 | Each name in `sharedVariables` of `.railway/railway.ts`, and `CLERK_PUBLISHABLE_KEY`. Three are secrets: `ConnectionStrings__Database`, `ControlPlane__Clerk__SecretKey` and `Notifications__Resend__ApiKey` | Railway shared variable. A secret is a sealed variable | own value | own value |
 | The image digest that each service runs | Railway service settings. `deploy.yml` sets it | the latest commit on `main` | the latest approved commit, or a rolled back release |
 | The custom domains of `api-web`, `web` and `platform`, and their DNS records | Railway service settings and the maintainer's DNS. Not part of the repository (section 13) | own domains | own domains |
+| The Errors applications and the uptime monitors | Repository: `.betterstack/config.json`. `pnpm betterstack:apply` applies it (section 16) | monitors `staging api`, `staging web`, `staging platform`; the applications are shared | monitors `production api`, `production web`, `production platform` |
+| `Host__ErrorTracking__Dsn`, `WEB_ERROR_TRACKING_DSN`, `PLATFORM_ERROR_TRACKING_DSN` | Railway shared variable, sealed. Copied from each Errors application's "Ingest" tab (section 16, step 5) | the same DSN in both environments | the same DSN in both environments |
+| `ERROR_TRACKING_ENVIRONMENT` of `web` and `platform` | Repository: `.railway/railway.ts`, from the linked Railway environment (`ctx.environment`), as it sets the API's `ASPNETCORE_ENVIRONMENT` | `staging` | `production` |
+| The Errors Slack integration: its channel, the new-error and the spike alerts | Better Stack, by hand (section 16, step 6) | shared | shared |
+| `BETTERSTACK_UPTIME_TOKEN`, `BETTERSTACK_TELEMETRY_TOKEN` | The maintainer's password manager only (section 16, step 2) | shared | shared |
 
 `apps/api/docs/configuration.md` describes each setting. The shared variables have the same names as the service variables, in the `__` form.
 
@@ -493,7 +498,7 @@ After a restore, the private host, the proxy and the root certificate are new. U
 - **Anonymous callers share one rate limit on Railway.** The API limits a caller without a token by its IP address (`apps/api/src/Api/RateLimiting/UserRateLimiting.cs`). Behind Railway's proxy, every caller has the proxy's address, because no `Host:ForwardedHeaders:KnownProxies` or `KnownNetworks` is set. So all anonymous calls to one pod share one limit, 1000 a minute by default. Heavy anonymous traffic can make the smoke test see 429, not 401. The maintainer decides whether to set the forwarded headers settings for Railway. The web apps call the API over the private network, from their own address, so an anonymous call through a BFF shares the limit of that app's replica too. A BFF answers 401 itself without a session (F6), so few anonymous calls reach the API.
 - **The npm advisories of three packages have no safe fix today.** `uuid` 8.3.2 and `stream-json` 1.9.1 come through `jayson` 4, which `@solana/web3.js` 1.x requires (`^4.3.0`, also in 1.99.0), and `@clerk/ui` brings in the Solana packages. The fixed versions are new major versions (`uuid` 11.1.1, `stream-json` 3.6.0) that `jayson` 4 does not accept (`^8.3.2`, `^1.9.1`). `braces` 3.0.3 has no fixed release (GHSA-vfj7-8cjw-p6xm). Dependabot cannot update a version-pinned transitive dependency with pnpm (dependabot-core issue 15766), so its run fails until then. Check again when `@solana/web3.js` or `braces` releases. Source: `pnpm audit` and `pnpm why`.
 - **A crash outside `Main` can hang the process on arm64.** Step 18g makes `Main` return an exit code. An exception that leaves another thread still calls `abort()`. As PID 1 in a container on arm64, this can hang at full CPU (dotnet/runtime issues 66707 and 111601; 111601 is open for .NET 10). A small init process (`tini`, or `docker run --init`) would reap the process. Planned: decide this in a later step about the image.
-- **No monitoring and no alerts.** OpenTelemetry is not connected to a backend: `OTEL_EXPORTER_OTLP_ENDPOINT` is not set (`apps/api/docs/configuration.md`). A failed deploy shows in GitHub Actions, but a failure at run time shows only in the Railway logs. Nobody gets an alert. Source: *Release It!* (Nygard), "Transparency".
+- **Errors and uptime are monitored; metrics and traces are not.** Better Stack collects the errors of the three apps and checks their public routes every 3 minutes (section 16). A monitor that fails for 5 minutes emails the owner, and a new error or a spike posts to Slack. Not covered yet: metrics and traces. OpenTelemetry is not connected to a backend: `OTEL_EXPORTER_OTLP_ENDPOINT` is not set (`apps/api/docs/configuration.md`). Planned: step 42. No alert reaches the phone except through Slack's app until production, which brings push, phone and SMS with a responder seat (step 47). Source: *Release It!* (Nygard), "Transparency".
 
 ## 11. When a deploy, a tag or a rollback fails
 
@@ -786,3 +791,83 @@ After the delivery, check:
 - A person on `ControlPlane:SystemAdmins:RootEmails` signs in to the platform app with a second factor and becomes a system admin again: the door adds the user row (`apps/api/docs/flows/system-admins.md`). No other user row, tenant or invitation is left: create the test tenants again, and invite their members again.
 
 A rollback of staging to a version from before the squash does not work after the reset (section 6, "The database").
+
+## 16. Error tracking and alerts
+
+Better Stack collects the errors of the API, the web app and the platform app, checks their public routes and alerts the owner. The three apps send their errors through the Sentry SDK. `.betterstack/config.json` holds the settings that Better Stack's API can manage, and `.betterstack/README.md` says which ones it cannot and why. `scripts/betterstack/config.sh` plans and applies them, like Railway's and Clerk's settings (section 7).
+
+What the file holds:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Errors applications | `api`, `web`, `platform`, one per app, for every environment | The `environment` tag of each event separates staging and production: the API's `ASPNETCORE_ENVIRONMENT` in lower case, and the web apps' `ERROR_TRACKING_ENVIRONMENT` |
+| Monitor `<environment> api` | `GET <API_URL>/v1/me/tenants` must answer 401 | The public route of the smoke test (section 2, step 6). The health endpoints answer only on the management port |
+| Monitors `<environment> web` and `<environment> platform` | `GET <WEB_URL>/health` and `GET <PLATFORM_URL>/health` must answer 2xx | The health paths of `.railway/web.json` and `.railway/platform.json` (section 2, step 9) |
+| Check interval | 180 seconds | The free plan's shortest interval |
+| Alert delay | 300 seconds of failure; resolved after 180 seconds up | A deploy's restart or a short network fault needs no person. Google, *Site Reliability Engineering*, chapter 6: alert on symptoms, and only when a person must act |
+| Alert channel | Email, no escalation policy | The free plan has email and Slack alerts only. Push, phone and SMS need a responder seat (step 47) |
+
+`plan` and `apply` compare only the monitors of one environment: those whose name starts with `<environment> `. `apply` deletes such a monitor when the file does not hold it. It never deletes an Errors application: deleting one deletes its errors, so `plan` prints that it leaves it.
+
+### First setup
+
+Do these steps once for staging. For production, do steps 3 to 7 with `production` and the production URLs; the Errors applications and the Slack integration exist then.
+
+1. **Create the Better Stack account** on the free plan, with the owner's email address. The account makes a team. Keep the owner the only member of the team: the monitors alert the team's members by email.
+2. **Create two team-based API tokens.** In Better Stack, open "API tokens", then "Team-based tokens", and pick the team. Create one token under "Incidents API tokens" and one under "Telemetry API tokens". Keep both in the password manager. They never go into a file, a GitHub secret or Railway. Better Stack has no read-only token, so `plan` uses the same tokens as `apply`.
+3. **Read the tokens and the URLs into the shell.** The URLs are the GitHub environment variables that `deploy.yml` reads (section 3). Run from the repository root:
+
+   ```bash
+   printf 'Incidents API token: '; read -rs BETTERSTACK_UPTIME_TOKEN; echo
+   printf 'Telemetry API token: '; read -rs BETTERSTACK_TELEMETRY_TOKEN; echo
+   export BETTERSTACK_UPTIME_TOKEN BETTERSTACK_TELEMETRY_TOKEN
+   export API_URL="$(gh variable get API_URL --env <environment>)"
+   export WEB_URL="$(gh variable get WEB_URL --env <environment>)"
+   export PLATFORM_URL="$(gh variable get PLATFORM_URL --env <environment>)"
+   ```
+
+4. **Plan, read the plan, then apply:**
+
+   ```bash
+   pnpm betterstack:plan <environment>
+   pnpm betterstack:apply <environment>
+   ```
+
+   The first plan for staging creates the three Errors applications and the three monitors of staging. `apply` asks before it changes anything. Run the plan again: it prints `No difference.`
+5. **Set the DSN of each application in Railway.** In Better Stack, open Errors, then each application, then its "Ingest" tab. The DSN is `https://<application token>@<ingesting host>/<application id>` (Better Stack docs, "Sentry SDK"). In the Railway dashboard, set these shared variables of `<environment>`, the DSNs as sealed variables. Never paste a DSN into a file or a chat.
+
+   | Shared variable | Value |
+   | --- | --- |
+   | `Host__ErrorTracking__Dsn` | the DSN of the application `api` |
+   | `WEB_ERROR_TRACKING_DSN` | the DSN of the application `web` |
+   | `PLATFORM_ERROR_TRACKING_DSN` | the DSN of the application `platform` |
+
+   `.railway/railway.ts` gives each service its own variable. It also sets the environment tag of the events from the linked Railway environment: `ASPNETCORE_ENVIRONMENT` for the API, `ERROR_TRACKING_ENVIRONMENT` for the web apps. You set neither. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
+6. **Connect Slack to Errors (manual).** Better Stack's API cannot manage the Errors integrations (`.betterstack/README.md`).
+   1. Choose a Slack channel for the alerts, such as `#alerts-<product>`.
+   2. In Better Stack, open Errors, then "Integrations". Find "Slack" and click "Add".
+   3. Follow the steps to authorize your Slack workspace.
+   4. In the integration's settings, pick the channel and the applications `api`, `web` and `platform`. Turn on the alert for a new error, and the alert for a spike. Keep the other settings at their defaults. Click "Save changes".
+   5. Write the settings you chose into this step, in a pull request, so the next product gets the same ones.
+   6. Install Slack's mobile app and allow its notifications for the channel. This is the only alert on the phone until step 47.
+7. **Remove the tokens from the shell:**
+
+   ```bash
+   unset BETTERSTACK_UPTIME_TOKEN BETTERSTACK_TELEMETRY_TOKEN
+   ```
+
+After the next deploy, check:
+
+- In Better Stack, Uptime, the three monitors of the environment show "Up".
+- An error in an app shows in its Errors application with the right `environment`, and a new error posts to the Slack channel.
+
+### When the plan prints something it cannot apply
+
+- `! Errors application "<name>" has platform ...`: the API cannot change an application's platform. Create a new application with the file's platform by hand, move the DSN in Railway to it (step 5), then delete the old one. Deleting it deletes its errors.
+- `! Errors application "<name>" is not in .betterstack/config.json`: the script leaves it. Add it to the file, or delete it by hand when its errors are not needed.
+- A monitor of another environment, or with a name that does not start with `<environment> `, is never in a plan. Uptime's free plan holds 10 monitors; the two environments use 6.
+
+### Later steps
+
+- **Push, phone and SMS alerts** come with production (step 47), with a responder seat and an escalation policy in `.betterstack/config.json`.
+- **A status page** is a later step (1.1).
