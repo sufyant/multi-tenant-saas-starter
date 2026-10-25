@@ -1,5 +1,6 @@
 import { ErrorCode, UserResponseStatus } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { expectVisibleToast } from "@repo/ui/test/toast";
+import { waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
 import {
@@ -65,9 +66,7 @@ describe("ReactivateUserDialog", () => {
     ).toBeVisible();
     await reactivate(dialog);
 
-    expect(
-      await screen.findByText(sentence("John Byrne reactivated.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("John Byrne reactivated."));
     expect(calls).toEqual([{ key: null, body: null }]);
     await waitFor(() => expect(reads.count).toBe(2));
   });

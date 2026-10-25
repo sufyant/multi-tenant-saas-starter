@@ -647,3 +647,28 @@ export function nativeChoiceControls(
   }
   return findings;
 }
+
+// A rule row of docs/frontend/ARCHITECTURE.md starts with its id in the first cell: `| F53 |`.
+const ruleRowId = /^\|\s*(F\d+[a-z]?)\s*\|/;
+
+/**
+ * Each frontend rule has one id ("Use the id when you refer to a rule"). Two rows with one id make every citation of it ambiguous.
+ * The finding names each row of a duplicated id, `path:line: what`. The API's `RuleIdTests` guards the ids that comments cite.
+ */
+export function duplicateRuleIds(document: string): Finding[] {
+  const lines = new Map<string, number[]>();
+  readFileSync(document, "utf8")
+    .split("\n")
+    .forEach((line, index) => {
+      const id = ruleRowId.exec(line)?.[1];
+      if (id) lines.set(id, [...(lines.get(id) ?? []), index + 1]);
+    });
+  return [...lines].flatMap(([id, numbers]) =>
+    numbers.length < 2
+      ? []
+      : numbers.map(
+          (number) =>
+            `${basename(document)}:${number}: rule id ${id} is on lines ${numbers.join(", ")}; give each rule its own id`,
+        ),
+  );
+}

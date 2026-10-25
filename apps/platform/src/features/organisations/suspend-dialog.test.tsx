@@ -3,6 +3,7 @@ import {
   FieldErrorCode,
   TenantResponseStatus,
 } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
@@ -75,9 +76,7 @@ describe("SuspendDialog", () => {
     ).toBeVisible();
     await suspend(dialog, "Contract under review");
 
-    expect(
-      await screen.findByText(sentence("Northwind Traders suspended")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Northwind Traders suspended"));
     expect(screen.getByText("Its 7 members cannot sign in.")).toBeVisible();
     expect(calls.map((call) => call.body)).toEqual([
       { reason: "Contract under review" },

@@ -1,4 +1,5 @@
 import { ErrorCode, TenantResponseStatus } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, HttpResponse, http } from "msw";
@@ -404,9 +405,7 @@ describe("OrganisationsPage", () => {
       dialog.getByRole("button", { name: "Rename organisation" }),
     );
 
-    expect(
-      await screen.findByText(sentence("Renamed to Northwind Traders Ltd.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Renamed to Northwind Traders Ltd."));
     await waitFor(() => expect(requests).toHaveLength(2));
   });
 

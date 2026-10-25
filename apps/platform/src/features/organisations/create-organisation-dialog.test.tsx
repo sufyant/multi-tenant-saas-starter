@@ -4,6 +4,7 @@ import {
   Language,
   TenantResponseStatus,
 } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -115,9 +116,7 @@ describe("CreateOrganisationDialog", () => {
     await fill(dialog, {});
     await send(dialog);
 
-    expect(
-      await screen.findByText(sentence("Liffey Design created")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Liffey Design created"));
     expect(
       screen.getByText("niamh@liffeydesign.example was invited as Owner."),
     ).toBeVisible();
@@ -154,9 +153,7 @@ describe("CreateOrganisationDialog", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     await send(dialog);
 
-    expect(
-      await screen.findByText(sentence("Liffey Design created")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Liffey Design created"));
     expect(new Set(calls.map((call) => call.key)).size).toBe(1);
   });
 
@@ -275,9 +272,7 @@ describe("CreateOrganisationDialog", () => {
     await fill(dialog, { slug: "liffey" });
     await send(dialog);
 
-    expect(
-      await screen.findByText(sentence("Liffey Design created")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Liffey Design created"));
     expect(new Set(calls.map((call) => call.key)).size).toBe(2);
   });
 });

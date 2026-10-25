@@ -4,6 +4,7 @@ import {
   colorLiterals,
   contractEnumValues,
   dateFormattingOutsideFormatter,
+  duplicateRuleIds,
   enumLiterals,
   enumValues,
   errorCodeMessages,
@@ -57,6 +58,12 @@ describe("architecture of packages/ui", () => {
 
   it("F32_Packages_NameEveryGeneratedFileGen", () => {
     expect(generatedFileNames(packages)).toEqual([]);
+  });
+
+  it("RuleIds_FrontendArchitecture_GivesEachRuleOneId", () => {
+    expect(
+      duplicateRuleIds(join(packages, "../docs/frontend/ARCHITECTURE.md")),
+    ).toEqual([]);
   });
 
   it("F15_SharedMessages_HaveTheSameKeysInEveryLanguage", () => {

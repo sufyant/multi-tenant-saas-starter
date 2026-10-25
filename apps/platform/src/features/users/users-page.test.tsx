@@ -1,4 +1,5 @@
 import { ErrorCode, UserResponseStatus } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, HttpResponse, http } from "msw";
@@ -235,9 +236,7 @@ describe("UsersPage", () => {
     await userEvent.type(lastName, "Demir");
     await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
 
-    expect(
-      await screen.findByText(sentence("Renamed to Ayşe Demir.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Renamed to Ayşe Demir."));
     await waitFor(() => expect(requests).toHaveLength(2));
   });
 

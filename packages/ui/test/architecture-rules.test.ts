@@ -8,6 +8,7 @@ import {
   crossFeatureImports,
   dateFormattingOutsideFormatter,
   declarationsOf,
+  duplicateRuleIds,
   enumLiterals,
   errorCodeMessages,
   generatedFileNames,
@@ -325,5 +326,26 @@ describe("architecture rules", () => {
       "en",
       "tr",
     ]);
+  });
+
+  it("DuplicateRuleIds_TwoRowsWithOneId_IsAFinding", () => {
+    const root = folder({
+      "ARCHITECTURE.md":
+        "| Id | Rule |\n| --- | --- |\n| F1 | One |\n| F2 | Two |\n| F1 | Three |\n",
+    });
+
+    expect(duplicateRuleIds(join(root, "ARCHITECTURE.md"))).toEqual([
+      "ARCHITECTURE.md:3: rule id F1 is on lines 3, 5; give each rule its own id",
+      "ARCHITECTURE.md:5: rule id F1 is on lines 3, 5; give each rule its own id",
+    ]);
+  });
+
+  it("DuplicateRuleIds_DistinctIds_AreNoFinding", () => {
+    const root = folder({
+      "ARCHITECTURE.md":
+        "| Id | Rule |\n| --- | --- |\n| F1 | One, as F2 says |\n| F2 | Two |\n",
+    });
+
+    expect(duplicateRuleIds(join(root, "ARCHITECTURE.md"))).toEqual([]);
   });
 });

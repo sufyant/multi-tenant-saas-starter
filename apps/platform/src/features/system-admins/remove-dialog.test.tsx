@@ -1,4 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -91,11 +92,9 @@ describe("RemoveSystemAdminDialog", () => {
 
     await remove();
 
-    expect(
-      await screen.findByText(
-        sentence("Tomás Ryan is no longer a system admin."),
-      ),
-    ).toBeVisible();
+    await expectVisibleToast(
+      sentence("Tomás Ryan is no longer a system admin."),
+    );
     expect(calls.count).toBe(1);
     await vi.waitFor(() => expect(requests).toHaveLength(2));
   });
@@ -186,11 +185,9 @@ describe("RemoveSystemAdminDialog", () => {
       step.getByRole("button", { name: "Verify and continue" }),
     );
 
-    expect(
-      await screen.findByText(
-        sentence("Tomás Ryan is no longer a system admin."),
-      ),
-    ).toBeVisible();
+    await expectVisibleToast(
+      sentence("Tomás Ryan is no longer a system admin."),
+    );
     expect(log).toEqual(["revoke", "token", "revoke"]);
     expect(calls.count).toBe(2);
   });
