@@ -10,7 +10,8 @@
     "./components/*": "./src/components/*/index.ts",
     "./dev-components-page": "./src/components/dev-components-page.tsx",
     "./test/*": "./test/*.ts",
-    "./messages/*": "./messages/*"
+    "./messages/*": "./messages/*",
+    "./tokens.json": "./tokens/tokens.json"
   },
   "scripts": {
     "generate:tokens": "node scripts/build-tokens.mjs",

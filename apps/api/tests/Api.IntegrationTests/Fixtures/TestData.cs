@@ -161,9 +161,9 @@ internal sealed class TestData(Database database, string databaseName = Database
     public Task<Guid> UserIdOfAsync(string externalId) =>
         database.ScalarAsync<Guid>($"SELECT id FROM control_plane.users WHERE external_id = '{externalId}'", database: databaseName);
 
-    public async Task<string> AddSystemAdminAsync(string? email = null, string? language = null)
+    public async Task<string> AddSystemAdminAsync(string? email = null, string? language = null, string? timeZone = null)
     {
-        var externalId = await AddUserAsync(email: email, language: language);
+        var externalId = await AddUserAsync(email: email, language: language, timeZone: timeZone);
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{externalId}'",
             database: databaseName);

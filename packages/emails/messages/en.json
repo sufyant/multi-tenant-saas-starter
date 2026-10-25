@@ -1,0 +1,44 @@
+{
+  "invitation": {
+    "subject": "{inviterName} invited you to {tenantName}",
+    "preheader": "Join as {roleName}. Expires on {expiresAt}.",
+    "heading": "{inviterName} invited you to join {tenantName} as {roleName}.",
+    "button": "Accept invitation",
+    "expiry": "Expires on {expiresAt}.",
+    "fallback": "If the button doesn’t work, copy this link into your browser:",
+    "footer": "You received this because someone invited this address. If you weren’t expecting it, you can ignore it."
+  },
+  "deletionWarning": {
+    "subject": "{tenantName} will be deleted on {purgesOn}",
+    "preheader": "It is closed. Contact us to reopen it before that date.",
+    "heading": "{tenantName} is closed.",
+    "body": "It will be deleted with all its data on {purgesAt}.",
+    "contact": "<link>Contact us</link> to reopen it before that date.",
+    "footer": "You received this because you are an Owner of {tenantName}."
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "dates": {
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sept",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "date": "{day} {month} {year}",
+    "moment": "{date} at {time} {zone}",
+    "zone": "{city} ({offset})",
+    "utc": "UTC"
+  }
+}

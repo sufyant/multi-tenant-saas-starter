@@ -9,6 +9,12 @@
     <PackageReference Include="WolverineFx" />
   </ItemGroup>
 
+  <!-- The emails that pnpm generate renders from packages/emails, read by EmailTemplate under these names. A file such as
+       invitation.en.html is no satellite resource of the culture en, so WithCulture is off. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Email/Generated/*" LogicalName="Notifications.Email.%(Filename)%(Extension)" WithCulture="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Notifications.Domain\Notifications.Domain.csproj" />
     <ProjectReference Include="..\Notifications.Contracts\Notifications.Contracts.csproj" />

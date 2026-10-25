@@ -116,7 +116,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe("ar");
-        _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
+        _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("دعوة من Starter إلى Acme Ltd");
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await _testData.InvitationLanguageOfAsync(owner)).ShouldBe("tr");
-        _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("Acme Ltd adlı kuruluşa davet edildiniz");
+        _api.Email.Sent.Single(sent => sent.To == owner).Subject.ShouldBe("Starter sizi Acme Ltd kuruluşuna davet etti");
     }
 
     [Fact]

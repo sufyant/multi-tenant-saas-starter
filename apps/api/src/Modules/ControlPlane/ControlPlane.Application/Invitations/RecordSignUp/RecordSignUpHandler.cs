@@ -37,13 +37,29 @@ public static class RecordSignUpHandler
 
         await tenants.SaveAsync(tenant, cancellationToken);
 
-        // The email speaks the invitation's language and says how long its link works.
+        // The email speaks the invitation's language. It names who invited and the role, and writes the expiry in the inviter's time zone:
+        // the invited person has no account, so the email has no zone of theirs. The values are copies of this moment, for the email only.
         var now = time.GetUtcNow();
-        var (language, lifetime) = (invitation.Language, invitation.ExpiresAt - invitation.CreatedAt);
+        var inviter = await tenants.FindInvitingUserAsync(invitation.InvitedBy, cancellationToken);
+        var role = (await tenants.FindRolesAsync(cancellationToken)).Of(
+            invitation.RoleId ?? throw new InvalidOperationException("A pending invitation always has a role."));
         OutgoingMessages messages =
         [
             new InvitationReadyEvent(
-                Guid.CreateVersion7(now), now, opened.TenantId, opened.InvitationId, opened.Email, opened.TenantName, opened.Link, language, lifetime),
+                Guid.CreateVersion7(now),
+                now,
+                opened.TenantId,
+                opened.InvitationId,
+                opened.Email,
+                opened.TenantName,
+                opened.Link,
+                invitation.Language,
+                invitation.ExpiresAt - invitation.CreatedAt,
+                inviter.NameForEmail,
+                role.Name,
+                role.BuiltIn is not null,
+                invitation.ExpiresAt,
+                inviter.TimeZone),
         ];
         if (opened.SignUpInvitationId is not null)
         {
