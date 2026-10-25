@@ -1,0 +1,42 @@
+{
+  "errors": {
+    "applications": [
+      { "name": "api", "platform": "asp_dot_net_core_errors" },
+      { "name": "web", "platform": "next_js_errors" },
+      { "name": "platform", "platform": "next_js_errors" }
+    ]
+  },
+  "uptime": {
+    "defaults": {
+      "check_frequency": 180,
+      "confirmation_period": 300,
+      "recovery_period": 180,
+      "email": true,
+      "push": false,
+      "sms": false,
+      "call": false,
+      "policy_id": null
+    },
+    "monitors": [
+      {
+        "name": "api",
+        "url_variable": "API_URL",
+        "path": "/v1/me/tenants",
+        "monitor_type": "expected_status_code",
+        "expected_status_codes": [401]
+      },
+      {
+        "name": "web",
+        "url_variable": "WEB_URL",
+        "health_path_of": ".railway/web.json",
+        "monitor_type": "status"
+      },
+      {
+        "name": "platform",
+        "url_variable": "PLATFORM_URL",
+        "health_path_of": ".railway/platform.json",
+        "monitor_type": "status"
+      }
+    ]
+  }
+}

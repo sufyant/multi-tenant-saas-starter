@@ -37,7 +37,7 @@ Keep both in a password manager. They never go into the repository, a GitHub sec
 ## What the file holds
 
 - `errors.applications`: one Errors application per app, for every environment. The `environment` tag of each event separates staging and production (the Sentry SDK's `environment` option).
-- `uptime.monitors`: one monitor per app and environment. The script names each monitor `<environment> <name>`. `url_variable` names the variable that holds the app's public URL, and `path` the route. The API's monitor calls the public route of `scripts/deploy/smoke-test.sh` and expects its 401, because the health endpoints answer only on the management port. The web apps' monitors call the health path of `.railway/web.json` and `.railway/platform.json`.
+- `uptime.monitors`: one monitor per app and environment. The script names each monitor `<environment> <name>`. `url_variable` names the variable that holds the app's public URL. `path` is the route, or `health_path_of` names the file whose `healthPath` is the route. The API's monitor calls the public route of `scripts/deploy/smoke-test.sh` and expects its 401 (`expected_status_code`), because the health endpoints answer only on the management port. The web apps' monitors call the health path of `.railway/web.json` and `.railway/platform.json`, which the smoke tests read too, and expect a 2xx (`status`).
 - `uptime.defaults`: the settings that every monitor shares.
 
 ## Decisions
