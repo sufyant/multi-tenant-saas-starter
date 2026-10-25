@@ -47,9 +47,10 @@ internal static class ErrorTracking
             sentry.AutoSessionTracking = false;
             sentry.SendClientReports = false;
 
-            // No personal data: no user, no client address, no cookies, no request body.
+            // No personal data: no user, no client address, no cookies, no request body. The filter takes the rest.
             sentry.SendDefaultPii = false;
             sentry.MaxRequestBodySize = RequestSize.None;
+            sentry.SetBeforeBreadcrumb((breadcrumb, _) => PersonalDataFilter.Apply(breadcrumb));
 
             // A call to another service that fails reaches the code as an exception, and the code reports it once.
             sentry.CaptureFailedRequests = false;
@@ -71,7 +72,7 @@ internal static class ErrorTracking
         // no event. The SDK reports every exception the handler caught, so the answer's status decides.
         builder.Services.AddOptions<SentryAspNetCoreOptions>().Configure<IHttpContextAccessor>((sentry, http) =>
             sentry.SetBeforeSend((sentryEvent, _) =>
-                IsAnsweredBelow500(sentryEvent, http) ? null : sentryEvent));
+                IsAnsweredBelow500(sentryEvent, http) ? null : PersonalDataFilter.Apply(sentryEvent)));
 
         return builder;
     }

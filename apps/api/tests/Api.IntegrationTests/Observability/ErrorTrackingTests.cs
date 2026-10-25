@@ -13,6 +13,8 @@ namespace Api.IntegrationTests.Observability;
 [Collection(nameof(ErrorTrackingHosts))]
 public sealed partial class ErrorTrackingTests(Database database)
 {
+    private const string Address = "ali@northwind.example";
+
     [Fact]
     public async Task AnswerRequest_UnhandledException_SendsOneEvent()
     {
@@ -170,6 +172,23 @@ public sealed partial class ErrorTrackingTests(Database database)
         sentryEvent.Environment.ShouldBe("development");
     }
 
+    // The privacy filter runs on every event the host sends: an address in a log's text and in its values does not leave the process.
+    [Fact]
+    public async Task Log_AtErrorWithAnAddress_SendsTheEventWithoutTheAddress()
+    {
+        var events = new ErrorEvents();
+        await using var host = await StartAsync(events);
+        var marker = Guid.NewGuid().ToString();
+
+        LogNoInvitation(Logger(host), new InvalidOperationException($"No account for {Address}"), Address, marker);
+
+        await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
+        var sentryEvent = Logged(events, marker).ShouldHaveSingleItem();
+        SentText(sentryEvent).ShouldNotContain(Address);
+        sentryEvent.Message!.Formatted.ShouldBe($"No invitation for \"[email]\": \"{marker}\"");
+        sentryEvent.SentryExceptions.ShouldNotBeNull().ShouldHaveSingleItem().Value.ShouldBe("No account for [email]");
+    }
+
     // Development, CI and the tests have no DSN: the host starts as without error tracking and sends nothing.
     [Fact]
     public async Task AnswerRequest_NoDsn_SendsNothing()
@@ -224,11 +243,26 @@ public sealed partial class ErrorTrackingTests(Database database)
     private static List<SentryEvent> Logged(ErrorEvents events, string marker) =>
         events.Where(sentryEvent => sentryEvent.Message?.Formatted?.Contains(marker, StringComparison.Ordinal) == true);
 
+    // Every text of the event as the SDK writes it to the wire.
+    private static string SentText(SentryEvent sentryEvent)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
+        {
+            sentryEvent.WriteTo(writer, null);
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Something failed: {Marker}")]
     private static partial void LogFailed(ILogger logger, string marker);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Something to look at: {Marker}")]
     private static partial void LogNotable(ILogger logger, string marker);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "No invitation for {Email}: {Marker}")]
+    private static partial void LogNoInvitation(ILogger logger, Exception exception, string email, string marker);
 
     private sealed class FailingService : BackgroundService
     {
