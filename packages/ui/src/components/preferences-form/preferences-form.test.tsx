@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+import ar from "../../../messages/ar.json";
 import en from "../../../messages/en.json";
+import tr from "../../../messages/tr.json";
 import { zodErrorMap } from "../../lib/zod-error-map";
 import { PreferencesForm, type PreferencesFormProps } from "./preferences-form";
 
@@ -35,11 +37,17 @@ class Refusal extends Error {
   }
 }
 
-function renderForm(props: Partial<PreferencesFormProps> = {}) {
+function renderForm(
+  props: Partial<PreferencesFormProps> = {},
+  { locale, localeMessages }: { locale: string; localeMessages: object } = {
+    locale: "en",
+    localeMessages: messages,
+  },
+) {
   return render(
     <NextIntlClientProvider
-      locale="en"
-      messages={messages}
+      locale={locale}
+      messages={localeMessages}
       timeZone="Europe/Dublin"
     >
       <PreferencesForm
@@ -50,6 +58,7 @@ function renderForm(props: Partial<PreferencesFormProps> = {}) {
           timeZone: "Europe/Istanbul",
         }}
         schema={schema}
+        nameMax={{ firstName: 100, lastName: 100 }}
         languages={Object.values(Language)}
         nameNote="Your name shows to the members of every organisation you belong to."
         rename={rename}
@@ -187,4 +196,45 @@ describe("PreferencesForm", () => {
       preferences: { language: Language.En, timeZone: "Asia/Riyadh" },
     });
   });
+
+  // The limit comes from the generated schema, as the apps' own texts take it (the Messages boards).
+  it.each([
+    [
+      "en",
+      { ...en, locale: { format: "en-IE" } },
+      ["First name", "Save preferences"],
+      "Use 1 to 40 characters.",
+    ],
+    [
+      "tr",
+      { ...tr, locale: { format: "tr-TR" } },
+      ["Ad", "Tercihleri kaydet"],
+      "1 ile 40 karakter arasında yazın.",
+    ],
+    [
+      "ar",
+      { ...ar, locale: { format: "ar-SA" } },
+      ["الاسم الأول", "حفظ التفضيلات"],
+      "استخدم من 1 إلى 40 حرف.",
+    ],
+  ] as const)(
+    "PreferencesForm_NameOverTheLimitInLanguage_%s_SaysTheLimitOfTheSchema",
+    async (locale, localeMessages, [label, saveLabel], text) => {
+      const short = z.string().trim().min(1).max(40);
+      renderForm(
+        {
+          schema: schema.extend({ firstName: short }),
+          nameMax: { firstName: 40, lastName: 100 },
+        },
+        { locale, localeMessages },
+      );
+      const field = screen.getByRole("textbox", { name: label });
+
+      await userEvent.clear(field);
+      await userEvent.type(field, "a".repeat(41));
+      await userEvent.click(screen.getByRole("button", { name: saveLabel }));
+
+      await vi.waitFor(() => expect(field).toHaveAccessibleDescription(text));
+    },
+  );
 });
