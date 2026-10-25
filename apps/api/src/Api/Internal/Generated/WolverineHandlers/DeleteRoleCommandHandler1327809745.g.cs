@@ -62,7 +62,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Commit the EF Core transaction before writing the response (GH-2917). The outbox flush follows in its own frame (GH-4742)
                 await efCoreEnvelopeTransaction.CommitAsync(cancellation, flushOutgoingMessages: false).ConfigureAwait(false);
                 // GH-2917/GH-4742: flush the outbox after the commit and before the response is written
-                await context.FlushOutgoingMessagesAsync().ConfigureAwait(false);
+                await Wolverine.EntityFrameworkCore.EfCoreOutboxFlushing.FlushOutgoingMessagesAsync(context).ConfigureAwait(false);
             }
             catch (System.Exception)
             {

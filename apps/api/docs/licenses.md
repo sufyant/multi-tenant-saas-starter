@@ -158,6 +158,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | System.Composition.TypedParts | MIT |
 | System.Diagnostics.EventLog | MIT |
 | System.IdentityModel.Tokens.Jwt | MIT |
+| System.Linq.Dynamic.Core | Apache-2.0 |
 | System.Management | MIT |
 | System.Security.AccessControl | MIT |
 | Testcontainers | MIT |
