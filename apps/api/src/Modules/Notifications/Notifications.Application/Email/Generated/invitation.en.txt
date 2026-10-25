@@ -1,0 +1,10 @@
+Starter
+
+{{inviterName}} invited you to join {{tenantName}} as {{roleName}}.
+
+Accept invitation:
+{{link}}
+
+Expires on {{expiresAt}}.
+
+You received this because someone invited this address. If you weren’t expecting it, you can ignore it.

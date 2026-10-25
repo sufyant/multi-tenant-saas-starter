@@ -1,0 +1,10 @@
+Starter
+
+{{tenantName}} is closed.
+
+It will be deleted with all its data on {{purgesAt}}.
+
+Contact us to reopen it before that date.
+{{supportUrl}}
+
+You received this because you are an Owner of {{tenantName}}.

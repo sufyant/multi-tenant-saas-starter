@@ -1,0 +1,10 @@
+Starter
+
+{{inviterName}} sizi {{tenantName}} kuruluşuna {{roleName}} olarak katılmaya davet etti.
+
+Daveti kabul et:
+{{link}}
+
+Son geçerlilik: {{expiresAt}}.
+
+Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız görmezden gelebilirsiniz.

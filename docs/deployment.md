@@ -54,7 +54,9 @@ On a push to `main`, after `ci.yml` passed:
 6. It smoke-tests the API's public route: `GET /v1/me/tenants` without a token must answer 401, and `GET /health/ready` must answer 404. The 401 shows that the route reaches the web process and its authentication. The 404 shows that the public route does not reach the health endpoints: they answer only on the management port, 8081. Railway's health check covers readiness there.
 7. It sets the web app's digest on `web` and the platform app's digest on `platform`, one Railway commit for each. The web apps go after the API, so a web app never runs against an API older than the one it was tested with. One exception: a rollback to a release tagged before the web apps were deployed rolls back the API only (section 6).
 8. It waits until the new deployment of `web` and `platform` is `SUCCESS`. Railway's health check calls `GET /health` of each (section 13).
-9. It smoke-tests each app's public route: `GET /health` must answer 200, and `GET /` without a session must end at the app's `/sign-in` with 200. The request asks for HTML, keeps the cookies and follows the redirects, as a browser's first visit does. With a Clerk development instance, Clerk first sends the request through its Frontend API and back, so this step also shows that the instance accepts the domain.
+9. It smoke-tests each app's public route: `GET /health` must answer 200, and `GET /` without a session must end at the app's `/sign-in` with 200. The request asks for HTML, keeps the cookies and follows the redirects, as a browser's first visit does. With a Clerk development instance, Clerk first sends the request through its Frontend API and back, so this step also shows that the instance accepts the domain. Each attempt prints the path and the status where the request ended, curl's exit code (28 is a timeout), and the host where the redirect chain stopped: `stopped at the app`, or `stopped at a third party: <host>`. It prints the host only, never the query or a cookie.
+
+A re-run of a Delivery run is safe, and it passes when the images are already deployed. Before the Railway commit of steps 4 and 7, `deploy-to-railway.sh` reads the newest deployment of each service (by `createdAt`, any status). When its image (`meta.image`, with the digest) is the image to deploy, the commit would change nothing, and Railway would make no new deployment. So the script leaves that service out of the commit and prints `<service>: deployment <id> already has this image`. Steps 5 and 8 then wait for that deployment: `SUCCESS` passes at once, a deployment in progress is waited for, and `FAILED`, `CRASHED` or `REMOVED` fails at once. When no service of an app needs the commit, the script skips it. Only the newest deployment counts: after `X`, then `Y`, a deploy of `X` makes a new deployment.
 
 ### Approve a production deploy
 
@@ -502,10 +504,15 @@ After a restore, the private host, the proxy and the root certificate are new. U
 - The migration fails with "The remote certificate was rejected": the database has a new root certificate. Set `MIGRATIONS_ROOT_CERTIFICATE` again (section 9, "When the root certificate changes").
 - The Railway step fails: the step prints the Railway CLI's own message. Check `RAILWAY_TOKEN` and the service names.
 - A deployment ends as `FAILED`, `CRASHED` or `REMOVED`: the step prints its ID. Read its logs in Railway. A missing shared variable or a private GHCR package are common causes.
-- "Not healthy after 10 minutes" with "no new deployment yet": Railway started no deployment. This can happen when the services already run this digest.
+- "Not healthy after 10 minutes" with "no new deployment yet": Railway started no deployment after the commit. A digest that the newest deployment already has does not cause this: the step then waits for that deployment (section 2).
 - "The variable API_URL ... is empty", or `WEB_URL` or `PLATFORM_URL`: set it (section 13, "Custom domains").
 - `web` or `platform` is not healthy: Railway's health check calls `GET /health` on `PORT`. A missing `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` or `API_URL` stops the app at start, and its log names the variable (F7).
-- The smoke test of a web app fails on `GET /`: the step prints the path where the request ended. `/v1/client/handshake` with status 000 means that Clerk's Frontend API did not answer. A path on the Clerk domain with another status means that the Clerk instance refused the app's domain. Any other path on the app's domain means that the sign-in redirect is wrong.
+- The smoke test of a web app fails on `GET /`: each attempt and the error name the host where the redirect chain stopped, and curl's exit code. Exit code 28 is a timeout. `stopped at a third party: <Clerk's Frontend API host>` with exit code 28 means that Clerk's Frontend API did not answer within 15 seconds; the status is then the app's last redirect, such as 307. A path on the Clerk domain with exit code 0 means that the Clerk instance refused the app's domain. `stopped at the app` with exit code 28 means that the app did not answer. Any other path on the app's domain means that the sign-in redirect is wrong. Example:
+
+  ```text
+  platform: GET / without a session ended at /v1/client/handshake with 307, curl exit code 28, stopped at a third party: <Clerk's Frontend API host>
+  ::error::platform: GET / without a session did not end at https://<platform domain>/sign-in with 200 (last attempt: stopped at a third party: <Clerk's Frontend API host>, curl exit code 28) within 60 seconds.
+  ```
 - The smoke test fails: the step prints the status codes. A 404 on `/v1/me/tenants` means the URL reaches a process that is not the web role. A 429 means the anonymous rate limit is used up (section 10).
 - `tag-release` fails: production runs the new version, but it has no tag yet. Re-run the job. If the tag was created and only the GHCR step failed, the re-run creates the next `N` for the same commit.
 - "... is not a release tag vYYYY.0M.0D.N" or "... is not on main": run `rollback.yml` on a release tag that `tag-release` created.
@@ -657,7 +664,7 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
    gh run rerun <run id>
    ```
 
-   If step 2 kept the image, skip the rerun: the API still runs, and a deploy of the same digest starts no new deployment, so `deploy.yml` would wait 10 minutes and fail (section 11). In staging on 2026-10-19 the apply kept the image, so this rerun was skipped (section 7). Manual: the maintainer decides when a deploy starts.
+   If step 2 kept the image, skip the rerun: the API still runs. A rerun is safe then too: `deploy.yml` sees that the newest deployment already has the digest and waits for it (section 2). In staging on 2026-10-19 the apply kept the image, so this rerun was skipped (section 7). Manual: the maintainer decides when a deploy starts.
 4. **Add the custom domains, their DNS records and the GitHub environment variables** for `api-web`, `web` and `platform` (section 13, "Custom domains"). Manual: the domains and the DNS stay out of the repository. A domain verifies only after its `TXT` record resolves, which can take minutes.
 5. **Switch the staging deploy off before the merge.**
 

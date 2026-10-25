@@ -1,3 +1,4 @@
+using ControlPlane.Application.Invitations;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
@@ -132,6 +133,12 @@ public interface ITenantRepository
     /// has none (A8). Each with the language the user keeps. Read under the tenant's lock, as values.
     /// </summary>
     internal Task<IReadOnlyList<OwnerAddress>> FindOwnerAddressesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The user who invited, as the invitation's email names them, and whether they are a system admin. Users and system admins belong to
+    /// no tenant (R6), so the read names the user and needs no tenant. Read as values; nothing is stored.
+    /// </summary>
+    internal Task<InvitingUser> FindInvitingUserAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Deletes ControlPlane's data of the active tenant for its purge, in the order the keys need, and saves the tenant, which

@@ -1,0 +1,10 @@
+Starter
+
+{{tenantName}} kapatıldı.
+
+{{purgesAt}} itibarıyla tüm verileriyle birlikte silinecek.
+
+Bu tarihten önce yeniden açmak için bize ulaşın.
+{{supportUrl}}
+
+Bu e-postayı, {{tenantName}} kuruluşunun Sahibi olduğunuz için aldınız.

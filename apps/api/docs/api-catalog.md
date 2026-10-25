@@ -117,7 +117,7 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - A replaced or a revoked invitation becomes `Cancelled`. Accepting it answers 404 `invitation.not_found`. There is no other status.
 - A replacement is one command and one audit entry: `member.invited`, with the replaced invitation's id in its details. It writes no `invitation.revoked` entry (K3).
 - "Send again" is not an endpoint of its own.
-- An invitation lives `ControlPlane:Invitations:Lifetime`, at least one day. The email says how long the link works, in whole days.
+- An invitation lives `ControlPlane:Invitations:Lifetime`, at least one day. The email says the moment the link stops working, in the inviter's time zone (`flows/invitations.md`).
 - An invitation keeps the language of its email (K8).
 - The platform's Owner invitation follows K9. A member never invites into a tenant without an Owner, because such a tenant has no member.
 - A tenant has at most one pending invitation to an email. A partial unique index on the tenant and the stored `email` of pending invitations keeps it. The tenant row lock is the first guard; the index is the second (K6).
@@ -224,12 +224,12 @@ ControlPlane changes its data and writes an event to the outbox in the same tran
 - One list of languages: `en`, `tr`, `ar`. It is the enum `Language` in `SharedKernel` and the schema `Language` in the OpenAPI document, so the generated client has the same list (`OpenApiContractTests`). A new language is a new member of the enum and its email texts.
 - The API sends codes and data, and the screen writes every text in its own language (K5). The API writes text only in emails, in the language of the invitation. It handles no `Accept-Language` and writes no error text in another language.
 - A user's `language` is required. A new user starts with the language of the invitation they accept. A known user keeps theirs. A root system admin who enters first through the system door starts with `en`.
-- A user's `timeZone` is an IANA name, or null for "not set". The API checks the shape only, keeps the name and gives it back. The web offers the list from the browser's time zone data, which can be newer or older than the image's (ARCHITECTURE.md, section 7). The API formats a date and a time in one place only: the email that warns an Owner of a tenant's purge writes the moment in the Owner's zone, or in UTC when the zone is null or unknown to the image (`flows/tenant-purge.md`).
+- A user's `timeZone` is an IANA name, or null for "not set". The API checks the shape only, keeps the name and gives it back. The web offers the list from the browser's time zone data, which can be newer or older than the image's (ARCHITECTURE.md, section 7). The API formats a date and a time in one place only, the formatter of the emails: the invitation writes its expiry in the inviter's zone, and the warning of a tenant's purge its moment in the Owner's, or in UTC when the zone is null or unknown to the image (`flows/language-and-time-zone.md`).
 - `InviteMember`, `CreateTenant` and `InviteOwner` take an optional `language` for the invitation's email. Without it, the invitation takes the inviter's own language; for `CreateTenant` and `InviteOwner`, the system admin's. The invitation keeps it.
-- The invitation emails say how long the link works, in whole days, from the invitation's lifetime, and show no date or time, so they need no time zone.
+- The invitation emails say the moment the link stops working, in the inviter's time zone with its label, or in UTC without one (`flows/language-and-time-zone.md`).
 - `ChangePreferences` writes the platform entry `user.preferences_changed`, by the user and about the user, with no details: the entry holds no value (K3).
 - A system admin's deletion erases the time zone with the names (A8). The language stays.
-- Sources: W3C, "Language tags in HTML and XML" and "Working with time zones". IANA Time Zone Database, "Theory and pragmatics of the tz code and data". Microsoft Learn, "Globalization invariant mode". Unicode CLDR, "Language Plural Rules".
+- Sources: W3C, "Language tags in HTML and XML" and "Working with time zones". IANA Time Zone Database, "Theory and pragmatics of the tz code and data". Microsoft Learn, "Globalization invariant mode".
 
 ### K9. The platform's Owner invitation
 

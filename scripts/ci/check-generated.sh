@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs every generator and fails when a committed generated file differs from what its generator writes now, or when a generator
 # writes a file that is not committed (rule D1, case 2, and "Generated files" in apps/api/docs/ARCHITECTURE.md). pnpm generate runs
-# the generators in their order: the CSS of the design tokens, the C# code, the OpenAPI document, then the API client.
+# the generators in their order: the CSS of the design tokens, the C# code, the OpenAPI document, the API client, then the emails.
 #
 # Inputs: none; run it from the repository root, with pnpm install done and the .NET SDK of apps/api/global.json. Exit codes: 0 when
 # every generated file is current; 1 otherwise; the exit code of pnpm generate when a generator fails.

@@ -7,3 +7,5 @@ apps/api/openapi/v1.json linguist-generated=true
 # EF Core writes the designer file and the model snapshot of a migration. The migration itself is reviewed: it holds row level security.
 *.Designer.cs linguist-generated=true
 *ModelSnapshot.cs linguist-generated=true
+# The emails that packages/emails renders into the API, with the data the API fills them with.
+apps/api/src/Modules/Notifications/Notifications.Application/Email/Generated/** linguist-generated=true

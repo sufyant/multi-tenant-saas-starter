@@ -18,6 +18,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "apps/api/src/Api", "--urls", "http://localhost:5050"],
       "port": 5050
+    },
+    {
+      "name": "emails",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@repo/emails", "dev"],
+      "port": 3002
     }
   ]
 }
