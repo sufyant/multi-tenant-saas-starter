@@ -37,7 +37,7 @@ describe("env", () => {
 // .railway/railway.ts gives the web service what the image needs to start (F7, F46). The test evaluates the file with the
 // SDK's own context and reads the service that it declares.
 const graph = await program(
-  createRailwayContext({ projectName: "project" }),
+  createRailwayContext({ projectName: "project", environment: "production" }),
   project,
 );
 const service = graph.resources

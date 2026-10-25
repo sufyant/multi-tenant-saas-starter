@@ -53,6 +53,7 @@ internal static class ObservabilityExtensions
             telemetry.UseOtlpExporter();
         }
 
-        return builder;
+        // After the providers are cleared: the error tracker is a logging provider that Serilog forwards to.
+        return builder.AddErrorTracking();
     }
 }
