@@ -1,5 +1,4 @@
 import type { BrowserOptions, NodeOptions } from "@sentry/nextjs";
-import { isNotSent } from "./not-sent";
 import { scrubBreadcrumb, scrubEvent } from "./privacy";
 
 /** Where the events go: the DSN and the environment that the server reads at run time (F55). */
@@ -64,10 +63,15 @@ const common = ({ dsn, environment }: ErrorTracking) => ({
     frameContextLines: 0,
   },
   sendClientReports: false,
-  beforeSend: (
+  // The filter of what is not sent reads the API client and the sign-in's Clerk codes. It loads with the first event, so the code that
+  // runs before React starts stays small.
+  beforeSend: async (
     event: Parameters<NonNullable<BrowserOptions["beforeSend"]>>[0],
     hint: Parameters<NonNullable<BrowserOptions["beforeSend"]>>[1],
-  ) => (isNotSent(hint.originalException) ? null : scrubEvent(event)),
+  ) => {
+    const { isNotSent } = await import("./not-sent");
+    return isNotSent(hint.originalException) ? null : scrubEvent(event);
+  },
   beforeBreadcrumb: scrubBreadcrumb,
 });
 

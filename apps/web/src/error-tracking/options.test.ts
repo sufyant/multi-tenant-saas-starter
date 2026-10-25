@@ -73,22 +73,23 @@ describe("beforeSend", () => {
   const beforeSend = browserOptions(tracking).beforeSend as (
     event: ErrorEvent,
     hint: EventHint,
-  ) => ErrorEvent | null;
+  ) => Promise<ErrorEvent | null>;
 
-  it("BeforeSend_ErrorOfTheApp_SendsItWithoutTheAddress", () => {
+  it("BeforeSend_ErrorOfTheApp_SendsItWithoutTheAddress", async () => {
     const error = new Error("No member ali@northwind.io");
 
-    expect(
-      beforeSend(anEvent(error.message), { originalException: error })
-        ?.exception?.values?.[0]?.value,
-    ).toBe("No member [email]");
+    const sent = await beforeSend(anEvent(error.message), {
+      originalException: error,
+    });
+
+    expect(sent?.exception?.values?.[0]?.value).toBe("No member [email]");
   });
 
-  it("BeforeSend_AnswerOfTheApi_SendsNothing", () => {
+  it("BeforeSend_AnswerOfTheApi_SendsNothing", async () => {
     const error = new ProblemDetailsError(409, null);
 
     expect(
-      beforeSend(anEvent(error.message), { originalException: error }),
+      await beforeSend(anEvent(error.message), { originalException: error }),
     ).toBeNull();
   });
 
