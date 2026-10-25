@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text;
+using Api.Observability;
+using Api.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -125,6 +127,40 @@ public sealed partial class ErrorTrackingTests(Database database)
         await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
         await ErrorEvents.FlushAsync();
         Logged(events, marker).ShouldHaveSingleItem();
+    }
+
+    // The web host and the worker share one application of the error tracker, so each event names the role that sent it.
+    [Theory]
+    [InlineData("web")]
+    [InlineData("worker")]
+    public async Task Log_AtError_EventNamesTheRole(string role)
+    {
+        var events = new ErrorEvents();
+        await using var host = await StartAsync(events, role: role);
+        var marker = Guid.NewGuid().ToString();
+
+        LogFailed(Logger(host), marker);
+
+        await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
+        Logged(events, marker).ShouldHaveSingleItem().Tags.ShouldContainKeyAndValue("role", role);
+    }
+
+    // The migration step runs no role; Program names its events by the command.
+    [Fact]
+    public async Task Log_AtErrorInTheMigrationStep_EventNamesTheCommand()
+    {
+        var events = new ErrorEvents();
+        await using var host = await PipelineHost.StartAsync(ErrorEvents.Settings(), services =>
+        {
+            events.SendTo(services);
+            services.NameErrorTrackingRole(MigrationStep.Command);
+        });
+        var marker = Guid.NewGuid().ToString();
+
+        LogFailed(Logger(host), marker);
+
+        await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
+        Logged(events, marker).ShouldHaveSingleItem().Tags.ShouldContainKeyAndValue("role", "migrate");
     }
 
     // The host logs a hosted service that fails at Error. A test host ignores the failure, so it keeps running for the test.

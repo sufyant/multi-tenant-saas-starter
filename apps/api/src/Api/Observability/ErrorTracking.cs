@@ -1,3 +1,4 @@
+using Api.Hosting;
 using Sentry.AspNetCore;
 using Sentry.Extensibility;
 using Sentry.Extensions.Logging;
@@ -15,6 +16,8 @@ internal static class ErrorTracking
     private const string WolverineRuntimeCategory = "Wolverine.Runtime.WolverineRuntime";
 
     private const int WolverineRescheduledEventId = 109;
+
+    private const string RoleTag = "role";
 
     private const string EfCoreCommandErrorEventName = "Microsoft.EntityFrameworkCore.Database.Command.CommandError";
 
@@ -68,6 +71,11 @@ internal static class ErrorTracking
                 || eventId.Name == EfCoreCommandErrorEventName);
         });
 
+        if (builder.Configuration.Read().Role is { Length: > 0 } role)
+        {
+            builder.Services.NameErrorTrackingRole(role);
+        }
+
         // The exception handler answers some exceptions with a 4xx, such as an invalid command (400); the caller caused them, so they are
         // no event. The SDK reports every exception the handler caught, so the answer's status decides.
         builder.Services.AddOptions<SentryAspNetCoreOptions>().Configure<IHttpContextAccessor>((sentry, http) =>
@@ -76,6 +84,11 @@ internal static class ErrorTracking
 
         return builder;
     }
+
+    // The web host and the worker share one application of the error tracker, so each event names the process that sent it: the host's
+    // role, or the command it runs. A later name replaces an earlier one.
+    public static IServiceCollection NameErrorTrackingRole(this IServiceCollection services, string role) =>
+        services.Configure<SentryAspNetCoreOptions>(sentry => sentry.DefaultTags[RoleTag] = role);
 
     private static bool IsAnsweredBelow500(Sentry.SentryEvent sentryEvent, IHttpContextAccessor http) =>
         sentryEvent.SentryExceptions?.Any(exception => exception.Mechanism?.Type == ExceptionHandlerMechanism) == true
