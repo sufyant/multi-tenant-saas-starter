@@ -9,6 +9,7 @@ import {
   enumValues,
   messageKeySets,
   nativeChoiceControls,
+  numericLayerClasses,
   physicalDirectionClasses,
   roleNameDecisions,
   testFolders,
@@ -43,6 +44,10 @@ describe("architecture of apps/platform", () => {
 
   it("F21_AppsPlatform_UsesNoColourLiteral", () => {
     expect(colorLiterals(src)).toEqual([]);
+  });
+
+  it("F53_AppsPlatform_UsesNoNumericLayerClass", () => {
+    expect(numericLayerClasses(src)).toEqual([]);
   });
 
   it("F25_AppsPlatform_WritesNoUserFacingLiteral", () => {

@@ -74,6 +74,50 @@ test("Members_InviteAMember_SendsItAndSaysSo", async ({ page: browser }) => {
   ).toBeVisible();
 });
 
+test("Members_OpenTheUserMenu_ShowsItOverTheTopBar", async ({
+  page: browser,
+}) => {
+  await open(browser);
+
+  await browser.getByRole("button", { name: "AY Account" }).click();
+  const menu = browser.getByRole("menu");
+  await expect(menu).toBeVisible();
+
+  // jsdom cannot stack layers: the browser answers which element is on top just under the menu's top edge (F53). The point is
+  // taken once the opening animation has ended.
+  const onTop = await menu.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((each) => each.finished));
+    const box = element.getBoundingClientRect();
+    return element.contains(
+      document.elementFromPoint(box.x + box.width / 2, box.y + 4),
+    );
+  });
+  expect(onTop).toBe(true);
+  await expectAccessible(browser);
+});
+
+test("Members_OpenADialog_PutsItsBackdropOverTheTopBar", async ({
+  page: browser,
+}) => {
+  await open(browser);
+
+  await browser.getByRole("button", { name: "Invite member" }).click();
+  await expect(
+    browser.getByRole("alertdialog", { name: "Invite a member" }),
+  ).toBeVisible();
+
+  // The element on top at the top bar's start is the backdrop, not the bar (F53). The bar's centre is under the dialog itself,
+  // which is centred. The open dialog hides the bar from the accessibility tree, so no role finds it.
+  const onTop = await browser.locator("header").evaluate((bar) => {
+    const box = bar.getBoundingClientRect();
+    return document
+      .elementFromPoint(box.x + 8, box.y + box.height / 2)
+      ?.getAttribute("data-slot");
+  });
+  expect(onTop).toBe("alert-dialog-overlay");
+  await expectAccessible(browser);
+});
+
 test("Members_ChangeARole_ChangesItAndSaysSo", async ({ page: browser }) => {
   await open(browser);
 
