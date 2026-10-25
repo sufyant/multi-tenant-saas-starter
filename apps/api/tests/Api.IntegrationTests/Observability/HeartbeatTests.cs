@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Time.Testing;
+using Sentry;
 
 namespace Api.IntegrationTests.Observability;
 
@@ -61,7 +62,7 @@ public sealed partial class HeartbeatTests : IDisposable
 
         await ErrorEvents.FlushAsync();
         _calls.Requests.ShouldBeEmpty();
-        _events.All.ShouldBeEmpty();
+        LoggedEvents().ShouldBeEmpty();
     }
 
     [Fact]
@@ -93,6 +94,7 @@ public sealed partial class HeartbeatTests : IDisposable
     [Theory]
     [InlineData(HttpStatusCode.ServiceUnavailable)]
     [InlineData(HeartbeatCalls.Unreachable)]
+    [InlineData(HeartbeatCalls.TimedOut)]
     public async Task Beat_CallFails_LogsOneWarningAndSendsNoEvent(HttpStatusCode answer)
     {
         _calls.Answer = answer;
@@ -103,7 +105,7 @@ public sealed partial class HeartbeatTests : IDisposable
 
         await ErrorEvents.FlushAsync();
         HeartbeatLogs(host).ShouldHaveSingleItem().Level.ShouldBe(LogLevel.Warning);
-        _events.All.ShouldBeEmpty();
+        LoggedEvents().ShouldBeEmpty();
     }
 
     // A failed call and a good one, then an event that carries the logs before it as breadcrumbs. The SDK keeps the breadcrumbs of each
@@ -121,9 +123,9 @@ public sealed partial class HeartbeatTests : IDisposable
         _readiness.FailWith(host.Services.GetRequiredService<ILoggerFactory>().CreateLogger<HeartbeatTests>());
         await BeatAsync(3);
 
-        await Waiting.UntilAsync(() => _events.All.Count > 0);
+        await Waiting.UntilAsync(() => LoggedEvents().Count > 0);
         await ErrorEvents.FlushAsync();
-        var sentryEvent = _events.All.ShouldHaveSingleItem();
+        var sentryEvent = LoggedEvents().ShouldHaveSingleItem();
         sentryEvent.Breadcrumbs.ShouldContain(breadcrumb => breadcrumb.Message == "The heartbeat call was answered 503");
         ErrorEvents.Text(sentryEvent).ShouldNotContain(Token);
         LoggedTexts(host).ShouldNotBeEmpty();
@@ -142,6 +144,10 @@ public sealed partial class HeartbeatTests : IDisposable
 
     private static IEnumerable<string> HostedServices(PipelineHost host) =>
         host.Services.GetServices<IHostedService>().Select(service => service.GetType().Name);
+
+    // The events of logs. The SDK keeps one hub for the process, and it also takes an unobserved exception of another test, which no log
+    // writes (section 7, "Error tracking", rule 7).
+    private List<SentryEvent> LoggedEvents() => _events.Where(sentryEvent => sentryEvent.Logger is not null);
 
     private Task<PipelineHost> StartAsync(string role, string? url) =>
         PipelineHost.StartAsync(
@@ -190,10 +196,13 @@ public sealed partial class HeartbeatTests : IDisposable
         private static partial void LogFailed(ILogger logger, string marker);
     }
 
-    // Answers each call with the status it is given, or fails to connect for Unreachable.
+    // Answers each call with the status it is given. For Unreachable it fails to connect, and for TimedOut it fails as HttpClient does when
+    // its time limit passes.
     private sealed class HeartbeatCalls : HttpMessageHandler
     {
         public const HttpStatusCode Unreachable = 0;
+
+        public const HttpStatusCode TimedOut = (HttpStatusCode)1;
 
         public HttpStatusCode Answer { get; set; } = HttpStatusCode.OK;
 
@@ -203,9 +212,12 @@ public sealed partial class HeartbeatTests : IDisposable
         {
             await Task.Yield();
             Requests.Enqueue(request.RequestUri!);
-            return Answer == Unreachable
-                ? throw new HttpRequestException("Connection refused (heartbeat.test:443)")
-                : new HttpResponseMessage(Answer);
+            return Answer switch
+            {
+                Unreachable => throw new HttpRequestException("Connection refused (heartbeat.test:443)"),
+                TimedOut => throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.", new TimeoutException()),
+                _ => new HttpResponseMessage(Answer),
+            };
         }
     }
 }
