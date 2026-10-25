@@ -26,6 +26,19 @@ describe("OrgMenu", () => {
     expect(screen.getByText("Owner")).toBeInTheDocument();
   });
 
+  // The Tag README: a role stays plain text, never a badge. The OrgMenu draws it muted.
+  it("OrgMenu_Open_ShowsTheRoleAsMutedText", async () => {
+    render(<OrgMenu {...props} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Northwind Traders" }),
+    );
+
+    const role = await screen.findByText("Owner");
+    expect(role).toHaveClass("text-muted-foreground");
+    expect(role.className).not.toMatch(/\b(bg-|border|rounded)/);
+  });
+
   it("OrgMenu_InRtl_KeepsTheSlugLeftToRight", async () => {
     render(
       <div dir="rtl">
