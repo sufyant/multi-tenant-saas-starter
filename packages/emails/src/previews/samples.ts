@@ -1,0 +1,64 @@
+import { brand } from "@repo/brand";
+import type { DeletionWarningProps } from "../templates/deletion-warning";
+import type { InvitationProps } from "../templates/invitation";
+
+// The sample values of the previews: the design system's invented names and `.example` addresses, written as the API writes them in
+// each language (the email boards).
+
+export const invitation = {
+  en: {
+    language: "en",
+    inviterName: "Ayşe Yılmaz",
+    tenantName: "Northwind Traders",
+    roleName: "Admin",
+    expiresAt: "1 Nov 2026 at 13:32 Dublin (UTC+0)",
+    link: "https://web.example/invitations/accept?code=k3Q9vXbT2mLp8Rz",
+  },
+  tr: {
+    language: "tr",
+    inviterName: "Ayşe Yılmaz",
+    tenantName: "Northwind Traders",
+    roleName: "Yönetici",
+    expiresAt: "1 Kas 2026, saat 16:32 Istanbul (UTC+3)",
+    link: "https://web.example/invitations/accept?code=k3Q9vXbT2mLp8Rz",
+  },
+  ar: {
+    language: "ar",
+    inviterName: "Ayşe Yılmaz",
+    tenantName: "Northwind Traders",
+    roleName: "مشرف",
+    expiresAt: "1 نوفمبر 2026 الساعة 13:32 بتوقيت Dublin (UTC+0)",
+    link: "https://web.example/invitations/accept?code=k3Q9vXbT2mLp8Rz",
+  },
+} satisfies Record<string, InvitationProps>;
+
+/** The platform invites a tenant's Owner: the inviter is the brand. */
+export const ownerInvitation: InvitationProps = {
+  ...invitation.en,
+  inviterName: brand.name,
+  roleName: "Owner",
+};
+
+export const deletionWarning = {
+  en: {
+    language: "en",
+    tenantName: "Northwind Traders",
+    purgesOn: "10 Nov 2026",
+    purgesAt: "10 Nov 2026 at 09:00 Istanbul (UTC+3)",
+    supportUrl: brand.supportUrl,
+  },
+  tr: {
+    language: "tr",
+    tenantName: "Northwind Traders",
+    purgesOn: "10 Kas 2026",
+    purgesAt: "10 Kas 2026, saat 09:00 Istanbul (UTC+3)",
+    supportUrl: brand.supportUrl,
+  },
+  ar: {
+    language: "ar",
+    tenantName: "Northwind Traders",
+    purgesOn: "10 نوفمبر 2026",
+    purgesAt: "10 نوفمبر 2026 الساعة 09:00 بتوقيت Istanbul (UTC+3)",
+    supportUrl: brand.supportUrl,
+  },
+} satisfies Record<string, DeletionWarningProps>;
