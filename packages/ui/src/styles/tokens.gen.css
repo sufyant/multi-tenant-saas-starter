@@ -67,6 +67,8 @@
   --touch-target-tablet: 48px;
   --rail-width: 56px;
   --rail-expanded: 232px;
+  --code-slot-width: 48px;
+  --code-slot-height: 56px;
   --content-max: 1280px;
   --bp-tablet: 768px;
   --bp-desktop: 1024px;
@@ -232,6 +234,8 @@
   --spacing-touch-target-tablet: var(--touch-target-tablet);
   --spacing-rail-width: var(--rail-width);
   --spacing-rail-expanded: var(--rail-expanded);
+  --spacing-code-slot-width: var(--code-slot-width);
+  --spacing-code-slot-height: var(--code-slot-height);
   --container-content-max: var(--content-max);
 
   --shadow-xs: var(--shadow-xs);

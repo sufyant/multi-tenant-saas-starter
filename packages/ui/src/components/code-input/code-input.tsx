@@ -22,9 +22,9 @@ export type CodeInputProps = {
 };
 
 /**
- * The six-digit code of an email or an authenticator app, on shadcn's InputOTP. One input holds the code, so a paste fills every
- * slot and the browser can offer the code it read (`one-time-code`). A code reads left to right in every language, so the slots
- * are `dir="ltr"` in Arabic too.
+ * The six-digit code of an email or an authenticator app, on shadcn's InputOTP: six separate boxes, as the sign-in and two-step
+ * boards draw them. One input holds the code, so a paste fills every box and the browser can offer the code it read
+ * (`one-time-code`). A code reads left to right in every language, so the boxes are `dir="ltr"` in Arabic too.
  */
 export function CodeInput({
   label,
@@ -65,7 +65,7 @@ export function CodeInput({
               key={index}
               index={index}
               aria-invalid={error ? true : undefined}
-              className="size-control-lg bg-card font-mono text-section-title"
+              className="h-code-slot-height w-code-slot-width bg-card font-mono text-section-title"
             />
           ))}
         </InputOTPGroup>
