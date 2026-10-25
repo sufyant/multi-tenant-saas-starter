@@ -20,6 +20,7 @@ import {
 } from "@repo/ui/components/table";
 import { Time } from "@repo/ui/components/time";
 import { showToast } from "@repo/ui/components/toast";
+import { formatDate } from "@repo/ui/lib/format-date-time";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -27,11 +28,7 @@ import { useState } from "react";
 import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
-import {
-  daysLeft,
-  type InvitationStatus,
-  invitationStatus,
-} from "./invitation-status";
+import { type InvitationStatus, invitationStatus } from "./invitation-status";
 import { nameOf } from "./person";
 import { RevokeInvitationDialog } from "./revoke-invitation-dialog";
 import { useRoleReach } from "./use-role-reach";
@@ -182,7 +179,7 @@ export function InvitationsTable({
                   title: t("members.sentAgain"),
                   description: t("members.sentText", {
                     email: sent.email,
-                    days: daysLeft(sent.expiresAt, new Date()),
+                    date: formatDate(sent.expiresAt, { locale, timeZone }),
                   }),
                 }),
             },

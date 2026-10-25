@@ -1,10 +1,6 @@
 import { InvitationResponseState } from "@repo/api-client";
 import { describe, expect, it } from "vitest";
-import {
-  daysLeft,
-  expiresSoonWithin,
-  invitationStatus,
-} from "./invitation-status";
+import { expiresSoonWithin, invitationStatus } from "./invitation-status";
 
 const now = new Date("2026-10-16T13:32:00Z");
 const pendingIn = (milliseconds: number) => ({
@@ -39,16 +35,5 @@ describe("invitationStatus", () => {
         now,
       ),
     ).toBe(InvitationResponseState.Expired);
-  });
-});
-
-describe("daysLeft", () => {
-  it("DaysLeft_SevenDaysLessASecond_IsSeven", () => {
-    expect(
-      daysLeft(
-        new Date(now.getTime() + 7 * expiresSoonWithin - 1000).toISOString(),
-        now,
-      ),
-    ).toBe(7);
   });
 });

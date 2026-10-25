@@ -55,7 +55,8 @@ const noop = () => {};
 const resolved = async () => {};
 
 // The preview's schema has the shape of the generated RenameMe and ChangePreferences, which the apps give (F11).
-const previewName = z.string().trim().min(1).max(100);
+const previewNameMax = 100;
+const previewName = z.string().trim().min(1).max(previewNameMax);
 const preferencesSchema = z.object({
   firstName: previewName,
   lastName: previewName,
@@ -464,6 +465,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
                 timeZone: sample.timeZone,
               }}
               schema={preferencesSchema}
+              nameMax={{ firstName: previewNameMax, lastName: previewNameMax }}
               languages={Object.keys(messages) as (keyof typeof messages)[]}
               nameNote={sample.nameNote}
               rename={resolved}

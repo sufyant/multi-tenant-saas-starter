@@ -26,6 +26,8 @@ export type PreferencesFormProps = {
   values: PreferencesValues;
   /** The generated schemas of RenameMe and ChangePreferences as one object, with the names trimmed and required (F11). */
   schema: z.ZodType<PreferencesValues, PreferencesValues>;
+  /** The most characters of each name: the generated schema's maximum (`schemas.renameMeBodyFirstNameMax`). */
+  nameMax: Record<keyof Names, number>;
   /** The languages of the contract: `Object.values(Language)`. */
   languages: readonly Language[];
   /** Under the names: who sees them. Each app has its own. */
@@ -70,6 +72,7 @@ const required = {
 export function PreferencesForm({
   values,
   schema,
+  nameMax,
   languages,
   nameNote,
   rename,
@@ -148,7 +151,8 @@ export function PreferencesForm({
   const nameError = (field: (typeof nameFields)[number]) => {
     const key = errors[field]?.message;
     if (key === "validation.required") return t(required[field]);
-    if (key === "validation.too_long") return t("preferencesForm.nameTooLong");
+    if (key === "validation.too_long")
+      return t("preferencesForm.nameTooLong", { max: nameMax[field] });
     return key && t(key as "validation.invalid");
   };
   const timeZoneError = errors.timeZone?.message;

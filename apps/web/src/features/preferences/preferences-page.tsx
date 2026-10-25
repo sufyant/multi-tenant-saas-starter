@@ -93,6 +93,10 @@ function Preferences({ me }: { me: MeResponse }) {
         timeZone: me.timeZone,
       }}
       schema={preferences}
+      nameMax={{
+        firstName: schemas.renameMeBodyFirstNameMax,
+        lastName: schemas.renameMeBodyLastNameMax,
+      }}
       languages={Object.values(Language)}
       nameNote={t("preferences.nameNote")}
       rename={rename.mutateAsync}

@@ -16,6 +16,7 @@ import { Combobox } from "@repo/ui/components/combobox";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { formatDate } from "@repo/ui/lib/format-date-time";
 import { directionOf } from "@repo/ui/lib/locale";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
@@ -28,7 +29,6 @@ import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useCanActOn, useTenantRoles } from "@/shared/use-can-act-on";
-import { daysLeft } from "./invitation-status";
 import { RoleChoice } from "./role-choice";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
@@ -116,7 +116,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
     if (code === ErrorCode.InvitationDailyLimitReached)
       return {
         title: t("members.dailyLimit"),
-        text: t("members.dailyLimitText", { organisation: tenant.name }),
+        text: t("members.dailyLimitText"),
       };
     if (code === ErrorCode.InvitationOwnerRequiresOwner)
       return {
@@ -154,7 +154,10 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
               title: t("members.sent"),
               description: t("members.sentText", {
                 email: sent.email,
-                days: daysLeft(sent.expiresAt, new Date()),
+                date: formatDate(sent.expiresAt, {
+                  locale: t("locale.format"),
+                  timeZone: me.data?.timeZone,
+                }),
               }),
             });
           },
