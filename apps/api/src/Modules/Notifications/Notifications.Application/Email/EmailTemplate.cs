@@ -28,7 +28,7 @@ internal sealed partial record EmailTemplate(string Subject, string Html, string
     /// <summary>
     /// The email to the address, its placeholders filled. Each value is HTML-encoded in the HTML part and stays as written in the subject and
     /// the text part. A link must be an absolute https URL, and a contact an absolute https URL or a mailto: address. Each placeholder needs
-    /// a value, and each value a placeholder. Anything else is a mistake of ours, so the email is not sent.
+    /// a value, and each value a placeholder and a text. Anything else is a mistake of ours, so the email is not sent.
     /// </summary>
     public EmailMessage Write(string to, string idempotencyKey, IReadOnlyList<EmailValue> values)
     {
@@ -78,6 +78,12 @@ internal sealed partial record EmailTemplate(string Subject, string Html, string
     // The message names the value, never its content: a link carries an invitation's secret.
     private static void Check(EmailValue value)
     {
+        // A message deserialized from an older version can lack a field.
+        if (value.Value is null)
+        {
+            throw new InvalidOperationException($"The value {value.Name} of an email is missing.");
+        }
+
         if (value.Kind == EmailValueKind.Text)
         {
             return;

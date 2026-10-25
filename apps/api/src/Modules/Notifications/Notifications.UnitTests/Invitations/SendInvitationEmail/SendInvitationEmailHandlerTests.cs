@@ -217,6 +217,18 @@ public sealed class SendInvitationEmailHandlerTests
         _channel.Sent.ShouldBeEmpty();
     }
 
+    // An event that a worker of the version before step r14 publishes during the deploy has no role and no expiry. The email cannot be
+    // written, so it is an error: the event retries and goes to the dead letter queue, and the inviter invites again (ARCHITECTURE.md,
+    // section 13).
+    [Fact]
+    public async Task SendInvitationEmail_AnEventOfTheVersionBefore_IsAnError()
+    {
+        var send = () => SendAsync(Ready() with { InviterName = null, RoleName = null!, RoleBuiltIn = false, ExpiresAt = default, TimeZone = null });
+
+        await send.ShouldThrowAsync<InvalidOperationException>();
+        _channel.Sent.ShouldBeEmpty();
+    }
+
     // The key is the invitation's, so an event that arrives twice does not send a second email (O4).
     [Fact]
     public async Task SendInvitationEmail_AskedTwice_SendsUnderTheInvitationsIdempotencyKey()

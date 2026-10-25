@@ -1,3 +1,4 @@
+import { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
 import type { DeletionWarningProps } from "../templates/deletion-warning";
 import type { InvitationProps } from "../templates/invitation";
@@ -7,7 +8,7 @@ import type { InvitationProps } from "../templates/invitation";
 
 export const invitation = {
   en: {
-    language: "en",
+    language: Language.En,
     inviterName: "Ayşe Yılmaz",
     tenantName: "Northwind Traders",
     roleName: "Admin",
@@ -15,7 +16,7 @@ export const invitation = {
     link: "https://web.example/invitations/accept?code=k3Q9vXbT2mLp8Rz",
   },
   tr: {
-    language: "tr",
+    language: Language.Tr,
     inviterName: "Ayşe Yılmaz",
     tenantName: "Northwind Traders",
     roleName: "Yönetici",
@@ -23,7 +24,7 @@ export const invitation = {
     link: "https://web.example/invitations/accept?code=k3Q9vXbT2mLp8Rz",
   },
   ar: {
-    language: "ar",
+    language: Language.Ar,
     inviterName: "Ayşe Yılmaz",
     tenantName: "Northwind Traders",
     roleName: "مشرف",
@@ -41,21 +42,21 @@ export const ownerInvitation: InvitationProps = {
 
 export const deletionWarning = {
   en: {
-    language: "en",
+    language: Language.En,
     tenantName: "Northwind Traders",
     purgesOn: "10 Nov 2026",
     purgesAt: "10 Nov 2026 at 09:00 Istanbul (UTC+3)",
     supportUrl: brand.supportUrl,
   },
   tr: {
-    language: "tr",
+    language: Language.Tr,
     tenantName: "Northwind Traders",
     purgesOn: "10 Kas 2026",
     purgesAt: "10 Kas 2026, saat 09:00 Istanbul (UTC+3)",
     supportUrl: brand.supportUrl,
   },
   ar: {
-    language: "ar",
+    language: Language.Ar,
     tenantName: "Northwind Traders",
     purgesOn: "10 نوفمبر 2026",
     purgesAt: "10 نوفمبر 2026 الساعة 09:00 بتوقيت Istanbul (UTC+3)",

@@ -22,7 +22,7 @@ public sealed class EmailTemplateTests
 
     // OWASP, "Cross Site Scripting Prevention Cheat Sheet", rule 1: HTML-encode a value put into an element or a quoted attribute.
     [Fact]
-    public void Write_AValueWithHtml_EscapesItInTheHtmlAndKeepsItAsWrittenInTheTextAndTheSubject()
+    public void WriteEmail_AValueWithHtml_EscapesItInTheHtmlAndKeepsItAsWrittenInTheTextAndTheSubject()
     {
         var email = Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "<b>Ayşe</b> & co"), Link]);
 
@@ -34,7 +34,7 @@ public sealed class EmailTemplateTests
     }
 
     [Fact]
-    public void Write_AQuoteInAValue_EscapesItInTheHtml()
+    public void WriteEmail_AQuoteInAValue_EscapesItInTheHtml()
     {
         var email = Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "\"O'Hara\""), Link]);
 
@@ -42,7 +42,7 @@ public sealed class EmailTemplateTests
     }
 
     [Fact]
-    public void Write_AnAddressAndAKey_GoOnTheMessage()
+    public void WriteEmail_AnAddressAndAKey_GoOnTheMessage()
     {
         var email = Greeting.Write("ada@example.test", "invite/1", [EmailValue.Text("name", "Ada"), Link]);
 
@@ -50,7 +50,7 @@ public sealed class EmailTemplateTests
     }
 
     [Fact]
-    public void Write_APlaceholderWithoutAValue_IsRefused()
+    public void WriteEmail_APlaceholderWithoutAValue_IsRefused()
     {
         var write = () => Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "Ada")]);
 
@@ -58,7 +58,7 @@ public sealed class EmailTemplateTests
     }
 
     [Fact]
-    public void Write_AValueWithoutAPlaceholder_IsRefused()
+    public void WriteEmail_AValueWithoutAPlaceholder_IsRefused()
     {
         var write = () => Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "Ada"), Link, EmailValue.Text("roleName", "Admin")]);
 
@@ -70,7 +70,7 @@ public sealed class EmailTemplateTests
     [InlineData("javascript:alert(1)")]
     [InlineData("mailto:support@starter.example")]
     [InlineData("/invitations/accept?code=x")]
-    public void Write_ALinkThatIsNotAnAbsoluteHttpsUrl_IsRefused(string link)
+    public void WriteEmail_ALinkThatIsNotAnAbsoluteHttpsUrl_IsRefused(string link)
     {
         var write = () => Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "Ada"), EmailValue.Link("link", new Uri(link, UriKind.RelativeOrAbsolute))]);
 
@@ -80,7 +80,7 @@ public sealed class EmailTemplateTests
     [Theory]
     [InlineData("mailto:support@starter.example")]
     [InlineData("https://help.starter.example/contact")]
-    public void Write_AContactByMailtoOrHttps_IsAccepted(string contact)
+    public void WriteEmail_AContactByMailtoOrHttps_IsAccepted(string contact)
     {
         var email = Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "Ada"), EmailValue.Contact("link", new Uri(contact))]);
 
@@ -90,7 +90,7 @@ public sealed class EmailTemplateTests
     [Theory]
     [InlineData("http://help.starter.example/contact")]
     [InlineData("ftp://help.starter.example/contact")]
-    public void Write_AContactThatIsNeitherMailtoNorHttps_IsRefused(string contact)
+    public void WriteEmail_AContactThatIsNeitherMailtoNorHttps_IsRefused(string contact)
     {
         var write = () => Greeting.Write("ada@example.test", "key", [EmailValue.Text("name", "Ada"), EmailValue.Contact("link", new Uri(contact))]);
 
@@ -101,7 +101,7 @@ public sealed class EmailTemplateTests
     // placeholders of the form {{name}}.
     [Theory]
     [MemberData(nameof(EveryGeneratedEmail))]
-    public void Of_EveryGeneratedEmailInEveryLanguage_HasItsThreeParts(string email, Language language)
+    public void ReadEmail_EveryGeneratedEmailInEveryLanguage_HasItsThreeParts(string email, Language language)
     {
         var template = EmailTemplate.Of(email, language);
 
@@ -112,7 +112,7 @@ public sealed class EmailTemplateTests
 
     // The brand of packages/brand, which the render script copies beside the emails.
     [Fact]
-    public void Brand_TheGeneratedBrand_IsTheProductsNameAndSupportContact()
+    public void ReadBrand_TheGeneratedBrand_IsTheProductsNameAndSupportContact()
     {
         (EmailTemplate.Brand.Name, EmailTemplate.Brand.SupportUrl).ShouldBe(("Starter", new Uri("mailto:support@starter.example")));
     }
