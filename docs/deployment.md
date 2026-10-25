@@ -109,7 +109,7 @@ The table holds names only. A value never goes into the repository.
 | The custom domains of `api-web`, `web` and `platform`, and their DNS records | Railway service settings and the maintainer's DNS. Not part of the repository (section 13) | own domains | own domains |
 | The Errors applications and the uptime monitors | Repository: `.betterstack/config.json`. `pnpm betterstack:apply` applies it (section 16) | monitors `staging api`, `staging web`, `staging platform`; the applications are shared | monitors `production api`, `production web`, `production platform` |
 | `Host__ErrorTracking__Dsn`, `WEB_ERROR_TRACKING_DSN`, `PLATFORM_ERROR_TRACKING_DSN` | Railway shared variable, sealed. Copied from each Errors application's "Ingest" tab (section 16, step 5) | the same DSN in both environments | the same DSN in both environments |
-| `ERROR_TRACKING_ENVIRONMENT` | Railway shared variable | `staging` | `production` |
+| `ERROR_TRACKING_ENVIRONMENT` of `web` and `platform` | Repository: `.railway/railway.ts`, from the linked Railway environment (`ctx.environment`), as it sets the API's `ASPNETCORE_ENVIRONMENT` | `staging` | `production` |
 | The Errors Slack integration: its channel, the new-error and the spike alerts | Better Stack, by hand (section 16, step 6) | shared | shared |
 | `BETTERSTACK_UPTIME_TOKEN`, `BETTERSTACK_TELEMETRY_TOKEN` | The maintainer's password manager only (section 16, step 2) | shared | shared |
 
@@ -841,9 +841,8 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
    | `Host__ErrorTracking__Dsn` | the DSN of the application `api` |
    | `WEB_ERROR_TRACKING_DSN` | the DSN of the application `web` |
    | `PLATFORM_ERROR_TRACKING_DSN` | the DSN of the application `platform` |
-   | `ERROR_TRACKING_ENVIRONMENT` | `staging` or `production`, for the web apps. The API tags its events with its `ASPNETCORE_ENVIRONMENT` in lower case, which `.railway/railway.ts` sets |
 
-   `.railway/railway.ts` gives each service its own variable. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
+   `.railway/railway.ts` gives each service its own variable. It also sets the environment tag of the events from the linked Railway environment: `ASPNETCORE_ENVIRONMENT` for the API, `ERROR_TRACKING_ENVIRONMENT` for the web apps. You set neither. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
 6. **Connect Slack to Errors (manual).** Better Stack's API cannot manage the Errors integrations (`.betterstack/README.md`).
    1. Choose a Slack channel for the alerts, such as `#alerts-<product>`.
    2. In Better Stack, open Errors, then "Integrations". Find "Slack" and click "Add".
