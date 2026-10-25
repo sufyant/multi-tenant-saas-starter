@@ -111,7 +111,7 @@ The table holds names only. A value never goes into the repository.
 | The Errors applications and the uptime monitors | Repository: `.betterstack/config.json`. `pnpm betterstack:apply` applies it (section 16) | monitors `staging api`, `staging web`, `staging platform`; the applications are shared | monitors `production api`, `production web`, `production platform` |
 | `Host__ErrorTracking__Dsn`, `WEB_ERROR_TRACKING_DSN`, `PLATFORM_ERROR_TRACKING_DSN` | Railway shared variable, sealed. Copied from each Errors application's "Ingest" tab (section 16, step 5) | the same DSN in both environments | the same DSN in both environments |
 | `ERROR_TRACKING_ENVIRONMENT` of `web` and `platform` | Repository: `.railway/railway.ts`, from the linked Railway environment (`ctx.environment`), as it sets the API's `ASPNETCORE_ENVIRONMENT` | `staging` | `production` |
-| The Errors Slack integration: its channel, the new-error and the spike alerts | Better Stack, by hand (section 16, step 6) | shared | shared |
+| The Errors integrations "Incidents" and "Slack": the Slack channel and the alerts | Better Stack, by hand (section 16, step 6) | shared | shared |
 | `BETTERSTACK_UPTIME_TOKEN`, `BETTERSTACK_TELEMETRY_TOKEN` | The maintainer's password manager only (section 16, step 2) | shared | shared |
 
 `apps/api/docs/configuration.md` describes each setting. The shared variables have the same names as the service variables, in the `__` form.
@@ -813,7 +813,7 @@ What the file holds:
 
 ### First setup
 
-Do these steps once for staging. For production, do steps 3 to 7 with `production` and the production URLs; the Errors applications and the Slack integration exist then.
+Do these steps once for staging. For production, do steps 3 to 7 with `production` and the production URLs; the Errors applications and the Errors integrations exist then.
 
 1. **Create the Better Stack account** on the free plan, with the owner's email address. The account makes a team. Keep the owner the only member of the team: the monitors alert the team's members by email.
 2. **Create two team-based API tokens.** In Better Stack, open "API tokens", then "Team-based tokens", and pick the team. Create one token under "Incidents API tokens" and one under "Telemetry API tokens". Keep both in the password manager. They never go into a file, a GitHub secret or Railway. Better Stack has no read-only token, so `plan` uses the same tokens as `apply`.
@@ -846,13 +846,33 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
    | `Host__Heartbeat__Url` | the URL of the heartbeat `<environment> api-worker`: in Better Stack, open Uptime, then "Heartbeats", then the heartbeat, and copy its URL. It is a secret: its token is in the path |
 
    `.railway/railway.ts` gives each service its own variable, and `Host__Heartbeat__Url` to `api-worker` only. It also sets the environment tag of the events from the linked Railway environment: `ASPNETCORE_ENVIRONMENT` for the API, `ERROR_TRACKING_ENVIRONMENT` for the web apps. You set neither. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
-6. **Connect Slack to Errors (manual).** Better Stack's API cannot manage the Errors integrations (`.betterstack/README.md`).
+6. **Set the Errors integrations (manual).** Better Stack's API cannot manage the Errors integrations (`.betterstack/README.md`). Two integrations alert: "Incidents", which is on by default and notifies by email, and "Slack".
    1. Choose a Slack channel for the alerts, such as `#alerts-<product>`.
    2. In Better Stack, open Errors, then "Integrations". Find "Slack" and click "Add".
-   3. Follow the steps to authorize your Slack workspace.
-   4. In the integration's settings, pick the channel and the applications `api`, `web` and `platform`. Turn on the alert for a new error, and the alert for a spike. Keep the other settings at their defaults. Click "Save changes".
-   5. Write the settings you chose into this step, in a pull request, so the next product gets the same ones.
-   6. Install Slack's mobile app and allow its notifications for the channel. This is the only alert on the phone until step 47.
+   3. Follow the steps to authorize your Slack workspace, and pick the channel.
+   4. Give "Incidents" and "Slack" the same settings, then click "Save changes" on each:
+
+      | Setting | Value |
+      | --- | --- |
+      | "Applications" | Any application |
+      | "Notify me when": "Application has a spike in errors" | On |
+      | "Notify me when": "New error occurs" | On |
+      | "Notify me when": "Error is automatically re-opened" | On |
+      | "Notify me when": "Error reaches an occurrence milestone" | Off: a spike covers it, and a milestone repeats for the same error |
+      | "Notify me when": "Error occurred N times within an interval" | Off: a spike covers it |
+      | "Only when tags match" | Empty for staging |
+
+      "Slack" has more settings. Set them too:
+
+      | Setting | Value |
+      | --- | --- |
+      | "Start an AI SRE conversation when Better Stack is tagged" | Off: a change to the repository goes through our own steps, and error data goes to no other AI |
+      | "Spike protection starts sampling exceptions" | On |
+      | "New release is observed" | Off: the channel holds only what needs action |
+      | "How we post updates" | Thread-based |
+
+      "Error reaches an occurrence milestone" stays off and "Error is automatically re-opened" stays on, as in the table above. Keep the other settings at their defaults. If Better Stack changes a name, write the new name into this step in a pull request.
+   5. Install Slack's mobile app and allow its notifications for the channel. This is the only alert on the phone until step 47.
 7. **Remove the tokens from the shell:**
 
    ```bash
@@ -874,4 +894,5 @@ After the next deploy, check:
 ### Later steps
 
 - **Push, phone and SMS alerts** come with production (step 47), with a responder seat and an escalation policy in `.betterstack/config.json`.
+- **Errors alerts by environment** come with production (step 47). The Errors integration that calls or pushes gets "Only when tags match" set to the tag `environment` matching `production`, so a staging error never pages the owner.
 - **A status page** is a later step (1.1).

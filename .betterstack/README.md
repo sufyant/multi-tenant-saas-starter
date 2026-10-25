@@ -23,7 +23,7 @@ Checked on 2026-10-25 against Better Stack's API documentation and its Terraform
 The account is on the free plan. Better Stack's pricing page lists for it "Slack & e-mail alerts", 10 monitors, 10 heartbeats, and 100,000 exceptions a month. Push notifications of the mobile app, escalations, phone calls and SMS need a paid responder seat. The free plan checks a monitor every 3 minutes at most (Better Stack docs, "Check frequency"). So:
 
 - Each monitor alerts by email, with no escalation policy.
-- Error alerts go to Slack, through the Errors Slack integration, set up by hand.
+- Error alerts go by email and to Slack, through the Errors integrations "Incidents" and "Slack", set up by hand (`docs/deployment.md`, section 16, step 6).
 - Push, phone and SMS come with production (step 47), with a responder seat.
 
 ## The tokens
