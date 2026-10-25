@@ -143,12 +143,11 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         var emails = _api.Email.Sent.Where(email => email.To.EndsWith("@acme.test", StringComparison.Ordinal)).OrderBy(email => email.To).ToList();
         emails.Select(email => (email.To, email.Subject)).ShouldBe(
         [
-            ("ayse@acme.test", "Acme Ltd adlı kuruluş 7 gün içinde silinecek"),
-            ("layla@acme.test", "سيتم حذف Acme Ltd خلال 7 أيام"),
+            ("ayse@acme.test", "Acme Ltd 1 Eki 2026 tarihinde silinecek"),
+            ("layla@acme.test", "ستُحذف Acme Ltd في 1 أكتوبر 2026"),
         ]);
-        emails.ShouldAllBe(email => email.Text.Contains("2026-10-01"));
-        emails[0].Text.ShouldContain("Istanbul (UTC+3) saatiyle 12:00");
-        emails[1].Text.ShouldContain("الساعة 09:00 بالتوقيت العالمي (UTC)");
+        emails[0].Text.ShouldContain("1 Eki 2026, saat 12:00 Istanbul (UTC+3) itibarıyla");
+        emails[1].Text.ShouldContain("في 1 أكتوبر 2026 الساعة 09:00 بالتوقيت العالمي (UTC)");
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
     }

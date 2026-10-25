@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Contracts.Invitations;
 using Microsoft.AspNetCore.Mvc;
@@ -78,28 +79,79 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task InviteMember_WithoutALanguage_InvitesInTheInvitersLanguage()
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: "tr"), role: "Owner");
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace", language: "tr"), role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await _testData.InvitationLanguageOfAsync(email)).ShouldBe("tr");
-        _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("Acme Ltd adlı kuruluşa davet edildiniz");
+        _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("Ada Lovelace sizi Acme Ltd kuruluşuna davet etti");
     }
 
     [Fact]
     public async Task InviteMember_WithALanguage_InvitesInIt()
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: "tr"), role: "Owner");
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace", language: "tr"), role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email, language: "ar"));
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await _testData.InvitationLanguageOfAsync(email)).ShouldBe("ar");
-        _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("دعوة للانضمام إلى Acme Ltd");
+        _api.Email.Sent.Single(sent => sent.To == email).Subject.ShouldBe("دعوة من Ada Lovelace إلى Acme Ltd");
+    }
+
+    // Step r14: the email names the inviter by the names they have at this moment, and writes the expiry in the inviter's time zone, with
+    // its city and offset (Europe/Istanbul has kept UTC+3 since 2016). The exact date is the unit tests' (SendInvitationEmailHandlerTests).
+    [Fact]
+    public async Task InviteMember_AnInviterWithATimeZone_EmailsTheirNameTheRoleAndTheExpiryInTheirZone()
+    {
+        var tenant = await _testData.AddTenantAsync(name: "Northwind Traders");
+        var inviter = await _testData.AddMemberAsync(
+            tenant.Id, await _testData.AddUserAsync(firstName: "Ayşe", lastName: "Yılmaz", timeZone: "Europe/Istanbul"), role: "Owner");
+        var email = NewEmail();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email, role: "admin"));
+
+        var sent = _api.Email.Sent.Single(message => message.To == email);
+        sent.Subject.ShouldBe("Ayşe Yılmaz invited you to Northwind Traders");
+        var parts = sent.Text.Split("\n\n");
+        parts[1].ShouldBe("Ayşe Yılmaz invited you to join Northwind Traders as Admin.");
+        parts[3].ShouldMatch(@"^Expires on \d{1,2} [A-Z][a-z]{2,3} \d{4} at \d{2}:\d{2} Istanbul \(UTC\+3\)\.$");
+        // The generated HTML breaks a long line where it has a space.
+        Regex.Replace(sent.Html, @"\s+", " ").ShouldContain("Ayşe Yılmaz invited you to join Northwind Traders as Admin.");
+    }
+
+    [Fact]
+    public async Task InviteMember_AnInviterWithoutATimeZone_WritesTheExpiryInUtc()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var email = NewEmail();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
+
+        _api.Email.Sent.Single(message => message.To == email).Text.Split("\n\n")[3]
+            .ShouldMatch(@"^Expires on \d{1,2} [A-Z][a-z]{2,3} \d{4} at \d{2}:\d{2} UTC\.$");
+    }
+
+    // A built-in role is written in the email's language; a custom role keeps the name the Owner typed.
+    [Fact]
+    public async Task InviteMember_ABuiltInAndACustomRole_WritesTheBuiltInOneInTheLanguageAndTheCustomOneAsTyped()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var inviter = _api.CreateClient(
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner"));
+        var custom = await _testData.AddCustomRoleAsync(tenant.Id, "Field agent", "tenant.profile.read");
+        var (builtIn, typed) = (NewEmail(), NewEmail());
+
+        await _api.WaitingForMessagesAsync(() => inviter.InviteMemberAsync(tenant.Id, builtIn, role: "member", language: "tr"));
+        await _api.WaitingForMessagesAsync(() => inviter.InviteMemberAsync(tenant.Id, typed, role: custom.ToString(), language: "tr"));
+
+        _api.Email.Sent.Single(message => message.To == builtIn).Text.Split("\n\n")[1].ShouldEndWith("Üye olarak katılmaya davet etti.");
+        _api.Email.Sent.Single(message => message.To == typed).Text.Split("\n\n")[1].ShouldEndWith("Field agent olarak katılmaya davet etti.");
     }
 
     // K8: the answer and the list carry the language the invitation keeps, not the inviter's, so a client that invites again can send it back.
@@ -536,7 +588,12 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
             "Acme Ltd",
             new Uri($"{ApiFactory.AcceptUrl}?code=x"),
             Language.En,
-            TimeSpan.FromDays(7));
+            TimeSpan.FromDays(7),
+            "Ada Lovelace",
+            "member",
+            true,
+            _time.GetUtcNow().AddDays(7),
+            null);
         using var scope = _api.Services.CreateScope();
         var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
         var inTheTenant = new DeliveryOptions { TenantId = invited.TenantId.ToString() };
