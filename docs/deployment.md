@@ -95,7 +95,8 @@ The table holds names only. A value never goes into the repository.
 | The PostgreSQL service `postgres`: Railway's template, its image `postgres-ssl:18` and its region | Repository: `.railway/railway.ts` | same | same |
 | Public access (TCP proxy) of `postgres` | Railway service settings, by hand (section 4, step 7) | own proxy | own proxy |
 | Backups and point-in-time recovery of `postgres` | Railway, by hand with the Railway CLI (section 4, step 11) | off | on |
-| `Host__Role`, `ASPNETCORE_ENVIRONMENT`, `PORT` | Repository: `.railway/railway.ts`, as literal values | same | same |
+| `Host__Role`, `PORT` | Repository: `.railway/railway.ts`, as literal values | same | same |
+| `ASPNETCORE_ENVIRONMENT` of `api-web` and `api-worker` | Repository: `.railway/railway.ts`, from the linked Railway environment (`ctx.environment`). The API names the environment of its error events from it, in lower case | `Staging` | `Production` |
 | `API_URL` of `web` and `platform`: `http://${{api-web.RAILWAY_PRIVATE_DOMAIN}}:8080` | Repository: `.railway/railway.ts`, as a Railway reference. Railway resolves it in each environment | own private domain | own private domain |
 | The names of the shared variables that each service uses | Repository: `.railway/railway.ts` | same | same |
 | The environments, their reviewers, their deployment branches and tags, the ruleset for release tags | Repository: `scripts/github/apply-settings.sh`, `.github/rulesets/` and `docs/github-settings.md` | branch `main`, no reviewer | branch `main` and tags `v*`, the owner as reviewer |
@@ -351,7 +352,7 @@ pnpm railway:apply
 pnpm railway:apply --confirm-destructive
 ```
 
-No setting in the file differs between the environments today. If one must differ, the file can read `ctx.environment`.
+Only the environment names differ between the environments: the API's `ASPNETCORE_ENVIRONMENT` and the web apps' `ERROR_TRACKING_ENVIRONMENT`, which the file reads from `ctx.environment`. Any other setting that must differ can read it too.
 
 Rules:
 
