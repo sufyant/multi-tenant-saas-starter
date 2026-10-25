@@ -97,8 +97,12 @@ export default defineRailway((ctx) => {
   const database = postgres("postgres", { region });
 
   // One build output, two process roles (W5). The worker serves the health endpoints too
-  // (apps/api/docs/local-run.md, section 6).
-  const api = (name: string, role: "web" | "worker") =>
+  // (apps/api/docs/local-run.md, section 6). `own` holds the variables of one service alone.
+  const api = (
+    name: string,
+    role: "web" | "worker",
+    own: Record<string, string> = {},
+  ) =>
     service(name, {
       replicas: { [region]: 1 },
       healthcheck: infrastructure.healthPath,
@@ -112,6 +116,7 @@ export default defineRailway((ctx) => {
         ...Object.fromEntries(
           sharedVariables.map((name) => [name, ctx.shared[name]]),
         ),
+        ...own,
       },
     });
 
@@ -145,7 +150,13 @@ export default defineRailway((ctx) => {
     resources: [
       database,
       api(infrastructure.services.web, "web"),
-      api(infrastructure.services.worker, "worker"),
+      // Host:Heartbeat:Url is optional and for the worker alone: the web host's uptime monitor calls a
+      // public route, and the worker answers none, so its heartbeat is its alert when it stops. The URL holds
+      // the heartbeat's token, so it is a secret. A missing shared variable gives an empty value, and an
+      // empty URL turns the heartbeat off (apps/api/docs/ARCHITECTURE.md, section 7, "Heartbeat").
+      api(infrastructure.services.worker, "worker", {
+        Host__Heartbeat__Url: ctx.shared.Host__Heartbeat__Url,
+      }),
       app(web),
       app(platform),
     ],
