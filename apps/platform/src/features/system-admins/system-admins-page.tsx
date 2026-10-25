@@ -9,6 +9,7 @@ import {
 import { Avatar } from "@repo/ui/components/avatar";
 import { Button } from "@repo/ui/components/button";
 import { Freshness } from "@repo/ui/components/freshness";
+import { KeyIcon } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
@@ -60,8 +61,12 @@ export function SystemAdminsPage() {
           <bdi className="truncate font-medium">
             {userNameOf(user, t("users.deletedUser"))}
           </bdi>
-          {user.isRootSystemAdmin && <Tag>{t("systemAdmins.root")}</Tag>}
-          {user.id === me.data?.id && <Tag>{t("systemAdmins.you")}</Tag>}
+          {user.isRootSystemAdmin && (
+            <Tag icon={KeyIcon}>{t("systemAdmins.root")}</Tag>
+          )}
+          {user.id === me.data?.id && (
+            <Tag variant="text">{t("systemAdmins.you")}</Tag>
+          )}
         </span>
         {user.email && (
           <bdi dir="ltr" className="truncate text-small text-muted-foreground">

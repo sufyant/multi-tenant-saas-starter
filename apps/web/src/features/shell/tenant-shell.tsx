@@ -3,7 +3,6 @@
 import { useClerk } from "@clerk/nextjs";
 import { getGetMeQueryOptions, type MyTenantResponse } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
-import { initialsOf } from "@repo/ui/components/avatar";
 import { HomeIcon, SettingsIcon } from "@repo/ui/components/icon";
 import { OrgMenu } from "@repo/ui/components/org-menu";
 import { InlineSkeleton, Skeleton } from "@repo/ui/components/skeleton";
@@ -153,10 +152,10 @@ function TenantFrame({
                 .filter(Boolean)
                 .join(" ")}
               email={me.data.email ?? ""}
-              initials={initialsOf({
+              person={{
                 firstName: me.data.firstName,
                 lastName: me.data.lastName,
-              })}
+              }}
               label={t("common.account")}
               languageName={t(`languages.${me.data.language}`)}
               languageLabel={t("shell.language")}

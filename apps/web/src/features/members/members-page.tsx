@@ -236,7 +236,7 @@ export function MembersPage() {
         <div className="flex flex-1 flex-wrap items-end justify-end gap-2">
           {readsRoles && (
             <Combobox
-              variant="compact"
+              variant="filter"
               label={t("members.roleFilter")}
               value={roleId ?? allRoles}
               options={[

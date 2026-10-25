@@ -61,7 +61,7 @@ test("SystemAdmins_List_ShowsTheRootAndTheOwnRow", async ({ page }) => {
   await expect(row(page, "root@starter.example")).toContainText(
     "Root admins come from the platform’s configuration.",
   );
-  await expect(row(page, "Sam Kelly")).toContainText("You");
+  await expect(row(page, "Sam Kelly")).toContainText("(you)");
   await page.getByRole("button", { name: "Actions for Sam Kelly" }).click();
   await expect(
     page.getByRole("menuitem", { name: /Remove system admin/ }),

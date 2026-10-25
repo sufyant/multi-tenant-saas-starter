@@ -113,6 +113,12 @@ const rect = (locator: Locator) =>
     element.getBoundingClientRect().toJSON(),
   ) as Promise<DOMRect>;
 
+/**
+ * Base UI's positioner rounds the menu to whole device pixels. The avatar is centred in the top bar's 51px under its border, so
+ * its bottom edge sits on a half pixel.
+ */
+const pixel = 0.5;
+
 /** A token's value as the browser draws it: a colour as `rgb(...)`, a size in pixels. */
 const token = (browser: Page, name: string, property: "color" | "width") =>
   browser.evaluate(
@@ -137,7 +143,7 @@ test("Members_UserMenu_OpensSixPixelsBelowTheAvatarAtItsEndEdge", async ({
   const { avatar, menu } = await openUserMenu(browser, "AY Account");
   const trigger = await rect(avatar);
   const box = await rect(menu);
-  expect(box.top).toBeCloseTo(trigger.bottom + 6, 0);
+  expect(Math.abs(box.top - (trigger.bottom + 6))).toBeLessThanOrEqual(pixel);
   expect(box.right).toBeCloseTo(trigger.right, 0);
   expect(box.width).toBe(280);
   await expectAccessible(browser);
@@ -151,7 +157,7 @@ test("Members_UserMenuInArabic_AlignsToTheAvatarsLeftEdge", async ({
   const { avatar, menu } = await openUserMenu(browser, "AY الحساب");
   const trigger = await rect(avatar);
   const box = await rect(menu);
-  expect(box.top).toBeCloseTo(trigger.bottom + 6, 0);
+  expect(Math.abs(box.top - (trigger.bottom + 6))).toBeLessThanOrEqual(pixel);
   expect(box.left).toBeCloseTo(trigger.left, 0);
   await expectAccessible(browser);
 });
