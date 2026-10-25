@@ -7,7 +7,7 @@ import { UserMenu } from "./user-menu";
 const props = {
   name: "Ayşe Yılmaz",
   email: "ayse@northwind.io",
-  initials: "AY",
+  person: { firstName: "Ayşe", lastName: "Yılmaz" },
   label: "Account",
   languageName: "English",
   languageLabel: "Language",

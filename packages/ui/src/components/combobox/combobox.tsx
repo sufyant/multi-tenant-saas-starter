@@ -3,7 +3,12 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react";
 import { type ReactNode, useId } from "react";
 import { cn } from "../../lib/utils";
-import { ChevronsUpDownIcon, Icon, type LucideIcon } from "../icon";
+import {
+  ChevronDownIcon,
+  ChevronsUpDownIcon,
+  Icon,
+  type LucideIcon,
+} from "../icon";
 import {
   ComboboxContent,
   ComboboxEmpty,
@@ -32,8 +37,11 @@ export type ComboboxProps = {
   value?: string;
   options: ComboboxOption[];
   onValueChange?: (id: string) => void;
-  /** field (default) in forms; compact in the sign-in footer, with an icon and the name only. */
-  variant?: "field" | "compact";
+  /**
+   * field (default) in forms; compact in the sign-in footer, with an icon and the name only; filter beside a search field, with
+   * the field's border and height and its width from the value.
+   */
+  variant?: "field" | "compact" | "filter";
   icon?: LucideIcon;
   searchPlaceholder: string;
   /** Shown when the search matches no option. */
@@ -50,9 +58,20 @@ const matches = (option: ComboboxOption, query: string) => {
   );
 };
 
+const triggers = {
+  field:
+    "h-control-md w-full justify-between border border-input bg-card px-3 pointer-coarse:h-control-lg tablet:pointer-coarse:h-control-xl",
+  compact:
+    "h-control-md px-2 text-muted-foreground hover:bg-accent pointer-coarse:h-control-lg",
+  // The search field's height and border (search.tsx), so the two line up.
+  filter:
+    "h-control-md min-w-35 border border-input bg-card ps-3 pe-2.5 pointer-coarse:h-control-lg",
+};
+
 /**
  * A searchable picker for a long list (the Combobox README): the search box is the first thing in the list, and each option keeps
- * its own language and direction. New options never change the layout.
+ * its own language and direction. New options never change the layout. As a filter, the first option names the whole set ("All
+ * roles") and a chosen one names the filter and the value ("Role: Billing lead"); the label is the accessible name only.
  */
 export function Combobox({
   label,
@@ -78,7 +97,7 @@ export function Combobox({
         id={labelId}
         className={cn(
           "text-body font-medium",
-          variant === "compact" && "sr-only",
+          variant !== "field" && "sr-only",
         )}
       >
         {label}
@@ -100,9 +119,7 @@ export function Combobox({
           aria-describedby={note ? noteId : undefined}
           className={cn(
             "inline-flex items-center gap-2 rounded-md text-body outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            variant === "field"
-              ? "h-control-md w-full justify-between border border-input bg-card px-3 pointer-coarse:h-control-lg tablet:pointer-coarse:h-control-xl"
-              : "h-control-md px-2 text-muted-foreground hover:bg-accent pointer-coarse:h-control-lg",
+            triggers[variant],
           )}
         >
           {icon && <Icon icon={icon} />}
@@ -111,6 +128,12 @@ export function Combobox({
           </span>
           {variant === "field" && (
             <Icon icon={ChevronsUpDownIcon} className="text-muted-foreground" />
+          )}
+          {variant === "filter" && (
+            <Icon
+              icon={ChevronDownIcon}
+              className="ms-auto text-muted-foreground"
+            />
           )}
         </ComboboxPrimitive.Trigger>
         <ComboboxContent className="min-w-64">

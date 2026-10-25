@@ -25,6 +25,7 @@ import {
   HistoryIcon,
   HomeIcon,
   Icon,
+  KeyIcon,
   PlusIcon,
   SettingsIcon,
   UsersIcon,
@@ -93,7 +94,7 @@ const samples = {
     toast: "Invitation sent",
     settings: "Settings",
     overview: "Overview",
-    you: "You",
+    you: "(you)",
     nameNote:
       "Your name shows to the members of every organisation you belong to.",
   },
@@ -124,7 +125,7 @@ const samples = {
     toast: "Davet gönderildi",
     settings: "Ayarlar",
     overview: "Genel bakış",
-    you: "Siz",
+    you: "(siz)",
     nameNote: "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür.",
   },
   ar: {
@@ -152,7 +153,7 @@ const samples = {
     toast: "تم إرسال الدعوة",
     settings: "الإعدادات",
     overview: "نظرة عامة",
-    you: "أنت",
+    you: "(أنت)",
     nameNote: "يظهر اسمك لأعضاء كل مؤسسة تنتمي إليها.",
   },
 };
@@ -254,7 +255,7 @@ function memberColumns(sample: Sample): TableColumn<Member>[] {
         <div className="flex flex-col">
           <span className="flex items-center gap-1.5 font-medium">
             <bdi>{row.name}</bdi>
-            {row.id === 1 && <Tag>{sample.you}</Tag>}
+            {row.id === 1 && <Tag variant="text">{sample.you}</Tag>}
           </span>
           <bdi dir="ltr" className="text-small text-muted-foreground">
             {row.email}
@@ -547,7 +548,11 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       render: ({ sample }) => (
         <>
           <span className="flex items-center gap-1.5">
-            Ayşe Yılmaz <Tag>{sample.you}</Tag>
+            Ayşe Yılmaz <Tag variant="text">{sample.you}</Tag>
+          </span>
+          <span className="flex items-center gap-1.5">
+            Ciara Byrne <Tag>System admin</Tag>
+            <Tag icon={KeyIcon}>Root</Tag>
           </span>
         </>
       ),
@@ -905,7 +910,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           <UserMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            initials="AY"
+            person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
             label="Account"
             languageName={
               languages.find((option) => option.id === sample.locale)?.label ??
