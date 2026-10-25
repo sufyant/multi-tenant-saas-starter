@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Runs the image of a Next.js app, `web` or `platform`, with fake, well-formed settings, all given at run time. The image is
-# built without any variable, so it proves that one image serves every environment (F7). The script starts it twice, with two
-# different publishable keys. Each time, the health path of .railway/<app>.json must answer 200, and /sign-in must answer 200
-# with the key of that run in its page and without the key of the other run. The keys name clerk-a.example.invalid and
-# clerk-b.example.invalid, and API_URL names api.example.invalid; none resolves. No real key is used. The app reads its settings
-# at start (src/env.ts), so a missing one stops the container here.
+# Runs the image of a Next.js app, `web` or `platform`, with fake, well-formed settings, all given at run time. The image is built
+# without any setting that differs between environments, so it proves that one image serves every environment (F7). The script
+# starts it twice, with two different publishable keys. Each time, the health path of .railway/<app>.json must answer 200, and
+# /sign-in must answer 200 with the key of that run in its page and without the key of the other run. The keys name
+# clerk-a.example.invalid and clerk-b.example.invalid, and API_URL names api.example.invalid; none resolves. No real key is used.
+# The app reads its settings at start (src/env.ts), so a missing one stops the container here.
 #
 # Inputs: the app's name, `web` or `platform`, which is also the image's and the container's name. Exit codes: 0 when both runs
 # pass; 2 for a wrong argument; Docker's exit code when a container does not start; 1 when a check fails. Leaves the container of

@@ -18,8 +18,8 @@
 // Apply deletes a service variable that is not in this file. Add every variable of every service
 // here, not in the Railway dashboard.
 //
-// The same file serves the environments staging and production. Only the API's ASPNETCORE_ENVIRONMENT
-// differs, from `ctx.environment`.
+// The same file serves the environments staging and production. Only the environment names differ, from
+// `ctx.environment`: the API's ASPNETCORE_ENVIRONMENT and the web apps' ERROR_TRACKING_ENVIRONMENT.
 //
 // Apply it by hand to each environment, from the repository root, after `railway login` and
 // `railway link` to that environment:
@@ -122,6 +122,10 @@ export default defineRailway((ctx) => {
   // - CLERK_SECRET_KEY: the same shared variable that the API reads as ControlPlane__Clerk__SecretKey, so the key has one source.
   // - CLERK_PUBLISHABLE_KEY: a shared variable of its own, read at run time, so one image serves every environment.
   // - PORT: the port of the server and of Railway's health check.
+  // - ERROR_TRACKING_DSN: the DSN of the app's own Errors application in Better Stack, a shared variable of its own:
+  //   WEB_ERROR_TRACKING_DSN or PLATFORM_ERROR_TRACKING_DSN. Without it the app sends no error (F55).
+  // - ERROR_TRACKING_ENVIRONMENT: the environment tag of each error event, the API's ASP.NET Core name in lower case, so the
+  //   three services tag their events alike.
   const app = (settings: typeof web) =>
     service(settings.service, {
       replicas: { [region]: 1 },
@@ -131,6 +135,9 @@ export default defineRailway((ctx) => {
         API_URL: `http://\${{${infrastructure.services.web}.RAILWAY_PRIVATE_DOMAIN}}:${infrastructure.publicPort}`,
         CLERK_PUBLISHABLE_KEY: ctx.shared.CLERK_PUBLISHABLE_KEY,
         CLERK_SECRET_KEY: ctx.shared.ControlPlane__Clerk__SecretKey,
+        ERROR_TRACKING_DSN:
+          ctx.shared[`${settings.service.toUpperCase()}_ERROR_TRACKING_DSN`],
+        ERROR_TRACKING_ENVIRONMENT: aspNetEnvironment.toLowerCase(),
       },
     });
 

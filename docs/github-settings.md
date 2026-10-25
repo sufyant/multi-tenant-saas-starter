@@ -168,7 +168,21 @@ The job `e2e` in `.github/workflows/ci.yml` runs the Playwright tests of `apps/w
 | `CLERK_SECRET_KEY_TEST` | secret | The secret key (`sk_test_...`) of the same instance. Never a key of the production instance | The maintainer, with `gh secret set CLERK_SECRET_KEY_TEST` |
 | `E2E_CLERK_USER_EMAIL` | secret | The address of a user of the same instance, with `+clerk_test` in it. It signs in with the code `424242`, and no email goes out | The maintainer, with `gh secret set E2E_CLERK_USER_EMAIL` |
 
-GitHub gives no repository secret to a workflow run from a fork's pull request, and gives a Dependabot pull request the Dependabot secrets only (GitHub Docs: "Using secrets in GitHub Actions", "Automating Dependabot with GitHub Actions"). `delivery.yml` passes no secret to `ci.yml`. In these runs the job skips its steps with the notice "E2E skipped" and passes. To run the tests on Dependabot pull requests too, set the same three values with `gh secret set <name> --app dependabot`.
+GitHub gives no repository secret to a workflow run from a fork's pull request, and gives a Dependabot pull request the Dependabot secrets only (GitHub Docs: "Using secrets in GitHub Actions", "Automating Dependabot with GitHub Actions"). `delivery.yml` passes none of the three to `ci.yml`. In these runs the job skips its steps with the notice "E2E skipped" and passes. To run the tests on Dependabot pull requests too, set the same three values with `gh secret set <name> --app dependabot`.
+
+### 3.8 Source map upload of the web and platform images
+
+The jobs `web-image` and `platform-image` in `.github/workflows/ci.yml` build each image with `scripts/ci/build-app-image.sh`. Where the token exists, the build uploads the app's source maps to Better Stack and then deletes them from the image (F55 in `docs/frontend/ARCHITECTURE.md`). The token goes into the build as a BuildKit secret, never as a build argument. The script never sets or reads these values; it only passes them to the build.
+
+| Name | Kind | What it holds | Who sets it |
+| --- | --- | --- | --- |
+| `BETTER_STACK_SOURCEMAPS_TOKEN` | secret | A Better Stack Telemetry API token for the source map upload only. Use a token of its own, not the one of `.betterstack/`, so a leak of this CI secret gives no write access to the settings | The maintainer, with `gh secret set BETTER_STACK_SOURCEMAPS_TOKEN` |
+| `BETTER_STACK_SOURCEMAPS_URL` | variable | Better Stack's source map host of the account, from Errors, an application, Advanced settings (such as `https://us-east-9-sourcemaps.betterstackdata.com`) | The maintainer, with `gh variable set BETTER_STACK_SOURCEMAPS_URL` |
+| `BETTER_STACK_ERRORS_ORG` | variable | The team's ID in Better Stack, from the same page | The maintainer, with `gh variable set BETTER_STACK_ERRORS_ORG` |
+| `BETTER_STACK_WEB_PROJECT` | variable | The ID of the Errors application `web`, from its Advanced settings | The maintainer, with `gh variable set BETTER_STACK_WEB_PROJECT` |
+| `BETTER_STACK_PLATFORM_PROJECT` | variable | The ID of the Errors application `platform`, from its Advanced settings | The maintainer, with `gh variable set BETTER_STACK_PLATFORM_PROJECT` |
+
+`delivery.yml` passes the secret to `ci.yml`, so the images that go to staging and production upload their maps. A fork's or Dependabot's pull request gets no secret, and its build uploads nothing and passes. With the token but without one of the three variables, the build stops, because the uploader would otherwise send the token to sentry.io (Better Stack docs, "Upload source maps"; GitHub Docs, "Using secrets in GitHub Actions").
 
 ## 4. Plan limits
 

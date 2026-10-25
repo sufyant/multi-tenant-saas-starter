@@ -4,6 +4,7 @@ import {
   colorLiterals,
   contractEnumValues,
   dateFormattingOutsideFormatter,
+  differingFiles,
   duplicateRuleIds,
   enumLiterals,
   enumValues,
@@ -86,5 +87,15 @@ describe("architecture of packages/ui", () => {
 
   it("F3_PackagesUi_WritesNoEnumValueAsALiteral", () => {
     expect(enumLiterals(src, contractEnumValues(generatedSchemas))).toEqual([]);
+  });
+
+  // Each app holds the same error tracking code, because only an app may import the SDK (F55, and the deviations table).
+  it("F55_ErrorTracking_IsTheSameInBothApps", () => {
+    expect(
+      differingFiles(
+        join(packages, "../apps/web/src/error-tracking"),
+        join(packages, "../apps/platform/src/error-tracking"),
+      ),
+    ).toEqual([]);
   });
 });

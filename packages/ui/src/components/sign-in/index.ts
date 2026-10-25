@@ -1,5 +1,6 @@
 export {
   clerkErrorCode,
+  isExpectedClerkError,
   type SignInErrorKey,
   type SignInStep,
   signInErrorKey,

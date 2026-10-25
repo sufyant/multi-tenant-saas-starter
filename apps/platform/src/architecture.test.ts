@@ -12,6 +12,7 @@ import {
   numericLayerClasses,
   physicalDirectionClasses,
   roleNameDecisions,
+  sdkImportRefusals,
   testFolders,
   testsBesideTheirFile,
   userFacingLiterals,
@@ -104,5 +105,27 @@ describe("architecture of apps/platform", () => {
     expect(
       declarationsOf(src, sharedParts, { from: "@repo/ui", rule: "F29" }),
     ).toEqual([]);
+  });
+  // Only the app's error tracking folder and next.config.ts import the SDK; a feature reports through reportError (F55).
+  it("F55_AppsPlatform_ImportsTheErrorTrackerOnlyInItsConfig", () => {
+    expect(
+      sdkImportRefusals(join(app, "../.."), [
+        "apps/platform/src/error-tracking/probe.ts",
+        "apps/platform/next.config.ts",
+        "apps/platform/src/instrumentation.ts",
+        "apps/platform/src/app/layout.tsx",
+        "apps/platform/src/features/probe/probe.tsx",
+        "apps/platform/src/shared/probe.ts",
+        "packages/ui/src/components/probe/probe.tsx",
+        "packages/api-client/src/probe.ts",
+      ]),
+    ).toEqual([
+      "apps/platform/src/app/layout.tsx",
+      "apps/platform/src/features/probe/probe.tsx",
+      "apps/platform/src/instrumentation.ts",
+      "apps/platform/src/shared/probe.ts",
+      "packages/api-client/src/probe.ts",
+      "packages/ui/src/components/probe/probe.tsx",
+    ]);
   });
 });

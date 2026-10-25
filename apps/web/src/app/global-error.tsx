@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportBrowserError } from "@/error-tracking/report-error";
 import { messages } from "@/i18n/messages";
 import "./globals.css";
 
@@ -14,6 +15,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error(error);
+    reportBrowserError(error);
   }, [error]);
   const language =
     typeof document === "undefined" ? undefined : document.documentElement.lang;

@@ -4,12 +4,24 @@ import { z } from "zod";
 // (instrumentation.ts), so a missing variable fails there, not at its first use. API_URL is a server variable: no
 // NEXT_PUBLIC_ name, so the browser never sees it. CLERK_PUBLISHABLE_KEY has no NEXT_PUBLIC_ name either, because a build would
 // write such a value into the image: the server reads it at run time and gives it to ClerkProvider and clerkMiddleware, so one
-// image serves every environment.
-const schema = z.object({
-  API_URL: z.url(),
-  CLERK_PUBLISHABLE_KEY: z.string().min(1),
-  CLERK_SECRET_KEY: z.string().min(1),
-});
+// image serves every environment. Error tracking starts only with ERROR_TRACKING_DSN, which then needs its environment; the root
+// layout gives both to the browser at run time (F55). An empty value counts as missing, as Railway gives it for a missing shared one.
+const optional = <T extends z.ZodType>(type: T) =>
+  z.preprocess((value) => (value === "" ? undefined : value), type.optional());
+
+const schema = z
+  .object({
+    API_URL: z.url(),
+    CLERK_PUBLISHABLE_KEY: z.string().min(1),
+    CLERK_SECRET_KEY: z.string().min(1),
+    ERROR_TRACKING_DSN: optional(z.url()),
+    ERROR_TRACKING_ENVIRONMENT: optional(z.enum(["staging", "production"])),
+  })
+  .refine(
+    (variables) =>
+      !variables.ERROR_TRACKING_DSN || variables.ERROR_TRACKING_ENVIRONMENT,
+    { path: ["ERROR_TRACKING_ENVIRONMENT"] },
+  );
 
 export type Env = z.infer<typeof schema>;
 

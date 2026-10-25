@@ -8,6 +8,7 @@ import {
   crossFeatureImports,
   dateFormattingOutsideFormatter,
   declarationsOf,
+  differingFiles,
   duplicateRuleIds,
   enumLiterals,
   errorCodeMessages,
@@ -17,6 +18,7 @@ import {
   numericLayerClasses,
   physicalDirectionClasses,
   roleNameDecisions,
+  sdkImportRefusals,
   testFolders,
   testsBesideTheirFile,
   userFacingLiterals,
@@ -347,5 +349,41 @@ describe("architecture rules", () => {
     });
 
     expect(duplicateRuleIds(join(root, "ARCHITECTURE.md"))).toEqual([]);
+  });
+
+  it("DifferingFiles_FileInOneFolderOnly_IsAFinding", () => {
+    const root = folder({
+      "a/options.ts": "x",
+      "a/extra.ts": "y",
+      "b/options.ts": "x",
+    });
+
+    expect(differingFiles(join(root, "a"), join(root, "b"))).toEqual([
+      "extra.ts: in one folder only; keep both copies the same",
+    ]);
+  });
+
+  it("DifferingFiles_ChangedCopy_IsAFinding", () => {
+    const root = folder({ "a/options.ts": "x", "b/options.ts": "z" });
+
+    expect(differingFiles(join(root, "a"), join(root, "b"))).toEqual([
+      "options.ts: the two copies differ; keep them the same",
+    ]);
+  });
+
+  it("DifferingFiles_SameCopies_AreNoFinding", () => {
+    const root = folder({ "a/options.ts": "x", "b/options.ts": "x" });
+
+    expect(differingFiles(join(root, "a"), join(root, "b"))).toEqual([]);
+  });
+
+  // The rule lints probe files with the repository's own biome.json.
+  it("SdkImportRefusals_FeatureAndErrorTrackingFolder_RefusesTheFeatureOnly", () => {
+    expect(
+      sdkImportRefusals(join(import.meta.dirname, "../../.."), [
+        "apps/web/src/error-tracking/probe.ts",
+        "apps/web/src/features/probe/probe.ts",
+      ]),
+    ).toEqual(["apps/web/src/features/probe/probe.ts"]);
   });
 });

@@ -12,6 +12,7 @@ import {
 import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { reportError } from "@/error-tracking/report-error";
 
 type User = NonNullable<ReturnType<typeof useUser>["user"]>;
 type Totp = Awaited<ReturnType<User["createTOTP"]>>;
@@ -49,7 +50,9 @@ export function TotpEnrol({
     user
       .createTOTP()
       .then(setTotp)
-      .catch((reason: unknown) => setError(signInErrorKey(reason, "totp")));
+      .catch((reason: unknown) =>
+        setError(signInErrorKey(reason, "totp", reportError)),
+      );
   }, [user]);
 
   const submit = async (event: FormEvent) => {
@@ -64,7 +67,7 @@ export function TotpEnrol({
       verified.current = true;
       onEnrolled(totp?.backupCodes ?? (await user.createBackupCode()).codes);
     } catch (reason) {
-      setError(signInErrorKey(reason, "totp"));
+      setError(signInErrorKey(reason, "totp", reportError));
       setPending(false);
     }
   };

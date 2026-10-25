@@ -27,6 +27,7 @@ pnpm --filter @repo/platform build
 | `react-hook-form`, `@hookform/resolvers` | The create and the lifecycle dialogs of Organisations, with the generated Zod schemas (F11) | MIT |
 | `qrcode.react` | The QR code of the authenticator app's enrolment, drawn in the browser (F42) | ISC |
 | `next-themes` | Light, dark and system (F24) | MIT |
+| `@sentry/nextjs` | Error tracking: the errors of the browser and the server go to Better Stack, and the build uploads the source maps (F55). It brings `sentry`, the uploader, which runs in the build only | MIT; `sentry` is FSL-1.1-Apache-2.0, allowed by name in `.github/dependency-review-config.yml` (F38) |
 | `zod` | `src/env.ts` and the Zod error map (F7, F12) | MIT |
 | `vitest`, `jsdom`, `@vitejs/plugin-react`, `vite-tsconfig-paths` | The unit tests (development only) | MIT |
 | `@testing-library/react`, `@testing-library/dom`, `@testing-library/user-event`, `@testing-library/jest-dom` | The component tests (development only) | MIT |

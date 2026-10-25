@@ -1,4 +1,5 @@
 import path from "node:path";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
@@ -41,4 +42,22 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default createNextIntlPlugin()(nextConfig);
+// Error tracking (F55). The build gives each chunk a debug ID, and uploads the source maps only where CI gives the token
+// (SENTRY_AUTH_TOKEN, with SENTRY_URL, SENTRY_ORG and SENTRY_PROJECT); then it deletes them, so the image serves none. Without
+// the token the build uploads nothing and still deletes them. The release is the commit that CI passes as SOURCE_REVISION, the
+// same in every environment; without it the events name no release. Errors only: no tracing code, no replay, no route list.
+export default withSentryConfig(createNextIntlPlugin()(nextConfig), {
+  telemetry: false,
+  silent: !process.env.CI,
+  release: { name: process.env.SOURCE_REVISION, create: false },
+  buildTimeInstrumentation: false,
+  routeManifestInjection: false,
+  suppressOnRouterTransitionStartWarning: true,
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeTracing: true,
+    excludeReplayShadowDom: true,
+    excludeReplayIframe: true,
+    excludeReplayWorker: true,
+  },
+});

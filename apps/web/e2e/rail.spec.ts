@@ -10,6 +10,7 @@ const path = `/${northwind.slug}/settings/members`;
 const rail = (page: Page) => page.getByRole("navigation", { name: "Main" });
 const toggle = (page: Page) =>
   page.getByRole("button", { name: "Menu labels" });
+// The shell mounts again when the first reads answer (F26, F49), so a test waits until the rail has the width it expects.
 const widthOf = (page: Page) =>
   rail(page).evaluate((element) => element.getBoundingClientRect().width);
 
@@ -43,7 +44,7 @@ test("Rail_ExpandThenReload_StaysExpanded", async ({ page }) => {
 
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
   await expect(rail(page).getByText("Overview")).toBeVisible();
-  expect(await widthOf(page)).toBe(232);
+  await expect.poll(() => widthOf(page)).toBe(232);
   await expectAccessible(page);
 });
 
@@ -64,7 +65,7 @@ test("Rail_CollapseThenReload_StaysCollapsed", async ({
   await reload(page);
 
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
-  expect(await widthOf(page)).toBe(56);
+  await expect.poll(() => widthOf(page)).toBe(56);
   await expectAccessible(page);
 });
 
@@ -74,6 +75,6 @@ test("Rail_Tablet_KeepsTheIconRailWithoutAToggle", async ({ page }) => {
 
   await expect(rail(page)).toBeVisible();
   await expect(toggle(page)).toBeHidden();
-  expect(await widthOf(page)).toBe(56);
+  await expect.poll(() => widthOf(page)).toBe(56);
   await expectAccessible(page);
 });

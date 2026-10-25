@@ -35,12 +35,16 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const dir = directionOf(locale);
+  const { ERROR_TRACKING_DSN, ERROR_TRACKING_ENVIRONMENT } = env();
   return (
     <html
       lang={locale}
       dir={dir}
       className={`${geist.variable} ${geistMono.variable} ${plexArabic.variable} h-full antialiased`}
       suppressHydrationWarning
+      // The browser's error tracking reads these before any script runs: the server's values at run time, not the build's (F55).
+      data-error-tracking-dsn={ERROR_TRACKING_DSN}
+      data-error-tracking-environment={ERROR_TRACKING_ENVIRONMENT}
     >
       <body className="min-h-full">
         {/* The key comes from the server at run time, not from the build (F7). */}

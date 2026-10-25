@@ -80,7 +80,10 @@ function fakeSignIn(status = "needs_identifier"): FakeSignIn {
 
 const languages = { en, ar };
 
-function renderSignIn(locale: keyof typeof languages = "en") {
+function renderSignIn(
+  locale: keyof typeof languages = "en",
+  onUnexpectedError?: (error: Error) => void,
+) {
   return render(
     <NextIntlClientProvider
       locale={locale}
@@ -91,6 +94,7 @@ function renderSignIn(locale: keyof typeof languages = "en") {
         title="Sign in to Starter"
         brand="Starter"
         onLanguageChange={async () => {}}
+        onUnexpectedError={onUnexpectedError}
       />
     </NextIntlClientProvider>,
   );
@@ -244,6 +248,23 @@ describe("SignIn", () => {
     ).toBeInTheDocument();
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Clerk's English")).not.toBeInTheDocument();
+  });
+
+  // The app's error tracking gets the code once, and never the address or the code the person typed (F41, F55).
+  it("SignIn_UnknownErrorCode_GivesTheAppOnlyTheClerkCode", async () => {
+    const signIn = fakeSignIn();
+    signIn.emailCode.verifyCode.mockResolvedValue(refused("code_of_next_year"));
+    const onUnexpectedError = vi.fn();
+    renderSignIn("en", onUnexpectedError);
+    const user = await sendCodeTo("ali@northwind.io");
+
+    await enterCode(user);
+    await screen.findByText("Sign-in did not work. Try again.");
+
+    expect(onUnexpectedError).toHaveBeenCalledTimes(1);
+    expect(onUnexpectedError.mock.calls[0]?.[0].message).toBe(
+      'Sign-in: no message for the Clerk error code "code_of_next_year".',
+    );
   });
 
   it("SignIn_RightCode_FinalizesToTheRedirectOfThisApp", async () => {
