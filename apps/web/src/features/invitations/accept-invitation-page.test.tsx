@@ -54,6 +54,13 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+// The SDK is faked: a Clerk code without a message goes to error tracking, and nothing leaves the test (F41, F55).
+const sdk = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  captureRequestError: vi.fn(),
+}));
+vi.mock("@sentry/nextjs", () => sdk);
+
 const code = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f.s3cr3t";
 
 const pending: InvitationPreviewResponse = {
@@ -605,5 +612,28 @@ describe("AcceptInvitationPage", () => {
         "This invitation link has expired. Ask for a new invitation.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("AcceptInvitationPage_TicketWithAnUnknownCode_ReportsOnlyTheCode", async () => {
+    setUp();
+    clerk.isSignedIn = false;
+    clerk.signUp = {
+      status: "missing_requirements",
+      ticket: vi.fn(async () => ({
+        error: { code: "ticket_code_of_2027" },
+      })),
+    };
+
+    renderWithProviders(
+      <AcceptInvitationPage code={code} ticket="ticket_abc" />,
+    );
+
+    await vi.waitFor(() =>
+      expect(sdk.captureException).toHaveBeenCalledWith(
+        new Error(
+          'Sign-in: no message for the Clerk error code "ticket_code_of_2027".',
+        ),
+      ),
+    );
   });
 });

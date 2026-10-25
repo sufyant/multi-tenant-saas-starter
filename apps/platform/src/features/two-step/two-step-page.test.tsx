@@ -17,6 +17,19 @@ vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ signOut: clerk.signOut }),
 }));
 
+// The SDK is faked: a Clerk code without a message goes to error tracking, and nothing leaves the test (F41, F55).
+const sdk = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  captureRequestError: vi.fn(),
+}));
+vi.mock("@sentry/nextjs", () => sdk);
+
+const unknownCode = (code: string) =>
+  new ClerkAPIResponseError("refused", {
+    data: [{ code, message: "Clerk's English", long_message: "" }],
+    status: 422,
+  });
+
 const secret = "JBSWY3DPEHPK3PXPK7QN";
 const backupCodes = Array.from({ length: 10 }, (_, index) => `code${index}`);
 
@@ -139,6 +152,48 @@ describe("TwoStepPage", () => {
       ),
     ).toBeInTheDocument();
     expect(user.createBackupCode).not.toHaveBeenCalled();
+  });
+
+  it("TwoStepPage_UnknownClerkCodeAtEnrolment_ReportsOnlyTheCode", async () => {
+    const { user } = fakeClerk();
+    user.verifyTOTP.mockRejectedValueOnce(
+      unknownCode("enrolment_code_of_2027"),
+    );
+    const person = userEvent.setup();
+    renderWithProviders(<TwoStepPage />);
+
+    await enrol(person);
+
+    await vi.waitFor(() =>
+      expect(sdk.captureException).toHaveBeenCalledWith(
+        new Error(
+          'Sign-in: no message for the Clerk error code "enrolment_code_of_2027".',
+        ),
+      ),
+    );
+  });
+
+  it("TwoStepPage_UnknownClerkCodeAtTheChallenge_ReportsOnlyTheCode", async () => {
+    const { session } = fakeClerk({ totpEnabled: true });
+    session.attemptSecondFactorVerification.mockRejectedValueOnce(
+      unknownCode("challenge_code_of_2027"),
+    );
+    const person = userEvent.setup();
+    renderWithProviders(<TwoStepPage />);
+
+    await person.type(
+      await screen.findByRole("textbox", { name: "Code" }),
+      "654321",
+    );
+    await person.click(screen.getByRole("button", { name: "Continue" }));
+
+    await vi.waitFor(() =>
+      expect(sdk.captureException).toHaveBeenCalledWith(
+        new Error(
+          'Sign-in: no message for the Clerk error code "challenge_code_of_2027".',
+        ),
+      ),
+    );
   });
 
   it("TwoStepPage_EnrolledButTheSessionHasNoSecondFactor_AsksForTheChallenge", async () => {
