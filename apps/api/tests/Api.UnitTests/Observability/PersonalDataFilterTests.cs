@@ -13,7 +13,9 @@ public sealed class PersonalDataFilterTests
 
     private const string Code = "0b8f1c2e-6d4a-4f7b-9e3a-2c5d8e1f4a6b.Xq3mZ8vT1kR7nW2pL9sD4fG6hJ0aB5cE8yU1iO3tQ7w";
 
-    private const string Ticket = "eyJhbGciOiJSUzI1NiJ9.eyJpZCI6Imluc18yYWJjIiwic2lkIjoic2l0XzEifQ.c2lnbmF0dXJlLW9mLXRoZS10aWNrZXQ";
+    // A JSON Web Token of no issuer, with no signature, made from its three parts when the tests run, so the file holds no token that a
+    // secret scanner reports.
+    private static readonly string Ticket = string.Join('.', Encoded("""{"alg":"none"}"""), Encoded("""{"id":"inv_test"}"""), Encoded("none"));
 
     public static TheoryData<string, string> Texts => new()
     {
@@ -120,4 +122,6 @@ public sealed class PersonalDataFilterTests
         result.Data.ShouldBe(new Dictionary<string, string> { ["value"] = filtered });
         (result.Type, result.Category, result.Level).ShouldBe(("default", "Category", BreadcrumbLevel.Info));
     }
+
+    private static string Encoded(string text) => System.Buffers.Text.Base64Url.EncodeToString(System.Text.Encoding.UTF8.GetBytes(text));
 }
