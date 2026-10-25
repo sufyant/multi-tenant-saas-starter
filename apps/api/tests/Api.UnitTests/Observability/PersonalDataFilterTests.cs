@@ -2,7 +2,7 @@ using Api.Observability;
 using Sentry;
 using Sentry.Protocol;
 
-namespace Api.IntegrationTests.Observability;
+namespace Api.UnitTests.Observability;
 
 // Section 7, "Error tracking": no email address and no invitation token leaves the process in an event. The accept link carries the
 // invitation code, <tenant id>.<secret>, in its code parameter; the identity provider's sign-up link carries its ticket, a JWT, and the

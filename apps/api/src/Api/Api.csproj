@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Api.IntegrationTests" />
+    <InternalsVisibleTo Include="Api.UnitTests" />
   </ItemGroup>
 
   <ItemGroup>

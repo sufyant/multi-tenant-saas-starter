@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\Shared\Tenancy.IntegrationTests\Tenancy.IntegrationTests.csproj" />
     <ProjectReference Include="..\Api.IntegrationTests\Api.IntegrationTests.csproj" />
     <ProjectReference Include="..\Api.EndToEndTests\Api.EndToEndTests.csproj" />
+    <ProjectReference Include="..\Api.UnitTests\Api.UnitTests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
