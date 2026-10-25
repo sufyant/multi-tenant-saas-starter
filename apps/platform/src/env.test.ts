@@ -91,21 +91,25 @@ describe("env", () => {
 });
 
 // .railway/railway.ts gives the platform service what the image needs to start (F7, F46). The test evaluates the file with the
-// SDK's own context and reads the service that it declares.
-const graph = await program(
-  createRailwayContext({ projectName: "project", environment: "production" }),
-  project,
-);
-const service = graph.resources
-  ?.flat()
-  .find(
-    (resource) =>
-      "name" in resource && resource.name === infrastructure.service,
-  ) as unknown as {
+// SDK's own context and reads the service that it declares, in each Railway environment.
+type Service = {
   source?: unknown;
   deploy: { healthcheckPath: string };
   variables: Record<string, unknown>;
 };
+const serviceIn = async (environment: string) =>
+  (
+    await program(
+      createRailwayContext({ projectName: "project", environment }),
+      project,
+    )
+  ).resources
+    ?.flat()
+    .find(
+      (resource) =>
+        "name" in resource && resource.name === infrastructure.service,
+    ) as unknown as Service;
+const service = await serviceIn("production");
 
 const exampleKeys = readFileSync(
   path.join(__dirname, "..", ".env.example"),
@@ -154,5 +158,31 @@ describe("env in railway.ts", () => {
   // CI sets the image by digest, as for the API.
   it("DefineService_TheApp_HasNoSource", () => {
     expect(service.source).toBeUndefined();
+  });
+
+  // Each app has its own Errors application, so its own DSN: a shared variable without a value in the repository (F55).
+  it("DefineService_TheApp_ReadsItsErrorTrackingDsnFromItsSharedVariable", () => {
+    expect(service.variables.ERROR_TRACKING_DSN).toEqual(
+      shared("PLATFORM_ERROR_TRACKING_DSN"),
+    );
+  });
+
+  // The environment tag of each event is set from the Railway environment, as the API's (F55).
+  it.each([
+    ["staging", "staging"],
+    ["production", "production"],
+  ])(
+    "DefineService_InRailwayEnvironment_%s_TagsTheErrorsWith_%s",
+    async (environment, tag) => {
+      const inEnvironment = await serviceIn(environment);
+
+      expect(inEnvironment.variables.ERROR_TRACKING_ENVIRONMENT).toEqual(
+        literal(tag),
+      );
+    },
+  );
+
+  it("DefineService_UnknownRailwayEnvironment_StopsThePlan", async () => {
+    await expect(serviceIn("preview")).rejects.toThrow("preview");
   });
 });
