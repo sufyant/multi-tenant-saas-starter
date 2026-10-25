@@ -64,7 +64,7 @@ export function OrgMenu({
               {slug}
             </bdi>
           </div>
-          <Tag>{memberRole}</Tag>
+          <Tag variant="text">{memberRole}</Tag>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link href={switchHref} />}>

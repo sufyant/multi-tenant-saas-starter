@@ -154,7 +154,10 @@ export function UserMenu({
           </DropdownMenuRadioGroup>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onSignOut} className="min-h-9 gap-2.5 px-2 text-body">
+        <DropdownMenuItem
+          onClick={onSignOut}
+          className="min-h-9 gap-2.5 px-2 text-body"
+        >
           <Icon icon={LogOutIcon} directional />
           {signOutLabel}
         </DropdownMenuItem>
