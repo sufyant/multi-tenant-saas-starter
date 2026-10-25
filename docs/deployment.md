@@ -870,6 +870,7 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
       | "Spike protection starts sampling exceptions" | On |
       | "New release is observed" | Off: the channel holds only what needs action |
       | "How we post updates" | Thread-based |
+      | "Send important updates also to #&lt;channel&gt;", under "Thread-based" | On: an important update does not stay hidden in a thread. Better Stack shows the channel of sub-step 3 in the name |
 
       "Error reaches an occurrence milestone" stays off and "Error is automatically re-opened" stays on, as in the table above. Keep the other settings at their defaults. If Better Stack changes a name, write the new name into this step in a pull request.
    5. Install Slack's mobile app and allow its notifications for the channel. This is the only alert on the phone until step 47.
