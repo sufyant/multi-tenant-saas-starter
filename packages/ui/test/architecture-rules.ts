@@ -145,6 +145,32 @@ export function colorLiterals(root: string, options: Options = {}): Finding[] {
     );
 }
 
+// A z- class with a number or an arbitrary value, except the local `z-10` (a lookahead skips it).
+const numericLayerClass =
+  /(?<=^|[\s"'`{(:!])-?z-(?!10(?![\w[\]-]))(?:\d+|\[[^\]]*\])(?![\w[\]-])/g;
+
+/** Rule F53: no numeric z-index class but the local `z-10`. A layer across the page is a token: `z-sticky`, `z-popover`. */
+export function numericLayerClasses(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  return filesUnder(root)
+    .filter(
+      (path) =>
+        /\.(ts|tsx|css)$/.test(path) &&
+        !isGenerated(path) &&
+        !ignored(root, path, options),
+    )
+    .flatMap((path) =>
+      linesMatching(
+        root,
+        path,
+        numericLayerClass,
+        (match) => `numeric layer class "${match}"; use a layer token`,
+      ),
+    );
+}
+
 const userFacingAttributes = new Set([
   "title",
   "placeholder",
