@@ -37,6 +37,14 @@
         "health_path_of": ".railway/platform.json",
         "monitor_type": "status"
       }
-    ]
+    ],
+    "heartbeat_defaults": {
+      "email": true,
+      "push": false,
+      "sms": false,
+      "call": false,
+      "policy_id": null
+    },
+    "heartbeats": [{ "name": "api-worker", "period": 180, "grace": 120 }]
   }
 }
