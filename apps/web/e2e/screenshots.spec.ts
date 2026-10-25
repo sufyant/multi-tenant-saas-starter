@@ -77,6 +77,11 @@ const rowAction = (menu: string, item: string) => async (page: Page) => {
   await page.getByRole("menuitem", { name: item }).click();
   await page.getByRole("alertdialog").waitFor();
 };
+/** Opens the user menu and waits until it shows. */
+const openUserMenu = (name: string) => async (page: Page) => {
+  await page.getByRole("button", { name }).click();
+  await expect(page.getByRole("menu")).toBeVisible();
+};
 const shots: {
   name: string;
   file: string;
@@ -263,6 +268,42 @@ const shots: {
     rail: false,
     open: (page) =>
       page.getByRole("button", { name: "إجراءات niall@northwind.io" }).click(),
+  },
+  {
+    name: "UserMenu_OwnerEnglishLightDesktop",
+    file: "user-menu-owner-en-light-desktop",
+    role: BuiltInRole.Owner,
+    language: Language.En,
+    scheme: "light",
+    width: 1440,
+    height: 900,
+    query: "",
+    rail: false,
+    open: openUserMenu("AY Account"),
+  },
+  {
+    name: "UserMenu_OwnerArabicDarkDesktop",
+    file: "user-menu-owner-ar-dark-desktop",
+    role: BuiltInRole.Owner,
+    language: Language.Ar,
+    scheme: "dark",
+    width: 1440,
+    height: 900,
+    query: "",
+    rail: false,
+    open: openUserMenu("AY الحساب"),
+  },
+  {
+    name: "UserMenu_OwnerEnglishLightPhone",
+    file: "user-menu-owner-en-light-phone",
+    role: BuiltInRole.Owner,
+    language: Language.En,
+    scheme: "light",
+    width: 390,
+    height: 844,
+    query: "",
+    rail: false,
+    open: openUserMenu("AY Account"),
   },
   {
     name: "MembersByRole_OwnerEnglishLightDesktop",
