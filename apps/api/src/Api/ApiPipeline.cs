@@ -29,6 +29,9 @@ namespace Api;
 // the integration tests compose it with test endpoints.
 internal static class ApiPipeline
 {
+    // The tag of the checks that decide whether a host is ready: the readiness endpoint and the worker's heartbeat run them.
+    public const string ReadyTag = "ready";
+
     private const string HealthPath = "/health";
 
     // FluentValidation validators are found only in the handler assemblies known when validation is switched on, so they are
@@ -55,6 +58,8 @@ internal static class ApiPipeline
         {
             builder.Services.AddHostedService<IdempotencyCleanup>();
         }
+
+        builder.AddHeartbeat(role);
 
         builder.Services.AddUserRateLimiting();
         builder.Services.AddHealthChecks();
@@ -94,7 +99,7 @@ internal static class ApiPipeline
         var managementPort = app.Configuration.Read().ManagementPort;
         app.MapWhen(context => context.Connection.LocalPort == managementPort, management => management
             .UseHealthChecks($"{HealthPath}/live", new HealthCheckOptions { Predicate = _ => false })
-            .UseHealthChecks($"{HealthPath}/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }));
+            .UseHealthChecks($"{HealthPath}/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains(ReadyTag) }));
 
         // Routing runs first so tenant resolution sees the tenant id. The rate limiter needs only the user, so a caller over their limit
         // costs no membership lookup. Authorization comes last, so callers it turns away have been rate limited too.

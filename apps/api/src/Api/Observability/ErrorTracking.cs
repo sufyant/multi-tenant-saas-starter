@@ -19,6 +19,9 @@ internal static class ErrorTracking
 
     private const string RoleTag = "role";
 
+    // The health check service's log of each check it runs: a check that fails is logged at Error.
+    private const string HealthCheckCategory = "Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService";
+
     private const string EfCoreCommandErrorEventName = "Microsoft.EntityFrameworkCore.Database.Command.CommandError";
 
     // The settings are read while the host is composed, since the SDK is registered only with a DSN, and checked on start like every
@@ -62,13 +65,15 @@ internal static class ErrorTracking
             // A log at Error or above is an event; a log below it is a breadcrumb of the next event.
             sentry.MinimumEventLevel = LogLevel.Error;
 
-            // Two logs at Error that report no failure of their own. Wolverine logs each put-back and each scheduled retry of a message at
+            // Three logs at Error that report no failure of their own. Wolverine logs each put-back and each scheduled retry of a message at
             // Error, and its level cannot be changed; the move to the dead letter queue is the alert. EF Core logs a command the database
             // refused, then throws an exception around the database's to the code, which reports it; the SDK leaves out EF Core's other
-            // such logs itself (SentryLogger).
+            // such logs itself (SentryLogger). The health check service logs a check that fails; the alert is the uptime monitor of the web
+            // host or the missing heartbeat of the worker, which runs the checks every interval.
             sentry.AddLogEntryFilter((category, _, eventId, _) =>
                 (category == WolverineRuntimeCategory && eventId.Id == WolverineRescheduledEventId)
-                || eventId.Name == EfCoreCommandErrorEventName);
+                || eventId.Name == EfCoreCommandErrorEventName
+                || category == HealthCheckCategory);
         });
 
         if (builder.Configuration.Read().Role is { Length: > 0 } role)

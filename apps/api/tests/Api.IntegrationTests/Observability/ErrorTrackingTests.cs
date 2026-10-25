@@ -220,7 +220,7 @@ public sealed partial class ErrorTrackingTests(Database database)
 
         await Waiting.UntilAsync(() => Logged(events, marker).Count > 0);
         var sentryEvent = Logged(events, marker).ShouldHaveSingleItem();
-        SentText(sentryEvent).ShouldNotContain(Address);
+        ErrorEvents.Text(sentryEvent).ShouldNotContain(Address);
         sentryEvent.Message!.Formatted.ShouldBe($"No invitation for \"[email]\": \"{marker}\"");
         sentryEvent.SentryExceptions.ShouldNotBeNull().ShouldHaveSingleItem().Value.ShouldBe("No account for [email]");
     }
@@ -278,18 +278,6 @@ public sealed partial class ErrorTrackingTests(Database database)
 
     private static List<SentryEvent> Logged(ErrorEvents events, string marker) =>
         events.Where(sentryEvent => sentryEvent.Message?.Formatted?.Contains(marker, StringComparison.Ordinal) == true);
-
-    // Every text of the event as the SDK writes it to the wire.
-    private static string SentText(SentryEvent sentryEvent)
-    {
-        using var stream = new MemoryStream();
-        using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
-        {
-            sentryEvent.WriteTo(writer, null);
-        }
-
-        return Encoding.UTF8.GetString(stream.ToArray());
-    }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Something failed: {Marker}")]
     private static partial void LogFailed(ILogger logger, string marker);

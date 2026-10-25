@@ -29,6 +29,18 @@ internal sealed class ErrorEvents : ITransport
     // The SDK sends from a queue of its own. A test that expects no event, or no second one, waits until the queue is empty.
     public static Task FlushAsync() => SentrySdk.FlushAsync(TimeSpan.FromSeconds(5));
 
+    // Every text of the event as the SDK writes it to the wire, its breadcrumbs included.
+    public static string Text(SentryEvent sentryEvent)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            sentryEvent.WriteTo(writer, null);
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
     public void SendTo(IServiceCollection services) =>
         services.Configure<SentryAspNetCoreOptions>(options => options.Transport = this);
 
