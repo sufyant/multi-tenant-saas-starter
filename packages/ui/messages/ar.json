@@ -155,7 +155,7 @@
     "languageSearch": "ابحث عن لغة",
     "languageEmpty": "لم يتم العثور على لغة",
     "checkEmailTitle": "تحقّق من بريدك الإلكتروني",
-    "checkEmailText": "أرسلنا رمزًا من 6 أرقام إلى <email></email>. يعمل الرمز لمدة 10 دقائق.",
+    "checkEmailText": "أرسلنا رمزًا من 6 أرقام إلى <email></email>.",
     "code": "الرمز",
     "signIn": "تسجيل الدخول",
     "noCode": "لم يصلك؟",

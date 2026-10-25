@@ -155,7 +155,7 @@
     "languageSearch": "Dil ara",
     "languageEmpty": "Dil bulunamadı",
     "checkEmailTitle": "E-postanızı kontrol edin",
-    "checkEmailText": "<email></email> adresine 6 haneli bir kod gönderdik. Kod 10 dakika geçerlidir.",
+    "checkEmailText": "<email></email> adresine 6 haneli bir kod gönderdik.",
     "code": "Kod",
     "signIn": "Giriş yap",
     "noCode": "Gelmedi mi?",

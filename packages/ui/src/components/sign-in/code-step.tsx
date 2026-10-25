@@ -19,7 +19,7 @@ export type CodeStepProps = {
   resent?: boolean;
 };
 
-/** The email code (the SignInCode board): the address, the ten minutes, six digits, and a way to a new code or another address. */
+/** The email code (the SignInCode board): the address, six digits, and a way to a new code or another address. */
 export function CodeStep({
   email,
   onSubmit,

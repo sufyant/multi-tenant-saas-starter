@@ -155,7 +155,7 @@
     "languageSearch": "Search languages",
     "languageEmpty": "No language found",
     "checkEmailTitle": "Check your email",
-    "checkEmailText": "We sent a 6-digit code to <email></email>. It works for 10 minutes.",
+    "checkEmailText": "We sent a 6-digit code to <email></email>.",
     "code": "Code",
     "signIn": "Sign in",
     "noCode": "Didn’t get it?",
