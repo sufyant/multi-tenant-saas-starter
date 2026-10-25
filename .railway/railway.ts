@@ -18,8 +18,8 @@
 // Apply deletes a service variable that is not in this file. Add every variable of every service
 // here, not in the Railway dashboard.
 //
-// The same file serves the environments staging and production. No setting differs today; a
-// setting that must differ can read `ctx.environment`.
+// The same file serves the environments staging and production. Only the API's ASPNETCORE_ENVIRONMENT
+// differs, from `ctx.environment`.
 //
 // Apply it by hand to each environment, from the repository root, after `railway login` and
 // `railway link` to that environment:
@@ -49,6 +49,9 @@ import web from "./web.json" with { type: "json" };
 // No API service references a variable of the `postgres` service. DATABASE_URL, PGUSER and
 // PGPASSWORD hold the superuser; the API connects as api_application only (R2, R7).
 //
+// Host:ErrorTracking:Dsn is optional: the API sends its errors to the error tracker only with it. A
+// missing shared variable gives an empty value, and an empty DSN turns error tracking off.
+//
 // ConfigurationDocumentTests in apps/api checks that this file sets every required key, and only
 // keys that configuration.md documents.
 const sharedVariables = [
@@ -61,11 +64,27 @@ const sharedVariables = [
   "ControlPlane__Invitations__AcceptUrl",
   "Notifications__Resend__ApiKey",
   "Notifications__Resend__From",
+  "Host__ErrorTracking__Dsn",
 ];
+
+// ASP.NET Core's name of each environment, capitalised as its standard names are, so that a file such as
+// appsettings.Staging.json loads on Linux, where file names are case sensitive. The error tracker names
+// the environment of each event from it (apps/api/docs/ARCHITECTURE.md, section 7, "Error tracking").
+const aspNetEnvironments: Record<string, string> = {
+  staging: "Staging",
+  production: "Production",
+};
 
 export default defineRailway((ctx) => {
   if (!ctx.projectName) {
     throw new Error("No Railway project is linked. Run `railway link` first.");
+  }
+
+  const aspNetEnvironment = aspNetEnvironments[ctx.environment ?? ""];
+  if (!aspNetEnvironment) {
+    throw new Error(
+      `The Railway environment "${ctx.environment}" has no ASP.NET Core environment name.`,
+    );
   }
 
   // The API's region. The database runs there too, next to the API.
@@ -85,7 +104,7 @@ export default defineRailway((ctx) => {
       healthcheck: infrastructure.healthPath,
       env: {
         Host__Role: role,
-        ASPNETCORE_ENVIRONMENT: "Production",
+        ASPNETCORE_ENVIRONMENT: aspNetEnvironment,
         // Railway's health check uses PORT; the public domain targets 8080. The API ignores PORT and
         // answers the health endpoints only on its management port (Railway docs, "Healthchecks",
         // "Configure the healthcheck port").

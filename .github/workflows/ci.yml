@@ -176,10 +176,12 @@ jobs:
           persist-credentials: false
 
       # The labels name the repository and the commit that the image comes from (OCI image spec,
-      # "Pre-Defined Annotation Keys").
+      # "Pre-Defined Annotation Keys"). The build argument puts the commit into the image too, as the
+      # release that each error event names (apps/api/Dockerfile).
       - name: Build the image
         run: |
           docker build -t api \
+            --build-arg "SOURCE_REVISION=$GITHUB_SHA" \
             --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             apps/api
