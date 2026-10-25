@@ -6,7 +6,7 @@ import {
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -19,8 +19,8 @@ import {
 } from "vitest";
 import { TenantProvider } from "@/shared/tenant-context";
 import { renderWithProviders } from "../../../test/render";
-import { roleOf } from "../../../test/tenant";
-import { TenantShell } from "./tenant-shell";
+import { problem, roleOf } from "../../../test/tenant";
+import { PendingTenantShell, TenantShell } from "./tenant-shell";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -67,7 +67,10 @@ const answers = (total: number) => [
 ];
 
 const shell = () => (
-  <TenantProvider slug="northwind">
+  <TenantProvider
+    slug="northwind"
+    pending={<PendingTenantShell slug="northwind" railExpanded={false} />}
+  >
     <TenantShell railExpanded={false}>Content</TenantShell>
   </TenantProvider>
 );
@@ -143,4 +146,149 @@ describe("TenantShell", () => {
       expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     },
   );
+
+  describe("while the first reads come", () => {
+    const waiting = () =>
+      http.get("*/v1/me/tenants", async () => {
+        await delay("infinite");
+      });
+    const meWaits = () =>
+      http.get("*/v1/me", async () => {
+        await delay("infinite");
+      });
+
+    it("TenantShell_ListMyTenantsWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
+      server.use(waiting(), meWaits());
+
+      renderWithProviders(shell());
+
+      const rail = screen.getByRole("navigation", { name: "Main" });
+      expect(
+        within(rail).getByRole("link", { name: "Settings" }),
+      ).toHaveAttribute("href", "/northwind/settings/general");
+      expect(screen.getByRole("banner")).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: "Breadcrumb" }),
+      ).toHaveTextContent("Preferences");
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_ListMyTenantsWaits_ShowsNoSkeletonBeforeTheDelayAndTheSkeletonAfterIt", async () => {
+      server.use(waiting(), meWaits());
+
+      renderWithProviders(shell());
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(
+        await screen.findByRole("status", { name: "Loading" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("main")).toContainElement(
+        screen.getByRole("status", { name: "Loading" }),
+      );
+    });
+
+    it("TenantShell_GetMyTenantWaits_KeepsTheShellAndWaitsInTheContent", async () => {
+      server.use(
+        answers(1)[0],
+        http.get("*/v1/tenants/:tenantId", async () => {
+          await delay("infinite");
+        }),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("status", { name: "Loading" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: "Main" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_SlugNotInTheList_ReplacesTheShellWithNoAccessYet", async () => {
+      server.use(
+        http.get("*/v1/me/tenants", () =>
+          HttpResponse.json({ items: [], page: 1, pageSize: 100, total: 0 }),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", { name: "No access yet" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_SuspendedInTheList_ReplacesTheShellWithTheSuspendedPage", async () => {
+      server.use(
+        http.get("*/v1/me/tenants", () =>
+          HttpResponse.json({
+            items: [{ ...northwind, status: "suspended" }],
+            page: 1,
+            pageSize: 100,
+            total: 1,
+          }),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Northwind Traders is suspended",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_GetMyTenantSaysClosed_ReplacesTheShellWithTheClosedPage", async () => {
+      server.use(
+        answers(1)[0],
+        http.get("*/v1/tenants/:tenantId", () =>
+          problem(403, ErrorCode.TenantClosed),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Northwind Traders is closed",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("TenantShell_ListMyTenantsSaysSuspendedUser_ReplacesTheShellWithTheAccountPage", async () => {
+      server.use(
+        http.get("*/v1/me/tenants", () =>
+          problem(403, ErrorCode.UserSuspended),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(shell());
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Your account is suspended",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+  });
 });

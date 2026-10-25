@@ -8,7 +8,7 @@ import {
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
-import { HttpResponse, http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -472,5 +472,122 @@ describe("PlatformShell", () => {
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
     ).toBeInTheDocument();
+  });
+
+  describe("while the first reads come", () => {
+    const meWaits = () =>
+      http.get("*/v1/me", async () => {
+        await delay("infinite");
+      });
+
+    it("PlatformShell_GetMeWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
+      navigation.pathname = "/users";
+      server.use(meWaits());
+
+      renderWithProviders(
+        <PlatformShell railExpanded={false}>Content</PlatformShell>,
+      );
+
+      const rail = screen.getByRole("navigation", { name: "Main" });
+      expect(within(rail).getByRole("link", { name: "Users" })).toHaveAttribute(
+        "href",
+        "/users",
+      );
+      expect(screen.getByRole("banner")).toHaveTextContent(/^Platform/);
+      expect(
+        screen.getByRole("navigation", { name: "Breadcrumb" }),
+      ).toHaveTextContent("Users");
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("PlatformShell_GetMeWaits_ShowsNoSkeletonBeforeTheDelayAndTheSkeletonAfterIt", async () => {
+      server.use(meWaits());
+
+      renderWithProviders(
+        <PlatformShell railExpanded={false}>Content</PlatformShell>,
+      );
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(
+        await screen.findByRole("status", { name: "Loading" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("main")).toContainElement(
+        screen.getByRole("status", { name: "Loading" }),
+      );
+    });
+
+    it("PlatformShell_DoorWaits_KeepsTheShellAndShowsNoContent", async () => {
+      server.use(
+        getGetMeMockHandler(
+          getGetMeResponseMock({ isSystemAdmin: false, language: "en" }),
+        ),
+        http.get("*/v1/platform/tenants", async () => {
+          await delay("infinite");
+        }),
+      );
+
+      renderWithProviders(
+        <PlatformShell railExpanded={false}>Content</PlatformShell>,
+      );
+
+      expect(
+        await screen.findByRole("status", { name: "Loading" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: "Main" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("PlatformShell_NoSystemAdmin_ReplacesTheShellWithNoAccess", async () => {
+      server.use(
+        getGetMeMockHandler(
+          getGetMeResponseMock({ isSystemAdmin: false, language: "en" }),
+        ),
+        http.get("*/v1/platform/tenants", () =>
+          HttpResponse.json(refused, { status: 403 }),
+        ),
+      );
+
+      renderWithProviders(
+        <PlatformShell railExpanded={false}>Content</PlatformShell>,
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: "You don’t have access" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("PlatformShell_GetMeSaysSuspended_ReplacesTheShellWithTheAccountPage", async () => {
+      server.use(
+        http.get("*/v1/me", () =>
+          HttpResponse.json(
+            {
+              status: 403,
+              title: "Forbidden",
+              code: ErrorCode.UserSuspended,
+              traceId: "00-trace-03",
+            },
+            { status: 403 },
+          ),
+        ),
+      );
+
+      renderWithProviders(
+        <PlatformShell railExpanded={false}>Content</PlatformShell>,
+      );
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Your account is suspended",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });
