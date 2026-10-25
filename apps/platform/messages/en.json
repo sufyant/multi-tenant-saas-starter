@@ -298,7 +298,7 @@
     "name": "Name",
     "added": "Added",
     "root": "Root",
-    "you": "You",
+    "you": "(you)",
     "rootHint": "Root admins come from the platform’s configuration.",
     "actions": "Actions",
     "actionsFor": "Actions for {name}",

@@ -69,7 +69,7 @@ export function MembersTable({
   const name = (member: MemberResponse) => (
     <span className="flex items-center gap-2">
       <bdi className="truncate font-medium">{nameText(member)}</bdi>
-      {member.userId === meId && <Tag>{t("members.you")}</Tag>}
+      {member.userId === meId && <Tag variant="text">{t("members.you")}</Tag>}
     </span>
   );
 

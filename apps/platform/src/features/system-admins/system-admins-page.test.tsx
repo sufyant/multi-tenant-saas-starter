@@ -71,6 +71,9 @@ describe("SystemAdminsPage", () => {
 
     const row = await rowOf("Rory Brennan");
     expect(row.getByText("Root")).toBeVisible();
+    expect(row.getByText("Root").querySelector("svg")).toHaveClass(
+      "lucide-key",
+    );
     expect(
       row.getByText("Root admins come from the platform’s configuration."),
     ).toBeVisible();
@@ -85,7 +88,7 @@ describe("SystemAdminsPage", () => {
     renderWithProviders(<SystemAdminsPage />);
 
     const row = await rowOf("Ciara Byrne");
-    expect(row.getByText("You")).toBeVisible();
+    expect(row.getByText("(you)")).toHaveClass("text-muted-foreground");
     await userEvent.click(
       row.getByRole("button", { name: "Actions for Ciara Byrne" }),
     );

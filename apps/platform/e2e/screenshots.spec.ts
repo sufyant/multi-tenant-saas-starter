@@ -59,3 +59,39 @@ for (const { language, scheme, size } of variants)
         fullPage: true,
       });
     });
+
+// The user menu open, as the UserMenu boards draw it: English light, Arabic dark and a phone.
+const menus = [
+  {
+    language: Language.En,
+    scheme: "light",
+    size: "desktop",
+    name: "SK Account",
+  },
+  { language: Language.Ar, scheme: "dark", size: "desktop", name: "SK الحساب" },
+  { language: Language.En, scheme: "light", size: "phone", name: "SK Account" },
+] as const;
+
+for (const { language, scheme, size, name } of menus)
+  test(`Screenshot_user-menu-${language}-${scheme}-${size}`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.setViewportSize(sizes[size]);
+    await context.addCookies([
+      { name: localeCookie, value: language, url: baseURL },
+    ]);
+    await mockPlatform(page, language);
+
+    await page.goto("/users");
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("button", { name }).click();
+    await page.getByRole("menu").waitFor();
+
+    await page.screenshot({
+      path: `${folder}/user-menu-${language}-${scheme}-${size}.png`,
+    });
+  });

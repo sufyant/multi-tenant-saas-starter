@@ -28,6 +28,17 @@ const props = {
   emptyLabel: "No language found",
 };
 
+const filter = {
+  label: "Filter by role",
+  variant: "filter" as const,
+  options: [
+    { id: "all", label: "All roles" },
+    { id: "billing", label: "Role: Billing lead" },
+  ],
+  searchPlaceholder: "Search roles",
+  emptyLabel: "No role found",
+};
+
 describe("Combobox", () => {
   it("Combobox_TypeTheNameInTheUiLanguage_FindsTheOptionInItsOwnScript", async () => {
     render(<Combobox {...props} options={languages} value="en-IE" />);
@@ -114,5 +125,35 @@ describe("Combobox", () => {
     expect(
       screen.getByRole("combobox", { name: "Language and format" }),
     ).toHaveAccessibleDescription("Dates use this format.");
+  });
+  it("Combobox_Filter_NamesTheWholeSetWhenNothingIsChosen", () => {
+    render(<Combobox {...filter} value="all" />);
+
+    const trigger = screen.getByRole("combobox", { name: "Filter by role" });
+    expect(trigger).toHaveTextContent(/^All roles$/);
+    expect(screen.getByText("Filter by role")).toHaveClass("sr-only");
+  });
+
+  it("Combobox_FilterWithAChoice_NamesTheFilterAndTheValue", () => {
+    render(<Combobox {...filter} value="billing" />);
+
+    expect(
+      screen.getByRole("combobox", { name: "Filter by role" }),
+    ).toHaveTextContent(/^Role: Billing lead$/);
+  });
+
+  // jsdom draws nothing, so the look is the classes of the tokens; Playwright compares the drawn heights on Members.
+  it("Combobox_Filter_HasTheSearchFieldsBorderAndHeightAndAChevronAtTheEnd", () => {
+    render(<Combobox {...filter} value="all" />);
+
+    const trigger = screen.getByRole("combobox", { name: "Filter by role" });
+    expect(trigger).toHaveClass(
+      "h-control-md",
+      "pointer-coarse:h-control-lg",
+      "border",
+      "border-input",
+      "min-w-35",
+    );
+    expect(trigger.lastElementChild).toHaveClass("lucide-chevron-down");
   });
 });

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
@@ -7,7 +7,7 @@ import { UserMenu } from "./user-menu";
 const props = {
   name: "Ayşe Yılmaz",
   email: "ayse@northwind.io",
-  initials: "AY",
+  person: { firstName: "Ayşe", lastName: "Yılmaz" },
   label: "Account",
   languageName: "English",
   languageLabel: "Language",
@@ -87,5 +87,123 @@ describe("UserMenu", () => {
       "dir",
       "ltr",
     );
+  });
+  it("UserMenu_Trigger_IsTheAvatarAlone", () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    const trigger = screen.getByRole("button", { name: "AY Account" });
+    expect(trigger.querySelector('[data-slot="avatar"]')).toHaveTextContent(
+      "AY",
+    );
+    expect(trigger).toHaveClass(
+      "size-control-md",
+      "max-tablet:size-control-lg",
+      "rounded-full",
+    );
+  });
+
+  it("UserMenu_Open_ShowsTheNameThenTheEmailAndBothWrap", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    const menu = await screen.findByRole("menu");
+    const name = within(menu).getByText("Ayşe Yılmaz");
+    const email = within(menu).getByText("ayse@northwind.io");
+    expect(name.compareDocumentPosition(email)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(name).toHaveClass("font-medium", "text-body", "wrap-anywhere");
+    expect(email).toHaveClass(
+      "text-small",
+      "text-muted-foreground",
+      "wrap-anywhere",
+    );
+    expect(name.className + email.className).not.toMatch(/truncate/);
+  });
+
+  it("UserMenu_Language_IsOneRowWithTheCurrentLanguageAtItsEnd", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    const language = await screen.findByRole("menuitem", {
+      name: /^Language\s*English/,
+    });
+    expect(language).toHaveAttribute("href", props.preferencesHref);
+    expect(within(language).getByText("English")).toHaveClass(
+      "text-muted-foreground",
+    );
+  });
+
+  it("UserMenu_Themes_AreThreeIconsNamedLightDarkSystem", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    const themes = await screen.findAllByRole("menuitemradio");
+    expect(themes.map((theme) => theme.getAttribute("aria-label"))).toEqual([
+      "Light",
+      "Dark",
+      "System",
+    ]);
+    expect(themes.map((theme) => theme.textContent)).toEqual(["", "", ""]);
+    expect(
+      themes.map((theme) => theme.querySelector("svg")?.classList[1]),
+    ).toEqual(["lucide-sun", "lucide-moon", "lucide-monitor"]);
+    expect(themes[0]).toHaveClass("size-7", "rounded-full");
+  });
+
+  it("UserMenu_ChosenTheme_IsCheckedOnPrimarySubtle", async () => {
+    render(
+      <UserMenu
+        {...props}
+        theme="dark"
+        onThemeChange={vi.fn()}
+        onSignOut={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    const dark = await screen.findByRole("menuitemradio", { name: "Dark" });
+    expect(dark).toHaveAttribute("aria-checked", "true");
+    expect(dark).toHaveClass(
+      "data-checked:bg-primary-subtle",
+      "data-checked:text-primary-subtle-foreground",
+    );
+    expect(
+      screen.getByRole("menuitemradio", { name: "System" }),
+    ).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("UserMenu_PointAtATheme_ShowsItsNameAsATooltip", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    await userEvent.hover(
+      await screen.findByRole("menuitemradio", { name: "Dark" }),
+    );
+
+    const tip = await screen.findByText("Dark", {
+      selector: '[data-slot="tooltip-content"]',
+    });
+    expect(tip).toBeVisible();
+  });
+
+  it("UserMenu_PickATheme_KeepsTheMenuOpen", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    await userEvent.click(
+      await screen.findByRole("menuitemradio", { name: "Light" }),
+    );
+
+    expect(screen.getByRole("menu")).toBeVisible();
+  });
+
+  it("UserMenu_SignOut_FollowsASeparator", async () => {
+    render(<UserMenu {...props} onThemeChange={vi.fn()} onSignOut={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Account/ }));
+    const signOut = await screen.findByRole("menuitem", { name: "Sign out" });
+
+    expect(signOut.previousElementSibling).toHaveAttribute("role", "separator");
   });
 });

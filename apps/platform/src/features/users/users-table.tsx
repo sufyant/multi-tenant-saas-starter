@@ -6,6 +6,7 @@ import {
   type UserResponse,
 } from "@repo/api-client";
 import { Avatar } from "@repo/ui/components/avatar";
+import { KeyIcon, type LucideIcon } from "@repo/ui/components/icon";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Status } from "@repo/ui/components/status";
 import {
@@ -40,21 +41,21 @@ export function AdminTags({
   linked?: boolean;
 }) {
   const t = useTranslations("users");
-  const tag = (label: string) =>
+  const tag = (label: string, icon?: LucideIcon) =>
     linked ? (
       <Link
         href={settingsPages.systemAdmins}
-        className="rounded-md hover:underline"
+        className="rounded-full hover:underline"
       >
-        <Tag>{label}</Tag>
+        <Tag icon={icon}>{label}</Tag>
       </Link>
     ) : (
-      <Tag>{label}</Tag>
+      <Tag icon={icon}>{label}</Tag>
     );
   return (
     <>
       {user.isSystemAdmin && tag(t("systemAdmin"))}
-      {user.isRootSystemAdmin && tag(t("root"))}
+      {user.isRootSystemAdmin && tag(t("root"), KeyIcon)}
     </>
   );
 }

@@ -96,13 +96,27 @@ describe("MembersPage", () => {
     ).not.toHaveAttribute("aria-disabled");
   });
 
-  it("MembersPage_YourOwnRow_HasTheYouTag", async () => {
+  it("MembersPage_YourOwnRow_SaysYouInMutedTextAfterTheName", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
     renderInTenant(<MembersPage />);
 
-    const row = (await (await table()).findByText("Ayşe Yılmaz")).closest("tr");
-    expect(row).toHaveTextContent("You");
+    const name = await (await table()).findByText("Ayşe Yılmaz");
+    const you = within(name.closest("tr") as HTMLElement).getByText("(you)");
+    expect(you).toHaveClass("text-muted-foreground");
+    expect(name.compareDocumentPosition(you)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it("MembersPage_NoRoleFilter_NamesAllRoles", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />);
+
+    expect(
+      await screen.findByRole("combobox", { name: "Filter by role" }),
+    ).toHaveTextContent(/^All roles$/);
   });
 
   it("MembersPage_Admin_CannotTouchAnOwnerAndSaysWhy", async () => {
@@ -237,9 +251,9 @@ describe("MembersPage", () => {
       expect(requests.at(-1)?.get("roleId")).toBe(billingLead.id),
     );
     await waitFor(() =>
-      expect(screen.getByRole("combobox", { name: "Role" })).toHaveTextContent(
-        "Role: Billing lead",
-      ),
+      expect(
+        screen.getByRole("combobox", { name: "Filter by role" }),
+      ).toHaveTextContent("Role: Billing lead"),
     );
   });
 

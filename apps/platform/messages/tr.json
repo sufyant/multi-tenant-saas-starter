@@ -298,7 +298,7 @@
     "name": "Ad",
     "added": "Eklenme",
     "root": "Kök",
-    "you": "Siz",
+    "you": "(siz)",
     "rootHint": "Kök yöneticiler platformun yapılandırmasından gelir.",
     "actions": "İşlemler",
     "actionsFor": "{name} için işlemler",

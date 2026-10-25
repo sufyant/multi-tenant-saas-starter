@@ -37,6 +37,21 @@ describe("Avatar", () => {
     expect(avatar).toHaveAttribute("aria-hidden", "true");
   });
 
+  // jsdom draws nothing, so the look is the classes of the tokens; Playwright reads the top bar's drawn avatar.
+  it("Avatar_InAList_IsTheSmallFilledCircle", () => {
+    const { container } = render(
+      <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />,
+    );
+
+    expect(container.querySelector('[data-slot="avatar"]')).toHaveClass(
+      "size-7",
+      "rounded-full",
+    );
+    expect(
+      container.querySelector('[data-slot="avatar-fallback"]'),
+    ).toHaveClass("bg-neutral-text", "text-background", "font-semibold");
+  });
+
   it("Avatar_Size_TakesTheClass", () => {
     const { container } = render(
       <Avatar

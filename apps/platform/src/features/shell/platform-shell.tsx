@@ -10,7 +10,6 @@ import {
   ProblemDetailsError,
 } from "@repo/api-client";
 import { AppShell } from "@repo/ui/components/app-shell";
-import { initialsOf } from "@repo/ui/components/avatar";
 import {
   BuildingIcon,
   HistoryIcon,
@@ -178,10 +177,7 @@ export function PlatformShell({
             <UserMenu
               name={[admin.firstName, admin.lastName].filter(Boolean).join(" ")}
               email={admin.email ?? ""}
-              initials={initialsOf({
-                firstName: admin.firstName,
-                lastName: admin.lastName,
-              })}
+              person={{ firstName: admin.firstName, lastName: admin.lastName }}
               label={t("common.account")}
               languageName={t(`languages.${admin.language}`)}
               languageLabel={t("shell.language")}
