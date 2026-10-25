@@ -3,7 +3,7 @@
 # One image for every API process (section 1 of docs/ARCHITECTURE.md).
 # The role comes from Host__Role; the migration is `docker run <image> migrate`.
 #
-#   docker build -t api apps/api
+#   docker build -t api --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" apps/api
 
 # 10.0.402 when pinned. Dependabot updates the digest, not this note.
 FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
@@ -41,6 +41,11 @@ USER $APP_UID
 EXPOSE 8080
 # The management port (Host:ManagementPort): the health endpoints answer only there. Route no public traffic to it.
 EXPOSE 8081
+
+# The commit the image is built from. CI passes it, so the image it promotes to production keeps it. Each error event
+# names it as its release (Host:ErrorTracking:Release). A build without it leaves the release empty.
+ARG SOURCE_REVISION=""
+ENV Host__ErrorTracking__Release=$SOURCE_REVISION
 
 # No HEALTHCHECK: the image has no shell and no curl. The platform checks /health/live and /health/ready over HTTP.
 ENTRYPOINT ["dotnet", "Api.dll"]
