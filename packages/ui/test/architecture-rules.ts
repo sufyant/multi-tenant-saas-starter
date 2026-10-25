@@ -2,7 +2,18 @@
 // rule is a pure function of a folder: it reads files and returns its findings, one line each, `path:line: what`. An app's or a
 // package's `architecture.test.ts` calls the rules for its own folders and expects no finding. docs/frontend/ARCHITECTURE.md names
 // the rule each function enforces.
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, relative, sep } from "node:path";
 import ts from "typescript";
 
@@ -671,4 +682,60 @@ export function duplicateRuleIds(document: string): Finding[] {
             `${basename(document)}:${number}: rule id ${id} is on lines ${numbers.join(", ")}; give each rule its own id`,
         ),
   );
+}
+
+/**
+ * The paths, relative to the repository root, where the repository's Biome configuration refuses an import of the error tracker's SDK
+ * (F55). Biome checks no text that comes on standard input, so the rule writes one probe file at each path into a temporary folder,
+ * beside a copy of `biome.json`, and lints that folder.
+ */
+export function sdkImportRefusals(
+  repositoryRoot: string,
+  paths: string[],
+): string[] {
+  const folder = mkdtempSync(join(tmpdir(), "sdk-imports-"));
+  try {
+    const configuration = JSON.parse(
+      readFileSync(join(repositoryRoot, "biome.json"), "utf8"),
+    );
+    writeFileSync(
+      join(folder, "biome.json"),
+      JSON.stringify({ ...configuration, vcs: { enabled: false } }),
+    );
+    for (const path of paths) {
+      mkdirSync(join(folder, dirname(path)), { recursive: true });
+      writeFileSync(
+        join(folder, path),
+        'import { captureException } from "@sentry/nextjs";\n\nexport const report = captureException;\n',
+      );
+    }
+    let output: string;
+    try {
+      output = execFileSync(
+        join(repositoryRoot, "node_modules/.bin/biome"),
+        ["lint", "--reporter=json", "."],
+        { cwd: folder, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      );
+    } catch (error) {
+      // Biome exits with 1 when it finds a diagnostic; its report is still on standard output.
+      output = (error as { stdout: string }).stdout;
+    }
+    const report = JSON.parse(output) as {
+      diagnostics: { category: string; location: { path: unknown } }[];
+    };
+    return report.diagnostics
+      .filter(
+        (diagnostic) =>
+          diagnostic.category === "lint/style/noRestrictedImports",
+      )
+      .map((diagnostic) => {
+        const path = diagnostic.location.path;
+        return typeof path === "string"
+          ? path
+          : (path as { file: string }).file;
+      })
+      .sort();
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 }

@@ -1,6 +1,10 @@
 import { ClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type SignInStep, signInErrorKey } from "./clerk-errors";
+import {
+  isExpectedClerkError,
+  type SignInStep,
+  signInErrorKey,
+} from "./clerk-errors";
 
 const apiError = (code: string) =>
   new ClerkAPIResponseError("refused", {
@@ -50,5 +54,32 @@ describe("signInErrorKey", () => {
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining("a_code_of_tomorrow"),
     );
+  });
+
+  it("SignInErrorKey_UnknownCode_GivesTheCallbackOnlyTheCodeOnce", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onUnexpectedError = vi.fn();
+
+    signInErrorKey(apiError("a_code_of_next_week"), "code", onUnexpectedError);
+    signInErrorKey(apiError("a_code_of_next_week"), "totp", onUnexpectedError);
+
+    expect(onUnexpectedError).toHaveBeenCalledTimes(1);
+    expect(onUnexpectedError.mock.calls[0]?.[0].message).toBe(
+      'Sign-in: no message for the Clerk error code "a_code_of_next_week".',
+    );
+  });
+});
+
+// What error tracking leaves out (F55): an error that a sign-in screen shows as a message.
+describe("isExpectedClerkError", () => {
+  it.each([
+    ["a code of one step", true, apiError("form_code_incorrect")],
+    ["a code of every step", true, apiError("too_many_requests")],
+    ["the ticket's code", true, apiError("ticket_expired_code")],
+    ["an unknown code", false, apiError("a_code_of_next_month")],
+    ["an error without a code", false, new Error("network")],
+    ["no error", false, undefined],
+  ])("IsExpectedClerkError_%s_Is_%s", (_, expected, error) => {
+    expect(isExpectedClerkError(error)).toBe(expected);
   });
 });

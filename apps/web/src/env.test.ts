@@ -32,6 +32,62 @@ describe("env", () => {
       }),
     ).toThrow("CLERK_PUBLISHABLE_KEY");
   });
+
+  // Error tracking is optional: without a DSN it does not start, so local runs, CI and the tests send nothing (F55).
+  it.each([
+    ["missing", undefined],
+    ["empty", ""],
+  ])("ReadEnv_DsnIs%s_TurnsErrorTrackingOff", (_, dsn) => {
+    expect(readEnv({ ...valid, ERROR_TRACKING_DSN: dsn })).toEqual(valid);
+  });
+
+  it.each(["staging", "production"] as const)(
+    "ReadEnv_DsnWithEnvironment_%s_ReturnsBoth",
+    (environment) => {
+      const variables = readEnv({
+        ...valid,
+        ERROR_TRACKING_DSN: "https://public@errors.example.test/1",
+        ERROR_TRACKING_ENVIRONMENT: environment,
+      });
+
+      expect(variables.ERROR_TRACKING_DSN).toBe(
+        "https://public@errors.example.test/1",
+      );
+      expect(variables.ERROR_TRACKING_ENVIRONMENT).toBe(environment);
+    },
+  );
+
+  it("ReadEnv_DsnWithoutEnvironment_FailsWithItsName", () => {
+    expect(() =>
+      readEnv({
+        ...valid,
+        ERROR_TRACKING_DSN: "https://public@errors.example.test/1",
+      }),
+    ).toThrow("ERROR_TRACKING_ENVIRONMENT");
+  });
+
+  it.each(["Staging", "prod"])(
+    "ReadEnv_Environment_%s_FailsWithItsName",
+    (environment) => {
+      expect(() =>
+        readEnv({
+          ...valid,
+          ERROR_TRACKING_DSN: "https://public@errors.example.test/1",
+          ERROR_TRACKING_ENVIRONMENT: environment,
+        }),
+      ).toThrow("ERROR_TRACKING_ENVIRONMENT");
+    },
+  );
+
+  it("ReadEnv_DsnThatIsNoUrl_FailsWithItsName", () => {
+    expect(() =>
+      readEnv({
+        ...valid,
+        ERROR_TRACKING_DSN: "public-key",
+        ERROR_TRACKING_ENVIRONMENT: "staging",
+      }),
+    ).toThrow("ERROR_TRACKING_DSN");
+  });
 });
 
 // .railway/railway.ts gives the web service what the image needs to start (F7, F46). The test evaluates the file with the
