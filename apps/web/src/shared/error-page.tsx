@@ -4,7 +4,7 @@ import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import { reportError } from "@/error-tracking/report-error";
+import { reportBrowserError } from "@/error-tracking/report-error";
 
 /** The body of every route group's error.tsx (F27): what happened, that data is safe, and a retry. */
 export function ErrorPage({
@@ -15,10 +15,9 @@ export function ErrorPage({
   retry: () => void;
 }) {
   const t = useTranslations();
-  // A browser error goes to error tracking. A server error comes here with only its digest; onRequestError sent it (F55).
   useEffect(() => {
     console.error(error);
-    if (!error.digest) reportError(error);
+    reportBrowserError(error);
   }, [error]);
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
