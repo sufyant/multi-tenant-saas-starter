@@ -1,4 +1,5 @@
 import { ErrorCode, FieldErrorCode } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
@@ -66,9 +67,7 @@ describe("RenameDialog", () => {
     expect(dialog.getByText("northwind")).toBeVisible();
     await rename(dialog, "Northwind Traders Ltd");
 
-    expect(
-      await screen.findByText(sentence("Renamed to Northwind Traders Ltd.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Renamed to Northwind Traders Ltd."));
     expect(calls.map((call) => call.body)).toEqual([
       { name: "Northwind Traders Ltd" },
     ]);

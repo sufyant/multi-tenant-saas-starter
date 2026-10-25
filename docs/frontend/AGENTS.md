@@ -52,6 +52,7 @@ These were decided with the maintainer in step 21a, with their sources. Do not r
 - Clerk's custom flows are Core 3 in `@clerk/nextjs` 7: `useSignIn().signIn.emailCode.sendCode`, `signIn.mfa.verifyTOTP`, `signIn.finalize`, `HandleSSOCallback`. A method returns `{ error }`; the code of an API error is in `error.errors[0].code` (`clerkErrorCode`). The user's and the session's methods (`createTOTP`, `attemptSecondFactorVerification`) still throw.
 - jsdom has no `elementFromPoint`; input-otp calls it, so `test/setup.ts` stubs it too.
 - jsdom has no `matchMedia`, `ResizeObserver` or `scrollIntoView`; `test/setup.ts` of each package and app stubs them, because next-themes, sonner and cmdk read them.
+- sonner adds a toast at opacity 0 and shows it one render later. `findByText` finds it before that render, so `toBeVisible` after it fails when React's scheduler is late. Check a toast with `expectVisibleToast` of `@repo/ui/test/toast`.
 - `/dev/components` is a `page.dev.tsx`. `next.config.ts` adds the page extension `dev.tsx` only outside production, so `next build` has no such route and `next dev` has it.
 - A value of a contract enum is never a literal, even when it is a word of our own: the action of a suspended user is `account-suspended`, not `suspended`, which `TenantResponseStatus` holds.
 - A command palette in shadcn on Base UI puts `Command` inside `CommandDialog`; without it, cmdk throws.

@@ -1,4 +1,5 @@
 import { ErrorCode, TenantResponseStatus } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -80,9 +81,7 @@ describe("CloseDialog", () => {
     );
     await userEvent.click(button);
 
-    expect(
-      await screen.findByText(sentence("Atlas Logistics closed")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Atlas Logistics closed"));
     expect(
       screen.getByText(
         `You can reopen it until ${dateOf(reopenableUntil)}. Pending invitations were cancelled.`,

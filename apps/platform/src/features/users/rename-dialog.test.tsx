@@ -1,5 +1,6 @@
 import { ErrorCode, FieldErrorCode } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { expectVisibleToast } from "@repo/ui/test/toast";
+import { waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
 import {
@@ -70,9 +71,7 @@ describe("RenameUserDialog", () => {
     ).toBeVisible();
     await lastName(dialog, "  Yılmaz Demir ");
 
-    expect(
-      await screen.findByText(sentence("Renamed to Ayşe Yılmaz Demir.")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Renamed to Ayşe Yılmaz Demir."));
     expect(calls).toEqual([
       { key: null, body: { firstName: "Ayşe", lastName: "Yılmaz Demir" } },
     ]);

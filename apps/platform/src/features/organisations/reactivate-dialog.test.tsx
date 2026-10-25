@@ -1,4 +1,5 @@
 import { ErrorCode, TenantResponseStatus } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
@@ -62,9 +63,7 @@ describe("ReactivateDialog", () => {
     ).toBeVisible();
     await confirm(dialog);
 
-    expect(
-      await screen.findByText(sentence("Atlas Logistics reactivated")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Atlas Logistics reactivated"));
     expect(screen.getByText("Its 9 members can sign in again.")).toBeVisible();
     await waitFor(() => expect(reads.count).toBe(2));
   });

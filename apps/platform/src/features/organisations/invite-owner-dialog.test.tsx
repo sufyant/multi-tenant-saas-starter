@@ -4,6 +4,7 @@ import {
   InvitationResponseState,
   Language,
 } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -120,7 +121,7 @@ describe("InviteOwnerDialog", () => {
     await typeEmail(dialog, "aoife@liffeydesign.example");
     await send(dialog);
 
-    expect(await screen.findByText("Invitation sent")).toBeVisible();
+    await expectVisibleToast("Invitation sent");
     expect(
       screen.getByText(
         `aoife@liffeydesign.example can join as Owner until ${dateOf(expiresAt)}.`,
@@ -146,7 +147,7 @@ describe("InviteOwnerDialog", () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     await send(dialog);
 
-    expect(await screen.findByText("Invitation sent")).toBeVisible();
+    await expectVisibleToast("Invitation sent");
     expect(new Set(calls.map((call) => call.key)).size).toBe(1);
   });
 
@@ -166,7 +167,7 @@ describe("InviteOwnerDialog", () => {
     await dialog.findByText(sentence("Liffey Design is not active."));
     await send(dialog);
 
-    expect(await screen.findByText("Invitation sent")).toBeVisible();
+    await expectVisibleToast("Invitation sent");
     expect(new Set(calls.map((call) => call.key)).size).toBe(2);
   });
 
@@ -187,7 +188,7 @@ describe("InviteOwnerDialog", () => {
     await dialog.findByText(sentence("Liffey Design did not change."));
     await send(dialog);
 
-    expect(await screen.findByText("Invitation sent")).toBeVisible();
+    await expectVisibleToast("Invitation sent");
     expect(new Set(calls.map((call) => call.key)).size).toBe(1);
   });
 

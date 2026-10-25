@@ -1,4 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse } from "msw";
@@ -64,11 +65,9 @@ describe("MakeOwnerDialog", () => {
     ).toBeVisible();
     await makeOwner(dialog);
 
-    expect(
-      await screen.findByText(
-        sentence("Mehmet Kaya is an Owner of Northwind Traders."),
-      ),
-    ).toBeVisible();
+    await expectVisibleToast(
+      sentence("Mehmet Kaya is an Owner of Northwind Traders."),
+    );
     expect(calls).toEqual([{ key: null, body: { userId: mehmet.id } }]);
     await waitFor(() => expect(reads.count).toBe(2));
     expect(screen.queryByRole("alertdialog")).toBeNull();

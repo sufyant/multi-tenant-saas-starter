@@ -3,7 +3,8 @@ import {
   type TenantDetailResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { expectVisibleToast } from "@repo/ui/test/toast";
+import { waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -83,9 +84,7 @@ describe("ReopenDialog", () => {
     ).toBeVisible();
     await confirm(dialog);
 
-    expect(
-      await screen.findByText(sentence("Kestrel Labs reopened")),
-    ).toBeVisible();
+    await expectVisibleToast(sentence("Kestrel Labs reopened"));
     await waitFor(() => expect(reads.count).toBe(2));
   });
 
