@@ -34,7 +34,7 @@ internal static class InvitationEmailTexts
         var text = $"{texts.Invitation(tenantName)}\n\n{link}\n\n{texts.Lifetime((int)lifetime.TotalDays)}";
 
         // The idempotency key is the invitation's, so an event that arrives twice sends one email.
-        return new EmailMessage(to, texts.Subject(tenantName), text, $"invite/{invitationId}");
+        return new EmailMessage(to, texts.Subject(tenantName), "", text, $"invite/{invitationId}");
     }
 
     private sealed record Texts(Func<string, string> Subject, Func<string, string> Invitation, Func<int, string> Lifetime);

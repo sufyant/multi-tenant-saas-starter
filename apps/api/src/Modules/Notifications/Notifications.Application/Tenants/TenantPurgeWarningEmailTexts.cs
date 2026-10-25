@@ -53,7 +53,7 @@ internal static class TenantPurgeWarningEmailTexts
 
         // The key is the Owner's warning of this purge, so an event that arrives twice sends one email; a tenant closed again purges at
         // another moment, so its warning is a new email.
-        return new EmailMessage(to, texts.Subject(tenantName, days), text, $"purge-warning/{tenantId}/{userId}/{purgesAt.UtcTicks}");
+        return new EmailMessage(to, texts.Subject(tenantName, days), "", text, $"purge-warning/{tenantId}/{userId}/{purgesAt.UtcTicks}");
     }
 
     private static string EnglishDays(int days) => days == 1 ? "1 day" : $"{days} days";
