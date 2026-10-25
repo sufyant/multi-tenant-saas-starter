@@ -11,6 +11,17 @@ on:
         type: boolean
         required: false
         default: false
+    secrets:
+      # delivery.yml passes it, so the images that go to staging and production upload their source maps (F55).
+      BETTER_STACK_SOURCEMAPS_TOKEN:
+        required: false
+      # delivery.yml passes none of these, so the e2e job skips on a push to main (docs/github-settings.md, section 3.7).
+      CLERK_PUBLISHABLE_KEY_TEST:
+        required: false
+      CLERK_SECRET_KEY_TEST:
+        required: false
+      E2E_CLERK_USER_EMAIL:
+        required: false
 
 # In a called workflow, the github context is the caller's: github.workflow is "Delivery",
 # github.event_name is "push" and github.run_id is the caller's run (GitHub Docs, "Reusing workflow
@@ -238,12 +249,15 @@ jobs:
         with:
           persist-credentials: false
 
+      # The commit is the release of each error event. The build uploads the source maps only where the token exists, so a
+      # fork's or Dependabot's pull request builds without it (F55; docs/github-settings.md, section 3.8).
       - name: Build the image
-        run: |
-          docker build -f apps/web/Dockerfile --build-arg NODE_MAJOR="$(cat .nvmrc)" -t web \
-            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            .
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.BETTER_STACK_SOURCEMAPS_TOKEN }}
+          SENTRY_URL: ${{ vars.BETTER_STACK_SOURCEMAPS_URL }}
+          SENTRY_ORG: ${{ vars.BETTER_STACK_ERRORS_ORG }}
+          SENTRY_PROJECT: ${{ vars.BETTER_STACK_WEB_PROJECT }}
+        run: scripts/ci/build-app-image.sh web
 
       - name: Check that the image runs as a non-root user
         run: |
@@ -300,12 +314,15 @@ jobs:
         with:
           persist-credentials: false
 
+      # The commit is the release of each error event. The build uploads the source maps only where the token exists, so a
+      # fork's or Dependabot's pull request builds without it (F55; docs/github-settings.md, section 3.8).
       - name: Build the image
-        run: |
-          docker build -f apps/platform/Dockerfile --build-arg NODE_MAJOR="$(cat .nvmrc)" -t platform \
-            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            .
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.BETTER_STACK_SOURCEMAPS_TOKEN }}
+          SENTRY_URL: ${{ vars.BETTER_STACK_SOURCEMAPS_URL }}
+          SENTRY_ORG: ${{ vars.BETTER_STACK_ERRORS_ORG }}
+          SENTRY_PROJECT: ${{ vars.BETTER_STACK_PLATFORM_PROJECT }}
+        run: scripts/ci/build-app-image.sh platform
 
       - name: Check that the image runs as a non-root user
         run: |

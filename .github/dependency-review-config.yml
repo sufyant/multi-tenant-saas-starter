@@ -33,7 +33,12 @@ comment-summary-in-pr: never
 # - json-schema-typed: GitHub's detection adds "JSON" to its license, but the package's LICENSE.md and every file of 8.0.2 say
 #   BSD-2-Clause. It comes with react-email through conf, which uses it for TypeScript types only (types.d.ts), and no build ships
 #   it. The maintainer's decision in step r14.
+# - sentry is FSL-1.1-Apache-2.0: Sentry's command-line tool, which @sentry/nextjs brings through @sentry/bundler-plugins. It runs
+#   only in the build, to upload the source maps of apps/web and apps/platform (F55 in docs/frontend/ARCHITECTURE.md), and the
+#   Dockerfiles fail when it reaches a runtime image. FSL-1.1 permits it: internal use is a Permitted Purpose, not a Competing
+#   Use. Each release becomes Apache-2.0 two years after it is published. The maintainer's decision in step 30-frontend.
 allow-dependencies-licenses:
   - pkg:npm/axe-core
   - pkg:npm/%40axe-core/playwright
   - pkg:npm/json-schema-typed
+  - pkg:npm/sentry

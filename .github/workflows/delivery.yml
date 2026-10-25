@@ -30,6 +30,9 @@ jobs:
     uses: $/.github/workflows/ci.yml
     with:
       keep-image: true
+    # The images that go to staging and production upload their source maps (F55).
+    secrets:
+      BETTER_STACK_SOURCEMAPS_TOKEN: ${{ secrets.BETTER_STACK_SOURCEMAPS_TOKEN }}
 
   # Push the images that ci.yml tested to GHCR and attest them (SLSA v1.0, Build Level 2), with the steps of
   # publish-image.yml. A caller must grant the permissions of the called job.
