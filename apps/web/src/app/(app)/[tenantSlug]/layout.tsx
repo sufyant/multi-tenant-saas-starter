@@ -1,6 +1,6 @@
 import { railCookieName, railExpandedFrom } from "@repo/ui/lib/rail-state";
 import { cookies } from "next/headers";
-import { TenantShell } from "@/features/shell/tenant-shell";
+import { PendingTenantShell, TenantShell } from "@/features/shell/tenant-shell";
 import { TenantProvider } from "@/shared/tenant-context";
 
 export default async function TenantLayout({
@@ -13,7 +13,12 @@ export default async function TenantLayout({
     (await cookies()).get(railCookieName)?.value,
   );
   return (
-    <TenantProvider slug={tenantSlug}>
+    <TenantProvider
+      slug={tenantSlug}
+      pending={
+        <PendingTenantShell slug={tenantSlug} railExpanded={railExpanded} />
+      }
+    >
       <TenantShell railExpanded={railExpanded}>{children}</TenantShell>
     </TenantProvider>
   );

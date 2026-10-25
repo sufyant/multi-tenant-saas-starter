@@ -75,6 +75,55 @@ describe("CodeInput", () => {
     expect(input).toHaveAttribute("autocomplete", "one-time-code");
   });
 
+  it("CodeInput_Slots_AreSixSeparateBoxesFromTheTokens", () => {
+    const { container } = render(<Harness />);
+
+    const group = container.querySelector("[data-slot='input-otp-group']");
+    const boxes = [
+      ...container.querySelectorAll("[data-slot='input-otp-slot']"),
+    ].map((box) => [...box.classList]);
+    expect(group).toHaveClass("gap-2");
+    expect(boxes).toEqual(
+      Array.from({ length: 6 }, () =>
+        expect.arrayContaining([
+          "w-code-slot-width",
+          "h-code-slot-height",
+          "rounded-md",
+          "border",
+          "font-mono",
+          "text-section-title",
+        ]),
+      ),
+    );
+    expect(boxes.flat()).not.toEqual(expect.arrayContaining(["border-y"]));
+  });
+
+  it("CodeInput_WithError_MarksEveryBox", () => {
+    const { container } = render(<Harness error="That code is not right." />);
+
+    const boxes = [
+      ...container.querySelectorAll("[data-slot='input-otp-slot']"),
+    ];
+    expect(boxes).toHaveLength(6);
+    expect(
+      boxes.filter((box) => box.getAttribute("aria-invalid") === "true"),
+    ).toHaveLength(6);
+  });
+
+  it("CodeInput_Paste_ShowsADigitInEachOfTheSixBoxes", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness />);
+
+    await user.click(screen.getByRole("textbox", { name: "Code" }));
+    await user.paste("424242");
+
+    expect(
+      [...container.querySelectorAll("[data-slot='input-otp-slot']")].map(
+        (box) => box.textContent,
+      ),
+    ).toEqual(["4", "2", "4", "2", "4", "2"]);
+  });
+
   it("CodeInput_WithError_IsInvalidAndAnnouncesIt", () => {
     render(<Harness error="That code is not right." />);
 

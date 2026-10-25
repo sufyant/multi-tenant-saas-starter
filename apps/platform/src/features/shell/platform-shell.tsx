@@ -95,10 +95,10 @@ export function PlatformShell({
     if (door.isError) setDoorAsked(true);
     else if (door.isSuccess) void refetch().finally(() => setDoorAsked(true));
   }, [door.isError, door.isSuccess, doorAsked, refetch]);
-  if (askTheDoor) return <Skeleton label={t("common.loading")} />;
-  if (me.error) return <ProblemScreen error={me.error} />;
-  if (!me.data) return <Skeleton label={t("common.loading")} />;
-  if (!me.data.isSystemAdmin) return <NoAccess />;
+  // Until GetMe and the door answer, the shell shows with what the route knows and the content waits (the ListStates boards).
+  if (!askTheDoor && me.error) return <ProblemScreen error={me.error} />;
+  const admin = askTheDoor ? undefined : me.data;
+  if (admin && !admin.isSystemAdmin) return <NoAccess />;
 
   const sections = {
     settings: "shell.settings",
@@ -130,7 +130,7 @@ export function PlatformShell({
 
   return (
     <>
-      <LocaleSync language={me.data.language} />
+      {admin && <LocaleSync language={admin.language} />}
       <AppShell
         nav={[
           {
@@ -174,31 +174,31 @@ export function PlatformShell({
         platformLabel={t("shell.platform")}
         crumbs={crumbs}
         userMenu={
-          <UserMenu
-            name={[me.data.firstName, me.data.lastName]
-              .filter(Boolean)
-              .join(" ")}
-            email={me.data.email ?? ""}
-            initials={initialsOf({
-              firstName: me.data.firstName,
-              lastName: me.data.lastName,
-            })}
-            label={t("common.account")}
-            languageName={t(`languages.${me.data.language}`)}
-            languageLabel={t("shell.language")}
-            preferencesHref="/settings/preferences"
-            theme={theme}
-            themes={[
-              { id: "light", label: t("theme.light") },
-              { id: "dark", label: t("theme.dark") },
-              { id: "system", label: t("theme.system") },
-            ]}
-            themeLabel={t("theme.label")}
-            onThemeChange={setTheme}
-            signOutLabel={t("common.signOut")}
-            onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
-            linkComponent={Link}
-          />
+          admin && (
+            <UserMenu
+              name={[admin.firstName, admin.lastName].filter(Boolean).join(" ")}
+              email={admin.email ?? ""}
+              initials={initialsOf({
+                firstName: admin.firstName,
+                lastName: admin.lastName,
+              })}
+              label={t("common.account")}
+              languageName={t(`languages.${admin.language}`)}
+              languageLabel={t("shell.language")}
+              preferencesHref="/settings/preferences"
+              theme={theme}
+              themes={[
+                { id: "light", label: t("theme.light") },
+                { id: "dark", label: t("theme.dark") },
+                { id: "system", label: t("theme.system") },
+              ]}
+              themeLabel={t("theme.label")}
+              onThemeChange={setTheme}
+              signOutLabel={t("common.signOut")}
+              onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
+              linkComponent={Link}
+            />
+          )
         }
         labels={{
           navigation: t("shell.navigation"),
@@ -217,7 +217,7 @@ export function PlatformShell({
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}
       >
-        {children}
+        {admin ? children : <Skeleton delayed label={t("common.loading")} />}
       </AppShell>
     </>
   );
