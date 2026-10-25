@@ -106,3 +106,17 @@ Root system admins: `ControlPlane:SystemAdmins:RootEmails` lists their addresses
 - The image `apps/api/Dockerfile` has no `HEALTHCHECK`: it has no shell and no `curl` (see the deviations table of `ARCHITECTURE.md`). Set the platform's HTTP health check instead, on port 8081. The readiness path is `/health/ready` and the liveness path is `/health/live`.
 - Kubernetes: use `/health/ready` for the readiness probe and `/health/live` for the liveness probe, both on port 8081. The Service exposes only port 8080.
 - Set `runAsNonRoot: true`. Both images run as a numeric non-root user.
+
+## 5. Error tracker and telemetry
+
+- The error tracker is Better Stack (Errors). It takes events in the Sentry protocol, so the API sends them through the Sentry SDK (section 7 of `ARCHITECTURE.md`, "Error tracking"). Another tracker that speaks the protocol needs only another DSN.
+- Staging and production: copy the DSN from the Ingest tab of the API's Errors application into the shared variable `Host__ErrorTracking__Dsn` of each environment. `.railway/railway.ts` gives it to both API services. Each event names its environment (`staging` or `production`, from `ASPNETCORE_ENVIRONMENT`) and its release (the commit of the image), so one application serves both environments.
+- Local development, CI and the tests set no DSN, so nothing is sent.
+- To see the logs, traces and metrics on a local machine, run the .NET Aspire Dashboard (MIT) and point the API at it. The dashboard keeps the data in memory only.
+
+```sh
+docker run --rm -d --name aspire-dashboard -p 18888:18888 -p 4317:18889 \
+  -e ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true mcr.microsoft.com/aspire/dashboard:13.6.1
+```
+
+  Then start each process with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` (OTLP over gRPC, the exporter's default) and open `http://localhost:18888`. The anonymous access suits a local machine only. Without it, the dashboard prints a login link to its log (`docker logs aspire-dashboard`). Source: Aspire documentation, "Standalone Aspire dashboard" (aspire.dev/dashboard/standalone).

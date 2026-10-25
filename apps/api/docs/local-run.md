@@ -81,7 +81,8 @@ Notes:
 - Leave `Notifications__Resend__ApiKey` unset. In Development without it, the worker writes each email to its log instead of sending it. If it is set together with `Notifications__Resend__From`, email is really sent, in Development too.
 - Leave `ConnectionStrings__Messaging` unset; Wolverine then uses `ConnectionStrings__Database`.
 - Do not give the running processes `ConnectionStrings__Migrations` (R3).
-- Leave `OTEL_EXPORTER_OTLP_ENDPOINT` unset unless a collector listens there; without it no telemetry is sent.
+- Leave `OTEL_EXPORTER_OTLP_ENDPOINT` unset unless a collector listens there; without it no telemetry is sent. `setup.md`, section 5, runs the .NET Aspire Dashboard as a local collector.
+- Leave `Host__ErrorTracking__Dsn` unset: a local run sends no error to the error tracker.
 - Development relaxes three things: `Host:Authentication:AuthorizedParties` may be empty, `Notifications:Resend:*` may be empty (email goes to the log), and the OpenAPI document and Scalar are served on the web process.
 
 ## 6. Start the web and the worker
