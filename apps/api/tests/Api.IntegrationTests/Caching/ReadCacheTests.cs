@@ -1,4 +1,6 @@
+using System.Diagnostics.Metrics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Tenancy.Caching;
@@ -118,6 +120,23 @@ public sealed class ReadCacheTests(Valkey valkey) : IClassFixture<Valkey>
 
         (await read.ShouldThrowAsync<TimeoutException>()).Message.ShouldBe("The database did not answer.");
         host.GetRequiredService<FakeLogCollector>().GetSnapshot().Where(log => log.Level >= LogLevel.Warning).ShouldBeEmpty();
+    }
+
+    // Step 42 shows the hits and the misses of each kind of read, from the host's meter.
+    [Fact]
+    public async Task Read_AMissAndAHit_CountsEachByTheKindOfReadAndItsResult()
+    {
+        await using var host = CacheHosts.Start(valkey.ConnectionString);
+        using var reads = new MetricCollector<long>(host.GetRequiredService<IMeterFactory>(), "Tenancy.Caching", "cache.reads");
+        var database = new CountingDatabase();
+        var subject = Subject();
+
+        await host.Cache().ReadAsync(UserRead, subject, database.LoadAsync, Cancellation);
+        await host.Cache().ReadAsync(UserRead, subject, database.LoadAsync, Cancellation);
+
+        reads.GetMeasurementSnapshot()
+            .Select(measurement => $"{measurement.Tags["cache.read"]} {measurement.Tags["cache.result"]} {measurement.Value}")
+            .ShouldBe(["test-user-read miss 1", "test-user-read hit 1"]);
     }
 
     private static string Subject() => $"user_{Guid.NewGuid():N}";

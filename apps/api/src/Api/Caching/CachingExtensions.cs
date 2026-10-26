@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using StackExchange.Redis;
@@ -29,7 +30,10 @@ internal static class CachingExtensions
 
     public static WebApplicationBuilder AddCaching(this WebApplicationBuilder builder)
     {
-        builder.Services.AddSingleton(provider => new ReadCache(provider.GetService<HybridCache>(), provider.GetRequiredService<ILogger<ReadCache>>()));
+        builder.Services.AddSingleton(provider => new ReadCache(
+            provider.GetService<HybridCache>(),
+            provider.GetRequiredService<ILogger<ReadCache>>(),
+            provider.GetRequiredService<IMeterFactory>()));
 
         if (builder.Configuration.GetConnectionString(CacheConnection) is not { Length: > 0 } connection)
         {
