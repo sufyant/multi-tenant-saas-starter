@@ -64,6 +64,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Microsoft.Extensions.ApiDescription.Server | MIT |
 | Microsoft.Extensions.Caching.Abstractions | MIT |
 | Microsoft.Extensions.Caching.Memory | MIT |
+| Microsoft.Extensions.Caching.StackExchangeRedis | MIT |
 | Microsoft.Extensions.Compliance.Abstractions | MIT |
 | Microsoft.Extensions.Configuration | MIT |
 | Microsoft.Extensions.Configuration.Abstractions | MIT |
@@ -131,6 +132,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | OpenTelemetry.Instrumentation.AspNetCore | Apache-2.0 |
 | Patched.DistributedLock.Core | MIT |
 | Patched.DistributedLock.Postgres | MIT |
+| Pipelines.Sockets.Unofficial | MIT |
 | Polly.Core | BSD-3-Clause |
 | Scalar.AspNetCore | MIT |
 | Sentry | MIT |
@@ -150,6 +152,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Spectre.Console | MIT |
 | Spectre.Console.Ansi | MIT |
 | SSH.NET | MIT |
+| StackExchange.Redis | MIT |
 | StyleCop.Analyzers | MIT |
 | StyleCop.Analyzers.Unstable | MIT |
 | System.CodeDom | MIT |
@@ -161,11 +164,13 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | System.Composition.TypedParts | MIT |
 | System.Diagnostics.EventLog | MIT |
 | System.IdentityModel.Tokens.Jwt | MIT |
+| System.IO.Hashing | MIT |
 | System.Linq.Dynamic.Core | Apache-2.0 |
 | System.Management | MIT |
 | System.Security.AccessControl | MIT |
 | Testcontainers | MIT |
 | Testcontainers.PostgreSql | MIT |
+| Testcontainers.Redis | MIT |
 | Weasel.Core | MIT |
 | Weasel.EntityFrameworkCore | MIT |
 | Weasel.Postgresql | MIT |
@@ -184,3 +189,5 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | xunit.v3.mtp-v2 | Apache-2.0 |
 | xunit.v3.runner.common | Apache-2.0 |
 | xunit.v3.runner.inproc.console | Apache-2.0 |
+| ZiggyCreatures.FusionCache | MIT |
+| ZiggyCreatures.FusionCache.Serialization.SystemTextJson | MIT |
