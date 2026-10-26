@@ -2,6 +2,7 @@
 #pragma warning disable
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
@@ -11,17 +12,19 @@ namespace Internal.Generated.WolverineHandlers
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
+        private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public GetAuditEntryNamesQueryHandler1763053583(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public GetAuditEntryNamesQueryHandler1763053583(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
+            _readCache = readCache;
         }
 
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
-            var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext);
+            var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             // The actual message body
             var getAuditEntryNamesQuery = (Audit.Application.AuditLogs.GetAuditEntryNames.GetAuditEntryNamesQuery)context.Envelope.Message;
 

@@ -3,8 +3,10 @@ using ControlPlane.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Tenancy;
+using Tenancy.Caching;
 using Testcontainers.PostgreSql;
 using Wolverine;
 
@@ -85,6 +87,8 @@ public sealed class Database : IAsyncLifetime
             .AddSingleton(TimeProvider.System)
             .AddTenancy(_ => ConnectionStringFor(DatabaseRoles.Application, database))
             .AddControlPlaneInfrastructure()
+            // No cache: every read goes to the database, as in a host without ConnectionStrings:Cache.
+            .AddSingleton(provider => new ReadCache(cache: null, provider.GetRequiredService<ILogger<ReadCache>>()))
             .AddScoped<IMessageContext>(_ => new TestMessageContext());
         if (!realIdentityProvider)
         {
