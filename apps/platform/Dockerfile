@@ -52,7 +52,7 @@ RUN if find apps/platform/.next/standalone apps/platform/.next/static apps/platf
     fi
 
 # Distroless: Node and nothing else. No shell, no npm, no package manager.
-FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:668bb45274f097b5b8b41e9825a9bbd3b5e5c44cec5c50c61fe2a1b6ce5f6ba6 AS runtime
+FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:10747a1323be68f206aed893599d43e6697ad67257e7c42703553f99fbce3d33 AS runtime
 # The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
 USER 0:0
 WORKDIR /app
