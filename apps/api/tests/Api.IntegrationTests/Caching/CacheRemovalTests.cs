@@ -12,15 +12,24 @@ namespace Api.IntegrationTests.Caching;
 // CacheRemoval.Delay after the commit, at least once, until Valkey takes it. So the next requests see the new answer even when the removal
 // at the commit never reached Valkey: a process whose circuit breaker is open, a crash right after the commit, or a read that began before
 // the commit and wrote its old answer after the removal. Each test waits for the new answer far less than an entry lives (10 minutes).
+// The message is scheduled, so each test runs on a database of its own: on the shared one, a host of another test runs it in its own cache
+// (section 9, rule 10).
 public sealed class CacheRemovalTests(Database database) : IAsyncLifetime
 {
-    private readonly TestData _testData = new(database);
-
     private readonly Valkey _valkey = new();
+
+    private string _databaseName = null!;
+
+    private TestData _testData = null!;
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    public ValueTask InitializeAsync() => _valkey.InitializeAsync();
+    public async ValueTask InitializeAsync()
+    {
+        _databaseName = await database.CreateMigratedDatabaseAsync();
+        _testData = new TestData(database, _databaseName);
+        await _valkey.InitializeAsync();
+    }
 
     public ValueTask DisposeAsync() => _valkey.DisposeAsync();
 
@@ -118,7 +127,7 @@ public sealed class CacheRemovalTests(Database database) : IAsyncLifetime
         (await api.CreateClient(member).GetAsync($"/v1/tenants/{tenantId}/members", Cancellation)).StatusCode;
 
     private ApiFactory Host(bool removeAtCommit = true) => new(
-        database.ConnectionStringFor(DatabaseRoles.Application),
+        database.ConnectionStringFor(DatabaseRoles.Application, _databaseName),
         settings: new Dictionary<string, string?> { ["ConnectionStrings:Cache"] = _valkey.ConnectionString },
         configureServices: services => services.AddCacheInvalidation(removeAtCommit));
 
