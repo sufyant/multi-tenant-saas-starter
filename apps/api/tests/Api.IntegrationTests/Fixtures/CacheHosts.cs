@@ -25,6 +25,7 @@ internal static class CacheHosts
         builder.Services.AddFakeLogging(options => options.CollectRecordsForDisabledLogLevels = false);
         builder.Services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Debug));
         builder.Services.AddMetrics();
+        builder.Services.AddSingleton(TimeProvider.System);
         builder.AddCaching();
         return builder.Services.BuildServiceProvider();
     }

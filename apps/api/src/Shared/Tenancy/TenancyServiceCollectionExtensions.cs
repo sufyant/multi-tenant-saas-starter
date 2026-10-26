@@ -18,10 +18,13 @@ public static class TenancyServiceCollectionExtensions
         services.AddSingleton(provider => DatabaseConnection.CreateDataSource(pooledConnectionString(provider)));
 
     /// <summary>
-    /// The host's part of the cache: the removal of the tags of every row a module DbContext saves, after the commit (C6). The host registers <see cref="ReadCache"/> too.
+    /// The host's part of the cache: the removal of the tags of every row a module DbContext saves, durable and after the commit (C6). The
+    /// host registers <see cref="ReadCache"/>, <see cref="CacheRemoval"/> and the handler of <see cref="RemoveCacheTagsCommand"/> too.
     /// </summary>
-    public static IServiceCollection AddCacheInvalidation(this IServiceCollection services) =>
-        services.AddSingleton(provider => new CacheInvalidationInterceptor(provider.GetRequiredService<ReadCache>()));
+    /// <param name="removeAtCommit">Whether the tags are also removed at once after the commit. Only a test turns it off.</param>
+    public static IServiceCollection AddCacheInvalidation(this IServiceCollection services, bool removeAtCommit = true) =>
+        services.AddSingleton(provider => new CacheInvalidationInterceptor(
+            provider.GetRequiredService<ReadCache>(), provider.GetRequiredService<TimeProvider>(), removeAtCommit));
 
     /// <summary>
     /// A module DbContext's options: the host's data source, the module's own schema, and the tenant declared at the start of each

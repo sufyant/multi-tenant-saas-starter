@@ -4,20 +4,21 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Tenancy.Caching;
 
-// The removal of the cache tags of the rows a module DbContext saved, after the commit (C6): a save collects them from the module's tag
-// table, and the end of its transaction removes them or drops them.
-internal sealed class CacheInvalidationInterceptor(ReadCache cache) : ISaveChangesInterceptor, IDbTransactionInterceptor
+// The removal of the cache tags of the rows a module DbContext saved (C6). A save collects them from the module's tag table, and writes
+// their durable removal in its transaction. The end of the transaction removes them at once, the fast path, or drops them. Without the
+// fast path (removeAtCommit: false), only the durable removal runs, as after a crash between the commit and the removal; a test uses it.
+internal sealed class CacheInvalidationInterceptor(ReadCache cache, TimeProvider time, bool removeAtCommit) : ISaveChangesInterceptor, IDbTransactionInterceptor
 {
     public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        (eventData.Context as TenantDbContext)?.CollectCacheTags();
+        CollectAsync(eventData.Context).AsTask().GetAwaiter().GetResult();
         return result;
     }
 
-    public ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+    public async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        (eventData.Context as TenantDbContext)?.CollectCacheTags();
-        return ValueTask.FromResult(result);
+        await CollectAsync(eventData.Context);
+        return result;
     }
 
     public int SavedChanges(SaveChangesCompletedEventData eventData, int result)
@@ -72,6 +73,15 @@ internal sealed class CacheInvalidationInterceptor(ReadCache cache) : ISaveChang
     private Task RemoveOutsideATransactionAsync(DbContext? context) =>
         context is TenantDbContext { Database.CurrentTransaction: null } ? RemoveAsync(context) : Task.CompletedTask;
 
+    private async ValueTask CollectAsync(DbContext? context)
+    {
+        if (context is TenantDbContext module)
+        {
+            module.CollectCacheTags();
+            await module.SendCacheRemovalAsync(time.GetUtcNow());
+        }
+    }
+
     private Task RemoveAsync(DbContext? context) =>
-        context is TenantDbContext module ? cache.RemoveTagsAsync(module.TakeCacheTags()) : Task.CompletedTask;
+        context is TenantDbContext module && module.TakeCacheTags() is { Count: > 0 } tags && removeAtCommit ? cache.RemoveTagsAsync(tags) : Task.CompletedTask;
 }

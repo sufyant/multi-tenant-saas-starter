@@ -19,7 +19,8 @@ public sealed class CachingTests
         "ZiggyCreatures.Caching.Fusion",
     ];
 
-    private static readonly string[] AllowedToCallTheCache = ["Tenancy.Caching.ReadCache", "Api.Caching.CachingExtensions"];
+    // The two helpers, and the composition root with its gauge of Valkey's evicted keys.
+    private static readonly string[] AllowedToCallTheCache = ["Tenancy.Caching.ReadCache", "Tenancy.Caching.CacheRemoval", "Api.Caching.CachingExtensions", "Api.Caching.EvictedKeys"];
 
     public static TheoryData<string> ProductionProjects => [.. Solution.AllProjects];
 

@@ -12,7 +12,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 internal static class CachedReads
 {
     /// <summary>How long an entry that grants access lives (C8). It comes first: the reads below read it when they are built.</summary>
-    public static readonly TimeSpan AccessLifetime = TimeSpan.FromMinutes(1);
+    public static readonly TimeSpan AccessLifetime = CachedRead.LongestLifetime;
 
     /// <summary>A user's deletion and suspension, on every me and tenant route (A9). A person who is not a user yet is neither.</summary>
     public static readonly UserCachedRead<UserAccess> UserAccess =

@@ -46,6 +46,22 @@ public sealed class CachedReadTests
         changed.Version.ShouldNotBe(original.Version);
     }
 
+    // C3: every part of a key names what it is, in the one form that a tag writes too.
+    [Fact]
+    public void KeyOf_ATenantReadAndAUserRead_LabelEveryPartAsATagDoes()
+    {
+        var tenantId = Guid.Parse("0b8f1c2e-6d4a-4f7b-9e3a-2c5d8e1f4a6b");
+        var tenantRead = new TenantCachedRead<Shape>("member-access", Lifetime, (tenant, _) => [CacheTag.Of(CacheLabel.Tenant, tenant)]);
+        var userRead = new UserCachedRead<Shape>("user-access", Lifetime, user => [CacheTag.Of(CacheLabel.User, user)]);
+
+        var tenantKey = tenantRead.KeyOf(tenantId, "user_2x");
+        var userKey = userRead.KeyOf("user_2x");
+
+        tenantKey.ShouldBe($"member-access:{tenantRead.Version}:tenant:{tenantId}:user:user_2x");
+        userKey.ShouldBe($"user-access:{userRead.Version}:user:user_2x");
+        tenantKey.ShouldContain(tenantRead.TagsOf(tenantId, "user_2x")[0]);
+    }
+
     [Fact]
     public void TagKinds_OfARead_AreTheKindsOfTheTagsItNames()
     {

@@ -110,13 +110,14 @@ export default defineRailway((ctx) => {
   //   The start command reads it, and the API's connection string references it, so the password has one source. A missing
   //   shared variable gives an empty value, and an empty password would turn authentication off, so Valkey does not start then.
   // - The container's memory limit is 512 MB, and Valkey keeps its data under 384 MB, with room for its own buffers.
-  //   Railway's default sets no limit. When the data reaches the limit, Valkey evicts the least recently used key of any key
-  //   (allkeys-lru): every key is an entry with an expiry that can refill from the database (Valkey docs, "Key eviction").
+  //   Railway's default sets no limit. When the data reaches the limit, Valkey evicts the key with the shortest time to live
+  //   (volatile-ttl, Valkey docs, "Key eviction"). Every key has one, and an entry that a removal outdated always has less time left
+  //   than the removal's marker, so Valkey evicts the old entry before the marker (apps/api/docs/ARCHITECTURE.md, C9).
   // - --save "" and --appendonly no turn persistence off, so Valkey never forks to write a snapshot.
   const cache = service(valkey.service, {
     source: image(valkey.image),
     replicas: { [region]: 1 },
-    start: `/bin/sh -c '[ -n "$VALKEY_PASSWORD" ] || { echo "VALKEY_PASSWORD is empty" >&2; exit 1; }; exec valkey-server --port ${valkey.port} --requirepass "$VALKEY_PASSWORD" --maxmemory 384mb --maxmemory-policy allkeys-lru --save "" --appendonly no'`,
+    start: `/bin/sh -c '[ -n "$VALKEY_PASSWORD" ] || { echo "VALKEY_PASSWORD is empty" >&2; exit 1; }; exec valkey-server --port ${valkey.port} --requirepass "$VALKEY_PASSWORD" --maxmemory 384mb --maxmemory-policy volatile-ttl --save "" --appendonly no'`,
     deploy: {
       limitOverride: { containers: { memoryBytes: 512 * 1024 * 1024 } },
     },

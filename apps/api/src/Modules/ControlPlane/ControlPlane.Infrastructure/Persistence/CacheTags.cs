@@ -13,13 +13,13 @@ namespace ControlPlane.Infrastructure.Persistence;
 internal static class CacheTags
 {
     /// <summary>A user's row, by the identity provider's id, which every cached read of the user is keyed by.</summary>
-    public const string User = "user";
+    public const string User = CacheLabel.User;
 
     /// <summary>
     /// A tenant: its row, and the rows of its memberships, its roles and their permissions. One tag for all of them: a change of any of
     /// them is rare, and an entry of the tenant then reads the database once.
     /// </summary>
-    public const string Tenant = "tenant";
+    public const string Tenant = CacheLabel.Tenant;
 
     /// <summary>The system admin list, whose grant or revocation changes the door of one user (A4).</summary>
     public const string SystemAdmins = "system-admins";

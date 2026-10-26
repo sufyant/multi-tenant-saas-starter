@@ -21,8 +21,8 @@ public sealed partial class ReadCache(HybridCache? cache, ILogger<ReadCache> log
         "cache.reads",
         description: "Cached reads, by the kind of read and the result: a hit, a miss that read the database, or a failure of the cache.");
 
-    public Task<T> ReadAsync<T>(TenantCachedRead<T> read, Guid tenantId, string subject, Func<CancellationToken, Task<T>> load, CancellationToken cancellationToken) =>
-        ReadAsync(read, read.KeyOf(tenantId, subject), read.TagsOf(tenantId, subject), load, cancellationToken);
+    public Task<T> ReadAsync<T>(TenantCachedRead<T> read, Guid tenantId, string externalUserId, Func<CancellationToken, Task<T>> load, CancellationToken cancellationToken) =>
+        ReadAsync(read, read.KeyOf(tenantId, externalUserId), read.TagsOf(tenantId, externalUserId), load, cancellationToken);
 
     public Task<T> ReadAsync<T>(UserCachedRead<T> read, string externalUserId, Func<CancellationToken, Task<T>> load, CancellationToken cancellationToken) =>
         ReadAsync(read, read.KeyOf(externalUserId), read.TagsOf(externalUserId), load, cancellationToken);

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using SharedKernel;
 using Tenancy.Caching;
 using Wolverine;
+using Wolverine.Runtime;
 
 namespace Tenancy;
 
@@ -22,6 +23,9 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
 {
     // The tags of the rows that the open transaction changed, which the cache removes after its commit (CacheInvalidationInterceptor).
     private readonly HashSet<string> _cacheTags = [];
+
+    // The tags of the rows that the open transaction changed and that no durable removal holds yet (C6).
+    private readonly HashSet<string> _unsentCacheTags = [];
 
     /// <summary>
     /// The tenant of the message this DbContext serves. There is none outside a handler, for a message sent without a tenant, and
@@ -66,7 +70,7 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
     public void RemoveCacheTagsAfterCommit(params IEnumerable<string> tags)
     {
         _ = CurrentTransaction("A write that the change tracker does not see removes its cache tags inside a transaction.");
-        _cacheTags.UnionWith(tags);
+        AddCacheTags(tags);
     }
 
     // The tags of every row the change tracker is about to save, added, changed or deleted, by the module's tag table: the value
@@ -83,9 +87,31 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
         {
             foreach (var source in CacheTagSources.Where(source => source.Entity.IsInstanceOfType(entry.Entity)))
             {
-                _cacheTags.UnionWith(TagsOf(entry, source));
+                AddCacheTags(TagsOf(entry, source));
             }
         }
+    }
+
+    // C6: the durable removal of the tags that this save collected, as a message that the save writes in the same transaction, through
+    // Wolverine's outbox, to be handled CacheRemoval.Delay after the commit. Wolverine's commit saves the DbContext once more before it
+    // commits (EfCoreEnvelopeTransaction.CommitAsync), so a message of the last save is in the transaction too. A DbContext that Wolverine
+    // did not build has no message context: design-time tooling and tests, which keep the removal at the commit only. One that Wolverine
+    // built and that saves outside a handler's transaction is refused: its removal could not be durable.
+    internal async ValueTask SendCacheRemovalAsync(DateTimeOffset now)
+    {
+        if (_unsentCacheTags.Count == 0 || messaging is null)
+        {
+            _unsentCacheTags.Clear();
+            return;
+        }
+
+        if (messaging is not MessageBus { Transaction: { } transaction } bus || transaction is MessageContext)
+        {
+            throw new InvalidOperationException("A change to a cached row is saved in a handler's transaction, which also holds the removal of its cache tags (C6).");
+        }
+
+        await bus.PublishAsync(new RemoveCacheTagsCommand([.. _unsentCacheTags], now), new DeliveryOptions { ScheduleDelay = CacheRemoval.Delay });
+        _unsentCacheTags.Clear();
     }
 
     internal IReadOnlyCollection<string> TakeCacheTags()
@@ -95,7 +121,11 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
         return tags;
     }
 
-    internal void DiscardCacheTags() => _cacheTags.Clear();
+    internal void DiscardCacheTags()
+    {
+        _cacheTags.Clear();
+        _unsentCacheTags.Clear();
+    }
 
     protected sealed override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -122,6 +152,14 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
     }
 
     protected abstract void BuildModel(ModelBuilder modelBuilder);
+
+    private void AddCacheTags(IEnumerable<string> tags)
+    {
+        foreach (var tag in tags.Where(_cacheTags.Add))
+        {
+            _unsentCacheTags.Add(tag);
+        }
+    }
 
     private IEnumerable<string> TagsOf(EntityEntry entry, CacheTagSource source)
     {

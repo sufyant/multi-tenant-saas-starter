@@ -9,11 +9,19 @@ public abstract class CachedRead
 {
     private protected CachedRead(string kind, Type shape, TimeSpan lifetime)
     {
+        if (lifetime <= TimeSpan.Zero || lifetime > LongestLifetime)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lifetime), lifetime, $"An entry lives more than zero and {LongestLifetime} at most (C8).");
+        }
+
         Kind = kind;
         Shape = shape;
         Lifetime = lifetime;
         Version = ShapeVersion.Of(shape);
     }
+
+    /// <summary>The longest lifetime of an entry, which bounds a bug in the removal and the age of a removal that still matters (C6, C8).</summary>
+    public static TimeSpan LongestLifetime { get; } = TimeSpan.FromMinutes(10);
 
     /// <summary>The kind of read: the first part of its key, and the tag of its counter.</summary>
     public string Kind { get; }
