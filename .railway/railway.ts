@@ -117,7 +117,9 @@ export default defineRailway((ctx) => {
     source: image(valkey.image),
     replicas: { [region]: 1 },
     start: `/bin/sh -c '[ -n "$VALKEY_PASSWORD" ] || { echo "VALKEY_PASSWORD is empty" >&2; exit 1; }; exec valkey-server --port ${valkey.port} --requirepass "$VALKEY_PASSWORD" --maxmemory 384mb --maxmemory-policy allkeys-lru --save "" --appendonly no'`,
-    deploy: { limitOverride: { containers: { memoryBytes: 512 * 1024 * 1024 } } },
+    deploy: {
+      limitOverride: { containers: { memoryBytes: 512 * 1024 * 1024 } },
+    },
     env: {
       VALKEY_PASSWORD: ctx.shared.VALKEY_PASSWORD,
     },
