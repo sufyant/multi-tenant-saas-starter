@@ -6,6 +6,7 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.SystemAdmins;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using Tenancy.Caching;
 using Wolverine;
 
 namespace ControlPlane.Infrastructure.Persistence.SystemAdmins;
@@ -18,21 +19,24 @@ internal sealed class SystemAdminDirectory(
     ControlPlaneDbContext controlPlane,
     IIdentityProvider identity,
     SystemAdminOptions settings,
-    IMessageBus bus) : ISystemAdminDirectory
+    IMessageBus bus,
+    ReadCache cache) : ISystemAdminDirectory
 {
     public async Task<IReadOnlySet<string>?> FindPlatformPermissionsAsync(
         string externalUserId,
         bool secondFactorVerified,
         CancellationToken cancellationToken)
     {
-        var user = await controlPlane.Users
-            .Where(user => user.ExternalId == externalUserId)
-            .Select(user => new { user.Email, IsSystemAdmin = controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) })
-            .SingleOrDefaultAsync(cancellationToken);
-        if (user is { IsSystemAdmin: true } || !secondFactorVerified)
+        var access = await cache.ReadAsync(CachedReads.PlatformAccess, externalUserId, token => ReadAccessAsync(externalUserId, token), cancellationToken);
+        if (access.IsSystemAdmin || !secondFactorVerified)
         {
-            return SystemDoor.PermissionsFor(user is { IsSystemAdmin: true }, secondFactorVerified);
+            return SystemDoor.PermissionsFor(access.IsSystemAdmin, secondFactorVerified);
         }
+
+        // A person with a second factor who is no system admin: the list of root system admins decides, and the cache holds no address.
+        var user = access.Known
+            ? await controlPlane.Users.Where(user => user.ExternalId == externalUserId).Select(user => new { user.Email }).SingleOrDefaultAsync(cancellationToken)
+            : null;
 
         var rootEmail = user is null
             ? SystemDoor.RootEmailOf(settings.Roots, secondFactorVerified, EmailAddress.AllOf(await identity.FindVerifiedEmailsAsync(externalUserId, cancellationToken)))
@@ -47,6 +51,13 @@ internal sealed class SystemAdminDirectory(
     }
 
     public Result CheckReverification(TimeSpan? secondFactorAge) => SystemDoor.CheckReverification(secondFactorAge, settings.ReverificationWindow);
+
+    private async Task<PlatformAccess> ReadAccessAsync(string externalUserId, CancellationToken cancellationToken) =>
+        await controlPlane.Users
+            .Where(user => user.ExternalId == externalUserId)
+            .Select(user => new PlatformAccess(true, controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id)))
+            .SingleOrDefaultAsync(cancellationToken)
+        ?? new PlatformAccess(Known: false, IsSystemAdmin: false);
 
     private Task<bool> IsSystemAdminAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => controlPlane.Users.Any(user => user.Id == admin.UserId && user.ExternalId == externalUserId), cancellationToken);

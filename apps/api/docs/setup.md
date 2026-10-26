@@ -120,3 +120,13 @@ docker run --rm -d --name aspire-dashboard -p 18888:18888 -p 4317:18889 \
 ```
 
   Then start each process with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` (OTLP over gRPC, the exporter's default) and open `http://localhost:18888`. The anonymous access suits a local machine only. Without it, the dashboard prints a login link to its log (`docker logs aspire-dashboard`). Source: Aspire documentation, "Standalone Aspire dashboard" (aspire.dev/dashboard/standalone).
+
+## 6. Cache provider
+
+The shared cache needs a server that speaks the Redis protocol (section 3 of `ARCHITECTURE.md`, "Cache"). The template uses Valkey, which is BSD licensed. Redis 8 is licensed under RSALv2, SSPLv1 or AGPLv3, so the template does not use it.
+
+- `ConnectionStrings:Cache` names the server in the StackExchange.Redis form: `host:port,password=...`. Without it the API has no cache and reads every access check from the database.
+- The server is a cache only: it needs no persistence and no backup. Give it a memory limit and the eviction policy `allkeys-lru`, so a full cache evicts old entries instead of refusing writes.
+- Reach it over a private network only, with a password.
+- Railway: `.railway/railway.ts` declares the service `valkey` from the official image; `docs/deployment.md` at the repository root, section 17, gives the steps. A managed Valkey or Redis-protocol service of another platform works too, with the same settings.
+- Local development: `docker run --rm -d --name valkey -p 6379:6379 valkey/valkey:9.1.2`, then start each process with `ConnectionStrings__Cache=localhost:6379`. Without it the API runs as before.

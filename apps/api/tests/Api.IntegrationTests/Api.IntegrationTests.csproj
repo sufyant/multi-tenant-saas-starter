@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.Redis" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
@@ -27,6 +28,7 @@
   <ItemGroup>
     <None Include="..\..\db\bootstrap.sql" Link="bootstrap.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\db\postgres-image" Link="postgres-image" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.railway\valkey.json" Link="valkey.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

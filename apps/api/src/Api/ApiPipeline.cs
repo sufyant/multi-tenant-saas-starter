@@ -1,6 +1,7 @@
 using System.Reflection;
 using Api.Authentication;
 using Api.Authorization;
+using Api.Caching;
 using Api.ErrorHandling;
 using Api.Hosting;
 using Api.Idempotency;
@@ -50,6 +51,7 @@ internal static class ApiPipeline
         builder.Services.AddDeadLetterOptions();
 
         builder.AddObservability();
+        builder.AddCaching();
         builder.AddAccess();
         builder.Services.AddErrorHandling();
         builder.AddMessaging(host, role, openApiBuild, handlerAssemblies);
