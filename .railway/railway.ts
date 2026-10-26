@@ -2,6 +2,7 @@
 //
 // This file manages the services of the environment that the Railway CLI is linked to:
 // - the PostgreSQL service `postgres`, from Railway's template, with its region;
+// - the cache service `valkey`, from the official Valkey image, with its region, start command and memory limit;
 // - the two API services: their names, region, replicas, health check and variables;
 // - the two web apps, `web` and `platform`: the same, from .railway/web.json and .railway/platform.json.
 //
@@ -26,7 +27,7 @@
 //   pnpm railway:plan     shows the changes and changes nothing
 //   pnpm railway:apply    applies the changes
 // Read the plan first. After the first deploy, do not apply: follow docs/deployment.md, section 7.
-import { defineRailway, postgres, project, service } from "railway/iac";
+import { defineRailway, image, postgres, project, service } from "railway/iac";
 // The values that the deploy scripts read too: the service names, the management port and the
 // health path. The API's own defaults are the source of the port and the path;
 // InfrastructureValueTests in apps/api checks that this file names the same.
@@ -34,6 +35,9 @@ import infrastructure from "./api.json" with { type: "json" };
 // The same values of each web app: its service name, port and health path. route.test.ts in each app checks the path, and
 // env.test.ts in each app checks what this file gives the service.
 import platform from "./platform.json" with { type: "json" };
+// The cache's service name, image and port. The API's test fixtures run the same image, and InfrastructureValueTests checks that
+// the image is pinned by digest.
+import valkey from "./valkey.json" with { type: "json" };
 import web from "./web.json" with { type: "json" };
 
 // Every key that apps/api/docs/configuration.md marks as required outside Development, except
@@ -48,6 +52,9 @@ import web from "./web.json" with { type: "json" };
 //
 // No API service references a variable of the `postgres` service. DATABASE_URL, PGUSER and
 // PGPASSWORD hold the superuser; the API connects as api_application only (R2, R7).
+//
+// ConnectionStrings:Cache is optional, and the API services get it below, from the `valkey` service. Without it the API reads every
+// access check from the database.
 //
 // Host:ErrorTracking:Dsn is optional: the API sends its errors to the error tracker only with it. A
 // missing shared variable gives an empty value, and an empty DSN turns error tracking off.
@@ -96,6 +103,26 @@ export default defineRailway((ctx) => {
   // (docs/deployment.md, section 3).
   const database = postgres("postgres", { region });
 
+  // The shared cache of the API's access checks (apps/api/docs/ARCHITECTURE.md, section 3, "Cache"). Valkey is BSD licensed and
+  // speaks the Redis protocol. It is a cache only, so it has no volume and saves nothing: a lost cache refills from the
+  // database. It has no public domain and no TCP proxy, so only the private network reaches it.
+  // - VALKEY_PASSWORD: a shared variable that the maintainer creates once with a random value (docs/deployment.md, section 17).
+  //   The start command reads it, and the API's connection string references it, so the password has one source. A missing
+  //   shared variable gives an empty value, and an empty password would turn authentication off, so Valkey does not start then.
+  // - The container's memory limit is 512 MB, and Valkey keeps its data under 384 MB, with room for its own buffers.
+  //   Railway's default sets no limit. When the data reaches the limit, Valkey evicts the least recently used key of any key
+  //   (allkeys-lru): every key is an entry with an expiry that can refill from the database (Valkey docs, "Key eviction").
+  // - --save "" and --appendonly no turn persistence off, so Valkey never forks to write a snapshot.
+  const cache = service(valkey.service, {
+    source: image(valkey.image),
+    replicas: { [region]: 1 },
+    start: `/bin/sh -c '[ -n "$VALKEY_PASSWORD" ] || { echo "VALKEY_PASSWORD is empty" >&2; exit 1; }; exec valkey-server --port ${valkey.port} --requirepass "$VALKEY_PASSWORD" --maxmemory 384mb --maxmemory-policy allkeys-lru --save "" --appendonly no'`,
+    deploy: { limitOverride: { containers: { memoryBytes: 512 * 1024 * 1024 } } },
+    env: {
+      VALKEY_PASSWORD: ctx.shared.VALKEY_PASSWORD,
+    },
+  });
+
   // One build output, two process roles (W5). The worker serves the health endpoints too
   // (apps/api/docs/local-run.md, section 6). `own` holds the variables of one service alone.
   const api = (
@@ -113,6 +140,10 @@ export default defineRailway((ctx) => {
         // answers the health endpoints only on its management port (Railway docs, "Healthchecks",
         // "Configure the healthcheck port").
         PORT: String(infrastructure.managementPort),
+        // The web host reads its access checks through the cache, and both hosts remove the entries of the rows they change,
+        // so both reach Valkey over the private network. Plain TCP, because WireGuard encrypts private traffic (Railway docs,
+        // "How Private Networking Works").
+        ConnectionStrings__Cache: `\${{${valkey.service}.RAILWAY_PRIVATE_DOMAIN}}:${valkey.port},password=\${{${valkey.service}.VALKEY_PASSWORD}}`,
         ...Object.fromEntries(
           sharedVariables.map((name) => [name, ctx.shared[name]]),
         ),
@@ -149,6 +180,7 @@ export default defineRailway((ctx) => {
   return project(ctx.projectName, {
     resources: [
       database,
+      cache,
       api(infrastructure.services.web, "web"),
       // Host:Heartbeat:Url is optional and for the worker alone: the web host's uptime monitor calls a
       // public route, and the worker answers none, so its heartbeat is its alert when it stops. The URL holds
