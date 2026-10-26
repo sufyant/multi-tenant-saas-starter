@@ -5,6 +5,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Tenancy.Caching;
 
 namespace Api.Observability;
 
@@ -20,7 +21,7 @@ internal static class ObservabilityExtensions
     // The OpenTelemetry SDK reads its other settings from the environment by these names, too.
     private const string OtlpEndpoint = "OTEL_EXPORTER_OTLP_ENDPOINT";
 
-    // A module names its meter "Modules.{module}".
+    // A module names its meter "Modules.{module}". The shared cache counts its reads on ReadCache.MeterName.
     private const string ModuleMeters = "Modules.*";
 
     public static WebApplicationBuilder AddObservability(this WebApplicationBuilder builder)
@@ -40,7 +41,7 @@ internal static class ObservabilityExtensions
         var telemetry = builder.Services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService(builder.Environment.ApplicationName))
             .WithTracing(tracing => tracing.AddAspNetCoreInstrumentation().AddSource(WolverineActivitySource))
-            .WithMetrics(metrics => metrics.AddAspNetCoreInstrumentation().AddMeter(WolverineMeters, ModuleMeters))
+            .WithMetrics(metrics => metrics.AddAspNetCoreInstrumentation().AddMeter(WolverineMeters, ModuleMeters, ReadCache.MeterName))
             .WithLogging();
 
         if (builder.Configuration[OtlpEndpoint] is { Length: > 0 } endpoint)

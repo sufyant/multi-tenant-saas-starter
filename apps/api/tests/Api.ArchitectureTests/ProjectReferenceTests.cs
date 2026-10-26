@@ -26,7 +26,8 @@ public sealed class ProjectReferenceTests
         references.Except([Solution.SharedKernel]).ShouldBeEmpty();
     }
 
-    // Tenancy reads the tenant of a module DbContext from Wolverine's message context (W2), and nothing else of Wolverine.
+    // Tenancy reads the tenant of a module DbContext from Wolverine's message context (W2), and publishes the durable removal of the
+    // cache tags through it (C6); it uses no other part of Wolverine.
     [Fact]
     public void ReferencePackages_Tenancy_StaysInsideTheTable()
     {

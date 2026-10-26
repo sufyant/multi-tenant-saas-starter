@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Tenancy.Caching;
 
 namespace Tenancy;
 
@@ -17,21 +18,35 @@ public static class TenancyServiceCollectionExtensions
         services.AddSingleton(provider => DatabaseConnection.CreateDataSource(pooledConnectionString(provider)));
 
     /// <summary>
+    /// The host's part of the cache: the removal of the tags of every row a module DbContext saves, durable and after the commit (C6). The
+    /// host registers <see cref="ReadCache"/>, <see cref="CacheRemoval"/> and the handler of <see cref="RemoveCacheTagsCommand"/> too.
+    /// </summary>
+    /// <param name="removeAtCommit">Whether the tags are also removed at once after the commit. Only a test turns it off.</param>
+    public static IServiceCollection AddCacheInvalidation(this IServiceCollection services, bool removeAtCommit = true) =>
+        services.AddSingleton(provider => new CacheInvalidationInterceptor(
+            provider.GetRequiredService<ReadCache>(), provider.GetRequiredService<TimeProvider>(), removeAtCommit));
+
+    /// <summary>
     /// A module DbContext's options: the host's data source, the module's own schema, and the tenant declared at the start of each
-    /// transaction (W2). The module registers its DbContext with Wolverine's EF Core integration and these options.
+    /// transaction (W2), and the removal of its rows' cache tags after each commit when the host has the cache. The module registers
+    /// its DbContext with Wolverine's EF Core integration and these options.
     /// </summary>
     /// <remarks>
     /// Wolverine reads the model of every module DbContext while it starts, to find the one that stores a saga (W6). A host that
     /// registers no database, as the build that writes the OpenAPI document, still builds the model: it needs the provider, not a
     /// connection.
     /// </remarks>
-    public static DbContextOptionsBuilder UseModuleDatabase(this DbContextOptionsBuilder options, IServiceProvider services, string schema) =>
+    public static DbContextOptionsBuilder UseModuleDatabase(this DbContextOptionsBuilder options, IServiceProvider services, string schema)
+    {
         UseModuleConventions(
                 options,
                 npgsql => services.GetService<NpgsqlDataSource>() is { } dataSource
                     ? npgsql.UseNpgsql(dataSource, Configure(schema))
                     : npgsql.UseNpgsql(Configure(schema)))
             .AddInterceptors(TenantDeclarationInterceptor.Instance);
+
+        return services.GetService<CacheInvalidationInterceptor>() is { } invalidation ? options.AddInterceptors(invalidation) : options;
+    }
 
     /// <summary>A module's migrations, which the separate migration step applies.</summary>
     public static IServiceCollection AddModuleMigrations<TContext>(this IServiceCollection services, string schema)
