@@ -360,6 +360,7 @@ Rules:
 - Change a setting of a service in the file, in a pull request. Do not change it only in the Railway dashboard. The next apply reverts it.
 - Apply deletes a service variable that is not in the file. Add every service variable to the file.
 - No service but `postgres` has a `source` in the file, because CI sets their image. After the first deploy, every plan shows `source.image` and `source.type` of each deployed service going to `null`. The Railway CLI diffs a `source` that the file leaves out against `null`: `diff_top_level_field` in `src/iac/change_set.rs` of github.com/railwayapp/cli. CLI 5.64.2 shows it, and the code is the same in 5.68.0. The CLI has no setting that leaves `source` unmanaged; `variables: { managed, ignore }` covers variables only (`variable_policy` in `src/iac/compiler.rs`). The Railway docs say the opposite: "Omit `source` when `.railway/railway.ts` should manage service settings but not declare a GitHub repository or Docker image" (Railway docs, "Infrastructure as Code", reference, "Source"). Observed in staging on 2026-10-19, with Railway CLI 5.64.2: `pnpm railway:apply --confirm-destructive` applied a plan with these `source` lines and kept the image. The variables of `api-web` and `api-worker` changed, so Railway redeployed both with the same `ghcr.io/<owner>/<repo>/api` image, and both came online (section 13, step 2). One observation is not a guarantee for another CLI version. So after the first deploy, still add settings with the procedure below when you can. A plan that adds a service needs an apply: apply only a plan that shows exactly the expected lines, and look at the image of each deployed service right after it. If an apply removed an image, rerun the last successful Delivery run of `main` at once, so `deploy.yml` sets the image again by digest.
+- After an apply that adds or changes a service variable, check that each such service runs with it. For the web apps, check the attributes of their `<html>` tag (section 16, step 5). For `api-worker`, check that its heartbeat shows "Up" in Better Stack. For another variable, check its effect. If a check fails, use Redeploy on the service's active deployment in the Railway dashboard. Restart is not enough: it keeps the old environment. Observed in staging on 2026-10-25: apply added the error tracking variables to all four services, and the new deployment of `web` ran without them, although the service's variables held them. Apply prints the `source` lines of a service before its variables, so the deployment that the service change starts can begin before the variables are written. This is an observation, not a documented behaviour. A Redeploy fixed it.
 - Production has not had an apply since its first deploy. The first apply to production after it goes live is a decision for the maintainer.
 - The first apply of a new environment is safe (step 6 of section 4). The services have no image yet, so the plan shows no change to `source`.
 - A shared variable must exist before you apply. A reference to a shared variable that does not exist gives an empty value. Railway does not stop the deploy for it. Source: Railway Central Station answers; the Railway docs do not describe this case. Set the shared variables first (step 3 of section 4).
@@ -847,6 +848,17 @@ Do these steps once for staging. For production, do steps 3 to 7 with `productio
    | `Host__Heartbeat__Url` | the URL of the heartbeat `<environment> api-worker`: in Better Stack, open Uptime, then "Heartbeats", then the heartbeat, and copy its URL. It is a secret: its token is in the path |
 
    `.railway/railway.ts` gives each service its own variable, and `Host__Heartbeat__Url` to `api-worker` only. Without `Host__Heartbeat__Url`, the worker sends no heartbeat, and the heartbeat stays "Pending" and never alerts. It also sets the environment tag of the events from the linked Railway environment: `ASPNETCORE_ENVIRONMENT` for the API, `ERROR_TRACKING_ENVIRONMENT` for the web apps. You set neither. Then run `pnpm railway:plan` and `pnpm railway:apply` for the environment (section 7).
+
+   After the apply, check that each service runs with its new variables (section 7, "Rules"). For the web app, run this. It prints no DSN:
+
+   ```bash
+   URL="$(gh variable get WEB_URL --env <environment>)/sign-in"
+   curl -s -L -c /tmp/jar -b /tmp/jar -H 'Accept: text/html' -o /tmp/page.html -w '%{http_code} %{url_effective}\n' "$URL" | sed -E 's#\?.*##'
+   grep -o '<html[^>]*>' /tmp/page.html | sed -E 's/dsn="[^"]*"/dsn="(present)"/'
+   rm -f /tmp/jar /tmp/page.html
+   ```
+
+   The `<html>` tag must hold `data-error-tracking-dsn="(present)"` and `data-error-tracking-environment="<environment>"`. Repeat it with `PLATFORM_URL`. For `api-worker`, the heartbeat `<environment> api-worker` must show "Up" in Better Stack. If a check fails, use Redeploy on the service's active deployment in the Railway dashboard. Restart keeps the old environment.
 6. **Set the Errors integrations (manual).** Better Stack's API cannot manage the Errors integrations (`.betterstack/README.md`). Two integrations alert: "Incidents", which is on by default and notifies by email, and "Slack".
    1. Choose a Slack channel for the alerts, such as `#alerts-<product>`.
    2. In Better Stack, open Errors, then "Integrations". Find "Slack" and click "Add".
@@ -886,6 +898,7 @@ After the next deploy, check:
 - In Better Stack, Uptime, the three monitors of the environment show "Up".
 - In Better Stack, Uptime, "Heartbeats", the heartbeat `<environment> api-worker` shows "Up". "Pending" means that no call came yet: check that `Host__Heartbeat__Url` is set and that `api-worker` is ready.
 - An error in an app shows in its Errors application with the right `environment`, and a new error posts to the Slack channel.
+- For the web app, open it in a browser and run this in the browser's console: `setTimeout(() => { throw new Error("error tracking test") })`. The error shows in the Errors application `web` with the right `environment`, and a message reaches the Slack channel.
 
 ### When the plan prints something it cannot apply
 
