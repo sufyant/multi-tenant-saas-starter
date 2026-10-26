@@ -31,8 +31,7 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
         messaging?.TenantId is { Length: > 0 } tenantId && tenantId != StorageConstants.DefaultTenantId ? Guid.Parse(tenantId) : null;
 
     /// <summary>
-    /// The module's tag table: the entity types whose saved changes remove cache tags after the commit, and the tag of each (section 3,
-    /// "Cache"). A module without a cached read has none.
+    /// The module's tag table: the entity types whose saved changes remove cache tags after the commit, and the tag of each (C5). A module without a cached read has none.
     /// </summary>
     protected internal virtual IReadOnlyList<CacheTagSource> CacheTagSources => [];
 
@@ -61,7 +60,7 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
 
     /// <summary>
     /// Removes the tags after the current transaction commits, for a write that the change tracker does not see: a bulk statement or
-    /// raw SQL that changes a row of a cached type (ARCHITECTURE.md, section 3, "Cache"). It is refused outside a transaction, which
+    /// raw SQL that changes a row of a cached type (C7). It is refused outside a transaction, which
     /// would leave no commit to wait for. <c>BulkWriteTests</c> fails for such a write without it.
     /// </summary>
     public void RemoveCacheTagsAfterCommit(params IEnumerable<string> tags)

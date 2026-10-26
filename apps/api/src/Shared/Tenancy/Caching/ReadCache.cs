@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace Tenancy.Caching;
 
 /// <summary>
-/// The one way to cache a read (ARCHITECTURE.md, section 3, "Cache"), and the one code besides the composition root that calls the
+/// The one way to cache a read (C2), and the one code besides the composition root that calls the
 /// cache. A read names its <see cref="CachedRead"/>, which builds the key and the tags; the cache keeps the answer for the read's
 /// lifetime. Without a cache, every read goes to the database. A cache that fails or is slow never fails a request: the read goes to the
 /// database, and the failure is a warning, because a cache that is down needs no person (section 7, "Error tracking", rule 4).

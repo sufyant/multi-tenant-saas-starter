@@ -7,7 +7,7 @@ using Tenancy.Caching;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The module's cache tags and the tag table (ARCHITECTURE.md, section 3, "Cache"): which rows' changes remove which tags, after the
+/// The module's cache tags and the tag table (C5): which rows' changes remove which tags, after the
 /// commit. A tag names what a cached answer depends on, so the row that changes it removes every entry that names it.
 /// </summary>
 internal static class CacheTags

@@ -6,17 +6,12 @@ using Tenancy.Caching;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// Every read of the module that the shared cache holds, in one place, so a reviewer sees them all (ARCHITECTURE.md, section 3, "Cache").
-/// They are the reads of the access check that the host makes on every request (A9, T7, A4). Each stores only rows, never what depends on
-/// the session, such as a second factor.
+/// Every read of the module that the shared cache holds, in one place, so a reviewer sees them all (C1): the reads of the access
+/// check that the host makes on every request (A9, T7, A4). Each stores only rows (C4).
 /// </summary>
 internal static class CachedReads
 {
-    /// <summary>
-    /// How long an entry that grants access lives: one minute. A missed removal can then grant an old permission for one minute at most,
-    /// as long as a session token of the identity provider lives (Clerk, "Session tokens": 60 seconds), which a revoked session already
-    /// keeps. It comes first: the reads below read it when they are built.
-    /// </summary>
+    /// <summary>How long an entry that grants access lives (C8). It comes first: the reads below read it when they are built.</summary>
     public static readonly TimeSpan AccessLifetime = TimeSpan.FromMinutes(1);
 
     /// <summary>A user's deletion and suspension, on every me and tenant route (A9). A person who is not a user yet is neither.</summary>

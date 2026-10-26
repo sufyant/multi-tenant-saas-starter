@@ -18,8 +18,7 @@ public static class TenancyServiceCollectionExtensions
         services.AddSingleton(provider => DatabaseConnection.CreateDataSource(pooledConnectionString(provider)));
 
     /// <summary>
-    /// The host's part of the cache: the removal of the tags of every row a module DbContext saves, after the commit (section 3,
-    /// "Cache"). The host registers <see cref="ReadCache"/> too.
+    /// The host's part of the cache: the removal of the tags of every row a module DbContext saves, after the commit (C6). The host registers <see cref="ReadCache"/> too.
     /// </summary>
     public static IServiceCollection AddCacheInvalidation(this IServiceCollection services) =>
         services.AddSingleton(provider => new CacheInvalidationInterceptor(provider.GetRequiredService<ReadCache>()));

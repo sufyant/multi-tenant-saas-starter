@@ -1,6 +1,6 @@
 using Tenancy.Caching;
 
-namespace Tenancy.IntegrationTests.Caching;
+namespace Tenancy.UnitTests.Caching;
 
 // Section 3, "Cache": every key holds the version of the shape its read stores. The version comes from the shape itself, so a change
 // that a reader of an old entry could misread changes the key, and a deploy never reads an entry of the old shape.

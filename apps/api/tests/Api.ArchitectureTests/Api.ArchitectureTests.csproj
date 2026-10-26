@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Modules\Notifications\Notifications.UnitTests\Notifications.UnitTests.csproj" />
     <ProjectReference Include="..\..\src\Shared\SharedKernel.UnitTests\SharedKernel.UnitTests.csproj" />
     <ProjectReference Include="..\..\src\Shared\Tenancy.IntegrationTests\Tenancy.IntegrationTests.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Tenancy.UnitTests\Tenancy.UnitTests.csproj" />
     <ProjectReference Include="..\Api.IntegrationTests\Api.IntegrationTests.csproj" />
     <ProjectReference Include="..\Api.EndToEndTests\Api.EndToEndTests.csproj" />
     <ProjectReference Include="..\Api.UnitTests\Api.UnitTests.csproj" />

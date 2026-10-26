@@ -4,11 +4,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Tenancy.Caching;
 
-// Removes the cache entries of the rows a module DbContext changed, after the commit (ARCHITECTURE.md, section 3, "Cache"). No handler
-// and no command calls the cache: the save collects the tags of the rows it writes from the module's tag table, and the commit of the
-// transaction removes them. Before the commit, another request could read the old row and put it back. A save outside a transaction
-// commits by itself, so it removes its tags when it has saved; a transaction that rolls back removes nothing. A commit that fails may
-// still have committed, so its tags go too: a removal is never wrong.
+// The removal of the cache tags of the rows a module DbContext saved, after the commit (C6): a save collects them from the module's tag
+// table, and the end of its transaction removes them or drops them.
 internal sealed class CacheInvalidationInterceptor(ReadCache cache) : ISaveChangesInterceptor, IDbTransactionInterceptor
 {
     public InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)

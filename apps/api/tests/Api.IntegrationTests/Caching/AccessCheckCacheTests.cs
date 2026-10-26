@@ -180,6 +180,67 @@ public sealed class AccessCheckCacheTests(Valkey valkey, Database database) : IC
         (before, after).ShouldBe((HttpStatusCode.OK, HttpStatusCode.Forbidden));
     }
 
+    [Fact]
+    public async Task CheckAccess_AfterTheUserAcceptsAnInvitation_LetsTheNewMemberInAtOnce()
+    {
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var secret = Guid.NewGuid().ToString("N");
+        var user = await _testData.AddUserAsync(email: email);
+        _api.Identity.AddAccount(user, email);
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddInvitationAsync(tenant.Id, email, secret: secret);
+        var before = await MembersAsync(user, tenant.Id);
+
+        (await _api.WaitingForMessagesAsync(() => _api.CreateClient(user).PostAsJsonAsync("/v1/me/invitations/accept", new { code = $"{tenant.Id}.{secret}" }, Cancellation))).EnsureSuccessStatusCode();
+        var after = await MembersAsync(user, tenant.Id);
+
+        (before, after).ShouldBe((HttpStatusCode.NotFound, HttpStatusCode.OK));
+    }
+
+    [Fact]
+    public async Task CheckAccess_AfterTheMemberIsMadeAnOwner_GrantsTheOwnersPermissionsAtOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        var before = await InvitationsAsync(member, tenant.Id);
+
+        (await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).MakeOwnerAsync(tenant.Id, await _testData.UserIdOfAsync(member)))).EnsureSuccessStatusCode();
+        var after = await InvitationsAsync(member, tenant.Id);
+
+        (before, after).ShouldBe((HttpStatusCode.Forbidden, HttpStatusCode.OK));
+    }
+
+    [Fact]
+    public async Task CheckAccess_AfterTheUserIsReactivated_LetsTheUserInAtOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        var admin = await SystemAdminAsync();
+        var userId = await _testData.UserIdOfAsync(member);
+        (await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation))).EnsureSuccessStatusCode();
+        var before = await MembersAsync(member, tenant.Id);
+
+        (await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/users/{userId}/reactivate", null, Cancellation))).EnsureSuccessStatusCode();
+        var after = await MembersAsync(member, tenant.Id);
+
+        (before, after).ShouldBe((HttpStatusCode.Forbidden, HttpStatusCode.OK));
+    }
+
+    [Fact]
+    public async Task CheckAccess_AfterTheTenantIsReactivated_LetsTheMemberInAtOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        var admin = await SystemAdminAsync();
+        (await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id))).EnsureSuccessStatusCode();
+        var before = await MembersAsync(member, tenant.Id);
+
+        (await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation))).EnsureSuccessStatusCode();
+        var after = await MembersAsync(member, tenant.Id);
+
+        (before, after).ShouldBe((HttpStatusCode.Forbidden, HttpStatusCode.OK));
+    }
+
     // Two processes share Valkey and nothing else. A suspension through one is seen at once by the other.
     [Fact]
     public async Task CheckAccess_AWriteThroughAnotherProcess_IsSeenAtOnce()

@@ -9,7 +9,7 @@ using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
 
 namespace Api.Caching;
 
-// The composition root of the shared cache (ARCHITECTURE.md, section 3, "Cache"): Microsoft's HybridCache abstraction, served by
+// The composition root of the shared cache (C9, C10): Microsoft's HybridCache abstraction, served by
 // FusionCache, with Valkey as its distributed level and the in-memory level off. Every process reads the same entries, so a removal
 // in one is seen at once in all of them, with no message between them. Without ConnectionStrings:Cache there is no cache: ReadCache
 // then reads the database every time. This file and ReadCache are the only code that knows the cache (CachingTests).

@@ -103,7 +103,7 @@ export default defineRailway((ctx) => {
   // (docs/deployment.md, section 3).
   const database = postgres("postgres", { region });
 
-  // The shared cache of the API's access checks (apps/api/docs/ARCHITECTURE.md, section 3, "Cache"). Valkey is BSD licensed and
+  // The shared cache of the API's access checks (apps/api/docs/ARCHITECTURE.md, C9). Valkey is BSD licensed and
   // speaks the Redis protocol. It is a cache only, so it has no volume and saves nothing: a lost cache refills from the
   // database. It has no public domain and no TCP proxy, so only the private network reaches it.
   // - VALKEY_PASSWORD: a shared variable that the maintainer creates once with a random value (docs/deployment.md, section 17).

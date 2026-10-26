@@ -109,8 +109,13 @@ internal static partial class BulkWrites
         return WrittenBy(sql, tables);
     }
 
-    private static IEnumerable<CachedTable> WrittenBy(string sql, IReadOnlyList<CachedTable> tables)
+    private static IEnumerable<CachedTable> WrittenBy(string? sql, IReadOnlyList<CachedTable> tables)
     {
+        if (sql is null)
+        {
+            return [new CachedTable("SQL this test cannot read", typeof(object), "")];
+        }
+
         return Writes().Matches(sql)
             .Where(write => !OnlyUncachedColumns(write))
             .SelectMany(write => tables.Where(table => table.Name == write.Groups["table"].Value || table.Name.EndsWith($".{write.Groups["table"].Value}", StringComparison.Ordinal)));
@@ -121,15 +126,23 @@ internal static partial class BulkWrites
         && UncachedColumns.TryGetValue(write.Groups["table"].Value, out var uncached)
         && write.Groups["set"].Value.Split(',').Select(assignment => assignment.Split('=')[0].Trim()).All(uncached.Contains);
 
-    private static string TextOf(ExpressionSyntax expression, SyntaxNode? method) => expression switch
+    // The text of a statement: a literal, an interpolated string, a concatenation of them, or a local or a field of the type that holds
+    // the code, whose initializer is one of them. Anything else, such as a parameter, is SQL this test cannot read: null.
+    private static string? TextOf(ExpressionSyntax expression, SyntaxNode? method) => expression switch
     {
         LiteralExpressionSyntax literal => literal.Token.ValueText,
         InterpolatedStringExpressionSyntax interpolated => string.Concat(interpolated.Contents.Select(part => part is InterpolatedStringTextSyntax text ? text.TextToken.ValueText : "{}")),
-        IdentifierNameSyntax local => method?.DescendantNodes().OfType<VariableDeclaratorSyntax>().FirstOrDefault(variable => variable.Identifier.Text == local.Identifier.Text)?.Initializer?.Value is { } value
-            ? TextOf(value, method)
-            : "",
-        _ => "",
+        BinaryExpressionSyntax { RawKind: (int)SyntaxKind.AddExpression } sum => TextOf(sum.Left, method) is { } left && TextOf(sum.Right, method) is { } right ? left + right : null,
+        ParenthesizedExpressionSyntax parenthesized => TextOf(parenthesized.Expression, method),
+        IdentifierNameSyntax name => DeclarationOf(name, method)?.Initializer?.Value is { } value ? TextOf(value, method) : null,
+        _ => null,
     };
+
+    private static VariableDeclaratorSyntax? DeclarationOf(IdentifierNameSyntax name, SyntaxNode? method) =>
+        method?.DescendantNodes().OfType<VariableDeclaratorSyntax>().FirstOrDefault(variable => variable.Identifier.Text == name.Identifier.Text)
+        ?? name.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault()?.Members.OfType<FieldDeclarationSyntax>()
+            .SelectMany(field => field.Declaration.Variables)
+            .FirstOrDefault(variable => variable.Identifier.Text == name.Identifier.Text);
 
     private static bool Removes(SyntaxNode? method, CachedTable table) =>
         method?.DescendantNodes().OfType<InvocationExpressionSyntax>()

@@ -925,10 +925,10 @@ After the next deploy, check:
 | Password | The shared variable `VALKEY_PASSWORD`, sealed. The start command reads it, and `ConnectionStrings__Cache` references it | A password never goes into the repository. Valkey does not start with an empty one, because an empty password turns authentication off |
 | Volume and persistence | None: no volume, `--save ""`, `--appendonly no` | The cache holds only copies. Its loss is safe |
 | Memory | The container's limit is 512 MB; Valkey keeps its data under 384 MB (`--maxmemory`) | Railway's default sets no limit. The room above `maxmemory` is for Valkey's own buffers |
-| Eviction | `allkeys-lru` | Every key is an entry with an expiry that refills from the database, so Valkey may evict any key (Valkey docs, "Key eviction") |
+| Eviction | `allkeys-lru` | Every entry has an expiry and refills from the database, so Valkey may evict it (Valkey docs, "Key eviction"). An evicted tag can keep an old entry for its last minute; tags are read on every read, so Valkey seldom evicts one |
 | `ConnectionStrings__Cache` of `api-web` and `api-worker` | `${{valkey.RAILWAY_PRIVATE_DOMAIN}}:6379,password=${{valkey.VALKEY_PASSWORD}}` | Both processes remove the entries of the rows they change, so both need it. A process without it reads the database and removes nothing |
 
-Its loss is safe. A restart, a redeploy or a crash empties the cache. Every read then goes to the database until the cache fills again, and each entry lives one minute at most. A cache that is down or slow fails no request: the read goes to the database after 250 ms at most, and the API logs a warning, never an error, so no alert fires.
+Its loss is safe. A restart, a redeploy or a crash empties the cache. Every read then goes to the database until the cache fills again, and each entry lives one minute at most. A cache that is down or slow fails no request. A Valkey that is down fails each call at once, and the read goes to the database. A Valkey that answers nothing in time delays each cached read by 250 ms, so a tenant request by 500 ms. The API logs a warning, never an error, so no alert fires.
 
 ### First setup
 
@@ -939,5 +939,7 @@ Do these steps in each environment, `staging` first. Production's first apply af
 3. **Apply.** Run `pnpm railway:apply`, and add `--confirm-destructive` only when the plan holds exactly the lines of step 2 (section 7). Right after it, look at the image of each deployed service (section 7, "Rules").
 4. **Check the service.** In the Railway dashboard, `valkey` is online, its Settings show the memory limit of 512 MB and no public networking, and its logs show "Ready to accept connections". Check the image of `api-web` and `api-worker` too (section 7, "Rules").
 5. **Check that each API service runs with the new variable.** Apply adds `ConnectionStrings__Cache` to both services, and a deployment can start before its variables are written (section 7, "Rules"). In the Railway dashboard, open each deployment's variables and look for `ConnectionStrings__Cache`. Then send a few requests to the tenant web, and read the logs of `api-web`: they must show no `CacheReadFailed` warning. If a service runs without the variable, or its logs show the warning, use Redeploy on its active deployment. Restart is not enough: it keeps the old environment.
+
+The first deploy after the apply: until it finishes, the version before it still serves and removes no cache entry when it writes. An entry can then stay old for one minute at most. The same holds after a rollback to a version before the cache (section 6).
 
 To turn the cache off in an environment, remove `ConnectionStrings__Cache` from both API services in `.railway/railway.ts` in a pull request: the API then reads every access check from the database, as before.

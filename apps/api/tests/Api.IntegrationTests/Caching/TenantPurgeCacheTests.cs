@@ -20,6 +20,8 @@ public sealed class TenantPurgeCacheTests(Valkey valkey, Database database) : IC
     // The module's clock at the purge: the closure plus the reopen period, 30 days.
     private readonly FakeTimeProvider _time = new(ClosedAt + TimeSpan.FromDays(30));
 
+    private string _databaseName = null!;
+
     private TestData _testData = null!;
 
     private ApiFactory _api = null!;
@@ -28,12 +30,9 @@ public sealed class TenantPurgeCacheTests(Valkey valkey, Database database) : IC
 
     public async ValueTask InitializeAsync()
     {
-        var databaseName = await database.CreateMigratedDatabaseAsync();
-        _testData = new TestData(database, databaseName);
-        _api = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
-            time: _time,
-            settings: new Dictionary<string, string?> { ["ConnectionStrings:Cache"] = valkey.ConnectionString });
+        _databaseName = await database.CreateMigratedDatabaseAsync();
+        _testData = new TestData(database, _databaseName);
+        _api = Host("all");
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
@@ -60,6 +59,44 @@ public sealed class TenantPurgeCacheTests(Valkey valkey, Database database) : IC
         (after.StatusCode, await CodeOfAsync(after)).ShouldBe((HttpStatusCode.NotFound, "tenant.not_found"));
     }
 
+    // The production layout (W5): the web host starts the purge, and the worker runs its later steps, which delete the tenant's rows in
+    // bulk. The worker's commit removes the tenant's tag, so the web host's next request finds no tenant.
+    [Fact]
+    public async Task CheckAccess_AfterTheWorkerPurgesTheTenant_FindsNoTenantInTheWebHost()
+    {
+        await using var web = Host("web");
+        await using var worker = Host("worker");
+        _ = worker.Services;
+        var tenant = await ClosedTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant);
+        await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, member);
+        var before = (await web.CreateClient(member).GetAsync($"/v1/tenants/{tenant}/members", Cancellation)).StatusCode;
+
+        using (var scope = web.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenant.ToString(), new StartTenantPurgeCommand(tenant, ClosedAt), Cancellation);
+        }
+
+        await Waiting.UntilAsync(async () => await database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.tenants WHERE id = '{tenant}'", _databaseName) == "Purged");
+        var after = await web.CreateClient(member).GetAsync($"/v1/tenants/{tenant}/members", Cancellation);
+
+        before.ShouldBe(HttpStatusCode.Forbidden);
+        (after.StatusCode, await CodeOfAsync(after)).ShouldBe((HttpStatusCode.NotFound, "tenant.not_found"));
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private async Task<Guid> ClosedTenantAsync()
+    {
+        var tenant = await _testData.AddTenantAsync(status: "Closed", closedAt: ClosedAt, createdAt: ClosedAt - TimeSpan.FromDays(30));
+        await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.SummarizeAsync(tenant.Id);
+        return tenant.Id;
+    }
+
+    private ApiFactory Host(string role) => new(
+        database.ConnectionStringFor(DatabaseRoles.Application, _databaseName),
+        time: _time,
+        settings: new Dictionary<string, string?> { ["Host:Role"] = role, ["ConnectionStrings:Cache"] = valkey.ConnectionString });
 }

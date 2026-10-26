@@ -17,6 +17,10 @@ public sealed class BulkWriteTests
         {
         """;
 
+    // Statements whose text this test cannot read, and why each writes no cached table. Declaration runs only its two constants, which set
+    // the tenant or the user of a transaction (R4, R11); they reach the command through a parameter.
+    private static readonly string[] Unread = ["src/Shared/Tenancy/Declaration.cs:35: SQL this test cannot read"];
+
     public static TheoryData<string, int> PlantedWrites => new()
     {
         { """public Task Run(Guid id) => controlPlane.Database.ExecuteSqlAsync($"UPDATE control_plane.memberships SET role_id = {id}");""", 1 },
@@ -25,6 +29,8 @@ public sealed class BulkWriteTests
         { """public Task Run(Guid id) => controlPlane.Database.ExecuteSqlAsync($"UPDATE control_plane.users SET membership_count = membership_count + 1 WHERE id = {id}");""", 0 },
         { """public Task Run(Guid id) => controlPlane.Database.ExecuteSqlAsync($"UPDATE control_plane.invitations SET status = 'Cancelled' WHERE id = {id}");""", 0 },
         { """public Task Run(Guid id) => controlPlane.Database.ExecuteSqlAsync($"SELECT * FROM control_plane.tenants WHERE id = {id} FOR UPDATE");""", 0 },
+        { """public Task Run(string sql) => controlPlane.Database.ExecuteSqlRawAsync(sql);""", 1 },
+        { """public Task Run(Guid id) => controlPlane.Database.ExecuteSqlRawAsync("UPDATE control_plane.roles " + "SET name = 'x'");""", 1 },
         {
             """
             public async Task Run(Guid id)
@@ -55,7 +61,8 @@ public sealed class BulkWriteTests
         var findings = Solution.ProductionProjects
             .SelectMany(Solution.SourceFilesOf)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            .SelectMany(file => BulkWrites.WithoutRemoval(Path.GetRelativePath(Solution.Root, file), File.ReadAllText(file), tables));
+            .SelectMany(file => BulkWrites.WithoutRemoval(Path.GetRelativePath(Solution.Root, file), File.ReadAllText(file), tables))
+            .Except(Unread);
 
         tables.ShouldNotBeEmpty();
         findings.ShouldBeEmpty();
