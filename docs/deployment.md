@@ -93,6 +93,8 @@ The table holds names only. A value never goes into the repository.
 | The services `api-web` and `api-worker`, their region, replicas and health check | Repository: `.railway/railway.ts`. The service names, the management port and the health path are in `.railway/api.json`, which the deploy scripts read too | same | same |
 | The services `web` and `platform`, their region, replicas, health check and variables | Repository: `.railway/railway.ts`. Each app's service name, port and health path are in `.railway/web.json` and `.railway/platform.json`, which the deploy scripts and the apps' tests read too | same | same |
 | The PostgreSQL service `postgres`: Railway's template, its image `postgres-ssl:18` and its region | Repository: `.railway/railway.ts` | same | same |
+| The cache service `valkey`: the official Valkey image, pinned by digest, its region, start command and memory limit, and no public access | Repository: `.railway/railway.ts`. The service name, the image and the port are in `.railway/valkey.json`, which the API's tests read too (section 17) | same | same |
+| `ConnectionStrings__Cache` of `api-web` and `api-worker`: a reference to the private domain and the password of `valkey` | Repository: `.railway/railway.ts`, as a Railway reference (section 17) | own service | own service |
 | Public access (TCP proxy) of `postgres` | Railway service settings, by hand (section 4, step 7) | own proxy | own proxy |
 | Backups and point-in-time recovery of `postgres` | Railway, by hand with the Railway CLI (section 4, step 11) | off | on |
 | `Host__Role`, `PORT` | Repository: `.railway/railway.ts`, as literal values | same | same |
@@ -110,6 +112,7 @@ The table holds names only. A value never goes into the repository.
 | The custom domains of `api-web`, `web` and `platform`, and their DNS records | Railway service settings and the maintainer's DNS. Not part of the repository (section 13) | own domains | own domains |
 | The Errors applications, the uptime monitors and the heartbeats | Repository: `.betterstack/config.json`. `pnpm betterstack:apply` applies it (section 16) | monitors `staging api`, `staging web`, `staging platform`, heartbeat `staging api-worker`; the applications are shared | monitors `production api`, `production web`, `production platform`, heartbeat `production api-worker` |
 | `Host__ErrorTracking__Dsn`, `WEB_ERROR_TRACKING_DSN`, `PLATFORM_ERROR_TRACKING_DSN` | Railway shared variable, sealed. Copied from each Errors application's "Ingest" tab (section 16, step 5) | the same DSN in both environments | the same DSN in both environments |
+| `VALKEY_PASSWORD` | Railway shared variable, sealed. A random value the maintainer creates (section 17, step 1). `valkey` reads it, and `ConnectionStrings__Cache` references it | own value | own value |
 | `Host__Heartbeat__Url` | Railway shared variable, sealed: its token is in the path. Copied from the heartbeat `<environment> api-worker` (section 16, step 5). `.railway/railway.ts` gives it to `api-worker` only. Optional: without it, the worker sends no heartbeat | the URL of `staging api-worker` | the URL of `production api-worker` |
 | `ERROR_TRACKING_ENVIRONMENT` of `web` and `platform` | Repository: `.railway/railway.ts`, from the linked Railway environment (`ctx.environment`), as it sets the API's `ASPNETCORE_ENVIRONMENT` | `staging` | `production` |
 | The Errors integrations "Incidents" and "Slack": the Slack channel and the alerts | Better Stack, by hand (section 16, step 6) | shared | shared |
@@ -911,3 +914,30 @@ After the next deploy, check:
 - **Push, phone and SMS alerts** come with production (step 47), with a responder seat and an escalation policy in `.betterstack/config.json`.
 - **Errors alerts by environment** come with production (step 47). The Errors integration that calls or pushes gets "Only when tags match" set to the tag `environment` matching `production`, so a staging error never pages the owner.
 - **A status page** is a later step (1.1).
+
+## 17. The cache
+
+`valkey` is the API's shared cache: Valkey, which is BSD licensed and speaks the Redis protocol. The API keeps there the answers of the access check that every request makes (`apps/api/docs/ARCHITECTURE.md`, section 3, "Cache"). `.railway/railway.ts` declares the service, and `.railway/valkey.json` pins its image by digest; the API's tests run the same image.
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Network | Private only: no public domain, no TCP proxy | Only `api-web` and `api-worker` reach it, over the private network, which WireGuard encrypts |
+| Password | The shared variable `VALKEY_PASSWORD`, sealed. The start command reads it, and `ConnectionStrings__Cache` references it | A password never goes into the repository. Valkey does not start with an empty one, because an empty password turns authentication off |
+| Volume and persistence | None: no volume, `--save ""`, `--appendonly no` | The cache holds only copies. Its loss is safe |
+| Memory | The container's limit is 512 MB; Valkey keeps its data under 384 MB (`--maxmemory`) | Railway's default sets no limit. The room above `maxmemory` is for Valkey's own buffers |
+| Eviction | `allkeys-lru` | Every key is an entry with an expiry that refills from the database, so Valkey may evict any key (Valkey docs, "Key eviction") |
+| `ConnectionStrings__Cache` of `api-web` and `api-worker` | `${{valkey.RAILWAY_PRIVATE_DOMAIN}}:6379,password=${{valkey.VALKEY_PASSWORD}}` | Both processes remove the entries of the rows they change, so both need it. A process without it reads the database and removes nothing |
+
+Its loss is safe. A restart, a redeploy or a crash empties the cache. Every read then goes to the database until the cache fills again, and each entry lives one minute at most. A cache that is down or slow fails no request: the read goes to the database after 250 ms at most, and the API logs a warning, never an error, so no alert fires.
+
+### First setup
+
+Do these steps in each environment, `staging` first. Production's first apply after it goes live is a decision for the maintainer (section 7).
+
+1. **Create the password.** In the Railway dashboard, open Shared Variables of the environment and add `VALKEY_PASSWORD`, sealed, with a random value of at least 32 characters, for example the output of `openssl rand -hex 32` on your own machine. Do it before the apply: a reference to a shared variable that does not exist gives an empty value (section 7, "Rules"), and Valkey then does not start.
+2. **Read the plan.** Run `pnpm railway:plan` with the environment linked. It must show: "Create service valkey", "Set variable api-web.ConnectionStrings__Cache", "Set variable api-worker.ConnectionStrings__Cache", and after the first deploy the `source` lines of each deployed service, `api-web`, `api-worker`, `web` and `platform` (section 7, "Rules"). Observed on staging with Railway CLI 5.64.2: "Plan: 1 to add, 6 to change, 0 to destroy". Any other line means the file and Railway differ. Fix that first, and do not apply.
+3. **Apply.** Run `pnpm railway:apply`, and add `--confirm-destructive` only when the plan holds exactly the lines of step 2 (section 7). Right after it, look at the image of each deployed service (section 7, "Rules").
+4. **Check the service.** In the Railway dashboard, `valkey` is online, its Settings show the memory limit of 512 MB and no public networking, and its logs show "Ready to accept connections". Check the image of `api-web` and `api-worker` too (section 7, "Rules").
+5. **Check that each API service runs with the new variable.** Apply adds `ConnectionStrings__Cache` to both services, and a deployment can start before its variables are written (section 7, "Rules"). In the Railway dashboard, open each deployment's variables and look for `ConnectionStrings__Cache`. Then send a few requests to the tenant web, and read the logs of `api-web`: they must show no `CacheReadFailed` warning. If a service runs without the variable, or its logs show the warning, use Redeploy on its active deployment. Restart is not enough: it keeps the old environment.
+
+To turn the cache off in an environment, remove `ConnectionStrings__Cache` from both API services in `.railway/railway.ts` in a pull request: the API then reads every access check from the database, as before.
