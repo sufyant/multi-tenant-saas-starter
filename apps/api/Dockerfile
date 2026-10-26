@@ -6,7 +6,7 @@
 #   docker build -t api --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" apps/api
 
 # 10.0.402 when pinned. Dependabot updates the digest, not this note.
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b AS build
 WORKDIR /src
 
 # What restore needs comes first, so a change to the source alone reuses the restore layer.
@@ -22,7 +22,7 @@ RUN dotnet publish src/Api/Api.csproj --configuration Release --no-restore --out
 
 # Chiseled: no shell, no package manager. It runs in invariant globalization mode, and the code needs no ICU.
 # 10.0.13 when pinned. Dependabot updates the digest, not this note.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:5165aeeb688df15e869a56a7584bb94bf16a14e0b3ba77b49fcdbe350f6b8020
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:c89a6a61f494f20a5ae302990e814627a8d91b332fd4a8e7c1707c2d4da9555d
 # The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
 USER 0:0
 WORKDIR /app
