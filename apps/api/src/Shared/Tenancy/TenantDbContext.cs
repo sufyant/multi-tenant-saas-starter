@@ -1,8 +1,10 @@
 using System.Data.Common;
 using JasperFx;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using SharedKernel;
+using Tenancy.Caching;
 using Wolverine;
 
 namespace Tenancy;
@@ -18,12 +20,21 @@ namespace Tenancy;
 /// </remarks>
 public abstract class TenantDbContext(DbContextOptions options, IMessageContext? messaging) : DbContext(options)
 {
+    // The tags of the rows that the open transaction changed, which the cache removes after its commit (CacheInvalidationInterceptor).
+    private readonly HashSet<string> _cacheTags = [];
+
     /// <summary>
     /// The tenant of the message this DbContext serves. There is none outside a handler, for a message sent without a tenant, and
     /// for Wolverine's default tenant id, which a stored message sent without a tenant comes back with (W3).
     /// </summary>
     public Guid? MessageTenantId =>
         messaging?.TenantId is { Length: > 0 } tenantId && tenantId != StorageConstants.DefaultTenantId ? Guid.Parse(tenantId) : null;
+
+    /// <summary>
+    /// The module's tag table: the entity types whose saved changes remove cache tags after the commit, and the tag of each (section 3,
+    /// "Cache"). A module without a cached read has none.
+    /// </summary>
+    protected internal virtual IReadOnlyList<CacheTagSource> CacheTagSources => [];
 
     /// <summary>
     /// Declares the tenant for the rest of the current transaction (R4), for a read outside a handler. Outside a transaction the
@@ -47,6 +58,45 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
             CurrentTransaction("A user is declared inside a transaction, never on the connection."),
             userId,
             cancellationToken);
+
+    /// <summary>
+    /// Removes the tags after the current transaction commits, for a write that the change tracker does not see: a bulk statement or
+    /// raw SQL that changes a row of a cached type (ARCHITECTURE.md, section 3, "Cache"). It is refused outside a transaction, which
+    /// would leave no commit to wait for. <c>BulkWriteTests</c> fails for such a write without it.
+    /// </summary>
+    public void RemoveCacheTagsAfterCommit(params IEnumerable<string> tags)
+    {
+        _ = CurrentTransaction("A write that the change tracker does not see removes its cache tags inside a transaction.");
+        _cacheTags.UnionWith(tags);
+    }
+
+    // The tags of every row the change tracker is about to save, added, changed or deleted, by the module's tag table: the value
+    // before and after a change, so a row that moves leaves no entry behind. The database fills a new row's tenant column, so an
+    // empty one is the declared tenant.
+    internal void CollectCacheTags()
+    {
+        if (CacheTagSources.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var entry in ChangeTracker.Entries().Where(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+        {
+            foreach (var source in CacheTagSources.Where(source => source.Entity.IsInstanceOfType(entry.Entity)))
+            {
+                _cacheTags.UnionWith(TagsOf(entry, source));
+            }
+        }
+    }
+
+    internal IReadOnlyCollection<string> TakeCacheTags()
+    {
+        string[] tags = [.. _cacheTags];
+        _cacheTags.Clear();
+        return tags;
+    }
+
+    internal void DiscardCacheTags() => _cacheTags.Clear();
 
     protected sealed override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,6 +123,25 @@ public abstract class TenantDbContext(DbContextOptions options, IMessageContext?
     }
 
     protected abstract void BuildModel(ModelBuilder modelBuilder);
+
+    private IEnumerable<string> TagsOf(EntityEntry entry, CacheTagSource source)
+    {
+        if (source.Property is null)
+        {
+            return [source.Kind];
+        }
+
+        var property = entry.Property(source.Property);
+        object?[] values = [
+            entry.State is EntityState.Added ? null : property.OriginalValue,
+            entry.State is EntityState.Deleted ? null : property.CurrentValue,
+        ];
+        return values
+            .Select(value => value is Guid id && id == Guid.Empty && source.Property == TenantColumn.Property ? MessageTenantId : value)
+            .Where(value => value is not null)
+            .Select(value => CacheTag.Of(source.Kind, value))
+            .Distinct();
+    }
 
     private DbTransaction CurrentTransaction(string refusal) =>
         Database.CurrentTransaction?.GetDbTransaction() ?? throw new InvalidOperationException(refusal);

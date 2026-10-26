@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using StackExchange.Redis;
+using Tenancy;
 using Tenancy.Caching;
 using ZiggyCreatures.Caching.Fusion;
 using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
@@ -34,6 +35,9 @@ internal static class CachingExtensions
         {
             return builder;
         }
+
+        // Every module DbContext removes the tags of the rows it saves, after the commit.
+        builder.Services.AddCacheInvalidation();
 
         var valkey = ConfigurationOptions.Parse(connection);
         valkey.AbortOnConnectFail = false;

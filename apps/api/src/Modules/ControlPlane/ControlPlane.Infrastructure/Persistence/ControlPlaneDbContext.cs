@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SharedKernel;
 using Tenancy;
+using Tenancy.Caching;
 using Wolverine;
 
 namespace ControlPlane.Infrastructure.Persistence;
@@ -109,6 +110,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             return Invitations;
         }
     }
+
+    protected override IReadOnlyList<CacheTagSource> CacheTagSources => CacheTags.Table;
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
