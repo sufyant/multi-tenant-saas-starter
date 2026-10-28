@@ -1,12 +1,14 @@
 using System.Net.Mail;
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Plans;
 using ControlPlane.Application.Roles;
 using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
+using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
@@ -14,6 +16,7 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Invitations;
+using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
@@ -40,6 +43,7 @@ public static class ControlPlaneInfrastructure
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
+        services.AddScoped<IEntitlementDirectory, EntitlementDirectory>();
 
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
@@ -62,17 +66,14 @@ public static class ControlPlaneInfrastructure
         // handler needs its transaction (W1).
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<ITenantQueries, TenantQueries>();
         services.AddScoped<IMemberQueries, MemberQueries>();
         services.AddScoped<IInvitationQueries, InvitationQueries>();
         services.AddScoped<IRoleQueries, RoleQueries>();
+        services.AddScoped<IPlanQueries, PlanQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
 
-        services.AddOptions<RoleOptions>()
-            .BindConfiguration(RoleOptions.Section)
-            .Validate(settings => settings.MaxCustomRolesPerTenant >= 1, $"{RoleOptions.Section}:MaxCustomRolesPerTenant must be at least 1.")
-            .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<RoleOptions>>().Value);
 
         services.AddOptions<InvitationOptions>()
             .BindConfiguration(InvitationOptions.Section)

@@ -33,7 +33,7 @@ public static class ChangeMemberRoleHandler
             return (Role.NotFound, []);
         }
 
-        var changed = tenant.ChangeRole(actorMembership, role, facts);
+        var changed = tenant.ChangeRole(actorMembership, role, facts, await tenants.FindEntitlementsAsync(tenant, time.GetUtcNow(), cancellationToken));
         if (!changed.IsSuccess)
         {
             return (changed.Error, []);

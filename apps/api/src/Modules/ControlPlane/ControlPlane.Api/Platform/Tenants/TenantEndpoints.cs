@@ -49,7 +49,7 @@ public static class TenantEndpoints
         CancellationToken cancellationToken)
     {
         var created = await idempotency.ExecuteAsync<TenantView>(
-            new CreateTenantCommand(user.Id(), request.Name, request.Slug, request.OwnerEmail, request.Language),
+            new CreateTenantCommand(user.Id(), request.Name, request.Slug, request.OwnerEmail, request.Language, request.PlanId),
             Guid.CreateVersion7(time.GetUtcNow()).ToString(),
             cancellationToken);
         return created.Map(ToResponse);

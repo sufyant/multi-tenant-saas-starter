@@ -107,6 +107,64 @@ export interface MemberRoleChangedDetailsResponse {
   newRole: AuditRoleResponse;
 }
 
+export type PlanCreatedDetailsResponseOperation = typeof PlanCreatedDetailsResponseOperation[keyof typeof PlanCreatedDetailsResponseOperation];
+
+
+export const PlanCreatedDetailsResponseOperation = {
+  PlanCreated: 'plan.created',
+} as const;
+
+/**
+ * One key's value as an entry keeps it: a feature's state in `enabled`, or a limit's number in `maximum`, or an unlimited
+ * limit with `unlimited` true.
+ */
+export interface AuditEntitlementValueResponse {
+  /** @nullable */
+  enabled: boolean | null;
+  /** @nullable */
+  maximum: number | null;
+  unlimited: boolean;
+}
+
+export type PlanCreatedDetailsResponseEntitlements = {[key: string]: AuditEntitlementValueResponse};
+
+export interface PlanCreatedDetailsResponse {
+  operation: PlanCreatedDetailsResponseOperation;
+  isDefault: boolean;
+  entitlements: PlanCreatedDetailsResponseEntitlements;
+}
+
+export type PlanUpdatedDetailsResponseOperation = typeof PlanUpdatedDetailsResponseOperation[keyof typeof PlanUpdatedDetailsResponseOperation];
+
+
+export const PlanUpdatedDetailsResponseOperation = {
+  PlanUpdated: 'plan.updated',
+} as const;
+
+/**
+ * A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,
+ * so the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.
+ */
+export interface AuditPlanResponse {
+  id: string;
+  name: string;
+}
+
+export type PlanUpdatedDetailsResponseOldEntitlements = {[key: string]: AuditEntitlementValueResponse};
+
+export type PlanUpdatedDetailsResponseNewEntitlements = {[key: string]: AuditEntitlementValueResponse};
+
+export interface PlanUpdatedDetailsResponse {
+  operation: PlanUpdatedDetailsResponseOperation;
+  oldName: string;
+  newName: string;
+  wasDefault: boolean;
+  isDefault: boolean;
+  oldEntitlements: PlanUpdatedDetailsResponseOldEntitlements;
+  newEntitlements: PlanUpdatedDetailsResponseNewEntitlements;
+  previousDefaultPlan: null | AuditPlanResponse;
+}
+
 export type RoleCreatedDetailsResponseOperation = typeof RoleCreatedDetailsResponseOperation[keyof typeof RoleCreatedDetailsResponseOperation];
 
 
@@ -122,12 +180,17 @@ export type Permission = typeof Permission[keyof typeof Permission];
 
 export const Permission = {
   PlatformAuditRead: 'platform.audit.read',
+  PlatformPlansCreate: 'platform.plans.create',
+  PlatformPlansRead: 'platform.plans.read',
+  PlatformPlansUpdate: 'platform.plans.update',
   PlatformSystemAdminsCreate: 'platform.system_admins.create',
   PlatformSystemAdminsDelete: 'platform.system_admins.delete',
+  PlatformTenantsChangePlan: 'platform.tenants.change_plan',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
   PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
+  PlatformTenantsOverrideEntitlements: 'platform.tenants.override_entitlements',
   PlatformTenantsReactivate: 'platform.tenants.reactivate',
   PlatformTenantsRead: 'platform.tenants.read',
   PlatformTenantsReopen: 'platform.tenants.reopen',
@@ -179,6 +242,53 @@ export interface RoleUpdatedDetailsResponse {
   permissionsRemoved: string[];
 }
 
+export type TenantCreatedDetailsResponseOperation = typeof TenantCreatedDetailsResponseOperation[keyof typeof TenantCreatedDetailsResponseOperation];
+
+
+export const TenantCreatedDetailsResponseOperation = {
+  TenantCreated: 'tenant.created',
+} as const;
+
+export interface TenantCreatedDetailsResponse {
+  operation: TenantCreatedDetailsResponseOperation;
+  plan: AuditPlanResponse;
+}
+
+export type TenantEntitlementOverrideRemovedDetailsResponseOperation = typeof TenantEntitlementOverrideRemovedDetailsResponseOperation[keyof typeof TenantEntitlementOverrideRemovedDetailsResponseOperation];
+
+
+export const TenantEntitlementOverrideRemovedDetailsResponseOperation = {
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+} as const;
+
+export interface TenantEntitlementOverrideRemovedDetailsResponse {
+  operation: TenantEntitlementOverrideRemovedDetailsResponseOperation;
+  key: string;
+  oldValue: AuditEntitlementValueResponse;
+  /** @nullable */
+  oldExpiresAt: string | null;
+}
+
+export type TenantEntitlementOverrideSetDetailsResponseOperation = typeof TenantEntitlementOverrideSetDetailsResponseOperation[keyof typeof TenantEntitlementOverrideSetDetailsResponseOperation];
+
+
+export const TenantEntitlementOverrideSetDetailsResponseOperation = {
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
+} as const;
+
+export interface TenantEntitlementOverrideSetDetailsResponse {
+  operation: TenantEntitlementOverrideSetDetailsResponseOperation;
+  key: string;
+  oldValue: null | AuditEntitlementValueResponse;
+  /** @nullable */
+  oldExpiresAt: string | null;
+  newValue: AuditEntitlementValueResponse;
+  /** @nullable */
+  newExpiresAt: string | null;
+  /** @nullable */
+  reason: string | null;
+}
+
 export type TenantOwnerInvitedDetailsResponseOperation = typeof TenantOwnerInvitedDetailsResponseOperation[keyof typeof TenantOwnerInvitedDetailsResponseOperation];
 
 
@@ -215,6 +325,19 @@ export interface TenantOwnerMadeDetailsResponse {
   displayName: string | null;
   deleted: boolean;
   oldRole: AuditRoleResponse;
+}
+
+export type TenantPlanChangedDetailsResponseOperation = typeof TenantPlanChangedDetailsResponseOperation[keyof typeof TenantPlanChangedDetailsResponseOperation];
+
+
+export const TenantPlanChangedDetailsResponseOperation = {
+  TenantPlanChanged: 'tenant.plan_changed',
+} as const;
+
+export interface TenantPlanChangedDetailsResponse {
+  operation: TenantPlanChangedDetailsResponseOperation;
+  oldPlan: AuditPlanResponse;
+  newPlan: AuditPlanResponse;
 }
 
 export type TenantPurgeWarnedDetailsResponseOperation = typeof TenantPurgeWarnedDetailsResponseOperation[keyof typeof TenantPurgeWarnedDetailsResponseOperation];
@@ -267,7 +390,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -281,6 +404,8 @@ export const AuditOperation = {
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  PlanCreated: 'plan.created',
+  PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
   RoleUpdated: 'role.updated',
@@ -288,8 +413,11 @@ export const AuditOperation = {
   SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPlanChanged: 'tenant.plan_changed',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
@@ -314,6 +442,7 @@ export const AuditTargetResponseKind = {
   User: 'user',
   Invitation: 'invitation',
   Role: 'role',
+  Plan: 'plan',
 } as const;
 
 /**
@@ -377,6 +506,39 @@ export interface ChangePreferencesRequest {
 }
 
 /**
+ * The plan the tenant is put on, or, in a preview, would be.
+ */
+export interface ChangeTenantPlanRequest {
+  planId: string;
+}
+
+/**
+ * One key's value in a request: a feature's state in `enabled`, or a limit's number of 0 or more in `maximum`, or an unlimited
+ * limit with `unlimited` true. Exactly one, of the key's kind; else 400 `plan.entitlement_invalid` with the key. Unlimited is a
+ * value of its own, never a number.
+ */
+export interface EntitlementValueRequest {
+  /** @nullable */
+  enabled?: boolean | null;
+  /** @nullable */
+  maximum?: number | null;
+  unlimited?: boolean;
+}
+
+export type CreatePlanRequestEntitlements = {[key: string]: EntitlementValueRequest};
+
+/**
+ * A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is
+ * closed. The API trims the name before it counts its length.
+ */
+export interface CreatePlanRequest {
+  /** @maxLength 100 */
+  name: string;
+  isDefault: boolean;
+  entitlements: CreatePlanRequestEntitlements;
+}
+
+/**
  * The name of the custom role, and the names of its permissions, from the tenant pool.
  */
 export interface CreateRoleRequest {
@@ -387,7 +549,8 @@ export interface CreateRoleRequest {
 
 /**
  * A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's
- * invitation email: without one, the system admin's own. The API trims the name before it counts its length.
+ * invitation email: without one, the system admin's own. The plan the tenant goes on: without one, the default plan. The API trims the
+ * name before it counts its length.
  */
 export interface CreateTenantRequest {
   /** @maxLength 100 */
@@ -401,12 +564,65 @@ export interface CreateTenantRequest {
   /** @maxLength 320 */
   ownerEmail: string;
   language?: null | Language;
+  /** @nullable */
+  planId?: string | null;
 }
 
 export interface CursorPageOfAuditEntryResponse {
   items: AuditEntryResponse[];
   /** @nullable */
   nextCursor: string | null;
+}
+
+/**
+ * One key's value: a feature's state in `enabled`, or a limit's number in `maximum`, or an unlimited limit with
+ * `unlimited` true. The fields of the other kind are null.
+ */
+export interface EntitlementValueResponse {
+  /** @nullable */
+  enabled: boolean | null;
+  /** @nullable */
+  maximum: number | null;
+  unlimited: boolean;
+}
+
+/**
+ * The state of an override at the moment of the request: active, or expired, when its expiry has passed. An expired override applies no
+ * more, and stays until a system admin removes it.
+ */
+export type EntitlementOverrideResponseState = typeof EntitlementOverrideResponseState[keyof typeof EntitlementOverrideResponseState];
+
+
+export const EntitlementOverrideResponseState = {
+  Active: 'active',
+  Expired: 'expired',
+} as const;
+
+/**
+ * A user's names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
+ * names and `deleted`, and the screen shows "Deleted user". It holds no email address.
+ */
+export interface UserNameResponse {
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  deleted: boolean;
+}
+
+/**
+ * A tenant's override of one key: its value, its expiry (null for one that never expires), its state, the system admin's reason, the
+ * system admin who set it, by id and by name, and when.
+ */
+export interface EntitlementOverrideResponse {
+  value: EntitlementValueResponse;
+  /** @nullable */
+  expiresAt: string | null;
+  state: EntitlementOverrideResponseState;
+  reason: string;
+  setById: string;
+  setBy: UserNameResponse;
+  setAt: string;
 }
 
 /**
@@ -442,6 +658,14 @@ export const ErrorCode = {
   PagingPageSizeInvalid: 'paging.page_size_invalid',
   PagingQInvalid: 'paging.q_invalid',
   PagingSortInvalid: 'paging.sort_invalid',
+  PlanDefaultRequired: 'plan.default_required',
+  PlanEntitlementInvalid: 'plan.entitlement_invalid',
+  PlanFeatureUnavailable: 'plan.feature_unavailable',
+  PlanLimitReached: 'plan.limit_reached',
+  PlanNameInvalid: 'plan.name_invalid',
+  PlanNameTaken: 'plan.name_taken',
+  PlanNotFound: 'plan.not_found',
+  PlanOverrideNotFound: 'plan.override_not_found',
   RateLimitExceeded: 'rate_limit.exceeded',
   RequestInvalid: 'request.invalid',
   RequestTimeout: 'request.timeout',
@@ -451,7 +675,6 @@ export const ErrorCode = {
   RoleBuiltIn: 'role.built_in',
   RoleEscalation: 'role.escalation',
   RoleInUse: 'role.in_use',
-  RoleLimitReached: 'role.limit_reached',
   RoleNameInvalid: 'role.name_invalid',
   RoleNameTaken: 'role.name_taken',
   RoleNotFound: 'role.not_found',
@@ -488,6 +711,17 @@ export const ErrorCode = {
 } as const;
 
 /**
+ * One key a change would put a tenant over: what the tenant has that the key counts (`count`), the new effective value, and how far
+ * over it goes (`amount`): the count less a limit, or the whole count for a feature that turns off while the tenant uses it.
+ */
+export interface ExcessResponse {
+  key: string;
+  count: number;
+  newValue: EntitlementValueResponse;
+  amount: number;
+}
+
+/**
  * Why one field of a request failed validation.
  */
 export type FieldErrorCode = typeof FieldErrorCode[keyof typeof FieldErrorCode];
@@ -506,6 +740,15 @@ export const FieldErrorCode = {
  */
 export interface GetInvitationPreviewRequest {
   code: string;
+}
+
+export type GetPlanUpdatePreviewRequestEntitlements = {[key: string]: EntitlementValueRequest};
+
+/**
+ * The values a plan edit would give the plan, exactly as UpdatePlanRequest gives them.
+ */
+export interface GetPlanUpdatePreviewRequest {
+  entitlements: GetPlanUpdatePreviewRequestEntitlements;
 }
 
 /**
@@ -570,18 +813,6 @@ export interface InvitationPreviewResponse {
   role: null | RoleResponse;
   expiresAt: string;
   state: InvitationResponseState;
-}
-
-/**
- * A user's names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
- * names and `deleted`, and the screen shows "Deleted user". It holds no email address.
- */
-export interface UserNameResponse {
-  /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
-  deleted: boolean;
 }
 
 /**
@@ -689,6 +920,24 @@ export interface ListPageOfMyTenantResponse {
 }
 
 /**
+ * A plan in the platform's list: its name, whether it is the default plan, and how many tenants are on it.
+ */
+export interface PlanListItemResponse {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  tenantCount: number;
+  createdAt: string;
+}
+
+export interface ListPageOfPlanListItemResponse {
+  items: PlanListItemResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+/**
  * A role of the tenant as the role endpoints answer it: what RoleResponse holds, the names of the role's permissions, in
  * ordinal order, and how many members have the role and how many pending invitations give it, an expired one included. DeleteRole
  * refuses a role while either count is above zero (role.in_use).
@@ -704,6 +953,26 @@ export interface RoleDetailResponse {
 
 export interface ListPageOfRoleDetailResponse {
   items: RoleDetailResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+/**
+ * A tenant that a plan edit would put over: its id, name and slug, how far over its furthest key it goes, each such key, and the keys
+ * that an override of the tenant still holds, which the edit does not touch.
+ */
+export interface TenantExcessResponse {
+  tenantId: string;
+  name: string;
+  slug: string;
+  furthest: number;
+  excesses: ExcessResponse[];
+  overriddenKeys: string[];
+}
+
+export interface ListPageOfTenantExcessResponse {
+  items: TenantExcessResponse[];
   page: number;
   pageSize: number;
   total: number;
@@ -836,11 +1105,17 @@ export interface MeResponse {
   timeZone: string | null;
 }
 
+export type MyTenantDetailResponseEntitlements = {[key: string]: boolean | number | null};
+
+export type MyTenantDetailResponseUsage = {[key: string]: number};
+
 /**
  * The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
  * permissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every
- * endpoint still checks the permission itself. It also holds the most custom roles the tenant may have, the limit CreateRole enforces,
- * for Settings › Roles: the list of roles holds nothing beside its page (K5).
+ * endpoint still checks the permission itself. It also holds the name of the tenant's plan; `entitlements`, every key of the list
+ * with its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null
+ * for an unlimited limit; and `usage`, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks
+ * its feature and its limit itself.
  */
 export interface MyTenantDetailResponse {
   id: string;
@@ -850,7 +1125,32 @@ export interface MyTenantDetailResponse {
   role: RoleResponse;
   permissions: Permission[];
   createdAt: string;
-  maxCustomRoles: number;
+  planName: string;
+  entitlements: MyTenantDetailResponseEntitlements;
+  usage: MyTenantDetailResponseUsage;
+}
+
+/**
+ * A plan as another resource names it: its id and its name.
+ */
+export interface PlanNameResponse {
+  id: string;
+  name: string;
+}
+
+export type PlanResponseEntitlements = {[key: string]: EntitlementValueResponse};
+
+/**
+ * A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was
+ * created. A key the plan has no value for is closed.
+ */
+export interface PlanResponse {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  tenantCount: number;
+  entitlements: PlanResponseEntitlements;
+  createdAt: string;
 }
 
 /**
@@ -892,6 +1192,11 @@ export interface ProblemDetails {
      * @nullable
      */
   tenantIds?: string[] | null;
+  /**
+     * The entitlement key the error is about: the feature that is off, or the limit that is reached.
+     * @nullable
+     */
+  entitlement?: string | null;
 }
 
 /**
@@ -921,6 +1226,18 @@ export interface RenameUserRequest {
   firstName: string;
   /** @maxLength 100 */
   lastName: string;
+}
+
+/**
+ * The tenant's value of the key in the route, over its plan's value; its expiry, after now, or null for one that never expires; and the
+ * system admin's reason, required. The API trims the reason before it counts its length.
+ */
+export interface SetEntitlementOverrideRequest {
+  value: EntitlementValueRequest;
+  /** @nullable */
+  expiresAt: string | null;
+  /** @maxLength 500 */
+  reason: string;
 }
 
 /**
@@ -974,6 +1291,38 @@ export interface TenantDetailResponse {
 }
 
 /**
+ * One key of a tenant's entitlements: whether it is a feature, the plan's value (null when the plan has none: the key is then closed),
+ * the tenant's override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key
+ * counts (`count`).
+ */
+export interface TenantEntitlementResponse {
+  key: string;
+  isFeature: boolean;
+  planValue: null | EntitlementValueResponse;
+  override: null | EntitlementOverrideResponse;
+  effective: EntitlementValueResponse;
+  count: number;
+}
+
+/**
+ * What a change of the tenant's plan would put it over: each key with the count and the new value, empty when it stays within every
+ * key, and the keys an override of the tenant still holds, which the change does not touch.
+ */
+export interface TenantPlanChangePreviewResponse {
+  excesses: ExcessResponse[];
+  overriddenKeys: string[];
+}
+
+/**
+ * A tenant's plan and every key of the list with its plan value, override, effective value and count.
+ */
+export interface TenantPlanResponse {
+  tenantId: string;
+  plan: PlanNameResponse;
+  entitlements: TenantEntitlementResponse[];
+}
+
+/**
  * A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its
  * closure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape.
  */
@@ -988,6 +1337,19 @@ export interface TenantResponse {
   closedAt: string | null;
   /** @nullable */
   purgedAt: string | null;
+}
+
+export type UpdatePlanRequestEntitlements = {[key: string]: EntitlementValueRequest};
+
+/**
+ * A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another
+ * plan takes it. The API trims the name before it counts its length.
+ */
+export interface UpdatePlanRequest {
+  /** @maxLength 100 */
+  name: string;
+  isDefault: boolean;
+  entitlements: UpdatePlanRequestEntitlements;
 }
 
 /**
@@ -1097,6 +1459,69 @@ export type InviteOwnerHeaders = {
  */
 'Idempotency-Key': string;
 };
+
+export type ListPlansParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+sort?: ListPlansSort;
+/**
+ * The search. The API trims it before it counts its length.
+ * @maxLength 100
+ */
+q?: string;
+};
+
+export type ListPlansSort = typeof ListPlansSort[keyof typeof ListPlansSort];
+
+
+export const ListPlansSort = {
+  Name: 'name',
+  NameDescending: '-name',
+} as const;
+
+export type CreatePlanHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
+
+export type GetPlanUpdatePreviewParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+sort?: GetPlanUpdatePreviewSort;
+/**
+ * The search. The API trims it before it counts its length.
+ * @maxLength 100
+ */
+q?: string;
+};
+
+export type GetPlanUpdatePreviewSort = typeof GetPlanUpdatePreviewSort[keyof typeof GetPlanUpdatePreviewSort];
+
+
+export const GetPlanUpdatePreviewSort = {
+  Excess: 'excess',
+  ExcessDescending: '-excess',
+  Name: 'name',
+  NameDescending: '-name',
+} as const;
 
 export type ListUsersParams = {
 /**

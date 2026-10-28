@@ -17,12 +17,14 @@ internal static class Problems
 
     public const string TenantIdsMember = "tenantIds";
 
+    public const string EntitlementMember = "entitlement";
+
     /// <summary>The JSON names of every field code of a validation answer.</summary>
     public static IReadOnlyList<string> FieldCodes { get; } = JsonEnum<FieldErrorCode>.Names;
 
     /// <summary>
-    /// The answer to a failed result, or to a refusal: its status, its English detail and its code, and the tenants it is about when it
-    /// names some.
+    /// The answer to a failed result, or to a refusal: its status, its English detail and its code, the tenants it is about when it
+    /// names some, and the entitlement key it is about when it names one.
     /// </summary>
     public static IResult For(Error error)
     {
@@ -30,6 +32,11 @@ internal static class Problems
         if (error.TenantIds is { } tenantIds)
         {
             extensions[TenantIdsMember] = tenantIds;
+        }
+
+        if (error.Entitlement is { } entitlement)
+        {
+            extensions[EntitlementMember] = entitlement;
         }
 
         return TypedResults.Problem(statusCode: StatusCodeFor(error.Type), detail: error.Description, extensions: extensions);

@@ -173,6 +173,17 @@ public sealed class DeleteRoleTests(Database database) : IAsyncLifetime
         (await delete.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.RestrictViolation);
     }
 
+    [Fact]
+    public async Task DeleteRole_FeatureOff_DeletesIt()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        var role = await _testData.AddCustomRoleAsync(tenantId, "Billing", "tenant.profile.read");
+
+        var deleted = await _api.WaitingForMessagesAsync(() => owner.DeleteRoleAsync(tenantId, role));
+
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

@@ -9,7 +9,8 @@ namespace Api.IntegrationTests.Tenant.Roles;
 
 // POST /v1/tenants/{tenantId}/roles: a member whose role holds tenant.roles.create builds a custom role from the tenant pool (A3). The
 // tenant's rules check, in this order, the actor's permission, the name, the permissions, the escalation rule and the limit (decisions
-// 1 to 3 of step r4b). The limit is 2 here, so a test reaches it with two roles.
+// 1 and 2 of step r4b; the limit is the tenant's roles.custom.max). The tenants here are on a plan whose limit is 2, so a test reaches it
+// with two roles.
 public sealed class CreateRoleTests(Database database) : IAsyncLifetime
 {
     private const int Limit = 2;
@@ -20,14 +21,14 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
 
     private ApiFactory _api = null!;
 
+    private Guid _planId;
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    public ValueTask InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application),
-            settings: new Dictionary<string, string?> { ["ControlPlane:Roles:MaxCustomRolesPerTenant"] = $"{Limit}" });
-        return ValueTask.CompletedTask;
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
+        _planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = true, ["roles.custom.max"] = Limit, ["members.max"] = TestData.Unlimited });
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
@@ -254,6 +255,7 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
             () => owner.CreateRoleAsync(tenantId, "Third", ["tenant.profile.read", "tenant.members.read"]));
 
         answers.Select(answer => answer.StatusCode).ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict]);
+        (await CodeOfAsync(answers[1])).ShouldBe("plan.limit_reached");
         (await CustomRolesOfAsync(tenantId)).ShouldBe(Limit);
     }
 
@@ -273,9 +275,9 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         (await CustomRolesOfAsync(tenantId)).ShouldBe(1);
     }
 
-    // Decision 3 of step r4b: the limit counts custom roles only, and a role at the limit is refused (OWASP API4).
+    // roles.custom.max counts custom roles only, and a role at the limit is refused with the key (OWASP API4).
     [Fact]
-    public async Task CreateRole_AtTheLimit_IsAConflictAndCreatesNothing()
+    public async Task CreateRole_AtTheLimit_IsAConflictWithTheKeyAndCreatesNothing()
     {
         var (tenantId, owner) = await OwnerAsync();
         (await owner.CreateRoleAsync(tenantId, "First", ["tenant.profile.read", "tenant.members.read"])).StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -284,8 +286,35 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         var third = await owner.CreateRoleAsync(tenantId, "Third", ["tenant.profile.read", "tenant.members.read"]);
 
         third.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await CodeOfAsync(third)).ShouldBe("role.limit_reached");
+        var problem = await third.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (problem.GetProperty("code").GetString(), problem.GetProperty("entitlement").GetString()).ShouldBe(("plan.limit_reached", "roles.custom.max"));
         (await CustomRolesOfAsync(tenantId)).ShouldBe(Limit);
+    }
+
+    // The rule when a tenant is over a limit, however it got there: nothing is deleted, what exists keeps working, nothing new that counts
+    // can be added until the count is under the limit, and deleting stays allowed. The plan's limit drops under the tenant's three roles.
+    [Fact]
+    public async Task CreateRole_OverTheLimitAfterThePlanChanged_IsRefusedUntilADeletionBringsItUnder()
+    {
+        var (tenantId, owner) = await OwnerAsync();
+        var planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = true, ["roles.custom.max"] = 3 });
+        await _testData.SetTenantPlanAsync(tenantId, planId);
+        var first = await _testData.AddCustomRoleAsync(tenantId, "First", "tenant.profile.read", "tenant.members.read");
+        await _testData.AddCustomRoleAsync(tenantId, "Second", "tenant.profile.read");
+        await _testData.AddCustomRoleAsync(tenantId, "Third", "tenant.profile.read");
+        var member = _api.CreateClient(await _testData.AddMemberWithRoleAsync(tenantId, first));
+        await _testData.SetPlanValueAsync(planId, "roles.custom.max", 2);
+
+        var overLimit = await owner.CreateRoleAsync(tenantId, "Fourth", ["tenant.profile.read"]);
+        var stillWorks = await member.GetAsync($"/v1/tenants/{tenantId}/members", Cancellation);
+        var deleted = await owner.DeleteRoleAsync(tenantId, await RoleIdAsync(tenantId, "Third"));
+        var atLimit = await owner.CreateRoleAsync(tenantId, "Fourth", ["tenant.profile.read"]);
+        await owner.DeleteRoleAsync(tenantId, await RoleIdAsync(tenantId, "Second"));
+        var underLimit = await owner.CreateRoleAsync(tenantId, "Fourth", ["tenant.profile.read"]);
+
+        (overLimit.StatusCode, stillWorks.StatusCode, deleted.StatusCode, atLimit.StatusCode, underLimit.StatusCode)
+            .ShouldBe((HttpStatusCode.Conflict, HttpStatusCode.OK, HttpStatusCode.NoContent, HttpStatusCode.Conflict, HttpStatusCode.Created));
+        (await CustomRolesOfAsync(tenantId)).ShouldBe(2);
     }
 
     // A3, K6b: the unique index on the tenant and lower(name) is the second guard behind the tenant's lock.
@@ -316,14 +345,28 @@ public sealed class CreateRoleTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.role_permissions WHERE tenant_id = '{tenantId}'")).ShouldBe(2);
     }
 
+    [Fact]
+    public async Task CreateRole_FeatureOff_IsForbiddenWithTheKeyAndCreatesNothing()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+
+        var created = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read"]);
+
+        await PlanAnswers.ShouldBeUnavailableAsync(created);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in IS NULL")).ShouldBe(0);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
     private async Task<(Guid TenantId, HttpClient Owner)> OwnerAsync()
     {
-        var tenant = await _testData.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync(planId: _planId);
         return (tenant.Id, _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner")));
     }
+
+    private Task<Guid> RoleIdAsync(Guid tenantId, string name) =>
+        database.ScalarAsSuperuserAsync<Guid>($"SELECT id FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND name = '{name}'");
 
     private Task<long> CustomRolesOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in IS NULL");

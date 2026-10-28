@@ -1,9 +1,11 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Invitations.OpenSignUp;
+using ControlPlane.Application.Plans;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -21,6 +23,7 @@ public static class CreateTenantHandler
         CreateTenantCommand command,
         ITenantRepository tenants,
         IUserRepository users,
+        IPlanRepository plans,
         InvitationOptions invitations,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -28,8 +31,14 @@ public static class CreateTenantHandler
         var actor = await users.FindProfileAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
+        var planId = command.PlanId ?? await plans.FindDefaultPlanIdAsync(cancellationToken);
+        if (await plans.FindPlanNameAsync(planId, cancellationToken) is not { } plan)
+        {
+            return (Plan.NotFound, []);
+        }
+
         var now = time.GetUtcNow();
-        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);
+        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, planId, now);
         if (!created.IsSuccess)
         {
             return (created.Error, []);
@@ -51,7 +60,8 @@ public static class CreateTenantHandler
             Inviter.Platform(actor.Id, actor.Language),
             new NewInvitation(Guid.CreateVersion7(now), email, new TenantRoles(roles).BuiltIn(BuiltInRole.Owner), command.Language, secret, now, invitations.Lifetime),
             await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
-            invitations.DailyLimitPerTenant);
+            invitations.DailyLimitPerTenant,
+            await tenants.FindEntitlementsAsync(tenant, now, cancellationToken));
         if (!invited.IsSuccess)
         {
             throw new InvalidOperationException($"A new tenant has no Owner and no invitation: {invited.Error.Code}.");
@@ -63,7 +73,7 @@ public static class CreateTenantHandler
         return (
             TenantView.Of(tenant),
             [
-                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id),
+                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id, plan.Id, plan.Name),
                 OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
             ]);
     }

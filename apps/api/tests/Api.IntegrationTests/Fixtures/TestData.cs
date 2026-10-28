@@ -7,8 +7,13 @@ namespace Api.IntegrationTests.Fixtures;
 // Writes ControlPlane's rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
 // name, the way ControlPlane stores them. A membership belongs to a tenant, so it is written with its tenant declared. The rows go
 // into the main database unless the test names a database of its own.
-internal sealed class TestData(Database database, string databaseName = Database.MainDatabase)
+// A tenant is on Pro unless the test names a plan, so a test written before the plans keeps what every tenant had (the migration moved
+// every tenant to Pro). A database taken back before the plans has no plan column: such a test passes withPlans false.
+internal sealed class TestData(Database database, string databaseName = Database.MainDatabase, bool withPlans = true)
 {
+    // The value of a limit without a number, for AddPlanAsync and SetPlanValueAsync.
+    public static readonly object Unlimited = new();
+
     // The invitation code of a link: the tenant id, a dot and the secret (ARCHITECTURE.md, section 6, "Rules without an id").
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
@@ -21,9 +26,10 @@ internal sealed class TestData(Database database, string databaseName = Database
         Guid? tenantId = null,
         string? suspensionReason = null,
         DateTimeOffset? closedAt = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        Guid? planId = null)
     {
-        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt);
+        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt, withPlans ? planId ?? SeedPlans.Pro : null);
         await database.ScalarAsync<object>($"INSERT INTO control_plane.tenant_summaries (tenant_id) VALUES ('{tenant.Id}')", database: databaseName);
         await database.ExecuteInTenantAsync(
             tenant.Id,
@@ -35,6 +41,35 @@ internal sealed class TestData(Database database, string databaseName = Database
 
         return tenant;
     }
+
+    // A plan of the test's own, with a unique name and these values: true or false for a feature, a number or Unlimited for a limit. A key
+    // left out has no value, and is closed. Tests share one database, so a test never edits the seed plans.
+    public async Task<Guid> AddPlanAsync(Dictionary<string, object> values, string? name = null)
+    {
+        var planId = Guid.NewGuid();
+        await database.ScalarAsSuperuserAsync<object>(
+            $"INSERT INTO control_plane.plans (id, name, created_at) VALUES ('{planId}', '{name ?? $"Plan {planId:N}"}', now())", databaseName);
+        foreach (var (key, value) in values)
+        {
+            await SetPlanValueAsync(planId, key, value);
+        }
+
+        return planId;
+    }
+
+    // Sets the plan's value of the key, or adds it, with plain SQL: no cache sees the write, so a test that changes a plan this way uses a
+    // host without a cache.
+    public Task SetPlanValueAsync(Guid planId, string key, object value) =>
+        database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.plan_entitlements (plan_id, key, enabled, maximum, unlimited) VALUES ('{planId}', '{key}', {ColumnsOf(value)})
+            ON CONFLICT (plan_id, key) DO UPDATE SET enabled = excluded.enabled, maximum = excluded.maximum, unlimited = excluded.unlimited
+            """,
+            databaseName);
+
+    // Puts the tenant on the plan, with plain SQL.
+    public Task SetTenantPlanAsync(Guid tenantId, Guid planId) =>
+        database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET plan_id = '{planId}' WHERE id = '{tenantId}'", databaseName);
 
     // A custom role of the tenant with these permissions (A3), written with its tenant declared, as CreateRole writes it.
     public async Task<Guid> AddCustomRoleAsync(Guid tenantId, string name, params string[] permissions)
@@ -71,7 +106,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         return externalId;
     }
 
-    // The tenant row alone, without its summary and its roles, as a purged tenant's tombstone is (K4).
+    // The tenant row alone, without its summary and its roles, as a purged tenant's tombstone is (K4). Without a plan, the column's
+    // default: a database before the plans has no column, and one after them gives the default plan.
     public async Task<(Guid Id, string Slug)> AddTenantRowAsync(
         string status = "Active",
         string? slug = null,
@@ -79,7 +115,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         Guid? tenantId = null,
         string? suspensionReason = null,
         DateTimeOffset? closedAt = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        Guid? planId = null)
     {
         var id = tenantId ?? Guid.NewGuid();
         // Not from the id: two version 7 ids of one millisecond start with the same 13 digits, and so would their slugs.
@@ -88,8 +125,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         DateTimeOffset? purgedAt = status == "Purged" ? DateTimeOffset.UtcNow : null;
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at{Column("purged_at", purgedAt)})
-            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)}{Value(purgedAt)})
+            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at{Column("purged_at", purgedAt)}{Column("plan_id", planId)})
+            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)}{Value(purgedAt)}{Value(planId)})
             """,
             database: databaseName);
 
@@ -125,7 +162,10 @@ internal sealed class TestData(Database database, string databaseName = Database
                 WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'Owner')
             UPDATE control_plane.tenant_summaries SET
                 member_count = (SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
-                owner_count = (SELECT count(*) FROM owners)
+                owner_count = (SELECT count(*) FROM owners),
+                custom_role_count = (SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in IS NULL),
+                pending_invitation_expiries = COALESCE(
+                    (SELECT array_agg(expires_at ORDER BY expires_at) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'), ARRAY[]::timestamptz[])
             WHERE tenant_id = '{tenantId}'
             """,
             databaseName);
@@ -268,6 +308,18 @@ internal sealed class TestData(Database database, string databaseName = Database
     private static string Column(string name, DateTimeOffset? moment) => moment is null ? string.Empty : $", {name}";
 
     private static string Value(DateTimeOffset? moment) => moment is { } given ? $", '{given:O}'" : string.Empty;
+
+    private static string ColumnsOf(object value) => value switch
+    {
+        bool on => $"{on.ToString().ToLowerInvariant()}, NULL, false",
+        int maximum => $"NULL, {maximum}, false",
+        _ when value == Unlimited => "NULL, NULL, true",
+        _ => throw new ArgumentException("A value is a feature's state, a limit's number or Unlimited.", nameof(value)),
+    };
+
+    private static string Column(string name, Guid? id) => id is null ? string.Empty : $", {name}";
+
+    private static string Value(Guid? id) => id is { } given ? $", '{given}'" : string.Empty;
 
     // The moment the test gives, else the moment of the insert.
     private static string Moment(DateTimeOffset? moment) => moment is { } given ? $"'{given:O}'" : "now()";

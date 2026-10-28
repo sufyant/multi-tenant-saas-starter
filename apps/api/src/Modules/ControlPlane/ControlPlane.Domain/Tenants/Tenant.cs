@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Users;
 using SharedKernel;
@@ -26,18 +27,19 @@ internal sealed class Tenant
         Error.Validation(ControlPlaneErrorCodes.TenantNameInvalid, $"A name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
 
     private static readonly Error NotActive =
-        Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed or closed.");
+        Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed, closed or given a plan or an override.");
 
     private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MemberLastOwner, "A tenant always has at least one Owner.");
 
     private static readonly Error RoleBuiltIn =
         Error.Conflict(ControlPlaneErrorCodes.RoleBuiltIn, "A built-in role keeps its name and its permissions, and cannot be deleted.");
 
-    private Tenant(Guid id, string name, string slug, DateTimeOffset createdAt)
+    private Tenant(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt)
     {
         Id = id;
         Name = name;
         Slug = slug;
+        PlanId = planId;
         Status = TenantStatus.Active;
         CreatedAt = createdAt;
     }
@@ -51,6 +53,9 @@ internal sealed class Tenant
     public string Slug { get; private init; }
 
     public TenantStatus Status { get; private set; }
+
+    /// <summary>The tenant's plan, whose values its entitlements start from (docs/flows/plans-and-entitlements.md). A tenant always has one.</summary>
+    public Guid PlanId { get; private set; }
 
     /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
@@ -67,8 +72,11 @@ internal sealed class Tenant
     /// <summary>When the purge ended and left the tenant as its tombstone (K4). None unless purged.</summary>
     public DateTimeOffset? PurgedAt { get; private set; }
 
-    /// <summary>A new tenant is active at once (docs/flows/tenant-creation.md). The name is stored without the spaces around it.</summary>
-    public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
+    /// <summary>
+    /// A new tenant is active at once, on the plan its creation names (docs/flows/tenant-creation.md). The name is stored without the
+    /// spaces around it.
+    /// </summary>
+    public static Result<Tenant> Create(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
         if (!IsValidName(trimmed))
@@ -77,7 +85,7 @@ internal sealed class Tenant
         }
 
         return IsUrlSafe(slug)
-            ? new Tenant(id, trimmed, slug, createdAt)
+            ? new Tenant(id, trimmed, slug, planId, createdAt)
             : Error.Validation(
                 ControlPlaneErrorCodes.TenantSlugInvalid,
                 $"A slug is {SlugMinLength} to {SlugMaxLength} lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
@@ -168,6 +176,89 @@ internal sealed class Tenant
 
         Name = trimmed;
         return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Puts an active or a suspended tenant on the plan. A closed, purging or purged tenant's plan is read-only. The plan the tenant is on
+    /// changes nothing (I1). The plan's values apply at once; nothing is deleted when the tenant is then over a limit
+    /// (docs/flows/plans-and-entitlements.md).
+    /// </summary>
+    public Result<StateChange> ChangePlan(Guid planId)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        if (planId == PlanId)
+        {
+            return StateChange.Unchanged;
+        }
+
+        PlanId = planId;
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Gives the key this value for this tenant, over its plan's value, until the expiry, if there is one, with the system admin's reason,
+    /// kept without the spaces around it. The key is on the code's list, the value has its kind, and an expiry comes after now. An active
+    /// or a suspended tenant only. Answers the override, the existing one changed or a new one, and its value before, if it had one.
+    /// </summary>
+    public Result<OverrideChange> SetOverride(
+        EntitlementOverride? existing,
+        string key,
+        EntitlementValue value,
+        DateTimeOffset? expiresAt,
+        string reason,
+        Guid setBy,
+        DateTimeOffset now)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        var valid = EntitlementValue.For(key, value);
+        if (!valid.IsSuccess)
+        {
+            return valid.Error;
+        }
+
+        if (expiresAt <= now)
+        {
+            return Error.Validation(ControlPlaneErrorCodes.PlanEntitlementInvalid, "An override expires after now.") with { Entitlement = key };
+        }
+
+        if (existing is null)
+        {
+            return new OverrideChange(new EntitlementOverride(Id, key, value, expiresAt, reason, setBy, now), null, Changed: true);
+        }
+
+        var old = existing.ToValue();
+        if (old == new OverrideValue(key, value, expiresAt) && existing.Reason == reason.Trim())
+        {
+            return new OverrideChange(existing, old, Changed: false);
+        }
+
+        existing.Set(value, expiresAt, reason, setBy, now);
+        return new OverrideChange(existing, old, Changed: true);
+    }
+
+    /// <summary>
+    /// Whether the tenant's override may be removed: it exists (else 404 <c>plan.override_not_found</c>), and the tenant is active or
+    /// suspended. The plan's value then applies again. The caller removes it.
+    /// </summary>
+    public Result<EntitlementOverride> RemoveOverride(EntitlementOverride? existing)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        return existing is null ? Error.NotFound(ControlPlaneErrorCodes.PlanOverrideNotFound, "The tenant has no override of this key.") : existing;
     }
 
     /// <summary>
@@ -281,14 +372,21 @@ internal sealed class Tenant
     /// <c>tenant.owners.manage</c> (A1): only a member whose role holds it gives or takes a role that holds it, and the last member whose
     /// role holds it keeps it. The actor's role holds every permission of the member's role and of the new one (decision 2 of step r4b,
     /// <see cref="Role.CheckEscalation"/>). A member may change their own role under the same rules. The caller holds the tenant's
-    /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). Every rejection comes before the
-    /// change.
+    /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). A custom role is given only while the
+    /// tenant's plan has <c>roles.custom</c> on; a built-in role always (docs/flows/plans-and-entitlements.md). Every rejection comes before
+    /// the change.
     /// </summary>
-    public Result<RoleChange> ChangeRole(Membership actor, Role role, MemberFacts facts)
+    public Result<RoleChange> ChangeRole(Membership actor, Role role, MemberFacts facts, EffectiveEntitlements entitlements)
     {
         if (MemberOf(facts) is not { } target)
         {
             return Membership.NotFound;
+        }
+
+        var feature = CheckCustomRole(role, target.RoleId, entitlements);
+        if (!feature.IsSuccess)
+        {
+            return feature.Error;
         }
 
         var oldRole = facts.Roles.Of(target.RoleId);
@@ -506,11 +604,11 @@ internal sealed class Tenant
     /// <c>tenant.roles.create</c>; the name, without the spaces around it, is 1 to <see cref="Role.NameMaxLength"/> characters and no other
     /// role of the tenant has it; the permissions are in the tenant pool, none is owner-only, and there is one at least; they hold the
     /// permissions the others need (<see cref="Role.CheckRequiredPermissions"/>); the actor's role holds every one of them
-    /// (<see cref="Role.CheckEscalation"/>); and the tenant has fewer custom roles than the limit (decision 3 of step r4b, OWASP API4).
-    /// The caller holds the tenant's lock and read the facts under it (K6a). Returns the new role, which the caller adds. Every rejection
-    /// comes before any change.
+    /// (<see cref="Role.CheckEscalation"/>); and the tenant has fewer custom roles than its <c>roles.custom.max</c> (OWASP API4). The caller
+    /// holds the tenant's lock and read the facts and the entitlements under it (K6a), so two creations at once never pass the limit.
+    /// Returns the new role, which the caller adds. Every rejection comes before any change.
     /// </summary>
-    public Result<Role> CreateRole(Role actor, NewRole request, RoleFacts facts, int limit)
+    public Result<Role> CreateRole(Role actor, NewRole request, RoleFacts facts, EffectiveEntitlements entitlements)
     {
         var name = request.Name.Trim();
         var permissions = request.Permissions.ToFrozenSet(StringComparer.Ordinal);
@@ -525,9 +623,8 @@ internal sealed class Tenant
             return allowed.Error;
         }
 
-        return facts.CustomRoles >= limit
-            ? Error.Conflict(ControlPlaneErrorCodes.RoleLimitReached, "The tenant has as many custom roles as it may.")
-            : Role.CreateCustom(request.Id, Id, name, permissions);
+        var limit = entitlements.CheckLimit(LimitKeys.RolesCustomMax, facts.CustomRoles);
+        return limit.IsSuccess ? Role.CreateCustom(request.Id, Id, name, permissions) : limit.Error;
     }
 
     /// <summary>
@@ -621,13 +718,16 @@ internal sealed class Tenant
     /// member gives only a role they may give, never to a member's address, and within the tenant's daily limit; the new invitation
     /// replaces a pending one to the same address. The platform invites an Owner only into an active tenant without one; nobody else
     /// invites there, so the new invitation replaces every pending one, also to another address. The caller holds the tenant's lock and
-    /// read the facts under it (K6i, K6j). Every rejection comes before the change. The new invitation keeps the request's language, else
-    /// the inviter's (K8).
+    /// read the facts and the entitlements under it (K6i, K6j). A member names a custom role only while the tenant's plan has
+    /// <c>roles.custom</c> on, and invites only while the members and the pending invitations that have not expired, less the one the new
+    /// invitation replaces, are under <c>members.max</c>; the platform's Owner invitation is not limited, because a tenant without an
+    /// Owner always gets one (docs/flows/plans-and-entitlements.md). Every rejection comes before the change. The new invitation keeps the
+    /// request's language, else the inviter's (K8).
     /// </summary>
-    public Result<Invited> Invite(Inviter inviter, NewInvitation request, InvitationFacts facts, int dailyLimit)
+    public Result<Invited> Invite(Inviter inviter, NewInvitation request, InvitationFacts facts, int dailyLimit, EffectiveEntitlements entitlements)
     {
         var allowed = inviter.MemberRole is { } inviterRole
-            ? CheckMemberInvitation(inviterRole, request.Role, facts, dailyLimit)
+            ? CheckMemberInvitation(inviterRole, request, facts, dailyLimit, entitlements)
             : CheckOwnerInvitation(facts.Owners);
         if (!allowed.IsSuccess)
         {
@@ -655,13 +755,20 @@ internal sealed class Tenant
         return new Invited(invitation, replaced);
     }
 
+    // roles.custom: a custom role is given, or named in an invitation, only while the feature is on; the role a member already has is no
+    // new grant. A built-in role is always given.
+    private static Result CheckCustomRole(Role role, Guid? current, EffectiveEntitlements entitlements) =>
+        role.BuiltIn is null && role.Id != current ? entitlements.CheckFeature(FeatureKeys.RolesCustom) : Result.Success();
+
     // A1: an Owner rule asks for the Owners' permission, never for the Owner role.
     private static bool ManagesOwners(Role role) => role.Holds(PermissionPools.TenantOwnersManage);
 
-    // A member's invitation: the role rules first, the Owner's and then the escalation rule, then a member's address, then the daily limit
-    // (docs/flows/invitations.md, section 2, "Member invitation").
-    private static Result CheckMemberInvitation(Role inviter, Role role, InvitationFacts facts, int dailyLimit)
+    // A member's invitation: the role rules first, the Owner's and then the escalation rule, then the plan's feature for a custom role,
+    // then a member's address, then the plan's members.max, then the daily limit (docs/flows/invitations.md, section 2, "Member
+    // invitation"). The new invitation replaces a pending one to the same address, so that one does not count.
+    private static Result CheckMemberInvitation(Role inviter, NewInvitation request, InvitationFacts facts, int dailyLimit, EffectiveEntitlements entitlements)
     {
+        var role = request.Role;
         var allowed = Invitation.CheckInviter(inviter, role);
         if (!allowed.IsSuccess)
         {
@@ -674,9 +781,22 @@ internal sealed class Tenant
             return escalation;
         }
 
+        var feature = CheckCustomRole(role, null, entitlements);
+        if (!feature.IsSuccess)
+        {
+            return feature;
+        }
+
         if (facts.AddressIsMember)
         {
             return Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant.");
+        }
+
+        var counted = facts.Members + facts.Pending.Count(pending => pending.ExpiresAt > request.Now && pending.Email != request.Email.Value);
+        var limit = entitlements.CheckLimit(LimitKeys.MembersMax, counted);
+        if (!limit.IsSuccess)
+        {
+            return limit;
         }
 
         return facts.SentInWindow >= dailyLimit
@@ -779,6 +899,10 @@ internal sealed class Tenant
 
         return cancelled;
     }
+
+    // A system admin changes a tenant's plan and overrides only while the tenant is active or suspended, as its name.
+    private Result CheckPlatformChange() =>
+        Status is TenantStatus.Active or TenantStatus.Suspended ? Result.Success() : NotActive;
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {

@@ -7,6 +7,7 @@ using ControlPlane.Application.Roles.DeleteRole;
 using ControlPlane.Application.Roles.ListRoles;
 using ControlPlane.Application.Roles.UpdateRole;
 using ControlPlane.Contracts;
+using ControlPlane.Contracts.Plans;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -24,14 +25,15 @@ public static class RoleEndpoints
 
     public static void Map(RouteGroupBuilder tenant)
     {
-        tenant.MapGet("/roles", ListRoles).RequireAuthorization(Permissions.TenantRolesRead);
+        tenant.MapGet("/roles", ListRoles).RequireAuthorization(Permissions.TenantRolesRead).WithMetadata(new NotPlanGated());
         tenant.MapPost("/roles", CreateRole)
             .WithMetadata(new IdempotencyKeyRequired())
             .WithDescription(NoLocation)
             .RequireAuthorization(Permissions.TenantRolesCreate)
+            .RequireAuthorization(Features.RolesCustom)
             .Produces<RoleDetailResponse>(StatusCodes.Status201Created);
-        tenant.MapPatch("/roles/{roleId:guid}", UpdateRole).RequireAuthorization(Permissions.TenantRolesUpdate);
-        tenant.MapDelete("/roles/{roleId:guid}", DeleteRole).RequireAuthorization(Permissions.TenantRolesDelete);
+        tenant.MapPatch("/roles/{roleId:guid}", UpdateRole).RequireAuthorization(Permissions.TenantRolesUpdate).RequireAuthorization(Features.RolesCustom);
+        tenant.MapDelete("/roles/{roleId:guid}", DeleteRole).RequireAuthorization(Permissions.TenantRolesDelete).WithMetadata(new NotPlanGated());
     }
 
     // Every response that holds a role answers it in this one shape (N7k).

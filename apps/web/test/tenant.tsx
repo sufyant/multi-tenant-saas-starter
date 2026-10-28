@@ -172,7 +172,7 @@ const meOfPerson = (person: MemberResponse): MeResponse => ({
 export const meOf = (role: BuiltInRole): MeResponse =>
   meOfPerson(viewerOf[role]);
 
-/** The most custom roles Northwind may have, as GetMyTenant answers it (the API's default). */
+/** The most custom roles Northwind may have, Pro's roles.custom.max, as GetMyTenant answers it. */
 export const maxCustomRoles = 20;
 
 /** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of the role. */
@@ -198,7 +198,13 @@ export const viewerAnswers = (
       role,
       createdAt: "2026-01-05T09:00:00Z",
       permissions,
-      maxCustomRoles,
+      planName: "Pro",
+      entitlements: {
+        "members.max": null,
+        "roles.custom": true,
+        "roles.custom.max": maxCustomRoles,
+      },
+      usage: { "members.max": 0, "roles.custom.max": 0 },
     }),
   ),
   http.get("*/v1/me", () => HttpResponse.json(meOfPerson(person))),

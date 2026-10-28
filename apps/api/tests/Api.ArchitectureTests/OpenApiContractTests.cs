@@ -499,7 +499,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         var located = created.Where(operation => ResponseHeadersOf(operation.Value.GetProperty("responses").GetProperty("201")).Contains("Location"));
         var unexplained = created.Except(located).Where(operation => !DescriptionOf(operation.Value).Contains("Location", StringComparison.Ordinal));
 
-        located.Select(operation => OperationIdOf(operation.Value)).ShouldBe(["CreateTenant"]);
+        located.Select(operation => OperationIdOf(operation.Value)).ShouldBe(["CreateTenant", "CreatePlan"], ignoreOrder: true);
         unexplained.Select(operation => OperationIdOf(operation.Value)).ShouldBeEmpty();
     }
 
@@ -640,6 +640,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             "RenameUserRequest.firstName PredicateValidator",
             "RenameUserRequest.lastName PredicateValidator",
             "SuspendTenantRequest.reason PredicateValidator",
+            "SetEntitlementOverrideRequest.reason PredicateValidator",
         ];
 
         var unread = RequestRules()

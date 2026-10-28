@@ -11,6 +11,9 @@ internal sealed class RequestAccess
 
     public Error? Refusal { get; set; }
 
+    /// <summary>Why a member who holds the permission is refused: a feature of the tenant's plan is off.</summary>
+    public Error? FeatureRefusal { get; set; }
+
     public IReadOnlySet<string>? PlatformPermissions { get; set; }
 
     // The tenant and platform pools never share a permission, so one set never satisfies the other's checks.

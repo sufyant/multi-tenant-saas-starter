@@ -27,6 +27,9 @@ public sealed partial class ReadCache(HybridCache? cache, ILogger<ReadCache> log
     public Task<T> ReadAsync<T>(UserCachedRead<T> read, string externalUserId, Func<CancellationToken, Task<T>> load, CancellationToken cancellationToken) =>
         ReadAsync(read, read.KeyOf(externalUserId), read.TagsOf(externalUserId), load, cancellationToken);
 
+    public Task<T> ReadAsync<T>(RowCachedRead<T> read, Guid id, Func<CancellationToken, Task<T>> load, CancellationToken cancellationToken) =>
+        ReadAsync(read, read.KeyOf(id), read.TagsOf(id), load, cancellationToken);
+
     /// <summary>
     /// Removes every entry that names one of the tags, in every process, because they share the cache. It runs after a commit, so a
     /// failure here changes no data: the entries then live until they expire, and the failure is a warning.

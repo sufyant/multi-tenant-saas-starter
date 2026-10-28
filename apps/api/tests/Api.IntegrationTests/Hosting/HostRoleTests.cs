@@ -7,6 +7,9 @@ using Audit.Application.Members.RecordMemberInvited;
 using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
 using Audit.Application.Members.RecordOwnerMade;
+using Audit.Application.Plans.RecordPlanCreated;
+using Audit.Application.Plans.RecordTenantEntitlementOverrideSet;
+using Audit.Application.Plans.RecordTenantPlanChanged;
 using Audit.Application.Roles.RecordRoleCreated;
 using Audit.Application.Roles.RecordRoleDeleted;
 using Audit.Application.Roles.RecordRoleUpdated;
@@ -14,8 +17,8 @@ using Audit.Application.SystemAdmins.RecordSystemAdminGranted;
 using Audit.Application.SystemAdmins.RecordSystemAdminRevoked;
 using Audit.Application.Tenants.RecordTenantClosed;
 using Audit.Application.Tenants.RecordTenantCreated;
-using Audit.Application.Tenants.RecordTenantPurged;
 using Audit.Application.Tenants.RecordTenantPurgeWarned;
+using Audit.Application.Tenants.RecordTenantPurged;
 using Audit.Application.Tenants.RecordTenantReactivated;
 using Audit.Application.Tenants.RecordTenantRenamed;
 using Audit.Application.Tenants.RecordTenantReopened;
@@ -38,6 +41,7 @@ using ControlPlane.Application.Roles.CreateRole;
 using ControlPlane.Application.Roles.DeleteRole;
 using ControlPlane.Application.Roles.UpdateRole;
 using ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin;
+using ControlPlane.Application.Tenants.ChangeTenantPlan;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CompleteTenantPurge;
 using ControlPlane.Application.Tenants.CreateTenant;
@@ -59,6 +63,7 @@ using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
+using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.Roles;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
@@ -68,9 +73,9 @@ using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
 using Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
 using Tenancy;
+using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Util;
-using Wolverine;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -203,6 +208,57 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantSuspendedEvent), typeof(RecordTenantSuspendedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.suspended")).ShouldBe(1L);
+    }
+
+    // O3: a tenant's plan change is announced from the web host, and its Audit handler runs in the worker, once, in both logs.
+    [Fact]
+    public async Task ChangeTenantPlan_OnAWebAndAWorkerHost_WritesOneAuditEntryInEachLogInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await new TestData(database, name).AddTenantAsync();
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var changed = await admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Free);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeTenantPlanCommand), typeof(ChangeTenantPlanHandler))]);
+        runs.In("worker").ShouldBe([new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
+        (await PlatformEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
+    }
+
+    // O3: an override and a new plan are announced from the web host, and their Audit handlers run in the worker, once: the plan in the
+    // platform's log only, because it belongs to no tenant, and the override in both logs.
+    [Fact]
+    public async Task SetOverrideAndCreatePlan_OnAWebAndAWorkerHost_WriteTheirEntriesInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await new TestData(database, name).AddTenantAsync();
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var set = await admin.SetOverrideAsync(tenant.Id, "members.max", PlanRequests.Max(50));
+        var created = await admin.CreatePlanAsync("Business", new Dictionary<string, object>());
+        var planId = await IdOfAsync(created);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, planId, "plan.created") > 0
+            && await PlatformEntriesAsync(name, tenant.Id, "tenant.entitlement_override_set") > 0);
+
+        (set.StatusCode, created.StatusCode).ShouldBe((HttpStatusCode.OK, HttpStatusCode.Created));
+        runs.In("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(EntitlementOverrideSetEvent), typeof(RecordTenantEntitlementOverrideSetHandler)),
+                new HandlerRun(typeof(PlanCreatedEvent), typeof(RecordPlanCreatedHandler)),
+            ],
+            ignoreOrder: true);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.entitlement_override_set")).ShouldBe(1L);
     }
 
     // O3: a closure is announced from the web host, and its Audit handler runs in the worker, once, in both logs.

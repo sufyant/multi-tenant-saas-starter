@@ -12,6 +12,8 @@ public sealed class RecordTenantCreatedTests(Database database)
 {
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 9, 9, 0, 0, TimeSpan.Zero);
 
+    private static readonly Guid PlanId = Guid.CreateVersion7();
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -78,7 +80,31 @@ public sealed class RecordTenantCreatedTests(Database database)
         (await change.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
     }
 
-    private static TenantCreatedEvent Created() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", Guid.CreateVersion7());
+    // The plan the tenant got is in both logs, as Audit keeps it from that moment: the default plan when the request named none.
+    [Fact]
+    public async Task RecordTenantCreated_TenantCreated_KeepsThePlanInBothLogs()
+    {
+        var created = Created();
+
+        await InTenant.RunAsync(database.Services, created.TenantId, scope => RecordAsync(scope, created));
+
+        var plan = $$$"""{"plan": {"id": "{{{PlanId}}}", "name": "Free"}}""";
+        (await Logs.DetailsAsync(database.Services, Logs.Platform, null, created.EventId)).ShouldBe(plan);
+        (await Logs.DetailsAsync(database.Services, Logs.Tenant, created.TenantId, created.EventId)).ShouldBe(plan);
+    }
+
+    // An event that the version before step 32 published names no plan, and its entries keep no details.
+    [Fact]
+    public async Task RecordTenantCreated_AnEventWithoutAPlan_KeepsNoDetails()
+    {
+        var created = Created() with { PlanId = null, PlanName = null };
+
+        await InTenant.RunAsync(database.Services, created.TenantId, scope => RecordAsync(scope, created));
+
+        (await Logs.DetailsAsync(database.Services, Logs.Platform, null, created.EventId)).ShouldBeNull();
+    }
+
+    private static TenantCreatedEvent Created() => new(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme Ltd", Guid.CreateVersion7(), PlanId, "Free");
 
     private static Task RecordAsync(IServiceProvider scope, TenantCreatedEvent created) =>
         RecordTenantCreatedHandler.HandleAsync(created, scope.GetRequiredService<IAuditLog>(), Cancellation);

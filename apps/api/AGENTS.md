@@ -20,6 +20,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
   - `custom-roles.md`: a tenant creates, updates and deletes its own roles.
   - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
   - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
+  - `plans-and-entitlements.md`: a system admin manages the plans, a tenant's plan and its overrides; a tenant endpoint checks its feature and a tenant's method its limit.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
@@ -61,6 +62,7 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - Health endpoints answer only on the management port (`Host:ManagementPort`, 8081). A `curl` to 8080 gets 404. (Section 8, `ManagementPortTests`)
 - A migration runs while the previous version still serves. A migration that breaks the previous version breaks production during the deploy. Expand first; contract in a later release. (`docs/deployment.md` at the repository root)
 - A folder named `System` hides .NET's `System` namespace. The audience of the system admins is `Platform` (`/v1/platform`, `platform.*`): in the tenant web, "Admin" is a role. The other rules for names and folders are in section 10 of `ARCHITECTURE.md` ("Names and places").
+- A new tenant endpoint names the feature of the plan it needs, `.RequireAuthorization(Features.X)`, or carries `NotPlanGated`: `PlanGateTests` fails otherwise. A new limit is checked in the tenant's method, under the tenant's lock, from the database, never from the cache. A new feature step starts with the plan questions (E7).
 - Me is a Visual Basic keyword. CA1716 does not check namespaces (`.editorconfig`); it still checks types and members.
 
 ## How we design

@@ -5,6 +5,7 @@ using ControlPlane.Application.Invitations.ExpireSignUp;
 using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
+using ControlPlane.Application.Plans;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Users;
@@ -33,6 +34,7 @@ internal static class Handlers
                 new CreateTenantCommand(actorId, "Acme Ltd", slug, ownerEmail, null),
                 scope.GetRequiredService<ITenantRepository>(),
                 scope.GetRequiredService<IUserRepository>(),
+                scope.GetRequiredService<IPlanRepository>(),
                 scope.GetRequiredService<InvitationOptions>(),
                 scope.GetRequiredService<TimeProvider>(),
                 Cancellation);

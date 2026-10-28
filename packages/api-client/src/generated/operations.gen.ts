@@ -33,12 +33,36 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ChangeTenantPlan",
+    "method": "PUT",
+    "path": "/v1/platform/tenants/{tenantId}/plan",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "CloseTenant",
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/close",
     "tag": "Platform/Tenants",
     "requestHeaders": [],
     "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "CreatePlan",
+    "method": "POST",
+    "path": "/v1/platform/plans",
+    "tag": "Platform/Plans",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Location",
       "Retry-After"
     ]
   },
@@ -120,10 +144,50 @@ export const operations = [
     ]
   },
   {
+    "operationId": "GetPlan",
+    "method": "GET",
+    "path": "/v1/platform/plans/{planId}",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetPlanUpdatePreview",
+    "method": "POST",
+    "path": "/v1/platform/plans/{planId}/preview",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetTenant",
     "method": "GET",
     "path": "/v1/platform/tenants/{tenantId}",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetTenantPlan",
+    "method": "GET",
+    "path": "/v1/platform/tenants/{tenantId}/plan",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetTenantPlanChangePreview",
+    "method": "POST",
+    "path": "/v1/platform/tenants/{tenantId}/plan/preview",
+    "tag": "Platform/Plans",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -219,6 +283,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ListPlans",
+    "method": "GET",
+    "path": "/v1/platform/plans",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ListPlatformAuditEntries",
     "method": "GET",
     "path": "/v1/platform/audit-log",
@@ -283,6 +357,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/reactivate",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "RemoveEntitlementOverride",
+    "method": "DELETE",
+    "path": "/v1/platform/tenants/{tenantId}/entitlement-overrides/{key}",
+    "tag": "Platform/Plans",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -359,6 +443,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "SetEntitlementOverride",
+    "method": "PUT",
+    "path": "/v1/platform/tenants/{tenantId}/entitlement-overrides/{key}",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "SuspendTenant",
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/suspend",
@@ -373,6 +467,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/suspend",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "UpdatePlan",
+    "method": "PATCH",
+    "path": "/v1/platform/plans/{planId}",
+    "tag": "Platform/Plans",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

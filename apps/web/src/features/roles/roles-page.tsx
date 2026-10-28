@@ -35,7 +35,7 @@ import { RolesFrame } from "./roles-frame";
  * permissions (F5), both disabled with the reason when the viewer's role does not hold every permission of it (F51); without the
  * update permission it opens read-only. A role in use offers its members, or its invitations when only invitations use it, and
  * its "Delete role" is disabled with the counts, as `role.in_use` counts them. The counter and the limit read
- * `GetMyTenant.maxCustomRoles`.
+ * `GetMyTenant.entitlements["roles.custom.max"]`, where null is unlimited.
  */
 export function RolesPage() {
   const t = useTranslations();
@@ -63,9 +63,12 @@ export function RolesPage() {
   const members = `/${tenant.slug}/settings/members`;
 
   const customRoles = roles.data?.items.filter((role) => !role.builtIn).length;
-  const max = detail.maxCustomRoles;
-  // A tenant may hold more custom roles than a limit lowered later; it creates none until it is under the limit again.
-  const atLimit = customRoles !== undefined && customRoles >= max;
+  const limit = detail.entitlements["roles.custom.max"];
+  const max = typeof limit === "number" ? limit : null;
+  // A tenant may hold more custom roles than a limit lowered later; it creates none until it is under the limit again. An unlimited
+  // limit has no counter.
+  const atLimit =
+    customRoles !== undefined && max !== null && customRoles >= max;
   // The button waits for the roles, so it never turns from enabled to disabled under the pointer.
   const createButton =
     canCreate &&
@@ -261,7 +264,7 @@ export function RolesPage() {
         {canCreate && (
           <div className="flex flex-col items-end gap-1">
             {createButton}
-            {customRoles !== undefined && (
+            {customRoles !== undefined && max !== null && (
               <span
                 id={counterId}
                 className="max-w-90 text-end text-small text-muted-foreground"

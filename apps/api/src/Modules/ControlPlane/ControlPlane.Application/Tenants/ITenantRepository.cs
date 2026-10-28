@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 
@@ -41,8 +42,11 @@ public interface ITenantRepository
     /// </summary>
     internal Task<RoleFacts> FindRoleFactsAsync(Guid? roleId, string? name, CancellationToken cancellationToken);
 
-    /// <summary>Adds the custom role to the active tenant, with its permissions, and saves it. The caller holds the tenant's lock (K6a).</summary>
-    internal Task AddRoleAsync(Role role, CancellationToken cancellationToken);
+    /// <summary>
+    /// Adds the custom role to the active tenant, with its permissions, and saves it with the tenant's summary, which counts the custom
+    /// roles (R12). The caller holds the tenant's lock (K6a, K6k).
+    /// </summary>
+    internal Task AddRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken);
 
     /// <summary>
     /// Saves what <see cref="Tenant.UpdateRole"/> did to the custom role: its name, the rows of the permissions it added, and the removal
@@ -51,10 +55,10 @@ public interface ITenantRepository
     internal Task SaveRoleAsync(RoleUpdate update, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes the custom role of the active tenant and saves it. Its permissions go with it, and a finished invitation that gave it keeps
-    /// no role. The caller holds the tenant's lock (K6a).
+    /// Deletes the custom role of the active tenant and saves it with the tenant's summary (R12). Its permissions go with it, and a
+    /// finished invitation that gave it keeps no role. The caller holds the tenant's lock (K6a, K6k).
     /// </summary>
-    internal Task DeleteRoleAsync(Role role, CancellationToken cancellationToken);
+    internal Task DeleteRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken);
 
     /// <summary>
     /// What a change to the user's membership needs to know of the active tenant (<see cref="MemberFacts"/>): the membership, how many
@@ -63,14 +67,33 @@ public interface ITenantRepository
     /// </summary>
     internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The locked tenant's effective entitlements at this moment, read from the database, never from the cache: its plan's values and its
+    /// overrides. The caller holds the tenant's lock, which a change of the tenant's plan or of an override takes first, so the values stay
+    /// true until the transaction ends, and two commands at a limit run one after the other (M1, K6a).
+    /// </summary>
+    internal Task<EffectiveEntitlements> FindEntitlementsAsync(Tenant tenant, DateTimeOffset now, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The active tenant's override of the key, tracked, so a change is saved; none when it has none. The caller holds the tenant's lock,
+    /// which every change to an override takes first (M1, K6a).
+    /// </summary>
+    internal Task<EntitlementOverride?> FindOverrideAsync(string key, CancellationToken cancellationToken);
+
+    /// <summary>Adds the override to the active tenant; the caller saves. The caller holds the tenant's lock.</summary>
+    internal void AddOverride(EntitlementOverride entry);
+
+    /// <summary>Removes the active tenant's override; the caller saves. The caller holds the tenant's lock.</summary>
+    internal void RemoveOverride(EntitlementOverride entry);
+
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
     /// What an invitation to this address needs to know of the active tenant (<see cref="Tenant.Invite"/>): how many members have a role
     /// that holds <c>tenant.owners.manage</c>, whether a member
-    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, and every
-    /// pending invitation, expired ones included. The caller holds the tenant's lock, which every change to a membership or an invitation
+    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, every
+    /// pending invitation, expired ones included, and how many members it has. The caller holds the tenant's lock, which every change to a membership or an invitation
     /// takes first, so the facts stay true until the transaction ends (K6i, K6j).
     /// </summary>
     internal Task<InvitationFacts> FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken);
@@ -94,8 +117,8 @@ public interface ITenantRepository
     internal Task<Invitation?> FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Saves the transaction's changes, then writes the tenant's summary from its memberships and invitations as the transaction leaves
-    /// them (R12). The tenant is the one <see cref="FindTenantForUpdateAsync"/> locked, so the summary is written under the tenant's lock,
+    /// Saves the transaction's changes, then writes the tenant's summary from its memberships, invitations and custom roles as the
+    /// transaction leaves them (R12). The tenant is the one <see cref="FindTenantForUpdateAsync"/> locked, so the summary is written under the tenant's lock,
     /// in the command's transaction (K6k). Every command that changes a membership or an invitation ends with it: a transaction that
     /// saved such a change and then no summary does not commit.
     /// </summary>
@@ -143,7 +166,7 @@ public interface ITenantRepository
     /// <summary>
     /// Deletes ControlPlane's data of the active tenant for its purge, in the order the keys need, and saves the tenant, which
     /// <see cref="Tenant.Purge"/> made its tombstone (docs/flows/tenant-purge.md): the invitations, then the memberships, each with the
-    /// user's count of memberships (R13), then the roles with their permissions, then the tenant's summary (R12). The caller holds the
+    /// user's count of memberships (R13), then the roles with their permissions, then the tenant's summary (R12) and its entitlement overrides (E2). The caller holds the
     /// tenant's lock (K6a); the counts are changed one user at a time, in the order of the user ids. Answers the former members whom the
     /// purge left without a membership, who are neither deleted nor system admins: the users left without a tenant.
     /// </summary>

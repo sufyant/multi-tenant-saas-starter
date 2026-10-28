@@ -4,6 +4,7 @@ export * from './me-users/me-users.gen';
 export * from './platform-auditlogs/platform-auditlogs.gen';
 export * from './platform-invitations/platform-invitations.gen';
 export * from './platform-members/platform-members.gen';
+export * from './platform-plans/platform-plans.gen';
 export * from './platform-systemadmins/platform-systemadmins.gen';
 export * from './platform-tenants/platform-tenants.gen';
 export * from './platform-users/platform-users.gen';

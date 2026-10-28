@@ -93,11 +93,20 @@
       "unsupported_media_type": "İstek geçerli değil. Sayfayı yenileyip yeniden deneyin.",
       "validation_failed": "Bazı alanların düzeltilmesi gerekiyor. Kontrol edip yeniden deneyin."
     },
+    "plan": {
+      "default_required": "Varsayılan plan, işareti başka bir plan alana kadar korur.",
+      "entitlement_invalid": "Bir değer anahtarına uymuyor. Değerleri denetleyip yeniden deneyin.",
+      "feature_unavailable": "Bu kuruluşun planı bu özelliği içermiyor.",
+      "limit_reached": "Bu kuruluş planının bir sınırına ulaştı.",
+      "name_invalid": "Bir plan adı girin.",
+      "name_taken": "Bu ad başka bir planda var. Başka bir ad seçin.",
+      "not_found": "Bu plan artık yok.",
+      "override_not_found": "Bu kuruluşta bu anahtar için geçersiz kılma yok."
+    },
     "role": {
       "built_in": "Yerleşik bir rolün adı ve izinleri değişmez, rol silinemez.",
       "escalation": "Rolünüz bu rolün tüm izinlerine sahip değil.",
       "in_use": "Bir üye ya da bekleyen bir davet bu role sahip. Önce onlara başka bir rol verin.",
-      "limit_reached": "Bu kuruluş en fazla sayıda özel role sahip. Önce bir rolü silin.",
       "name_invalid": "Bir rol adı girin.",
       "name_taken": "Bu kuruluşta bu adla bir rol zaten var. Başka bir ad seçin.",
       "not_found": "Bu rol artık kuruluşta değil.",

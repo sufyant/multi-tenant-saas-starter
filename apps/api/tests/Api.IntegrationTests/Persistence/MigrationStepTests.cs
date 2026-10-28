@@ -17,6 +17,10 @@ public sealed class MigrationStepTests(Database database)
 
     private const string MessageStorageExists = "SELECT to_regclass('wolverine.wolverine_incoming_envelopes') IS NOT NULL";
 
+    // A row as text without the columns that a later migration adds, so a test of an earlier migration compares the columns it knew:
+    // step 32's tenant plan and the summary's counts of custom roles and pending invitations.
+    private const string LaterColumnsLeftOut = "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries'])::text";
+
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
     [Fact]
     public async Task StartApplication_OnADatabaseNotMigrated_FailsSayingToMigrateAndMigratesNothing()
@@ -175,7 +179,7 @@ public sealed class MigrationStepTests(Database database)
     public async Task Migrate_RequireOwnerInvitationLanguage_KeepsTheRowsAndRefusesAStatusWithoutALanguage()
     {
         var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("RequireOwnerInvitationLanguage");
-        var testData = new TestData(database, before);
+        var testData = new TestData(database, before, withPlans: false);
         await testData.AddTenantAsync();
         var pending = await testData.AddTenantAsync();
         await testData.AddInvitationAsync(pending.Id, role: "Owner", language: "tr");
@@ -193,6 +197,69 @@ public sealed class MigrationStepTests(Database database)
             $"UPDATE control_plane.tenant_summaries SET owner_invitation_language = NULL WHERE tenant_id = '{pending.Id}'", before));
         refused.SqlState.ShouldBe(PostgresErrorCodes.CheckViolation);
         refused.ConstraintName.ShouldBe("ck_tenant_summaries_owner_invitation_together");
+    }
+
+    // Step 32: the migration seeds Free, the default plan, and Pro, which holds what every tenant had (custom roles on, 20 of them, members
+    // without a limit), and moves every existing tenant to Pro, so it takes nothing away. The rows the version before wrote survive, apart
+    // from the new columns, and each tenant's summary then counts its custom roles and keeps the expiry of each pending invitation.
+    [Fact]
+    public async Task Migrate_AddPlansAndEntitlements_PutsEveryTenantOnProAndSummarizesItsRolesAndInvitations()
+    {
+        var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddPlansAndEntitlements");
+        var testData = new TestData(database, before, withPlans: false);
+        var active = await testData.AddTenantAsync();
+        await testData.AddCustomRoleAsync(active.Id, "Billing", "tenant.profile.read");
+        await testData.AddCustomRoleAsync(active.Id, "Support", "tenant.profile.read");
+        var expiresAt = new DateTimeOffset(2030, 1, 2, 3, 4, 5, TimeSpan.Zero);
+        await testData.AddInvitationAsync(active.Id, expiresAt: expiresAt);
+        await testData.AddInvitationAsync(active.Id, status: "Cancelled");
+        var closed = await testData.AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow);
+        var tenantsBefore = await RowsOfAsync(before, "control_plane", "users", "memberships", "roles", "role_permissions", "invitations");
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await RowsOfAsync(before, "control_plane", "users", "memberships", "roles", "role_permissions", "invitations")).ShouldBe(tenantsBefore);
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.tenants WHERE id IN ('{active.Id}', '{closed.Id}') AND plan_id = '{SeedPlans.Pro}'", before)).ShouldBe(2);
+        (await database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans", before)).ShouldBe(SeedPlans.Free);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(key || '=' || coalesce(enabled::text, maximum::text, 'unlimited'), ',' ORDER BY key)
+            FROM control_plane.plan_entitlements WHERE plan_id = '{SeedPlans.Pro}'
+            """,
+            before)).ShouldBe("members.max=unlimited,roles.custom=true,roles.custom.max=20");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT custom_role_count || ':' || array_to_string(pending_invitation_expiries, ',') FROM control_plane.tenant_summaries WHERE tenant_id = '{active.Id}'",
+            before)).ShouldBe("2:2030-01-02 03:04:05+00");
+    }
+
+    // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
+    // default mark (R15).
+    [Fact]
+    public async Task WritePlans_ARowTheRulesRefuse_IsRefused()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+
+        var deletePlan = await Should.ThrowAsync<PostgresException>(() =>
+            database.ScalarAsSuperuserAsync<object>($"DELETE FROM control_plane.plans WHERE id = '{SeedPlans.Free}'", name));
+        var secondMark = await Should.ThrowAsync<PostgresException>(() =>
+            database.ScalarAsSuperuserAsync<object>($"INSERT INTO control_plane.default_plans (id, plan_id) VALUES (false, '{SeedPlans.Pro}')", name));
+        var limitOfAFeature = await Should.ThrowAsync<PostgresException>(() =>
+            database.ScalarAsSuperuserAsync<object>(
+                $"INSERT INTO control_plane.plan_entitlements (plan_id, key, maximum, unlimited) VALUES ('{SeedPlans.Pro}', 'roles.custom', 3, false)", name));
+        var unknownKey = await Should.ThrowAsync<PostgresException>(() =>
+            database.ScalarAsSuperuserAsync<object>(
+                $"UPDATE control_plane.plan_entitlements SET key = 'projects.max' WHERE plan_id = '{SeedPlans.Pro}' AND key = 'members.max'", name));
+        var numberAndUnlimited = await Should.ThrowAsync<PostgresException>(() =>
+            database.ScalarAsSuperuserAsync<object>(
+                $"UPDATE control_plane.plan_entitlements SET maximum = 3 WHERE plan_id = '{SeedPlans.Pro}' AND key = 'members.max'", name));
+
+        deletePlan.SqlState.ShouldBe(PostgresErrorCodes.RestrictViolation);
+        secondMark.ConstraintName.ShouldBe("ck_default_plans_one_row");
+        limitOfAFeature.ConstraintName.ShouldBe("ck_plan_entitlements_value_of_its_kind");
+        unknownKey.ConstraintName.ShouldBe("ck_plan_entitlements_key");
+        numberAndUnlimited.ConstraintName.ShouldBe("ck_plan_entitlements_value_of_its_kind");
     }
 
     // Every row of ControlPlane's tables, as the superuser reads them, as one hash for each table: equal hashes, equal rows.
@@ -214,8 +281,9 @@ public sealed class MigrationStepTests(Database database)
     private Task<string?> RowsOfAsync(string databaseName, string schema, params string[] tables) =>
         database.ScalarAsSuperuserAsync<string>(
             $"SELECT concat_ws(', ', {string.Join(", ", tables.Select(table =>
-                $"'{table} ' || (SELECT count(*) || ' ' || md5(coalesce(string_agg(row::text, ';' ORDER BY row::text), '')) FROM {schema}.{table} AS row)"))})",
+                $"'{table} ' || (SELECT count(*) || ' ' || md5(coalesce(string_agg({LaterColumnsLeftOut}, ';' ORDER BY {LaterColumnsLeftOut}), '')) FROM {schema}.{table} AS row)"))})",
             databaseName);
+
 
     private Task<string?> OwnerOfAsync(string schema, string table, string databaseName) =>
         database.ScalarAsync<string>(

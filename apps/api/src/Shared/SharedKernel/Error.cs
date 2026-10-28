@@ -12,6 +12,9 @@ public sealed record Error(ErrorCode Code, string Description, ErrorType Type)
     /// <summary>The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of.</summary>
     public IReadOnlyList<Guid>? TenantIds { get; init; }
 
+    /// <summary>The entitlement key the error is about, such as the feature that is off or the limit that is reached.</summary>
+    public string? Entitlement { get; init; }
+
     public static Error Validation(ErrorCode code, string description) => new(code, description, ErrorType.Validation);
 
     public static Error NotFound(ErrorCode code, string description) => new(code, description, ErrorType.NotFound);

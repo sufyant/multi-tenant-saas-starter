@@ -255,6 +255,10 @@
         "removed": "<actor></actor> removed <target></target> (<role></role>) from the organisation.",
         "role_changed": "<actor></actor> changed the role of <target></target> from <oldRole></oldRole> to <newRole></newRole>."
       },
+      "plan": {
+        "created": "<actor></actor> created a plan.",
+        "updated": "<actor></actor> changed a plan."
+      },
       "role": {
         "created": "<actor></actor> created the role <target></target>.",
         "deleted": "<actor></actor> deleted the role <target></target>.",
@@ -267,8 +271,11 @@
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",
         "created": "<actor></actor> created this organisation.",
+        "entitlement_override_removed": "<actor></actor> removed a change of a limit of this organisation.",
+        "entitlement_override_set": "<actor></actor> changed a limit of this organisation.",
         "owner_invited": "<actor></actor> invited someone as Owner.",
         "owner_made": "<actor></actor> made a member an Owner.",
+        "plan_changed": "<actor></actor> changed this organisation's plan.",
         "purge_warned": "The Owners were told that <target></target> will be deleted on {date}.",
         "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",

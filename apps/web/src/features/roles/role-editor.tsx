@@ -175,7 +175,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
       [ErrorCode.RolePermissionOwnerOnly]: t("roles.ownerOnly"),
       [ErrorCode.RolePermissionInvalid]: t("roles.permissionInvalid"),
       [ErrorCode.RoleEscalation]: t("roles.lacks"),
-      [ErrorCode.RoleLimitReached]: t("errors.role.limit_reached"),
+      [ErrorCode.PlanLimitReached]: t("errors.plan.limit_reached"),
     } as Partial<Record<string, string>>;
     if (code === ErrorCode.RoleBuiltIn)
       return { title: t("roles.builtInTitle"), text: t("roles.builtInText") };

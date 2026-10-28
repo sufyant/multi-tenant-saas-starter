@@ -12,4 +12,7 @@ internal sealed record AuditTarget(AuditTargetKind Kind, Guid Id, string? Name)
 
     /// <summary>A role of the tenant, with its name of that moment: a role is not a person (K3).</summary>
     public static AuditTarget Role(Guid roleId, string name) => new(AuditTargetKind.Role, roleId, name);
+
+    /// <summary>A plan, with its name of that moment: a plan belongs to no tenant and is not a person.</summary>
+    public static AuditTarget Plan(Guid planId, string name) => new(AuditTargetKind.Plan, planId, name);
 }

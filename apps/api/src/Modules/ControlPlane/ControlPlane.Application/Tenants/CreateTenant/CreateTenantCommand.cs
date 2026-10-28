@@ -6,7 +6,7 @@ namespace ControlPlane.Application.Tenants.CreateTenant;
 /// A system admin creates a tenant. It runs inside the tenant it creates, whose id the server chose, so the transaction declares that
 /// tenant and the messages it sends carry it on. The host's idempotency layer protects
 /// the HTTP request (section 3). The command carries no request key. The owner's invitation email is in the language given, else in
-/// the system admin's own.
+/// the system admin's own. The tenant goes on the plan given, else on the default plan.
 /// </summary>
 [MessageName("create-tenant")]
-public sealed record CreateTenantCommand(string ActorId, string Name, string Slug, string OwnerEmail, Language? Language);
+public sealed record CreateTenantCommand(string ActorId, string Name, string Slug, string OwnerEmail, Language? Language, Guid? PlanId = null);

@@ -161,4 +161,15 @@ public sealed class ListRolesTests(Database database) : IAsyncLifetime
         three.ShouldBe(one);
         one.ShouldBeGreaterThan(0);
     }
+
+    [Fact]
+    public async Task ListRoles_FeatureOff_ListsTheCustomRolesToo()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        await _testData.AddCustomRoleAsync(tenantId, "Billing", "tenant.profile.read");
+
+        var listed = await owner.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/roles", Cancellation);
+
+        listed.GetProperty("total").GetInt32().ShouldBe(4);
+    }
 }

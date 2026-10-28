@@ -42,7 +42,8 @@ public static class InviteOwnerHandler
             Inviter.Platform(actor.Id, actor.Language),
             new NewInvitation(Guid.CreateVersion7(now), email, owner, command.Language, secret, now, invitations.Lifetime),
             await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
-            invitations.DailyLimitPerTenant);
+            invitations.DailyLimitPerTenant,
+            await tenants.FindEntitlementsAsync(tenant, now, cancellationToken));
         if (!invited.IsSuccess)
         {
             return (invited.Error, []);

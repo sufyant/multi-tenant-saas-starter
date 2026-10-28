@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence.Roles;
@@ -38,7 +39,12 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.SaveChangesAsync(cancellationToken);
         var summary = await controlPlane.TenantSummaries.SingleAsync(found => found.TenantId == tenantId, cancellationToken);
         var (members, owners, latestOwnerInvitation) = await ReadSummaryAsync(cancellationToken);
-        summary.Summarize(members, owners, latestOwnerInvitation);
+        var customRoles = await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken);
+        var pendingExpiries = await controlPlane.TenantInvitations
+            .Where(invitation => invitation.Status == InvitationStatus.Pending)
+            .Select(invitation => invitation.ExpiresAt)
+            .ToListAsync(cancellationToken);
+        summary.Summarize(members, owners, latestOwnerInvitation, customRoles, pendingExpiries);
         await controlPlane.SaveChangesAsync(cancellationToken);
         controlPlane.SummaryWritten();
     }
@@ -68,10 +74,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return new RoleFacts(target, await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken), nameTaken, use);
     }
 
-    async Task ITenantRepository.AddRoleAsync(Role role, CancellationToken cancellationToken)
+    async Task ITenantRepository.AddRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken)
     {
         controlPlane.Roles.Add(OfActiveTenant(role, role.TenantId));
-        await controlPlane.SaveChangesAsync(cancellationToken);
+        await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
     }
 
     // A permission's row has the tenant column, which the database fills (TenantDbContext), so EF Core takes a new row it finds in the
@@ -89,10 +95,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.SaveChangesAsync(cancellationToken);
     }
 
-    async Task ITenantRepository.DeleteRoleAsync(Role role, CancellationToken cancellationToken)
+    async Task ITenantRepository.DeleteRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken)
     {
         controlPlane.Roles.Remove(OfActiveTenant(role, role.TenantId));
-        await controlPlane.SaveChangesAsync(cancellationToken);
+        await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
     }
 
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
@@ -100,6 +106,24 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             await ((ITenantRepository)this).FindMembershipAsync(userId, cancellationToken),
             await CountOwnersAsync(cancellationToken),
             await ((ITenantRepository)this).FindRolesAsync(cancellationToken));
+
+    // The plans, their values and the overrides belong to no tenant (R6); the tenant row is the one the caller locked.
+    async Task<EffectiveEntitlements> ITenantRepository.FindEntitlementsAsync(Tenant tenant, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var locked = OfActiveTenant(tenant, tenant.Id);
+        var plan = await controlPlane.PlanEntitlements.Where(value => value.PlanId == locked.PlanId).AsNoTracking().ToListAsync(cancellationToken);
+        var overrides = await controlPlane.EntitlementOverrides.Where(entry => entry.TenantId == locked.Id).AsNoTracking().ToListAsync(cancellationToken);
+        return EffectiveEntitlements.Of(
+            plan.ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal), overrides.Select(entry => entry.ToValue()), now);
+    }
+
+    // An override belongs to no tenant's row level security (R6); the key names the active tenant's.
+    Task<EntitlementOverride?> ITenantRepository.FindOverrideAsync(string key, CancellationToken cancellationToken) =>
+        controlPlane.EntitlementOverrides.SingleOrDefaultAsync(entry => entry.TenantId == controlPlane.ActiveTenant && entry.Key == key, cancellationToken);
+
+    void ITenantRepository.AddOverride(EntitlementOverride entry) => controlPlane.EntitlementOverrides.Add(OfActiveTenant(entry, entry.TenantId));
+
+    void ITenantRepository.RemoveOverride(EntitlementOverride entry) => controlPlane.EntitlementOverrides.Remove(OfActiveTenant(entry, entry.TenantId));
 
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
@@ -112,7 +136,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             await CountOwnersAsync(cancellationToken),
             await IsMemberEmailAsync(email, cancellationToken),
             await ((ITenantRepository)this).CountInvitationsSinceAsync(since, cancellationToken),
-            await ((ITenantRepository)this).FindPendingInvitationsAsync(cancellationToken));
+            await ((ITenantRepository)this).FindPendingInvitationsAsync(cancellationToken),
+            await Memberships.CountAsync(cancellationToken));
     }
 
     // Row level security keeps the invitations to the active tenant; the query names no tenant.
@@ -169,8 +194,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         var inserted = await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH tenant AS (
-                INSERT INTO control_plane.tenants (id, name, slug, status, created_at)
-                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
+                INSERT INTO control_plane.tenants (id, name, slug, status, plan_id, created_at)
+                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.PlanId}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
                 RETURNING id)
             INSERT INTO control_plane.tenant_summaries (tenant_id) SELECT id FROM tenant
             """,
@@ -219,10 +244,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             .SingleAsync(cancellationToken);
 
     // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a
-    // membership name a role (A2), a role's permissions go with it (A3), and the summary names the tenant (R12). The summary goes with the
+    // membership name a role (A2), a role's permissions go with it (A3), and the summary and the overrides name the tenant (R12, E2). The summary goes with the
     // tenant's data, so no change of a membership or an invitation owes one (K6k). Each user's count changes in the order of the user ids,
     // so two purges that share users take their rows in one order. The change tracker does not see a bulk statement, so the purge removes
-    // the tenant's cache tag itself, after the commit (C7); the users' counts are in no cached answer.
+    // the tenant's cache tag itself, after the commit (C7), which the overrides' entries name too; the users' counts are in no cached answer.
     async Task<IReadOnlyList<Guid>> ITenantRepository.PurgeAsync(Tenant tenant, CancellationToken cancellationToken)
     {
         var purged = OfActiveTenant(tenant, tenant.Id);
@@ -241,6 +266,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.TenantRolePermissions.ExecuteDeleteAsync(cancellationToken);
         await controlPlane.TenantRoles.ExecuteDeleteAsync(cancellationToken);
         await controlPlane.TenantSummaries.Where(summary => summary.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.EntitlementOverrides.Where(entry => entry.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
         await controlPlane.SaveChangesAsync(cancellationToken);
 
         return await controlPlane.Users

@@ -62,6 +62,20 @@ public sealed class CachedReadTests
         tenantKey.ShouldContain(tenantRead.TagsOf(tenantId, "user_2x")[0]);
     }
 
+    // C3: a read of one row's data that is the same for every user, such as a tenant's entitlements or a plan's values, is keyed by the
+    // row's label and id, in the one form that a tag writes too.
+    [Fact]
+    public void KeyOf_ARowRead_LabelsTheRowAsATagDoes()
+    {
+        var planId = Guid.Parse("0b8f1c2e-6d4a-4f7b-9e3a-2c5d8e1f4a6b");
+        var read = new RowCachedRead<Shape>("plan-entitlements", "plan", Lifetime, plan => [CacheTag.Of("plan", plan)]);
+
+        var key = read.KeyOf(planId);
+
+        key.ShouldBe($"plan-entitlements:{read.Version}:plan:{planId}");
+        key.ShouldEndWith(read.TagsOf(planId)[0]);
+    }
+
     [Fact]
     public void TagKinds_OfARead_AreTheKindsOfTheTagsItNames()
     {

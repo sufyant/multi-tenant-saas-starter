@@ -612,6 +612,24 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(accepted)).ShouldBe("invitation.not_found");
     }
 
+    // The plan's limit dropped under the members and the invitations already out: the acceptance still adds the member.
+    [Fact]
+    public async Task AcceptInvitation_OverTheLimit_NeverFailsOnIt()
+    {
+        var (tenantId, _) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 1);
+        var secret = $"{Guid.NewGuid():N}";
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var invitee = await _testData.AddUserAsync();
+        _api.Identity.AddAccount(invitee, email);
+        await _testData.AddInvitationAsync(tenantId, email: email, secret: secret);
+
+        var accepted = await _api.WaitingForMessagesAsync(() => _api.CreateClient(invitee).PostAsJsonAsync(
+            "/v1/me/invitations/accept", new { code = TestData.InvitationCodeOf(tenantId, secret) }, Cancellation));
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(2);
+    }
+
     // An invitation code is `<tenantId>.<secret>`.
     private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];
 

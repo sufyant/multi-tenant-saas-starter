@@ -1,3 +1,4 @@
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
@@ -16,10 +17,13 @@ internal static class CacheTags
     public const string User = CacheLabel.User;
 
     /// <summary>
-    /// A tenant: its row, and the rows of its memberships, its roles and their permissions. One tag for all of them: a change of any of
-    /// them is rare, and an entry of the tenant then reads the database once.
+    /// A tenant: its row, its plan included, and the rows of its memberships, its roles and their permissions, and its entitlement
+    /// overrides. One tag for all of them: a change of any of them is rare, and an entry of the tenant then reads the database once.
     /// </summary>
     public const string Tenant = CacheLabel.Tenant;
+
+    /// <summary>A plan: its row and its values. A plan edit removes it, and every tenant on the plan then reads the new values.</summary>
+    public const string Plan = "plan";
 
     /// <summary>The system admin list, whose grant or revocation changes the door of one user (A4).</summary>
     public const string SystemAdmins = "system-admins";
@@ -32,6 +36,9 @@ internal static class CacheTags
         new(typeof(Membership), Tenant, nameof(Membership.TenantId)),
         new(typeof(Role), Tenant, nameof(Role.TenantId)),
         new(typeof(RolePermission), Tenant, nameof(RolePermission.TenantId)),
+        new(typeof(EntitlementOverride), Tenant, nameof(EntitlementOverride.TenantId)),
+        new(typeof(Domain.Plans.Plan), Plan, nameof(Domain.Plans.Plan.Id)),
+        new(typeof(PlanEntitlement), Plan, nameof(PlanEntitlement.PlanId)),
         new(typeof(SystemAdmin), SystemAdmins, null),
     ];
 }

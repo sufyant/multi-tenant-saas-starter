@@ -6,4 +6,5 @@ internal enum AuditTargetKind
     User,
     Invitation,
     Role,
+    Plan,
 }

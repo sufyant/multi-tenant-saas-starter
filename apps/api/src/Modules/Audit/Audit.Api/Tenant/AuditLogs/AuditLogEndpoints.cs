@@ -4,6 +4,7 @@ using Audit.Application.AuditLogs.GetAuditEntryNames;
 using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
+using Audit.Application.Plans;
 using Audit.Application.Tenants;
 using Audit.Application.Roles;
 using Microsoft.AspNetCore.Builder;
@@ -17,7 +18,7 @@ namespace Audit.Api.Tenant.AuditLogs;
 public static class AuditLogEndpoints
 {
     public static void Map(RouteGroupBuilder tenant) =>
-        tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead);
+        tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
 
     internal static AuditEntryResponse ToResponse(AuditEntryView entry) => new(
         entry.Id,
@@ -37,6 +38,20 @@ public static class AuditLogEndpoints
         MemberRoleChangedDetails changed => new MemberRoleChangedDetailsResponse(
             RoleOf(changed.OldRole, changed.OldRoleId, changed.OldRoleBuiltIn),
             RoleOf(changed.NewRole, changed.NewRoleId, changed.NewRoleBuiltIn)),
+        PlanCreatedDetails created => new PlanCreatedDetailsResponse(created.IsDefault, ValuesOf(created.Entitlements)),
+        PlanUpdatedDetails updated => new PlanUpdatedDetailsResponse(
+            updated.OldName,
+            updated.NewName,
+            updated.WasDefault,
+            updated.IsDefault,
+            ValuesOf(updated.OldEntitlements),
+            ValuesOf(updated.NewEntitlements),
+            updated.PreviousDefaultPlan is { } previous ? PlanOf(previous) : null),
+        TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(PlanOf(changed.OldPlan), PlanOf(changed.NewPlan)),
+        TenantCreatedDetails created => new TenantCreatedDetailsResponse(PlanOf(created.Plan)),
+        TenantEntitlementOverrideSetDetails set => new TenantEntitlementOverrideSetDetailsResponse(
+            set.Key, set.OldValue is { } old ? ValueOf(old) : null, set.OldExpiresAt, ValueOf(set.NewValue), set.NewExpiresAt, set.Reason),
+        TenantEntitlementOverrideRemovedDetails removed => new TenantEntitlementOverrideRemovedDetailsResponse(removed.Key, ValueOf(removed.OldValue), removed.OldExpiresAt),
         RoleCreatedDetails created => new RoleCreatedDetailsResponse(created.Permissions),
         RoleUpdatedDetails updated => new RoleUpdatedDetailsResponse(updated.OldName, updated.NewName, updated.PermissionsAdded, updated.PermissionsRemoved),
         TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId),
@@ -50,6 +65,14 @@ public static class AuditLogEndpoints
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
         var details => throw new ArgumentOutOfRangeException(nameof(entry), details.GetType().Name, "The response has no details of this type."),
     };
+
+    // An entry keeps the plan as it was at that moment (K3).
+    private static AuditPlanResponse PlanOf(AuditPlan plan) => new(plan.Id, plan.Name);
+
+    private static AuditEntitlementValueResponse ValueOf(AuditEntitlementValue value) => new(value.Enabled, value.Maximum, value.Unlimited);
+
+    private static Dictionary<string, AuditEntitlementValueResponse> ValuesOf(IReadOnlyDictionary<string, AuditEntitlementValue> values) =>
+        values.ToDictionary(value => value.Key, value => ValueOf(value.Value), StringComparer.Ordinal);
 
     // An entry keeps the role as it was at that moment (K3).
     private static AuditRoleResponse RoleOf(string name, Guid id, bool builtIn) => new(id, name, builtIn);

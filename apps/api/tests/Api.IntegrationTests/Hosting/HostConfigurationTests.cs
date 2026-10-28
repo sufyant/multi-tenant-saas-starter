@@ -46,7 +46,6 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:Tenants:PurgeWarningLead", "00:00:00" },
         { "ControlPlane:Tenants:PurgeWarningLead", "30.00:00:00" },
         { "ControlPlane:Tenants:PurgeTimeout", "00:00:00" },
-        { "ControlPlane:Roles:MaxCustomRolesPerTenant", "0" },
         { "Host:RateLimiting:InvitationAccept:PermitLimit", "0" },
         { "Host:RateLimiting:InvitationAccept:Window", "00:00:00" },
         { "Notifications:Resend:Timeout", "-00:00:01" },

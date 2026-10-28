@@ -30,6 +30,8 @@ export const ListAuditEntriesResponse = zod.object({
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  PlanCreated: 'plan.created',
+  PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
   RoleUpdated: 'role.updated',
@@ -37,8 +39,11 @@ export const ListAuditEntriesResponse = zod.object({
   SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPlanChanged: 'tenant.plan_changed',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
@@ -86,16 +91,53 @@ export const ListAuditEntriesResponse = zod.object({
 }).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).')
 }).describe('The details of `member.role_changed`: the member\'s old and new role.'),zod.object({
   "operation": zod.enum({
+  PlanCreated: 'plan.created',
+}),
+  "isDefault": zod.boolean(),
+  "entitlements": zod.record(zod.string(), zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.'))
+}),zod.object({
+  "operation": zod.enum({
+  PlanUpdated: 'plan.updated',
+}),
+  "oldName": zod.string(),
+  "newName": zod.string(),
+  "wasDefault": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "oldEntitlements": zod.record(zod.string(), zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.')),
+  "newEntitlements": zod.record(zod.string(), zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.')),
+  "previousDefaultPlan": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')])
+}),zod.object({
+  "operation": zod.enum({
   RoleCreated: 'role.created',
 }),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformPlansCreate: 'platform.plans.create',
+  PlatformPlansRead: 'platform.plans.read',
+  PlatformPlansUpdate: 'platform.plans.update',
   PlatformSystemAdminsCreate: 'platform.system_admins.create',
   PlatformSystemAdminsDelete: 'platform.system_admins.delete',
+  PlatformTenantsChangePlan: 'platform.tenants.change_plan',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
   PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
+  PlatformTenantsOverrideEntitlements: 'platform.tenants.override_entitlements',
   PlatformTenantsReactivate: 'platform.tenants.reactivate',
   PlatformTenantsRead: 'platform.tenants.read',
   PlatformTenantsReopen: 'platform.tenants.reopen',
@@ -130,6 +172,43 @@ export const ListAuditEntriesResponse = zod.object({
   "permissionsRemoved": zod.array(zod.string())
 }).describe('The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order.'),zod.object({
   "operation": zod.enum({
+  TenantCreated: 'tenant.created',
+}),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
+}),zod.object({
+  "operation": zod.enum({
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+}),
+  "key": zod.string(),
+  "oldValue": zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.'),
+  "oldExpiresAt": zod.iso.datetime({"offset":true}).nullable()
+}),zod.object({
+  "operation": zod.enum({
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
+}),
+  "key": zod.string(),
+  "oldValue": zod.union([zod.null(),zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.')]),
+  "oldExpiresAt": zod.iso.datetime({"offset":true}).nullable(),
+  "newValue": zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.'),
+  "newExpiresAt": zod.iso.datetime({"offset":true}).nullable(),
+  "reason": zod.string().nullable()
+}),zod.object({
+  "operation": zod.enum({
   TenantOwnerInvited: 'tenant.owner_invited',
 }),
   "invitationId": zod.uuid(),
@@ -147,6 +226,18 @@ export const ListAuditEntriesResponse = zod.object({
   "builtIn": zod.boolean()
 }).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).')
 }).describe('The details of `tenant.owner_made`: the member who became an Owner, and the role they had. The entry keeps the member by id only\n(K3); `displayName` and `deleted` name them now, as an actor is named: `displayName` is the real name, or null for a\nuser without a name, a deleted user and an unknown user, and `deleted` is true for a deleted user.'),zod.object({
+  "operation": zod.enum({
+  TenantPlanChanged: 'tenant.plan_changed',
+}),
+  "oldPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "newPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
+}),zod.object({
   "operation": zod.enum({
   TenantPurgeWarned: 'tenant.purge_warned',
 }),
@@ -178,6 +269,7 @@ export const ListAuditEntriesResponse = zod.object({
   User: 'user',
   Invitation: 'invitation',
   Role: 'role',
+  Plan: 'plan',
 }).describe('The kind of target of an audit entry.'),
   "id": zod.uuid(),
   "name": zod.string().nullable(),

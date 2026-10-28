@@ -28,12 +28,17 @@ export const GetMyTenantResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformPlansCreate: 'platform.plans.create',
+  PlatformPlansRead: 'platform.plans.read',
+  PlatformPlansUpdate: 'platform.plans.update',
   PlatformSystemAdminsCreate: 'platform.system_admins.create',
   PlatformSystemAdminsDelete: 'platform.system_admins.delete',
+  PlatformTenantsChangePlan: 'platform.tenants.change_plan',
   PlatformTenantsClose: 'platform.tenants.close',
   PlatformTenantsCreate: 'platform.tenants.create',
   PlatformTenantsInviteOwner: 'platform.tenants.invite_owner',
   PlatformTenantsMakeOwner: 'platform.tenants.make_owner',
+  PlatformTenantsOverrideEntitlements: 'platform.tenants.override_entitlements',
   PlatformTenantsReactivate: 'platform.tenants.reactivate',
   PlatformTenantsRead: 'platform.tenants.read',
   PlatformTenantsReopen: 'platform.tenants.reopen',
@@ -59,6 +64,8 @@ export const GetMyTenantResponse = zod.object({
   TenantRolesUpdate: 'tenant.roles.update',
 }).describe('A name of the permission list. Every endpoint checks its own permission.')),
   "createdAt": zod.iso.datetime({"offset":true}),
-  "maxCustomRoles": zod.int()
-}).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the most custom roles the tenant may have, the limit CreateRole enforces,\nfor Settings › Roles: the list of roles holds nothing beside its page (K5).')
+  "planName": zod.string(),
+  "entitlements": zod.record(zod.string(), zod.union([zod.boolean().describe('A feature\'s state, a limit\'s number, or null for an unlimited limit.'),zod.int().describe('A feature\'s state, a limit\'s number, or null for an unlimited limit.')]).nullable().describe('A feature\'s state, a limit\'s number, or null for an unlimited limit.')),
+  "usage": zod.record(zod.string(), zod.int())
+}).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the name of the tenant\'s plan; `entitlements`, every key of the list\nwith its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null\nfor an unlimited limit; and `usage`, the tenant\'s count of each limit, so the web adds no list up. Every endpoint still checks\nits feature and its limit itself.')
 

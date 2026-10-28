@@ -1,13 +1,19 @@
+using ControlPlane.Application.Plans;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.GetMyTenant;
 using ControlPlane.Application.Tenants.GetTenant;
+using ControlPlane.Application.Tenants.GetTenantPlan;
 using ControlPlane.Application.Tenants.ListMyTenants;
 using ControlPlane.Application.Tenants.ListTenants;
+using ControlPlane.Application.Tenants.GetTenantPlanChangePreview;
+using ControlPlane.Application.Users;
 using ControlPlane.Domain;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using ControlPlane.Infrastructure.Persistence.Lists;
+using ControlPlane.Infrastructure.Persistence.Plans;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -58,8 +64,9 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     }
 
     // The tenant, the person and their membership's role with its permissions, in three queries; row level security keeps the membership
-    // and the role's permissions to the active tenant. A custom role's permissions are its rows (A3).
-    async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, int maxCustomRoles, CancellationToken cancellationToken)
+    // and the role's permissions to the active tenant. A custom role's permissions are its rows (A3). Then the tenant's plan, its values,
+    // overrides and summary, which belong to no tenant (R6): the effective values at this moment, and each limit's count.
+    async Task<MyTenantDetailView?> ITenantQueries.FindMyTenantAsync(string externalUserId, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (await FindAsync(cancellationToken) is not { } tenant
             || await controlPlane.Users.AsNoTracking().SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken) is not { } user
@@ -75,7 +82,18 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             return null;
         }
 
-        return new MyTenantDetailView(MyTenantView.Of(tenant, role), [.. role.Permissions.Order(StringComparer.Ordinal)], tenant.CreatedAt, maxCustomRoles);
+        var facts = await FindPlanFactsAsync(cancellationToken) ?? throw new InvalidOperationException("The tenant was found in this transaction.");
+        var plan = await controlPlane.PlanValuesAsync(facts.Plan.Id, cancellationToken);
+        var overrides = (await controlPlane.OverridesOfAsync([facts.TenantId], cancellationToken))[facts.TenantId].Select(entry => entry.ToValue());
+        var effective = EffectiveEntitlements.Of(plan, overrides, now);
+        var usage = EntitlementReads.UsageOf(facts.Summary, now);
+        return new MyTenantDetailView(
+            MyTenantView.Of(tenant, role),
+            [.. role.Permissions.Order(StringComparer.Ordinal)],
+            tenant.CreatedAt,
+            facts.Plan.Name,
+            effective.Values.OrderBy(value => value.Key, StringComparer.Ordinal).ToDictionary(value => value.Key, value => EntitlementValueView.Of(value.Value), StringComparer.Ordinal),
+            EntitlementKeys.Limits.ToDictionary(key => key, usage.CountOf, StringComparer.Ordinal));
     }
 
     // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. The page joins
@@ -133,6 +151,61 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             total);
     }
 
+    // The tenant row, its plan, its overrides with the user who set each one, and its summary: the tables belong to no tenant (R6).
+    async Task<TenantPlanView?> ITenantQueries.FindTenantPlanAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (await FindPlanFactsAsync(cancellationToken) is not { } found)
+        {
+            return null;
+        }
+
+        var plan = await controlPlane.PlanValuesAsync(found.Plan.Id, cancellationToken);
+        var overrides = await (
+                from entry in controlPlane.EntitlementOverrides
+                where entry.TenantId == found.TenantId
+                join user in controlPlane.Users on entry.SetBy equals user.Id
+                select new { Entry = entry, User = user })
+            .AsNoTracking()
+            .ToDictionaryAsync(pair => pair.Entry.Key, StringComparer.Ordinal, cancellationToken);
+        var effective = EffectiveEntitlements.Of(plan, overrides.Values.Select(pair => pair.Entry.ToValue()), now);
+        var usage = EntitlementReads.UsageOf(found.Summary, now);
+        var entitlements = EntitlementKeys.All
+            .OrderBy(key => key.Key, StringComparer.Ordinal)
+            .Select(key => new TenantEntitlementView(
+                key.Key,
+                key.Value == EntitlementKind.Feature,
+                plan.TryGetValue(key.Key, out var planValue) ? EntitlementValueView.Of(planValue) : null,
+                overrides.TryGetValue(key.Key, out var pair)
+                    ? new EntitlementOverrideView(
+                        EntitlementValueView.Of(pair.Entry.Value),
+                        pair.Entry.ExpiresAt,
+                        !pair.Entry.ToValue().IsActiveAt(now),
+                        pair.Entry.Reason,
+                        pair.User.Id,
+                        UserNameView.Of(pair.User),
+                        pair.Entry.SetAt)
+                    : null,
+                EntitlementValueView.Of(effective.ValueOf(key.Key)),
+                usage.CountOf(key.Key)))
+            .ToList();
+        return new TenantPlanView(found.TenantId, found.Plan, entitlements);
+    }
+
+    async Task<TenantPlanChangePreviewView?> ITenantQueries.PreviewPlanChangeAsync(
+        IReadOnlyDictionary<string, EntitlementValue> plan,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        if (await FindPlanFactsAsync(cancellationToken) is not { } found)
+        {
+            return null;
+        }
+
+        var overrides = (await controlPlane.OverridesOfAsync([found.TenantId], cancellationToken))[found.TenantId].Select(entry => entry.ToValue()).ToList();
+        var preview = PlanPreview.Of(plan, overrides, EntitlementReads.UsageOf(found.Summary, now), now);
+        return new TenantPlanChangePreviewView([.. preview.Excesses.Select(ExcessView.Of)], preview.OverriddenKeys);
+    }
+
     // The user is found by the identity provider's id in control_plane.users, which belongs to no tenant. The page is one query:
     // each membership's tenant and role are joined, with no query for each tenant.
     async Task<ListPage<MyTenantView>> ITenantQueries.ListMyTenantsAsync(string externalUserId, ListRequest<ListMyTenantsSort> list, CancellationToken cancellationToken)
@@ -186,4 +259,19 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
     private Task<Tenant?> FindAsync(CancellationToken cancellationToken) =>
         controlPlane.Tenants.AsNoTracking().SingleOrDefaultAsync(tenant => tenant.Id == controlPlane.ActiveTenant, cancellationToken);
+
+    // The active tenant with its plan's id and name and its summary, where it has one: a purged tenant's tombstone has none (K4).
+    private async Task<(Guid TenantId, PlanNames Plan, TenantSummary? Summary)?> FindPlanFactsAsync(CancellationToken cancellationToken)
+    {
+        var found = await (
+                from tenant in controlPlane.Tenants
+                where tenant.Id == controlPlane.ActiveTenant
+                join plan in controlPlane.Plans on tenant.PlanId equals plan.Id
+                join kept in controlPlane.TenantSummaries on tenant.Id equals kept.TenantId into summaries
+                from summary in summaries.DefaultIfEmpty()
+                select new { tenant.Id, PlanId = plan.Id, PlanName = plan.Name, Summary = summary })
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        return found is null ? null : (found.Id, new PlanNames(found.PlanId, found.PlanName), found.Summary);
+    }
 }

@@ -238,8 +238,9 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(tenant)).ShouldBe(
             $"{tenant}:tenant.created|Platform|-|Tenant|{tenant}|Acme Ltd, {tenant}:tenant.owner_invited|Platform|-|Tenant|{tenant}|Acme Ltd");
         var details = $$"""{"invitationId": "{{id}}", "replacedInvitationId": "{{replaced}}"}""";
-        (await _audit.PlatformDetailsAsync(tenant)).ShouldBe($"-, {details}");
-        (await _audit.TenantDetailsAsync(tenant)).ShouldBe($"-, {details}");
+        var created = $$$"""{"plan": {"id": "{{{SeedPlans.Free}}}", "name": "Free"}}""";
+        (await _audit.PlatformDetailsAsync(tenant)).ShouldBe($"{created}, {details}");
+        (await _audit.TenantDetailsAsync(tenant)).ShouldBe($"{created}, {details}");
         (await _audit.TenantRecordsHoldingAsync(tenant, owner)).ShouldBe(0);
     }
 
@@ -311,6 +312,18 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (await PendingInvitationsOfAsync(tenant)).ShouldBe(1);
         (await MembersOfAsync(tenant)).ShouldBe(0);
         await _summaries.ShouldMatchTheRowsAsync(tenant);
+    }
+
+    [Fact]
+    public async Task InviteOwner_ATenantAtItsLimit_IsNotLimited()
+    {
+        var planId = await _testData.AddPlanAsync(new() { ["members.max"] = 0 });
+        var tenant = await _testData.AddTenantAsync(planId: planId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var invited = await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant.Id, $"{Guid.NewGuid():N}@example.com"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

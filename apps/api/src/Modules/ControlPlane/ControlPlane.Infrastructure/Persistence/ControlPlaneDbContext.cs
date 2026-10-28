@@ -1,11 +1,13 @@
 using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantPurge;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using ControlPlane.Infrastructure.Persistence.Invitations;
 using ControlPlane.Infrastructure.Persistence.Members;
+using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
@@ -20,7 +22,8 @@ using Wolverine;
 namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants and their summaries, users, system admins), and the roles,
+/// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, their summaries and their entitlement overrides, users,
+/// system admins, plans and their values, the default plan), and the roles,
 /// their permissions, memberships, invitations and tenant purge sagas, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
@@ -58,6 +61,14 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
 
     internal DbSet<TenantPurgeSaga> TenantPurgeSagas => Set<TenantPurgeSaga>();
 
+    internal DbSet<Plan> Plans => Set<Plan>();
+
+    internal DbSet<PlanEntitlement> PlanEntitlements => Set<PlanEntitlement>();
+
+    internal DbSet<DefaultPlan> DefaultPlans => Set<DefaultPlan>();
+
+    internal DbSet<EntitlementOverride> EntitlementOverrides => Set<EntitlementOverride>();
+
     /// <summary>
     /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
     /// fast without one.
@@ -76,7 +87,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     }
 
     /// <summary>
-    /// Whether the transaction saved a change to a membership or an invitation after the tenant's summary was last written (K6k). The
+    /// Whether the transaction saved a change to a membership or an invitation, or added or deleted a custom role, after the tenant's summary was
+    /// last written (K6k). The
     /// transaction then does not commit (<see cref="TenantSummaryInterceptor"/>): <see cref="TenantRepository"/> writes the summary.
     /// </summary>
     internal bool SummaryOwed { get; private set; }
@@ -145,13 +157,19 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new InvitationConfiguration());
         modelBuilder.ApplyConfiguration(new SystemAdminConfiguration());
         modelBuilder.ApplyConfiguration(new TenantPurgeSagaConfiguration());
+        modelBuilder.ApplyConfiguration(new PlanConfiguration());
+        modelBuilder.ApplyConfiguration(new PlanEntitlementConfiguration());
+        modelBuilder.ApplyConfiguration(new DefaultPlanConfiguration());
+        modelBuilder.ApplyConfiguration(new EntitlementOverrideConfiguration());
     }
 
     // Only a change inside a transaction is owed: the transaction is what commits it (W1). Entries() detects the changes first.
     private void OweSummary()
     {
         if (Database.CurrentTransaction is not null
-            && ChangeTracker.Entries().Any(entry => entry.Entity is Membership or Invitation && entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+            && ChangeTracker.Entries().Any(entry =>
+                (entry.Entity is Membership or Invitation && entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                || (entry.Entity is Role { BuiltIn: null } && entry.State is EntityState.Added or EntityState.Deleted)))
         {
             SummaryOwed = true;
         }
