@@ -103,7 +103,7 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
 
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.plan_changed|User|{await _testData.UserIdOfAsync(adminId)}|Tenant|{tenant.Id}|Acme Ltd");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.plan_changed|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
-        (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe($$"""{"newPlanId": "{{SeedPlans.Free}}", "oldPlanId": "{{SeedPlans.Pro}}", "newPlanName": "Free", "oldPlanName": "Pro"}""");
+        (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe($$$"""{"newPlan": {"id": "{{{SeedPlans.Free}}}", "name": "Free"}, "oldPlan": {"id": "{{{SeedPlans.Pro}}}", "name": "Pro"}}""");
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);

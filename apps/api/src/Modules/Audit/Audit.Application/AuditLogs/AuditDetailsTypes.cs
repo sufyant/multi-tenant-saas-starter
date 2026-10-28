@@ -30,6 +30,8 @@ public static class AuditDetailsTypes
 
     public const string RoleUpdated = AuditOperations.RoleUpdated;
 
+    public const string TenantCreated = AuditOperations.TenantCreated;
+
     public const string TenantEntitlementOverrideRemoved = AuditOperations.TenantEntitlementOverrideRemoved;
 
     public const string TenantEntitlementOverrideSet = AuditOperations.TenantEntitlementOverrideSet;
@@ -62,7 +64,7 @@ public static class AuditDetailsTypes
         [AuditOperations.SystemAdminGranted] = null,
         [AuditOperations.SystemAdminRevoked] = null,
         [AuditOperations.TenantClosed] = null,
-        [AuditOperations.TenantCreated] = null,
+        [AuditOperations.TenantCreated] = typeof(TenantCreatedDetails),
         [AuditOperations.TenantEntitlementOverrideRemoved] = typeof(TenantEntitlementOverrideRemovedDetails),
         [AuditOperations.TenantEntitlementOverrideSet] = typeof(TenantEntitlementOverrideSetDetails),
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),

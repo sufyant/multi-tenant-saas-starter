@@ -40,8 +40,15 @@ public static class AuditLogEndpoints
             RoleOf(changed.NewRole, changed.NewRoleId, changed.NewRoleBuiltIn)),
         PlanCreatedDetails created => new PlanCreatedDetailsResponse(created.IsDefault, ValuesOf(created.Entitlements)),
         PlanUpdatedDetails updated => new PlanUpdatedDetailsResponse(
-            updated.OldName, updated.NewName, updated.WasDefault, updated.IsDefault, ValuesOf(updated.OldEntitlements), ValuesOf(updated.NewEntitlements)),
-        TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(changed.OldPlanId, changed.OldPlanName, changed.NewPlanId, changed.NewPlanName),
+            updated.OldName,
+            updated.NewName,
+            updated.WasDefault,
+            updated.IsDefault,
+            ValuesOf(updated.OldEntitlements),
+            ValuesOf(updated.NewEntitlements),
+            updated.PreviousDefaultPlan is { } previous ? PlanOf(previous) : null),
+        TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(PlanOf(changed.OldPlan), PlanOf(changed.NewPlan)),
+        TenantCreatedDetails created => new TenantCreatedDetailsResponse(PlanOf(created.Plan)),
         TenantEntitlementOverrideSetDetails set => new TenantEntitlementOverrideSetDetailsResponse(
             set.Key, set.OldValue is { } old ? ValueOf(old) : null, set.OldExpiresAt, ValueOf(set.NewValue), set.NewExpiresAt, set.Reason),
         TenantEntitlementOverrideRemovedDetails removed => new TenantEntitlementOverrideRemovedDetailsResponse(removed.Key, ValueOf(removed.OldValue), removed.OldExpiresAt),
@@ -58,6 +65,9 @@ public static class AuditLogEndpoints
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
         var details => throw new ArgumentOutOfRangeException(nameof(entry), details.GetType().Name, "The response has no details of this type."),
     };
+
+    // An entry keeps the plan as it was at that moment (K3).
+    private static AuditPlanResponse PlanOf(AuditPlan plan) => new(plan.Id, plan.Name);
 
     private static AuditEntitlementValueResponse ValueOf(AuditEntitlementValue value) => new(value.Enabled, value.Maximum, value.Unlimited);
 

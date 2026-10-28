@@ -1,3 +1,3 @@
 namespace Audit.Api.Tenant.AuditLogs;
 
-public sealed record TenantPlanChangedDetailsResponse(Guid OldPlanId, string OldPlanName, Guid NewPlanId, string NewPlanName) : AuditDetailsResponse;
+public sealed record TenantPlanChangedDetailsResponse(AuditPlanResponse OldPlan, AuditPlanResponse NewPlan) : AuditDetailsResponse;

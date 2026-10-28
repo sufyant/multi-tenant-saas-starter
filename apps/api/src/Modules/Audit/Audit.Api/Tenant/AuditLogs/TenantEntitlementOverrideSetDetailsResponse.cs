@@ -6,4 +6,4 @@ public sealed record TenantEntitlementOverrideSetDetailsResponse(
     DateTimeOffset? OldExpiresAt,
     AuditEntitlementValueResponse NewValue,
     DateTimeOffset? NewExpiresAt,
-    string Reason) : AuditDetailsResponse;
+    string? Reason) : AuditDetailsResponse;

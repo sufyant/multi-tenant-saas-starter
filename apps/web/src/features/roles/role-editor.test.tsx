@@ -292,7 +292,7 @@ describe("CreateRole", () => {
     [
       409,
       ErrorCode.PlanLimitReached,
-      "This organisation has as many custom roles as it may have. Delete a role first.",
+      "This organisation has reached a limit of its plan.",
     ],
   ])("CreateRole_Refused%s_%s_ShowsTheBanner", async (status, code, text) => {
     server.use(

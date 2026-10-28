@@ -45,6 +45,7 @@ public static class UpdatePlanHandler
             return (edited.Error, []);
         }
 
+        var previousDefault = wasDefault || !command.IsDefault ? null : await plans.FindPlanNameAsync(mark.PlanId, cancellationToken);
         mark.Mark(plan.Id, command.IsDefault);
         var before = edited.Value;
         var changed = before.OldName != plan.Name || wasDefault != command.IsDefault || !SameValues(before.OldValues, plan.ValueMap);
@@ -68,7 +69,9 @@ public static class UpdatePlanHandler
             wasDefault,
             command.IsDefault,
             EntitlementValueView.RecordsOf(before.OldValues),
-            EntitlementValueView.RecordsOf(plan.ValueMap))]);
+            EntitlementValueView.RecordsOf(plan.ValueMap),
+            previousDefault?.Id,
+            previousDefault?.Name)]);
     }
 
     private static bool SameValues(IReadOnlyDictionary<string, EntitlementValue> before, IReadOnlyDictionary<string, EntitlementValue> after) =>

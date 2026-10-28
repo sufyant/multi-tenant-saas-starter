@@ -232,10 +232,10 @@ public sealed class HostRoleTests(Database database)
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
     }
 
-    // O3: an override and a new plan are announced from the web host, and their Audit handlers run in the worker, once, in the platform's
-    // log only: the plan belongs to no tenant, and the override's reason is the provider's own note.
+    // O3: an override and a new plan are announced from the web host, and their Audit handlers run in the worker, once: the plan in the
+    // platform's log only, because it belongs to no tenant, and the override in both logs.
     [Fact]
-    public async Task SetOverrideAndCreatePlan_OnAWebAndAWorkerHost_WriteOnePlatformEntryEachInTheWorker()
+    public async Task SetOverrideAndCreatePlan_OnAWebAndAWorkerHost_WriteTheirEntriesInTheWorker()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         var runs = new HandlerRuns();
@@ -258,7 +258,7 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(PlanCreatedEvent), typeof(RecordPlanCreatedHandler)),
             ],
             ignoreOrder: true);
-        (await AuditEntriesAsync(name, tenant.Id, "tenant.entitlement_override_set")).ShouldBe(0L);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.entitlement_override_set")).ShouldBe(1L);
     }
 
     // O3: a closure is announced from the web host, and its Audit handler runs in the worker, once, in both logs.

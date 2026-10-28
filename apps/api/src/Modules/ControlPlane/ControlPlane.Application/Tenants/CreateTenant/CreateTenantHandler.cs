@@ -32,7 +32,7 @@ public static class CreateTenantHandler
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var planId = command.PlanId ?? await plans.FindDefaultPlanIdAsync(cancellationToken);
-        if (await plans.FindPlanNameAsync(planId, cancellationToken) is null)
+        if (await plans.FindPlanNameAsync(planId, cancellationToken) is not { } plan)
         {
             return (Plan.NotFound, []);
         }
@@ -73,7 +73,7 @@ public static class CreateTenantHandler
         return (
             TenantView.Of(tenant),
             [
-                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id),
+                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor.Id, plan.Id, plan.Name),
                 OpenSignUpCommand.For(tenant, invitation, invitations.AcceptLink(new InvitationCode(tenant.Id, secret))),
             ]);
     }

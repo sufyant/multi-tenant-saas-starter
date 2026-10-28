@@ -244,10 +244,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             .SingleAsync(cancellationToken);
 
     // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a
-    // membership name a role (A2), a role's permissions go with it (A3), and the summary names the tenant (R12). The summary goes with the
+    // membership name a role (A2), a role's permissions go with it (A3), and the summary and the overrides name the tenant (R12, E2). The summary goes with the
     // tenant's data, so no change of a membership or an invitation owes one (K6k). Each user's count changes in the order of the user ids,
     // so two purges that share users take their rows in one order. The change tracker does not see a bulk statement, so the purge removes
-    // the tenant's cache tag itself, after the commit (C7); the users' counts are in no cached answer.
+    // the tenant's cache tag itself, after the commit (C7), which the overrides' entries name too; the users' counts are in no cached answer.
     async Task<IReadOnlyList<Guid>> ITenantRepository.PurgeAsync(Tenant tenant, CancellationToken cancellationToken)
     {
         var purged = OfActiveTenant(tenant, tenant.Id);
@@ -266,6 +266,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.TenantRolePermissions.ExecuteDeleteAsync(cancellationToken);
         await controlPlane.TenantRoles.ExecuteDeleteAsync(cancellationToken);
         await controlPlane.TenantSummaries.Where(summary => summary.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.EntitlementOverrides.Where(entry => entry.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
         await controlPlane.SaveChangesAsync(cancellationToken);
 
         return await controlPlane.Users

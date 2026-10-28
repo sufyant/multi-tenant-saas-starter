@@ -6,4 +6,5 @@ public sealed record PlanUpdatedDetailsResponse(
     bool WasDefault,
     bool IsDefault,
     IReadOnlyDictionary<string, AuditEntitlementValueResponse> OldEntitlements,
-    IReadOnlyDictionary<string, AuditEntitlementValueResponse> NewEntitlements) : AuditDetailsResponse;
+    IReadOnlyDictionary<string, AuditEntitlementValueResponse> NewEntitlements,
+    AuditPlanResponse? PreviousDefaultPlan) : AuditDetailsResponse;

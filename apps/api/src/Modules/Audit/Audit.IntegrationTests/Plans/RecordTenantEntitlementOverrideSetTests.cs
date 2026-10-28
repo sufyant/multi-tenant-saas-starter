@@ -6,8 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.Plans;
 
-// An override goes to the platform's log only, although its event comes in the tenant's transaction: its reason is the provider's own
-// note, which a member never reads.
+// An override goes to both logs, in the tenant's transaction. The reason is the provider's own note, so only the platform's entry keeps it,
+// as for tenant.suspended.
 public sealed class RecordTenantEntitlementOverrideSetTests(Database database)
 {
     private static readonly DateTimeOffset OccurredAt = new(2026, 10, 28, 9, 0, 0, TimeSpan.Zero);
@@ -15,7 +15,7 @@ public sealed class RecordTenantEntitlementOverrideSetTests(Database database)
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task RecordTenantEntitlementOverrideSet_OverrideSet_WritesOnlyThePlatformEntryWithTheReason()
+    public async Task RecordTenantEntitlementOverrideSet_OverrideSet_WritesBothEntriesAndTheReasonInThePlatformsOnly()
     {
         var set = new EntitlementOverrideSetEvent(
             Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme", Guid.CreateVersion7(), "members.max",
@@ -25,7 +25,8 @@ public sealed class RecordTenantEntitlementOverrideSetTests(Database database)
             RecordTenantEntitlementOverrideSetHandler.HandleAsync(set, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, set.EventId)).ShouldBe($"tenant.entitlement_override_set|User|{set.SetBy}|Tenant|{set.TenantId}|Acme");
-        (await Logs.CountAsync(database.Services, Logs.Tenant, set.TenantId, set.EventId)).ShouldBe(0);
+        (await Logs.DescribeAsync(database.Services, Logs.Tenant, set.TenantId, set.EventId)).ShouldBe($"tenant.entitlement_override_set|Platform|-|Tenant|{set.TenantId}|Acme");
+        JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, set.TenantId, set.EventId))!).RootElement.GetProperty("reason").ValueKind.ShouldBe(JsonValueKind.Null);
         var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Platform, null, set.EventId))!).RootElement;
         (details.GetProperty("key").GetString(), details.GetProperty("oldValue").GetProperty("maximum").GetInt32(), details.GetProperty("newValue").GetProperty("unlimited").GetBoolean(), details.GetProperty("reason").GetString())
             .ShouldBe(("members.max", 5, true, "A trial"));

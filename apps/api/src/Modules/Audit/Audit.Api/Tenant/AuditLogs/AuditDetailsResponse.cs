@@ -15,6 +15,7 @@ namespace Audit.Api.Tenant.AuditLogs;
 [JsonDerivedType(typeof(PlanUpdatedDetailsResponse), AuditDetailsTypes.PlanUpdated)]
 [JsonDerivedType(typeof(RoleCreatedDetailsResponse), AuditDetailsTypes.RoleCreated)]
 [JsonDerivedType(typeof(RoleUpdatedDetailsResponse), AuditDetailsTypes.RoleUpdated)]
+[JsonDerivedType(typeof(TenantCreatedDetailsResponse), AuditDetailsTypes.TenantCreated)]
 [JsonDerivedType(typeof(TenantEntitlementOverrideRemovedDetailsResponse), AuditDetailsTypes.TenantEntitlementOverrideRemoved)]
 [JsonDerivedType(typeof(TenantEntitlementOverrideSetDetailsResponse), AuditDetailsTypes.TenantEntitlementOverrideSet)]
 [JsonDerivedType(typeof(TenantOwnerInvitedDetailsResponse), AuditDetailsTypes.TenantOwnerInvited)]

@@ -15,7 +15,8 @@ public static class RecordTenantPlanChangedHandler
     {
         var tenant = AuditTarget.Tenant(changed.TenantId, changed.TenantName);
         var details = JsonSerializer.Serialize(
-            new TenantPlanChangedDetails(changed.OldPlanId, changed.OldPlanName, changed.NewPlanId, changed.NewPlanName), JsonSerializerOptions.Web);
+            new TenantPlanChangedDetails(new AuditPlan(changed.OldPlanId, changed.OldPlanName), new AuditPlan(changed.NewPlanId, changed.NewPlanName)),
+            JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.User(changed.ChangedBy), AuditOperations.TenantPlanChanged, tenant, details),
             new TenantAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.Platform, AuditOperations.TenantPlanChanged, tenant, details),

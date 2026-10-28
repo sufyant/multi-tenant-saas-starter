@@ -72,7 +72,7 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 - A plan becomes the default by marking it. The mark leaves the previous default plan in the same transaction. The default plan keeps its mark until another plan takes it (409 `plan.default_required`).
 - An edit gives the plan exactly the values it sends: a key left out loses its value and is closed. It applies at once to every tenant on the plan. A plan edit locks the plan row, then the default mark.
 - `CreateTenant` takes an optional `planId`; without one, the tenant gets the default plan.
-- A closed, purging or purged tenant's plan and overrides are read-only (409 `tenant.not_active`). A suspended tenant's can change.
+- A closed, purging or purged tenant's plan and overrides are read-only (409 `tenant.not_active`). A suspended tenant's can change. The purge deletes the overrides; the tombstone keeps its plan, because a tenant always has one.
 - There is no deletion of a plan, no plan version, no trial and no billing in this step. A trial is an override with an expiry; billing (step 36) will change a tenant's plan through ControlPlane.
 
 ## 6. The previews
@@ -89,13 +89,17 @@ The preview of a plan edit is a page in the list contract (K5). It lists only th
 
 | Command | Event | Audit handler | Log | Operation |
 | --- | --- | --- | --- | --- |
+| `CreateTenant` | `TenantCreatedEvent`, with the plan the tenant got | `RecordTenantCreatedHandler` | platform and tenant | `tenant.created`; details: the plan, the default plan when the request named none |
 | `CreatePlan` | `PlanCreatedEvent` | `RecordPlanCreatedHandler` | platform | `plan.created`; the target is the plan, with its name; details: the default mark and the values |
-| `UpdatePlan` | `PlanUpdatedEvent`, only when something changed | `RecordPlanUpdatedHandler` | platform | `plan.updated`; the target keeps the new name; details: the old and the new name, default mark and values |
-| `ChangeTenantPlan` | `TenantPlanChangedEvent`, only for another plan | `RecordTenantPlanChangedHandler` | platform and tenant | `tenant.plan_changed`; details: the old and the new plan in both logs |
-| `SetEntitlementOverride` | `EntitlementOverrideSetEvent`, only when something changed | `RecordTenantEntitlementOverrideSetHandler` | platform | `tenant.entitlement_override_set`; details: the key, the old and the new value and expiry, the reason |
-| `RemoveEntitlementOverride` | `EntitlementOverrideRemovedEvent` | `RecordTenantEntitlementOverrideRemovedHandler` | platform | `tenant.entitlement_override_removed`; details: the key and the value and expiry it had |
+| `UpdatePlan` | `PlanUpdatedEvent`, only when something changed | `RecordPlanUpdatedHandler` | platform | `plan.updated`; the target keeps the new name; details: the old and the new name, default mark and values, and the previous default plan when the mark moved to this plan |
+| `ChangeTenantPlan` | `TenantPlanChangedEvent`, only for another plan | `RecordTenantPlanChangedHandler` | platform and tenant | `tenant.plan_changed`; details: the old and the new plan |
+| `SetEntitlementOverride` | `EntitlementOverrideSetEvent`, only when something changed | `RecordTenantEntitlementOverrideSetHandler` | platform and tenant | `tenant.entitlement_override_set`; details: the key, the old and the new value and expiry; the reason in the platform's entry only |
+| `RemoveEntitlementOverride` | `EntitlementOverrideRemovedEvent` | `RecordTenantEntitlementOverrideRemovedHandler` | platform and tenant | `tenant.entitlement_override_removed`; details: the key and the value and expiry it had |
 
-An override goes to the platform's log only: its reason is the provider's own note, which a member never reads in the tenant's Activity.
+- A plan in the details is Audit's own `AuditPlanResponse`, `{ id, name }`, the plan as it was at that moment.
+- The reason of an override is the provider's own note, so only the platform's entry keeps it, as for `tenant.suspended`.
+- A plan edit writes no entry in the logs of the tenants on the plan (`reading-the-audit-logs.md`).
+- A tenant's purge deletes its overrides with its other data (`tenant-purge.md`). The platform's log keeps its own entries about them.
 
 ## 8. A new feature step
 

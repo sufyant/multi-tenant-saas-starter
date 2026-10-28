@@ -117,9 +117,9 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
         set.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    // The platform's log only: the reason is the provider's own note, which a member never reads in the tenant's Activity.
+    // Both logs; the reason is the provider's own note, so only the platform's entry keeps it, as for tenant.suspended.
     [Fact]
-    public async Task SetEntitlementOverride_AnOverride_RecordsItInThePlatformLogOnly()
+    public async Task SetEntitlementOverride_AnOverride_RecordsItInBothLogsWithTheReasonInThePlatformsOnly()
     {
         var (admin, adminId) = await AdminAsync();
         var tenant = await _testData.AddTenantAsync(name: "Acme Ltd");
@@ -129,7 +129,9 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.entitlement_override_set|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd");
         (await _audit.PlatformDetailsAsync(tenant.Id)).ShouldBe(
             """{"key": "members.max", "reason": "Seats for the pilot", "newValue": {"enabled": null, "maximum": 50, "unlimited": false}, "oldValue": null, "newExpiresAt": null, "oldExpiresAt": null}""");
-        (await _audit.TenantLogAsync(tenant.Id)).ShouldBeNull();
+        (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.entitlement_override_set|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
+        (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe(
+            """{"key": "members.max", "reason": null, "newValue": {"enabled": null, "maximum": 50, "unlimited": false}, "oldValue": null, "newExpiresAt": null, "oldExpiresAt": null}""");
     }
 
     private async Task<(HttpClient Client, Guid UserId)> AdminAsync()

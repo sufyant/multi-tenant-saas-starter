@@ -97,7 +97,7 @@
       "default_required": "Varsayılan plan, işareti başka bir plan alana kadar korur.",
       "entitlement_invalid": "Bir değer anahtarına uymuyor. Değerleri denetleyip yeniden deneyin.",
       "feature_unavailable": "Bu kuruluşun planı bu özelliği içermiyor.",
-      "limit_reached": "Bu kuruluş en fazla sayıda özel role sahip. Önce bir rolü silin.",
+      "limit_reached": "Bu kuruluş planının bir sınırına ulaştı.",
       "name_invalid": "Bir plan adı girin.",
       "name_taken": "Bu ad başka bir planda var. Başka bir ad seçin.",
       "not_found": "Bu plan artık yok.",

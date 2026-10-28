@@ -141,6 +141,15 @@ export const PlanUpdatedDetailsResponseOperation = {
   PlanUpdated: 'plan.updated',
 } as const;
 
+/**
+ * A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,
+ * so the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.
+ */
+export interface AuditPlanResponse {
+  id: string;
+  name: string;
+}
+
 export type PlanUpdatedDetailsResponseOldEntitlements = {[key: string]: AuditEntitlementValueResponse};
 
 export type PlanUpdatedDetailsResponseNewEntitlements = {[key: string]: AuditEntitlementValueResponse};
@@ -153,6 +162,7 @@ export interface PlanUpdatedDetailsResponse {
   isDefault: boolean;
   oldEntitlements: PlanUpdatedDetailsResponseOldEntitlements;
   newEntitlements: PlanUpdatedDetailsResponseNewEntitlements;
+  previousDefaultPlan: null | AuditPlanResponse;
 }
 
 export type RoleCreatedDetailsResponseOperation = typeof RoleCreatedDetailsResponseOperation[keyof typeof RoleCreatedDetailsResponseOperation];
@@ -232,6 +242,18 @@ export interface RoleUpdatedDetailsResponse {
   permissionsRemoved: string[];
 }
 
+export type TenantCreatedDetailsResponseOperation = typeof TenantCreatedDetailsResponseOperation[keyof typeof TenantCreatedDetailsResponseOperation];
+
+
+export const TenantCreatedDetailsResponseOperation = {
+  TenantCreated: 'tenant.created',
+} as const;
+
+export interface TenantCreatedDetailsResponse {
+  operation: TenantCreatedDetailsResponseOperation;
+  plan: AuditPlanResponse;
+}
+
 export type TenantEntitlementOverrideRemovedDetailsResponseOperation = typeof TenantEntitlementOverrideRemovedDetailsResponseOperation[keyof typeof TenantEntitlementOverrideRemovedDetailsResponseOperation];
 
 
@@ -263,7 +285,8 @@ export interface TenantEntitlementOverrideSetDetailsResponse {
   newValue: AuditEntitlementValueResponse;
   /** @nullable */
   newExpiresAt: string | null;
-  reason: string;
+  /** @nullable */
+  reason: string | null;
 }
 
 export type TenantOwnerInvitedDetailsResponseOperation = typeof TenantOwnerInvitedDetailsResponseOperation[keyof typeof TenantOwnerInvitedDetailsResponseOperation];
@@ -313,10 +336,8 @@ export const TenantPlanChangedDetailsResponseOperation = {
 
 export interface TenantPlanChangedDetailsResponse {
   operation: TenantPlanChangedDetailsResponseOperation;
-  oldPlanId: string;
-  oldPlanName: string;
-  newPlanId: string;
-  newPlanName: string;
+  oldPlan: AuditPlanResponse;
+  newPlan: AuditPlanResponse;
 }
 
 export type TenantPurgeWarnedDetailsResponseOperation = typeof TenantPurgeWarnedDetailsResponseOperation[keyof typeof TenantPurgeWarnedDetailsResponseOperation];
@@ -369,7 +390,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.

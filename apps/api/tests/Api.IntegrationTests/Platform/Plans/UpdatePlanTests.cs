@@ -75,6 +75,8 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans", own)).ShouldBe(SeedPlans.Pro);
         (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.default_plans", own)).ShouldBe(1);
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT details->>'previousDefaultPlan' FROM audit.platform_entries WHERE target_id = '{SeedPlans.Pro}'", own))
+            .ShouldBe($$"""{"id": "{{SeedPlans.Free}}", "name": "Free"}""");
     }
 
     [Fact]

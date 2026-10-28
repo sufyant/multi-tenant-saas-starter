@@ -6855,6 +6855,9 @@
             "$ref": "#/components/schemas/RoleUpdatedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantCreatedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantEntitlementOverrideRemovedDetailsResponse"
           },
           {
@@ -6890,6 +6893,7 @@
             "plan.updated": "#/components/schemas/PlanUpdatedDetailsResponse",
             "role.created": "#/components/schemas/RoleCreatedDetailsResponse",
             "role.updated": "#/components/schemas/RoleUpdatedDetailsResponse",
+            "tenant.created": "#/components/schemas/TenantCreatedDetailsResponse",
             "tenant.entitlement_override_removed": "#/components/schemas/TenantEntitlementOverrideRemovedDetailsResponse",
             "tenant.entitlement_override_set": "#/components/schemas/TenantEntitlementOverrideSetDetailsResponse",
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
@@ -7036,6 +7040,23 @@
           "UserRenamed",
           "UserSuspended"
         ]
+      },
+      "AuditPlanResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "description": "A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse."
       },
       "AuditRoleResponse": {
         "required": [
@@ -8558,6 +8579,7 @@
           "isDefault",
           "oldEntitlements",
           "newEntitlements",
+          "previousDefaultPlan",
           "operation"
         ],
         "properties": {
@@ -8593,6 +8615,16 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/AuditEntitlementValueResponse"
             }
+          },
+          "previousDefaultPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditPlanResponse"
+              }
+            ]
           }
         }
       },
@@ -8902,6 +8934,26 @@
         },
         "description": "Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member\nnever sees it. It holds no personal data, such as a person's name or email address: the platform's audit log keeps it after the\ntenant's purge (A8)."
       },
+      "TenantCreatedDetailsResponse": {
+        "required": [
+          "plan",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.created"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantCreated"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          }
+        }
+      },
       "TenantDetailResponse": {
         "required": [
           "id",
@@ -9082,7 +9134,10 @@
             "format": "date-time"
           },
           "reason": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -9358,10 +9413,8 @@
       },
       "TenantPlanChangedDetailsResponse": {
         "required": [
-          "oldPlanId",
-          "oldPlanName",
-          "newPlanId",
-          "newPlanName",
+          "oldPlan",
+          "newPlan",
           "operation"
         ],
         "properties": {
@@ -9374,19 +9427,11 @@
               "TenantPlanChanged"
             ]
           },
-          "oldPlanId": {
-            "type": "string",
-            "format": "uuid"
+          "oldPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
           },
-          "oldPlanName": {
-            "type": "string"
-          },
-          "newPlanId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "newPlanName": {
-            "type": "string"
+          "newPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
           }
         }
       },

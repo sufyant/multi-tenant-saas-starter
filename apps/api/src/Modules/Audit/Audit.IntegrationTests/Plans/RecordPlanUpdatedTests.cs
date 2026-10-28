@@ -29,4 +29,19 @@ public sealed class RecordPlanUpdatedTests(Database database)
         (details.GetProperty("oldEntitlements").GetProperty("members.max").GetProperty("maximum").GetInt32(),
             details.GetProperty("newEntitlements").GetProperty("members.max").GetProperty("maximum").GetInt32()).ShouldBe((5, 50));
     }
+
+    // When the default mark moves to this plan, the details keep the plan that had it.
+    [Fact]
+    public async Task RecordPlanUpdated_MarkedDefault_KeepsThePreviousDefaultPlan()
+    {
+        var previous = Guid.CreateVersion7();
+        var updated = new PlanUpdatedEvent(
+            Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Team", "Team", false, true,
+            new Dictionary<string, EntitlementValueRecord>(), new Dictionary<string, EntitlementValueRecord>(), previous, "Free");
+
+        await InTenant.RunAsync(database.Services, null, scope => RecordPlanUpdatedHandler.HandleAsync(updated, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Platform, null, updated.EventId))!).RootElement;
+        (details.GetProperty("previousDefaultPlan").GetProperty("id").GetGuid(), details.GetProperty("previousDefaultPlan").GetProperty("name").GetString()).ShouldBe((previous, "Free"));
+    }
 }

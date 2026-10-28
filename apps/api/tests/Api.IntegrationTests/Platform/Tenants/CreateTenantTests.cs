@@ -115,8 +115,11 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await database.ScalarAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE slug = '{slug}'"))
-            .ShouldBe(await database.ScalarAsync<Guid>("SELECT plan_id FROM control_plane.default_plans"));
+        var tenantId = await database.ScalarAsync<Guid>($"SELECT id FROM control_plane.tenants WHERE slug = '{slug}'");
+        var defaultPlan = await database.ScalarAsync<Guid>("SELECT plan_id FROM control_plane.default_plans");
+        (await database.ScalarAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(defaultPlan);
+        (await _audit.TenantDetailsAsync(tenantId)).ShouldBe($$$"""{"plan": {"id": "{{{defaultPlan}}}", "name": "Free"}}""");
+        (await _audit.PlatformDetailsAsync(tenantId)).ShouldBe($$$"""{"plan": {"id": "{{{defaultPlan}}}", "name": "Free"}}""");
     }
 
     [Fact]

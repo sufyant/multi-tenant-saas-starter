@@ -113,7 +113,11 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "enabled": zod.boolean().nullable(),
   "maximum": zod.int().nullable(),
   "unlimited": zod.boolean()
-}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.'))
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.')),
+  "previousDefaultPlan": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')])
 }),zod.object({
   "operation": zod.enum({
   RoleCreated: 'role.created',
@@ -165,6 +169,14 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "permissionsRemoved": zod.array(zod.string())
 }).describe('The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order.'),zod.object({
   "operation": zod.enum({
+  TenantCreated: 'tenant.created',
+}),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
+}),zod.object({
+  "operation": zod.enum({
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
 }),
   "key": zod.string(),
@@ -191,7 +203,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "unlimited": zod.boolean()
 }).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.'),
   "newExpiresAt": zod.iso.datetime({"offset":true}).nullable(),
-  "reason": zod.string()
+  "reason": zod.string().nullable()
 }),zod.object({
   "operation": zod.enum({
   TenantOwnerInvited: 'tenant.owner_invited',
@@ -214,10 +226,14 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "operation": zod.enum({
   TenantPlanChanged: 'tenant.plan_changed',
 }),
-  "oldPlanId": zod.uuid(),
-  "oldPlanName": zod.string(),
-  "newPlanId": zod.uuid(),
-  "newPlanName": zod.string()
+  "oldPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "newPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
 }),zod.object({
   "operation": zod.enum({
   TenantPurgeWarned: 'tenant.purge_warned',

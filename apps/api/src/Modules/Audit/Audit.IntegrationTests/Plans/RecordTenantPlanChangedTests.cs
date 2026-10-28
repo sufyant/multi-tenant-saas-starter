@@ -26,6 +26,7 @@ public sealed class RecordTenantPlanChangedTests(Database database)
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, changed.EventId)).ShouldBe($"tenant.plan_changed|User|{changed.ChangedBy}|Tenant|{changed.TenantId}|Acme");
         (await Logs.DescribeAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId)).ShouldBe($"tenant.plan_changed|Platform|-|Tenant|{changed.TenantId}|Acme");
         var details = JsonDocument.Parse((await Logs.DetailsAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId))!).RootElement;
-        (details.GetProperty("oldPlanName").GetString(), details.GetProperty("newPlanName").GetString()).ShouldBe(("Pro", "Free"));
+        (details.GetProperty("oldPlan").GetProperty("id").GetGuid(), details.GetProperty("oldPlan").GetProperty("name").GetString()).ShouldBe((changed.OldPlanId, "Pro"));
+        (details.GetProperty("newPlan").GetProperty("id").GetGuid(), details.GetProperty("newPlan").GetProperty("name").GetString()).ShouldBe((changed.NewPlanId, "Free"));
     }
 }

@@ -1,4 +1,5 @@
 using System.Reflection;
+using ControlPlane.Contracts;
 using ControlPlane.Contracts.Plans;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -19,6 +20,14 @@ public sealed class PlanGateTests : IAsyncLifetime
     private static readonly string[] FeatureList =
     [
         .. typeof(Features).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!),
+    ];
+
+    // The permission list: the policy provider reads any other policy name as a permission.
+    private static readonly string[] PermissionList =
+    [
+        .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!),
     ];
@@ -61,6 +70,31 @@ public sealed class PlanGateTests : IAsyncLifetime
 
         unstated.ShouldBe(["neither", "both"]);
     }
+
+    // The policy provider reads a policy name of the feature list as a feature, and any other as a permission (AccessPolicies). A name on
+    // both lists would be read as a feature, and its permission never asked.
+    [Fact]
+    public void NameFeatures_EveryFeatureKey_IsNoPermissionName()
+    {
+        var onBoth = SharedNames(FeatureList, PermissionList);
+
+        FeatureList.ShouldNotBeEmpty();
+        onBoth.ShouldBeEmpty();
+    }
+
+    // The rule finds a planted feature key that is also a permission name.
+    [Fact]
+    public void NameFeatures_AFeatureKeyThatIsAPermissionName_IsFound()
+    {
+        string[] planted = [.. FeatureList, Permissions.TenantRolesCreate];
+
+        var onBoth = SharedNames(planted, PermissionList);
+
+        onBoth.ShouldBe([Permissions.TenantRolesCreate]);
+    }
+
+    private static string[] SharedNames(IEnumerable<string> features, IEnumerable<string> permissions) =>
+        [.. features.Intersect(permissions, StringComparer.Ordinal)];
 
     // Exactly one of the two: the mark that it needs no feature, or a feature as a policy.
     private static bool StatesOneGate(RouteEndpoint endpoint) =>
