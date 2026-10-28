@@ -18,6 +18,7 @@ An Owner or an Admin changes a member's role and removes a member (api-catalog, 
   4. `RemoveMember` on yourself: 403 `member.cannot_remove_self`.
   5. An Admin who acts on an Owner, or who gives the Owner role: 403 `member.owner_requires_owner`.
   6. The member's role, or the new role (`ChangeMemberRole`), holds a permission the actor's role does not: 403 `role.escalation` (`custom-roles.md`).
+- `ChangeMemberRole` refuses a custom role while the tenant's `roles.custom` is off (403 `plan.feature_unavailable`, with the key), right after it finds the member, under the lock; a built-in role is always given, and a member keeps the custom role they have (ARCHITECTURE.md, E5; `plans-and-entitlements.md`).
   7. The change would leave no Owner: 409 `member.last_owner`.
   8. The same role (`ChangeMemberRole` only): 200, and nothing is published (I1).
 - `ChangeMemberRole` refuses a role id the tenant has not, another tenant's included, with 404 `role.not_found`, before check 3.

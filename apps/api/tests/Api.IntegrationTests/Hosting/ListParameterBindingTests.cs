@@ -19,6 +19,7 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
     public static TheoryData<string, string> Lists => new()
     {
         { "ListTenants", "platform" },
+        { "ListPlans", "platform" },
         { "ListUsers", "platform" },
         { "ListMyTenants", "user" },
         { "ListMembers", "member" },

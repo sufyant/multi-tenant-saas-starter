@@ -151,8 +151,6 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             total);
     }
 
-    // The user is found by the identity provider's id in control_plane.users, which belongs to no tenant. The page is one query:
-    // each membership's tenant and role are joined, with no query for each tenant.
     // The tenant row, its plan, its overrides with the user who set each one, and its summary: the tables belong to no tenant (R6).
     async Task<TenantPlanView?> ITenantQueries.FindTenantPlanAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -208,6 +206,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         return new TenantPlanChangePreviewView([.. preview.Excesses.Select(ExcessView.Of)], preview.OverriddenKeys);
     }
 
+    // The user is found by the identity provider's id in control_plane.users, which belongs to no tenant. The page is one query:
+    // each membership's tenant and role are joined, with no query for each tenant.
     async Task<ListPage<MyTenantView>> ITenantQueries.ListMyTenantsAsync(string externalUserId, ListRequest<ListMyTenantsSort> list, CancellationToken cancellationToken)
     {
         var userId = await controlPlane.Users
