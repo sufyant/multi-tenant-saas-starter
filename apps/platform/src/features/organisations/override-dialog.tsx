@@ -36,8 +36,11 @@ import { ValueField } from "@/shared/value-field";
 import { afterRefusal, refreshOrganisation } from "./organisation";
 
 // The generated schema of SetEntitlementOverride (F11): the reason is trimmed and 1 to 500 characters, as the API counts it. The
-// expiry is a calendar day of the date field, or empty for none.
-const overriding = z.object({
+// value is a draft of the key's kind, and the expiry a calendar day of the date field, or empty for none.
+const overriding = schemas.SetEntitlementOverrideBody.omit({
+  value: true,
+  expiresAt: true,
+}).extend({
   key: z.string(),
   draft: z.object({
     enabled: z.boolean().nullable(),

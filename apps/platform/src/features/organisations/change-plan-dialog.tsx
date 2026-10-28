@@ -47,7 +47,12 @@ export function ChangePlanDialog({
   const chosenName =
     plans.data?.items.find((item) => item.id === chosen)?.name ?? "";
   const preview = useQuery({
-    queryKey: ["tenant-plan-change-preview", organisation.id, chosen],
+    // A POST that reads: its key is its operation and its arguments, as a generated key is (F2, F44).
+    queryKey: [
+      "getTenantPlanChangePreview",
+      organisation.id,
+      { planId: chosen },
+    ],
     queryFn: () =>
       getTenantPlanChangePreview(organisation.id, { planId: chosen }),
     enabled: chosen !== plan.plan.id,
@@ -137,7 +142,8 @@ export function ChangePlanDialog({
                 <span>
                   {isFeatureKey(excess.key)
                     ? text.turnsOff(excess.key, excess.count)
-                    : t("limitOver", {
+                    : t.rich("limitOver", {
+                        ...isolated,
                         key: text.name(excess.key),
                         count: excess.count,
                         limit: text.label(false, excess.newValue),

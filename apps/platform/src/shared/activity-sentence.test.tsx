@@ -718,6 +718,26 @@ const planCases: PlanCase[] = [
     },
   ],
   [
+    "PlanMadeDefaultAndChanged",
+    AuditOperation.PlanUpdated,
+    planTarget(free),
+    updated({
+      oldName: "Free",
+      newName: "Free",
+      isDefault: true,
+      previousDefaultPlan: { id: pro.id, name: "Pro" },
+      newEntitlements: {
+        ...proValues,
+        [LimitKey.MembersMax]: value({ maximum: 5 }),
+      },
+    }),
+    {
+      en: "Ciara Byrne made Free the default plan, in place of Pro, and changed Members limit from unlimited to 5.",
+      tr: "Ciara Byrne, Pro yerine Free planını varsayılan yaptı ve şunları değiştirdi: Üye sınırı, sınırsız değerinden 5 değerine.",
+      ar: "جعل Ciara Byrne Free الخطة الافتراضية بدلًا من Pro، وغيّر حد الأعضاء من غير محدود إلى 5.",
+    },
+  ],
+  [
     "TenantCreatedOnAPlan",
     AuditOperation.TenantCreated,
     tenantTarget(liffey),
@@ -854,7 +874,11 @@ describe("ActivitySentence of the plans", () => {
       entry({
         operation: AuditOperation.PlanCreated,
         target: planTarget(partner),
-        details: planCases[0]?.[3] ?? null,
+        details: {
+          operation: PlanCreatedDetailsResponseOperation.PlanCreated,
+          isDefault: false,
+          entitlements: proValues,
+        },
       }),
     );
 

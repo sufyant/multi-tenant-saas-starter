@@ -595,7 +595,9 @@ describe("PlanSection", () => {
         "Custom roles turns off. Its 14 custom roles stay, and their members keep their permissions; nobody can create, edit or give one.",
       ),
     ).toBeVisible();
-    expect(dialog.getByText("Members limit: 22 now, 5 on Free.")).toBeVisible();
+    expect(
+      dialog.getByText(sentence("Members limit: 22 now, 5 on Free.")),
+    ).toBeVisible();
     expect(dialog.getByText("Over by 17")).toBeVisible();
     expect(
       dialog.getByText("Custom roles limit: its override (25) still applies."),

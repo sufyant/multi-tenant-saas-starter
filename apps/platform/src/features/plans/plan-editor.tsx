@@ -53,11 +53,11 @@ import { SettingsNav, settingsPages } from "@/shared/settings-nav";
 import { ValueField } from "@/shared/value-field";
 import { ImpactDialog } from "./impact-dialog";
 
-// The generated schema of CreatePlan and UpdatePlan (F11): the API trims the name and needs 1 to 100 characters. The values are
-// one draft per key of the list, in its order, because a key's dots would nest a field's path.
-const editing = z.object({
+// The generated schema of UpdatePlan, which CreatePlan shares (F11): the API trims the name and needs 1 to 100 characters; the
+// generated schema has the limit only, so the form adds the trim and the minimum. The values are one draft per key of the list,
+// in its order, because a key's dots would nest a field's path.
+const editing = schemas.UpdatePlanBody.omit({ entitlements: true }).extend({
   name: z.string().trim().min(1).max(schemas.updatePlanBodyNameMax),
-  isDefault: z.boolean(),
   drafts: z.array(
     z.object({
       enabled: z.boolean().nullable(),
@@ -283,7 +283,10 @@ function Form({ plan }: { plan: PlanResponse | null }) {
     ? t("plans.defaultLocked")
     : isDefault
       ? t("plans.defaultOn")
-      : t("plans.defaultOff", { plan: currentDefault?.name ?? "" });
+      : t.rich("plans.defaultOff", {
+          plan: currentDefault?.name ?? "",
+          ...isolated,
+        });
 
   return (
     <form

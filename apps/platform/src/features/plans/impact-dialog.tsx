@@ -20,6 +20,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { isFeatureKey, useEntitlementText } from "@/shared/entitlements";
+import { isolated } from "@/shared/isolated";
 
 type Row = ExcessResponse & { id: string; tenantId: string; name: string };
 
@@ -51,7 +52,8 @@ export function ImpactDialog({
   const failureText = useFailureText();
   const [q, setQ] = useState("");
   const pages = useInfiniteQuery({
-    queryKey: ["plan-update-preview", plan.id, entitlements, q],
+    // A POST that reads: its key is its operation and its arguments, as a generated key is (F2, F44).
+    queryKey: ["getPlanUpdatePreview", plan.id, { entitlements }, { q }],
     queryFn: ({ pageParam }) =>
       getPlanUpdatePreview(
         plan.id,
@@ -125,7 +127,7 @@ export function ImpactDialog({
     <Dialog
       open
       onOpenChange={(open) => !open && onCancel()}
-      title={t("impactTitle", { plan: plan.name })}
+      title={t.rich("impactTitle", { plan: plan.name, ...isolated })}
       description={t("impactText", { count: first.total })}
       actionLabel={t("saveAnyway")}
       cancelLabel={common("cancel")}
@@ -148,7 +150,10 @@ export function ImpactDialog({
             columns={columns}
             rows={rows}
             rowKey="id"
-            label={t("impactTitle", { plan: plan.name })}
+            label={t.markup("impactTitle", {
+              plan: plan.name,
+              bdi: (chunks) => chunks,
+            })}
             rowCount={rows.length}
             page={1}
             pageSize={Math.max(rows.length, 1)}

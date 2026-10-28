@@ -379,10 +379,10 @@
       },
       "plan": {
         "created": "<actor></actor> created the plan <target></target>.",
-        "updated": "{change, select, renamed {<actor></actor> renamed the plan <name>{oldName}</name> to <target></target>.} default {<actor></actor> made <target></target> the default plan, in place of <previous></previous>.} one {<actor></actor> changed the plan <target></target>: {changes}.} other {<actor></actor> changed several values of the plan <target></target>: {changes}.}}"
+        "updated": "{change, select, renamed {<actor></actor> renamed the plan <name>{oldName}</name> to <target></target>.} default {<actor></actor> made <target></target> the default plan, in place of <previous></previous>.} defaultAndChanges {<actor></actor> made <target></target> the default plan, in place of <previous></previous>, and changed <changes></changes>.} one {<actor></actor> changed the plan <target></target>: <changes></changes>.} other {<actor></actor> changed several values of the plan <target></target>: <changes></changes>.}}"
       }
     },
-    "change": "{key} from {old} to {new}",
+    "change": "{key} from <bdi>{old}</bdi> to <bdi>{new}</bdi>",
     "changeSeparator": "; ",
     "nameKey": "name"
   },
@@ -433,7 +433,7 @@
     "name": "Name",
     "defaultPlan": "Default plan",
     "defaultOn": "New organisations get this plan.",
-    "defaultOff": "Check it to give this plan to new organisations instead of {plan}.",
+    "defaultOff": "Check it to give this plan to new organisations instead of <bdi>{plan}</bdi>.",
     "defaultLocked": "There is always one default plan. To change it, make another plan the default first.",
     "numberPlaceholder": "Not set",
     "organisationCount": "{count, plural, one {One organisation is on this plan.} other {# organisations are on this plan.}}",
@@ -448,7 +448,7 @@
     "saved": "<bdi>{name}</bdi> saved",
     "created": "<bdi>{name}</bdi> created",
     "notSaved": "Plan not saved",
-    "impactTitle": "Save changes to {plan}?",
+    "impactTitle": "Save changes to <bdi>{plan}</bdi>?",
     "impactText": "{count, plural, one {This edit puts # organisation over a limit. Nothing is deleted or locked: it can’t add more until it is under it. To keep it as it is, give it an override first.} other {This edit puts # organisations over a limit. Nothing is deleted or locked: they can’t add more until they are under it. To keep one as it is, give it an override first.}}",
     "organisation": "Organisation",
     "limit": "Limit",
@@ -507,14 +507,14 @@
     "removed": "Override removed",
     "notRemoved": "Override not removed",
     "changeTitle": "Change <bdi>{name}</bdi>’s plan",
-    "changeText": "On {plan}, <bdi>{name}</bdi> goes over a limit and loses a feature. Nothing is deleted or locked: its people can’t add more until it is under the limit.",
+    "changeText": "On <bdi>{plan}</bdi>, <bdi>{name}</bdi> goes over a limit and loses a feature. Nothing is deleted or locked: its people can’t add more until it is under the limit.",
     "newPlan": "New plan",
     "current": "Current",
     "planSearch": "Search plans",
     "planEmpty": "No plan found",
-    "limitOver": "{key}: {count} now, {limit} on {plan}.",
+    "limitOver": "{key}: {count} now, {limit} on <bdi>{plan}</bdi>.",
     "overrideApplies": "{key}: its override ({value}) still applies.",
-    "changed": "<bdi>{name}</bdi> moved to {plan}",
+    "changed": "<bdi>{name}</bdi> moved to <bdi>{plan}</bdi>",
     "notChanged": "Plan not changed"
   }
 }

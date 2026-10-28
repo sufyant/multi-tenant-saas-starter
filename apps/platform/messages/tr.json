@@ -379,10 +379,10 @@
       },
       "plan": {
         "created": "<actor></actor>, <target></target> planını oluşturdu.",
-        "updated": "{change, select, renamed {<actor></actor>, <name>{oldName}</name> planının adını <target></target> olarak değiştirdi.} default {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı.} one {<actor></actor>, <target></target> planını değiştirdi: {changes}.} other {<actor></actor>, <target></target> planında birkaç değeri değiştirdi: {changes}.}}"
+        "updated": "{change, select, renamed {<actor></actor>, <name>{oldName}</name> planının adını <target></target> olarak değiştirdi.} default {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı.} defaultAndChanges {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı ve şunları değiştirdi: <changes></changes>.} one {<actor></actor>, <target></target> planını değiştirdi: <changes></changes>.} other {<actor></actor>, <target></target> planında birkaç değeri değiştirdi: <changes></changes>.}}"
       }
     },
-    "change": "{key}, {old} değerinden {new} değerine",
+    "change": "{key}, <bdi>{old}</bdi> değerinden <bdi>{new}</bdi> değerine",
     "changeSeparator": "; ",
     "nameKey": "ad"
   },
@@ -433,7 +433,7 @@
     "name": "Ad",
     "defaultPlan": "Varsayılan plan",
     "defaultOn": "Yeni kuruluşlar bu planı alır.",
-    "defaultOff": "Yeni kuruluşlara {plan} yerine bu planın verilmesi için işaretleyin.",
+    "defaultOff": "Yeni kuruluşlara <bdi>{plan}</bdi> yerine bu planın verilmesi için işaretleyin.",
     "defaultLocked": "Her zaman bir varsayılan plan vardır. Değiştirmek için önce başka bir planı varsayılan yapın.",
     "numberPlaceholder": "Ayarlanmadı",
     "organisationCount": "Bu planda {count} kuruluş var.",
@@ -448,7 +448,7 @@
     "saved": "<bdi>{name}</bdi> kaydedildi",
     "created": "<bdi>{name}</bdi> oluşturuldu",
     "notSaved": "Plan kaydedilmedi",
-    "impactTitle": "{plan} değişiklikleri kaydedilsin mi?",
+    "impactTitle": "<bdi>{plan}</bdi> değişiklikleri kaydedilsin mi?",
     "impactText": "Bu değişiklik {count} kuruluşu bir sınırın üstüne çıkarıyor. Hiçbir şey silinmez veya kilitlenmez: sınırın altına inene kadar yenisini ekleyemezler. Birini olduğu gibi tutmak için önce ona istisna verin.",
     "organisation": "Kuruluş",
     "limit": "Sınır",
@@ -507,14 +507,14 @@
     "removed": "İstisna kaldırıldı",
     "notRemoved": "İstisna kaldırılmadı",
     "changeTitle": "<bdi>{name}</bdi> kuruluşunun planını değiştir",
-    "changeText": "{plan} planında <bdi>{name}</bdi> bir sınırın üstüne çıkar ve bir özelliği kaybeder. Hiçbir şey silinmez veya kilitlenmez: sınırın altına inene kadar yenisini ekleyemez.",
+    "changeText": "<bdi>{plan}</bdi> planında <bdi>{name}</bdi> bir sınırın üstüne çıkar ve bir özelliği kaybeder. Hiçbir şey silinmez veya kilitlenmez: sınırın altına inene kadar yenisini ekleyemez.",
     "newPlan": "Yeni plan",
     "current": "Mevcut",
     "planSearch": "Planlarda ara",
     "planEmpty": "Plan bulunamadı",
-    "limitOver": "{key}: şu an {count}, {plan} planında {limit}.",
+    "limitOver": "{key}: şu an {count}, <bdi>{plan}</bdi> planında {limit}.",
     "overrideApplies": "{key}: istisnası ({value}) geçerli kalır.",
-    "changed": "<bdi>{name}</bdi>, {plan} planına geçti",
+    "changed": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planına geçti",
     "notChanged": "Plan değiştirilmedi"
   }
 }

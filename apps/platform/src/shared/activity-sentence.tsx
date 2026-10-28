@@ -19,12 +19,13 @@ import {
   TenantSuspendedDetailsResponseOperation,
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   entitlementKeys,
   isFeatureKey,
   useEntitlementText,
 } from "./entitlements";
+import { isolated } from "./isolated";
 import { planPage } from "./plans";
 import { TextLink } from "./text-link";
 import { useDates } from "./use-dates";
@@ -61,8 +62,8 @@ const same = (
   a?.unlimited === b?.unlimited;
 
 type Texts = {
-  /** One change of a plan edit: `Custom roles limit from 20 to 10`. */
-  change: (values: { key: string; old: string; new: string }) => string;
+  /** One change of a plan edit: `Custom roles limit from 20 to 10`, each value isolated (a name may be in another script). */
+  change: (values: { key: string; old: string; new: string }) => ReactNode;
   separator: string;
   /** The plan's name as the key of a change, and no earlier value. */
   nameKey: string;
@@ -151,7 +152,9 @@ function detailValues(
         );
       const previous = details.previousDefaultPlan;
       const change = previous
-        ? "default"
+        ? items.length > 0
+          ? "defaultAndChanges"
+          : "default"
         : renamed && items.length === 1
           ? "renamed"
           : items.length === 1
@@ -160,7 +163,15 @@ function detailValues(
       return {
         change,
         oldName: details.oldName,
-        changes: items.join(separator),
+        changes: () =>
+          items.map((item, index) => (
+            // The items of one entry never reorder, so their place is a stable key.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
+            <Fragment key={index}>
+              {index > 0 && separator}
+              {item}
+            </Fragment>
+          )),
         ...(previous ? { previous: planLink(previous) } : {}),
       };
     }
@@ -212,7 +223,7 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const values: Rich = {
     onPlan: "none",
     ...detailValues(entry.details, {
-      change: (values) => t("activity.change", values),
+      change: (values) => t.rich("activity.change", { ...values, ...isolated }),
       separator: t("activity.changeSeparator"),
       nameKey: t("activity.nameKey"),
       none: t("entitlements.sentence.none"),

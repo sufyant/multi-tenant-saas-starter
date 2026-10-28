@@ -832,6 +832,59 @@ describe("PlanEditor", () => {
     expect(creates[1]?.key).not.toBe(creates[0]?.key);
   });
 
+  it("Create_RetryAfterANetworkError_SendsTheSameKey", async () => {
+    const creates: Call[] = [];
+    server.use(
+      plansCommand(
+        "post",
+        "plans",
+        [
+          () => HttpResponse.error(),
+          () => HttpResponse.json(partner, { status: 201 }),
+        ],
+        creates,
+      ),
+    );
+
+    renderWithProviders(<PlanEditor planId={null} />);
+    await userEvent.type(
+      await screen.findByRole("textbox", { name: "Name" }),
+      "Partner",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
+    await waitFor(() => expect(creates).toHaveLength(1));
+    await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
+
+    await waitFor(() => expect(creates).toHaveLength(2));
+    expect(creates[1]?.key).toBe(creates[0]?.key);
+  });
+
+  it("Create_EditAfterANetworkError_SendsANewKey", async () => {
+    const creates: Call[] = [];
+    server.use(
+      plansCommand(
+        "post",
+        "plans",
+        [
+          () => HttpResponse.error(),
+          () => HttpResponse.json(partner, { status: 201 }),
+        ],
+        creates,
+      ),
+    );
+
+    renderWithProviders(<PlanEditor planId={null} />);
+    const name = await screen.findByRole("textbox", { name: "Name" });
+    await userEvent.type(name, "Partner");
+    await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
+    await waitFor(() => expect(creates).toHaveLength(1));
+    await userEvent.type(name, "s");
+    await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
+
+    await waitFor(() => expect(creates).toHaveLength(2));
+    expect(creates[1]?.key).not.toBe(creates[0]?.key);
+  });
+
   it("Cancel_LeadsBackToThePlans", async () => {
     await openPro();
 

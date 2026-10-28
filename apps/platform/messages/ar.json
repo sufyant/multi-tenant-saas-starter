@@ -379,10 +379,10 @@
       },
       "plan": {
         "created": "أنشأ <actor></actor> الخطة <target></target>.",
-        "updated": "{change, select, renamed {غيّر <actor></actor> اسم الخطة <name>{oldName}</name> إلى <target></target>.} default {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>.} one {غيّر <actor></actor> الخطة <target></target>: {changes}.} other {غيّر <actor></actor> عدة قيم في الخطة <target></target>: {changes}.}}"
+        "updated": "{change, select, renamed {غيّر <actor></actor> اسم الخطة <name>{oldName}</name> إلى <target></target>.} default {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>.} defaultAndChanges {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>، وغيّر <changes></changes>.} one {غيّر <actor></actor> الخطة <target></target>: <changes></changes>.} other {غيّر <actor></actor> عدة قيم في الخطة <target></target>: <changes></changes>.}}"
       }
     },
-    "change": "{key} من {old} إلى {new}",
+    "change": "{key} من <bdi>{old}</bdi> إلى <bdi>{new}</bdi>",
     "changeSeparator": "؛ ",
     "nameKey": "الاسم"
   },
@@ -433,7 +433,7 @@
     "name": "الاسم",
     "defaultPlan": "الخطة الافتراضية",
     "defaultOn": "تحصل المؤسسات الجديدة على هذه الخطة.",
-    "defaultOff": "حدّدها لتحصل المؤسسات الجديدة على هذه الخطة بدلًا من {plan}.",
+    "defaultOff": "حدّدها لتحصل المؤسسات الجديدة على هذه الخطة بدلًا من <bdi>{plan}</bdi>.",
     "defaultLocked": "توجد دائمًا خطة افتراضية واحدة. لتغييرها، اجعل خطة أخرى هي الافتراضية أولًا.",
     "numberPlaceholder": "غير محدد",
     "organisationCount": "{count, plural, one {على هذه الخطة مؤسسة واحدة.} other {على هذه الخطة # مؤسسات.}}",
@@ -448,7 +448,7 @@
     "saved": "حُفظت <bdi>{name}</bdi>",
     "created": "أُنشئت <bdi>{name}</bdi>",
     "notSaved": "لم تُحفظ الخطة",
-    "impactTitle": "حفظ التغييرات على {plan}؟",
+    "impactTitle": "حفظ التغييرات على <bdi>{plan}</bdi>؟",
     "impactText": "{count, plural, one {يجعل هذا التعديل مؤسسة واحدة فوق حدٍّ ما. لا يُحذف شيء ولا يُقفل شيء: لا يمكنها إضافة المزيد حتى تعود تحت الحد. لإبقائها كما هي، امنحها استثناءً أولًا.} other {يجعل هذا التعديل # مؤسسات فوق حدٍّ ما. لا يُحذف شيء ولا يُقفل شيء: لا يمكنها إضافة المزيد حتى تعود تحت الحد. لإبقاء مؤسسة كما هي، امنحها استثناءً أولًا.}}",
     "organisation": "المؤسسة",
     "limit": "الحد",
@@ -507,14 +507,14 @@
     "removed": "أُزيل الاستثناء",
     "notRemoved": "لم يُزل الاستثناء",
     "changeTitle": "تغيير خطة <bdi>{name}</bdi>",
-    "changeText": "على {plan} تصبح <bdi>{name}</bdi> فوق حدٍّ وتفقد ميزة. لا يُحذف شيء ولا يُقفل شيء: لا يمكن لأفرادها إضافة المزيد حتى تعود تحت الحد.",
+    "changeText": "على <bdi>{plan}</bdi> تصبح <bdi>{name}</bdi> فوق حدٍّ وتفقد ميزة. لا يُحذف شيء ولا يُقفل شيء: لا يمكن لأفرادها إضافة المزيد حتى تعود تحت الحد.",
     "newPlan": "الخطة الجديدة",
     "current": "الحالية",
     "planSearch": "ابحث في الخطط",
     "planEmpty": "لم يُعثر على خطة",
-    "limitOver": "{key}: {count} الآن، و{limit} على {plan}.",
+    "limitOver": "{key}: {count} الآن، و{limit} على <bdi>{plan}</bdi>.",
     "overrideApplies": "{key}: يبقى استثناؤها ({value}) ساريًا.",
-    "changed": "نُقلت <bdi>{name}</bdi> إلى {plan}",
+    "changed": "نُقلت <bdi>{name}</bdi> إلى <bdi>{plan}</bdi>",
     "notChanged": "لم تتغيّر الخطة"
   }
 }
