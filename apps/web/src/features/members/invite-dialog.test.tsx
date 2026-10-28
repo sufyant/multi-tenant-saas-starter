@@ -252,9 +252,30 @@ describe("InviteDialog", () => {
         "Your organisation’s plan doesn’t include custom roles.",
       ),
     );
-    for (const name of ["Owner", "Admin", "Member"])
-      expect(within(dialog).getByRole("radio", { name })).not.toBeDisabled();
+    expect(within(dialog).getByRole("radio", { name: "Owner" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Admin" })).toBeEnabled();
     expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
+  });
+
+  it("Invite_Success_ReadsGetMyTenantAgainForTheCount", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countedMyTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      inviteAnswer([
+        () => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 }),
+      ]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    const before = reads.count;
+    await typeEmail(dialog, "khalid@northwind.io");
+    await send(dialog);
+
+    await screen.findByText("Invitation sent");
+    await waitFor(() => expect(reads.count).toBeGreaterThan(before));
   });
 
   it("Invite_RefusedLimitReached_ShowsTheReasonOfTheLimitInTheDialog", async () => {

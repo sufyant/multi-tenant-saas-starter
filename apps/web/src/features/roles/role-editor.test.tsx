@@ -18,10 +18,12 @@ import {
   customRole,
   mehmet,
   northwind,
+  permissionsOf,
   planProblem,
   planWith,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
   viewerAnswers,
 } from "../../../test/tenant";
@@ -443,6 +445,79 @@ describe("CreateRole", () => {
 
     await waitFor(() => expect(sent).toHaveLength(2));
     expect(sent[0]?.key).not.toBe(sent[1]?.key);
+  });
+});
+
+describe("NewRolePage", () => {
+  it("NewRolePage_CustomRolesOff_ShowsTheReasonAndNoForm", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom": false, "roles.custom.max": 0 }),
+      ),
+    );
+
+    renderInTenant(<NewRolePage />, { url: `${list}/new` });
+
+    expect(
+      await screen.findByText(
+        "Your organisation’s plan doesn’t include custom roles.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Back to Roles" }),
+    ).toHaveAttribute("href", list);
+  });
+
+  it("NewRolePage_AtTheLimit_ShowsTheReasonAndNoForm", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom.max": 2 }, { "roles.custom.max": 2 }),
+      ),
+    );
+
+    renderInTenant(<NewRolePage />, { url: `${list}/new` });
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan allows 2 custom roles. Delete one to create another.",
+    );
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("NewRolePage_CreatesTheLastRoleAllowed_StillLeavesForTheList", async () => {
+    // The success reads GetMyTenant again, which then says full: the page that opened with room keeps its editor until it leaves.
+    let created = false;
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}`, () =>
+        HttpResponse.json({
+          ...northwind,
+          role: roleOf.owner,
+          createdAt: "2026-01-05T09:00:00Z",
+          permissions: permissionsOf.owner,
+          ...planWith(
+            { "roles.custom.max": 1 },
+            { "roles.custom.max": Number(created) },
+          ),
+        }),
+      ),
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() => {
+        created = true;
+        return HttpResponse.json(reviewer, { status: 201 });
+      }),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(list));
   });
 });
 

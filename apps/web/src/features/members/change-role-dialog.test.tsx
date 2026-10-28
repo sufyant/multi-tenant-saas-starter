@@ -85,17 +85,20 @@ describe("ChangeRoleDialog", () => {
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
 
-    for (const name of ["Billing lead", "Support lead"]) {
-      const custom = await within(dialog).findByRole("radio", { name });
-      expect(custom).toBeDisabled();
-      expect(custom).toHaveAccessibleDescription(
-        expect.stringContaining(
-          "Your organisation’s plan doesn’t include custom roles.",
-        ),
-      );
-    }
-    for (const name of ["Owner", "Admin", "Member"])
-      expect(within(dialog).getByRole("radio", { name })).not.toBeDisabled();
+    const reason = expect.stringContaining(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+    const billing = await within(dialog).findByRole("radio", {
+      name: "Billing lead",
+    });
+    const support = within(dialog).getByRole("radio", { name: "Support lead" });
+    expect(billing).toBeDisabled();
+    expect(billing).toHaveAccessibleDescription(reason);
+    expect(support).toBeDisabled();
+    expect(support).toHaveAccessibleDescription(reason);
+    expect(within(dialog).getByRole("radio", { name: "Owner" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Admin" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Member" })).toBeEnabled();
   });
 
   it("ChangeRole_RefusedFeatureUnavailable_ShowsTheReasonAndReadsGetMyTenantAgain", async () => {
