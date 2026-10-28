@@ -16,6 +16,10 @@ public static class AuditOperations
 
     public const string MemberRoleChanged = "member.role_changed";
 
+    public const string PlanCreated = "plan.created";
+
+    public const string PlanUpdated = "plan.updated";
+
     public const string RoleCreated = "role.created";
 
     public const string RoleDeleted = "role.deleted";
@@ -28,6 +32,10 @@ public static class AuditOperations
 
     public const string TenantClosed = "tenant.closed";
 
+    public const string TenantEntitlementOverrideRemoved = "tenant.entitlement_override_removed";
+
+    public const string TenantEntitlementOverrideSet = "tenant.entitlement_override_set";
+
     public const string TenantCreated = "tenant.created";
 
     public const string TenantOwnerInvited = "tenant.owner_invited";
@@ -35,6 +43,8 @@ public static class AuditOperations
     public const string TenantOwnerMade = "tenant.owner_made";
 
     public const string TenantReactivated = "tenant.reactivated";
+
+    public const string TenantPlanChanged = "tenant.plan_changed";
 
     public const string TenantPurgeWarned = "tenant.purge_warned";
 

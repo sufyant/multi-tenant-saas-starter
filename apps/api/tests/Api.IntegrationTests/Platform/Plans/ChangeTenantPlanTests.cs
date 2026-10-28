@@ -11,6 +11,8 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
 
+    private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -87,6 +89,21 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
         var changed = await admin.ChangeTenantPlanAsync(tenant.Id, Guid.NewGuid());
 
         (changed.StatusCode, (await PlanRequests.ProblemOfAsync(changed)).Code).ShouldBe((HttpStatusCode.NotFound, "plan.not_found"));
+    }
+
+    // K3: the system admin acted in the platform's log, the platform in the tenant's; both keep the old and the new plan.
+    [Fact]
+    public async Task ChangeTenantPlan_ToAnotherPlan_RecordsItInBothLogs()
+    {
+        var adminId = await _testData.AddSystemAdminAsync();
+        var admin = _api.CreateClient(adminId, secondFactor: true);
+        var tenant = await _testData.AddTenantAsync(name: "Acme Ltd");
+
+        await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Free));
+
+        (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.plan_changed|User|{await _testData.UserIdOfAsync(adminId)}|Tenant|{tenant.Id}|Acme Ltd");
+        (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.plan_changed|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
+        (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe($$"""{"newPlanId": "{{SeedPlans.Free}}", "oldPlanId": "{{SeedPlans.Pro}}", "newPlanName": "Free", "oldPlanName": "Pro"}""");
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);

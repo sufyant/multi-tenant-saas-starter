@@ -11,6 +11,8 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
 
+    private readonly AuditEntries _audit = new(database);
+
     private ApiFactory _api = null!;
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -83,6 +85,20 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         var updated = await admin.UpdatePlanAsync(Guid.NewGuid(), "Nothing", new Dictionary<string, object>());
 
         (updated.StatusCode, (await PlanRequests.ProblemOfAsync(updated)).Code).ShouldBe((HttpStatusCode.NotFound, "plan.not_found"));
+    }
+
+    // A plan belongs to no tenant: its edit goes to the platform's log only, with the old and the new values.
+    [Fact]
+    public async Task UpdatePlan_NewValues_RecordsTheOldAndTheNewInThePlatformLog()
+    {
+        var adminId = await _testData.AddSystemAdminAsync();
+        var admin = _api.CreateClient(adminId, secondFactor: true);
+        var planId = await _testData.AddPlanAsync(new() { ["members.max"] = 3 }, name: $"Old {Guid.NewGuid():N}");
+
+        await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, $"New {planId:N}", new Dictionary<string, object> { ["members.max"] = PlanRequests.Max(30) }));
+
+        (await _audit.PlatformLogAsync(planId)).ShouldBe($"plan.updated|User|{await _testData.UserIdOfAsync(adminId)}|Plan|{planId}|New {planId:N}");
+        (await _audit.PlatformDetailsAsync(planId))!.ShouldContain("\"oldEntitlements\": {\"members.max\": {\"enabled\": null, \"maximum\": 3, \"unlimited\": false}}");
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
+using Audit.Application.Plans;
 using Audit.Application.Roles;
 using Audit.Application.Tenants;
 using Audit.Domain;
@@ -21,13 +22,23 @@ public static class AuditDetailsTypes
 
     public const string MemberRoleChanged = AuditOperations.MemberRoleChanged;
 
+    public const string PlanCreated = AuditOperations.PlanCreated;
+
+    public const string PlanUpdated = AuditOperations.PlanUpdated;
+
     public const string RoleCreated = AuditOperations.RoleCreated;
 
     public const string RoleUpdated = AuditOperations.RoleUpdated;
 
+    public const string TenantEntitlementOverrideRemoved = AuditOperations.TenantEntitlementOverrideRemoved;
+
+    public const string TenantEntitlementOverrideSet = AuditOperations.TenantEntitlementOverrideSet;
+
     public const string TenantOwnerInvited = AuditOperations.TenantOwnerInvited;
 
     public const string TenantOwnerMade = AuditOperations.TenantOwnerMade;
+
+    public const string TenantPlanChanged = AuditOperations.TenantPlanChanged;
 
     public const string TenantPurgeWarned = AuditOperations.TenantPurgeWarned;
 
@@ -43,6 +54,8 @@ public static class AuditDetailsTypes
         [AuditOperations.MemberJoined] = null,
         [AuditOperations.MemberRemoved] = typeof(MemberRemovedDetails),
         [AuditOperations.MemberRoleChanged] = typeof(MemberRoleChangedDetails),
+        [AuditOperations.PlanCreated] = typeof(PlanCreatedDetails),
+        [AuditOperations.PlanUpdated] = typeof(PlanUpdatedDetails),
         [AuditOperations.RoleCreated] = typeof(RoleCreatedDetails),
         [AuditOperations.RoleDeleted] = null,
         [AuditOperations.RoleUpdated] = typeof(RoleUpdatedDetails),
@@ -50,8 +63,11 @@ public static class AuditDetailsTypes
         [AuditOperations.SystemAdminRevoked] = null,
         [AuditOperations.TenantClosed] = null,
         [AuditOperations.TenantCreated] = null,
+        [AuditOperations.TenantEntitlementOverrideRemoved] = typeof(TenantEntitlementOverrideRemovedDetails),
+        [AuditOperations.TenantEntitlementOverrideSet] = typeof(TenantEntitlementOverrideSetDetails),
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),
         [AuditOperations.TenantOwnerMade] = typeof(TenantOwnerMadeDetails),
+        [AuditOperations.TenantPlanChanged] = typeof(TenantPlanChangedDetails),
         [AuditOperations.TenantPurgeWarned] = typeof(TenantPurgeWarnedDetails),
         [AuditOperations.TenantPurged] = null,
         [AuditOperations.TenantReactivated] = null,

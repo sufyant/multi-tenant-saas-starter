@@ -6843,16 +6843,31 @@
             "$ref": "#/components/schemas/MemberRoleChangedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/PlanCreatedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/PlanUpdatedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/RoleCreatedDetailsResponse"
           },
           {
             "$ref": "#/components/schemas/RoleUpdatedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantEntitlementOverrideRemovedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantEntitlementOverrideSetDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantOwnerInvitedDetailsResponse"
           },
           {
             "$ref": "#/components/schemas/TenantOwnerMadeDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantPlanChangedDetailsResponse"
           },
           {
             "$ref": "#/components/schemas/TenantPurgeWarnedDetailsResponse"
@@ -6871,15 +6886,47 @@
             "member.invited": "#/components/schemas/MemberInvitedDetailsResponse",
             "member.removed": "#/components/schemas/MemberRemovedDetailsResponse",
             "member.role_changed": "#/components/schemas/MemberRoleChangedDetailsResponse",
+            "plan.created": "#/components/schemas/PlanCreatedDetailsResponse",
+            "plan.updated": "#/components/schemas/PlanUpdatedDetailsResponse",
             "role.created": "#/components/schemas/RoleCreatedDetailsResponse",
             "role.updated": "#/components/schemas/RoleUpdatedDetailsResponse",
+            "tenant.entitlement_override_removed": "#/components/schemas/TenantEntitlementOverrideRemovedDetailsResponse",
+            "tenant.entitlement_override_set": "#/components/schemas/TenantEntitlementOverrideSetDetailsResponse",
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
             "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
+            "tenant.plan_changed": "#/components/schemas/TenantPlanChangedDetailsResponse",
             "tenant.purge_warned": "#/components/schemas/TenantPurgeWarnedDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
           }
         }
+      },
+      "AuditEntitlementValueResponse": {
+        "required": [
+          "enabled",
+          "maximum",
+          "unlimited"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "maximum": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unlimited": {
+            "type": "boolean"
+          }
+        },
+        "description": "One key's value as an entry keeps it: a feature's state in `enabled`, or a limit's number in `maximum`, or an unlimited\nlimit with `unlimited` true."
       },
       "AuditEntryResponse": {
         "required": [
@@ -6929,6 +6976,8 @@
           "member.joined",
           "member.removed",
           "member.role_changed",
+          "plan.created",
+          "plan.updated",
           "role.created",
           "role.deleted",
           "role.updated",
@@ -6936,8 +6985,11 @@
           "system_admin.revoked",
           "tenant.closed",
           "tenant.created",
+          "tenant.entitlement_override_removed",
+          "tenant.entitlement_override_set",
           "tenant.owner_invited",
           "tenant.owner_made",
+          "tenant.plan_changed",
           "tenant.purge_warned",
           "tenant.purged",
           "tenant.reactivated",
@@ -6958,6 +7010,8 @@
           "MemberJoined",
           "MemberRemoved",
           "MemberRoleChanged",
+          "PlanCreated",
+          "PlanUpdated",
           "RoleCreated",
           "RoleDeleted",
           "RoleUpdated",
@@ -6965,8 +7019,11 @@
           "SystemAdminRevoked",
           "TenantClosed",
           "TenantCreated",
+          "TenantEntitlementOverrideRemoved",
+          "TenantEntitlementOverrideSet",
           "TenantOwnerInvited",
           "TenantOwnerMade",
+          "TenantPlanChanged",
           "TenantPurgeWarned",
           "TenantPurged",
           "TenantReactivated",
@@ -7037,7 +7094,8 @@
           "tenant",
           "user",
           "invitation",
-          "role"
+          "role",
+          "plan"
         ],
         "type": "string",
         "description": "The kind of target of an audit entry.",
@@ -7045,7 +7103,8 @@
           "Tenant",
           "User",
           "Invitation",
-          "Role"
+          "Role",
+          "Plan"
         ]
       },
       "ChangeMemberRoleRequest": {
@@ -8361,6 +8420,33 @@
           "TenantRolesUpdate"
         ]
       },
+      "PlanCreatedDetailsResponse": {
+        "required": [
+          "isDefault",
+          "entitlements",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "plan.created"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "PlanCreated"
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "entitlements": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AuditEntitlementValueResponse"
+            }
+          }
+        }
+      },
       "PlanListItemResponse": {
         "required": [
           "id",
@@ -8446,6 +8532,52 @@
           }
         },
         "description": "A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was\ncreated. A key the plan has no value for is closed."
+      },
+      "PlanUpdatedDetailsResponse": {
+        "required": [
+          "oldName",
+          "newName",
+          "wasDefault",
+          "isDefault",
+          "oldEntitlements",
+          "newEntitlements",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "plan.updated"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "PlanUpdated"
+            ]
+          },
+          "oldName": {
+            "type": "string"
+          },
+          "newName": {
+            "type": "string"
+          },
+          "wasDefault": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "oldEntitlements": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AuditEntitlementValueResponse"
+            }
+          },
+          "newEntitlements": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AuditEntitlementValueResponse"
+            }
+          }
+        }
       },
       "PreferencesResponse": {
         "required": [
@@ -8850,6 +8982,93 @@
         },
         "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise)."
       },
+      "TenantEntitlementOverrideRemovedDetailsResponse": {
+        "required": [
+          "key",
+          "oldValue",
+          "oldExpiresAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.entitlement_override_removed"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantEntitlementOverrideRemoved"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "oldValue": {
+            "$ref": "#/components/schemas/AuditEntitlementValueResponse"
+          },
+          "oldExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "TenantEntitlementOverrideSetDetailsResponse": {
+        "required": [
+          "key",
+          "oldValue",
+          "oldExpiresAt",
+          "newValue",
+          "newExpiresAt",
+          "reason",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.entitlement_override_set"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantEntitlementOverrideSet"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "oldValue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditEntitlementValueResponse"
+              }
+            ]
+          },
+          "oldExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "newValue": {
+            "$ref": "#/components/schemas/AuditEntitlementValueResponse"
+          },
+          "newExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
       "TenantEntitlementResponse": {
         "required": [
           "key",
@@ -9119,6 +9338,40 @@
           }
         },
         "description": "An Owner of a tenant: the user's id, names and address."
+      },
+      "TenantPlanChangedDetailsResponse": {
+        "required": [
+          "oldPlanId",
+          "oldPlanName",
+          "newPlanId",
+          "newPlanName",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.plan_changed"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPlanChanged"
+            ]
+          },
+          "oldPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "oldPlanName": {
+            "type": "string"
+          },
+          "newPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "newPlanName": {
+            "type": "string"
+          }
+        }
       },
       "TenantPlanChangePreviewResponse": {
         "required": [

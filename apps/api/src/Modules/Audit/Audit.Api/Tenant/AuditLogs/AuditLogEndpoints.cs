@@ -4,6 +4,7 @@ using Audit.Application.AuditLogs.GetAuditEntryNames;
 using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
+using Audit.Application.Plans;
 using Audit.Application.Tenants;
 using Audit.Application.Roles;
 using Microsoft.AspNetCore.Builder;
@@ -37,6 +38,13 @@ public static class AuditLogEndpoints
         MemberRoleChangedDetails changed => new MemberRoleChangedDetailsResponse(
             RoleOf(changed.OldRole, changed.OldRoleId, changed.OldRoleBuiltIn),
             RoleOf(changed.NewRole, changed.NewRoleId, changed.NewRoleBuiltIn)),
+        PlanCreatedDetails created => new PlanCreatedDetailsResponse(created.IsDefault, ValuesOf(created.Entitlements)),
+        PlanUpdatedDetails updated => new PlanUpdatedDetailsResponse(
+            updated.OldName, updated.NewName, updated.WasDefault, updated.IsDefault, ValuesOf(updated.OldEntitlements), ValuesOf(updated.NewEntitlements)),
+        TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(changed.OldPlanId, changed.OldPlanName, changed.NewPlanId, changed.NewPlanName),
+        TenantEntitlementOverrideSetDetails set => new TenantEntitlementOverrideSetDetailsResponse(
+            set.Key, set.OldValue is { } old ? ValueOf(old) : null, set.OldExpiresAt, ValueOf(set.NewValue), set.NewExpiresAt, set.Reason),
+        TenantEntitlementOverrideRemovedDetails removed => new TenantEntitlementOverrideRemovedDetailsResponse(removed.Key, ValueOf(removed.OldValue), removed.OldExpiresAt),
         RoleCreatedDetails created => new RoleCreatedDetailsResponse(created.Permissions),
         RoleUpdatedDetails updated => new RoleUpdatedDetailsResponse(updated.OldName, updated.NewName, updated.PermissionsAdded, updated.PermissionsRemoved),
         TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId),
@@ -50,6 +58,11 @@ public static class AuditLogEndpoints
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
         var details => throw new ArgumentOutOfRangeException(nameof(entry), details.GetType().Name, "The response has no details of this type."),
     };
+
+    private static AuditEntitlementValueResponse ValueOf(AuditEntitlementValue value) => new(value.Enabled, value.Maximum, value.Unlimited);
+
+    private static Dictionary<string, AuditEntitlementValueResponse> ValuesOf(IReadOnlyDictionary<string, AuditEntitlementValue> values) =>
+        values.ToDictionary(value => value.Key, value => ValueOf(value.Value), StringComparer.Ordinal);
 
     // An entry keeps the role as it was at that moment (K3).
     private static AuditRoleResponse RoleOf(string name, Guid id, bool builtIn) => new(id, name, builtIn);

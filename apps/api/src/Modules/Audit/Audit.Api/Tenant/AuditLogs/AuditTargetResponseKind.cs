@@ -17,4 +17,7 @@ public enum AuditTargetResponseKind
 
     [JsonStringEnumMemberName("role")]
     Role,
+
+    [JsonStringEnumMemberName("plan")]
+    Plan,
 }

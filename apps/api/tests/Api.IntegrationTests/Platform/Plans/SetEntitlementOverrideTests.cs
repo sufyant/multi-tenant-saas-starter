@@ -13,6 +13,8 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
 {
     private readonly TestData _testData = new(database);
 
+    private readonly AuditEntries _audit = new(database);
+
     private readonly FakeTimeProvider _time = new(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
 
     private ApiFactory _api = null!;
@@ -113,6 +115,21 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
         var set = await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenant.Id, "members.max", PlanRequests.Max(50)));
 
         set.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // The platform's log only: the reason is the provider's own note, which a member never reads in the tenant's Activity.
+    [Fact]
+    public async Task SetEntitlementOverride_AnOverride_RecordsItInThePlatformLogOnly()
+    {
+        var (admin, adminId) = await AdminAsync();
+        var tenant = await _testData.AddTenantAsync(name: "Acme Ltd");
+
+        await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenant.Id, "members.max", PlanRequests.Max(50), reason: "Seats for the pilot"));
+
+        (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.entitlement_override_set|User|{adminId}|Tenant|{tenant.Id}|Acme Ltd");
+        (await _audit.PlatformDetailsAsync(tenant.Id)).ShouldBe(
+            """{"key": "members.max", "reason": "Seats for the pilot", "newValue": {"enabled": null, "maximum": 50, "unlimited": false}, "oldValue": null, "newExpiresAt": null, "oldExpiresAt": null}""");
+        (await _audit.TenantLogAsync(tenant.Id)).ShouldBeNull();
     }
 
     private async Task<(HttpClient Client, Guid UserId)> AdminAsync()

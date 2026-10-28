@@ -107,6 +107,54 @@ export interface MemberRoleChangedDetailsResponse {
   newRole: AuditRoleResponse;
 }
 
+export type PlanCreatedDetailsResponseOperation = typeof PlanCreatedDetailsResponseOperation[keyof typeof PlanCreatedDetailsResponseOperation];
+
+
+export const PlanCreatedDetailsResponseOperation = {
+  PlanCreated: 'plan.created',
+} as const;
+
+/**
+ * One key's value as an entry keeps it: a feature's state in `enabled`, or a limit's number in `maximum`, or an unlimited
+ * limit with `unlimited` true.
+ */
+export interface AuditEntitlementValueResponse {
+  /** @nullable */
+  enabled: boolean | null;
+  /** @nullable */
+  maximum: number | null;
+  unlimited: boolean;
+}
+
+export type PlanCreatedDetailsResponseEntitlements = {[key: string]: AuditEntitlementValueResponse};
+
+export interface PlanCreatedDetailsResponse {
+  operation: PlanCreatedDetailsResponseOperation;
+  isDefault: boolean;
+  entitlements: PlanCreatedDetailsResponseEntitlements;
+}
+
+export type PlanUpdatedDetailsResponseOperation = typeof PlanUpdatedDetailsResponseOperation[keyof typeof PlanUpdatedDetailsResponseOperation];
+
+
+export const PlanUpdatedDetailsResponseOperation = {
+  PlanUpdated: 'plan.updated',
+} as const;
+
+export type PlanUpdatedDetailsResponseOldEntitlements = {[key: string]: AuditEntitlementValueResponse};
+
+export type PlanUpdatedDetailsResponseNewEntitlements = {[key: string]: AuditEntitlementValueResponse};
+
+export interface PlanUpdatedDetailsResponse {
+  operation: PlanUpdatedDetailsResponseOperation;
+  oldName: string;
+  newName: string;
+  wasDefault: boolean;
+  isDefault: boolean;
+  oldEntitlements: PlanUpdatedDetailsResponseOldEntitlements;
+  newEntitlements: PlanUpdatedDetailsResponseNewEntitlements;
+}
+
 export type RoleCreatedDetailsResponseOperation = typeof RoleCreatedDetailsResponseOperation[keyof typeof RoleCreatedDetailsResponseOperation];
 
 
@@ -184,6 +232,40 @@ export interface RoleUpdatedDetailsResponse {
   permissionsRemoved: string[];
 }
 
+export type TenantEntitlementOverrideRemovedDetailsResponseOperation = typeof TenantEntitlementOverrideRemovedDetailsResponseOperation[keyof typeof TenantEntitlementOverrideRemovedDetailsResponseOperation];
+
+
+export const TenantEntitlementOverrideRemovedDetailsResponseOperation = {
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+} as const;
+
+export interface TenantEntitlementOverrideRemovedDetailsResponse {
+  operation: TenantEntitlementOverrideRemovedDetailsResponseOperation;
+  key: string;
+  oldValue: AuditEntitlementValueResponse;
+  /** @nullable */
+  oldExpiresAt: string | null;
+}
+
+export type TenantEntitlementOverrideSetDetailsResponseOperation = typeof TenantEntitlementOverrideSetDetailsResponseOperation[keyof typeof TenantEntitlementOverrideSetDetailsResponseOperation];
+
+
+export const TenantEntitlementOverrideSetDetailsResponseOperation = {
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
+} as const;
+
+export interface TenantEntitlementOverrideSetDetailsResponse {
+  operation: TenantEntitlementOverrideSetDetailsResponseOperation;
+  key: string;
+  oldValue: null | AuditEntitlementValueResponse;
+  /** @nullable */
+  oldExpiresAt: string | null;
+  newValue: AuditEntitlementValueResponse;
+  /** @nullable */
+  newExpiresAt: string | null;
+  reason: string;
+}
+
 export type TenantOwnerInvitedDetailsResponseOperation = typeof TenantOwnerInvitedDetailsResponseOperation[keyof typeof TenantOwnerInvitedDetailsResponseOperation];
 
 
@@ -220,6 +302,21 @@ export interface TenantOwnerMadeDetailsResponse {
   displayName: string | null;
   deleted: boolean;
   oldRole: AuditRoleResponse;
+}
+
+export type TenantPlanChangedDetailsResponseOperation = typeof TenantPlanChangedDetailsResponseOperation[keyof typeof TenantPlanChangedDetailsResponseOperation];
+
+
+export const TenantPlanChangedDetailsResponseOperation = {
+  TenantPlanChanged: 'tenant.plan_changed',
+} as const;
+
+export interface TenantPlanChangedDetailsResponse {
+  operation: TenantPlanChangedDetailsResponseOperation;
+  oldPlanId: string;
+  oldPlanName: string;
+  newPlanId: string;
+  newPlanName: string;
 }
 
 export type TenantPurgeWarnedDetailsResponseOperation = typeof TenantPurgeWarnedDetailsResponseOperation[keyof typeof TenantPurgeWarnedDetailsResponseOperation];
@@ -272,7 +369,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -286,6 +383,8 @@ export const AuditOperation = {
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  PlanCreated: 'plan.created',
+  PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
   RoleUpdated: 'role.updated',
@@ -293,8 +392,11 @@ export const AuditOperation = {
   SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
   TenantCreated: 'tenant.created',
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPlanChanged: 'tenant.plan_changed',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
@@ -319,6 +421,7 @@ export const AuditTargetResponseKind = {
   User: 'user',
   Invitation: 'invitation',
   Role: 'role',
+  Plan: 'plan',
 } as const;
 
 /**
