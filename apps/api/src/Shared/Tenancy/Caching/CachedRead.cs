@@ -3,7 +3,8 @@ namespace Tenancy.Caching;
 /// <summary>
 /// One read that the shared cache may hold, declared on purpose (C1, C3): its kind, the shape it stores,
 /// how long an entry lives, and the tags of the rows it depends on. A read of a tenant's data is a <see cref="TenantCachedRead{T}"/>,
-/// whose key always holds the tenant; a read of one user's own rows, above any tenant, is a <see cref="UserCachedRead{T}"/>.
+/// whose key always holds the tenant; a read of one user's own rows, above any tenant, is a <see cref="UserCachedRead{T}"/>; a read of one
+/// row's data that is the same for every user, a tenant's or a plan's, is a <see cref="RowCachedRead{T}"/>.
 /// </summary>
 public abstract class CachedRead
 {

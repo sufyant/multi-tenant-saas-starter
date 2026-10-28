@@ -1,3 +1,4 @@
+using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using ControlPlane.Infrastructure.Persistence.Users;
@@ -7,7 +8,8 @@ namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
 /// Every read of the module that the shared cache holds, in one place, so a reviewer sees them all (C1): the reads of the access
-/// check that the host makes on every request (A9, T7, A4). Each stores only rows (C4).
+/// check that the host makes on every request (A9, T7, A4), and the two reads of a tenant's entitlements that its feature check makes
+/// (docs/flows/plans-and-entitlements.md). Each stores only rows (C4).
 /// </summary>
 internal static class CachedReads
 {
@@ -25,4 +27,12 @@ internal static class CachedReads
     /// <summary>Whether a person is a user, and a system admin, on every platform route (A4).</summary>
     public static readonly UserCachedRead<PlatformAccess> PlatformAccess =
         new("platform-access", AccessLifetime, externalUserId => [CacheTag.Of(CacheTags.User, externalUserId), CacheTags.SystemAdmins]);
+
+    /// <summary>A tenant's plan and its overrides with their expiry, on every tenant route that needs a feature.</summary>
+    public static readonly RowCachedRead<TenantEntitlementRows> TenantEntitlements =
+        new("tenant-entitlements", CacheLabel.Tenant, AccessLifetime, tenantId => [CacheTag.Of(CacheTags.Tenant, tenantId)]);
+
+    /// <summary>A plan's values, which every tenant on the plan reads; a plan edit removes it alone.</summary>
+    public static readonly RowCachedRead<PlanEntitlementRows> PlanEntitlements =
+        new("plan-entitlements", CacheTags.Plan, AccessLifetime, planId => [CacheTag.Of(CacheTags.Plan, planId)]);
 }

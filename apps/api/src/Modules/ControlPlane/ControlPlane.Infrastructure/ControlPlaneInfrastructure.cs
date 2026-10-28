@@ -8,6 +8,7 @@ using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
+using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
@@ -42,6 +43,7 @@ public static class ControlPlaneInfrastructure
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
+        services.AddScoped<IEntitlementDirectory, EntitlementDirectory>();
 
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
