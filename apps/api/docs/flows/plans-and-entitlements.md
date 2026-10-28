@@ -13,7 +13,7 @@ A system admin decides from the platform what each tenant may use, with no deplo
 - The migration `AddPlansAndEntitlements` seeds Free and Pro, marks Free default and moves every existing tenant to Pro. Pro holds what every tenant had before: custom roles on, 20 of them, members without a limit. The migration takes nothing away.
 - A pending invitation counts toward `members.max`. Example: a limit of 10 and 9 members. Without the invitations, 5 invitations could go out and 14 members could join. With them, one invitation can go out.
 - A key that a plan has no value for is closed: a feature is off, a limit is 0 (E3).
-- The OpenAPI document lists the keys as two enums, `FeatureKey` and `LimitKey` (N11i). The platform's plan editor reads them from the generated client, so a key added in code shows at once on every plan, closed until a system admin gives it a value.
+- The OpenAPI document lists the keys as two enums, `FeatureKey` and `LimitKey` (N11i). A client reads them from the generated client. So a client that lists every key shows a key added in code at once, closed until a system admin gives it a value.
 
 ## 2. The effective value
 
