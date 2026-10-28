@@ -94,12 +94,12 @@
       "validation_failed": "Some fields need attention. Check them and try again."
     },
     "plan": {
-      "default_required": "The default plan keeps its mark until another plan takes it.",
-      "entitlement_invalid": "A value does not fit its key. Check the values and try again.",
+      "default_required": "There is always one default plan. To change it, make another plan the default first.",
+      "entitlement_invalid": "Enter a whole number, 0 or more.",
       "feature_unavailable": "This organisation's plan does not include this feature.",
       "limit_reached": "This organisation has reached a limit of its plan.",
-      "name_invalid": "Enter a plan name.",
-      "name_taken": "Another plan has this name. Choose another name.",
+      "name_invalid": "Enter a name.",
+      "name_taken": "Another plan has this name.",
       "not_found": "This plan no longer exists.",
       "override_not_found": "This organisation has no override of this key."
     },

@@ -38,6 +38,7 @@ import {
   waitingInvitation,
   waitsForOwner,
 } from "./organisation";
+import { PlanSection } from "./plan-section";
 import { useOrganisationActions } from "./use-organisation-actions";
 
 /** The Users list, searched by the invited email: an Owner who joined as a member is made an Owner from their user page. */
@@ -307,7 +308,10 @@ function Overview({ organisation }: { organisation: TenantDetailResponse }) {
           </p>
         </div>
       ) : (
-        <DetailList rows={rows} />
+        <>
+          <DetailList rows={rows} />
+          <PlanSection organisation={organisation} />
+        </>
       )}
       {view === "overview" && waitsForOwner(organisation) && (
         <p className="text-small text-muted-foreground">

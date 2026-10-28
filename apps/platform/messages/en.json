@@ -26,7 +26,8 @@
     "language": "Language",
     "platform": "Platform",
     "systemAdmins": "System admins",
-    "activity": "Activity"
+    "activity": "Activity",
+    "plans": "Plans"
   },
   "preferences": {
     "title": "Preferences",
@@ -194,7 +195,12 @@
     "inviteNotActive": "<bdi>{name}</bdi> is not active.",
     "inviteNotActiveText": "Reactivate or reopen it first.",
     "notDone": "<bdi>{name}</bdi> did not change.",
-    "activity": "Activity"
+    "activity": "Activity",
+    "plan": "Plan",
+    "planHint": "New organisations get the default plan. You can change it later.",
+    "planSearch": "Search plans",
+    "planEmpty": "No plan found",
+    "planDefault": "Default"
   },
   "users": {
     "title": "Users",
@@ -346,7 +352,7 @@
     "operations": {
       "unknown": "<actor></actor> made a change (<code>{operation}</code>).",
       "tenant": {
-        "created": "<actor></actor> created <target></target> and invited its Owner.",
+        "created": "{onPlan, select, none {<actor></actor> created <target></target> and invited its Owner.} other {<actor></actor> created <target></target> on <plan></plan> and invited its Owner.}}",
         "renamed": "<actor></actor> renamed <link>{oldName}</link> to <name>{newName}</name>.",
         "suspended": "<actor></actor> suspended <target></target>. Reason: <name>{reason}</name>.",
         "reactivated": "<actor></actor> reactivated <target></target>.",
@@ -355,7 +361,10 @@
         "owner_invited": "<actor></actor> invited a new Owner of <target></target>.",
         "owner_made": "{owner, select, named {<actor></actor> made <member></member> an Owner of <target></target>.} deletedUser {<actor></actor> made <member>Deleted user</member> an Owner of <target></target>.} other {<actor></actor> made <member>a member</member> an Owner of <target></target>.}}",
         "purge_warned": "The Owners of <target></target> were warned that it will be deleted on {date}.",
-        "purged": "<target></target> was deleted."
+        "purged": "<target></target> was deleted.",
+        "plan_changed": "<actor></actor> moved <target></target> from <oldPlan></oldPlan> to <newPlan></newPlan>.",
+        "entitlement_override_set": "<actor></actor> set <target></target>’s {key} to {value}{expiry, select, none {, no expiry} other { until {date}}} (before: {previous}).{hasReason, select, yes { Reason: <name>{reason}</name>.} ended { Reason: <name>{reason}</name>} other {}}",
+        "entitlement_override_removed": "<actor></actor> removed <target></target>’s override on {key} ({value}, {expiry, select, none {no expiry} other {until {date}}})."
       },
       "user": {
         "suspended": "<actor></actor> suspended the user <target></target>.",
@@ -367,7 +376,145 @@
       "system_admin": {
         "granted": "<actor></actor> made <target></target> a system admin.",
         "revoked": "<actor></actor> removed <target></target> as a system admin."
+      },
+      "plan": {
+        "created": "<actor></actor> created the plan <target></target>.",
+        "updated": "{change, select, renamed {<actor></actor> renamed the plan <name>{oldName}</name> to <target></target>.} default {<actor></actor> made <target></target> the default plan, in place of <previous></previous>.} one {<actor></actor> changed the plan <target></target>: {changes}.} other {<actor></actor> changed several values of the plan <target></target>: {changes}.}}"
       }
+    },
+    "change": "{key} from {old} to {new}",
+    "changeSeparator": "; ",
+    "nameKey": "name"
+  },
+  "entitlements": {
+    "areas": {
+      "roles": "Roles",
+      "members": "Members"
+    },
+    "keys": {
+      "roles_custom": {
+        "name": "Custom roles",
+        "description": "Roles an organisation creates beyond Owner, Admin and Member.",
+        "turnsOff": "{key} turns off. Its {count} custom roles stay, and their members keep their permissions; nobody can create, edit or give one."
+      },
+      "roles_custom_max": {
+        "name": "Custom roles limit",
+        "description": "How many custom roles an organisation can have."
+      },
+      "members_max": {
+        "name": "Members limit",
+        "description": "Members plus pending invitations that have not expired."
+      }
+    },
+    "turnsOff": "{key} turns off.",
+    "on": "On",
+    "off": "Off",
+    "unlimited": "Unlimited",
+    "notSet": "Not set: closed",
+    "sentence": {
+      "on": "on",
+      "off": "off",
+      "unlimited": "unlimited",
+      "notSet": "not set",
+      "none": "none"
     }
+  },
+  "plans": {
+    "title": "Plans",
+    "intro": "A plan gives each organisation its features and limits. New organisations get the default plan.",
+    "newPlan": "New plan",
+    "default": "Default",
+    "nameColumn": "Plan",
+    "organisationsColumn": "Organisations",
+    "loading": "Loading plans",
+    "error": "Couldn’t load plans",
+    "loadError": "Couldn’t load the plan",
+    "section": "Plan",
+    "name": "Name",
+    "defaultPlan": "Default plan",
+    "defaultOn": "New organisations get this plan.",
+    "defaultOff": "Check it to give this plan to new organisations instead of {plan}.",
+    "defaultLocked": "There is always one default plan. To change it, make another plan the default first.",
+    "numberPlaceholder": "Not set",
+    "organisationCount": "{count, plural, one {One organisation is on this plan.} other {# organisations are on this plan.}}",
+    "createTitle": "New plan",
+    "createText": "A key you leave unset is closed for the organisations on this plan.",
+    "save": "Save changes",
+    "create": "Create plan",
+    "nameRequired": "Enter a name.",
+    "nameTaken": "Another plan has this name.",
+    "nameTooLong": "Use 1 to {max} characters.",
+    "numberInvalid": "Enter a whole number, 0 or more.",
+    "saved": "<bdi>{name}</bdi> saved",
+    "created": "<bdi>{name}</bdi> created",
+    "notSaved": "Plan not saved",
+    "impactTitle": "Save changes to {plan}?",
+    "impactText": "{count, plural, one {This edit puts # organisation over a limit. Nothing is deleted or locked: it can’t add more until it is under it. To keep it as it is, give it an override first.} other {This edit puts # organisations over a limit. Nothing is deleted or locked: they can’t add more until they are under it. To keep one as it is, give it an override first.}}",
+    "organisation": "Organisation",
+    "limit": "Limit",
+    "now": "Now",
+    "newLimit": "New limit",
+    "overBy": "Over by {count}",
+    "saveAnyway": "Save anyway",
+    "search": "Search organisations",
+    "shown": "Showing {shown} of {total}, the furthest over first.",
+    "loadMore": "Load more",
+    "newTab": "(opens in a new tab)",
+    "previewError": "Couldn’t check the organisations on this plan. Try again."
+  },
+  "planSection": {
+    "title": "Plan",
+    "changePlan": "Change plan",
+    "addOverride": "Add override",
+    "key": "Feature or limit",
+    "plan": "Plan",
+    "override": "Override",
+    "applies": "Applies",
+    "used": "Used",
+    "setBy": "Set by {name}",
+    "until": "until <date></date>",
+    "noExpiry": "No expiry",
+    "expired": "Expired",
+    "hint": "An override changes one value for this organisation only. The plan stays as it is.",
+    "noOverrides": "No overrides. Every value comes from the plan.",
+    "overTitle": "<bdi>{name}</bdi> is over a limit.",
+    "overText": "Nothing is deleted or locked. Its people can’t add more until it is under the limit.",
+    "overBy": "Over by {count}",
+    "closedTitle": "<bdi>{name}</bdi> is closed. Its plan and overrides are read-only.",
+    "closedText": "Reopen it to change them.",
+    "error": "Couldn’t load the plan",
+    "actionsFor": "Actions for {name}",
+    "editOverride": "Edit override",
+    "removeOverride": "Remove override",
+    "addTitle": "Add an override for <bdi>{name}</bdi>",
+    "editTitle": "Edit the override on {key}",
+    "overrideText": "It changes this value for <bdi>{name}</bdi> only, until it expires or someone removes it.",
+    "keySearch": "Search features and limits",
+    "keyEmpty": "No feature or limit found",
+    "value": "Value",
+    "expires": "Expires",
+    "expiresHint": "Optional. From this date the plan’s value applies again, from midnight in your time zone.",
+    "reason": "Reason",
+    "reasonHint": "Only the platform sees it.",
+    "reasonRequired": "Enter a reason.",
+    "reasonTooLong": "Use 1 to {max} characters.",
+    "expiryInvalid": "Choose a date after today.",
+    "save": "Save override",
+    "saved": "Override saved",
+    "notSaved": "Override not saved",
+    "removeTitle": "Remove the override on {key}?",
+    "removeText": "<bdi>{name}</bdi> goes back to the plan’s value, {value}. It has {count} now.",
+    "removed": "Override removed",
+    "notRemoved": "Override not removed",
+    "changeTitle": "Change <bdi>{name}</bdi>’s plan",
+    "changeText": "On {plan}, <bdi>{name}</bdi> goes over a limit and loses a feature. Nothing is deleted or locked: its people can’t add more until it is under the limit.",
+    "newPlan": "New plan",
+    "current": "Current",
+    "planSearch": "Search plans",
+    "planEmpty": "No plan found",
+    "limitOver": "{key}: {count} now, {limit} on {plan}.",
+    "overrideApplies": "{key}: its override ({value}) still applies.",
+    "changed": "<bdi>{name}</bdi> moved to {plan}",
+    "notChanged": "Plan not changed"
   }
 }

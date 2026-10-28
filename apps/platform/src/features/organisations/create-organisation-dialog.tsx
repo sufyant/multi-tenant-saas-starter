@@ -6,6 +6,7 @@ import {
   createTenant,
   ErrorCode,
   getGetMeQueryOptions,
+  getListPlansQueryOptions,
   getListTenantsQueryKey,
   Language,
   ProblemDetailsError,
@@ -13,6 +14,7 @@ import {
   schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
+import { Combobox } from "@repo/ui/components/combobox";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
@@ -25,6 +27,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { isolated } from "@/shared/isolated";
+import { plansQuery, refreshPlans } from "@/shared/plans";
 import { savedUnderKey } from "@/shared/saved-under-key";
 import { emailText, nameText, slugText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
@@ -42,17 +45,20 @@ export const pageOf = (location: string) =>
   `/organisations/${new URL(location, "https://platform.invalid").pathname.split("/").at(-1)}`;
 
 /**
- * Create an organisation and invite its Owner (the CreateOrg board): Name, Slug, Owner's email and Owner's language, the system
- * admin's own by default. One Idempotency-Key per intent (F48). After the 201 the page of the new organisation opens, from the
+ * Create an organisation and invite its Owner (the CreateOrg board): Name, Slug, Owner's email, Owner's language, the system
+ * admin's own by default, and the Plan, the default plan preselected and marked. One Idempotency-Key per intent (F48). After the 201 the page of the new organisation opens, from the
  * answer's `Location` (RFC 9110, section 10.2.2).
  */
 export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations("organisations");
   const common = useTranslations("common");
+  const all = useTranslations();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const router = useRouter();
   const me = useQuery(getGetMeQueryOptions());
+  const plans = useQuery(getListPlansQueryOptions(plansQuery));
+  const defaultPlan = plans.data?.items.find((plan) => plan.isDefault);
   const { key, renew } = useIntentKey();
   const form = useForm<Creation>({
     resolver: zodResolver(creation),
@@ -63,6 +69,11 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
       language: me.data?.language ?? Language.En,
     },
   });
+  // The default plan, once the plans are read; a choice of the system admin stays.
+  useEffect(() => {
+    if (defaultPlan && !form.getValues("planId"))
+      form.setValue("planId", defaultPlan.id);
+  }, [defaultPlan, form]);
   // Another value of any field is another intent: it gets a new key.
   useEffect(
     () => form.subscribe({ formState: { values: true }, callback: renew }),
@@ -92,6 +103,11 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
         form.setError("name", { message: code });
       if (code === ErrorCode.TenantSlugTaken)
         form.setError("slug", { message: "slugTaken" });
+      // The plan was gone meanwhile: its text under the field, and the plans are read again (F47).
+      if (code === ErrorCode.PlanNotFound) {
+        form.setError("planId", { message: code });
+        void refreshPlans(queryClient);
+      }
       const action = actionFor(error.status, error.problem);
       if (action.kind !== "field-errors") return;
       for (const field of ["name", "slug", "ownerEmail"] as const) {
@@ -107,7 +123,8 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
       !create.error ||
       code === ErrorCode.RequestValidationFailed ||
       code === ErrorCode.TenantNameInvalid ||
-      code === ErrorCode.TenantSlugTaken
+      code === ErrorCode.TenantSlugTaken ||
+      code === ErrorCode.PlanNotFound
     )
       return null;
     return {
@@ -185,6 +202,23 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
           label={t("ownerLanguage")}
           value={form.watch("language") ?? Language.En}
           onChange={(language) => form.setValue("language", language)}
+        />
+        <Combobox
+          label={t("plan")}
+          hint={t("planHint")}
+          error={errors.planId ? all("errors.plan.not_found") : undefined}
+          value={form.watch("planId") ?? undefined}
+          options={(plans.data?.items ?? []).map((plan) => ({
+            id: plan.id,
+            label: plan.name,
+            hint: plan.isDefault ? t("planDefault") : undefined,
+          }))}
+          onValueChange={(planId) => {
+            form.setValue("planId", planId);
+            form.clearErrors("planId");
+          }}
+          searchPlaceholder={t("planSearch")}
+          emptyLabel={t("planEmpty")}
         />
         {failure && (
           <Banner tone="destructive" title={failure.title}>
