@@ -57,8 +57,6 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode RoleInUse = ErrorCode.Declare("role.in_use");
 
-    public static readonly ErrorCode RoleLimitReached = ErrorCode.Declare("role.limit_reached");
-
     public static readonly ErrorCode RoleNameInvalid = ErrorCode.Declare("role.name_invalid");
 
     public static readonly ErrorCode RoleNameTaken = ErrorCode.Declare("role.name_taken");

@@ -654,7 +654,6 @@ export const ErrorCode = {
   RoleBuiltIn: 'role.built_in',
   RoleEscalation: 'role.escalation',
   RoleInUse: 'role.in_use',
-  RoleLimitReached: 'role.limit_reached',
   RoleNameInvalid: 'role.name_invalid',
   RoleNameTaken: 'role.name_taken',
   RoleNotFound: 'role.not_found',
@@ -1085,11 +1084,17 @@ export interface MeResponse {
   timeZone: string | null;
 }
 
+export type MyTenantDetailResponseEntitlements = {[key: string]: boolean | number | null};
+
+export type MyTenantDetailResponseUsage = {[key: string]: number};
+
 /**
  * The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
  * permissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every
- * endpoint still checks the permission itself. It also holds the most custom roles the tenant may have, the limit CreateRole enforces,
- * for Settings › Roles: the list of roles holds nothing beside its page (K5).
+ * endpoint still checks the permission itself. It also holds the name of the tenant's plan; `entitlements`, every key of the list
+ * with its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null
+ * for an unlimited limit; and `usage`, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks
+ * its feature and its limit itself.
  */
 export interface MyTenantDetailResponse {
   id: string;
@@ -1099,7 +1104,9 @@ export interface MyTenantDetailResponse {
   role: RoleResponse;
   permissions: Permission[];
   createdAt: string;
-  maxCustomRoles: number;
+  planName: string;
+  entitlements: MyTenantDetailResponseEntitlements;
+  usage: MyTenantDetailResponseUsage;
 }
 
 /**

@@ -45,34 +45,42 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
             .ShouldBe((tenant.Id, "Profile Ltd", tenant.Slug, "active"));
         RoleAnswers.Of(found).ShouldBe(RoleAnswers.BuiltIn(name));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(createdAt);
-        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "maxCustomRoles"], ignoreOrder: true);
+        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "planName", "entitlements", "usage"], ignoreOrder: true);
     }
 
-    // Settings › Roles shows how many custom roles the tenant may have, beside the list of roles (step r12): the list contract holds
-    // nothing beside the page (K5). The limit is the setting ControlPlane:Roles:MaxCustomRolesPerTenant that CreateRole enforces.
+    // The tenant web reads the plan's name and the effective value of every key, by key, as it reads the permissions: a feature is true or
+    // false, a limit a number, and null is unlimited. For each limit it reads the tenant's count, so it adds no list up (D1). A Pro tenant
+    // with one custom role, two members and one pending invitation.
     [Fact]
-    public async Task GetMyTenant_AnyMember_AnswersTheMostCustomRolesTheTenantMayHave()
+    public async Task GetMyTenant_AProTenant_AnswersThePlanItsEntitlementsAndTheCounts()
     {
         var tenant = await _testData.AddTenantAsync();
         var member = await _testData.AddMemberAsync(tenant.Id);
+        await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddCustomRoleAsync(tenant.Id, "Billing", "tenant.profile.read");
+        await _testData.AddInvitationAsync(tenant.Id);
+        await _testData.SummarizeAsync(tenant.Id);
 
         var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
-        found.GetProperty("maxCustomRoles").GetInt32().ShouldBe(20);
+        found.GetProperty("planName").GetString().ShouldBe("Pro");
+        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"members.max":null,"roles.custom":true,"roles.custom.max":20}""");
+        found.GetProperty("usage").GetRawText().ShouldBe("""{"members.max":3,"roles.custom.max":1}""");
     }
 
+    // An override over the plan's value is the effective value the tenant reads.
     [Fact]
-    public async Task GetMyTenant_AnotherLimitOfCustomRoles_AnswersThatLimit()
+    public async Task GetMyTenant_AFreeTenantWithAnOverride_AnswersTheEffectiveValues()
     {
-        await using var api = new ApiFactory(
-            database.ConnectionStringFor(DatabaseRoles.Application),
-            settings: new Dictionary<string, string?> { ["ControlPlane:Roles:MaxCustomRolesPerTenant"] = "3" });
-        var tenant = await _testData.AddTenantAsync();
+        var tenant = await _testData.AddTenantAsync(planId: SeedPlans.Free);
         var member = await _testData.AddMemberAsync(tenant.Id);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenant.Id, "members.max", PlanRequests.Max(12)))).EnsureSuccessStatusCode();
 
-        var found = await api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
+        var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
-        found.GetProperty("maxCustomRoles").GetInt32().ShouldBe(3);
+        found.GetProperty("planName").GetString().ShouldBe("Free");
+        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"members.max":12,"roles.custom":false,"roles.custom.max":0}""");
     }
 
     // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner holds the tenant pool, an Admin all of it but

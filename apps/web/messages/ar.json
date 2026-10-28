@@ -255,6 +255,10 @@
         "removed": "<actor></actor> أزال <target></target> (<role></role>) من المؤسسة.",
         "role_changed": "{actorKind, select, platform {غيّرت} other {غيّر}} <actor></actor> دور <target></target> من <oldRole></oldRole> إلى <newRole></newRole>."
       },
+      "plan": {
+        "created": "<actor></actor> أنشأ خطة.",
+        "updated": "<actor></actor> غيّر خطة."
+      },
       "role": {
         "created": "أنشأ <actor></actor> الدور <target></target>.",
         "deleted": "حذف <actor></actor> الدور <target></target>.",
@@ -267,8 +271,11 @@
       "tenant": {
         "closed": "<actor></actor> أغلق هذه المؤسسة.",
         "created": "<actor></actor> أنشأ هذه المؤسسة.",
+        "entitlement_override_removed": "<actor></actor> أزال تغييرًا لحدّ هذه المؤسسة.",
+        "entitlement_override_set": "<actor></actor> غيّر حدًّا لهذه المؤسسة.",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
         "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
+        "plan_changed": "<actor></actor> غيّر خطة هذه المؤسسة.",
         "purge_warned": "أُبلغ المالكون بأن <target></target> ستُحذف في {date}.",
         "purged": "<actor></actor> حذف هذه المؤسسة وبياناتها.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",

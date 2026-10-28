@@ -74,11 +74,6 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IPlanQueries, PlanQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
 
-        services.AddOptions<RoleOptions>()
-            .BindConfiguration(RoleOptions.Section)
-            .Validate(settings => settings.MaxCustomRolesPerTenant >= 1, $"{RoleOptions.Section}:MaxCustomRolesPerTenant must be at least 1.")
-            .ValidateOnStart();
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<RoleOptions>>().Value);
 
         services.AddOptions<InvitationOptions>()
             .BindConfiguration(InvitationOptions.Section)

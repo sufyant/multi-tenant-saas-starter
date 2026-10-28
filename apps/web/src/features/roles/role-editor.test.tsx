@@ -291,7 +291,7 @@ describe("CreateRole", () => {
     [403, ErrorCode.RoleEscalation, "Your role doesn’t have this permission."],
     [
       409,
-      ErrorCode.RoleLimitReached,
+      ErrorCode.PlanLimitReached,
       "This organisation has as many custom roles as it may have. Delete a role first.",
     ],
   ])("CreateRole_Refused%s_%s_ShowsTheBanner", async (status, code, text) => {
@@ -334,7 +334,7 @@ describe("CreateRole", () => {
     const sent: Sent[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
-      createAnswer(() => problem(409, ErrorCode.RoleLimitReached), sent),
+      createAnswer(() => problem(409, ErrorCode.PlanLimitReached), sent),
     );
     const field = await openNew();
     await userEvent.type(field, "Support");

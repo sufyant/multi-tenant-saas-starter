@@ -97,7 +97,13 @@ const limitOf = (max: number) =>
       role: roleOf.owner,
       createdAt: "2026-01-05T09:00:00Z",
       permissions: permissionsOf.owner,
-      maxCustomRoles: max,
+      planName: "Pro",
+      entitlements: {
+        "members.max": null,
+        "roles.custom": true,
+        "roles.custom.max": max,
+      },
+      usage: { "members.max": 0, "roles.custom.max": 0 },
     }),
   );
 

@@ -61,7 +61,7 @@ const builtIn = (
   pendingInvitationCount: 0,
 });
 
-/** The most custom roles Northwind may have, as GetMyTenant answers it (the API's default). */
+/** The most custom roles Northwind may have, Pro's roles.custom.max, as GetMyTenant answers it. */
 export const maxCustomRoles = 20;
 
 /** Northwind's roles, as ListRoles answers them. A request gives a role by its id. */
@@ -175,7 +175,13 @@ export async function mockApi(
       json: {
         ...northwind,
         createdAt: "2026-01-05T09:00:00Z",
-        maxCustomRoles,
+        planName: "Pro",
+        entitlements: {
+          "members.max": null,
+          "roles.custom": true,
+          "roles.custom.max": maxCustomRoles,
+        },
+        usage: { "members.max": 0, "roles.custom.max": 0 },
         permissions: tenantPermissions,
       },
     }),
@@ -376,7 +382,13 @@ export async function mockMembers(
         ...northwind,
         role: roleOf(roles[role]),
         createdAt: "2026-01-05T09:00:00Z",
-        maxCustomRoles,
+        planName: "Pro",
+        entitlements: {
+          "members.max": null,
+          "roles.custom": true,
+          "roles.custom.max": maxCustomRoles,
+        },
+        usage: { "members.max": 0, "roles.custom.max": 0 },
         permissions: roles[role].permissions,
       },
     }),

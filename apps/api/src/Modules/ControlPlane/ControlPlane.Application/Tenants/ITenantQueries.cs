@@ -35,7 +35,7 @@ public interface ITenantQueries
     /// has the active tenant's id, the person is not a user, or they are no member of it (T3). It carries the most custom roles the tenant
     /// may have, as given.
     /// </summary>
-    internal Task<MyTenantDetailView?> FindMyTenantAsync(string externalUserId, int maxCustomRoles, CancellationToken cancellationToken);
+    internal Task<MyTenantDetailView?> FindMyTenantAsync(string externalUserId, DateTimeOffset now, CancellationToken cancellationToken);
 
     /// <summary>
     /// A page of every tenant whose name or slug contains the search, in the status or every status, by the sort field, then id. It

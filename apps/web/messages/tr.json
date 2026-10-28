@@ -255,6 +255,10 @@
         "removed": "<actor></actor>, <target></target> adlı üyeyi (<role></role>) kuruluştan çıkardı.",
         "role_changed": "<actor></actor>, <target></target> kişisinin rolünü <oldRole></oldRole> rolünden <newRole></newRole> rolüne değiştirdi."
       },
+      "plan": {
+        "created": "<actor></actor> bir plan oluşturdu.",
+        "updated": "<actor></actor> bir planı değiştirdi."
+      },
       "role": {
         "created": "<actor></actor>, <target></target> rolünü oluşturdu.",
         "deleted": "<actor></actor>, <target></target> rolünü sildi.",
@@ -267,8 +271,11 @@
       "tenant": {
         "closed": "<actor></actor> bu kuruluşu kapattı.",
         "created": "<actor></actor> bu kuruluşu oluşturdu.",
+        "entitlement_override_removed": "<actor></actor> bu kuruluşun bir sınır değişikliğini kaldırdı.",
+        "entitlement_override_set": "<actor></actor> bu kuruluşun bir sınırını değiştirdi.",
         "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
         "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
+        "plan_changed": "<actor></actor> bu kuruluşun planını değiştirdi.",
         "purge_warned": "Sahiplere <target></target> kuruluşunun {date} tarihinde silineceği bildirildi.",
         "purged": "<actor></actor> bu kuruluşu ve verilerini sildi.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
