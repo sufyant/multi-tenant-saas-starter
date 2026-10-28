@@ -238,8 +238,9 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(tenant)).ShouldBe(
             $"{tenant}:tenant.created|Platform|-|Tenant|{tenant}|Acme Ltd, {tenant}:tenant.owner_invited|Platform|-|Tenant|{tenant}|Acme Ltd");
         var details = $$"""{"invitationId": "{{id}}", "replacedInvitationId": "{{replaced}}"}""";
-        (await _audit.PlatformDetailsAsync(tenant)).ShouldBe($"-, {details}");
-        (await _audit.TenantDetailsAsync(tenant)).ShouldBe($"-, {details}");
+        var created = $$$"""{"plan": {"id": "{{{SeedPlans.Free}}}", "name": "Free"}}""";
+        (await _audit.PlatformDetailsAsync(tenant)).ShouldBe($"{created}, {details}");
+        (await _audit.TenantDetailsAsync(tenant)).ShouldBe($"{created}, {details}");
         (await _audit.TenantRecordsHoldingAsync(tenant, owner)).ShouldBe(0);
     }
 
