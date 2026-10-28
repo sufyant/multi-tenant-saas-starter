@@ -227,7 +227,8 @@
     "name": "Ad",
     "status": "Durum",
     "created": "Oluşturulma",
-    "yourRole": "Rolünüz"
+    "yourRole": "Rolünüz",
+    "plan": "Plan"
   },
   "activity": {
     "title": "Etkinlik",
@@ -270,12 +271,12 @@
       },
       "tenant": {
         "closed": "<actor></actor> bu kuruluşu kapattı.",
-        "created": "<actor></actor> bu kuruluşu oluşturdu.",
-        "entitlement_override_removed": "<actor></actor> bu kuruluşun bir sınır değişikliğini kaldırdı.",
-        "entitlement_override_set": "<actor></actor> bu kuruluşun bir sınırını değiştirdi.",
+        "created": "{plan, select, none {<actor></actor> bu kuruluşu oluşturdu.} other {<actor></actor> bu kuruluşu <planName></planName> planında oluşturdu.}}",
+        "entitlement_override_removed": "<actor></actor> bu kuruluşun <key></key> istisnasını kaldırdı.",
+        "entitlement_override_set": "{expires, select, yes {<actor></actor> bu kuruluşun <key></key> değerini {date} tarihine kadar {value} yaptı.} other {<actor></actor> bu kuruluşun <key></key> değerini {value} yaptı.}}",
         "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
         "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
-        "plan_changed": "<actor></actor> bu kuruluşun planını değiştirdi.",
+        "plan_changed": "<actor></actor> bu kuruluşu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.",
         "purge_warned": "Sahiplere <target></target> kuruluşunun {date} tarihinde silineceği bildirildi.",
         "purged": "<actor></actor> bu kuruluşu ve verilerini sildi.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
@@ -363,8 +364,6 @@
     "inUseReason": "Önce {users} için başka bir rol seçin.",
     "seeMembers": "Üyelerini gör",
     "seeInvitations": "Davetlerini gör",
-    "counter": "{count} / {max} özel rol",
-    "limitReached": "Kuruluşunuz {max} özel rol sınırına ulaştı. Yenisini oluşturmak için birini silin.",
     "builtIn": "Yerleşik",
     "actions": "İşlemler",
     "actionsFor": "{name} için işlemler",
@@ -418,6 +417,31 @@
       "invitations": "Davetler",
       "roles": "Roller",
       "activity": "Etkinlik"
+    }
+  },
+  "plans": {
+    "rolesCustomOff": "Kuruluşunuzun planı özel rolleri içermiyor.",
+    "rolesLimit": "Kuruluşunuzun planı {limit} özel role izin veriyor.",
+    "rolesLimitAction": "Yenisini oluşturmak için birini silin.",
+    "rolesCount": "{count} / {limit} özel rol",
+    "rolesOver": "{count} özel rolünüz var; planınız {limit} özel role izin veriyor.",
+    "rolesOverText": "Yenilerini oluşturmak için rol silin. Her rol ve üyeleri çalışmaya devam eder.",
+    "membersLimit": "Kuruluşunuzun planı, davetler dahil {limit} üyeye izin veriyor.",
+    "membersLimitAction": "Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin.",
+    "membersCount": "{count} / {limit} üye, davetler dahil",
+    "membersOver": "{count} üyeniz ve bekleyen davetiniz var; planınız {limit} üyeye izin veriyor.",
+    "membersOverRemover": "Yeni kişileri davet etmek için üye çıkarın veya davetleri iptal edin. Kimse erişimini kaybetmez.",
+    "membersOverInviter": "Üye çıkarabilen biri yer açabilir. Kimse erişimini kaybetmez.",
+    "contact": "Bize ulaşın",
+    "keys": {
+      "rolesCustom": "Özel roller",
+      "rolesCustomMax": "Özel rol sınırı",
+      "membersMax": "Üye sınırı"
+    },
+    "values": {
+      "on": "açık",
+      "off": "kapalı",
+      "unlimited": "sınırsız"
     }
   }
 }

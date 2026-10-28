@@ -21,10 +21,13 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
+import { EntitlementKey, usePlan } from "@/shared/plan";
+import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
+import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
 import { DeleteRoleDialog } from "./delete-role-dialog";
 import { RolesFrame } from "./roles-frame";
@@ -34,8 +37,10 @@ import { RolesFrame } from "./roles-frame";
  * roles first (F51). A built-in role offers "View permissions". A custom role offers "Edit role" and "Delete role" by their
  * permissions (F5), both disabled with the reason when the viewer's role does not hold every permission of it (F51); without the
  * update permission it opens read-only. A role in use offers its members, or its invitations when only invitations use it, and
- * its "Delete role" is disabled with the counts, as `role.in_use` counts them. The counter and the limit read
- * `GetMyTenant.entitlements["roles.custom.max"]`, where null is unlimited.
+ * its "Delete role" is disabled with the counts, as `role.in_use` counts them. The plan (the plan-limit boards, through `usePlan`):
+ * a viewer who may create sees the count of `roles.custom.max` (none when unlimited); at the limit "Create role" is disabled with
+ * the reason, over it with the banner. With `roles.custom` off the custom roles stay listed, "Create role" and "Edit role" are
+ * disabled with the feature's reason in place of the count, and "Delete role" keeps its own rules.
  */
 export function RolesPage() {
   const t = useTranslations();
@@ -45,8 +50,11 @@ export function RolesPage() {
   const { tenant, detail } = useTenant();
   const roles = useTenantRoles();
   const me = useQuery(getGetMeQueryOptions());
+  const plan = usePlan();
+  const planReason = usePlanReason();
   const [deleting, setDeleting] = useState<RoleDetailResponse | null>(null);
   const counterId = useId();
+  const bannerId = useId();
 
   if (!can(Permission.TenantRolesRead))
     return (
@@ -62,19 +70,32 @@ export function RolesPage() {
   const open = (role: RoleDetailResponse) => router.push(`${base}/${role.id}`);
   const members = `/${tenant.slug}/settings/members`;
 
-  const customRoles = roles.data?.items.filter((role) => !role.builtIn).length;
-  const limit = detail.entitlements["roles.custom.max"];
-  const max = typeof limit === "number" ? limit : null;
-  // A tenant may hold more custom roles than a limit lowered later; it creates none until it is under the limit again. An unlimited
-  // limit has no counter.
-  const atLimit =
-    customRoles !== undefined && max !== null && customRoles >= max;
-  // The button waits for the roles, so it never turns from enabled to disabled under the pointer.
+  // The plan closes creating and editing a custom role; deleting stays (E4, E5). The feature's reason wins over the limit's.
+  const featureOff = plan.on(EntitlementKey.RolesCustom)
+    ? undefined
+    : planReason.feature(EntitlementKey.RolesCustom);
+  const roleLimit = plan.limit(EntitlementKey.RolesCustomMax);
+  const over = featureOff === undefined && roleLimit.overLimit;
+  const counter = (() => {
+    if (featureOff) return featureOff;
+    if (roleLimit.limit === null) return null;
+    if (roleLimit.atLimit)
+      return sentenceOf(planReason.limit(EntitlementKey.RolesCustomMax));
+    return t("plans.rolesCount", {
+      count: roleLimit.count,
+      limit: roleLimit.limit,
+    });
+  })();
+  // The button waits for the roles, so it shows with the list it acts on.
   const createButton =
     canCreate &&
-    customRoles !== undefined &&
-    (atLimit ? (
-      <Button variant="primary" disabled aria-describedby={counterId}>
+    roles.data !== undefined &&
+    (featureOff || roleLimit.full ? (
+      <Button
+        variant="primary"
+        disabled
+        aria-describedby={over ? reasonIdsOf(bannerId) : counterId}
+      >
         {t("roles.create")}
       </Button>
     ) : (
@@ -168,17 +189,18 @@ export function RolesPage() {
     const outOfReach = holdsAll(detail.permissions, role)
       ? undefined
       : t("roles.outOfReach");
+    const closed = outOfReach ?? featureOff;
     const edit = {
       label: t("roles.edit"),
       onSelect: () => open(role),
-      disabled: outOfReach !== undefined,
-      reason: outOfReach,
+      disabled: closed !== undefined,
+      reason: closed,
     };
     const items: RowMenuItem[] = [
-      canUpdate && !outOfReach ? edit : view,
+      canUpdate && !closed ? edit : view,
       ...usedBy(role),
     ];
-    if (canUpdate && outOfReach) items.push(edit);
+    if (canUpdate && closed) items.push(edit);
     if (canDelete) {
       // The escalation reason wins: the viewer could not delete the role even when nobody used it (F51).
       const users = usersOf(role, "roles.inUseBoth");
@@ -264,19 +286,27 @@ export function RolesPage() {
         {canCreate && (
           <div className="flex flex-col items-end gap-1">
             {createButton}
-            {customRoles !== undefined && max !== null && (
+            {roles.data && counter && (
               <span
                 id={counterId}
                 className="max-w-90 text-end text-small text-muted-foreground"
               >
-                {atLimit
-                  ? t("roles.limitReached", { max })
-                  : t("roles.counter", { count: customRoles, max })}
+                {counter}
               </span>
             )}
           </div>
         )}
       </div>
+      {canCreate && over && roleLimit.limit !== null && (
+        <PlanBanner
+          id={bannerId}
+          title={t("plans.rolesOver", {
+            count: roleLimit.count,
+            limit: roleLimit.limit,
+          })}
+          text={t("plans.rolesOverText")}
+        />
+      )}
       <p className="max-w-prose text-muted-foreground">{t("roles.lead")}</p>
       {body}
       {deleting && (

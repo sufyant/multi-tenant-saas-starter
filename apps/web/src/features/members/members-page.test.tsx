@@ -502,7 +502,8 @@ describe("MembersPage", () => {
     expect(
       screen.getByRole("button", { name: "Invite member" }),
     ).not.toBeDisabled();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    await table();
+    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
   });
 
   it("MembersPage_Unlimited_ShowsNoCount", async () => {
@@ -542,7 +543,8 @@ describe("MembersPage", () => {
     expect(invite).toBeDisabled();
     expect(invite).toHaveAccessibleDescription(reason);
     expect(screen.getByText(reason)).toBeVisible();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    await table();
+    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
     // At the limit, removing stays allowed.
     await openMenu("John Byrne");
     expect(
@@ -622,7 +624,7 @@ describe("MembersPage", () => {
     renderInTenant(<MembersPage />);
 
     await table();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
     expect(screen.queryByText(/invitations included/)).not.toBeInTheDocument();
   });
 

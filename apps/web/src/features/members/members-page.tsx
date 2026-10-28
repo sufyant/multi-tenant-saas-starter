@@ -20,13 +20,16 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs } from "@repo/ui/components/tabs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback, useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
+import { EntitlementKey, usePlan } from "@/shared/plan";
+import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
 import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
+import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
@@ -35,7 +38,12 @@ import { sortValue, type Tab, useListParams } from "./use-list-params";
 
 const allRoles = "all";
 
-/** Settings > Members (the Members boards): the Members tab, and the Invitations tab for whom may read them (F5). */
+/**
+ * Settings > Members (the Members boards): the Members tab, and the Invitations tab for whom may read them (F5). The plan (the
+ * plan-limit boards, through `usePlan`): a viewer who may invite sees the count of `members.max`, invitations included (none when
+ * unlimited); at the limit "Invite member" is disabled with the reason, over it with the banner, whose text says how to make
+ * room to a viewer who may remove members and who can to one who may not. A viewer who may not invite sees neither.
+ */
 export function MembersPage() {
   const t = useTranslations();
   const roleName = useRoleName();
@@ -44,6 +52,10 @@ export function MembersPage() {
   const [params, setParams] = useListParams();
   const [inviting, setInviting] = useState(false);
   const me = useQuery(getGetMeQueryOptions());
+  const plan = usePlan();
+  const planReason = usePlanReason();
+  const counterId = useId();
+  const bannerId = useId();
   const onSearch = useCallback(
     (next: string) => void setParams({ q: next || null, page: null }),
     [setParams],
@@ -102,6 +114,30 @@ export function MembersPage() {
         <PermissionDenied page={t("settings.members")} />
       </Frame>
     );
+
+  const canInvite = can(Permission.TenantInvitationsCreate);
+  const memberLimit = plan.limit(EntitlementKey.MembersMax);
+  const counter = (() => {
+    if (memberLimit.limit === null) return null;
+    if (memberLimit.atLimit)
+      return sentenceOf(planReason.limit(EntitlementKey.MembersMax));
+    return t("plans.membersCount", {
+      count: memberLimit.count,
+      limit: memberLimit.limit,
+    });
+  })();
+  // Nothing new that counts is added at or over the limit; removing and cancelling stay (E4). Over it, the banner is the reason.
+  const reasonId = memberLimit.overLimit ? reasonIdsOf(bannerId) : counterId;
+  const inviteButton = canInvite && (
+    <Button
+      variant="primary"
+      onClick={() => setInviting(true)}
+      disabled={memberLimit.full}
+      aria-describedby={memberLimit.full ? reasonId : undefined}
+    >
+      {t("members.invite")}
+    </Button>
+  );
 
   const filtered = Boolean(q || roleId);
   // The empty state of a filtered list offers its own clear button.
@@ -170,13 +206,7 @@ export function MembersPage() {
         <EmptyState
           title={t("members.noInvitations")}
           description={t("members.noInvitationsText")}
-          action={
-            can(Permission.TenantInvitationsCreate) && (
-              <Button variant="primary" onClick={() => setInviting(true)}>
-                {t("members.invite")}
-              </Button>
-            )
-          }
+          action={inviteButton}
         />
       );
     const table = {
@@ -207,10 +237,18 @@ export function MembersPage() {
             />
           )}
         </div>
-        {can(Permission.TenantInvitationsCreate) && (
-          <Button variant="primary" onClick={() => setInviting(true)}>
-            {t("members.invite")}
-          </Button>
+        {canInvite && (
+          <div className="flex flex-col items-end gap-1">
+            {inviteButton}
+            {counter && (
+              <span
+                id={counterId}
+                className="max-w-90 text-end text-small text-muted-foreground"
+              >
+                {counter}
+              </span>
+            )}
+          </div>
         )}
       </div>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -279,6 +317,20 @@ export function MembersPage() {
           />
         </div>
       </div>
+      {canInvite && memberLimit.overLimit && memberLimit.limit !== null && (
+        <PlanBanner
+          id={bannerId}
+          title={t("plans.membersOver", {
+            count: memberLimit.count,
+            limit: memberLimit.limit,
+          })}
+          text={
+            can(Permission.TenantMembersDelete)
+              ? t("plans.membersOverRemover")
+              : t("plans.membersOverInviter")
+          }
+        />
+      )}
       {body}
       {inviting && <InviteDialog onClose={() => setInviting(false)} />}
     </Frame>

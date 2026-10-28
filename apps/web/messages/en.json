@@ -227,7 +227,8 @@
     "name": "Name",
     "status": "Status",
     "created": "Created",
-    "yourRole": "Your role"
+    "yourRole": "Your role",
+    "plan": "Plan"
   },
   "activity": {
     "title": "Activity",
@@ -270,12 +271,12 @@
       },
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",
-        "created": "<actor></actor> created this organisation.",
-        "entitlement_override_removed": "<actor></actor> removed a change of a limit of this organisation.",
-        "entitlement_override_set": "<actor></actor> changed a limit of this organisation.",
+        "created": "{plan, select, none {<actor></actor> created this organisation.} other {<actor></actor> created this organisation on <planName></planName>.}}",
+        "entitlement_override_removed": "<actor></actor> removed this organisation’s override on <key></key>.",
+        "entitlement_override_set": "{expires, select, yes {<actor></actor> set this organisation’s <key></key> to {value} until {date}.} other {<actor></actor> set this organisation’s <key></key> to {value}.}}",
         "owner_invited": "<actor></actor> invited someone as Owner.",
         "owner_made": "<actor></actor> made a member an Owner.",
-        "plan_changed": "<actor></actor> changed this organisation's plan.",
+        "plan_changed": "<actor></actor> moved this organisation from <oldPlan></oldPlan> to <newPlan></newPlan>.",
         "purge_warned": "The Owners were told that <target></target> will be deleted on {date}.",
         "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",
@@ -363,8 +364,6 @@
     "inUseReason": "Give its {users} another role first.",
     "seeMembers": "See its members",
     "seeInvitations": "See its invitations",
-    "counter": "{count} of {max, plural, one {# custom role} other {# custom roles}}",
-    "limitReached": "Your organisation has reached its limit of {max, plural, one {# custom role} other {# custom roles}}. Delete one to create another.",
     "builtIn": "Built in",
     "actions": "Actions",
     "actionsFor": "Actions for {name}",
@@ -418,6 +417,31 @@
       "invitations": "Invitations",
       "roles": "Roles",
       "activity": "Activity"
+    }
+  },
+  "plans": {
+    "rolesCustomOff": "Your organisation’s plan doesn’t include custom roles.",
+    "rolesLimit": "Your organisation’s plan allows {limit, plural, one {# custom role} other {# custom roles}}.",
+    "rolesLimitAction": "Delete one to create another.",
+    "rolesCount": "{count} of {limit, plural, one {# custom role} other {# custom roles}}",
+    "rolesOver": "You have {count, plural, one {# custom role} other {# custom roles}}; your plan allows {limit}.",
+    "rolesOverText": "Delete roles to create new ones. Every role and its members keep working.",
+    "membersLimit": "Your organisation’s plan allows {limit, plural, one {# member} other {# members}}, invitations included.",
+    "membersLimitAction": "Remove a member or cancel an invitation to invite someone.",
+    "membersCount": "{count} of {limit, plural, one {# member} other {# members}}, invitations included",
+    "membersOver": "You have {count} members and pending invitations; your plan allows {limit}.",
+    "membersOverRemover": "Remove members or cancel invitations to invite new people. Nobody loses access.",
+    "membersOverInviter": "Someone who can remove members can make room. Nobody loses access.",
+    "contact": "Contact us",
+    "keys": {
+      "rolesCustom": "Custom roles",
+      "rolesCustomMax": "Custom roles limit",
+      "membersMax": "Members limit"
+    },
+    "values": {
+      "on": "on",
+      "off": "off",
+      "unlimited": "unlimited"
     }
   }
 }
