@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
+using ControlPlane.Application.Plans;
 using ControlPlane.Application.Roles;
 using ControlPlane.Application.SystemAdmins;
 using ControlPlane.Application.Members;
@@ -14,6 +15,7 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Invitations;
+using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
@@ -62,6 +64,7 @@ public static class ControlPlaneInfrastructure
         // handler needs its transaction (W1).
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<ITenantQueries, TenantQueries>();
         services.AddScoped<IMemberQueries, MemberQueries>();
         services.AddScoped<IInvitationQueries, InvitationQueries>();

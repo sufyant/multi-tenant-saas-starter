@@ -7,7 +7,9 @@ namespace Api.IntegrationTests.Fixtures;
 // Writes ControlPlane's rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
 // name, the way ControlPlane stores them. A membership belongs to a tenant, so it is written with its tenant declared. The rows go
 // into the main database unless the test names a database of its own.
-internal sealed class TestData(Database database, string databaseName = Database.MainDatabase)
+// A tenant is on Pro unless the test names a plan, so a test written before the plans keeps what every tenant had (the migration moved
+// every tenant to Pro). A database taken back before the plans has no plan column: such a test passes withPlans false.
+internal sealed class TestData(Database database, string databaseName = Database.MainDatabase, bool withPlans = true)
 {
     // The invitation code of a link: the tenant id, a dot and the secret (ARCHITECTURE.md, section 6, "Rules without an id").
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
@@ -21,9 +23,10 @@ internal sealed class TestData(Database database, string databaseName = Database
         Guid? tenantId = null,
         string? suspensionReason = null,
         DateTimeOffset? closedAt = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        Guid? planId = null)
     {
-        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt);
+        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt, withPlans ? planId ?? SeedPlans.Pro : null);
         await database.ScalarAsync<object>($"INSERT INTO control_plane.tenant_summaries (tenant_id) VALUES ('{tenant.Id}')", database: databaseName);
         await database.ExecuteInTenantAsync(
             tenant.Id,
@@ -71,7 +74,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         return externalId;
     }
 
-    // The tenant row alone, without its summary and its roles, as a purged tenant's tombstone is (K4).
+    // The tenant row alone, without its summary and its roles, as a purged tenant's tombstone is (K4). Without a plan, the column's
+    // default: a database before the plans has no column, and one after them gives the default plan.
     public async Task<(Guid Id, string Slug)> AddTenantRowAsync(
         string status = "Active",
         string? slug = null,
@@ -79,7 +83,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         Guid? tenantId = null,
         string? suspensionReason = null,
         DateTimeOffset? closedAt = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        Guid? planId = null)
     {
         var id = tenantId ?? Guid.NewGuid();
         // Not from the id: two version 7 ids of one millisecond start with the same 13 digits, and so would their slugs.
@@ -88,8 +93,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         DateTimeOffset? purgedAt = status == "Purged" ? DateTimeOffset.UtcNow : null;
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at{Column("purged_at", purgedAt)})
-            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)}{Value(purgedAt)})
+            INSERT INTO control_plane.tenants (id, name, slug, status, suspension_reason, closed_at, created_at{Column("purged_at", purgedAt)}{Column("plan_id", planId)})
+            VALUES ('{id}', '{name}', '{slug}', '{status}', {Text(suspensionReason)}, {Text(closedAt?.ToString("O"))}, {Moment(createdAt)}{Value(purgedAt)}{Value(planId)})
             """,
             database: databaseName);
 
@@ -268,6 +273,10 @@ internal sealed class TestData(Database database, string databaseName = Database
     private static string Column(string name, DateTimeOffset? moment) => moment is null ? string.Empty : $", {name}";
 
     private static string Value(DateTimeOffset? moment) => moment is { } given ? $", '{given:O}'" : string.Empty;
+
+    private static string Column(string name, Guid? id) => id is null ? string.Empty : $", {name}";
+
+    private static string Value(Guid? id) => id is { } given ? $", '{given}'" : string.Empty;
 
     // The moment the test gives, else the moment of the insert.
     private static string Moment(DateTimeOffset? moment) => moment is { } given ? $"'{given:O}'" : "now()";

@@ -77,6 +77,32 @@ public sealed class TenantRepositoryTests(Database database)
         (await TestData.MemberCountOfAsync(database.Services, tenant)).ShouldBe(0);
     }
 
+    // R12: the summary counts the tenant's custom roles, which the platform's previews read across tenants, so adding and deleting a
+    // custom role writes it, as a membership's change does.
+    [Fact]
+    public async Task AddAndDeleteRole_ACustomRole_AreCountedInTheSummary()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        var role = Role.CreateCustom(Guid.CreateVersion7(), tenant.Id, "Billing", new HashSet<string>(StringComparer.Ordinal) { "tenant.profile.read" });
+
+        await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            await tenants.AddRoleAsync((await tenants.FindTenantForUpdateAsync(Cancellation))!, role, Cancellation);
+            return SharedKernel.Result.Success();
+        });
+        var added = (await TestData.SummaryOfAsync(database.Services, tenant)).CustomRoleCount;
+        await InTenant.RunAsync(database.Services, tenant.Id, async scope =>
+        {
+            var tenants = scope.GetRequiredService<ITenantRepository>();
+            var locked = (await tenants.FindTenantForUpdateAsync(Cancellation))!;
+            await tenants.DeleteRoleAsync(locked, (await tenants.FindRoleFactsAsync(role.Id, null, Cancellation)).Target!, Cancellation);
+            return SharedKernel.Result.Success();
+        });
+
+        (added, (await TestData.SummaryOfAsync(database.Services, tenant)).CustomRoleCount).ShouldBe((1, 0));
+    }
+
     // K6k: a command that changes an invitation or a membership and saves it without the summary does not commit, so the summary
     // never says less than the rows (R12).
     [Fact]
@@ -157,7 +183,7 @@ public sealed class TenantRepositoryTests(Database database)
     [Fact]
     public async Task AddTenant_OtherThanTheDeclaredTenant_IsRefused()
     {
-        var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), DateTimeOffset.UtcNow).Value;
+        var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), await TestData.DefaultPlanIdAsync(database.Services), DateTimeOffset.UtcNow).Value;
 
         var add = () => InTenant.ReadAsync(database.Services, Guid.CreateVersion7(), scope =>
             scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, [], Cancellation));

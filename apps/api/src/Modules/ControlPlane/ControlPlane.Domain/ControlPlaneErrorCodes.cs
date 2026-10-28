@@ -35,6 +35,22 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode MemberOwnerRequiresOwner = ErrorCode.Declare("member.owner_requires_owner");
 
+    public static readonly ErrorCode PlanDefaultRequired = ErrorCode.Declare("plan.default_required");
+
+    public static readonly ErrorCode PlanEntitlementInvalid = ErrorCode.Declare("plan.entitlement_invalid");
+
+    public static readonly ErrorCode PlanFeatureUnavailable = ErrorCode.Declare("plan.feature_unavailable");
+
+    public static readonly ErrorCode PlanLimitReached = ErrorCode.Declare("plan.limit_reached");
+
+    public static readonly ErrorCode PlanNameInvalid = ErrorCode.Declare("plan.name_invalid");
+
+    public static readonly ErrorCode PlanNameTaken = ErrorCode.Declare("plan.name_taken");
+
+    public static readonly ErrorCode PlanNotFound = ErrorCode.Declare("plan.not_found");
+
+    public static readonly ErrorCode PlanOverrideNotFound = ErrorCode.Declare("plan.override_not_found");
+
     public static readonly ErrorCode RoleBuiltIn = ErrorCode.Declare("role.built_in");
 
     public static readonly ErrorCode RoleEscalation = ErrorCode.Declare("role.escalation");

@@ -145,6 +145,7 @@ public sealed class CreateTenantTests(Database database)
             new CreateTenantCommand(actorId, "Acme Ltd", slug, Unique.Email(), null),
             scope.ServiceProvider.GetRequiredService<ITenantRepository>(),
             scope.ServiceProvider.GetRequiredService<IUserRepository>(),
+            scope.ServiceProvider.GetRequiredService<Application.Plans.IPlanRepository>(),
             scope.ServiceProvider.GetRequiredService<Application.Invitations.InvitationOptions>(),
             TimeProvider.System,
             Cancellation)).Item1;

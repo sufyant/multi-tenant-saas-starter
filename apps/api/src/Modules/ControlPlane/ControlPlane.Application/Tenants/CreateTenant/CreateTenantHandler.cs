@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Invitations.OpenSignUp;
+using ControlPlane.Application.Plans;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
@@ -21,6 +22,7 @@ public static class CreateTenantHandler
         CreateTenantCommand command,
         ITenantRepository tenants,
         IUserRepository users,
+        IPlanRepository plans,
         InvitationOptions invitations,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -29,7 +31,7 @@ public static class CreateTenantHandler
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
         var now = time.GetUtcNow();
-        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, now);
+        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, await plans.FindDefaultPlanIdAsync(cancellationToken), now);
         if (!created.IsSuccess)
         {
             return (created.Error, []);

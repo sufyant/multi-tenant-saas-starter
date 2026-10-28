@@ -35,7 +35,7 @@ public static class DeleteRoleHandler
         }
 
         var role = deleted.Value;
-        await tenants.DeleteRoleAsync(role, cancellationToken);
+        await tenants.DeleteRoleAsync(tenant, role, cancellationToken);
 
         var now = time.GetUtcNow();
         return (Result.Success(), [new RoleDeletedEvent(Guid.CreateVersion7(now), now, tenant.Id, role.Id, actor.Id, role.Name)]);

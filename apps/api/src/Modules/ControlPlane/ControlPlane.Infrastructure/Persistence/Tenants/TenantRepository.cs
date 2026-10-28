@@ -38,7 +38,12 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.SaveChangesAsync(cancellationToken);
         var summary = await controlPlane.TenantSummaries.SingleAsync(found => found.TenantId == tenantId, cancellationToken);
         var (members, owners, latestOwnerInvitation) = await ReadSummaryAsync(cancellationToken);
-        summary.Summarize(members, owners, latestOwnerInvitation);
+        var customRoles = await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken);
+        var pendingExpiries = await controlPlane.TenantInvitations
+            .Where(invitation => invitation.Status == InvitationStatus.Pending)
+            .Select(invitation => invitation.ExpiresAt)
+            .ToListAsync(cancellationToken);
+        summary.Summarize(members, owners, latestOwnerInvitation, customRoles, pendingExpiries);
         await controlPlane.SaveChangesAsync(cancellationToken);
         controlPlane.SummaryWritten();
     }
@@ -68,10 +73,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         return new RoleFacts(target, await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken), nameTaken, use);
     }
 
-    async Task ITenantRepository.AddRoleAsync(Role role, CancellationToken cancellationToken)
+    async Task ITenantRepository.AddRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken)
     {
         controlPlane.Roles.Add(OfActiveTenant(role, role.TenantId));
-        await controlPlane.SaveChangesAsync(cancellationToken);
+        await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
     }
 
     // A permission's row has the tenant column, which the database fills (TenantDbContext), so EF Core takes a new row it finds in the
@@ -89,10 +94,10 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.SaveChangesAsync(cancellationToken);
     }
 
-    async Task ITenantRepository.DeleteRoleAsync(Role role, CancellationToken cancellationToken)
+    async Task ITenantRepository.DeleteRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken)
     {
         controlPlane.Roles.Remove(OfActiveTenant(role, role.TenantId));
-        await controlPlane.SaveChangesAsync(cancellationToken);
+        await ((ITenantRepository)this).SaveAsync(tenant, cancellationToken);
     }
 
     async Task<MemberFacts> ITenantRepository.FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken) =>
@@ -169,8 +174,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         var inserted = await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH tenant AS (
-                INSERT INTO control_plane.tenants (id, name, slug, status, created_at)
-                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
+                INSERT INTO control_plane.tenants (id, name, slug, status, plan_id, created_at)
+                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.PlanId}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
                 RETURNING id)
             INSERT INTO control_plane.tenant_summaries (tenant_id) SELECT id FROM tenant
             """,

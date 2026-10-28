@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace ControlPlane.Infrastructure.Persistence.Tenants;
 
-// K6k: a transaction that saved a change to a membership or an invitation commits only after the tenant's summary followed it, so the
+// K6k: a transaction that saved a change to a membership or an invitation, or added or deleted a custom role, commits only after the tenant's summary followed it, so the
 // summary always says what the rows say (R12). ITenantRepository.SaveAsync writes it; a command that forgets it fails here, and its
 // transaction rolls back.
 internal sealed class TenantSummaryInterceptor : DbTransactionInterceptor

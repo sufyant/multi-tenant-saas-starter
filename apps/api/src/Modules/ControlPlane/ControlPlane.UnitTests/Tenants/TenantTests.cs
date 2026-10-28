@@ -55,14 +55,25 @@ public sealed class TenantTests
 
     private static readonly DateTimeOffset CreatedAt = new(2026, 10, 1, 8, 0, 0, TimeSpan.Zero);
 
+    private static readonly Guid PlanId = new("0199a8f0-0000-7000-8000-0000000000aa");
+
 
     public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
+
+    // A tenant always has a plan: its creation names one.
+    [Fact]
+    public void CreateTenant_Valid_IsOnThePlan()
+    {
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt);
+
+        tenant.Value.PlanId.ShouldBe(PlanId);
+    }
 
     // Settings › General shows when the tenant was created.
     [Fact]
     public void CreateTenant_Valid_KeepsWhenItWasCreated()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt);
 
         tenant.Value.CreatedAt.ShouldBe(CreatedAt);
     }
@@ -75,7 +86,7 @@ public sealed class TenantTests
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk")]
     public void CreateTenant_UrlSafeSlug_IsCreatedWithThatSlug(string slug)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", slug, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", slug, PlanId, CreatedAt);
 
         tenant.IsSuccess.ShouldBeTrue();
         tenant.Value.Slug.ShouldBe(slug);
@@ -94,7 +105,7 @@ public sealed class TenantTests
     [InlineData("acmé")]
     public void CreateTenant_SlugNotUrlSafe_IsRejected(string slug)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", slug, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", slug, PlanId, CreatedAt);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugInvalid);
@@ -103,7 +114,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_NameWithSpacesAround_IsKeptWithoutThem()
     {
-        var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme", CreatedAt);
+        var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme", PlanId, CreatedAt);
 
         tenant.Value.Name.ShouldBe("Acme Ltd");
     }
@@ -113,7 +124,7 @@ public sealed class TenantTests
     {
         var name = new string('n', 100);
 
-        var tenant = Tenant.Create(Id, name, "acme", CreatedAt);
+        var tenant = Tenant.Create(Id, name, "acme", PlanId, CreatedAt);
 
         tenant.Value.Name.ShouldBe(name);
     }
@@ -122,7 +133,7 @@ public sealed class TenantTests
     [MemberData(nameof(InvalidNames))]
     public void CreateTenant_InvalidName_IsRejected(string name)
     {
-        var tenant = Tenant.Create(Id, name, "acme", CreatedAt);
+        var tenant = Tenant.Create(Id, name, "acme", PlanId, CreatedAt);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNameInvalid);
@@ -131,7 +142,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_New_IsActive()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
 
         tenant.Status.ShouldBe(TenantStatus.Active);
     }
@@ -1882,7 +1893,7 @@ public sealed class TenantTests
         invitation.Status.ShouldBe(InvitationStatus.Pending);
     }
 
-    private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
+    private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
 
     private static Tenant Suspended()
     {
@@ -1900,7 +1911,7 @@ public sealed class TenantTests
 
     private static Tenant InStatus(string status)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", CreatedAt).Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
         _ = status switch
         {
             "Active" => true,

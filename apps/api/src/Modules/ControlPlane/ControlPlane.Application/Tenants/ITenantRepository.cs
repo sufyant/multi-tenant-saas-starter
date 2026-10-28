@@ -41,8 +41,11 @@ public interface ITenantRepository
     /// </summary>
     internal Task<RoleFacts> FindRoleFactsAsync(Guid? roleId, string? name, CancellationToken cancellationToken);
 
-    /// <summary>Adds the custom role to the active tenant, with its permissions, and saves it. The caller holds the tenant's lock (K6a).</summary>
-    internal Task AddRoleAsync(Role role, CancellationToken cancellationToken);
+    /// <summary>
+    /// Adds the custom role to the active tenant, with its permissions, and saves it with the tenant's summary, which counts the custom
+    /// roles (R12). The caller holds the tenant's lock (K6a, K6k).
+    /// </summary>
+    internal Task AddRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken);
 
     /// <summary>
     /// Saves what <see cref="Tenant.UpdateRole"/> did to the custom role: its name, the rows of the permissions it added, and the removal
@@ -51,10 +54,10 @@ public interface ITenantRepository
     internal Task SaveRoleAsync(RoleUpdate update, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes the custom role of the active tenant and saves it. Its permissions go with it, and a finished invitation that gave it keeps
-    /// no role. The caller holds the tenant's lock (K6a).
+    /// Deletes the custom role of the active tenant and saves it with the tenant's summary (R12). Its permissions go with it, and a
+    /// finished invitation that gave it keeps no role. The caller holds the tenant's lock (K6a, K6k).
     /// </summary>
-    internal Task DeleteRoleAsync(Role role, CancellationToken cancellationToken);
+    internal Task DeleteRoleAsync(Tenant tenant, Role role, CancellationToken cancellationToken);
 
     /// <summary>
     /// What a change to the user's membership needs to know of the active tenant (<see cref="MemberFacts"/>): the membership, how many
@@ -94,8 +97,8 @@ public interface ITenantRepository
     internal Task<Invitation?> FindInvitationForUpdateAsync(Guid invitationId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Saves the transaction's changes, then writes the tenant's summary from its memberships and invitations as the transaction leaves
-    /// them (R12). The tenant is the one <see cref="FindTenantForUpdateAsync"/> locked, so the summary is written under the tenant's lock,
+    /// Saves the transaction's changes, then writes the tenant's summary from its memberships, invitations and custom roles as the
+    /// transaction leaves them (R12). The tenant is the one <see cref="FindTenantForUpdateAsync"/> locked, so the summary is written under the tenant's lock,
     /// in the command's transaction (K6k). Every command that changes a membership or an invitation ends with it: a transaction that
     /// saved such a change and then no summary does not commit.
     /// </summary>

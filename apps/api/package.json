@@ -7,6 +7,7 @@
     "test": "dotnet test --solution Api.slnx",
     "codegen": "node scripts/codegen.mjs",
     "generate:permissions": "node scripts/generate-permissions.mjs",
+    "generate:entitlements": "node scripts/generate-entitlements.mjs",
     "generate:openapi": "dotnet build src/Api"
   }
 }

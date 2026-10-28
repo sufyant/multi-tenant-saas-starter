@@ -36,17 +36,30 @@ internal sealed class TenantSummary(Guid tenantId)
     /// <summary>The language the latest Owner invitation keeps for its email (K8), while the tenant has no Owner.</summary>
     public Language? OwnerInvitationLanguage { get; private set; }
 
+    /// <summary>How many custom roles the tenant has, which <c>roles.custom.max</c> counts and a preview reads across tenants.</summary>
+    public int CustomRoleCount { get; private set; }
+
     /// <summary>
-    /// Keeps what the tenant's memberships and invitations say, after a change to one of them. The latest Owner invitation stays only
-    /// while the tenant has no Owner.
+    /// When each pending invitation of the tenant expires. Whether one has expired is read at the moment it is asked
+    /// (<see cref="PendingInvitationsAt"/>), never stored, so the count a preview reads is right without a write at each expiry.
     /// </summary>
-    public void Summarize(int members, int owners, Invitation? latestOwnerInvitation)
+    public List<DateTimeOffset> PendingInvitationExpiries { get; private set; } = [];
+
+    /// <summary>
+    /// Keeps what the tenant's memberships, invitations and roles say, after a change to one of them. The latest Owner invitation stays
+    /// only while the tenant has no Owner.
+    /// </summary>
+    public void Summarize(int members, int owners, Invitation? latestOwnerInvitation, int customRoles, IReadOnlyList<DateTimeOffset> pendingInvitationExpiries)
     {
-        (MemberCount, OwnerCount) = (members, owners);
+        (MemberCount, OwnerCount, CustomRoleCount) = (members, owners, customRoles);
+        PendingInvitationExpiries = [.. pendingInvitationExpiries.Order()];
         var invitation = owners == 0 ? latestOwnerInvitation : null;
         (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage) =
             (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language);
     }
+
+    /// <summary>How many pending invitations have not expired at this moment: those that count toward <c>members.max</c>.</summary>
+    public int PendingInvitationsAt(DateTimeOffset now) => PendingInvitationExpiries.Count(expiresAt => expiresAt > now);
 
     /// <summary>The state of the latest Owner invitation at this moment, while the tenant has no Owner; none otherwise.</summary>
     public OwnerInvitationState? OwnerInvitationStateAt(DateTimeOffset now) => OwnerInvitationStatus switch

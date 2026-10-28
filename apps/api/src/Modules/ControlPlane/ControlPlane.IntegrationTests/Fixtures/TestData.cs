@@ -13,7 +13,7 @@ internal static class TestData
 {
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
-        var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), DateTimeOffset.UtcNow).Value;
+        var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), await DefaultPlanIdAsync(services), DateTimeOffset.UtcNow).Value;
         if (status == TenantStatus.Suspended)
         {
             tenant.Suspend("Unpaid invoices");
@@ -85,6 +85,21 @@ internal static class TestData
         await using var scope = services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries
             .Where(found => found.TenantId == tenant.Id).Select(found => found.MemberCount).SingleAsync(TestContext.Current.CancellationToken);
+    }
+
+    public static async Task<TenantSummary> SummaryOfAsync(IServiceProvider services, Tenant tenant)
+    {
+        await using var scope = services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().TenantSummaries.AsNoTracking()
+            .SingleAsync(found => found.TenantId == tenant.Id, TestContext.Current.CancellationToken);
+    }
+
+    // The migration seeds the plans and marks one default; plans belong to no tenant.
+    public static async Task<Guid> DefaultPlanIdAsync(IServiceProvider services)
+    {
+        await using var scope = services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>().DefaultPlans
+            .Select(mark => mark.PlanId).SingleAsync(TestContext.Current.CancellationToken);
     }
 
     private static async Task SaveAsync(IServiceProvider services, Action<ControlPlaneDbContext> change)

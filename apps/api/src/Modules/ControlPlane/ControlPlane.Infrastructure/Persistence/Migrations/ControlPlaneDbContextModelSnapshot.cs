@@ -19,7 +19,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("control_plane")
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -62,6 +62,95 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("tenant_purge_sagas", "control_plane", t =>
                         {
                             t.HasCheckConstraint("ck_tenant_purge_sagas_state", "state IN ('PurgingModules', 'Finishing', 'Completed')");
+                        });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
+                {
+                    b.Property<bool>("Id")
+                        .HasColumnType("boolean")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_default_plans");
+
+                    b.HasIndex("PlanId")
+                        .HasDatabaseName("ix_default_plans_plan_id");
+
+                    b.ToTable("default_plans", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_default_plans_one_row", "id");
+                        });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Plans.Plan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_plans");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_plans_name");
+
+                    b.HasIndex(new[] { "Name" }, "ix_plans_name_trgm")
+                        .HasDatabaseName("ix_plans_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_plans_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_plans_name_trgm"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("plans", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Plans.PlanEntitlement", b =>
+                {
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
+
+                    b.Property<bool?>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<int?>("Maximum")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum");
+
+                    b.Property<bool>("Unlimited")
+                        .HasColumnType("boolean")
+                        .HasColumnName("unlimited");
+
+                    b.HasKey("PlanId", "Key")
+                        .HasName("pk_plan_entitlements");
+
+                    b.ToTable("plan_entitlements", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_plan_entitlements_key", "key IN ('members.max', 'roles.custom', 'roles.custom.max')");
+
+                            t.HasCheckConstraint("ck_plan_entitlements_maximum", "maximum >= 0");
+
+                            t.HasCheckConstraint("ck_plan_entitlements_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
                         });
                 });
 
@@ -151,6 +240,63 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasName("pk_system_admins");
 
                     b.ToTable("system_admins", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.EntitlementOverride", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
+
+                    b.Property<bool?>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<int?>("Maximum")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("SetAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("set_at");
+
+                    b.Property<Guid>("SetBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("set_by");
+
+                    b.Property<bool>("Unlimited")
+                        .HasColumnType("boolean")
+                        .HasColumnName("unlimited");
+
+                    b.HasKey("TenantId", "Key")
+                        .HasName("pk_entitlement_overrides");
+
+                    b.HasIndex("SetBy")
+                        .HasDatabaseName("ix_entitlement_overrides_set_by");
+
+                    b.ToTable("entitlement_overrides", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_entitlement_overrides_key", "key IN ('members.max', 'roles.custom', 'roles.custom.max')");
+
+                            t.HasCheckConstraint("ck_entitlement_overrides_maximum", "maximum >= 0");
+
+                            t.HasCheckConstraint("ck_entitlement_overrides_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Invitation", b =>
@@ -315,6 +461,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
                     b.Property<DateTimeOffset?>("PurgedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("purged_at");
@@ -341,6 +491,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_tenants_name");
+
+                    b.HasIndex("PlanId")
+                        .HasDatabaseName("ix_tenants_plan_id");
 
                     b.HasIndex("Slug")
                         .IsUnique()
@@ -371,6 +524,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
+
+                    b.Property<int>("CustomRoleCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("custom_role_count");
 
                     b.Property<int>("MemberCount")
                         .ValueGeneratedOnAdd()
@@ -403,12 +562,19 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("owner_invitation_status");
 
+                    b.PrimitiveCollection<List<DateTimeOffset>>("PendingInvitationExpiries")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone[]")
+                        .HasColumnName("pending_invitation_expiries")
+                        .HasDefaultValueSql("'{}'");
+
                     b.HasKey("TenantId")
                         .HasName("pk_tenant_summaries");
 
                     b.ToTable("tenant_summaries", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count");
+                            t.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0");
 
                             t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_language", "owner_invitation_language IN ('en', 'tr', 'ar')");
 
@@ -530,6 +696,26 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Plans.Plan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_default_plans_plans_plan_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Plans.PlanEntitlement", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Plans.Plan", null)
+                        .WithMany("Values")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_plan_entitlements_plans_plan_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
@@ -559,6 +745,23 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_system_admins_users_user_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.EntitlementOverride", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("SetBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_entitlement_overrides_users_set_by");
+
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_entitlement_overrides_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Invitation", b =>
@@ -616,6 +819,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_memberships_roles_tenant_id_role_id");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Plans.Plan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_tenants_plans_plan_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
@@ -633,6 +846,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SuspendedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_users_users_suspended_by");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Plans.Plan", b =>
+                {
+                    b.Navigation("Values");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>

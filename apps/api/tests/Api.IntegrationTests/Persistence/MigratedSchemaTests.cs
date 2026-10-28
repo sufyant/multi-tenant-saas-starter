@@ -119,8 +119,12 @@ public sealed class MigratedSchemaTests(Database database)
             table audit.entries: INSERT, SELECT
             table audit.platform_entries: INSERT, SELECT
             table control_plane.__ef_migrations_history: SELECT
+            table control_plane.default_plans: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.entitlement_overrides: DELETE, INSERT, SELECT, UPDATE
             table control_plane.invitations: DELETE, INSERT, SELECT, UPDATE
             table control_plane.memberships: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.plan_entitlements: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.plans: DELETE, INSERT, SELECT, UPDATE
             table control_plane.role_permissions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.roles: DELETE, INSERT, SELECT, UPDATE
             table control_plane.system_admins: DELETE, INSERT, SELECT, UPDATE
@@ -292,6 +296,9 @@ public sealed class MigratedSchemaTests(Database database)
 
         rules.ShouldBe(
             """
+            fk_default_plans_plans_plan_id: RESTRICT
+            fk_entitlement_overrides_tenants_tenant_id: RESTRICT
+            fk_entitlement_overrides_users_set_by: RESTRICT
             fk_invitations_roles_tenant_id_role_id: SET NULL (role_id)
             fk_invitations_tenants_tenant_id: RESTRICT
             fk_invitations_users_accepted_by: RESTRICT
@@ -299,10 +306,12 @@ public sealed class MigratedSchemaTests(Database database)
             fk_memberships_roles_tenant_id_role_id: RESTRICT
             fk_memberships_tenants_tenant_id: RESTRICT
             fk_memberships_users_user_id: RESTRICT
+            fk_plan_entitlements_plans_plan_id: RESTRICT
             fk_role_permissions_roles_tenant_id_role_id: CASCADE
             fk_roles_tenants_tenant_id: RESTRICT
             fk_system_admins_users_user_id: RESTRICT
             fk_tenant_summaries_tenants_tenant_id: RESTRICT
+            fk_tenants_plans_plan_id: RESTRICT
             fk_users_users_suspended_by: RESTRICT
             """);
         refusals.ShouldBe(["fk_roles_tenants_tenant_id", "fk_memberships_users_user_id", "fk_system_admins_users_user_id", "taken"]);

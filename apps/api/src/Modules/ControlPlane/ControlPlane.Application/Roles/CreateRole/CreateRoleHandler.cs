@@ -39,7 +39,7 @@ public static class CreateRoleHandler
         }
 
         var role = created.Value;
-        await tenants.AddRoleAsync(role, cancellationToken);
+        await tenants.AddRoleAsync(tenant, role, cancellationToken);
 
         var view = RoleDetailView.Of(role, RoleUse.None);
         return (view, [new RoleCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, role.Id, actor.Id, role.Name, view.Permissions)]);

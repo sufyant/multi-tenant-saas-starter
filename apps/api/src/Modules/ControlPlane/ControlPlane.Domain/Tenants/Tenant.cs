@@ -33,11 +33,12 @@ internal sealed class Tenant
     private static readonly Error RoleBuiltIn =
         Error.Conflict(ControlPlaneErrorCodes.RoleBuiltIn, "A built-in role keeps its name and its permissions, and cannot be deleted.");
 
-    private Tenant(Guid id, string name, string slug, DateTimeOffset createdAt)
+    private Tenant(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt)
     {
         Id = id;
         Name = name;
         Slug = slug;
+        PlanId = planId;
         Status = TenantStatus.Active;
         CreatedAt = createdAt;
     }
@@ -51,6 +52,9 @@ internal sealed class Tenant
     public string Slug { get; private init; }
 
     public TenantStatus Status { get; private set; }
+
+    /// <summary>The tenant's plan, whose values its entitlements start from (docs/flows/plans-and-entitlements.md). A tenant always has one.</summary>
+    public Guid PlanId { get; private set; }
 
     /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
@@ -67,8 +71,11 @@ internal sealed class Tenant
     /// <summary>When the purge ended and left the tenant as its tombstone (K4). None unless purged.</summary>
     public DateTimeOffset? PurgedAt { get; private set; }
 
-    /// <summary>A new tenant is active at once (docs/flows/tenant-creation.md). The name is stored without the spaces around it.</summary>
-    public static Result<Tenant> Create(Guid id, string name, string slug, DateTimeOffset createdAt)
+    /// <summary>
+    /// A new tenant is active at once, on the plan its creation names (docs/flows/tenant-creation.md). The name is stored without the
+    /// spaces around it.
+    /// </summary>
+    public static Result<Tenant> Create(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
         if (!IsValidName(trimmed))
@@ -77,7 +84,7 @@ internal sealed class Tenant
         }
 
         return IsUrlSafe(slug)
-            ? new Tenant(id, trimmed, slug, createdAt)
+            ? new Tenant(id, trimmed, slug, planId, createdAt)
             : Error.Validation(
                 ControlPlaneErrorCodes.TenantSlugInvalid,
                 $"A slug is {SlugMinLength} to {SlugMaxLength} lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
