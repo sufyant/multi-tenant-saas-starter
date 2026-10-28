@@ -105,6 +105,44 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await database.ScalarAsync<DateTime>($"SELECT created_at FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(now.UtcDateTime);
     }
 
+    // A tenant always has a plan: without one in the request, the default plan.
+    [Fact]
+    public async Task CreateTenant_WithoutAPlan_PutsTheTenantOnTheDefaultPlan()
+    {
+        var slug = Slug();
+        var admin = await SystemAdminAsync();
+
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com" }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await database.ScalarAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE slug = '{slug}'"))
+            .ShouldBe(await database.ScalarAsync<Guid>("SELECT plan_id FROM control_plane.default_plans"));
+    }
+
+    [Fact]
+    public async Task CreateTenant_WithAPlan_PutsTheTenantOnIt()
+    {
+        var slug = Slug();
+        var admin = await SystemAdminAsync();
+
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com", planId = SeedPlans.Pro }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await database.ScalarAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(SeedPlans.Pro);
+    }
+
+    [Fact]
+    public async Task CreateTenant_APlanNoneHas_IsNotFoundAndCreatesNothing()
+    {
+        var slug = Slug();
+        var admin = await SystemAdminAsync();
+
+        var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com", planId = Guid.NewGuid() });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await database.ScalarAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+    }
+
     // Decision 5 of step 20j: without a language, the owner's invitation speaks the system admin's own, and its email does too.
     [Fact]
     public async Task CreateTenant_WithoutALanguage_InvitesTheOwnerInTheSystemAdminsLanguage()

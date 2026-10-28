@@ -28,6 +28,16 @@ internal static class PermissionPools
 
     public const string PlatformTenantsMakeOwner = "platform.tenants.make_owner";
 
+    public const string PlatformTenantsChangePlan = "platform.tenants.change_plan";
+
+    public const string PlatformTenantsOverrideEntitlements = "platform.tenants.override_entitlements";
+
+    public const string PlatformPlansRead = "platform.plans.read";
+
+    public const string PlatformPlansCreate = "platform.plans.create";
+
+    public const string PlatformPlansUpdate = "platform.plans.update";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";
@@ -103,6 +113,11 @@ internal static class PermissionPools
         PlatformTenantsReopen,
         PlatformTenantsInviteOwner,
         PlatformTenantsMakeOwner,
+        PlatformTenantsChangePlan,
+        PlatformTenantsOverrideEntitlements,
+        PlatformPlansRead,
+        PlatformPlansCreate,
+        PlatformPlansUpdate,
         PlatformUsersRead,
         PlatformUsersSuspend,
         PlatformUsersReactivate,

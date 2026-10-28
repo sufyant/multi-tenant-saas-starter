@@ -117,6 +117,14 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             plan.ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal), overrides.Select(entry => entry.ToValue()), now);
     }
 
+    // An override belongs to no tenant's row level security (R6); the key names the active tenant's.
+    Task<EntitlementOverride?> ITenantRepository.FindOverrideAsync(string key, CancellationToken cancellationToken) =>
+        controlPlane.EntitlementOverrides.SingleOrDefaultAsync(entry => entry.TenantId == controlPlane.ActiveTenant && entry.Key == key, cancellationToken);
+
+    void ITenantRepository.AddOverride(EntitlementOverride entry) => controlPlane.EntitlementOverrides.Add(OfActiveTenant(entry, entry.TenantId));
+
+    void ITenantRepository.RemoveOverride(EntitlementOverride entry) => controlPlane.EntitlementOverrides.Remove(OfActiveTenant(entry, entry.TenantId));
+
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
 

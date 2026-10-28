@@ -36,8 +36,9 @@ export const CreateTenantBody = zod.object({
   En: 'en',
   Tr: 'tr',
   Ar: 'ar',
-}).describe('A language the web speaks, by its BCP 47 language tag.')]).optional()
-}).describe('A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner\'s\ninvitation email: without one, the system admin\'s own. The API trims the name before it counts its length.')
+}).describe('A language the web speaks, by its BCP 47 language tag.')]).optional(),
+  "planId": zod.uuid().nullish()
+}).describe('A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner\'s\ninvitation email: without one, the system admin\'s own. The plan the tenant goes on: without one, the default plan. The API trims the\nname before it counts its length.')
 
 export const CreateTenantResponse = zod.object({
   "id": zod.uuid(),

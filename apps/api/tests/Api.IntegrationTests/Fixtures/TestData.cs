@@ -162,7 +162,10 @@ internal sealed class TestData(Database database, string databaseName = Database
                 WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'Owner')
             UPDATE control_plane.tenant_summaries SET
                 member_count = (SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
-                owner_count = (SELECT count(*) FROM owners)
+                owner_count = (SELECT count(*) FROM owners),
+                custom_role_count = (SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in IS NULL),
+                pending_invitation_expiries = COALESCE(
+                    (SELECT array_agg(expires_at ORDER BY expires_at) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'), ARRAY[]::timestamptz[])
             WHERE tenant_id = '{tenantId}'
             """,
             databaseName);

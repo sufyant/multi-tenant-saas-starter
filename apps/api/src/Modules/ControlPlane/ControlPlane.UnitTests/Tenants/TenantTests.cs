@@ -1993,6 +1993,99 @@ public sealed class TenantTests
         changed.IsSuccess.ShouldBeTrue();
     }
 
+    // A tenant's plan changes while the tenant is active or suspended. A closed or a purged tenant's plan is read-only (409
+    // tenant.not_active), as every other platform change of a closed tenant is.
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    public void ChangePlan_ActiveOrSuspended_MovesTheTenant(string status)
+    {
+        var tenant = InStatus(status);
+        var other = Guid.NewGuid();
+
+        var changed = tenant.ChangePlan(other);
+
+        (changed.Value, tenant.PlanId).ShouldBe((StateChange.Changed, other));
+    }
+
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    [InlineData("Purged")]
+    public void ChangePlan_ClosedOrPurged_IsAConflictAndKeepsThePlan(string status)
+    {
+        var tenant = InStatus(status);
+
+        var changed = tenant.ChangePlan(Guid.NewGuid());
+
+        (changed.Error.Code, tenant.PlanId).ShouldBe((ControlPlaneErrorCodes.TenantNotActive, PlanId));
+    }
+
+    [Fact]
+    public void ChangePlan_ThePlanItHas_ChangesNothing() => Active().ChangePlan(PlanId).Value.ShouldBe(StateChange.Unchanged);
+
+    [Fact]
+    public void SetOverride_ANewKey_AddsItWithItsReasonAndWhoSetIt()
+    {
+        var set = Active().SetOverride(null, LimitKeys.MembersMax, EntitlementValue.Unlimited, Now.AddDays(14), "  A trial  ", InviterId, Now);
+
+        var entry = set.Value.Override;
+        (entry.Key, entry.Value, entry.ExpiresAt, entry.Reason, entry.SetBy, entry.SetAt).ShouldBe(
+            (LimitKeys.MembersMax, EntitlementValue.Unlimited, Now.AddDays(14), "A trial", InviterId, Now));
+        set.Value.Old.ShouldBeNull();
+    }
+
+    [Fact]
+    public void SetOverride_AKeyItHas_ReplacesTheValueAndAnswersTheOldOne()
+    {
+        var tenant = Active();
+        var existing = new EntitlementOverride(Id, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, "More seats", InviterId, Now);
+
+        var set = tenant.SetOverride(existing, LimitKeys.MembersMax, EntitlementValue.Limit(20), null, "Even more seats", InviterId, Now);
+
+        (set.Value.Override, set.Value.Old, set.Value.Changed).ShouldBe((existing, new OverrideValue(LimitKeys.MembersMax, EntitlementValue.Limit(10), null), true));
+        existing.Value.ShouldBe(EntitlementValue.Limit(20));
+    }
+
+    [Fact]
+    public void SetOverride_TheValueExpiryAndReasonItHas_ChangesNothing()
+    {
+        var existing = new EntitlementOverride(Id, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, "More seats", InviterId, Now);
+
+        var set = Active().SetOverride(existing, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, " More seats ", Guid.NewGuid(), Now.AddDays(1));
+
+        (set.Value.Changed, existing.SetAt).ShouldBe((false, Now));
+    }
+
+    [Fact]
+    public void SetOverride_AValueOfTheWrongKind_IsInvalidWithTheKey()
+    {
+        var set = Active().SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.Limit(3), null, "A trial", InviterId, Now);
+
+        (set.Error.Code, set.Error.Entitlement).ShouldBe((ControlPlaneErrorCodes.PlanEntitlementInvalid, FeatureKeys.RolesCustom));
+    }
+
+    [Fact]
+    public void SetOverride_AnExpiryThatHasPassed_IsInvalid() =>
+        Active().SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.On, Now, "A trial", InviterId, Now).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanEntitlementInvalid);
+
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Purged")]
+    public void SetOverride_ClosedOrPurged_IsAConflict(string status) =>
+        InStatus(status).SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.On, null, "A trial", InviterId, Now).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+
+    [Fact]
+    public void RemoveOverride_None_IsNotFound() => Active().RemoveOverride(null).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanOverrideNotFound);
+
+    [Fact]
+    public void RemoveOverride_ClosedTenant_IsAConflict()
+    {
+        var existing = new EntitlementOverride(Id, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, "More seats", InviterId, Now);
+
+        InStatus("Closed").RemoveOverride(existing).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+    }
+
     private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
 
     private static Tenant Suspended()

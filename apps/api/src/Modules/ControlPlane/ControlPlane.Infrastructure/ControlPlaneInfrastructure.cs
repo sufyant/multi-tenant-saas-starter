@@ -71,6 +71,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IMemberQueries, MemberQueries>();
         services.AddScoped<IInvitationQueries, InvitationQueries>();
         services.AddScoped<IRoleQueries, RoleQueries>();
+        services.AddScoped<IPlanQueries, PlanQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
 
         services.AddOptions<RoleOptions>()

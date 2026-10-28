@@ -4,6 +4,7 @@ using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Me.Users;
 using ControlPlane.Api.Platform.Invitations;
 using ControlPlane.Api.Platform.Members;
+using ControlPlane.Api.Platform.Plans;
 using ControlPlane.Api.Platform.SystemAdmins;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.Users;
@@ -34,6 +35,7 @@ public static class ControlPlaneModule
         TenantEndpoints.Map(platform);
         PlatformInvitationEndpoints.Map(platform);
         PlatformMemberEndpoints.Map(platform);
+        PlanEndpoints.Map(platform);
         UserEndpoints.Map(platform);
         SystemAdminEndpoints.Map(platform);
         MyProfileEndpoints.Map(me);

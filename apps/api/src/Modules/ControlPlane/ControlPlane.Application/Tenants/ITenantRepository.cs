@@ -74,6 +74,18 @@ public interface ITenantRepository
     /// </summary>
     internal Task<EffectiveEntitlements> FindEntitlementsAsync(Tenant tenant, DateTimeOffset now, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The active tenant's override of the key, tracked, so a change is saved; none when it has none. The caller holds the tenant's lock,
+    /// which every change to an override takes first (M1, K6a).
+    /// </summary>
+    internal Task<EntitlementOverride?> FindOverrideAsync(string key, CancellationToken cancellationToken);
+
+    /// <summary>Adds the override to the active tenant; the caller saves. The caller holds the tenant's lock.</summary>
+    internal void AddOverride(EntitlementOverride entry);
+
+    /// <summary>Removes the active tenant's override; the caller saves. The caller holds the tenant's lock.</summary>
+    internal void RemoveOverride(EntitlementOverride entry);
+
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 

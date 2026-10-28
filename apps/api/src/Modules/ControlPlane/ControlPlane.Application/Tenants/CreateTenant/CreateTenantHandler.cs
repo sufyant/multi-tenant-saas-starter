@@ -5,6 +5,7 @@ using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using SharedKernel;
@@ -30,8 +31,14 @@ public static class CreateTenantHandler
         var actor = await users.FindProfileAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
 
+        var planId = command.PlanId ?? await plans.FindDefaultPlanIdAsync(cancellationToken);
+        if (await plans.FindPlanNameAsync(planId, cancellationToken) is null)
+        {
+            return (Plan.NotFound, []);
+        }
+
         var now = time.GetUtcNow();
-        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, await plans.FindDefaultPlanIdAsync(cancellationToken), now);
+        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, planId, now);
         if (!created.IsSuccess)
         {
             return (created.Error, []);

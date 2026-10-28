@@ -27,7 +27,7 @@ internal sealed class Tenant
         Error.Validation(ControlPlaneErrorCodes.TenantNameInvalid, $"A name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
 
     private static readonly Error NotActive =
-        Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed or closed.");
+        Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed, closed or given a plan or an override.");
 
     private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MemberLastOwner, "A tenant always has at least one Owner.");
 
@@ -176,6 +176,89 @@ internal sealed class Tenant
 
         Name = trimmed;
         return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Puts an active or a suspended tenant on the plan. A closed, purging or purged tenant's plan is read-only. The plan the tenant is on
+    /// changes nothing (I1). The plan's values apply at once; nothing is deleted when the tenant is then over a limit
+    /// (docs/flows/plans-and-entitlements.md).
+    /// </summary>
+    public Result<StateChange> ChangePlan(Guid planId)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        if (planId == PlanId)
+        {
+            return StateChange.Unchanged;
+        }
+
+        PlanId = planId;
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Gives the key this value for this tenant, over its plan's value, until the expiry, if there is one, with the system admin's reason,
+    /// kept without the spaces around it. The key is on the code's list, the value has its kind, and an expiry comes after now. An active
+    /// or a suspended tenant only. Answers the override, the existing one changed or a new one, and its value before, if it had one.
+    /// </summary>
+    public Result<OverrideChange> SetOverride(
+        EntitlementOverride? existing,
+        string key,
+        EntitlementValue value,
+        DateTimeOffset? expiresAt,
+        string reason,
+        Guid setBy,
+        DateTimeOffset now)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        var valid = EntitlementValue.For(key, value);
+        if (!valid.IsSuccess)
+        {
+            return valid.Error;
+        }
+
+        if (expiresAt <= now)
+        {
+            return Error.Validation(ControlPlaneErrorCodes.PlanEntitlementInvalid, "An override expires after now.") with { Entitlement = key };
+        }
+
+        if (existing is null)
+        {
+            return new OverrideChange(new EntitlementOverride(Id, key, value, expiresAt, reason, setBy, now), null, Changed: true);
+        }
+
+        var old = existing.ToValue();
+        if (old == new OverrideValue(key, value, expiresAt) && existing.Reason == reason.Trim())
+        {
+            return new OverrideChange(existing, old, Changed: false);
+        }
+
+        existing.Set(value, expiresAt, reason, setBy, now);
+        return new OverrideChange(existing, old, Changed: true);
+    }
+
+    /// <summary>
+    /// Whether the tenant's override may be removed: it exists (else 404 <c>plan.override_not_found</c>), and the tenant is active or
+    /// suspended. The plan's value then applies again. The caller removes it.
+    /// </summary>
+    public Result<EntitlementOverride> RemoveOverride(EntitlementOverride? existing)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        return existing is null ? Error.NotFound(ControlPlaneErrorCodes.PlanOverrideNotFound, "The tenant has no override of this key.") : existing;
     }
 
     /// <summary>
@@ -816,6 +899,10 @@ internal sealed class Tenant
 
         return cancelled;
     }
+
+    // A system admin changes a tenant's plan and overrides only while the tenant is active or suspended, as its name.
+    private Result CheckPlatformChange() =>
+        Status is TenantStatus.Active or TenantStatus.Suspended ? Result.Success() : NotActive;
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {
