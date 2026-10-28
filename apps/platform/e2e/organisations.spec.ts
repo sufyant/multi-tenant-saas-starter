@@ -7,6 +7,7 @@ import {
   mockCreate,
   mockPlatform,
   organisations,
+  plans,
 } from "./api";
 import { expectAccessible } from "./axe";
 
@@ -79,6 +80,7 @@ test("CreateOrganisation_Valid_OpensTheNewOrganisation", async ({ page }) => {
       slug: created.slug,
       ownerEmail: "owner@corrib.example",
       language: "en",
+      planId: plans.free.id,
     },
   ]);
   await expectAccessible(page);
