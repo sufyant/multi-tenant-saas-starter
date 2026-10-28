@@ -5,6 +5,7 @@ import {
   maxCustomRoles,
   mockMembers,
   northwind,
+  pro,
   roles,
 } from "./api";
 import { expectAccessible } from "./axe";
@@ -60,5 +61,41 @@ test("Role_BuiltInRole_OpensItsPermissions", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Admin" }),
   ).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("Roles_CustomRolesOff_ListsThemWithCreateAndEditClosed", async ({
+  page,
+}) => {
+  await mockMembers(page, {
+    plan: {
+      planName: "Free",
+      entitlements: {
+        ...pro.entitlements,
+        "roles.custom": false,
+        "roles.custom.max": 0,
+      },
+      usage: pro.usage,
+    },
+  });
+  await setupClerkTestingToken({ page });
+  await page.goto(base);
+
+  const reason = "Your organisation’s plan doesn’t include custom roles.";
+  const create = page.getByRole("button", { name: "Create role" });
+  await expect(create).toBeDisabled();
+  await expect(create).toHaveAccessibleDescription(reason);
+  await expect(page.getByRole("row", { name: /Billing lead/ })).toBeVisible();
+  await expect(page.getByText(/0 of 0/)).toHaveCount(0);
+  await page
+    .getByRole("table", { name: "Roles" })
+    .getByRole("button", { name: "Actions for Support" })
+    .click();
+  await expect(
+    page.getByRole("menuitem", { name: /Edit role/ }),
+  ).toHaveAttribute("aria-disabled", "true");
+  await expect(
+    page.getByRole("menuitem", { name: "Delete role" }),
+  ).not.toHaveAttribute("aria-disabled");
   await expectAccessible(page);
 });

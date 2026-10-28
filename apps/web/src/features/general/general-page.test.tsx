@@ -2,7 +2,7 @@ import { BuiltInRole } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { renderInTenant, tenantAnswers } from "../../../test/tenant";
+import { free, renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { GeneralPage } from "./general-page";
 
 const server = setupServer();
@@ -29,6 +29,25 @@ describe("GeneralPage", () => {
     expect(valueBeside("Status")).toHaveTextContent("Active");
     expect(valueBeside("Created")).toHaveTextContent("5 Jan 2026");
     expect(valueBeside("Your role")).toHaveTextContent("Owner");
+    expect(valueBeside("Plan")).toHaveTextContent("Pro");
+  });
+
+  it("GeneralPage_Member_ShowsThePlanReadOnly", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Member, undefined, [], free));
+
+    renderInTenant(<GeneralPage />, { url });
+
+    expect(await screen.findByText("Plan", { selector: "dt" })).toBeVisible();
+    expect(valueBeside("Plan")).toHaveTextContent("Free");
+  });
+
+  it("GeneralPage_InArabic_NamesThePlanRow", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    renderInTenant(<GeneralPage />, { url, locale: "ar" });
+
+    expect(await screen.findByText("الخطة", { selector: "dt" })).toBeVisible();
+    expect(valueBeside("الخطة")).toHaveTextContent("Pro");
   });
 
   it("GeneralPage_Member_ShowsTheSameRowsAndNoForm", async () => {

@@ -12,6 +12,7 @@ import {
 } from "vitest";
 import {
   customRole,
+  free,
   renderInTenant,
   roleOf,
   tenantAnswers,
@@ -104,6 +105,38 @@ describe("RolePage", () => {
     expect(
       screen.queryByText("Built-in roles can’t be edited or deleted."),
     ).not.toBeInTheDocument();
+  });
+
+  it("RolePage_CustomRoleWithCustomRolesOff_ReadsWithTheReason", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [
+          customRole("0198f0a2-0000-7000-8000-0000000000c3", "Reviewer", [
+            Permission.TenantProfileRead,
+            Permission.TenantMembersRead,
+          ]),
+        ],
+        free,
+      ),
+    );
+    renderInTenant(<RolePage roleId="0198f0a2-0000-7000-8000-0000000000c3" />, {
+      url: "/northwind/settings/roles/0198f0a2-0000-7000-8000-0000000000c3",
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Reviewer" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your organisation’s plan doesn’t include custom roles.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("checkbox", { name: "See members" }),
+    ).toBeDisabled();
   });
 
   it("RolePage_UnknownId_SaysTheRoleIsGone", async () => {

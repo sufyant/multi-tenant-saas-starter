@@ -17,6 +17,7 @@ import {
   Language,
   type MemberResponse,
   type MeResponse,
+  type MyTenantDetailResponse,
   type MyTenantResponse,
   type MyTenantResponseStatus,
   Permission,
@@ -158,6 +159,23 @@ export const me = (language: Language): MeResponse => ({
   timeZone: "Europe/Dublin",
 });
 
+/** A tenant's plan as GetMyTenant answers it: the plan's name, the effective value of each key and the count of each limit. */
+export type Plan = Pick<
+  MyTenantDetailResponse,
+  "planName" | "entitlements" | "usage"
+>;
+
+/** Pro, Northwind's plan: custom roles on, 20 of them, members without a limit; the counts are Northwind's custom roles. */
+export const pro: Plan = {
+  planName: "Pro",
+  entitlements: {
+    "members.max": null,
+    "roles.custom": true,
+    "roles.custom.max": maxCustomRoles,
+  },
+  usage: { "members.max": 0, "roles.custom.max": customRoles.length },
+};
+
 export async function mockApi(
   page: Page,
   language: Language = Language.En,
@@ -175,13 +193,7 @@ export async function mockApi(
       json: {
         ...northwind,
         createdAt: "2026-01-05T09:00:00Z",
-        planName: "Pro",
-        entitlements: {
-          "members.max": null,
-          "roles.custom": true,
-          "roles.custom.max": maxCustomRoles,
-        },
-        usage: { "members.max": 0, "roles.custom.max": 0 },
+        ...pro,
         permissions: tenantPermissions,
       },
     }),
@@ -361,7 +373,8 @@ export async function mockMembers(
   {
     role = BuiltInRole.Owner,
     language = Language.En,
-  }: { role?: BuiltInRole; language?: Language } = {},
+    plan = pro,
+  }: { role?: BuiltInRole; language?: Language; plan?: Plan } = {},
 ): Promise<void> {
   await mockApi(page, language);
   const viewer = members.find((member) => member.role.id === roles[role].id);
@@ -382,13 +395,7 @@ export async function mockMembers(
         ...northwind,
         role: roleOf(roles[role]),
         createdAt: "2026-01-05T09:00:00Z",
-        planName: "Pro",
-        entitlements: {
-          "members.max": null,
-          "roles.custom": true,
-          "roles.custom.max": maxCustomRoles,
-        },
-        usage: { "members.max": 0, "roles.custom.max": 0 },
+        ...plan,
         permissions: roles[role].permissions,
       },
     }),

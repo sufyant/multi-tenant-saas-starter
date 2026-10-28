@@ -14,7 +14,11 @@ import {
   Permission,
   RoleCreatedDetailsResponseOperation,
   RoleUpdatedDetailsResponseOperation,
+  TenantCreatedDetailsResponseOperation,
+  TenantEntitlementOverrideRemovedDetailsResponseOperation,
+  TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
+  TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -112,6 +116,32 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation: TenantRenamedDetailsResponseOperation.TenantRenamed,
       oldName: "Northwind",
       newName: "Northwind Traders",
+    },
+    [AuditOperation.TenantCreated]: {
+      operation: TenantCreatedDetailsResponseOperation.TenantCreated,
+      plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantPlanChanged]: {
+      operation: TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
+      oldPlan: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
+      newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantEntitlementOverrideSet]: {
+      operation:
+        TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+      key: "members.max",
+      oldValue: null,
+      oldExpiresAt: null,
+      newValue: { enabled: null, maximum: 25, unlimited: false },
+      newExpiresAt: "2026-12-31T12:00:00Z",
+      reason: null,
+    },
+    [AuditOperation.TenantEntitlementOverrideRemoved]: {
+      operation:
+        TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved,
+      key: "roles.custom.max",
+      oldValue: { enabled: null, maximum: 30, unlimited: false },
+      oldExpiresAt: null,
     },
     [AuditOperation.TenantSuspended]: {
       operation: TenantSuspendedDetailsResponseOperation.TenantSuspended,

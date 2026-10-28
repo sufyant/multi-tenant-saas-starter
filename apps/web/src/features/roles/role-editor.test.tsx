@@ -14,9 +14,12 @@ import {
 } from "vitest";
 import {
   billingLead,
+  countedMyTenant,
   customRole,
   mehmet,
   northwind,
+  planProblem,
+  planWith,
   problem,
   renderInTenant,
   tenantAnswers,
@@ -307,6 +310,100 @@ describe("CreateRole", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(text);
   });
 
+  it("CreateRole_RefusedLimitReached_ShowsTheReasonOfTheLimit", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom.max": 20 }, { "roles.custom.max": 19 }),
+      ),
+      createAnswer(() =>
+        planProblem(409, ErrorCode.PlanLimitReached, "roles.custom.max"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan allows 20 custom roles. Delete one to create another.",
+    );
+  });
+
+  it("CreateRole_RefusedLimitReachedOfAnUnknownKey_ShowsTheNeutralText", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(409, ErrorCode.PlanLimitReached, "storage.max"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "This organisation has reached a limit of its plan.",
+    );
+  });
+
+  it("CreateRole_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeature", async () => {
+    // The gap 32-backend left: the editor had no text for plan.feature_unavailable.
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+    expect(banner).not.toHaveTextContent("Couldn’t");
+  });
+
+  it("CreateRole_RefusedFeatureUnavailableOfAnUnknownKey_ShowsTheNeutralText", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "reports.export"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "This organisation's plan does not include this feature.",
+    );
+  });
+
+  it("CreateRole_RefusedByThePlan_ReadsGetMyTenantAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countedMyTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+    const field = await openNew();
+    await waitFor(() => expect(reads.count).toBe(1));
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    await waitFor(() => expect(reads.count).toBe(2));
+  });
+
   it("CreateRole_RefusedNameTaken_ReadsTheRolesAgain", async () => {
     let reads = 0;
     server.use(
@@ -350,6 +447,23 @@ describe("CreateRole", () => {
 });
 
 describe("UpdateRole", () => {
+  it("UpdateRole_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeature", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
+      updateAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+    const field = await openReviewer();
+
+    await userEvent.type(field, " team");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+  });
+
   it("UpdateRole_Success_SendsTheNameAndEveryPermissionAfterwards", async () => {
     const sent: unknown[] = [];
     server.use(

@@ -2,6 +2,7 @@ import {
   BuiltInRole,
   type MemberResponse,
   type MeResponse,
+  type MyTenantDetailResponse,
   type MyTenantResponse,
   Permission,
   type RoleDetailResponse,
@@ -175,12 +176,52 @@ export const meOf = (role: BuiltInRole): MeResponse =>
 /** The most custom roles Northwind may have, Pro's roles.custom.max, as GetMyTenant answers it. */
 export const maxCustomRoles = 20;
 
+/** A tenant's plan as GetMyTenant answers it: the plan's name, the effective value of each key and the count of each limit. */
+export type Plan = Pick<
+  MyTenantDetailResponse,
+  "planName" | "entitlements" | "usage"
+>;
+
+/** Pro, Northwind's plan: custom roles on, 20 of them, members without a limit. */
+export const pro: Plan = {
+  planName: "Pro",
+  entitlements: {
+    "members.max": null,
+    "roles.custom": true,
+    "roles.custom.max": maxCustomRoles,
+  },
+  usage: { "members.max": 0, "roles.custom.max": 0 },
+};
+
+/** Free: custom roles off and none allowed, five members. */
+export const free: Plan = {
+  planName: "Free",
+  entitlements: {
+    "members.max": 5,
+    "roles.custom": false,
+    "roles.custom.max": 0,
+  },
+  usage: { "members.max": 0, "roles.custom.max": 0 },
+};
+
+/** A plan with the given values and counts over Pro's. */
+export const planWith = (
+  entitlements: Plan["entitlements"],
+  usage: Plan["usage"] = {},
+  planName = "Pro",
+): Plan => ({
+  planName,
+  entitlements: { ...pro.entitlements, ...entitlements },
+  usage: { ...pro.usage, ...usage },
+});
+
 /** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of the role. */
 export const tenantAnswers = (
   role: BuiltInRole,
   permissions: Permission[] = permissionsOf[role],
   custom: RoleDetailResponse[] = [],
-) => viewerAnswers(roleOf[role], permissions, viewerOf[role], custom);
+  plan: Plan = pro,
+) => viewerAnswers(roleOf[role], permissions, viewerOf[role], custom, plan);
 
 /** ListMyTenants, GetMyTenant, GetMe and ListRoles for a viewer of any role, a custom one too. */
 export const viewerAnswers = (
@@ -188,28 +229,31 @@ export const viewerAnswers = (
   permissions: Permission[],
   person: MemberResponse,
   custom: RoleDetailResponse[] = [],
+  plan: Plan = pro,
 ) => [
   http.get("*/v1/me/tenants", () =>
     HttpResponse.json({ items: [northwind], page: 1, pageSize: 100, total: 1 }),
   ),
+  myTenantAnswer(role, permissions, plan),
+  http.get("*/v1/me", () => HttpResponse.json(meOfPerson(person))),
+  rolesAnswer(custom),
+];
+
+/** GetMyTenant for a viewer of the role, on the plan. */
+export const myTenantAnswer = (
+  role: RoleResponse,
+  permissions: Permission[],
+  plan: Plan = pro,
+) =>
   http.get(`*/v1/tenants/${northwind.id}`, () =>
     HttpResponse.json({
       ...northwind,
       role,
       createdAt: "2026-01-05T09:00:00Z",
       permissions,
-      planName: "Pro",
-      entitlements: {
-        "members.max": null,
-        "roles.custom": true,
-        "roles.custom.max": maxCustomRoles,
-      },
-      usage: { "members.max": 0, "roles.custom.max": 0 },
+      ...plan,
     }),
-  ),
-  http.get("*/v1/me", () => HttpResponse.json(meOfPerson(person))),
-  rolesAnswer(custom),
-];
+  );
 
 /** ListRoles: Northwind's built-in roles with their permissions, and the custom roles given. */
 export function rolesAnswer(custom: RoleDetailResponse[] = []) {
@@ -238,6 +282,41 @@ export const problem = (status: number, code: string) =>
     },
     { status },
   );
+
+/** A refusal of the plan (403 `plan.feature_unavailable`, 409 `plan.limit_reached`), with the key it is about. */
+export const planProblem = (
+  status: number,
+  code: string,
+  entitlement: string,
+) =>
+  HttpResponse.json(
+    {
+      status,
+      title: "Refused",
+      code,
+      entitlement,
+      traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    },
+    { status },
+  );
+
+/** GetMyTenant that counts its reads, for a test that a refusal of the plan reads it again. */
+export const countedMyTenant = (
+  reads: { count: number },
+  role: RoleResponse = roleOf.owner,
+  permissions: Permission[] = permissionsOf.owner,
+  plan: Plan = pro,
+) =>
+  http.get(`*/v1/tenants/${northwind.id}`, () => {
+    reads.count += 1;
+    return HttpResponse.json({
+      ...northwind,
+      role,
+      createdAt: "2026-01-05T09:00:00Z",
+      permissions,
+      ...plan,
+    });
+  });
 
 /** Renders a screen of the organisation at an address, with the toasts, as the tenant layout and the root layout do. */
 export function renderInTenant(

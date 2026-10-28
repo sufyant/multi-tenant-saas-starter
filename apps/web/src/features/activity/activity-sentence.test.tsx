@@ -7,6 +7,8 @@ import {
   MemberRoleChangedDetailsResponseOperation,
   Permission,
   RoleUpdatedDetailsResponseOperation,
+  TenantEntitlementOverrideRemovedDetailsResponseOperation,
+  TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
 } from "@repo/api-client";
 import { screen } from "@testing-library/react";
@@ -545,4 +547,158 @@ describe("ActivitySentence", () => {
 
     expect(shown("المنصة أعادت المنصة فتح هذه المؤسسة.")).toBeInTheDocument();
   });
+
+  it.each([
+    [
+      AuditOperation.TenantPlanChanged,
+      "Platform The platform moved this organisation from Free to Pro.",
+    ],
+    [
+      AuditOperation.TenantEntitlementOverrideSet,
+      "Platform The platform set this organisation’s Members limit to 25 until 31 Dec 2026.",
+    ],
+    [
+      AuditOperation.TenantEntitlementOverrideRemoved,
+      "Platform The platform removed this organisation’s override on Custom roles limit.",
+    ],
+    [
+      AuditOperation.TenantCreated,
+      "Platform The platform created this organisation on Pro.",
+    ],
+  ])("ActivitySentence_%s_WritesTheBoardsSentence", (operation, text) => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation,
+          actor: thePlatform,
+          target: northwindTarget,
+          details: detailsOf[operation],
+        })}
+        timeZone="Europe/Dublin"
+      />,
+    );
+
+    expect(shown(text)).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      { enabled: true, maximum: null, unlimited: false },
+      "roles.custom",
+      "Custom roles to on",
+    ],
+    [
+      { enabled: false, maximum: null, unlimited: false },
+      "roles.custom",
+      "Custom roles to off",
+    ],
+    [
+      { enabled: null, maximum: null, unlimited: true },
+      "members.max",
+      "Members limit to unlimited",
+    ],
+    [
+      { enabled: null, maximum: 0, unlimited: false },
+      "roles.custom.max",
+      "Custom roles limit to 0",
+    ],
+  ])(
+    "ActivitySentence_OverrideSetWithoutExpiry_%#_SaysTheValueAndNoDate",
+    (newValue, key, words) => {
+      renderWithProviders(
+        <ActivitySentence
+          entry={entry({
+            operation: AuditOperation.TenantEntitlementOverrideSet,
+            actor: thePlatform,
+            target: northwindTarget,
+            details: {
+              operation:
+                TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+              key,
+              oldValue: null,
+              oldExpiresAt: null,
+              newValue,
+              newExpiresAt: null,
+              reason: null,
+            },
+          })}
+        />,
+      );
+
+      expect(
+        shown(`Platform The platform set this organisation’s ${words}.`),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("ActivitySentence_OverrideSetWithAReason_NeverShowsTheReason", () => {
+    const { container } = renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantEntitlementOverrideSet,
+          actor: thePlatform,
+          target: northwindTarget,
+          details: {
+            operation:
+              TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+            key: "members.max",
+            oldValue: null,
+            oldExpiresAt: null,
+            newValue: { enabled: null, maximum: 25, unlimited: false },
+            newExpiresAt: null,
+            reason: "Trial for the spring campaign",
+          },
+        })}
+      />,
+    );
+
+    expect(container).not.toHaveTextContent("Trial for the spring campaign");
+  });
+
+  it("ActivitySentence_OverrideOfAnUnknownKey_ShowsTheKeyAsItIs", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantEntitlementOverrideRemoved,
+          actor: thePlatform,
+          target: northwindTarget,
+          details: {
+            operation:
+              TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved,
+            key: "reports.export",
+            oldValue: { enabled: true, maximum: null, unlimited: false },
+            oldExpiresAt: null,
+          },
+        })}
+      />,
+    );
+
+    expect(
+      shown(
+        "Platform The platform removed this organisation’s override on reports.export.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["tr", "Platform Platform bu kuruluşu Free planından Pro planına geçirdi."],
+    ["ar", "المنصة نقلت المنصة هذه المؤسسة من Free إلى Pro."],
+  ] as const)(
+    "ActivitySentence_PlanChangedIn%s_WritesTheBoardsSentence",
+    (language, text) => {
+      renderWithProviders(
+        <ActivitySentence
+          entry={entry({
+            operation: AuditOperation.TenantPlanChanged,
+            actor: thePlatform,
+            target: northwindTarget,
+            details: detailsOf[AuditOperation.TenantPlanChanged],
+          })}
+        />,
+        language,
+      );
+
+      expect(shown(text)).toBeInTheDocument();
+    },
+  );
 });
