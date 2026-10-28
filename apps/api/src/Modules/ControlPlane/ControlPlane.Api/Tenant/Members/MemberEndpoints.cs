@@ -18,9 +18,9 @@ public static class MemberEndpoints
 {
     public static void Map(RouteGroupBuilder tenant)
     {
-        tenant.MapGet("/members", ListMembers).RequireAuthorization(Permissions.TenantMembersRead);
-        tenant.MapPatch("/members/{userId:guid}", ChangeMemberRole).RequireAuthorization(Permissions.TenantMembersUpdate);
-        tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete);
+        tenant.MapGet("/members", ListMembers).RequireAuthorization(Permissions.TenantMembersRead).WithMetadata(new NotPlanGated());
+        tenant.MapPatch("/members/{userId:guid}", ChangeMemberRole).RequireAuthorization(Permissions.TenantMembersUpdate).WithMetadata(new NotPlanGated());
+        tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete).WithMetadata(new NotPlanGated());
     }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the list to it.

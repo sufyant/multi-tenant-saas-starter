@@ -16,7 +16,7 @@ namespace ControlPlane.Api.Tenant.Tenants;
 public static class TenantProfileEndpoints
 {
     public static void Map(RouteGroupBuilder tenant) =>
-        tenant.MapGet(string.Empty, GetMyTenant).RequireAuthorization(Permissions.TenantProfileRead);
+        tenant.MapGet(string.Empty, GetMyTenant).RequireAuthorization(Permissions.TenantProfileRead).WithMetadata(new NotPlanGated());
 
     // The member's shape of a tenant (K5), with when it was created and the member's role and permissions. The tenant door has declared
     // the tenant of the route.

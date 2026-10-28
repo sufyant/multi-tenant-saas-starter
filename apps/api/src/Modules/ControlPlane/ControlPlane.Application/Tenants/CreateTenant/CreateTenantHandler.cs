@@ -53,7 +53,8 @@ public static class CreateTenantHandler
             Inviter.Platform(actor.Id, actor.Language),
             new NewInvitation(Guid.CreateVersion7(now), email, new TenantRoles(roles).BuiltIn(BuiltInRole.Owner), command.Language, secret, now, invitations.Lifetime),
             await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
-            invitations.DailyLimitPerTenant);
+            invitations.DailyLimitPerTenant,
+            await tenants.FindEntitlementsAsync(tenant, now, cancellationToken));
         if (!invited.IsSuccess)
         {
             throw new InvalidOperationException($"A new tenant has no Owner and no invitation: {invited.Error.Code}.");

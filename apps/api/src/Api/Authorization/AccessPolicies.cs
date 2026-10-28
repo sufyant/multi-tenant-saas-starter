@@ -1,4 +1,6 @@
+using System.Reflection;
 using Api.ErrorHandling;
+using ControlPlane.Contracts.Plans;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.Extensions.Options;
@@ -9,7 +11,9 @@ namespace Api.Authorization;
 public sealed class SignedInEndpoint;
 
 // Authorization asks for permissions, never roles. Every endpoint states its access (A5): public with AllowAnonymous, signed-in
-// only with RequireSignedIn, or the permission it needs as its policy. The route groups add who may reach them at all.
+// only with RequireSignedIn, or the permission it needs as its policy. The route groups add who may reach them at all. A tenant endpoint
+// may also name a feature of the tenant's plan as a policy, which the tenant's effective entitlements decide
+// (docs/flows/plans-and-entitlements.md).
 internal static class AccessPolicies
 {
     public const string TenantMember = "tenant-member";
@@ -40,11 +44,22 @@ internal static class AccessPolicies
         where TBuilder : IEndpointConventionBuilder =>
         builder.RequireAuthorization(SignedIn).WithMetadata(new SignedInEndpoint());
 
+    // A policy name is a feature key of the plans' list, or else a permission. The two lists never share a name: a key has no audience.
     private sealed class PermissionPolicyProvider(IOptions<AuthorizationOptions> options) : DefaultAuthorizationPolicyProvider(options)
     {
+        private static readonly HashSet<string> FeatureKeys =
+        [
+            .. typeof(Features).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(field => field.IsLiteral)
+                .Select(field => (string)field.GetRawConstantValue()!),
+        ];
+
         public override async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName) =>
             await base.GetPolicyAsync(policyName)
-            ?? new AuthorizationPolicyBuilder().RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(policyName)).Build();
+            ?? new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .AddRequirements(FeatureKeys.Contains(policyName) ? new FeatureRequirement(policyName) : new PermissionRequirement(policyName))
+                .Build();
     }
 
     // A caller ControlPlane refused is told why, in the error shape of every other refusal and with the refusal's own status. A tenant
@@ -56,7 +71,8 @@ internal static class AccessPolicies
 
         public async Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy, PolicyAuthorizationResult authorizeResult)
         {
-            if (authorizeResult.Forbidden && context.RequestServices.GetRequiredService<RequestAccess>().Refusal is { } refusal)
+            var access = context.RequestServices.GetRequiredService<RequestAccess>();
+            if (authorizeResult.Forbidden && (access.Refusal ?? access.FeatureRefusal) is { } refusal)
             {
                 await Problems.For(refusal).ExecuteAsync(context);
                 return;
@@ -69,6 +85,8 @@ internal static class AccessPolicies
 
 internal sealed record PermissionRequirement(string Permission) : IAuthorizationRequirement;
 
+internal sealed record FeatureRequirement(string Feature) : IAuthorizationRequirement;
+
 internal sealed record TenantMemberRequirement : IAuthorizationRequirement;
 
 internal sealed record SystemAdminRequirement : IAuthorizationRequirement;
@@ -79,11 +97,11 @@ internal sealed record AccessStatedRequirement : IAuthorizationRequirement;
 
 internal sealed class AccessHandler : IAuthorizationHandler
 {
-    public Task HandleAsync(AuthorizationHandlerContext context)
+    public async Task HandleAsync(AuthorizationHandlerContext context)
     {
         if (context.Resource is not HttpContext http)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         // A refused caller meets no requirement, whatever the endpoint asks (A9).
@@ -91,10 +109,10 @@ internal sealed class AccessHandler : IAuthorizationHandler
         if (access.Refusal is not null)
         {
             context.Fail();
-            return Task.CompletedTask;
+            return;
         }
 
-        foreach (var requirement in context.PendingRequirements.ToList())
+        foreach (var requirement in context.PendingRequirements.Where(requirement => requirement is not FeatureRequirement).ToList())
         {
             var met = requirement switch
             {
@@ -111,6 +129,26 @@ internal sealed class AccessHandler : IAuthorizationHandler
             }
         }
 
-        return Task.CompletedTask;
+        // A feature is asked last, and only of a member who meets every other requirement: a caller without the permission is told
+        // that, and costs no read of the plan. The tenant's effective entitlements decide, from the cache.
+        var features = context.PendingRequirements.OfType<FeatureRequirement>().ToList();
+        var unmet = context.PendingRequirements.Any(requirement => requirement is PermissionRequirement or TenantMemberRequirement or SystemAdminRequirement);
+        if (features.Count == 0 || unmet || access.Membership is not { } membership)
+        {
+            return;
+        }
+
+        var entitlements = http.RequestServices.GetRequiredService<IEntitlementDirectory>();
+        foreach (var feature in features)
+        {
+            var on = await entitlements.CheckFeatureAsync(membership.TenantId, feature.Feature, http.RequestAborted);
+            if (!on.IsSuccess)
+            {
+                access.FeatureRefusal = on.Error;
+                return;
+            }
+
+            context.Succeed(feature);
+        }
     }
 }

@@ -9,7 +9,7 @@ using Wolverine;
 namespace ControlPlane.Application.Roles.CreateRole;
 
 // K6a: a role belongs to the tenant's rules (M1), so the tenant row is locked first; two creations at once then run one after the other,
-// and neither passes the limit nor takes a name the other took. An actor who is no longer a member, and a tenant that is no longer
+// and neither passes the limit, roles.custom.max read under the lock from the database, nor takes a name the other took. An actor who is no longer a member, and a tenant that is no longer
 // active, are refused first (TenantActor); the rules of the role are the tenant's (Tenant.CreateRole). Rejections come first (W7).
 public static class CreateRoleHandler
 {
@@ -17,7 +17,6 @@ public static class CreateRoleHandler
         CreateRoleCommand command,
         ITenantRepository tenants,
         IUserRepository users,
-        RoleOptions roles,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -32,7 +31,8 @@ public static class CreateRoleHandler
         var now = time.GetUtcNow();
         var actorRole = (await tenants.FindRolesAsync(cancellationToken)).Of(actorMembership.RoleId);
         var facts = await tenants.FindRoleFactsAsync(null, command.Name.Trim(), cancellationToken);
-        var created = tenant.CreateRole(actorRole, new NewRole(Guid.CreateVersion7(now), command.Name, command.Permissions), facts, roles.MaxCustomRolesPerTenant);
+        var entitlements = await tenants.FindEntitlementsAsync(tenant, now, cancellationToken);
+        var created = tenant.CreateRole(actorRole, new NewRole(Guid.CreateVersion7(now), command.Name, command.Permissions), facts, entitlements);
         if (!created.IsSuccess)
         {
             return (created.Error, []);

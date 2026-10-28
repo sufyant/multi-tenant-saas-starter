@@ -528,6 +528,11 @@ internal static partial class OpenApiContract
             Items = new OpenApiSchema { Type = JsonSchemaType.String, Format = "uuid" },
             Description = "The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of.",
         };
+        problem.Properties[Problems.EntitlementMember] = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String | JsonSchemaType.Null,
+            Description = "The entitlement key the error is about: the feature that is off, or the limit that is reached.",
+        };
         problem.Required ??= new HashSet<string>();
         problem.Required.Add(Problems.CodeMember);
         problem.Required.Add(Problems.TraceIdMember);

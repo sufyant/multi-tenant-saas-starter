@@ -763,6 +763,42 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
+    [Fact]
+    public async Task InviteMember_WithACustomRoleWhenTheFeatureIsOff_IsForbiddenWithTheKey()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        var role = await _testData.AddCustomRoleAsync(tenantId, "Viewer", "tenant.profile.read");
+
+        var invited = await owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com", role.ToString());
+
+        await PlanAnswers.ShouldBeUnavailableAsync(invited);
+    }
+
+    // An Owner and a pending invitation make two of a limit of two.
+    [Fact]
+    public async Task InviteMember_APendingInvitationFillsTheLimit_IsAConflictWithTheKey()
+    {
+        var (tenantId, owner) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 2);
+        await _testData.AddInvitationAsync(tenantId);
+
+        var invited = await owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com");
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        var problem = await invited.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (problem.GetProperty("code").GetString(), problem.GetProperty("entitlement").GetString()).ShouldBe(("plan.limit_reached", "members.max"));
+    }
+
+    [Fact]
+    public async Task InviteMember_AnExpiredInvitation_DoesNotCount()
+    {
+        var (tenantId, owner) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 2);
+        await _testData.AddInvitationAsync(tenantId, expiresAt: DateTimeOffset.UtcNow.AddMinutes(-1));
+
+        var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, $"{Guid.NewGuid():N}@example.com"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
     private static (string? Role, string? ReplacedInvitationId) Details(string? json)
     {
         var details = JsonDocument.Parse(json!).RootElement;

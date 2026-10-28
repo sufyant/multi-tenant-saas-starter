@@ -31,9 +31,10 @@ public static class InvitationEndpoints
             .WithMetadata(new IdempotencyKeyRequired())
             .WithDescription(NoLocation)
             .RequireAuthorization(Permissions.TenantInvitationsCreate)
+            .WithMetadata(new NotPlanGated())
             .Produces<InvitationResponse>(StatusCodes.Status201Created);
-        tenant.MapGet("/invitations", ListInvitations).RequireAuthorization(Permissions.TenantInvitationsRead);
-        tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete);
+        tenant.MapGet("/invitations", ListInvitations).RequireAuthorization(Permissions.TenantInvitationsRead).WithMetadata(new NotPlanGated());
+        tenant.MapDelete("/invitations/{invitationId:guid}", RevokeInvitation).RequireAuthorization(Permissions.TenantInvitationsDelete).WithMetadata(new NotPlanGated());
     }
 
     // A pending invitation always has a role and an address, and the API answers this shape for a pending invitation only. The platform answers its

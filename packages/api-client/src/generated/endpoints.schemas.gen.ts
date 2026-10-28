@@ -900,6 +900,11 @@ export interface ProblemDetails {
      * @nullable
      */
   tenantIds?: string[] | null;
+  /**
+     * The entitlement key the error is about: the feature that is off, or the limit that is reached.
+     * @nullable
+     */
+  entitlement?: string | null;
 }
 
 /**

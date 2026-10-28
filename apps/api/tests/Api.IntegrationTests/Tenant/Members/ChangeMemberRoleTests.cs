@@ -408,6 +408,30 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task ChangeMemberRole_ToACustomRoleWhenTheFeatureIsOff_IsForbiddenWithTheKey()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        var role = await _testData.AddCustomRoleAsync(tenantId, "Viewer", "tenant.profile.read");
+        var member = await _testData.AddMemberAsync(tenantId);
+
+        var changed = await owner.ChangeMemberRoleAsync(tenantId, await _testData.UserIdOfAsync(member), role.ToString());
+
+        await PlanAnswers.ShouldBeUnavailableAsync(changed);
+    }
+
+    [Fact]
+    public async Task ChangeMemberRole_ToABuiltInRoleWhenTheFeatureIsOff_ChangesIt()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        var role = await _testData.AddCustomRoleAsync(tenantId, "Viewer", "tenant.profile.read");
+        var member = await _testData.AddMemberWithRoleAsync(tenantId, role);
+
+        var changed = await _api.WaitingForMessagesAsync(async () => await owner.ChangeMemberRoleAsync(tenantId, await _testData.UserIdOfAsync(member), "member"));
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

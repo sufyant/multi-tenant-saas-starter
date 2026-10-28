@@ -48,7 +48,8 @@ public static class InviteMemberHandler
             inviter,
             new NewInvitation(Guid.CreateVersion7(now), email, role, command.Language, secret, now, invitations.Lifetime),
             await tenants.FindInvitationFactsAsync(email, now - Tenant.InvitationLimitWindow, cancellationToken),
-            invitations.DailyLimitPerTenant);
+            invitations.DailyLimitPerTenant,
+            await tenants.FindEntitlementsAsync(tenant, now, cancellationToken));
         if (!invited.IsSuccess)
         {
             return (invited.Error, []);

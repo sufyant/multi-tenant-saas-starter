@@ -6757,6 +6757,13 @@
               "format": "uuid"
             },
             "description": "The tenants the error is about, when a client needs them to act, such as the tenants a user is the last Owner of."
+          },
+          "entitlement": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The entitlement key the error is about: the feature that is off, or the limit that is reached."
           }
         }
       },

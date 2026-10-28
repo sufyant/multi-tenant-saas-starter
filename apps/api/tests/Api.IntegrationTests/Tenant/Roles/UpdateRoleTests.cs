@@ -259,6 +259,17 @@ public sealed class UpdateRoleTests(Database database) : IAsyncLifetime
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task UpdateRole_FeatureOff_IsForbiddenWithTheKey()
+    {
+        var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        var role = await _testData.AddCustomRoleAsync(tenantId, "Billing", "tenant.profile.read");
+
+        var updated = await owner.UpdateRoleAsync(tenantId, role, "Finance", ["tenant.profile.read"]);
+
+        await PlanAnswers.ShouldBeUnavailableAsync(updated);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

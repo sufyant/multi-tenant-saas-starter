@@ -313,6 +313,18 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenant);
     }
 
+    [Fact]
+    public async Task InviteOwner_ATenantAtItsLimit_IsNotLimited()
+    {
+        var planId = await _testData.AddPlanAsync(new() { ["members.max"] = 0 });
+        var tenant = await _testData.AddTenantAsync(planId: planId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var invited = await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant.Id, $"{Guid.NewGuid():N}@example.com"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

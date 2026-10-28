@@ -17,7 +17,7 @@ namespace Audit.Api.Tenant.AuditLogs;
 public static class AuditLogEndpoints
 {
     public static void Map(RouteGroupBuilder tenant) =>
-        tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead);
+        tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
 
     internal static AuditEntryResponse ToResponse(AuditEntryView entry) => new(
         entry.Id,

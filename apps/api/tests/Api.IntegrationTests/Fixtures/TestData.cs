@@ -11,6 +11,9 @@ namespace Api.IntegrationTests.Fixtures;
 // every tenant to Pro). A database taken back before the plans has no plan column: such a test passes withPlans false.
 internal sealed class TestData(Database database, string databaseName = Database.MainDatabase, bool withPlans = true)
 {
+    // The value of a limit without a number, for AddPlanAsync and SetPlanValueAsync.
+    public static readonly object Unlimited = new();
+
     // The invitation code of a link: the tenant id, a dot and the secret (ARCHITECTURE.md, section 6, "Rules without an id").
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
@@ -38,6 +41,35 @@ internal sealed class TestData(Database database, string databaseName = Database
 
         return tenant;
     }
+
+    // A plan of the test's own, with a unique name and these values: true or false for a feature, a number or Unlimited for a limit. A key
+    // left out has no value, and is closed. Tests share one database, so a test never edits the seed plans.
+    public async Task<Guid> AddPlanAsync(Dictionary<string, object> values, string? name = null)
+    {
+        var planId = Guid.NewGuid();
+        await database.ScalarAsSuperuserAsync<object>(
+            $"INSERT INTO control_plane.plans (id, name, created_at) VALUES ('{planId}', '{name ?? $"Plan {planId:N}"}', now())", databaseName);
+        foreach (var (key, value) in values)
+        {
+            await SetPlanValueAsync(planId, key, value);
+        }
+
+        return planId;
+    }
+
+    // Sets the plan's value of the key, or adds it, with plain SQL: no cache sees the write, so a test that changes a plan this way uses a
+    // host without a cache.
+    public Task SetPlanValueAsync(Guid planId, string key, object value) =>
+        database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.plan_entitlements (plan_id, key, enabled, maximum, unlimited) VALUES ('{planId}', '{key}', {ColumnsOf(value)})
+            ON CONFLICT (plan_id, key) DO UPDATE SET enabled = excluded.enabled, maximum = excluded.maximum, unlimited = excluded.unlimited
+            """,
+            databaseName);
+
+    // Puts the tenant on the plan, with plain SQL.
+    public Task SetTenantPlanAsync(Guid tenantId, Guid planId) =>
+        database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET plan_id = '{planId}' WHERE id = '{tenantId}'", databaseName);
 
     // A custom role of the tenant with these permissions (A3), written with its tenant declared, as CreateRole writes it.
     public async Task<Guid> AddCustomRoleAsync(Guid tenantId, string name, params string[] permissions)
@@ -273,6 +305,14 @@ internal sealed class TestData(Database database, string databaseName = Database
     private static string Column(string name, DateTimeOffset? moment) => moment is null ? string.Empty : $", {name}";
 
     private static string Value(DateTimeOffset? moment) => moment is { } given ? $", '{given:O}'" : string.Empty;
+
+    private static string ColumnsOf(object value) => value switch
+    {
+        bool on => $"{on.ToString().ToLowerInvariant()}, NULL, false",
+        int maximum => $"NULL, {maximum}, false",
+        _ when value == Unlimited => "NULL, NULL, true",
+        _ => throw new ArgumentException("A value is a feature's state, a limit's number or Unlimited.", nameof(value)),
+    };
 
     private static string Column(string name, Guid? id) => id is null ? string.Empty : $", {name}";
 

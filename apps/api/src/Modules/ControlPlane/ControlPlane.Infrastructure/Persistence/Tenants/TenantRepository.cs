@@ -2,6 +2,7 @@ using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence.Roles;
@@ -106,6 +107,16 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             await CountOwnersAsync(cancellationToken),
             await ((ITenantRepository)this).FindRolesAsync(cancellationToken));
 
+    // The plans, their values and the overrides belong to no tenant (R6); the tenant row is the one the caller locked.
+    async Task<EffectiveEntitlements> ITenantRepository.FindEntitlementsAsync(Tenant tenant, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var locked = OfActiveTenant(tenant, tenant.Id);
+        var plan = await controlPlane.PlanEntitlements.Where(value => value.PlanId == locked.PlanId).AsNoTracking().ToListAsync(cancellationToken);
+        var overrides = await controlPlane.EntitlementOverrides.Where(entry => entry.TenantId == locked.Id).AsNoTracking().ToListAsync(cancellationToken);
+        return EffectiveEntitlements.Of(
+            plan.ToDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal), overrides.Select(entry => entry.ToValue()), now);
+    }
+
     Task<int> ITenantRepository.CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken) =>
         controlPlane.TenantInvitations.CountAsync(invitation => invitation.CreatedAt > since, cancellationToken);
 
@@ -117,7 +128,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             await CountOwnersAsync(cancellationToken),
             await IsMemberEmailAsync(email, cancellationToken),
             await ((ITenantRepository)this).CountInvitationsSinceAsync(since, cancellationToken),
-            await ((ITenantRepository)this).FindPendingInvitationsAsync(cancellationToken));
+            await ((ITenantRepository)this).FindPendingInvitationsAsync(cancellationToken),
+            await Memberships.CountAsync(cancellationToken));
     }
 
     // Row level security keeps the invitations to the active tenant; the query names no tenant.

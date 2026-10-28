@@ -1,5 +1,6 @@
 using ControlPlane.Application.Invitations;
 using ControlPlane.Domain.EmailAddresses;
+using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 
@@ -66,14 +67,21 @@ public interface ITenantRepository
     /// </summary>
     internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The locked tenant's effective entitlements at this moment, read from the database, never from the cache: its plan's values and its
+    /// overrides. The caller holds the tenant's lock, which a change of the tenant's plan or of an override takes first, so the values stay
+    /// true until the transaction ends, and two commands at a limit run one after the other (M1, K6a).
+    /// </summary>
+    internal Task<EffectiveEntitlements> FindEntitlementsAsync(Tenant tenant, DateTimeOffset now, CancellationToken cancellationToken);
+
     /// <summary>How many invitations the active tenant created after the moment, whatever their status (K2).</summary>
     internal Task<int> CountInvitationsSinceAsync(DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>
     /// What an invitation to this address needs to know of the active tenant (<see cref="Tenant.Invite"/>): how many members have a role
     /// that holds <c>tenant.owners.manage</c>, whether a member
-    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, and every
-    /// pending invitation, expired ones included. The caller holds the tenant's lock, which every change to a membership or an invitation
+    /// has the address, compared in its one form from the tenant's memberships, how many invitations it created after the moment, every
+    /// pending invitation, expired ones included, and how many members it has. The caller holds the tenant's lock, which every change to a membership or an invitation
     /// takes first, so the facts stay true until the transaction ends (K6i, K6j).
     /// </summary>
     internal Task<InvitationFacts> FindInvitationFactsAsync(EmailAddress email, DateTimeOffset since, CancellationToken cancellationToken);
