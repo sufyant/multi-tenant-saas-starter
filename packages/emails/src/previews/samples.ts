@@ -2,6 +2,7 @@ import { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
 import type { DeletionWarningProps } from "../templates/deletion-warning";
 import type { InvitationProps } from "../templates/invitation";
+import type { NotificationProps } from "../templates/notification";
 
 // The sample values of the previews: the design system's invented names and `.example` addresses, written as the API writes them in
 // each language (the email boards).
@@ -63,3 +64,12 @@ export const deletionWarning = {
     supportUrl: brand.supportUrl,
   },
 } satisfies Record<string, DeletionWarningProps>;
+
+export const notification = {
+  en: {
+    language: Language.En,
+    title: "Your role changed in Northwind Traders",
+    body: "You are now Admin in Northwind Traders.",
+    link: "https://app.example/",
+  },
+} satisfies Record<string, NotificationProps>;

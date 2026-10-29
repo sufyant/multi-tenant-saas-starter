@@ -1,0 +1,10 @@
+Starter
+
+{{title}}
+
+{{body}}
+
+Starter uygulamasını aç:
+{{link}}
+
+Bu e-postayı bildirim e-posta tercihleriniz nedeniyle aldınız. Tercihlerinizden değiştirebilirsiniz.

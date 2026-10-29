@@ -1,0 +1,10 @@
+Starter
+
+{{title}}
+
+{{body}}
+
+Open Starter:
+{{link}}
+
+You received this because of your email preferences for notifications. You change them in your preferences.

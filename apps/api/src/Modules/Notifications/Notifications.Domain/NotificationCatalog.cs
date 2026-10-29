@@ -32,6 +32,15 @@ public static class NotificationCatalog
 
     public const string TenantStatusChanged = "tenant.status_changed";
 
+    /// <summary>The words of a tenant's new status in <see cref="TenantStatusChanged"/>.</summary>
+    public const string StatusSuspended = "suspended";
+
+    public const string StatusReactivated = "reactivated";
+
+    public const string StatusClosed = "closed";
+
+    public const string StatusReopened = "reopened";
+
     /// <summary>The categories in the order a screen lists them.</summary>
     public static readonly IReadOnlyList<string> Categories = [AccessCategory, MembersCategory, PlanCategory, PlatformCategory];
 
@@ -88,7 +97,7 @@ public static class NotificationCatalog
             NotificationLinkKind.PlatformTenant,
             InAppAndEmailOff(),
             Required: false,
-            [new("tenantName", NotificationValueKind.Text), new("status", NotificationValueKind.Word)]),
+            [new("tenantName", NotificationValueKind.Text), new("status", NotificationValueKind.Word, [StatusSuspended, StatusReactivated, StatusClosed, StatusReopened])]),
         new(
             TenantPurged,
             PlatformCategory,
