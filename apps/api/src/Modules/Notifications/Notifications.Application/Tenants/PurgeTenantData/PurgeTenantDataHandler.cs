@@ -1,15 +1,20 @@
 using ControlPlane.Contracts.Tenants;
+using Notifications.Application.Notifications;
 using Wolverine;
 
 namespace Notifications.Application.Tenants.PurgeTenantData;
 
-// Notifications stores no data of a tenant: it sends an email and keeps nothing (docs/flows/tenant-purge.md). It still takes part in the
-// tenant purge, so the purge waits for it, and the module that adds data of a tenant later deletes it here, in the tenant's transaction,
-// before it replies. The handler takes no DbContext today, so Wolverine opens no transaction.
+// The tenant purge asks Notifications to delete the tenant's data, in the tenant's transaction (docs/flows/tenant-purge.md): every
+// notification about the tenant, in every recipient's list, through the narrow function that deletes those of the declared tenant (U8).
+// A personal notification is about no tenant and stays. It replies, so the purge goes on; a second copy deletes nothing more (S7).
 public static class PurgeTenantDataHandler
 {
     /// <summary>The name Notifications takes part in the purge by, which its replies carry.</summary>
     public const string Participant = "Notifications";
 
-    public static OutgoingMessages Handle(PurgeTenantDataCommand purge) => [new PurgeTenantDataReply(purge.TenantId, Participant)];
+    public static async Task<OutgoingMessages> HandleAsync(PurgeTenantDataCommand purge, INotificationRepository notifications, CancellationToken cancellationToken)
+    {
+        await notifications.PurgeTenantAsync(cancellationToken);
+        return [new PurgeTenantDataReply(purge.TenantId, Participant)];
+    }
 }

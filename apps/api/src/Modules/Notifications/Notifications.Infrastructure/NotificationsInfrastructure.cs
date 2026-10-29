@@ -9,6 +9,7 @@ using Notifications.Infrastructure.Email;
 using Notifications.Infrastructure.Persistence;
 using Notifications.Infrastructure.Persistence.EmailPreferences;
 using Notifications.Infrastructure.Persistence.Notifications;
+using Notifications.Infrastructure.Retention;
 using SharedKernel;
 using Tenancy;
 using Wolverine;
@@ -86,6 +87,11 @@ public static class NotificationsInfrastructure
                 $"{LiveStreamOptions.Section}:KeepAliveInterval must be positive and at most 30 seconds, and Lifetime longer than it and at most 10 minutes.")
             .ValidateOnStart();
 
+        services.AddOptions<NotificationRetentionOptions>()
+            .BindConfiguration(NotificationRetentionOptions.Section)
+            .Validate(retention => retention.IsValid, $"{NotificationRetentionOptions.Section}:Days must be at least 1.")
+            .ValidateOnStart();
+
         services.AddOptions<InvitationEmailOptions>()
             .BindConfiguration(InvitationEmailOptions.Section)
             .Validate(settings => settings.IsValid, $"{InvitationEmailRetryDelaysKey} must be positive pauses that grow.")
@@ -94,4 +100,8 @@ public static class NotificationsInfrastructure
 
         return services;
     }
+
+    /// <summary>The hourly retention of the notifications (U8), which the host runs in the roles worker and all only.</summary>
+    public static IServiceCollection AddNotificationRetention(this IServiceCollection services) =>
+        services.AddHostedService<NotificationRetention>();
 }

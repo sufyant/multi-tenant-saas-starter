@@ -20,8 +20,10 @@ public sealed class CommandAuditTests : IAsyncLifetime
 {
     private const string Audit = "Audit.Application";
 
-    // K3's exception: a change of a user's read state of their notifications is their own view, not a change of the product's data (U7).
-    private static readonly string[] ReadStateCommands = ["MarkNotificationReadCommand", "MarkAllNotificationsReadCommand"];
+    // K3's exceptions: a change of a user's read state of their notifications is their own view, not a change of the product's data (U7),
+    // and the worker's retention of the notifications is no endpoint's (U8).
+    private static readonly string[] CommandsWithoutAudit =
+        ["MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand"];
 
     private readonly ComposedApplication _application = new("worker");
 
@@ -55,7 +57,7 @@ public sealed class CommandAuditTests : IAsyncLifetime
     }
 
     private static bool IsQuery(Type message) =>
-        message.Name.StartsWith("List", StringComparison.Ordinal) || message.Name.StartsWith("Get", StringComparison.Ordinal) || ReadStateCommands.Contains(message.Name);
+        message.Name.StartsWith("List", StringComparison.Ordinal) || message.Name.StartsWith("Get", StringComparison.Ordinal) || CommandsWithoutAudit.Contains(message.Name);
 
     private static bool ReachesAudit(Type command, Dictionary<Type, MethodInfo[]> handlers)
     {
