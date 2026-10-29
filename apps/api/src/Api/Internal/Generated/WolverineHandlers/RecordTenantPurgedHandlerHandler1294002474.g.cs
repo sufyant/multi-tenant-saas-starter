@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: MemberRemovedEventHandler1553820299
+    // START: RecordTenantPurgedHandlerHandler1294002474
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class MemberRemovedEventHandler1553820299 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class RecordTenantPurgedHandlerHandler1294002474 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public MemberRemovedEventHandler1553820299(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public RecordTenantPurgedHandlerHandler1294002474(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var memberRemovedEvent = (ControlPlane.Contracts.Members.MemberRemovedEvent)context.Envelope.Message;
+            var tenantPurgedEvent = (ControlPlane.Contracts.Tenants.TenantPurgedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -37,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordMemberRemoved.RecordMemberRemovedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordMemberRemoved.RecordMemberRemovedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantPurged.RecordTenantPurgedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantPurged.RecordTenantPurgedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Members.RecordMemberRemoved.RecordMemberRemovedHandler.HandleAsync(memberRemovedEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Tenants.RecordTenantPurged.RecordTenantPurgedHandler.HandleAsync(tenantPurgedEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: MemberRemovedEventHandler1553820299
+    // END: RecordTenantPurgedHandlerHandler1294002474
     
     
 }

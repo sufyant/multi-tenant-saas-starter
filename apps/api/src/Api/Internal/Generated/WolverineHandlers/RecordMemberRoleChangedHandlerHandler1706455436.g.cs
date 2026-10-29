@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantClosedEventHandler692446805
+    // START: RecordMemberRoleChangedHandlerHandler1706455436
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantClosedEventHandler692446805 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class RecordMemberRoleChangedHandlerHandler1706455436 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public TenantClosedEventHandler692446805(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public RecordMemberRoleChangedHandlerHandler1706455436(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var tenantClosedEvent = (ControlPlane.Contracts.Tenants.TenantClosedEvent)context.Envelope.Message;
+            var memberRoleChangedEvent = (ControlPlane.Contracts.Members.MemberRoleChangedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -37,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantClosed.RecordTenantClosedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantClosed.RecordTenantClosedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Tenants.RecordTenantClosed.RecordTenantClosedHandler.HandleAsync(tenantClosedEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler.HandleAsync(memberRoleChangedEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantClosedEventHandler692446805
+    // END: RecordMemberRoleChangedHandlerHandler1706455436
     
     
 }

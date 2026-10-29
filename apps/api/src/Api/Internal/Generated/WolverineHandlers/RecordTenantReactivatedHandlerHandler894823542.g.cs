@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantReactivatedEventHandler2087990229
+    // START: RecordTenantReactivatedHandlerHandler894823542
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantReactivatedEventHandler2087990229 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class RecordTenantReactivatedHandlerHandler894823542 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public TenantReactivatedEventHandler2087990229(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public RecordTenantReactivatedHandlerHandler894823542(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantReactivatedEventHandler2087990229
+    // END: RecordTenantReactivatedHandlerHandler894823542
     
     
 }

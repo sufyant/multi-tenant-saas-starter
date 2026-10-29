@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: OwnerMadeEventHandler1902770451
+    // START: RecordTenantSuspendedHandlerHandler1910166218
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class OwnerMadeEventHandler1902770451 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class RecordTenantSuspendedHandlerHandler1910166218 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public OwnerMadeEventHandler1902770451(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public RecordTenantSuspendedHandlerHandler1910166218(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var ownerMadeEvent = (ControlPlane.Contracts.Members.OwnerMadeEvent)context.Envelope.Message;
+            var tenantSuspendedEvent = (ControlPlane.Contracts.Tenants.TenantSuspendedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -37,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler.HandleAsync(ownerMadeEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler.HandleAsync(tenantSuspendedEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: OwnerMadeEventHandler1902770451
+    // END: RecordTenantSuspendedHandlerHandler1910166218
     
     
 }

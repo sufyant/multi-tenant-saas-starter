@@ -15,7 +15,7 @@ public sealed class EmailTemplateTests
 
     private static readonly EmailValue Link = EmailValue.Link("link", new Uri("https://web.example/invitations/accept?code=a&b"));
 
-    private static readonly string[] Emails = ["invitation", "deletion-warning"];
+    private static readonly string[] Emails = ["invitation", "deletion-warning", "notification"];
 
     public static TheoryData<string, Language> EveryGeneratedEmail =>
         [.. from email in Emails from language in Enum.GetValues<Language>() select (email, language)];

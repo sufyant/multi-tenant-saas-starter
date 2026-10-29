@@ -72,6 +72,13 @@ public static class NotificationsInfrastructure
         // from the message's scope. It reaches no DbContext.
         services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IEmailChannel>());
 
+        // The button of a notification email leads to the web app or the platform app, so both are needed to send one (U2).
+        services.AddOptions<NotificationLinkOptions>()
+            .BindConfiguration(NotificationLinkOptions.Section)
+            .Validate(links => NotificationLinkOptions.IsHttps(links.WebUrl), $"{NotificationLinkOptions.Section}:WebUrl must be an absolute https URL.")
+            .Validate(links => NotificationLinkOptions.IsHttps(links.PlatformUrl), $"{NotificationLinkOptions.Section}:PlatformUrl must be an absolute https URL.")
+            .ValidateOnStart();
+
         services.AddOptions<InvitationEmailOptions>()
             .BindConfiguration(InvitationEmailOptions.Section)
             .Validate(settings => settings.IsValid, $"{InvitationEmailRetryDelaysKey} must be positive pauses that grow.")

@@ -71,6 +71,8 @@ Host__Authentication__AuthorizedParties__0=https://app.localhost
 ControlPlane__SystemAdmins__RootEmails__0=<a root system admin's email>
 ControlPlane__Clerk__SecretKey=<Backend API secret key>
 ControlPlane__Invitations__AcceptUrl=https://app.localhost/invitations/accept
+Notifications__Links__WebUrl=https://app.localhost/
+Notifications__Links__PlatformUrl=https://platform.localhost/
 ASPNETCORE_URLS=http://127.0.0.1:5080   # the public port; each web process on the machine needs its own
 Host__ManagementPort=5180               # the health endpoints; each process on the machine needs its own
 ```

@@ -20,4 +20,20 @@ public interface IUserDirectory
     /// shows names only (K3).
     /// </summary>
     Task<IReadOnlyDictionary<Guid, UserName>> FindNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// How to reach each known user, by user id, for a whole list of recipients in one call (U3). An id that no user has is left out.
+    /// </summary>
+    Task<IReadOnlyList<UserContact>> FindContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken);
+
+    /// <summary>The signed-in user's contact, by the identity provider's id; none for a person who is not a user yet.</summary>
+    Task<UserContact?> FindContactAsync(string externalUserId, CancellationToken cancellationToken);
+
+    /// <summary>The user ids of every system admin (A4).</summary>
+    Task<IReadOnlyList<Guid>> ListSystemAdminIdsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The ids of the tenants where the user is a member. The caller's transaction declares no tenant: the read declares the user (R11).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListTenantIdsAsync(Guid userId, CancellationToken cancellationToken);
 }

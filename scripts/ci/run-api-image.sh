@@ -92,6 +92,8 @@ docker run --rm --network api-image \
   echo "ControlPlane__Clerk__SecretKey=sk_test_fake_not_a_secret"
   echo "ControlPlane__Clerk__BackendApiUrl=https://clerk.example.invalid/v1/"
   echo "ControlPlane__Invitations__AcceptUrl=https://app.example.invalid/invitations/accept"
+  echo "Notifications__Links__WebUrl=https://app.example.invalid/"
+  echo "Notifications__Links__PlatformUrl=https://platform.example.invalid/"
   echo "Notifications__Resend__ApiKey=re_fake_not_a_secret"
   echo "Notifications__Resend__From=App <no-reply@example.invalid>"
   echo "Notifications__Resend__ApiUrl=https://resend.example.invalid/"

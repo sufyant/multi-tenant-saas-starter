@@ -8,6 +8,7 @@ using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
+using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
@@ -16,9 +17,9 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.Invitations;
+using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.Roles;
-using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using ControlPlane.Infrastructure.Persistence.Users;
@@ -48,6 +49,7 @@ public static class ControlPlaneInfrastructure
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IMemberDirectory, MemberDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
 
         // docs/flows/system-admins.md: the list must name at least one address, so the platform always has a way in. Each item is an

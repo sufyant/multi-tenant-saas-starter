@@ -33,6 +33,11 @@ internal sealed class ApiFactory(
 {
     public const string AcceptUrl = "https://app.test/invitations/accept";
 
+    // Where the button of a notification email leads (U2).
+    public const string WebUrl = "https://app.test/";
+
+    public const string PlatformUrl = "https://platform.test/";
+
     // The one root system admin of the list. No account of the fake identity provider has this address, so nobody becomes a system
     // admin by accident.
     public const string RootEmail = "root-admin@app.test";
@@ -134,6 +139,8 @@ internal sealed class ApiFactory(
             ["ConnectionStrings:Messaging"] = messagingConnectionString,
             ["ConnectionStrings:Migrations"] = migrationsConnectionString,
             ["ControlPlane:Invitations:AcceptUrl"] = AcceptUrl,
+            ["Notifications:Links:WebUrl"] = WebUrl,
+            ["Notifications:Links:PlatformUrl"] = PlatformUrl,
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
             ["ControlPlane:SystemAdmins:RootEmails:0"] = RootEmail,
             ["Host:Authentication:Issuer"] = TestTokens.Issuer,

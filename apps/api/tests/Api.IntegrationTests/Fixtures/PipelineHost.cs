@@ -31,6 +31,8 @@ internal sealed class PipelineHost : IAsyncDisposable
         ["Host:RateLimiting:Window"] = "00:01:00",
         ["Host:Role"] = "all",
         ["ControlPlane:Invitations:AcceptUrl"] = ApiFactory.AcceptUrl,
+        ["Notifications:Links:WebUrl"] = ApiFactory.WebUrl,
+        ["Notifications:Links:PlatformUrl"] = ApiFactory.PlatformUrl,
         ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
         ["ControlPlane:SystemAdmins:RootEmails:0"] = ApiFactory.RootEmail,
     };
