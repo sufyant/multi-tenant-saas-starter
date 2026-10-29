@@ -4,7 +4,7 @@ using Notifications.Application.Notifications;
 using Notifications.Domain;
 using Wolverine;
 
-namespace Notifications.Application.Tenants.NotifyTenantOwnerJoined;
+namespace Notifications.Application.Members.NotifyTenantOwnerJoined;
 
 // "The first Owner of a new organisation joined", to every system admin, in the platform's bell.
 public static class NotifyTenantOwnerJoinedHandler

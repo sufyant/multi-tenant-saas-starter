@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: NotifyTenantOwnerJoinedHandlerHandler1351795349
+    // START: NotifyTenantOwnerJoinedHandlerHandler659067315
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class NotifyTenantOwnerJoinedHandlerHandler1351795349 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantOwnerJoinedHandlerHandler659067315 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public NotifyTenantOwnerJoinedHandlerHandler1351795349(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantOwnerJoinedHandlerHandler659067315(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -40,11 +40,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: NotifyTenantOwnerJoinedHandlerHandler1351795349
+    // END: NotifyTenantOwnerJoinedHandlerHandler659067315
     
     
 }

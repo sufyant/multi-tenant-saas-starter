@@ -5,7 +5,7 @@ using Wolverine;
 
 namespace Notifications.Infrastructure.Retention;
 
-// The worker's hourly start of the retention (U8): a message, so the deletion runs in a handler's transaction and on one worker at a time.
+// The worker's hourly start of the retention (U8): a message, so the deletion runs in a handler's transaction. Each worker sends its own; a batch that finds the rows gone deletes nothing.
 // The host runs it in the roles worker and all only, as it runs the idempotency cleanup (I7).
 internal sealed class NotificationRetention(IServiceScopeFactory scopes, TimeProvider time) : BackgroundService
 {

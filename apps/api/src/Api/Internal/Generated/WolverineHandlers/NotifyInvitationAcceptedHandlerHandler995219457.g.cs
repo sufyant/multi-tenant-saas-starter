@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: NotifyInvitationAcceptedHandlerHandler196635598
+    // START: NotifyInvitationAcceptedHandlerHandler995219457
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class NotifyInvitationAcceptedHandlerHandler196635598 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyInvitationAcceptedHandlerHandler995219457 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public NotifyInvitationAcceptedHandlerHandler196635598(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyInvitationAcceptedHandlerHandler995219457(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -40,11 +40,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Invitations.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Invitations.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Members.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Members.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler");
                 
                 // The actual message execution
-                var outgoing2 = await Notifications.Application.Invitations.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing2 = await Notifications.Application.Members.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: NotifyInvitationAcceptedHandlerHandler196635598
+    // END: NotifyInvitationAcceptedHandlerHandler995219457
     
     
 }

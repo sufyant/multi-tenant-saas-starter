@@ -71,6 +71,7 @@ using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
+using Notifications.Application.Members.NotifyMemberRoleChanged;
 using Notifications.Application.Notifications.DeliverNotification;
 using Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
 using Tenancy;
@@ -461,7 +462,7 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(DeleteUserCommand), typeof(DeleteUserHandler)),
             ],
             ignoreOrder: true);
-        runs.In("worker").ShouldBe(
+        runs.WithoutNotificationsIn("worker").ShouldBe(
             [
                 new HandlerRun(typeof(UserRenamedEvent), typeof(RecordUserRenamedHandler)),
                 new HandlerRun(typeof(UserMembershipRemovedEvent), typeof(RecordUserMembershipRemovedHandler)),
@@ -500,7 +501,7 @@ public sealed class HostRoleTests(Database database)
             && await PlatformEntriesAsync(name, userId, "user.deleted") > 0 && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        runs.In("worker").ShouldBe(
+        runs.WithoutNotificationsIn("worker").ShouldBe(
             [
                 new HandlerRun(typeof(UserMembershipRemovedEvent), typeof(RecordUserMembershipRemovedHandler)),
                 new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
@@ -544,7 +545,7 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(DeleteUserCommand), typeof(DeleteUserHandler)),
             ],
             ignoreOrder: true);
-        runs.In("worker").ShouldBe(
+        runs.WithoutNotificationsIn("worker").ShouldBe(
             [
                 new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
                 new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
@@ -726,6 +727,7 @@ public sealed class HostRoleTests(Database database)
             event: notifications
             data: {"scope":"tenant","tenantId":"{{tenant.Id}}"}
             """);
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(MemberRoleChangedEvent), typeof(NotifyMemberRoleChangedHandler)));
         runs.In("worker").ShouldContain(new HandlerRun(typeof(DeliverNotificationCommand), typeof(DeliverNotificationHandler)));
         runs.In("web").ShouldNotContain(new HandlerRun(typeof(DeliverNotificationCommand), typeof(DeliverNotificationHandler)));
     }

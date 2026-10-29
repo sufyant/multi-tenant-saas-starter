@@ -29,9 +29,14 @@ public sealed class NotificationRepository(NotificationsDbContext notifications)
             .ExecuteUpdateAsync(set => set.SetProperty(notification => notification.ReadAt, now), cancellationToken);
 
         // The change tracker does not see a bulk update, so the user's live signal is named here (U6).
+        // A tenant's bell marks the personal ones too, which every tenant bell shows.
         if (marked > 0)
         {
             notifications.SignalAfterCommit(inbox);
+            if (inbox.Bell == NotificationBell.Tenant)
+            {
+                notifications.SignalAfterCommit(Inbox.Personal);
+            }
         }
 
         return marked;

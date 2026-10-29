@@ -1,6 +1,6 @@
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
-import { Button, Heading, Text } from "react-email";
+import { Button, Heading, Link, Text } from "react-email";
 import { colours } from "../layout/colours";
 import { Layout, lookOf } from "../layout/layout";
 import { format, messages } from "../texts";
@@ -21,6 +21,7 @@ const textsOf = ({ language }: NotificationProps) => {
   const texts = messages[language].notificationEmail;
   return {
     button: format(texts.button, { brandName: brand.name }),
+    fallback: texts.fallback,
     footer: texts.footer,
   };
 };
@@ -116,6 +117,37 @@ export function Notification(props: NotificationProps) {
           </tr>
         </tbody>
       </table>
+      <Text
+        className="e-muted"
+        style={{
+          fontFamily: look.font,
+          margin: "28px 0 0",
+          fontSize: "13px",
+          lineHeight: look.line.small,
+          color: colours.muted.light,
+        }}
+      >
+        {texts.fallback}
+      </Text>
+      <Text
+        dir="ltr"
+        style={{
+          fontFamily: look.font,
+          margin: "4px 0 0",
+          fontSize: "13px",
+          lineHeight: "18px",
+          textAlign: look.align,
+          wordBreak: "break-all",
+        }}
+      >
+        <Link
+          href={props.link}
+          className="e-link"
+          style={{ color: colours.primary.light, textDecoration: "underline" }}
+        >
+          {props.link}
+        </Link>
+      </Text>
     </Layout>
   );
 }

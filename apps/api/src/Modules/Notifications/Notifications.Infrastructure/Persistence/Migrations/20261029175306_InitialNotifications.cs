@@ -102,13 +102,16 @@ namespace Notifications.Infrastructure.Persistence.Migrations
             // U8, in the shape of R14: the tenant purge and the retention delete across users, which no transaction of the application
             // can, because it declares one user at most. Each goes through one function that runs as its owner, the migration role, which
             // the application never connects as (R3, R7). Row level security, forced, binds the owner too, so two policies for the owner
-            // alone let the functions read and delete; the application's own policy stays as it is. Each function deletes only its own
+            // alone let the functions read and delete, and only the rows that either function may: those about the declared tenant, and
+            // those more than a day old. The application's own policy stays as it is. Each function deletes only its own
             // rows: the purge those about the tenant the transaction declares, and the retention a batch of those older than a moment that
             // is at least a day old. The search path is fixed (PostgreSQL documentation, CREATE FUNCTION, "Writing SECURITY DEFINER
             // Functions Safely"). Only the application may execute them.
             migrationBuilder.Sql("""
-                CREATE POLICY owner_read ON notifications.notifications FOR SELECT TO api_owner USING (true);
-                CREATE POLICY owner_delete ON notifications.notifications FOR DELETE TO api_owner USING (true);
+                CREATE POLICY owner_read ON notifications.notifications FOR SELECT TO api_owner
+                    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid OR created_at < now() - interval '1 day');
+                CREATE POLICY owner_delete ON notifications.notifications FOR DELETE TO api_owner
+                    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid OR created_at < now() - interval '1 day');
 
                 CREATE FUNCTION notifications.purge_tenant_notifications() RETURNS integer
                     LANGUAGE plpgsql

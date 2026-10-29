@@ -39,6 +39,7 @@ public static class NotificationsInfrastructure
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationQueries, NotificationQueries>();
         services.AddScoped<IEmailPreferenceRepository, EmailPreferenceRepository>();
+        services.AddScoped<IEmailPreferenceQueries, EmailPreferenceQueries>();
 
         // Outside Development email goes only through Resend. Without its settings no email could leave, invitations included, so the
         // application does not start.

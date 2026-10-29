@@ -4,7 +4,7 @@ using Notifications.Application.Notifications;
 using Notifications.Domain;
 using Wolverine;
 
-namespace Notifications.Application.Invitations.NotifyInvitationAccepted;
+namespace Notifications.Application.Members.NotifyInvitationAccepted;
 
 // "An invitation you sent was accepted", to the member who invited, while still a member: the acceptance names them only then. The
 // platform's invitations name nobody.

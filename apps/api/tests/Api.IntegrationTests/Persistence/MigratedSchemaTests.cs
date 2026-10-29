@@ -71,8 +71,8 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.tenant_purge_sagas tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             notifications.email_preferences own_email_preferences: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications own_notifications: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
-            notifications.notifications owner_delete: PERMISSIVE DELETE {api_owner} USING true WITH CHECK -
-            notifications.notifications owner_read: PERMISSIVE SELECT {api_owner} USING true WITH CHECK -
+            notifications.notifications owner_delete: PERMISSIVE DELETE {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
+            notifications.notifications owner_read: PERMISSIVE SELECT {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
             """);
     }
 

@@ -43,7 +43,8 @@
   },
   "notificationEmail": {
     "button": "{brandName} uygulamasını aç",
-    "footer": "Bu e-postayı bildirim e-posta tercihleriniz nedeniyle aldınız. Tercihlerinizden değiştirebilirsiniz."
+    "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
+    "footer": "Bu e-postayı sizi ilgilendiren bir değişiklik olduğu için aldınız. Hangi bildirimlerin e-postayla da geleceğini tercihlerinizden seçersiniz."
   },
   "notifications": {
     "member.role_changed": {

@@ -7,4 +7,4 @@ Starter
 Starter uygulamasını aç:
 {{link}}
 
-Bu e-postayı bildirim e-posta tercihleriniz nedeniyle aldınız. Tercihlerinizden değiştirebilirsiniz.
+Bu e-postayı sizi ilgilendiren bir değişiklik olduğu için aldınız. Hangi bildirimlerin e-postayla da geleceğini tercihlerinizden seçersiniz.

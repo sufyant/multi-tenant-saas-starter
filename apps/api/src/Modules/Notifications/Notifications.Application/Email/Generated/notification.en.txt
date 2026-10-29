@@ -7,4 +7,4 @@ Starter
 Open Starter:
 {{link}}
 
-You received this because of your email preferences for notifications. You change them in your preferences.
+You received this because something changed that concerns you. You choose which notifications also come by email in your preferences.

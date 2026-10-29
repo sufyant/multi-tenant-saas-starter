@@ -31,7 +31,7 @@ public sealed class SendNotificationEmailHandlerTests
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@example.com", "You were removed from Acme", $"notification/{notificationId}"));
         email.Text.ShouldBe(
             "Starter\n\nYou were removed from Acme\n\nYou no longer have access to Acme.\n\nOpen Starter:\nhttps://app.example/\n\n"
-            + "You received this because of your email preferences for notifications. You change them in your preferences.");
+            + "You received this because something changed that concerns you. You choose which notifications also come by email in your preferences.");
         email.Html.ShouldContain("href=\"https://app.example/\"");
     }
 

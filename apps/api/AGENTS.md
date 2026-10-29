@@ -68,13 +68,14 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 
 ## A new notification
 
-A notification type is a template (U1 to U4). A new one needs three things and changes no other part of the system:
+A notification type is a template (U1 to U4). A new one needs these things, and the module that raises the event does not change:
 
 1. One entry in `Notifications.Domain/NotificationCatalog.cs`: the type, its category, its bell, its link kind, its channels with their defaults, whether it is required, and the values its texts use.
 2. Its texts in `packages/emails/messages/{en,tr,ar}.json`, under `notifications`: a title and a body with the values as `{name}`, and the words of a closed list under `notificationWords`. Run `pnpm generate`.
-3. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.To(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
+3. A migration of Notifications: the CHECK of the types reads the catalog (`dotnet ef migrations add`; `PendingModelChangesTests` asks for it). A new link kind also needs its value in `NotificationLinkResponseKind` and `Statuses/ResponseStatus.cs`.
+4. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.To(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
 
-The module that raises the event does not change. `NotificationCatalogTests` fails for a type without its texts in every language, without its handler or without a category of the catalog. "Which category?" is a plan question of every feature step (E7).
+`NotificationCatalogTests` fails for a type without its texts in every language, without its handler or without a category of the catalog. "Which category?" is a plan question of every feature step (E7).
 
 ## How we design
 
