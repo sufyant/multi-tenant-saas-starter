@@ -21,6 +21,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
   - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
   - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
   - `plans-and-entitlements.md`: a system admin manages the plans, a tenant's plan and its overrides; a tenant endpoint checks its feature and a tenant's method its limit.
+  - `notifications.md`: an event reaches its recipients in the bell, live, and by email by their preferences; the bells, their read state and the retention.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
@@ -64,6 +65,16 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 - A folder named `System` hides .NET's `System` namespace. The audience of the system admins is `Platform` (`/v1/platform`, `platform.*`): in the tenant web, "Admin" is a role. The other rules for names and folders are in section 10 of `ARCHITECTURE.md` ("Names and places").
 - A new tenant endpoint names the feature of the plan it needs, `.RequireAuthorization(Features.X)`, or carries `NotPlanGated`: `PlanGateTests` fails otherwise. A new limit is checked in the tenant's method, under the tenant's lock, from the database, never from the cache. A new feature step starts with the plan questions (E7).
 - Me is a Visual Basic keyword. CA1716 does not check namespaces (`.editorconfig`); it still checks types and members.
+
+## A new notification
+
+A notification type is a template (U1 to U4). A new one needs three things and changes no other part of the system:
+
+1. One entry in `Notifications.Domain/NotificationCatalog.cs`: the type, its category, its bell, its link kind, its channels with their defaults, whether it is required, and the values its texts use.
+2. Its texts in `packages/emails/messages/{en,tr,ar}.json`, under `notifications`: a title and a body with the values as `{name}`, and the words of a closed list under `notificationWords`. Run `pnpm generate`.
+3. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.To(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
+
+The module that raises the event does not change. `NotificationCatalogTests` fails for a type without its texts in every language, without its handler or without a category of the catalog. "Which category?" is a plan question of every feature step (E7).
 
 ## How we design
 
