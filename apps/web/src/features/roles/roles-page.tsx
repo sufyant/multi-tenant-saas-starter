@@ -2,6 +2,7 @@
 
 import {
   getGetMeQueryOptions,
+  LimitKey,
   Permission,
   problemOf,
   type RoleDetailResponse,
@@ -74,13 +75,13 @@ export function RolesPage() {
   const featureOff = plan.on(EntitlementKey.RolesCustom)
     ? undefined
     : planReason.feature(EntitlementKey.RolesCustom);
-  const roleLimit = plan.limit(EntitlementKey.RolesCustomMax);
+  const roleLimit = plan.limit(LimitKey.RolesCustomMax);
   const over = featureOff === undefined && roleLimit.overLimit;
   const counter = (() => {
     if (featureOff) return featureOff;
     if (roleLimit.limit === null) return null;
     if (roleLimit.atLimit)
-      return sentenceOf(planReason.limit(EntitlementKey.RolesCustomMax));
+      return sentenceOf(planReason.limit(LimitKey.RolesCustomMax));
     return t("plans.rolesCount", {
       count: roleLimit.count,
       limit: roleLimit.limit,

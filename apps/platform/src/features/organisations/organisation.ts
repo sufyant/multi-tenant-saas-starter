@@ -1,16 +1,15 @@
 import {
-  actionFor,
   ErrorCode,
-  getGetMeQueryKey,
+  getGetTenantPlanQueryKey,
   getGetTenantQueryKey,
   getListTenantsQueryKey,
   InvitationResponseState,
-  ProblemDetailsError,
   type TenantListItemResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
 import type { StatusTone } from "@repo/ui/components/status";
 import type { QueryClient } from "@tanstack/react-query";
+import { afterAccountRefusal } from "@/shared/refusal";
 
 /** What the list and the detail page both know of an organisation: an item of ListTenants, or the answer of GetTenant. */
 export type Organisation = Pick<
@@ -119,10 +118,11 @@ export function actionsOf(organisation: Organisation): (Action | null)[] {
   }
 }
 
-/** After a command the screen reads again (F47): the organisation, and every page of the list. */
+/** After a command the screen reads again (F47): the organisation, its plan, and every page of the list. */
 export const refreshOrganisation = (queryClient: QueryClient, id: string) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: getGetTenantQueryKey(id) }),
+    queryClient.invalidateQueries({ queryKey: getGetTenantPlanQueryKey(id) }),
     queryClient.invalidateQueries({ queryKey: getListTenantsQueryKey() }),
   ]);
 
@@ -133,6 +133,7 @@ const changedMeanwhile = new Set<string>([
   ErrorCode.TenantReopenPeriodEnded,
   ErrorCode.TenantHasOwner,
   ErrorCode.TenantNotFound,
+  ErrorCode.PlanOverrideNotFound,
 ]);
 
 /**
@@ -144,11 +145,7 @@ export function afterRefusal(
   id: string | null,
   error: unknown,
 ): void {
-  if (!(error instanceof ProblemDetailsError)) return;
-  const { kind } = actionFor(error.status, error.problem);
-  if (kind === "sign-in") window.location.assign("/sign-in");
-  if (kind === "account-suspended" || kind === "account-deleted")
-    void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-  if (id && error.problem && changedMeanwhile.has(error.problem.code))
+  const code = afterAccountRefusal(queryClient, error);
+  if (id && code && changedMeanwhile.has(code))
     void refreshOrganisation(queryClient, id);
 }

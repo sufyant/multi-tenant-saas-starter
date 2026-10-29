@@ -26,7 +26,8 @@
     "language": "اللغة",
     "platform": "Platform",
     "systemAdmins": "مسؤولو النظام",
-    "activity": "النشاط"
+    "activity": "النشاط",
+    "plans": "الخطط"
   },
   "preferences": {
     "title": "التفضيلات",
@@ -194,7 +195,12 @@
     "inviteNotActive": "<bdi>{name}</bdi> ليست نشطة.",
     "inviteNotActiveText": "أعد تفعيلها أو أعد فتحها أولًا.",
     "notDone": "لم تتغيّر <bdi>{name}</bdi>.",
-    "activity": "النشاط"
+    "activity": "النشاط",
+    "plan": "الخطة",
+    "planHint": "تحصل المؤسسات الجديدة على الخطة الافتراضية. يمكنك تغييرها لاحقًا.",
+    "planSearch": "ابحث في الخطط",
+    "planEmpty": "لم يُعثر على خطة",
+    "planDefault": "افتراضية"
   },
   "users": {
     "title": "المستخدمون",
@@ -346,7 +352,7 @@
     "operations": {
       "unknown": "أجرى <actor></actor> تغييرًا (<code>{operation}</code>).",
       "tenant": {
-        "created": "أنشأ <actor></actor> <target></target> ودعا مالكها.",
+        "created": "{onPlan, select, none {أنشأ <actor></actor> <target></target> ودعا مالكها.} other {أنشأ <actor></actor> <target></target> على <plan></plan> ودعا مالكها.}}",
         "renamed": "غيّر <actor></actor> اسم <link>{oldName}</link> إلى <name>{newName}</name>.",
         "suspended": "أوقف <actor></actor> <target></target>. السبب: <name>{reason}</name>.",
         "reactivated": "أعاد <actor></actor> تفعيل <target></target>.",
@@ -355,7 +361,10 @@
         "owner_invited": "دعا <actor></actor> مالكًا جديدًا إلى <target></target>.",
         "owner_made": "{owner, select, named {جعل <actor></actor> <member></member> مالكًا في <target></target>.} deletedUser {جعل <actor></actor> <member>مستخدمًا محذوفًا</member> مالكًا في <target></target>.} other {جعل <actor></actor> <member>عضوًا</member> مالكًا في <target></target>.}}",
         "purge_warned": "أُبلغ مالكو <target></target> بأنها ستُحذف في {date}.",
-        "purged": "حُذفت <target></target>."
+        "purged": "حُذفت <target></target>.",
+        "plan_changed": "نقل <actor></actor> <target></target> من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
+        "entitlement_override_set": "جعل <actor></actor> {key} لـ<target></target> {value} {expiry, select, none {بلا انتهاء} other {حتى {date}}} (قبل ذلك: {previous}).{hasReason, select, yes { السبب: <name>{reason}</name>.} ended { السبب: <name>{reason}</name>} other {}}",
+        "entitlement_override_removed": "أزال <actor></actor> استثناء <target></target> على {key} ({value}، {expiry, select, none {بلا انتهاء} other {حتى {date}}})."
       },
       "user": {
         "suspended": "أوقف <actor></actor> المستخدم <target></target>.",
@@ -367,7 +376,145 @@
       "system_admin": {
         "granted": "جعل <actor></actor> <target></target> مسؤول نظام.",
         "revoked": "أزال <actor></actor> <target></target> من مسؤولي النظام."
+      },
+      "plan": {
+        "created": "أنشأ <actor></actor> الخطة <target></target>.",
+        "updated": "{change, select, renamed {غيّر <actor></actor> اسم الخطة <name>{oldName}</name> إلى <target></target>.} default {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>.} defaultAndChanges {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>، وغيّر <changes></changes>.} one {غيّر <actor></actor> الخطة <target></target>: <changes></changes>.} other {غيّر <actor></actor> عدة قيم في الخطة <target></target>: <changes></changes>.}}"
       }
+    },
+    "change": "{key} من <bdi>{old}</bdi> إلى <bdi>{new}</bdi>",
+    "changeSeparator": "؛ ",
+    "nameKey": "الاسم"
+  },
+  "entitlements": {
+    "areas": {
+      "roles": "الأدوار",
+      "members": "الأعضاء"
+    },
+    "keys": {
+      "roles_custom": {
+        "name": "الأدوار المخصصة",
+        "description": "أدوار تنشئها المؤسسة إلى جانب المالك والمشرف والعضو.",
+        "turnsOff": "تتوقف {key}. تبقى أدوارها المخصصة الـ{count} ويحتفظ أعضاؤها بصلاحياتهم؛ لا يمكن لأحد إنشاء دور أو تعديله أو منحه."
+      },
+      "roles_custom_max": {
+        "name": "حد الأدوار المخصصة",
+        "description": "عدد الأدوار المخصصة التي يمكن أن تملكها المؤسسة."
+      },
+      "members_max": {
+        "name": "حد الأعضاء",
+        "description": "الأعضاء والدعوات المعلّقة التي لم تنتهِ صلاحيتها."
+      }
+    },
+    "turnsOff": "تتوقف {key}.",
+    "on": "مفعّل",
+    "off": "متوقف",
+    "unlimited": "غير محدود",
+    "notSet": "غير محدد: مغلق",
+    "sentence": {
+      "on": "مفعّل",
+      "off": "متوقف",
+      "unlimited": "غير محدود",
+      "notSet": "غير محدد",
+      "none": "لا شيء"
     }
+  },
+  "plans": {
+    "title": "الخطط",
+    "intro": "تمنح الخطة كل مؤسسة ميزاتها وحدودها. تحصل المؤسسات الجديدة على الخطة الافتراضية.",
+    "newPlan": "خطة جديدة",
+    "default": "افتراضية",
+    "nameColumn": "الخطة",
+    "organisationsColumn": "المؤسسات",
+    "loading": "جارٍ تحميل الخطط",
+    "error": "تعذّر تحميل الخطط",
+    "loadError": "تعذّر تحميل الخطة",
+    "section": "الخطة",
+    "name": "الاسم",
+    "defaultPlan": "الخطة الافتراضية",
+    "defaultOn": "تحصل المؤسسات الجديدة على هذه الخطة.",
+    "defaultOff": "حدّدها لتحصل المؤسسات الجديدة على هذه الخطة بدلًا من <bdi>{plan}</bdi>.",
+    "defaultLocked": "توجد دائمًا خطة افتراضية واحدة. لتغييرها، اجعل خطة أخرى هي الافتراضية أولًا.",
+    "numberPlaceholder": "غير محدد",
+    "organisationCount": "{count, plural, one {على هذه الخطة مؤسسة واحدة.} other {على هذه الخطة # مؤسسات.}}",
+    "createTitle": "خطة جديدة",
+    "createText": "المفتاح الذي تتركه دون قيمة يكون مغلقًا للمؤسسات على هذه الخطة.",
+    "save": "حفظ التغييرات",
+    "create": "إنشاء الخطة",
+    "nameRequired": "أدخل اسمًا.",
+    "nameTaken": "لخطة أخرى هذا الاسم.",
+    "nameTooLong": "استخدم من 1 إلى {max} حرف.",
+    "numberInvalid": "أدخل عددًا صحيحًا، 0 أو أكثر.",
+    "saved": "حُفظت <bdi>{name}</bdi>",
+    "created": "أُنشئت <bdi>{name}</bdi>",
+    "notSaved": "لم تُحفظ الخطة",
+    "impactTitle": "حفظ التغييرات على <bdi>{plan}</bdi>؟",
+    "impactText": "{count, plural, one {يجعل هذا التعديل مؤسسة واحدة فوق حدٍّ ما. لا يُحذف شيء ولا يُقفل شيء: لا يمكنها إضافة المزيد حتى تعود تحت الحد. لإبقائها كما هي، امنحها استثناءً أولًا.} other {يجعل هذا التعديل # مؤسسات فوق حدٍّ ما. لا يُحذف شيء ولا يُقفل شيء: لا يمكنها إضافة المزيد حتى تعود تحت الحد. لإبقاء مؤسسة كما هي، امنحها استثناءً أولًا.}}",
+    "organisation": "المؤسسة",
+    "limit": "الحد",
+    "now": "الآن",
+    "newLimit": "الحد الجديد",
+    "overBy": "زيادة {count}",
+    "saveAnyway": "حفظ على أي حال",
+    "search": "البحث في المؤسسات",
+    "shown": "عرض {shown} من {total}، الأبعد عن الحد أولًا.",
+    "loadMore": "تحميل المزيد",
+    "newTab": "(يُفتح في علامة تبويب جديدة)",
+    "previewError": "تعذّر التحقق من المؤسسات على هذه الخطة. حاول مرة أخرى."
+  },
+  "planSection": {
+    "title": "الخطة",
+    "changePlan": "تغيير الخطة",
+    "addOverride": "إضافة استثناء",
+    "key": "الميزة أو الحد",
+    "plan": "الخطة",
+    "override": "الاستثناء",
+    "applies": "المطبّق",
+    "used": "المستخدم",
+    "setBy": "حدّده {name}",
+    "until": "حتى <date></date>",
+    "noExpiry": "بلا انتهاء",
+    "expired": "منتهٍ",
+    "hint": "يغيّر الاستثناء قيمة واحدة لهذه المؤسسة فقط. تبقى الخطة كما هي.",
+    "noOverrides": "لا استثناءات. كل قيمة تأتي من الخطة.",
+    "overTitle": "<bdi>{name}</bdi> فوق حدٍّ ما.",
+    "overText": "لا يُحذف شيء ولا يُقفل شيء. لا يمكن لأفرادها إضافة المزيد حتى تعود تحت الحد.",
+    "overBy": "زيادة {count}",
+    "closedTitle": "<bdi>{name}</bdi> مغلقة. خطتها واستثناءاتها للقراءة فقط.",
+    "closedText": "أعد فتحها لتغييرها.",
+    "error": "تعذّر تحميل الخطة",
+    "actionsFor": "إجراءات {name}",
+    "editOverride": "تعديل الاستثناء",
+    "removeOverride": "إزالة الاستثناء",
+    "addTitle": "إضافة استثناء لـ<bdi>{name}</bdi>",
+    "editTitle": "تعديل الاستثناء على {key}",
+    "overrideText": "يغيّر هذه القيمة لـ<bdi>{name}</bdi> فقط، حتى تنتهي صلاحيته أو يزيله أحد.",
+    "keySearch": "ابحث في الميزات والحدود",
+    "keyEmpty": "لم يُعثر على ميزة أو حد",
+    "value": "القيمة",
+    "expires": "ينتهي في",
+    "expiresHint": "اختياري. من هذا التاريخ تعود قيمة الخطة، بدءًا من منتصف الليل بتوقيتك.",
+    "reason": "السبب",
+    "reasonHint": "لا تراه إلا المنصة.",
+    "reasonRequired": "أدخل سببًا.",
+    "reasonTooLong": "استخدم من 1 إلى {max} حرف.",
+    "expiryInvalid": "اختر تاريخًا بعد اليوم.",
+    "save": "حفظ الاستثناء",
+    "saved": "حُفظ الاستثناء",
+    "notSaved": "لم يُحفظ الاستثناء",
+    "removeTitle": "إزالة الاستثناء على {key}؟",
+    "removeText": "تعود <bdi>{name}</bdi> إلى قيمة الخطة، {value}. تستخدم الآن {count}.",
+    "removed": "أُزيل الاستثناء",
+    "notRemoved": "لم يُزل الاستثناء",
+    "changeTitle": "تغيير خطة <bdi>{name}</bdi>",
+    "changeText": "على <bdi>{plan}</bdi> تصبح <bdi>{name}</bdi> فوق حدٍّ وتفقد ميزة. لا يُحذف شيء ولا يُقفل شيء: لا يمكن لأفرادها إضافة المزيد حتى تعود تحت الحد.",
+    "newPlan": "الخطة الجديدة",
+    "current": "الحالية",
+    "planSearch": "ابحث في الخطط",
+    "planEmpty": "لم يُعثر على خطة",
+    "limitOver": "{key}: {count} الآن، و{limit} على <bdi>{plan}</bdi>.",
+    "overrideApplies": "{key}: يبقى استثناؤها ({value}) ساريًا.",
+    "changed": "نُقلت <bdi>{name}</bdi> إلى <bdi>{plan}</bdi>",
+    "notChanged": "لم تتغيّر الخطة"
   }
 }

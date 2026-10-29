@@ -94,14 +94,14 @@
       "validation_failed": "Bazı alanların düzeltilmesi gerekiyor. Kontrol edip yeniden deneyin."
     },
     "plan": {
-      "default_required": "Varsayılan plan, işareti başka bir plan alana kadar korur.",
-      "entitlement_invalid": "Bir değer anahtarına uymuyor. Değerleri denetleyip yeniden deneyin.",
+      "default_required": "Her zaman bir varsayılan plan vardır. Değiştirmek için önce başka bir planı varsayılan yapın.",
+      "entitlement_invalid": "0 veya daha büyük bir tam sayı girin.",
       "feature_unavailable": "Bu kuruluşun planı bu özelliği içermiyor.",
       "limit_reached": "Bu kuruluş planının bir sınırına ulaştı.",
-      "name_invalid": "Bir plan adı girin.",
-      "name_taken": "Bu ad başka bir planda var. Başka bir ad seçin.",
+      "name_invalid": "Bir ad girin.",
+      "name_taken": "Bu ad başka bir planda var.",
       "not_found": "Bu plan artık yok.",
-      "override_not_found": "Bu kuruluşta bu anahtar için geçersiz kılma yok."
+      "override_not_found": "Bu kuruluşta bu anahtar için istisna yok."
     },
     "role": {
       "built_in": "Yerleşik bir rolün adı ve izinleri değişmez, rol silinemez.",

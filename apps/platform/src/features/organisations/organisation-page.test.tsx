@@ -1,5 +1,5 @@
 import { AuditOperation, ErrorCode } from "@repo/api-client";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http } from "msw";
 import { setupServer } from "msw/node";
@@ -29,6 +29,7 @@ import {
   northwind,
   problem,
 } from "../../../test/organisations";
+import { anyTenantPlanAnswer, plansAnswer } from "../../../test/plans";
 import { renderWithProviders, sentence } from "../../../test/render";
 import { OrganisationPage } from "./organisation-page";
 
@@ -38,9 +39,10 @@ vi.mock("next/navigation", () => ({
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-beforeEach(() =>
-  window.history.replaceState(null, "", `/organisations/${northwind.id}`),
-);
+beforeEach(() => {
+  window.history.replaceState(null, "", `/organisations/${northwind.id}`);
+  server.use(anyTenantPlanAnswer(), plansAnswer());
+});
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
@@ -254,8 +256,11 @@ describe("OrganisationPage", () => {
 
     renderWithProviders(<OrganisationPage tenantId={corrib.id} />);
 
-    expect(await term("Deleted")).toHaveTextContent(
-      dateOf(corrib.purgedAt as string),
+    // The date is in the admin's zone once GetMe answers; before, the page writes it in the runtime's zone, a day apart near midnight.
+    await waitFor(async () =>
+      expect(await term("Deleted")).toHaveTextContent(
+        dateOf(corrib.purgedAt as string),
+      ),
     );
     expect(
       screen.getByText(
@@ -387,5 +392,26 @@ describe("OrganisationPage", () => {
     expect(requests.map((url) => url.searchParams.get("tenantId"))).toEqual([
       corrib.id,
     ]);
+  });
+  it("OrganisationPage_Overview_ShowsThePlanSection", async () => {
+    server.use(meAnswer(), detailAnswer(detailOf(northwind)));
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "Plan" }),
+    ).toBeVisible();
+    expect(await screen.findByRole("table", { name: "Plan" })).toBeVisible();
+  });
+
+  it("OrganisationPage_Deleted_HasNoPlanSection", async () => {
+    server.use(meAnswer(), detailAnswer(detailOf(corrib)));
+
+    renderWithProviders(<OrganisationPage tenantId={corrib.id} />);
+
+    expect(await term("Deleted")).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Plan" }),
+    ).toBeNull();
   });
 });

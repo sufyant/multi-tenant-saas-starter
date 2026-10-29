@@ -8,13 +8,17 @@ import { useTranslations } from "next-intl";
 export const settingsPages = {
   preferences: "/settings/preferences",
   systemAdmins: "/settings/system-admins",
+  plans: "/settings/plans",
 } as const;
 
-/** The Settings SubNav of the platform (the Preferences and SystemAdmins boards): You › Preferences, Platform › System admins. */
+/**
+ * The Settings SubNav of the platform (the Preferences, SystemAdmins and Plans boards): You › Preferences, Platform › System admins
+ * and Plans.
+ */
 export function SettingsNav({
   current,
 }: {
-  current: "preferences" | "system-admins";
+  current: "preferences" | "system-admins" | "plans";
 }) {
   const t = useTranslations("shell");
   return (
@@ -39,6 +43,11 @@ export function SettingsNav({
               id: "system-admins",
               label: t("systemAdmins"),
               href: settingsPages.systemAdmins,
+            },
+            {
+              id: "plans",
+              label: t("plans"),
+              href: settingsPages.plans,
             },
           ],
         },

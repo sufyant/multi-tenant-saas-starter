@@ -722,6 +722,16 @@ export interface ExcessResponse {
 }
 
 /**
+ * A feature key of the entitlement list: on or off.
+ */
+export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
+
+
+export const FeatureKey = {
+  RolesCustom: 'roles.custom',
+} as const;
+
+/**
  * Why one field of a request failed validation.
  */
 export type FieldErrorCode = typeof FieldErrorCode[keyof typeof FieldErrorCode];
@@ -854,6 +864,17 @@ export interface InviteOwnerRequest {
   email: string;
   language?: null | Language;
 }
+
+/**
+ * A limit key of the entitlement list: a number of 0 or more, or unlimited.
+ */
+export type LimitKey = typeof LimitKey[keyof typeof LimitKey];
+
+
+export const LimitKey = {
+  RolesCustomMax: 'roles.custom.max',
+  MembersMax: 'members.max',
+} as const;
 
 export interface ListPageOfInvitationResponse {
   items: InvitationResponse[];

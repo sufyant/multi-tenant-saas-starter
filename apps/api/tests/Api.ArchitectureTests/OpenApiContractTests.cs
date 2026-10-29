@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Audit.Api.Tenant.AuditLogs;
 using Audit.Domain;
 using ControlPlane.Contracts;
+using ControlPlane.Contracts.Plans;
 using FluentValidation;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Authorization;
@@ -208,6 +209,23 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             .Order(StringComparer.Ordinal);
 
         var documented = EnumOf(Schemas().Single(schema => schema.Name == "Permission").Value);
+
+        listed.ShouldNotBeEmpty();
+        documented.ShouldBe(string.Join(", ", listed));
+    }
+
+    // N11i and E1: the entitlement keys are two enums in the document, each in the order of its list, so a generated client knows
+    // each key and its kind, and the platform shows a key added in code at once.
+    [Theory]
+    [InlineData("FeatureKey", typeof(Features))]
+    [InlineData("LimitKey", typeof(Limits))]
+    public void BuildOpenApiDocument_EntitlementKeys_ListEveryKeyOfItsListInItsOrder(string schemaName, Type keys)
+    {
+        var listed = keys.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral)
+            .Select(field => (string)field.GetRawConstantValue()!);
+
+        var documented = EnumOf(Schemas().Single(schema => schema.Name == schemaName).Value);
 
         listed.ShouldNotBeEmpty();
         documented.ShouldBe(string.Join(", ", listed));
