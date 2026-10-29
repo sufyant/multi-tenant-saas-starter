@@ -79,6 +79,13 @@ public static class NotificationsInfrastructure
             .Validate(links => NotificationLinkOptions.IsHttps(links.PlatformUrl), $"{NotificationLinkOptions.Section}:PlatformUrl must be an absolute https URL.")
             .ValidateOnStart();
 
+        services.AddOptions<LiveStreamOptions>()
+            .BindConfiguration(LiveStreamOptions.Section)
+            .Validate(
+                stream => stream.IsValid,
+                $"{LiveStreamOptions.Section}:KeepAliveInterval must be positive and at most 30 seconds, and Lifetime longer than it and at most 10 minutes.")
+            .ValidateOnStart();
+
         services.AddOptions<InvitationEmailOptions>()
             .BindConfiguration(InvitationEmailOptions.Section)
             .Validate(settings => settings.IsValid, $"{InvitationEmailRetryDelaysKey} must be positive pauses that grow.")

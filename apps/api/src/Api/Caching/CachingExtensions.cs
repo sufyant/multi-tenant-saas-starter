@@ -65,6 +65,8 @@ internal static partial class CachingExtensions
         valkey.AsyncTimeout = (int)CallTimeLimit.TotalMilliseconds;
         valkey.SyncTimeout = (int)CallTimeLimit.TotalMilliseconds;
         var connecting = new Lazy<Task<IConnectionMultiplexer>>(async () => await ConnectionMultiplexer.ConnectAsync(valkey));
+        // The live channel publishes on the same connection (U6, LiveChannelExtensions).
+        builder.Services.AddSingleton(new ValkeyConnection(connecting));
         var distributed = new RedisCache(new RedisCacheOptions { ConnectionMultiplexerFactory = () => connecting.Value });
 
 

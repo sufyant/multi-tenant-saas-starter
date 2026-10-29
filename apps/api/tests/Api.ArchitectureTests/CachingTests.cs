@@ -20,7 +20,9 @@ public sealed class CachingTests
     ];
 
     // The two helpers, and the composition root with its gauge of Valkey's evicted keys.
-    private static readonly string[] AllowedToCallTheCache = ["Tenancy.Caching.ReadCache", "Tenancy.Caching.CacheRemoval", "Api.Caching.CachingExtensions", "Api.Caching.EvictedKeys"];
+    // The live channel publishes and subscribes on the cache's connection to Valkey (U6); it reads and writes no entry.
+    private static readonly string[] AllowedToCallTheCache =
+        ["Tenancy.Caching.ReadCache", "Tenancy.Caching.CacheRemoval", "Api.Caching.CachingExtensions", "Api.Caching.EvictedKeys", "Api.Caching.ValkeyConnection", "Api.Live.LiveChannel"];
 
     public static TheoryData<string> ProductionProjects => [.. Solution.AllProjects];
 

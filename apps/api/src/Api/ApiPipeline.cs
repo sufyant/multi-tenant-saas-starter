@@ -5,6 +5,7 @@ using Api.Caching;
 using Api.ErrorHandling;
 using Api.Hosting;
 using Api.Idempotency;
+using Api.Live;
 using Api.Messaging;
 using Api.Networking;
 using Api.Observability;
@@ -52,6 +53,7 @@ internal static class ApiPipeline
 
         builder.AddObservability();
         builder.AddCaching();
+        builder.AddLiveChannel();
         builder.AddAccess();
         builder.Services.AddErrorHandling();
         builder.AddMessaging(host, role, openApiBuild, handlerAssemblies);

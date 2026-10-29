@@ -71,6 +71,7 @@ using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
 using Notifications.Application.Invitations.SendInvitationEmail;
+using Notifications.Application.Notifications.DeliverNotification;
 using Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
 using Tenancy;
 using Wolverine;
@@ -692,6 +693,41 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeMemberRoleCommand), typeof(ChangeMemberRoleHandler))]);
         runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(MemberRoleChangedEvent), typeof(RecordMemberRoleChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.role_changed")).ShouldBe(1L);
+    }
+
+    // U6: the worker writes the notification, and its commit publishes the signal on Valkey; the web host that holds the member's stream hears
+    // it and writes it to that stream. Without Valkey the worker's signal would stay in the worker. The stream's first comment line shows it
+    // is open, and its subscription is in place.
+    [Fact]
+    public async Task StreamNotifications_OnAWebAndAWorkerHostWithValkey_TheWorkersNotificationReachesTheWebStream()
+    {
+        await using var valkey = new Valkey();
+        await valkey.InitializeAsync();
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        Dictionary<string, string?> settings = new()
+        {
+            ["ConnectionStrings:Cache"] = valkey.ConnectionString,
+            ["Notifications:LiveStream:KeepAliveInterval"] = "00:00:00.500",
+        };
+        await using var web = Host(name, "web", runs, settings: settings);
+        await using var worker = Host(name, "worker", runs, settings: settings);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = web.CreateClient(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var member = await testData.AddMemberAsync(tenant.Id);
+        await using var stream = await LiveStream.OpenAsync(web.CreateClient(member));
+        (await stream.NextAsync(TimeSpan.FromSeconds(10))).ShouldBe(LiveStream.KeepAlive);
+
+        await owner.ChangeMemberRoleAsync(tenant.Id, await testData.UserIdOfAsync(member), (await testData.RoleIdOfAsync(tenant.Id, "Admin")).ToString());
+
+        (await stream.NextEventAsync(TimeSpan.FromSeconds(20))).ShouldBe($$"""
+            event: notifications
+            data: {"scope":"tenant","tenantId":"{{tenant.Id}}"}
+            """);
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(DeliverNotificationCommand), typeof(DeliverNotificationHandler)));
+        runs.In("web").ShouldNotContain(new HandlerRun(typeof(DeliverNotificationCommand), typeof(DeliverNotificationHandler)));
     }
 
     // Owner recovery (docs/flows/owner-recovery.md): the platform's new Owner is accepted by the web host, and its records in both logs run in the worker,
