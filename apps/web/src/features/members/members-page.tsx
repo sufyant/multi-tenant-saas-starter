@@ -4,6 +4,7 @@ import {
   getGetMeQueryOptions,
   getListInvitationsQueryOptions,
   getListMembersQueryOptions,
+  LimitKey,
   ListInvitationsSort,
   ListMembersSort,
   Permission,
@@ -22,7 +23,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
-import { EntitlementKey, usePlan } from "@/shared/plan";
+import { usePlan } from "@/shared/plan";
 import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
@@ -116,11 +117,11 @@ export function MembersPage() {
     );
 
   const canInvite = can(Permission.TenantInvitationsCreate);
-  const memberLimit = plan.limit(EntitlementKey.MembersMax);
+  const memberLimit = plan.limit(LimitKey.MembersMax);
   const counter = (() => {
     if (memberLimit.limit === null) return null;
     if (memberLimit.atLimit)
-      return sentenceOf(planReason.limit(EntitlementKey.MembersMax));
+      return sentenceOf(planReason.limit(LimitKey.MembersMax));
     return t("plans.membersCount", {
       count: memberLimit.count,
       limit: memberLimit.limit,

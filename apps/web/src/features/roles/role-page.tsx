@@ -1,6 +1,6 @@
 "use client";
 
-import { Permission, problemOf } from "@repo/api-client";
+import { FeatureKey, Permission, problemOf } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
@@ -9,7 +9,7 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { PermissionDenied } from "@/shared/permission-denied";
-import { EntitlementKey, usePlan } from "@/shared/plan";
+import { usePlan } from "@/shared/plan";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
@@ -81,7 +81,7 @@ export function RolePage({ roleId }: { roleId: string }) {
     !role.builtIn &&
     can(Permission.TenantRolesUpdate) &&
     holdsAll(detail.permissions, role);
-  const featureOn = plan.on(EntitlementKey.RolesCustom);
+  const featureOn = plan.on(FeatureKey.RolesCustom);
   if (editable && featureOn)
     return (
       <RolesFrame>
@@ -101,7 +101,7 @@ export function RolePage({ roleId }: { roleId: string }) {
       {editable && !featureOn && (
         <Banner
           tone="info"
-          title={planReason.feature(EntitlementKey.RolesCustom)}
+          title={planReason.feature(FeatureKey.RolesCustom)}
         />
       )}
       <div className="max-w-3xl">

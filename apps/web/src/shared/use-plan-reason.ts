@@ -1,8 +1,8 @@
 "use client";
 
-import { ErrorCode, problemOf } from "@repo/api-client";
+import { ErrorCode, FeatureKey, LimitKey, problemOf } from "@repo/api-client";
 import { useTranslations } from "next-intl";
-import { EntitlementKey, usePlan } from "./plan";
+import { usePlan } from "./plan";
 
 /** A reason in two parts: the fact, and what to do next, when there is something to do. */
 export type PlanReason = { title: string; text: string | null };
@@ -22,13 +22,13 @@ export function usePlanReason(): {
   const plan = usePlan();
 
   const feature = (key: string) =>
-    key === EntitlementKey.RolesCustom
+    key === FeatureKey.RolesCustom
       ? t("plans.rolesCustomOff")
       : t("errors.plan.feature_unavailable");
 
   const limit = (key: string): PlanReason => {
     const neutral = { title: t("errors.plan.limit_reached"), text: null };
-    if (key === EntitlementKey.RolesCustomMax) {
+    if (key === LimitKey.RolesCustomMax) {
       const { limit } = plan.limit(key);
       return limit === null
         ? neutral
@@ -37,7 +37,7 @@ export function usePlanReason(): {
             text: t("plans.rolesLimitAction"),
           };
     }
-    if (key === EntitlementKey.MembersMax) {
+    if (key === LimitKey.MembersMax) {
       const { limit } = plan.limit(key);
       return limit === null
         ? neutral

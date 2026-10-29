@@ -1,13 +1,13 @@
 "use client";
 
-import { Permission } from "@repo/api-client";
+import { FeatureKey, LimitKey, Permission } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
-import { EntitlementKey, usePlan } from "@/shared/plan";
+import { usePlan } from "@/shared/plan";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { type PlanReason, usePlanReason } from "@/shared/use-plan-reason";
 import { RoleEditor } from "./role-editor";
@@ -25,13 +25,13 @@ export function NewRolePage() {
   const plan = usePlan();
   const planReason = usePlanReason();
   const [closed] = useState<PlanReason | null>(() => {
-    if (!plan.on(EntitlementKey.RolesCustom))
+    if (!plan.on(FeatureKey.RolesCustom))
       return {
-        title: planReason.feature(EntitlementKey.RolesCustom),
+        title: planReason.feature(FeatureKey.RolesCustom),
         text: null,
       };
-    return plan.limit(EntitlementKey.RolesCustomMax).full
-      ? planReason.limit(EntitlementKey.RolesCustomMax)
+    return plan.limit(LimitKey.RolesCustomMax).full
+      ? planReason.limit(LimitKey.RolesCustomMax)
       : null;
   });
 

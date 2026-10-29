@@ -8,6 +8,8 @@ import {
   type AuditEntryResponse,
   type AuditRoleResponse,
   type AuditTargetResponse,
+  FeatureKey,
+  LimitKey,
   MemberInvitedDetailsResponseOperation,
   MemberRemovedDetailsResponseOperation,
   MemberRoleChangedDetailsResponseOperation,
@@ -23,7 +25,6 @@ import {
 import { formatDate } from "@repo/ui/lib/format-date-time";
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
-import { EntitlementKey } from "@/shared/plan";
 import { useRoleName } from "@/shared/use-role-name";
 
 /** The words for a person the log cannot name. */
@@ -109,9 +110,9 @@ const keyLabels: Record<
   string,
   "rolesCustom" | "rolesCustomMax" | "membersMax"
 > = {
-  [EntitlementKey.RolesCustom]: "rolesCustom",
-  [EntitlementKey.RolesCustomMax]: "rolesCustomMax",
-  [EntitlementKey.MembersMax]: "membersMax",
+  [FeatureKey.RolesCustom]: "rolesCustom",
+  [LimitKey.RolesCustomMax]: "rolesCustomMax",
+  [LimitKey.MembersMax]: "membersMax",
 };
 
 /** Which sides of a role's permissions changed: the `select` of the sentence of `role.updated`. */

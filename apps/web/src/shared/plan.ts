@@ -1,18 +1,9 @@
-import type { MyTenantDetailResponse } from "@repo/api-client";
+import type {
+  FeatureKey,
+  LimitKey,
+  MyTenantDetailResponse,
+} from "@repo/api-client";
 import { useTenant } from "./tenant-context";
-
-/**
- * The entitlement keys the tenant web knows (the API's plans-and-entitlements flow, section 1). The contract types a key as a
- * string, so the web writes the keys it shows once, here.
- */
-export const EntitlementKey = {
-  RolesCustom: "roles.custom",
-  RolesCustomMax: "roles.custom.max",
-  MembersMax: "members.max",
-} as const;
-
-export type EntitlementKey =
-  (typeof EntitlementKey)[keyof typeof EntitlementKey];
 
 type Plan = Pick<MyTenantDetailResponse, "entitlements" | "usage">;
 
@@ -29,12 +20,12 @@ export type LimitState = {
 };
 
 /** True when the feature is on. A key without a value is closed (E3). */
-export function featureOn(plan: Plan, key: string): boolean {
+export function featureOn(plan: Plan, key: FeatureKey): boolean {
   return plan.entitlements[key] === true;
 }
 
 /** A limit's value and the tenant's count (`GetMyTenant.usage`). Null is unlimited; a key without a value is closed at 0 (E3). */
-export function limitOf(plan: Plan, key: string): LimitState {
+export function limitOf(plan: Plan, key: LimitKey): LimitState {
   const value = plan.entitlements[key];
   const limit = value === null ? null : typeof value === "number" ? value : 0;
   const count = plan.usage[key] ?? 0;
@@ -48,8 +39,8 @@ export function limitOf(plan: Plan, key: string): LimitState {
  * the numbers itself. The API still checks each feature and limit (E5, E6).
  */
 export function usePlan(): {
-  on: (key: EntitlementKey) => boolean;
-  limit: (key: EntitlementKey) => LimitState;
+  on: (key: FeatureKey) => boolean;
+  limit: (key: LimitKey) => LimitState;
 } {
   const { detail } = useTenant();
   return {

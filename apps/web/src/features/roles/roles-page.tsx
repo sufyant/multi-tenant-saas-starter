@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  FeatureKey,
   getGetMeQueryOptions,
   LimitKey,
   Permission,
@@ -22,7 +23,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
-import { EntitlementKey, usePlan } from "@/shared/plan";
+import { usePlan } from "@/shared/plan";
 import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
@@ -72,9 +73,9 @@ export function RolesPage() {
   const members = `/${tenant.slug}/settings/members`;
 
   // The plan closes creating and editing a custom role; deleting stays (E4, E5). The feature's reason wins over the limit's.
-  const featureOff = plan.on(EntitlementKey.RolesCustom)
+  const featureOff = plan.on(FeatureKey.RolesCustom)
     ? undefined
-    : planReason.feature(EntitlementKey.RolesCustom);
+    : planReason.feature(FeatureKey.RolesCustom);
   const roleLimit = plan.limit(LimitKey.RolesCustomMax);
   const over = featureOff === undefined && roleLimit.overLimit;
   const counter = (() => {

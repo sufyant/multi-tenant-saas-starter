@@ -1,11 +1,11 @@
 "use client";
 
-import type { RoleDetailResponse } from "@repo/api-client";
+import { FeatureKey, type RoleDetailResponse } from "@repo/api-client";
 import { RadioGroup, RadioGroupItem } from "@repo/ui/components/ui/radio-group";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
-import { EntitlementKey, usePlan } from "@/shared/plan";
+import { usePlan } from "@/shared/plan";
 import { inListOrder } from "@/shared/roles";
 import { usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleDescription, useRoleName } from "@/shared/use-role-name";
@@ -39,9 +39,9 @@ export function RoleChoice({
   const reach = useRoleReach();
   const plan = usePlan();
   const planReason = usePlanReason();
-  const featureOff = plan.on(EntitlementKey.RolesCustom)
+  const featureOff = plan.on(FeatureKey.RolesCustom)
     ? null
-    : planReason.feature(EntitlementKey.RolesCustom);
+    : planReason.feature(FeatureKey.RolesCustom);
   const id = useId();
   return (
     <fieldset className="flex min-w-0 flex-col gap-1.5">
