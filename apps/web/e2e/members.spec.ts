@@ -1,7 +1,7 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { BuiltInRole, Language } from "@repo/api-client";
-import { mockMembers, northwind } from "./api";
+import { mockMembers, northwind, pro } from "./api";
 import { expectAccessible } from "./axe";
 
 const page = `/${northwind.slug}/settings/members`;
@@ -322,4 +322,27 @@ test("Members_Phone_ShowsCardsAndABottomSheet", async ({ page: browser }) => {
       Math.round(element.getBoundingClientRect().bottom),
     ),
   ).toBe(844);
+});
+
+test("Members_AtTheLimit_DisablesInviteWithTheReason", async ({
+  page: browser,
+}) => {
+  await open(browser, {
+    plan: {
+      planName: "Free",
+      entitlements: { ...pro.entitlements, "members.max": 10 },
+      usage: { ...pro.usage, "members.max": 10 },
+    },
+  });
+
+  const reason =
+    "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.";
+  const invite = browser.getByRole("button", { name: "Invite member" });
+  await expect(invite).toBeDisabled();
+  await expect(invite).toHaveAccessibleDescription(reason);
+  await expect(browser.getByText(reason)).toBeVisible();
+  await expect(
+    browser.getByRole("table", { name: "Members" }).getByText("John Byrne"),
+  ).toBeVisible();
+  await expectAccessible(browser);
 });

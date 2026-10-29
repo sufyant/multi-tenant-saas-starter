@@ -13,6 +13,7 @@ import {
   vi,
 } from "vitest";
 import {
+  countedMyTenant,
   john,
   membersAnswer,
   northwind,
@@ -66,6 +67,26 @@ describe("RemoveMemberDialog", () => {
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
+  });
+
+  it("RemoveMember_Success_ReadsGetMyTenantAgainForTheCount", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countedMyTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      removeAnswer(() => new HttpResponse(null, { status: 204 })),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openRemove();
+    const before = reads.count;
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Remove member" }),
+    );
+
+    await screen.findByText("John Byrne removed from Northwind Traders");
+    await waitFor(() => expect(reads.count).toBeGreaterThan(before));
   });
 
   it("RemoveMember_RefusedEscalation_ReadsTheListAgain", async () => {

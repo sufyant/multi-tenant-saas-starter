@@ -24,8 +24,8 @@ const tones: Record<MyTenantResponseStatus, StatusTone> = {
 };
 
 /**
- * Settings > General (the Settings board): the organisation's name, status, creation date and the viewer's role, from GetMyTenant.
- * Read-only for everyone: only the platform renames an organisation.
+ * Settings > General (the Settings and GeneralPlan boards): the organisation's name, status, creation date, the viewer's role and
+ * the plan's name, from GetMyTenant. Read-only for everyone: only the platform renames an organisation or changes its plan.
  */
 export function GeneralPage() {
   const t = useTranslations();
@@ -70,6 +70,7 @@ export function GeneralPage() {
             term: t("general.yourRole"),
             value: roleName(detail.role),
           },
+          { term: t("general.plan"), value: <bdi>{detail.planName}</bdi> },
         ]}
       />
     </Frame>

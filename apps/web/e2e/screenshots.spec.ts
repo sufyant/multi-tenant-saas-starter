@@ -16,6 +16,8 @@ import {
   mockMembers,
   mockTenantStatus,
   northwind,
+  type Plan,
+  pro,
 } from "./api";
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/web/test-results/screenshots,
@@ -457,6 +459,100 @@ for (const { language, scheme, size } of reviewVariants)
 
       await page.screenshot({
         path: `${folder}/${name}-${language}-${scheme}-${size}.png`,
+        fullPage: true,
+      });
+    });
+
+// The plan-limit pages of step 32-frontend-2, in the four variants of a review.
+const planWith = (
+  entitlements: Plan["entitlements"],
+  usage: Plan["usage"],
+): Plan => ({
+  planName: "Free",
+  entitlements: { ...pro.entitlements, ...entitlements },
+  usage: { ...pro.usage, ...usage },
+});
+const customRolesOff = planWith(
+  { "roles.custom": false, "roles.custom.max": 0 },
+  {},
+);
+const planPages: {
+  name: string;
+  path: string;
+  plan: Plan;
+  role?: BuiltInRole;
+  open?: (page: Page) => Promise<void>;
+}[] = [
+  { name: "roles-plan-off", path: roles, plan: customRolesOff },
+  {
+    name: "roles-plan-over",
+    path: roles,
+    plan: planWith({ "roles.custom.max": 1 }, {}),
+  },
+  {
+    name: "members-plan-limit",
+    path: members,
+    plan: planWith({ "members.max": 10 }, { "members.max": 10 }),
+  },
+  {
+    name: "members-plan-over",
+    path: members,
+    plan: planWith({ "members.max": 5 }, { "members.max": 10 }),
+  },
+  {
+    name: "members-plan-over-member",
+    path: members,
+    plan: planWith({ "members.max": 5 }, { "members.max": 10 }),
+    role: BuiltInRole.Member,
+  },
+  {
+    name: "change-role-plan-off",
+    path: members,
+    plan: customRolesOff,
+    // In every language: John Byrne's ⋯ menu, then its first item, Change role.
+    open: async (page) => {
+      await page
+        .getByRole("table")
+        .getByRole("button", { name: /John Byrne/ })
+        .click();
+      await page.getByRole("menuitem").first().click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+  {
+    name: "invite-plan-off",
+    path: members,
+    plan: customRolesOff,
+    open: async (page) => {
+      await page.getByRole("button", { name: /Invite|Davet|دعوة/ }).click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+  { name: "general-plan", path: `${settings}/general`, plan: pro },
+];
+
+for (const { language, scheme, size } of reviewVariants)
+  for (const shot of planPages)
+    test(`Screenshot_${shot.name}-${language}-${scheme}-${size}`, async ({
+      page,
+      context,
+      baseURL,
+    }) => {
+      await setupClerkTestingToken({ page });
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.setViewportSize(sizes[size]);
+      await context.addCookies([
+        { name: localeCookie, value: language, url: baseURL },
+      ]);
+      await mockMembers(page, { language, role: shot.role, plan: shot.plan });
+
+      await page.goto(shot.path);
+      await page.getByRole("heading", { level: 1 }).waitFor();
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+      await shot.open?.(page);
+
+      await page.screenshot({
+        path: `${folder}/${shot.name}-${language}-${scheme}-${size}.png`,
         fullPage: true,
       });
     });

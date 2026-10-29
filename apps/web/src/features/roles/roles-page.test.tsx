@@ -4,6 +4,7 @@ import {
   Permission,
   type RoleDetailResponse,
 } from "@repo/api-client";
+import { brand } from "@repo/brand";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -20,11 +21,12 @@ import {
 import {
   billingLead,
   customRole,
-  maxCustomRoles,
+  free,
   mehmet,
   northwind,
   permissionsOf,
   pickFromRowMenu,
+  planWith,
   problem,
   renderInTenant,
   roleOf,
@@ -88,24 +90,6 @@ const usedBy = (
   memberCount: number,
   pendingInvitationCount: number,
 ): RoleDetailResponse => ({ ...role, memberCount, pendingInvitationCount });
-
-/** GetMyTenant of the Owner, with the most custom roles Northwind may have. */
-const limitOf = (max: number) =>
-  http.get(`*/v1/tenants/${northwind.id}`, () =>
-    HttpResponse.json({
-      ...northwind,
-      role: roleOf.owner,
-      createdAt: "2026-01-05T09:00:00Z",
-      permissions: permissionsOf.owner,
-      planName: "Pro",
-      entitlements: {
-        "members.max": null,
-        "roles.custom": true,
-        "roles.custom.max": max,
-      },
-      usage: { "members.max": 0, "roles.custom.max": 0 },
-    }),
-  );
 
 const deleteAnswer = (answer: () => Response) =>
   http.delete(`*/v1/tenants/${northwind.id}/roles/${reviewer.id}`, answer);
@@ -365,16 +349,43 @@ describe("RolesPage", () => {
     ]);
   });
 
-  it("RolesPage_UnderTheLimit_CountsTheCustomRoles", async () => {
+  it("RolesPage_UnderTheLimit_CountsTheCustomRolesOfTheUsage", async () => {
     server.use(
-      ...tenantAnswers(BuiltInRole.Owner, undefined, [billingLead, reviewer]),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [billingLead, reviewer],
+        planWith({ "roles.custom.max": 20 }, { "roles.custom.max": 15 }),
+      ),
     );
 
     renderInTenant(<RolesPage />, { url });
 
     expect(
-      await screen.findByText(`2 of ${maxCustomRoles} custom roles`),
+      await screen.findByText("15 of 20 custom roles"),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
+      "href",
+      "/northwind/settings/roles/new",
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("RolesPage_Unlimited_ShowsNoCountAndCreates", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [billingLead, reviewer],
+        planWith({ "roles.custom.max": null }, { "roles.custom.max": 2 }),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await rows()).toHaveLength(5);
+    expect(screen.queryByText(/custom roles?$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/null/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
       "href",
       "/northwind/settings/roles/new",
@@ -383,30 +394,23 @@ describe("RolesPage", () => {
 
   it.each([
     [
-      "AtTheLimit",
       2,
-      [billingLead, reviewer],
-      "Your organisation has reached its limit of 2 custom roles. Delete one to create another.",
+      "Your organisation’s plan allows 2 custom roles. Delete one to create another.",
     ],
     [
-      // A limit lowered after the tenant made its roles: 3 custom roles against a limit of 2.
-      "OverTheLimit",
-      2,
-      [billingLead, reviewer, supportLead],
-      "Your organisation has reached its limit of 2 custom roles. Delete one to create another.",
-    ],
-    [
-      "OverALimitOfOne",
       1,
-      [billingLead, reviewer],
-      "Your organisation has reached its limit of 1 custom role. Delete one to create another.",
+      "Your organisation’s plan allows 1 custom role. Delete one to create another.",
     ],
   ])(
-    "RolesPage_%s_DisablesCreateWithTheLimit",
-    async (_, max, custom, reason) => {
+    "RolesPage_AtALimitOf%s_DisablesCreateWithTheReason",
+    async (max, reason) => {
       server.use(
-        limitOf(max),
-        ...tenantAnswers(BuiltInRole.Owner, undefined, custom),
+        ...tenantAnswers(
+          BuiltInRole.Owner,
+          undefined,
+          [billingLead, reviewer],
+          planWith({ "roles.custom.max": max }, { "roles.custom.max": max }),
+        ),
       );
 
       renderInTenant(<RolesPage />, { url });
@@ -417,11 +421,158 @@ describe("RolesPage", () => {
       await waitFor(() => expect(create).toBeDisabled());
       expect(create).not.toHaveAttribute("href");
       expect(create).toHaveAccessibleDescription(reason);
-      expect(
-        screen.queryByText(/ of \d+ custom roles?$/),
-      ).not.toBeInTheDocument();
+      expect(screen.getByText(reason)).toBeVisible();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
     },
   );
+
+  it("RolesPage_OverTheLimit_DisablesCreateAndShowsTheBanner", async () => {
+    // A limit lowered after the tenant made its roles: 3 custom roles against a limit of 2.
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [billingLead, reviewer, supportLead],
+        planWith({ "roles.custom.max": 2 }, { "roles.custom.max": 3 }),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent(
+      "You have 3 custom roles; your plan allows 2. Delete roles to create new ones. Every role and its members keep working.",
+    );
+    expect(
+      within(banner).getByRole("link", { name: "Contact us" }),
+    ).toHaveAttribute("href", brand.supportUrl);
+    expect(screen.getByText("3 of 2 custom roles")).toBeVisible();
+    const create = screen.getByRole("button", { name: "Create role" });
+    expect(create).toBeDisabled();
+    expect(create).toHaveAccessibleDescription(
+      "You have 3 custom roles; your plan allows 2. Delete roles to create new ones. Every role and its members keep working.",
+    );
+    // Over the limit, nothing is locked: a role not in use still deletes.
+    expect(await menuItems("Reviewer")).toEqual([
+      ["Edit role", false],
+      ["Delete role", false],
+    ]);
+  });
+
+  it("RolesPage_OverTheLimitWithoutCreate_ShowsNoBannerAndNoCount", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Admin,
+        undefined,
+        [billingLead, reviewer, supportLead],
+        planWith({ "roles.custom.max": 2 }, { "roles.custom.max": 3 }),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await rows()).toHaveLength(6);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/custom roles?$/)).not.toBeInTheDocument();
+  });
+
+  it("RolesPage_CustomRolesOffOnFree_ShowsTheReasonInPlaceOfZeroOfZero", async () => {
+    // Free: roles.custom off and roles.custom.max 0. The board shows the reason, never "0 of 0 custom roles".
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [], free));
+
+    renderInTenant(<RolesPage />, { url });
+
+    const reason = "Your organisation’s plan doesn’t include custom roles.";
+    const [create] = await screen.findAllByRole("button", {
+      name: "Create role",
+    });
+    await waitFor(() => expect(create).toBeDisabled());
+    expect(create).toHaveAccessibleDescription(reason);
+    expect(screen.queryByText(/0 of 0/)).not.toBeInTheDocument();
+  });
+
+  it("RolesPage_CustomRolesOff_ListsThemClosesEditAndKeepsDelete", async () => {
+    // A tenant moved to a plan without custom roles: 3 custom roles, over a limit of 0. The feature's reason shows, no banner.
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [usedBy(billingLead, 1, 0), reviewer, supportLead],
+        planWith(
+          { "roles.custom": false, "roles.custom.max": 0 },
+          { "roles.custom.max": 3 },
+          "Free",
+        ),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    const reason = "Your organisation’s plan doesn’t include custom roles.";
+    expect(await rows()).toEqual([
+      expect.stringMatching(/^Owner/),
+      expect.stringMatching(/^Admin/),
+      expect.stringMatching(/^Member/),
+      expect.stringMatching(/^Billing lead/),
+      expect.stringMatching(/^Reviewer/),
+      expect.stringMatching(/^Support lead/),
+    ]);
+    const create = screen.getByRole("button", { name: "Create role" });
+    expect(create).toBeDisabled();
+    expect(create).toHaveAccessibleDescription(reason);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/custom roles$/)).not.toBeInTheDocument();
+    expect(await menuItems("Reviewer")).toEqual([
+      ["View permissions", false],
+      [`Edit role${reason}`, true],
+      ["Delete role", false],
+    ]);
+  });
+
+  it("RolesPage_CustomRolesOffAndRoleInUse_KeepsTheInUseReasonOnDelete", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [usedBy(reviewer, 1, 1)],
+        planWith(
+          { "roles.custom": false, "roles.custom.max": 0 },
+          { "roles.custom.max": 1 },
+        ),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await menuItems("Reviewer")).toEqual([
+      ["View permissions", false],
+      ["See its members", false],
+      ["Edit roleYour organisation’s plan doesn’t include custom roles.", true],
+      [
+        "Delete roleGive its 1 member and 1 pending invitation another role first.",
+        true,
+      ],
+    ]);
+  });
+
+  it("RolesPage_ArabicOverTheLimit_ShowsTheCountAndTheBanner", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [billingLead, reviewer, supportLead],
+        planWith({ "roles.custom.max": 2 }, { "roles.custom.max": 3 }),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url, locale: "ar" });
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "لديك 3 من الأدوار المخصصة؛ وتسمح خطتك بـ2.",
+    );
+    expect(screen.getByText("3 من 2 من الأدوار المخصصة")).toBeVisible();
+    expect(screen.getByRole("link", { name: "تواصل معنا" })).toBeVisible();
+  });
 
   it("RolesPage_WithoutCreate_ShowsNoCounter", async () => {
     server.use(...tenantAnswers(BuiltInRole.Admin, undefined, [reviewer]));

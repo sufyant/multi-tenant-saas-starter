@@ -14,11 +14,16 @@ import {
 } from "vitest";
 import {
   billingLead,
+  countedMyTenant,
   customRole,
   mehmet,
   northwind,
+  permissionsOf,
+  planProblem,
+  planWith,
   problem,
   renderInTenant,
+  roleOf,
   tenantAnswers,
   viewerAnswers,
 } from "../../../test/tenant";
@@ -307,6 +312,100 @@ describe("CreateRole", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(text);
   });
 
+  it("CreateRole_RefusedLimitReached_ShowsTheReasonOfTheLimit", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom.max": 20 }, { "roles.custom.max": 19 }),
+      ),
+      createAnswer(() =>
+        planProblem(409, ErrorCode.PlanLimitReached, "roles.custom.max"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan allows 20 custom roles. Delete one to create another.",
+    );
+  });
+
+  it("CreateRole_RefusedLimitReachedOfAnUnknownKey_ShowsTheNeutralText", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(409, ErrorCode.PlanLimitReached, "storage.max"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "This organisation has reached a limit of its plan.",
+    );
+  });
+
+  it("CreateRole_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeature", async () => {
+    // The gap 32-backend left: the editor had no text for plan.feature_unavailable.
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+    expect(banner).not.toHaveTextContent("Couldn’t");
+  });
+
+  it("CreateRole_RefusedFeatureUnavailableOfAnUnknownKey_ShowsTheNeutralText", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "reports.export"),
+      ),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "This organisation's plan does not include this feature.",
+    );
+  });
+
+  it("CreateRole_RefusedByThePlan_ReadsGetMyTenantAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countedMyTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+    const field = await openNew();
+    await waitFor(() => expect(reads.count).toBe(1));
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    await waitFor(() => expect(reads.count).toBe(2));
+  });
+
   it("CreateRole_RefusedNameTaken_ReadsTheRolesAgain", async () => {
     let reads = 0;
     server.use(
@@ -349,7 +448,97 @@ describe("CreateRole", () => {
   });
 });
 
+describe("NewRolePage", () => {
+  it("NewRolePage_CustomRolesOff_ShowsTheReasonAndNoForm", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom": false, "roles.custom.max": 0 }),
+      ),
+    );
+
+    renderInTenant(<NewRolePage />, { url: `${list}/new` });
+
+    expect(
+      await screen.findByText(
+        "Your organisation’s plan doesn’t include custom roles.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Back to Roles" }),
+    ).toHaveAttribute("href", list);
+  });
+
+  it("NewRolePage_AtTheLimit_ShowsTheReasonAndNoForm", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom.max": 2 }, { "roles.custom.max": 2 }),
+      ),
+    );
+
+    renderInTenant(<NewRolePage />, { url: `${list}/new` });
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan allows 2 custom roles. Delete one to create another.",
+    );
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("NewRolePage_CreatesTheLastRoleAllowed_StillLeavesForTheList", async () => {
+    // The success reads GetMyTenant again, which then says full: the page that opened with room keeps its editor until it leaves.
+    let created = false;
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}`, () =>
+        HttpResponse.json({
+          ...northwind,
+          role: roleOf.owner,
+          createdAt: "2026-01-05T09:00:00Z",
+          permissions: permissionsOf.owner,
+          ...planWith(
+            { "roles.custom.max": 1 },
+            { "roles.custom.max": Number(created) },
+          ),
+        }),
+      ),
+      ...tenantAnswers(BuiltInRole.Owner),
+      createAnswer(() => {
+        created = true;
+        return HttpResponse.json(reviewer, { status: 201 });
+      }),
+    );
+    const field = await openNew();
+
+    await userEvent.type(field, "Support");
+    await userEvent.click(screen.getByRole("button", { name: "Create role" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(list));
+  });
+});
+
 describe("UpdateRole", () => {
+  it("UpdateRole_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeature", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
+      updateAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+    const field = await openReviewer();
+
+    await userEvent.type(field, " team");
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+  });
+
   it("UpdateRole_Success_SendsTheNameAndEveryPermissionAfterwards", async () => {
     const sent: unknown[] = [];
     server.use(

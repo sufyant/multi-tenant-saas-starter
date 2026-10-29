@@ -29,6 +29,7 @@ import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useCanActOn, useTenantRoles } from "@/shared/use-can-act-on";
+import { usePlanReason } from "@/shared/use-plan-reason";
 import { RoleChoice } from "./role-choice";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
@@ -47,6 +48,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const { tenant } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
   const { key, renew } = useIntentKey();
+  const planReason = usePlanReason();
   const canActOn = useCanActOn();
   const tenantRoles = useTenantRoles();
   const roles = tenantRoles.data?.items ?? [];
@@ -133,6 +135,9 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         title: t("members.roleGone"),
         text: t("members.roleGoneText"),
       };
+    // The same text as the disabled action's reason (the PlanErrors board).
+    const plan = planReason.refusal(invite.error);
+    if (plan) return plan;
     return {
       title: t("members.notSent"),
       text: failureText(problemOf(invite.error)),

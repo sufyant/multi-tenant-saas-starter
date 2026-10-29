@@ -4,14 +4,21 @@ import {
   type AuditActorResponse,
   AuditActorResponseKind,
   type AuditDetailsResponse,
+  type AuditEntitlementValueResponse,
   type AuditEntryResponse,
   type AuditRoleResponse,
   type AuditTargetResponse,
+  FeatureKey,
+  LimitKey,
   MemberInvitedDetailsResponseOperation,
   MemberRemovedDetailsResponseOperation,
   MemberRoleChangedDetailsResponseOperation,
   type RoleUpdatedDetailsResponse,
   RoleUpdatedDetailsResponseOperation,
+  TenantCreatedDetailsResponseOperation,
+  TenantEntitlementOverrideRemovedDetailsResponseOperation,
+  TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
 } from "@repo/api-client";
@@ -41,17 +48,42 @@ function targetName(target: AuditTargetResponse, t: Translate): string {
 
 type Rich = Record<string, string | ((chunks: ReactNode) => ReactNode)>;
 
+/** What a sentence of the plan names: a plan, a key and a value, each in the viewer's language. */
+type PlanWords = {
+  plan: (name: string) => () => ReactNode;
+  key: (key: string) => () => ReactNode;
+  value: (value: AuditEntitlementValueResponse) => string;
+};
+
 /**
- * The values of the details that a sentence shows: the roles, the names and the day of a purge. The details' own `operation`
- * narrows the union. The reason of `tenant.suspended` never shows: a member never sees it (the Suspended board).
+ * The values of the details that a sentence shows: the roles, the names, the day of a purge and the plan's changes. The details'
+ * own `operation` narrows the union. The reason of `tenant.suspended` never shows: a member never sees it (the Suspended board).
+ * Nor does the reason of an override: the tenant's entry has none, and the sentence never writes one (the API's flow of plans).
  */
 function detailValues(
   details: AuditDetailsResponse | null,
   role: (role: AuditRoleResponse) => () => ReactNode,
   permissions: (names: string[]) => () => ReactNode,
   date: (at: string) => string,
+  words: PlanWords,
 ): Rich {
   switch (details?.operation) {
+    case TenantCreatedDetailsResponseOperation.TenantCreated:
+      return { plan: "named", planName: words.plan(details.plan.name) };
+    case TenantPlanChangedDetailsResponseOperation.TenantPlanChanged:
+      return {
+        oldPlan: words.plan(details.oldPlan.name),
+        newPlan: words.plan(details.newPlan.name),
+      };
+    case TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet:
+      return {
+        key: words.key(details.key),
+        value: words.value(details.newValue),
+        expires: details.newExpiresAt ? "yes" : "no",
+        date: details.newExpiresAt ? date(details.newExpiresAt) : "",
+      };
+    case TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved:
+      return { key: words.key(details.key) };
     case MemberInvitedDetailsResponseOperation.MemberInvited:
     case MemberRemovedDetailsResponseOperation.MemberRemoved:
       return { role: role(details.role) };
@@ -68,9 +100,20 @@ function detailValues(
         removed: permissions(details.permissionsRemoved),
       };
     default:
-      return {};
+      // An entry without details, such as a `tenant.created` written before plans, names no plan.
+      return { plan: "none" };
   }
 }
+
+/** The message of a key the web knows; any other key shows as it is, never as a blank. */
+const keyLabels: Record<
+  string,
+  "rolesCustom" | "rolesCustomMax" | "membersMax"
+> = {
+  [FeatureKey.RolesCustom]: "rolesCustom",
+  [LimitKey.RolesCustomMax]: "rolesCustomMax",
+  [LimitKey.MembersMax]: "membersMax",
+};
 
 /** Which sides of a role's permissions changed: the `select` of the sentence of `role.updated`. */
 function changeOf(details: RoleUpdatedDetailsResponse): string {
@@ -133,6 +176,19 @@ export function ActivitySentence({
       ...(more > 0 ? [t("activity.morePermissions", { count: more })] : []),
     ]);
   };
+  const words: PlanWords = {
+    plan: (name) => () => <bdi>{name}</bdi>,
+    key: (key) => () => {
+      const label = keyLabels[key];
+      return label ? t(`plans.keys.${label}`) : <bdi dir="ltr">{key}</bdi>;
+    },
+    value: (value) => {
+      if (value.unlimited) return t("plans.values.unlimited");
+      if (value.enabled !== null)
+        return t(value.enabled ? "plans.values.on" : "plans.values.off");
+      return String(value.maximum);
+    },
+  };
   const people = {
     actor: person(actorName(entry.actor, t)),
     target: person(targetName(entry.target, t)),
@@ -164,7 +220,7 @@ export function ActivitySentence({
       {renamed && permissionsChanged && " "}
       {(!renamed || permissionsChanged) &&
         t.rich(`activity.operations.${entry.operation}`, {
-          ...detailValues(details, role, permissions, date),
+          ...detailValues(details, role, permissions, date, words),
           ...people,
           actorKind: entry.actor.kind,
         })}

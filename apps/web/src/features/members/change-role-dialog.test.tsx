@@ -23,6 +23,9 @@ import {
   people,
   permissionsOf,
   pickFromRowMenu,
+  planProblem,
+  planWith,
+  pro,
   problem,
   renderInTenant,
   roleOf,
@@ -39,6 +42,7 @@ const countedTenant = (reads: string[]) =>
       ...northwind,
       createdAt: "2026-01-05T09:00:00Z",
       permissions: permissionsOf.owner,
+      ...pro,
     });
   });
 
@@ -67,6 +71,65 @@ const openChangeRole = async () => {
 };
 
 describe("ChangeRoleDialog", () => {
+  it("ChangeRole_CustomRolesOff_DisablesEveryCustomRoleWithTheReasonAndKeepsTheBuiltIns", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [billingLead, supportLead],
+        planWith({ "roles.custom": false, "roles.custom.max": 0 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+
+    const reason = expect.stringContaining(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+    const billing = await within(dialog).findByRole("radio", {
+      name: "Billing lead",
+    });
+    const support = within(dialog).getByRole("radio", { name: "Support lead" });
+    expect(billing).toBeDisabled();
+    expect(billing).toHaveAccessibleDescription(reason);
+    expect(support).toBeDisabled();
+    expect(support).toHaveAccessibleDescription(reason);
+    expect(within(dialog).getByRole("radio", { name: "Owner" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Admin" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Member" })).toBeEnabled();
+  });
+
+  it("ChangeRole_RefusedFeatureUnavailable_ShowsTheReasonAndReadsGetMyTenantAgain", async () => {
+    const reads: string[] = [];
+    server.use(
+      countedTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [billingLead]),
+      membersAnswer(),
+      changeAnswer(() =>
+        planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+    const before = reads.length;
+    await userEvent.click(
+      await within(dialog).findByRole("radio", { name: "Billing lead" }),
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Change role" }),
+    );
+
+    const banner = await within(dialog).findByRole("status");
+    expect(banner).toHaveTextContent(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+    expect(banner).not.toHaveTextContent("Couldn’t change the role");
+    await waitFor(() => expect(reads.length).toBeGreaterThan(before));
+  });
+
   it("ChangeRole_Success_ClosesToastsAndRefreshesTheList", async () => {
     const requests: URLSearchParams[] = [];
     const bodies: unknown[] = [];

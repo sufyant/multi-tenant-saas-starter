@@ -23,11 +23,14 @@ import { messages } from "@/i18n/messages";
 import {
   ayse,
   billingLead,
+  countedMyTenant,
   mehmet,
   membersAnswer,
   meOf,
   northwind,
   permissionsOf,
+  planProblem,
+  planWith,
   problem,
   renderInTenant,
   roleOf,
@@ -224,6 +227,144 @@ describe("InviteDialog", () => {
         },
       ]),
     );
+  });
+
+  it("Invite_CustomRolesOff_DisablesEveryCustomRoleWithTheReasonAndKeepsTheBuiltIns", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        permissionsOf.owner,
+        [billingLead],
+        planWith({ "roles.custom": false, "roles.custom.max": 0 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    const custom = await within(dialog).findByRole("radio", {
+      name: "Billing lead",
+    });
+    expect(custom).toBeDisabled();
+    expect(custom).toHaveAccessibleDescription(
+      expect.stringContaining(
+        "Your organisation’s plan doesn’t include custom roles.",
+      ),
+    );
+    expect(within(dialog).getByRole("radio", { name: "Owner" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Admin" })).toBeEnabled();
+    expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
+  });
+
+  it("Invite_Success_ReadsGetMyTenantAgainForTheCount", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countedMyTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      inviteAnswer([
+        () => HttpResponse.json(sent("khalid@northwind.io"), { status: 201 }),
+      ]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    const before = reads.count;
+    await typeEmail(dialog, "khalid@northwind.io");
+    await send(dialog);
+
+    await screen.findByText("Invitation sent");
+    await waitFor(() => expect(reads.count).toBeGreaterThan(before));
+  });
+
+  it("Invite_RefusedLimitReached_ShowsTheReasonOfTheLimitInTheDialog", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 10 }, { "members.max": 9 }),
+      ),
+      membersAnswer(),
+      inviteAnswer([
+        () => planProblem(409, ErrorCode.PlanLimitReached, "members.max"),
+      ]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await typeEmail(dialog, "khalid@northwind.io");
+    await send(dialog);
+
+    expect(await within(dialog).findByRole("status")).toHaveTextContent(
+      "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.",
+    );
+  });
+
+  it("Invite_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeatureInTheDialog", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, permissionsOf.owner, [billingLead]),
+      membersAnswer(),
+      inviteAnswer([
+        () =>
+          planProblem(403, ErrorCode.PlanFeatureUnavailable, "roles.custom"),
+      ]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await typeEmail(dialog, "khalid@northwind.io");
+    await userEvent.click(
+      await within(dialog).findByRole("radio", { name: "Billing lead" }),
+    );
+    await send(dialog);
+
+    const banner = await within(dialog).findByRole("status");
+    expect(banner).toHaveTextContent(
+      "Your organisation’s plan doesn’t include custom roles.",
+    );
+    expect(banner).not.toHaveTextContent("Invitation not sent");
+  });
+
+  it("Invite_RefusedLimitReachedOfAnUnknownKey_ShowsTheNeutralText", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      inviteAnswer([
+        () => planProblem(409, ErrorCode.PlanLimitReached, "seats.max"),
+      ]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await typeEmail(dialog, "khalid@northwind.io");
+    await send(dialog);
+
+    expect(await within(dialog).findByRole("status")).toHaveTextContent(
+      "This organisation has reached a limit of its plan.",
+    );
+  });
+
+  it("Invite_RefusedByThePlan_ReadsGetMyTenantAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      countedMyTenant(reads),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      inviteAnswer([
+        () => planProblem(409, ErrorCode.PlanLimitReached, "members.max"),
+      ]),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    const before = reads.count;
+    await typeEmail(dialog, "khalid@northwind.io");
+    await send(dialog);
+
+    await within(dialog).findByRole("status");
+    await waitFor(() => expect(reads.count).toBeGreaterThan(before));
   });
 
   it("Invite_CustomViewerWithoutInviting_SeesNoInviteButton", async () => {

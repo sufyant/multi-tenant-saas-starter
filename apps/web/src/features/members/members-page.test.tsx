@@ -1,4 +1,5 @@
 import { BuiltInRole, ErrorCode, Permission } from "@repo/api-client";
+import { brand } from "@repo/brand";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -23,6 +24,7 @@ import {
   northwind,
   people,
   permissionsOf,
+  planWith,
   problem,
   renderInTenant,
   roleOf,
@@ -479,5 +481,170 @@ describe("MembersPage", () => {
     expect(
       screen.queryByRole("button", { name: "Try again" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_UnderTheLimit_CountsMembersWithInvitationsAndSaysSo", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    expect(
+      await screen.findByText("10 of 15 members, invitations included"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Invite member" }),
+    ).not.toBeDisabled();
+    await table();
+    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_Unlimited_ShowsNoCount", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": null }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    await table();
+    expect(screen.queryByText(/invitations included/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/null/)).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_AtTheLimit_DisablesInviteWithTheReason", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 10 }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    const reason =
+      "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.";
+    const invite = await screen.findByRole("button", { name: "Invite member" });
+    expect(invite).toBeDisabled();
+    expect(invite).toHaveAccessibleDescription(reason);
+    expect(screen.getByText(reason)).toBeVisible();
+    await table();
+    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
+    // At the limit, removing stays allowed.
+    await openMenu("John Byrne");
+    expect(
+      await screen.findByRole("menuitem", { name: "Remove from organisation" }),
+    ).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("MembersPage_OverTheLimitForAnOwner_ShowsTheBannerToMakeRoom", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 5 }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent(
+      "You have 10 members and pending invitations; your plan allows 5. Remove members or cancel invitations to invite new people. Nobody loses access.",
+    );
+    expect(
+      within(banner).getByRole("link", { name: "Contact us" }),
+    ).toHaveAttribute("href", brand.supportUrl);
+    expect(
+      screen.getByText("10 of 5 members, invitations included"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Invite member" }),
+    ).toBeDisabled();
+  });
+
+  it("MembersPage_OverTheLimitForAnInviterWhoCannotRemove_SaysWhoCanMakeRoom", async () => {
+    const inviter = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c5",
+      "Inviter",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantMembersRead,
+        Permission.TenantInvitationsRead,
+        Permission.TenantInvitationsCreate,
+        Permission.TenantRolesRead,
+      ],
+    );
+    server.use(
+      ...viewerAnswers(
+        inviter,
+        inviter.permissions,
+        { ...mehmet, role: inviter },
+        [inviter],
+        planWith({ "members.max": 5 }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "You have 10 members and pending invitations; your plan allows 5. Someone who can remove members can make room. Nobody loses access.",
+    );
+  });
+
+  it("MembersPage_OverTheLimitForAMember_ShowsNoBannerAndNoCount", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Member,
+        undefined,
+        [],
+        planWith({ "members.max": 5 }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    await table();
+    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/invitations included/)).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_ArabicAtTheLimit_ShowsTheReason", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 10 }, { "members.max": 10 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, { locale: "ar" });
+
+    expect(
+      await screen.findByText(
+        "تسمح خطة مؤسستك بـ10 من الأعضاء، بما في ذلك الدعوات. أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
+      ),
+    ).toBeVisible();
   });
 });

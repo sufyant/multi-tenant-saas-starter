@@ -31,6 +31,7 @@ import { afterRefusal, refreshRoles, refreshTenant } from "@/shared/refresh";
 import { nameTaken } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
+import { usePlanReason } from "@/shared/use-plan-reason";
 import { DeleteRoleDialog } from "./delete-role-dialog";
 import { PermissionList } from "./permission-list";
 import { withRequired } from "./permissions";
@@ -56,6 +57,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
   const can = useCan();
   const { tenant, detail } = useTenant();
   const roles = useTenantRoles();
+  const planReason = usePlanReason();
   const { key, renew } = useIntentKey();
   const [deleting, setDeleting] = useState(false);
   const list = `/${tenant.slug}/settings/roles`;
@@ -175,10 +177,12 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
       [ErrorCode.RolePermissionOwnerOnly]: t("roles.ownerOnly"),
       [ErrorCode.RolePermissionInvalid]: t("roles.permissionInvalid"),
       [ErrorCode.RoleEscalation]: t("roles.lacks"),
-      [ErrorCode.PlanLimitReached]: t("errors.plan.limit_reached"),
     } as Partial<Record<string, string>>;
     if (code === ErrorCode.RoleBuiltIn)
       return { title: t("roles.builtInTitle"), text: t("roles.builtInText") };
+    // The plan's refusals show the text of their key, as the disabled actions of Roles do.
+    const plan = planReason.refusal(save.error);
+    if (plan) return plan;
     const title = code ? own[code] : undefined;
     if (title) return { title, text: null };
     return {

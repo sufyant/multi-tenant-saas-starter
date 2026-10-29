@@ -16,6 +16,7 @@ import { useState } from "react";
 import { afterRefusal, refreshMembers, refreshTenant } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
+import { usePlanReason } from "@/shared/use-plan-reason";
 import { roleSelect } from "@/shared/use-role-name";
 import { nameOf } from "./person";
 import { RoleChoice } from "./role-choice";
@@ -39,6 +40,7 @@ export function ChangeRoleDialog({
   const queryClient = useQueryClient();
   const { tenant } = useTenant();
   const roles = useTenantRoles();
+  const planReason = usePlanReason();
   const [roleId, setRoleId] = useState(member.role.id);
   const name = nameOf(member) ?? t("members.deletedUser");
   const organisation = tenant.name;
@@ -59,6 +61,8 @@ export function ChangeRoleDialog({
 
   const failure = (() => {
     if (!change.error) return null;
+    const plan = planReason.refusal(change.error);
+    if (plan) return { title: plan.title, text: plan.text };
     switch (problemOf(change.error)?.code) {
       case ErrorCode.MemberLastOwner:
         return {

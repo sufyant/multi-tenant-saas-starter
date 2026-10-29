@@ -227,7 +227,8 @@
     "name": "الاسم",
     "status": "الحالة",
     "created": "تاريخ الإنشاء",
-    "yourRole": "دورك"
+    "yourRole": "دورك",
+    "plan": "الخطة"
   },
   "activity": {
     "title": "النشاط",
@@ -270,12 +271,12 @@
       },
       "tenant": {
         "closed": "<actor></actor> أغلق هذه المؤسسة.",
-        "created": "<actor></actor> أنشأ هذه المؤسسة.",
-        "entitlement_override_removed": "<actor></actor> أزال تغييرًا لحدّ هذه المؤسسة.",
-        "entitlement_override_set": "<actor></actor> غيّر حدًّا لهذه المؤسسة.",
+        "created": "{plan, select, none {<actor></actor> أنشأ هذه المؤسسة.} other {أنشأت <actor></actor> هذه المؤسسة على <planName></planName>.}}",
+        "entitlement_override_removed": "أزالت <actor></actor> استثناء هذه المؤسسة على <key></key>.",
+        "entitlement_override_set": "{expires, select, yes {جعلت <actor></actor> <key></key> لهذه المؤسسة {value} حتى {date}.} other {جعلت <actor></actor> <key></key> لهذه المؤسسة {value}.}}",
         "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
         "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
-        "plan_changed": "<actor></actor> غيّر خطة هذه المؤسسة.",
+        "plan_changed": "نقلت <actor></actor> هذه المؤسسة من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
         "purge_warned": "أُبلغ المالكون بأن <target></target> ستُحذف في {date}.",
         "purged": "<actor></actor> حذف هذه المؤسسة وبياناتها.",
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
@@ -363,8 +364,6 @@
     "inUseReason": "هذا الدور مستخدم: {users}. امنحهم دورًا آخر أولًا.",
     "seeMembers": "عرض أعضائه",
     "seeInvitations": "عرض دعواته",
-    "counter": "{count} من {max, plural, one {# دور مخصص} two {# دورين مخصصين} few {# أدوار مخصصة} many {# دورًا مخصصًا} other {# دور مخصص}}",
-    "limitReached": "بلغت مؤسستك حدّها من الأدوار المخصصة، وهو {max, plural, one {دور مخصص واحد} two {دوران مخصصان} few {# أدوار مخصصة} many {# دورًا مخصصًا} other {# دور مخصص}}. احذف دورًا لإنشاء آخر.",
     "builtIn": "مضمّن",
     "actions": "الإجراءات",
     "actionsFor": "إجراءات {name}",
@@ -418,6 +417,31 @@
       "invitations": "الدعوات",
       "roles": "الأدوار",
       "activity": "النشاط"
+    }
+  },
+  "plans": {
+    "rolesCustomOff": "لا تتضمن خطة مؤسستك الأدوار المخصصة.",
+    "rolesLimit": "تسمح خطة مؤسستك بـ{limit} من الأدوار المخصصة.",
+    "rolesLimitAction": "احذف دورًا لإنشاء آخر.",
+    "rolesCount": "{count} من {limit} من الأدوار المخصصة",
+    "rolesOver": "لديك {count} من الأدوار المخصصة؛ وتسمح خطتك بـ{limit}.",
+    "rolesOverText": "احذف أدوارًا لإنشاء أدوار جديدة. يبقى كل دور وأعضاؤه كما هم.",
+    "membersLimit": "تسمح خطة مؤسستك بـ{limit} من الأعضاء، بما في ذلك الدعوات.",
+    "membersLimitAction": "أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
+    "membersCount": "{count} من {limit} من الأعضاء، بما في ذلك الدعوات",
+    "membersOver": "لديك {count} من الأعضاء والدعوات المعلّقة؛ وتسمح خطتك بـ{limit}.",
+    "membersOverRemover": "أزل أعضاء أو ألغِ دعوات لدعوة أشخاص جدد. لا يفقد أحد وصوله.",
+    "membersOverInviter": "يمكن لمن يستطيع إزالة الأعضاء أن يفسح المجال. لا يفقد أحد وصوله.",
+    "contact": "تواصل معنا",
+    "keys": {
+      "rolesCustom": "الأدوار المخصصة",
+      "rolesCustomMax": "حد الأدوار المخصصة",
+      "membersMax": "حد الأعضاء"
+    },
+    "values": {
+      "on": "مفعّلة",
+      "off": "معطّلة",
+      "unlimited": "غير محدود"
     }
   }
 }
