@@ -59,7 +59,7 @@ public sealed class OwnNotificationsPolicyTests(Database database)
         await database.ExecuteAsUserAsync(other, $"INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{other}', false, '{{}}')");
 
         var insert = () => database.ExecuteAsUserAsync(
-            user, $"INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{other}', true, '{{\"plan\": true}}')");
+            user, $"INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{other}', true, jsonb_build_object('tenant_plans', true))");
         var read = await database.ScalarAsUserAsync<long>(user, "SELECT count(*) FROM notifications.email_preferences");
 
         (await insert.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);

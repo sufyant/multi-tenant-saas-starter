@@ -7,21 +7,49 @@ using Microsoft.Extensions.Options;
 using Notifications.Api.Authentication;
 using Notifications.Application.Notifications;
 using Notifications.Application.Notifications.GetNotificationReaderAccess;
+using Notifications.Application.Notifications.MarkNotificationRead;
+using Notifications.Api.Tenant.Notifications;
 using Notifications.Application.Notifications.GetNotificationReader;
 using SharedKernel;
 using Wolverine;
 
 namespace Notifications.Api.Me.Notifications;
 
-/// <summary>The signed-in user's own notifications: the live stream of their signals (U6).</summary>
+/// <summary>
+/// The signed-in user's own notifications: the personal bell of a user without a tenant (U7), opening one notification of any bell, and the
+/// live stream of their signals (U6).
+/// </summary>
 public static class MyNotificationEndpoints
 {
-    public static void Map(RouteGroupBuilder me) =>
+    public static void Map(RouteGroupBuilder me)
+    {
+        me.MapGet("/notifications", ListMyNotifications);
+        me.MapGet("/notifications/unread-count", GetMyUnreadNotificationCount);
+        me.MapPost("/notifications/read", MarkAllMyNotificationsRead);
+        me.MapPost("/notifications/{notificationId:guid}/read", MarkNotificationRead);
         me.MapGet("/notifications/stream", StreamNotifications)
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
+    }
+
+    private static Task<Result<CursorPage<NotificationResponse>>> ListMyNotifications(
+        string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
+        NotificationEndpoints.ListAsync(http, bus, Inbox.Personal, cursor, limit, cancellationToken);
+
+    private static Task<Result<UnreadNotificationCountResponse>> GetMyUnreadNotificationCount(HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
+        NotificationEndpoints.CountAsync(http, bus, Inbox.Personal, cancellationToken);
+
+    private static Task<Result> MarkAllMyNotificationsRead(HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
+        NotificationEndpoints.MarkAllReadAsync(http, bus, Inbox.Personal, cancellationToken);
+
+    // Opens one notification of any bell: row level security shows the reader only their own, so another user's answers 404.
+    private static async Task<Result> MarkNotificationRead(Guid notificationId, HttpContext http, IMessageBus bus, CancellationToken cancellationToken)
+    {
+        var reader = await NotificationEndpoints.ReaderAsync(http, bus, cancellationToken);
+        return await bus.InvokeAsync<Result>(new MarkNotificationReadCommand(reader, notificationId), cancellationToken);
+    }
 
     // U6: server-sent events of the user's live signals, one event "notifications" each, whose data names only the bell that changed. A
     // comment line goes out every KeepAliveInterval, and the stream closes after its Lifetime, so the client opens a new one with a fresh

@@ -77,6 +77,7 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantReopened] = null,
         [AuditOperations.TenantSuspended] = typeof(TenantSuspendedDetails),
         [AuditOperations.UserDeleted] = null,
+        [AuditOperations.UserEmailPreferencesChanged] = null,
         [AuditOperations.UserPreferencesChanged] = null,
         [AuditOperations.UserReactivated] = null,
         [AuditOperations.UserRenamed] = null,

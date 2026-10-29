@@ -46,6 +46,16 @@ internal static partial class OpenApiContract
 
     private const string OperationMember = "operation";
 
+    private const string NotificationTypeSchema = "NotificationType";
+
+    private const string NotificationCategorySchema = "NotificationCategory";
+
+    private const string NotificationCatalogClass = "NotificationCatalog";
+
+    private const string TypeMember = "type";
+
+    private const string CategoryMember = "category";
+
     private const string EnumNamesExtension = "x-enumNames";
 
     // An idempotent operation replays a saved result: its success or a business rejection. A request that failed validation (400) or
@@ -101,6 +111,13 @@ internal static partial class OpenApiContract
             .Order(StringComparer.Ordinal),
     ];
 
+    // U1: Notifications declares every notification type and category once, in Notifications.Domain's NotificationCatalog, which the host
+    // finds by its name, as it finds the audit operations. Its Kinds hold the types, and its Categories the categories.
+    private static IReadOnlyList<string> DeclaredNotificationTypes { get; } =
+        [.. NotificationCatalogValues("Kinds").Cast<object>().Select(kind => (string)kind.GetType().GetProperty("Key")!.GetValue(kind)!).Order(StringComparer.Ordinal)];
+
+    private static IReadOnlyList<string> DeclaredNotificationCategories { get; } = [.. NotificationCatalogValues("Categories").Cast<string>()];
+
     private static IReadOnlyList<string> ListedPermissions { get; } =
     [
         .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -135,6 +152,7 @@ internal static partial class OpenApiContract
                     .AddDocumentTransformer(DescribeEntitlementKeys)
                     .AddDocumentTransformer(DescribeDiscriminators)
                     .AddDocumentTransformer(DescribeAuditOperations)
+                    .AddDocumentTransformer(DescribeNotificationCatalog)
                     .AddDocumentTransformer(NameEnumMembers);
             });
 
@@ -626,6 +644,36 @@ internal static partial class OpenApiContract
 
         return Task.CompletedTask;
     }
+
+    // The notification types and categories are two enums in the document (U1), so a client has a type for each and hears of a new one. A
+    // response and a request keep them as strings, so each field named category refers to the categories, and the field type of a schema
+    // that has a category to the types (NotificationResponse.type). OpenApiContractTests checks both.
+    private static Task DescribeNotificationCatalog(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas is not { } schemas)
+        {
+            return Task.CompletedTask;
+        }
+
+        schemas[NotificationTypeSchema] = EnumSchema(DeclaredNotificationTypes, "The type of a notification, area.event.");
+        schemas[NotificationCategorySchema] = EnumSchema(DeclaredNotificationCategories, "The category of a notification, which the email preferences name.");
+        foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(CategoryMember) == true))
+        {
+            schema.Properties![CategoryMember] = new OpenApiSchemaReference(NotificationCategorySchema, document);
+            if (schema.Properties.ContainsKey(TypeMember))
+            {
+                schema.Properties[TypeMember] = new OpenApiSchemaReference(NotificationTypeSchema, document);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static System.Collections.IEnumerable NotificationCatalogValues(string field) =>
+        AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: NotificationCatalogClass })
+            .Select(type => (System.Collections.IEnumerable)type.GetField(field, BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!)
+            .Single();
 
     // A polymorphic response (AuditDetailsResponse) has a discriminator, which System.Text.Json writes into each of its shapes. .NET names
     // the schema of a shape after the base type and the shape (AuditDetailsResponseTenantRenamedDetailsResponse); here it takes the

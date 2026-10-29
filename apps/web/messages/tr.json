@@ -286,6 +286,7 @@
       },
       "user": {
         "deleted": "<actor></actor>, <target></target> adlı kullanıcının hesabını sildi.",
+        "email_preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "reactivated": "<actor></actor>, <target></target> adlı kullanıcının hesabını yeniden etkinleştirdi.",
         "renamed": "<actor></actor>, <target></target> adlı kullanıcının adını değiştirdi.",

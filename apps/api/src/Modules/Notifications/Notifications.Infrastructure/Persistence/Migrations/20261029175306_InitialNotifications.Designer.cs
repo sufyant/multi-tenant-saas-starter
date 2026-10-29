@@ -46,7 +46,7 @@ namespace Notifications.Infrastructure.Persistence.Migrations
 
                     b.ToTable("email_preferences", "notifications", t =>
                         {
-                            t.HasCheckConstraint("ck_email_preferences_categories", "jsonb_typeof(categories) = 'object' AND (categories - ARRAY['access', 'members', 'plan', 'platform']::text[]) = '{}'::jsonb");
+                            t.HasCheckConstraint("ck_email_preferences_categories", "jsonb_typeof(categories) = 'object' AND (categories - ARRAY['access', 'member_invitations', 'tenant_plans', 'platform_tenants']::text[]) = '{}'::jsonb");
 
                             t.HasCheckConstraint("ck_email_preferences_not_default", "NOT (enabled AND categories = '{}'::jsonb)");
                         });

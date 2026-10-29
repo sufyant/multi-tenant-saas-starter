@@ -13,6 +13,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ChangeEmailPreferences",
+    "method": "PUT",
+    "path": "/v1/me/email-preferences",
+    "tag": "Me/EmailPreferences",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ChangeMemberRole",
     "method": "PATCH",
     "path": "/v1/tenants/{tenantId}/members/{userId}",
@@ -114,6 +124,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "GetEmailPreferences",
+    "method": "GET",
+    "path": "/v1/me/email-preferences",
+    "tag": "Me/EmailPreferences",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetInvitationPreview",
     "method": "POST",
     "path": "/v1/me/invitations/preview",
@@ -144,6 +164,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "GetMyUnreadNotificationCount",
+    "method": "GET",
+    "path": "/v1/me/notifications/unread-count",
+    "tag": "Me/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetPlan",
     "method": "GET",
     "path": "/v1/platform/plans/{planId}",
@@ -158,6 +188,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/plans/{planId}/preview",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetPlatformUnreadNotificationCount",
+    "method": "GET",
+    "path": "/v1/platform/notifications/unread-count",
+    "tag": "Platform/Notifications",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -188,6 +228,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/plan/preview",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetUnreadNotificationCount",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/notifications/unread-count",
+    "tag": "Tenant/Notifications",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -273,10 +323,30 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ListMyNotifications",
+    "method": "GET",
+    "path": "/v1/me/notifications",
+    "tag": "Me/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ListMyTenants",
     "method": "GET",
     "path": "/v1/me/tenants",
     "tag": "Me/Tenants",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "ListNotifications",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/notifications",
+    "tag": "Tenant/Notifications",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -297,6 +367,16 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/audit-log",
     "tag": "Platform/AuditLogs",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "ListPlatformNotifications",
+    "method": "GET",
+    "path": "/v1/platform/notifications",
+    "tag": "Platform/Notifications",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -337,6 +417,46 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/owners",
     "tag": "Platform/Members",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "MarkAllMyNotificationsRead",
+    "method": "POST",
+    "path": "/v1/me/notifications/read",
+    "tag": "Me/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "MarkAllNotificationsRead",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/notifications/read",
+    "tag": "Tenant/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "MarkAllPlatformNotificationsRead",
+    "method": "POST",
+    "path": "/v1/platform/notifications/read",
+    "tag": "Platform/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "MarkNotificationRead",
+    "method": "POST",
+    "path": "/v1/me/notifications/{notificationId}/read",
+    "tag": "Me/Notifications",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -447,6 +567,16 @@ export const operations = [
     "method": "PUT",
     "path": "/v1/platform/tenants/{tenantId}/entitlement-overrides/{key}",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "StreamNotifications",
+    "method": "GET",
+    "path": "/v1/me/notifications/stream",
+    "tag": "Me/Notifications",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

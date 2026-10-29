@@ -51,6 +51,9 @@
       "forbidden": "Bu işlem için yetkiniz yok.",
       "unauthenticated": "Oturumunuz sona erdi. Yeniden giriş yapın."
     },
+    "email_preferences": {
+      "not_found": "Bu sayfa yok."
+    },
     "idempotency": {
       "key_in_progress": "Bu istek hâlâ sürüyor. Biraz bekleyin, sonra sonucu kontrol edin.",
       "key_invalid": "İstek gönderilemedi. Sayfayı yenileyip yeniden deneyin.",
@@ -73,6 +76,9 @@
       "last_owner": "Bir kuruluşun en az bir Sahibi olmalı.",
       "not_found": "Bu üye artık kuruluşta değil.",
       "owner_requires_owner": "Bir Sahibi yalnızca bir Sahip değiştirebilir ya da çıkarabilir."
+    },
+    "notification": {
+      "not_found": "Bu sayfa yok."
     },
     "paging": {
       "cursor_invalid": "Liste devam edemedi. Sayfayı yenileyin.",

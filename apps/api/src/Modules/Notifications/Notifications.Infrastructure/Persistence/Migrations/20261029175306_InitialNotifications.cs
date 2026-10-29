@@ -32,7 +32,7 @@ namespace Notifications.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_email_preferences", x => x.user_id);
-                    table.CheckConstraint("ck_email_preferences_categories", "jsonb_typeof(categories) = 'object' AND (categories - ARRAY['access', 'members', 'plan', 'platform']::text[]) = '{}'::jsonb");
+                    table.CheckConstraint("ck_email_preferences_categories", "jsonb_typeof(categories) = 'object' AND (categories - ARRAY['access', 'member_invitations', 'tenant_plans', 'platform_tenants']::text[]) = '{}'::jsonb");
                     table.CheckConstraint("ck_email_preferences_not_default", "NOT (enabled AND categories = '{}'::jsonb)");
                 });
 

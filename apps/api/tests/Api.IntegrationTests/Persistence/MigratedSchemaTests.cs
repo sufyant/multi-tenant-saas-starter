@@ -293,7 +293,7 @@ public sealed class MigratedSchemaTests(Database database)
             INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
             VALUES ('{tenantNotification}', '{user}', gen_random_uuid(), 'tenant.plan_changed', 'Tenant', jsonb_build_object('tenantName', 'Acme'), now()),
                 ('{personalNotification}', '{user}', NULL, 'member.removed', 'Personal', jsonb_build_object('tenantName', 'Acme'), now());
-            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{user}', true, jsonb_build_object('plan', true));
+            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{user}', true, jsonb_build_object('tenant_plans', true));
             """,
             migrated);
 

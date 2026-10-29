@@ -12,11 +12,11 @@ public static class NotificationCatalog
 {
     public const string AccessCategory = "access";
 
-    public const string MembersCategory = "members";
+    public const string MembersCategory = "member_invitations";
 
-    public const string PlanCategory = "plan";
+    public const string PlanCategory = "tenant_plans";
 
-    public const string PlatformCategory = "platform";
+    public const string PlatformCategory = "platform_tenants";
 
     public const string InvitationAccepted = "invitation.accepted";
 

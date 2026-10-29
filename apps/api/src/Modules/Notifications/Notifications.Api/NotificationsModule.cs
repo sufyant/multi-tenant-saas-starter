@@ -1,6 +1,9 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Routing;
+using Notifications.Api.Me.EmailPreferences;
 using Notifications.Api.Me.Notifications;
+using Notifications.Api.Platform.Notifications;
+using Notifications.Api.Tenant.Notifications;
 using Notifications.Application.Invitations.SendInvitationEmail;
 using Notifications.Application.Tenants.PurgeTenantData;
 
@@ -18,6 +21,9 @@ public static class NotificationsModule
     /// <summary>Maps the module's endpoints into the host's route groups: the bells of the tenant web, the personal one and the platform's (U7).</summary>
     public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder me, RouteGroupBuilder tenant)
     {
+        NotificationEndpoints.Map(tenant);
         MyNotificationEndpoints.Map(me);
+        EmailPreferenceEndpoints.Map(me);
+        PlatformNotificationEndpoints.Map(platform);
     }
 }

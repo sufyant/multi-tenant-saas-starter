@@ -286,6 +286,7 @@
       },
       "user": {
         "deleted": "<actor></actor> حذف حساب <target></target>.",
+        "email_preferences_changed": "<actor></actor> غيّر تفضيلاته.",
         "preferences_changed": "<actor></actor> غيّر تفضيلاته.",
         "reactivated": "<actor></actor> أعاد تفعيل حساب <target></target>.",
         "renamed": "<actor></actor> غيّر اسم <target></target>.",
