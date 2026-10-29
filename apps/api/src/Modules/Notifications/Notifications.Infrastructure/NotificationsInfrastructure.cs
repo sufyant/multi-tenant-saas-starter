@@ -2,15 +2,23 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Notifications.Application.Email;
+using Notifications.Application.EmailPreferences;
 using Notifications.Application.Invitations;
+using Notifications.Application.Notifications;
 using Notifications.Infrastructure.Email;
+using Notifications.Infrastructure.Persistence;
+using Notifications.Infrastructure.Persistence.EmailPreferences;
+using Notifications.Infrastructure.Persistence.Notifications;
+using SharedKernel;
+using Tenancy;
 using Wolverine;
+using Wolverine.EntityFrameworkCore;
 
 namespace Notifications.Infrastructure;
 
 /// <summary>
-/// The module's infrastructure entry point: the host calls it to register the module's adapters. The module stores no data, so it
-/// has no DbContext and no migrations.
+/// The module's infrastructure entry point: the host calls it to register the module's DbContext, adapters and ports. The host registers
+/// the live channel (<see cref="ILiveChannel"/>), which the module signals after each commit that changed a notification (U6).
 /// </summary>
 public static class NotificationsInfrastructure
 {
@@ -19,6 +27,18 @@ public static class NotificationsInfrastructure
 
     public static IServiceCollection AddNotificationsInfrastructure(this IServiceCollection services)
     {
+        services.AddDbContextWithWolverineIntegration<NotificationsDbContext>(
+            (provider, options) => options
+                .UseModuleDatabase(provider, NotificationsDbContext.Schema)
+                .AddInterceptors(new LiveSignalInterceptor(provider.GetRequiredService<ILiveChannel>())),
+            TenancyServiceCollectionExtensions.MessageSchema);
+        services.AddModuleMigrations<NotificationsDbContext>(NotificationsDbContext.Schema);
+
+        // Registered by type, so Wolverine builds them in its generated code on the handler's own DbContext (W1).
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationQueries, NotificationQueries>();
+        services.AddScoped<IEmailPreferenceRepository, EmailPreferenceRepository>();
+
         // Outside Development email goes only through Resend. Without its settings no email could leave, invitations included, so the
         // application does not start.
         services.AddOptions<ResendOptions>()
