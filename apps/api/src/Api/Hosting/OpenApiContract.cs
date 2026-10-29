@@ -9,6 +9,7 @@ using Api.ErrorHandling;
 using Api.Idempotency;
 using Api.RateLimiting;
 using ControlPlane.Contracts;
+using ControlPlane.Contracts.Plans;
 using FluentValidation;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Http.Metadata;
@@ -25,7 +26,7 @@ namespace Api.Hosting;
 // the endpoints do not state: an operation id for each endpoint, the parameters a route group puts in a path, the values of a list's
 // sort and filters, the limits of a request and of a list, the values of an enum with a converter of its own, the idempotency key and
 // the headers of an answer, the bearer scheme, the members of the one error schema with the enums of the error codes, the enum of the
-// permissions, the enum of the audit operations, and a name for each member of every enum. They change the document only. The one rule here that the wire follows is how
+// permissions, the enums of the entitlement keys, the enum of the audit operations, and a name for each member of every enum. They change the document only. The one rule here that the wire follows is how
 // JSON reads a number, because the document describes the numbers from it.
 internal static partial class OpenApiContract
 {
@@ -34,6 +35,10 @@ internal static partial class OpenApiContract
     private const string PermissionSchema = "Permission";
 
     private const string PermissionsMember = "permissions";
+
+    private const string FeatureKeySchema = "FeatureKey";
+
+    private const string LimitKeySchema = "LimitKey";
 
     private const string AuditOperationSchema = "AuditOperation";
 
@@ -127,6 +132,7 @@ internal static partial class OpenApiContract
                     .AddDocumentTransformer(RequireBearerToken)
                     .AddDocumentTransformer(DescribeProblemDetails)
                     .AddDocumentTransformer(DescribePermissions)
+                    .AddDocumentTransformer(DescribeEntitlementKeys)
                     .AddDocumentTransformer(DescribeDiscriminators)
                     .AddDocumentTransformer(DescribeAuditOperations)
                     .AddDocumentTransformer(NameEnumMembers);
@@ -686,6 +692,29 @@ internal static partial class OpenApiContract
         }
 
         return Task.CompletedTask;
+    }
+
+    // The platform shows every key of the entitlement list, with its kind, also for a plan that has no value for it (E1, E3). The keys
+    // are two enums in the document, the features and the limits, so a generated client has the list and each key's kind. A key stays
+    // a string in every request and response: a map is by key, and a client that knows fewer keys still reads the answer.
+    private static Task DescribeEntitlementKeys(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas is not { } schemas)
+        {
+            return Task.CompletedTask;
+        }
+
+        schemas[FeatureKeySchema] = EnumSchema(KeysOf(typeof(Features)), "A feature key of the entitlement list: on or off.");
+        schemas[LimitKeySchema] = EnumSchema(KeysOf(typeof(Limits)), "A limit key of the entitlement list: a number of 0 or more, or unlimited.");
+        return Task.CompletedTask;
+
+        // The keys in the order of their list (E1), which the platform's editor keeps.
+        static List<string> KeysOf(Type keys) =>
+        [
+            .. keys.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(field => field.IsLiteral)
+                .Select(field => (string)field.GetRawConstantValue()!),
+        ];
     }
 
     private static OpenApiSchema EnumSchema(IReadOnlyList<string> values, string description) =>

@@ -7572,6 +7572,16 @@
         },
         "description": "One key a change would put a tenant over: what the tenant has that the key counts (`count`), the new effective value, and how far\nover it goes (`amount`): the count less a limit, or the whole count for a feature that turns off while the tenant uses it."
       },
+      "FeatureKey": {
+        "enum": [
+          "roles.custom"
+        ],
+        "type": "string",
+        "description": "A feature key of the entitlement list: on or off.",
+        "x-enumNames": [
+          "RolesCustom"
+        ]
+      },
       "FieldErrorCode": {
         "enum": [
           "required",
@@ -7827,6 +7837,18 @@
           "En",
           "Tr",
           "Ar"
+        ]
+      },
+      "LimitKey": {
+        "enum": [
+          "roles.custom.max",
+          "members.max"
+        ],
+        "type": "string",
+        "description": "A limit key of the entitlement list: a number of 0 or more, or unlimited.",
+        "x-enumNames": [
+          "RolesCustomMax",
+          "MembersMax"
         ]
       },
       "ListPageOfInvitationResponse": {

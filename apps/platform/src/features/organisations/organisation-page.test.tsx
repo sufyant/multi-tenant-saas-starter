@@ -1,5 +1,5 @@
 import { AuditOperation, ErrorCode } from "@repo/api-client";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http } from "msw";
 import { setupServer } from "msw/node";
@@ -254,8 +254,11 @@ describe("OrganisationPage", () => {
 
     renderWithProviders(<OrganisationPage tenantId={corrib.id} />);
 
-    expect(await term("Deleted")).toHaveTextContent(
-      dateOf(corrib.purgedAt as string),
+    // The date is in the admin's zone once GetMe answers; before, the page writes it in the runtime's zone, a day apart near midnight.
+    await waitFor(async () =>
+      expect(await term("Deleted")).toHaveTextContent(
+        dateOf(corrib.purgedAt as string),
+      ),
     );
     expect(
       screen.getByText(

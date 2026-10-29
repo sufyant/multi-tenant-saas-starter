@@ -2,6 +2,7 @@
 
 import {
   getGetMeQueryOptions,
+  LimitKey,
   Permission,
   problemOf,
   type RoleDetailResponse,
@@ -63,7 +64,7 @@ export function RolesPage() {
   const members = `/${tenant.slug}/settings/members`;
 
   const customRoles = roles.data?.items.filter((role) => !role.builtIn).length;
-  const limit = detail.entitlements["roles.custom.max"];
+  const limit = detail.entitlements[LimitKey.RolesCustomMax];
   const max = typeof limit === "number" ? limit : null;
   // A tenant may hold more custom roles than a limit lowered later; it creates none until it is under the limit again. An unlimited
   // limit has no counter.
