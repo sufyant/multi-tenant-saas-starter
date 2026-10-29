@@ -8,6 +8,7 @@ import {
   formatRelative,
   formatTime,
   formatUtc,
+  startOfDay,
   utcOffset,
   zoneLabel,
   zoneName,
@@ -214,5 +215,22 @@ describe("format-date-time", () => {
     ["2026-01-01", "2025-12-31"],
   ])("DayBefore_%s_Is %s", (day, expected) => {
     expect(dayBefore(day)).toBe(expected);
+  });
+
+  it.each([
+    ["2026-12-31", "Europe/Dublin", "2026-12-31T00:00:00.000Z"],
+    ["2026-07-01", "Europe/Dublin", "2026-06-30T23:00:00.000Z"],
+    ["2026-12-31", "Asia/Riyadh", "2026-12-30T21:00:00.000Z"],
+    ["2026-12-31", "America/New_York", "2026-12-31T05:00:00.000Z"],
+  ])("StartOfDay_%s_In%s_IsItsFirstMoment", (day, timeZone, expected) => {
+    expect(startOfDay(day, { timeZone })).toBe(expected);
+  });
+
+  it("StartOfDay_CalendarDayOfIt_IsTheSameDay", () => {
+    const timeZone = "Pacific/Auckland";
+
+    expect(
+      calendarDay(startOfDay("2026-10-16", { timeZone }), { timeZone }),
+    ).toBe("2026-10-16");
   });
 });

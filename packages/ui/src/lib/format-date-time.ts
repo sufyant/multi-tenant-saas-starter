@@ -82,6 +82,48 @@ export function dayBefore(day: string): string {
     .slice(0, 10);
 }
 
+/** The zone's offset from UTC at an instant, in milliseconds: the zone's wall clock read as UTC, less the instant. */
+function offsetAt(at: Date, timeZone: string | null | undefined): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    ...base({ locale: "en-US", timeZone }),
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(at);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((item) => item.type === type)?.value ?? 0);
+  const wall = Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour"),
+    part("minute"),
+    part("second"),
+  );
+  return wall - Math.floor(at.getTime() / 1000) * 1000;
+}
+
+/**
+ * The first moment of a calendar day of `calendarDay` (`2026-12-31`) in the zone, in UTC: `2026-12-31T00:00:00.000Z` in Dublin's
+ * winter. A date field gives the day; the API takes the instant. Null or absent zone: the browser's.
+ */
+export function startOfDay(
+  day: string,
+  options: Pick<DateTimeOptions, "timeZone">,
+): string {
+  const [year = 0, month = 1, date = 1] = day.split("-").map(Number);
+  const midnight = Date.UTC(year, month - 1, date);
+  // The offset at the guess can differ from the offset at the answer when the clock changes that day: one more step settles it.
+  const guess = midnight - offsetAt(new Date(midnight), options.timeZone);
+  return new Date(
+    midnight - offsetAt(new Date(guess), options.timeZone),
+  ).toISOString();
+}
+
 /** The same moment in UTC: `13:32 UTC`. The screen writes "UTC", never "Z" or "GMT". */
 export function formatUtc(at: Instant, options: DateTimeOptions): string {
   return `${format(at, { locale: options.locale, timeZone: "UTC" }, { ...timePart, hourCycle: "h23" })} UTC`;

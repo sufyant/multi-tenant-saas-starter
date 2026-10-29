@@ -2,7 +2,7 @@ import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
-import { mockPlatform, organisations, users } from "./api";
+import { mockPlatform, organisations, plans, users } from "./api";
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/platform/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
@@ -24,13 +24,18 @@ const variants = [
   { language: Language.Ar, scheme: "light", size: "phone" },
 ] as const;
 
-// The platform's four sections: Organisations, Users, System admins and Activity, with one organisation and one user.
+// The platform's sections: Organisations, Users, System admins, Plans and Activity, with one organisation, one user and one plan.
 const pages = [
   ["organisations", "/"],
   ["organisation", `/organisations/${organisations.atlas.id}`],
   ["users", "/users"],
   ["user", `/users/${users.ayse.id}`],
   ["system-admins", "/settings/system-admins"],
+  ["plans", "/settings/plans"],
+  ["plan", `/settings/plans/${plans.pro.id}`],
+  ["plan-default", `/settings/plans/${plans.free.id}`],
+  ["plan-new", "/settings/plans/new"],
+  ["organisation-plan", `/organisations/${organisations.northwind.id}`],
   ["activity", "/activity"],
 ] as const;
 

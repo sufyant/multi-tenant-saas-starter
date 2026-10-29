@@ -4,7 +4,17 @@ import {
   type AuditEntryResponse,
   AuditOperation,
   type AuditTargetResponse,
+  AuditTargetResponseKind,
+  FeatureKey,
+  LimitKey,
+  PlanCreatedDetailsResponseOperation,
+  type PlanUpdatedDetailsResponse,
+  PlanUpdatedDetailsResponseOperation,
+  TenantCreatedDetailsResponseOperation,
+  TenantEntitlementOverrideRemovedDetailsResponseOperation,
+  TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
+  TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -39,6 +49,7 @@ import {
   meAnswer,
   northwind,
 } from "../../test/organisations";
+import { free, partner, pro } from "../../test/plans";
 import { renderWithProviders } from "../../test/render";
 import { ActivitySentence } from "./activity-sentence";
 
@@ -67,6 +78,11 @@ const platformOperations = [
   AuditOperation.UserPreferencesChanged,
   AuditOperation.SystemAdminGranted,
   AuditOperation.SystemAdminRevoked,
+  AuditOperation.PlanCreated,
+  AuditOperation.PlanUpdated,
+  AuditOperation.TenantPlanChanged,
+  AuditOperation.TenantEntitlementOverrideSet,
+  AuditOperation.TenantEntitlementOverrideRemoved,
 ];
 
 /** The sentence of the operation in a message file, found by its path: `activity.operations.tenant.created`. */
@@ -556,5 +572,369 @@ describe("ActivitySentence", () => {
     expect(
       [...container.querySelectorAll("bdi")].map((name) => name.textContent),
     ).toEqual(["Ciara Byrne", "Mehmet Kaya"]);
+  });
+});
+
+// The Plans boards' Activity sentences (the platform's Activity boards and the Messages board's "Plans" section).
+const planTarget = (plan: {
+  id: string;
+  name: string;
+}): AuditTargetResponse => ({
+  kind: AuditTargetResponseKind.Plan,
+  id: plan.id,
+  name: plan.name,
+  deleted: null,
+});
+const value = (
+  values: Partial<{ enabled: boolean; maximum: number; unlimited: boolean }>,
+) => ({ enabled: null, maximum: null, unlimited: false, ...values });
+const proValues = {
+  [FeatureKey.RolesCustom]: value({ enabled: true }),
+  [LimitKey.RolesCustomMax]: value({ maximum: 20 }),
+  [LimitKey.MembersMax]: value({ unlimited: true }),
+};
+const updated = (
+  values: Partial<PlanUpdatedDetailsResponse>,
+): AuditDetailsResponse => ({
+  operation: PlanUpdatedDetailsResponseOperation.PlanUpdated,
+  oldName: "Pro",
+  newName: "Pro",
+  wasDefault: false,
+  isDefault: false,
+  oldEntitlements: proValues,
+  newEntitlements: proValues,
+  previousDefaultPlan: null,
+  ...values,
+});
+const burrenTarget = tenantTarget({
+  id: "0198f0a2-0000-7000-8000-000000000002",
+  name: "Burren Supply",
+});
+
+type PlanCase = [
+  string,
+  AuditOperation,
+  AuditTargetResponse,
+  AuditDetailsResponse,
+  { en: string; tr: string; ar: string },
+];
+
+const planCases: PlanCase[] = [
+  [
+    "PlanCreated",
+    AuditOperation.PlanCreated,
+    planTarget(partner),
+    {
+      operation: PlanCreatedDetailsResponseOperation.PlanCreated,
+      isDefault: false,
+      entitlements: proValues,
+    },
+    {
+      en: "Ciara Byrne created the plan Partner.",
+      tr: "Ciara Byrne, Partner planını oluşturdu.",
+      ar: "أنشأ Ciara Byrne الخطة Partner.",
+    },
+  ],
+  [
+    "PlanUpdatedOneValue",
+    AuditOperation.PlanUpdated,
+    planTarget(pro),
+    updated({
+      newEntitlements: {
+        ...proValues,
+        [LimitKey.RolesCustomMax]: value({ maximum: 10 }),
+      },
+    }),
+    {
+      en: "Ciara Byrne changed the plan Pro: Custom roles limit from 20 to 10.",
+      tr: "Ciara Byrne, Pro planını değiştirdi: Özel rol sınırı, 20 değerinden 10 değerine.",
+      ar: "غيّر Ciara Byrne الخطة Pro: حد الأدوار المخصصة من 20 إلى 10.",
+    },
+  ],
+  [
+    "PlanUpdatedSeveralValues",
+    AuditOperation.PlanUpdated,
+    planTarget(partner),
+    updated({
+      oldName: "Partners",
+      newName: "Partner",
+      oldEntitlements: {
+        ...proValues,
+        [LimitKey.RolesCustomMax]: value({ maximum: 50 }),
+      },
+      newEntitlements: {
+        ...proValues,
+        [LimitKey.RolesCustomMax]: value({ maximum: 40 }),
+        [LimitKey.MembersMax]: value({ maximum: 100 }),
+      },
+    }),
+    {
+      en: "Ciara Byrne changed several values of the plan Partner: Custom roles limit from 50 to 40; Members limit from unlimited to 100; name from Partners to Partner.",
+      tr: "Ciara Byrne, Partner planında birkaç değeri değiştirdi: Özel rol sınırı, 50 değerinden 40 değerine; Üye sınırı, sınırsız değerinden 100 değerine; ad, Partners değerinden Partner değerine.",
+      ar: "غيّر Ciara Byrne عدة قيم في الخطة Partner: حد الأدوار المخصصة من 50 إلى 40؛ حد الأعضاء من غير محدود إلى 100؛ الاسم من Partners إلى Partner.",
+    },
+  ],
+  [
+    "PlanUpdatedFeatureAndUnset",
+    AuditOperation.PlanUpdated,
+    planTarget(pro),
+    updated({
+      newEntitlements: {
+        [FeatureKey.RolesCustom]: value({ enabled: false }),
+        [LimitKey.RolesCustomMax]: value({ maximum: 20 }),
+      },
+    }),
+    {
+      en: "Ciara Byrne changed several values of the plan Pro: Custom roles from on to off; Members limit from unlimited to not set.",
+      tr: "Ciara Byrne, Pro planında birkaç değeri değiştirdi: Özel roller, açık değerinden kapalı değerine; Üye sınırı, sınırsız değerinden ayarlanmadı değerine.",
+      ar: "غيّر Ciara Byrne عدة قيم في الخطة Pro: الأدوار المخصصة من مفعّل إلى متوقف؛ حد الأعضاء من غير محدود إلى غير محدد.",
+    },
+  ],
+  [
+    "PlanRenamed",
+    AuditOperation.PlanUpdated,
+    planTarget(partner),
+    updated({ oldName: "Partners", newName: "Partner" }),
+    {
+      en: "Ciara Byrne renamed the plan Partners to Partner.",
+      tr: "Ciara Byrne, Partners planının adını Partner olarak değiştirdi.",
+      ar: "غيّر Ciara Byrne اسم الخطة Partners إلى Partner.",
+    },
+  ],
+  [
+    "PlanMadeDefault",
+    AuditOperation.PlanUpdated,
+    planTarget(free),
+    updated({
+      oldName: "Free",
+      newName: "Free",
+      isDefault: true,
+      previousDefaultPlan: { id: pro.id, name: "Pro" },
+    }),
+    {
+      en: "Ciara Byrne made Free the default plan, in place of Pro.",
+      tr: "Ciara Byrne, Pro yerine Free planını varsayılan yaptı.",
+      ar: "جعل Ciara Byrne Free الخطة الافتراضية بدلًا من Pro.",
+    },
+  ],
+  [
+    "PlanMadeDefaultAndChanged",
+    AuditOperation.PlanUpdated,
+    planTarget(free),
+    updated({
+      oldName: "Free",
+      newName: "Free",
+      isDefault: true,
+      previousDefaultPlan: { id: pro.id, name: "Pro" },
+      newEntitlements: {
+        ...proValues,
+        [LimitKey.MembersMax]: value({ maximum: 5 }),
+      },
+    }),
+    {
+      en: "Ciara Byrne made Free the default plan, in place of Pro, and changed Members limit from unlimited to 5.",
+      tr: "Ciara Byrne, Pro yerine Free planını varsayılan yaptı ve şunları değiştirdi: Üye sınırı, sınırsız değerinden 5 değerine.",
+      ar: "جعل Ciara Byrne Free الخطة الافتراضية بدلًا من Pro، وغيّر حد الأعضاء من غير محدود إلى 5.",
+    },
+  ],
+  [
+    "TenantCreatedOnAPlan",
+    AuditOperation.TenantCreated,
+    tenantTarget(liffey),
+    {
+      operation: TenantCreatedDetailsResponseOperation.TenantCreated,
+      plan: { id: free.id, name: "Free" },
+    },
+    {
+      en: "Ciara Byrne created Liffey Design on Free and invited its Owner.",
+      tr: "Ciara Byrne, Liffey Design kuruluşunu Free planında oluşturdu ve Sahibini davet etti.",
+      ar: "أنشأ Ciara Byrne Liffey Design على Free ودعا مالكها.",
+    },
+  ],
+  [
+    "TenantPlanChanged",
+    AuditOperation.TenantPlanChanged,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation: TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
+      oldPlan: { id: free.id, name: "Free" },
+      newPlan: { id: pro.id, name: "Pro" },
+    },
+    {
+      en: "Ciara Byrne moved Shannon Studio from Free to Pro.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunu Free planından Pro planına geçirdi.",
+      ar: "نقل Ciara Byrne Shannon Studio من Free إلى Pro.",
+    },
+  ],
+  [
+    "OverrideSet",
+    AuditOperation.TenantEntitlementOverrideSet,
+    burrenTarget,
+    {
+      operation:
+        TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+      key: LimitKey.RolesCustomMax,
+      oldValue: null,
+      oldExpiresAt: null,
+      newValue: value({ maximum: 25 }),
+      newExpiresAt: "2026-12-31T00:00:00Z",
+      reason: "Moving their old roles over; review at year end.",
+    },
+    {
+      en: "Ciara Byrne set Burren Supply’s Custom roles limit to 25 until 31 Dec 2026 (before: none). Reason: Moving their old roles over; review at year end.",
+      tr: "Ciara Byrne, Burren Supply kuruluşunun Özel rol sınırı değerini 31 Ara 2026 tarihine kadar 25 yaptı (önceki: yok). Neden: Moving their old roles over; review at year end.",
+      ar: "جعل Ciara Byrne حد الأدوار المخصصة لـBurren Supply 25 حتى 31 ديسمبر 2026 (قبل ذلك: لا شيء). السبب: Moving their old roles over; review at year end.",
+    },
+  ],
+  [
+    "OverrideSetNoExpiry",
+    AuditOperation.TenantEntitlementOverrideSet,
+    burrenTarget,
+    {
+      operation:
+        TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+      key: FeatureKey.RolesCustom,
+      oldValue: value({ enabled: true }),
+      oldExpiresAt: null,
+      newValue: value({ enabled: false }),
+      newExpiresAt: null,
+      reason: "Under review",
+    },
+    {
+      en: "Ciara Byrne set Burren Supply’s Custom roles to off, no expiry (before: on). Reason: Under review.",
+      tr: "Ciara Byrne, Burren Supply kuruluşunun Özel roller değerini süresiz olarak kapalı yaptı (önceki: açık). Neden: Under review.",
+      ar: "جعل Ciara Byrne الأدوار المخصصة لـBurren Supply متوقف بلا انتهاء (قبل ذلك: مفعّل). السبب: Under review.",
+    },
+  ],
+  [
+    "OverrideRemoved",
+    AuditOperation.TenantEntitlementOverrideRemoved,
+    tenantTarget(atlas),
+    {
+      operation:
+        TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved,
+      key: LimitKey.MembersMax,
+      oldValue: value({ maximum: 40 }),
+      oldExpiresAt: "2026-11-30T00:00:00Z",
+    },
+    {
+      en: "Ciara Byrne removed Atlas Logistics’s override on Members limit (40, until 30 Nov 2026).",
+      tr: "Ciara Byrne, Atlas Logistics kuruluşunun Üye sınırı istisnasını kaldırdı (40, 30 Kas 2026 tarihine kadar).",
+      ar: "أزال Ciara Byrne استثناء Atlas Logistics على حد الأعضاء (40، حتى 30 نوفمبر 2026).",
+    },
+  ],
+  [
+    "OverrideRemovedNoExpiry",
+    AuditOperation.TenantEntitlementOverrideRemoved,
+    tenantTarget(atlas),
+    {
+      operation:
+        TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved,
+      key: LimitKey.MembersMax,
+      oldValue: value({ unlimited: true }),
+      oldExpiresAt: null,
+    },
+    {
+      en: "Ciara Byrne removed Atlas Logistics’s override on Members limit (unlimited, no expiry).",
+      tr: "Ciara Byrne, Atlas Logistics kuruluşunun Üye sınırı istisnasını kaldırdı (sınırsız, süresiz).",
+      ar: "أزال Ciara Byrne استثناء Atlas Logistics على حد الأعضاء (غير محدود، بلا انتهاء).",
+    },
+  ],
+];
+
+describe("ActivitySentence of the plans", () => {
+  it.each(
+    planCases.flatMap(([name, operation, target, details, texts]) =>
+      (["en", "tr", "ar"] as const).map(
+        (locale) =>
+          [
+            `${name}In${locale}`,
+            operation,
+            target,
+            details,
+            locale,
+            texts[locale],
+          ] as const,
+      ),
+    ),
+  )(
+    "ActivitySentence_%s_SaysTheBoardsSentence",
+    async (_, operation, target, details, locale, text) => {
+      renderEntry(entry({ operation, target, details }), locale);
+
+      expect(await findSentence(text)).toBeInTheDocument();
+    },
+  );
+
+  it("ActivitySentence_PlanTarget_LinksToThePlansPage", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.PlanCreated,
+        target: planTarget(partner),
+        details: {
+          operation: PlanCreatedDetailsResponseOperation.PlanCreated,
+          isDefault: false,
+          entitlements: proValues,
+        },
+      }),
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "Partner" }),
+    ).toHaveAttribute("href", `/settings/plans/${partner.id}`);
+  });
+
+  it("ActivitySentence_PlanChanged_LinksTheOrganisationAndBothPlansByTheirNamesThen", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantPlanChanged,
+        target: tenantTarget(northwind),
+        details: {
+          operation:
+            TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
+          oldPlan: { id: free.id, name: "Starter" },
+          newPlan: { id: pro.id, name: "Pro" },
+        },
+      }),
+    );
+
+    await screen.findByRole("link", { name: "Northwind Traders" });
+    expect(
+      screen
+        .getAllByRole("link")
+        .map((link) => [link.textContent, link.getAttribute("href")]),
+    ).toEqual([
+      ["Northwind Traders", `/organisations/${northwind.id}`],
+      ["Starter", `/settings/plans/${free.id}`],
+      ["Pro", `/settings/plans/${pro.id}`],
+    ]);
+  });
+
+  it("ActivitySentence_OverrideSetInTheTenantLog_HasNoReason", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantEntitlementOverrideSet,
+        target: burrenTarget,
+        details: {
+          operation:
+            TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+          key: LimitKey.RolesCustomMax,
+          oldValue: null,
+          oldExpiresAt: null,
+          newValue: value({ maximum: 25 }),
+          newExpiresAt: null,
+          reason: null,
+        },
+      }),
+    );
+
+    expect(
+      await findSentence(
+        "Ciara Byrne set Burren Supply’s Custom roles limit to 25, no expiry (before: none).",
+      ),
+    ).toBeInTheDocument();
   });
 });

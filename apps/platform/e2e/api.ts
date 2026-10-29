@@ -7,15 +7,21 @@ import {
   BuiltInRole,
   type CreateTenantRequest,
   type CursorPageOfAuditEntryResponse,
+  EntitlementOverrideResponseState,
+  type EntitlementValueResponse,
   ErrorCode,
+  FeatureKey,
   InvitationResponseState,
   Language,
+  LimitKey,
   type MakeOwnerRequest,
   type MeResponse,
+  type PlanResponse,
   type RenameMeRequest,
   type RoleResponse,
   type TenantDetailResponse,
   type TenantListItemResponse,
+  type TenantPlanResponse,
   TenantResponseStatus,
   TenantSuspendedDetailsResponseOperation,
   type UserDetailResponse,
@@ -414,6 +420,7 @@ export async function mockPlatform(
   await page.route(`**/api/v1/platform/users/${users.ayse.id}`, (route) =>
     route.fulfill({ json: ayseDetail }),
   );
+  await mockPlans(page);
   await page.route("**/api/v1/platform/audit-log*", (route) => {
     const tenantId = new URL(route.request().url()).searchParams.get(
       "tenantId",
@@ -512,6 +519,180 @@ export async function mockGrant(
           systemAdminGrantedAt: new Date().toISOString(),
         },
       });
+    },
+  );
+}
+
+const value = (
+  values: Partial<EntitlementValueResponse>,
+): EntitlementValueResponse => ({
+  enabled: null,
+  maximum: null,
+  unlimited: false,
+  ...values,
+});
+
+const plan = (
+  id: string,
+  name: string,
+  tenantCount: number,
+  entitlements: PlanResponse["entitlements"],
+  isDefault = false,
+): PlanResponse => ({
+  id,
+  name,
+  isDefault,
+  tenantCount,
+  entitlements,
+  createdAt: "2026-09-01T09:00:00Z",
+});
+
+/** The plans of the Plans boards: Free, the default; Pro; Partner. */
+export const plans = {
+  free: plan(
+    "0198f0a2-0000-7000-8000-00000000c001",
+    "Free",
+    1,
+    {
+      [FeatureKey.RolesCustom]: value({ enabled: false }),
+      [LimitKey.RolesCustomMax]: value({ maximum: 0 }),
+      [LimitKey.MembersMax]: value({ maximum: 5 }),
+    },
+    true,
+  ),
+  pro: plan("0198f0a2-0000-7000-8000-00000000c002", "Pro", 6, {
+    [FeatureKey.RolesCustom]: value({ enabled: true }),
+    [LimitKey.RolesCustomMax]: value({ maximum: 20 }),
+    [LimitKey.MembersMax]: value({ unlimited: true }),
+  }),
+  partner: plan("0198f0a2-0000-7000-8000-00000000c003", "Partner", 0, {
+    [FeatureKey.RolesCustom]: value({ enabled: true }),
+    [LimitKey.RolesCustomMax]: value({ maximum: 50 }),
+    [LimitKey.MembersMax]: value({ unlimited: true }),
+  }),
+};
+
+/** An organisation's Plan section, as the OrgPlan board draws Burren Supply: Pro, with an override of the custom roles limit. */
+export const tenantPlan = (tenantId: string): TenantPlanResponse => ({
+  tenantId,
+  plan: { id: plans.pro.id, name: plans.pro.name },
+  entitlements: [
+    {
+      key: FeatureKey.RolesCustom,
+      isFeature: true,
+      planValue: value({ enabled: true }),
+      override: null,
+      effective: value({ enabled: true }),
+      count: 4,
+    },
+    {
+      key: LimitKey.RolesCustomMax,
+      isFeature: false,
+      planValue: value({ maximum: 20 }),
+      override: {
+        value: value({ maximum: 25 }),
+        expiresAt: inDays(60),
+        state: EntitlementOverrideResponseState.Active,
+        reason: "Moving their old roles over; review at year end.",
+        setById: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e30",
+        setBy: { firstName: "Sam", lastName: "Kelly", deleted: false },
+        setAt: inDays(-2),
+      },
+      effective: value({ maximum: 25 }),
+      count: 4,
+    },
+    {
+      key: LimitKey.MembersMax,
+      isFeature: false,
+      planValue: value({ unlimited: true }),
+      override: null,
+      effective: value({ unlimited: true }),
+      count: 6,
+    },
+  ],
+});
+
+/** What the plan pages read: ListPlans, GetPlan and each organisation's GetTenantPlan. */
+async function mockPlans(page: Page): Promise<void> {
+  const all = Object.values(plans);
+  await page.route("**/api/v1/platform/plans*", (route) =>
+    route.fulfill({
+      json: {
+        items: all.map(({ entitlements: _, ...item }) => item),
+        page: 1,
+        pageSize: 100,
+        total: all.length,
+      },
+    }),
+  );
+  await page.route("**/api/v1/platform/plans/*", (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const id = new URL(route.request().url()).pathname.split("/").at(-1);
+    const found = all.find((item) => item.id === id);
+    return route.fulfill(
+      found ? { json: found } : problem(404, ErrorCode.PlanNotFound),
+    );
+  });
+  await page.route("**/api/v1/platform/tenants/*/plan", (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const id = new URL(route.request().url()).pathname.split("/").at(-2) ?? "";
+    return route.fulfill({ json: tenantPlan(id) });
+  });
+}
+
+/**
+ * The preview of a Pro edit puts two organisations over a limit, and UpdatePlan saves it. It records each body of UpdatePlan.
+ */
+export async function mockPlanEdit(
+  page: Page,
+  bodies: unknown[] = [],
+): Promise<void> {
+  await page.route(
+    `**/api/v1/platform/plans/${plans.pro.id}/preview*`,
+    (route) =>
+      route.fulfill({
+        json: {
+          items: [organisations.northwind, organisations.shannon].map(
+            (organisation, index) => ({
+              tenantId: organisation.id,
+              name: organisation.name,
+              slug: organisation.slug,
+              furthest: 4 - index,
+              excesses: [
+                {
+                  key: LimitKey.RolesCustomMax,
+                  count: 14 - index,
+                  newValue: value({ maximum: 10 }),
+                  amount: 4 - index,
+                },
+              ],
+              overriddenKeys: [],
+            }),
+          ),
+          page: 1,
+          pageSize: 20,
+          total: 2,
+        },
+      }),
+  );
+  await page.route(`**/api/v1/platform/plans/${plans.pro.id}`, (route) => {
+    if (route.request().method() !== "PATCH") return route.fallback();
+    bodies.push(route.request().postDataJSON());
+    return route.fulfill({ json: plans.pro });
+  });
+}
+
+/** SetEntitlementOverride answers the section, and records each body. */
+export async function mockOverride(
+  page: Page,
+  tenantId: string,
+  bodies: unknown[] = [],
+): Promise<void> {
+  await page.route(
+    `**/api/v1/platform/tenants/${tenantId}/entitlement-overrides/*`,
+    (route) => {
+      bodies.push(route.request().postDataJSON());
+      return route.fulfill({ json: tenantPlan(tenantId) });
     },
   );
 }

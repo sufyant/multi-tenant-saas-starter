@@ -26,7 +26,8 @@
     "language": "Dil",
     "platform": "Platform",
     "systemAdmins": "Sistem yöneticileri",
-    "activity": "Etkinlik"
+    "activity": "Etkinlik",
+    "plans": "Planlar"
   },
   "preferences": {
     "title": "Tercihler",
@@ -194,7 +195,12 @@
     "inviteNotActive": "<bdi>{name}</bdi> etkin değil.",
     "inviteNotActiveText": "Önce yeniden etkinleştirin ya da yeniden açın.",
     "notDone": "<bdi>{name}</bdi> değişmedi.",
-    "activity": "Etkinlik"
+    "activity": "Etkinlik",
+    "plan": "Plan",
+    "planHint": "Yeni kuruluşlar varsayılan planı alır. Sonra değiştirebilirsiniz.",
+    "planSearch": "Planlarda ara",
+    "planEmpty": "Plan bulunamadı",
+    "planDefault": "Varsayılan"
   },
   "users": {
     "title": "Kullanıcılar",
@@ -346,7 +352,7 @@
     "operations": {
       "unknown": "<actor></actor> bir değişiklik yaptı (<code>{operation}</code>).",
       "tenant": {
-        "created": "<actor></actor>, <target></target> kuruluşunu oluşturdu ve Sahibini davet etti.",
+        "created": "{onPlan, select, none {<actor></actor>, <target></target> kuruluşunu oluşturdu ve Sahibini davet etti.} other {<actor></actor>, <target></target> kuruluşunu <plan></plan> planında oluşturdu ve Sahibini davet etti.}}",
         "renamed": "<actor></actor>, <link>{oldName}</link> kuruluşunun adını <name>{newName}</name> olarak değiştirdi.",
         "suspended": "<actor></actor>, <target></target> kuruluşunu askıya aldı. Neden: <name>{reason}</name>.",
         "reactivated": "<actor></actor>, <target></target> kuruluşunu yeniden etkinleştirdi.",
@@ -355,7 +361,10 @@
         "owner_invited": "<actor></actor>, <target></target> kuruluşuna yeni bir Sahip davet etti.",
         "owner_made": "{owner, select, named {<actor></actor>, <member></member> kullanıcısını <target></target> kuruluşunda Sahip yaptı.} deletedUser {<actor></actor>, <member>silinmiş bir kullanıcıyı</member> <target></target> kuruluşunda Sahip yaptı.} other {<actor></actor>, <member>bir üyeyi</member> <target></target> kuruluşunda Sahip yaptı.}}",
         "purge_warned": "<target></target> kuruluşunun Sahiplerine kuruluşun {date} tarihinde silineceği bildirildi.",
-        "purged": "<target></target> silindi."
+        "purged": "<target></target> silindi.",
+        "plan_changed": "<actor></actor>, <target></target> kuruluşunu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.",
+        "entitlement_override_set": "<actor></actor>, <target></target> kuruluşunun {key} değerini {expiry, select, none {süresiz olarak} other {{date} tarihine kadar}} {value} yaptı (önceki: {previous}).{hasReason, select, yes { Neden: <name>{reason}</name>.} ended { Neden: <name>{reason}</name>} other {}}",
+        "entitlement_override_removed": "<actor></actor>, <target></target> kuruluşunun {key} istisnasını kaldırdı ({value}, {expiry, select, none {süresiz} other {{date} tarihine kadar}})."
       },
       "user": {
         "suspended": "<actor></actor>, <target></target> kullanıcısını askıya aldı.",
@@ -367,7 +376,145 @@
       "system_admin": {
         "granted": "<actor></actor>, <target></target> kullanıcısını sistem yöneticisi yaptı.",
         "revoked": "<actor></actor>, <target></target> kullanıcısını sistem yöneticiliğinden kaldırdı."
+      },
+      "plan": {
+        "created": "<actor></actor>, <target></target> planını oluşturdu.",
+        "updated": "{change, select, renamed {<actor></actor>, <name>{oldName}</name> planının adını <target></target> olarak değiştirdi.} default {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı.} defaultAndChanges {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı ve şunları değiştirdi: <changes></changes>.} one {<actor></actor>, <target></target> planını değiştirdi: <changes></changes>.} other {<actor></actor>, <target></target> planında birkaç değeri değiştirdi: <changes></changes>.}}"
       }
+    },
+    "change": "{key}, <bdi>{old}</bdi> değerinden <bdi>{new}</bdi> değerine",
+    "changeSeparator": "; ",
+    "nameKey": "ad"
+  },
+  "entitlements": {
+    "areas": {
+      "roles": "Roller",
+      "members": "Üyeler"
+    },
+    "keys": {
+      "roles_custom": {
+        "name": "Özel roller",
+        "description": "Bir kuruluşun Sahip, Yönetici ve Üye dışında oluşturduğu roller.",
+        "turnsOff": "{key} kapanır. Mevcut {count} özel rol kalır ve üyeleri izinlerini korur; kimse yenisini oluşturamaz, düzenleyemez veya veremez."
+      },
+      "roles_custom_max": {
+        "name": "Özel rol sınırı",
+        "description": "Bir kuruluşun en fazla kaç özel rolü olabileceği."
+      },
+      "members_max": {
+        "name": "Üye sınırı",
+        "description": "Üyeler ve süresi dolmamış bekleyen davetler."
+      }
+    },
+    "turnsOff": "{key} kapanır.",
+    "on": "Açık",
+    "off": "Kapalı",
+    "unlimited": "Sınırsız",
+    "notSet": "Ayarlanmadı: kapalı",
+    "sentence": {
+      "on": "açık",
+      "off": "kapalı",
+      "unlimited": "sınırsız",
+      "notSet": "ayarlanmadı",
+      "none": "yok"
     }
+  },
+  "plans": {
+    "title": "Planlar",
+    "intro": "Plan, her kuruluşa özelliklerini ve sınırlarını verir. Yeni kuruluşlar varsayılan planı alır.",
+    "newPlan": "Yeni plan",
+    "default": "Varsayılan",
+    "nameColumn": "Plan",
+    "organisationsColumn": "Kuruluşlar",
+    "loading": "Planlar yükleniyor",
+    "error": "Planlar yüklenemedi",
+    "loadError": "Plan yüklenemedi",
+    "section": "Plan",
+    "name": "Ad",
+    "defaultPlan": "Varsayılan plan",
+    "defaultOn": "Yeni kuruluşlar bu planı alır.",
+    "defaultOff": "Yeni kuruluşlara <bdi>{plan}</bdi> yerine bu planın verilmesi için işaretleyin.",
+    "defaultLocked": "Her zaman bir varsayılan plan vardır. Değiştirmek için önce başka bir planı varsayılan yapın.",
+    "numberPlaceholder": "Ayarlanmadı",
+    "organisationCount": "Bu planda {count} kuruluş var.",
+    "createTitle": "Yeni plan",
+    "createText": "Ayarlamadığınız bir anahtar, bu plandaki kuruluşlar için kapalıdır.",
+    "save": "Değişiklikleri kaydet",
+    "create": "Planı oluştur",
+    "nameRequired": "Bir ad girin.",
+    "nameTaken": "Bu ad başka bir planda var.",
+    "nameTooLong": "1 ile {max} karakter arasında yazın.",
+    "numberInvalid": "0 veya daha büyük bir tam sayı girin.",
+    "saved": "<bdi>{name}</bdi> kaydedildi",
+    "created": "<bdi>{name}</bdi> oluşturuldu",
+    "notSaved": "Plan kaydedilmedi",
+    "impactTitle": "<bdi>{plan}</bdi> değişiklikleri kaydedilsin mi?",
+    "impactText": "Bu değişiklik {count} kuruluşu bir sınırın üstüne çıkarıyor. Hiçbir şey silinmez veya kilitlenmez: sınırın altına inene kadar yenisini ekleyemezler. Birini olduğu gibi tutmak için önce ona istisna verin.",
+    "organisation": "Kuruluş",
+    "limit": "Sınır",
+    "now": "Şu an",
+    "newLimit": "Yeni sınır",
+    "overBy": "{count} fazla",
+    "saveAnyway": "Yine de kaydet",
+    "search": "Kuruluşlarda ara",
+    "shown": "{total} kuruluştan {shown} tanesi gösteriliyor, sınırı en çok aşan önce.",
+    "loadMore": "Daha fazla yükle",
+    "newTab": "(yeni sekmede açılır)",
+    "previewError": "Bu plandaki kuruluşlar denetlenemedi. Yeniden deneyin."
+  },
+  "planSection": {
+    "title": "Plan",
+    "changePlan": "Planı değiştir",
+    "addOverride": "İstisna ekle",
+    "key": "Özellik veya sınır",
+    "plan": "Plan",
+    "override": "İstisna",
+    "applies": "Geçerli",
+    "used": "Kullanılan",
+    "setBy": "{name} ayarladı",
+    "until": "<date></date> tarihine kadar",
+    "noExpiry": "Süresiz",
+    "expired": "Süresi doldu",
+    "hint": "İstisna, yalnızca bu kuruluş için bir değeri değiştirir. Plan olduğu gibi kalır.",
+    "noOverrides": "İstisna yok. Her değer plandan gelir.",
+    "overTitle": "<bdi>{name}</bdi> bir sınırın üstünde.",
+    "overText": "Hiçbir şey silinmez veya kilitlenmez. Sınırın altına inene kadar yenisini ekleyemez.",
+    "overBy": "{count} fazla",
+    "closedTitle": "<bdi>{name}</bdi> kapalı. Planı ve istisnaları salt okunur.",
+    "closedText": "Değiştirmek için yeniden açın.",
+    "error": "Plan yüklenemedi",
+    "actionsFor": "{name} işlemleri",
+    "editOverride": "İstisnayı düzenle",
+    "removeOverride": "İstisnayı kaldır",
+    "addTitle": "<bdi>{name}</bdi> için istisna ekle",
+    "editTitle": "{key} istisnasını düzenle",
+    "overrideText": "Bu değeri yalnızca <bdi>{name}</bdi> için, süresi dolana ya da biri kaldırana kadar değiştirir.",
+    "keySearch": "Özellik ve sınırlarda ara",
+    "keyEmpty": "Özellik veya sınır bulunamadı",
+    "value": "Değer",
+    "expires": "Bitiş",
+    "expiresHint": "İsteğe bağlı. Bu tarihten itibaren, saat diliminizde gece yarısından sonra planın değeri yeniden geçerli olur.",
+    "reason": "Neden",
+    "reasonHint": "Bunu yalnızca platform görür.",
+    "reasonRequired": "Bir neden girin.",
+    "reasonTooLong": "1 ile {max} karakter arasında yazın.",
+    "expiryInvalid": "Bugünden sonraki bir tarih seçin.",
+    "save": "İstisnayı kaydet",
+    "saved": "İstisna kaydedildi",
+    "notSaved": "İstisna kaydedilmedi",
+    "removeTitle": "{key} istisnası kaldırılsın mı?",
+    "removeText": "<bdi>{name}</bdi>, planın değerine döner: {value}. Şu an {count} kullanıyor.",
+    "removed": "İstisna kaldırıldı",
+    "notRemoved": "İstisna kaldırılmadı",
+    "changeTitle": "<bdi>{name}</bdi> kuruluşunun planını değiştir",
+    "changeText": "<bdi>{plan}</bdi> planında <bdi>{name}</bdi> bir sınırın üstüne çıkar ve bir özelliği kaybeder. Hiçbir şey silinmez veya kilitlenmez: sınırın altına inene kadar yenisini ekleyemez.",
+    "newPlan": "Yeni plan",
+    "current": "Mevcut",
+    "planSearch": "Planlarda ara",
+    "planEmpty": "Plan bulunamadı",
+    "limitOver": "{key}: şu an {count}, <bdi>{plan}</bdi> planında {limit}.",
+    "overrideApplies": "{key}: istisnası ({value}) geçerli kalır.",
+    "changed": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planına geçti",
+    "notChanged": "Plan değiştirilmedi"
   }
 }
