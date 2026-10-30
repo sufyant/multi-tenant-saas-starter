@@ -1,5 +1,9 @@
 using Api.Caching;
+using Api.Hosting;
 using Api.Live;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using SharedKernel;
@@ -42,16 +46,47 @@ public sealed class LiveChannelTests : IAsyncLifetime
         (await otherReceived).ShouldBeFalse();
     }
 
+    // A publish never waits for Valkey: the commit that signals takes no time of a stopped Valkey. The queued events fail once each, and
+    // the warning comes once, until a send succeeds again.
     [Fact]
-    public async Task Publish_ValkeyStopped_LogsAWarningAndFailsNobody()
+    public async Task Publish_ValkeyStopped_ReturnsAtOnceLogsOneWarningAndFailsNobody()
     {
         var logger = new FakeLogger<LiveChannel>();
         using var worker = Channel(logger);
         await _valkey.StopAsync();
+        var started = TimeProvider.System.GetTimestamp();
 
         await worker.PublishAsync(Guid.CreateVersion7(), Signal, TestContext.Current.CancellationToken);
+        await worker.PublishAsync(Guid.CreateVersion7(), Signal, TestContext.Current.CancellationToken);
+        var took = TimeProvider.System.GetElapsedTime(started);
+        await Waiting.UntilAsync(() => logger.Collector.Count > 0);
+        await Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken);
 
-        logger.Collector.GetSnapshot().Select(log => (log.Level, log.Message)).ShouldBe([(LogLevel.Warning, "A live event notifications was not published, and is lost.")]);
+        took.ShouldBeLessThan(TimeSpan.FromMilliseconds(100));
+        logger.Collector.GetSnapshot().Select(log => (log.Level, log.Message)).ShouldBe(
+            [(LogLevel.Warning, "A live event notifications was not published, and is lost; the events after it are lost too until Valkey answers again.")]);
+    }
+
+    // A web or a worker process without a cache connection loses the worker's signals; it says so once at start. The role all needs none.
+    [Theory]
+    [InlineData("Web", null, 1)]
+    [InlineData("Worker", null, 1)]
+    [InlineData("All", null, 0)]
+    [InlineData("Web", "localhost:1", 0)]
+    public async Task StartHost_AWebOrAWorkerWithoutACacheConnection_WarnsOnce(string role, string? cache, int warnings)
+    {
+        var builder = WebApplication.CreateEmptyBuilder(new());
+        builder.Configuration[$"ConnectionStrings:{CachingExtensions.CacheConnection}"] = cache;
+        builder.Services.AddFakeLogging();
+        builder.WebHost.UseTestServer();
+        builder.AddLiveChannel(Enum.Parse<HostRole>(role));
+        await using var host = builder.Build();
+
+        await host.StartAsync(TestContext.Current.CancellationToken);
+        await host.StopAsync(TestContext.Current.CancellationToken);
+
+        host.Services.GetRequiredService<FakeLogCollector>().GetSnapshot().Count(log => log.Level == LogLevel.Warning && log.Message.Contains("ConnectionStrings:Cache", StringComparison.Ordinal))
+            .ShouldBe(warnings);
     }
 
     private LiveChannel Channel(ILogger<LiveChannel> logger)

@@ -9,8 +9,10 @@ namespace Api.Live;
 
 // The live channel of U6. Each process keeps the open streams of its users. Without Valkey, an event goes straight to the streams of this
 // process. With Valkey, an event goes to one channel of Valkey's publish and subscribe, and each process that has an open stream hears every
-// event of it and hands each to its own streams; a worker only publishes. A failure of Valkey loses the event and logs a warning: it never
-// fails the caller, because the event carries no content and the next read is right (section 7, "Error tracking", rule 4).
+// event of it and hands each to its own streams; a worker only publishes. A publish never waits for Valkey: it puts the event in a bounded
+// queue of the process, which one loop sends, so a slow or stopped Valkey adds no time to the commit that signals. A failure of Valkey loses
+// the event and logs one warning until a send succeeds again: it never fails the caller, because the event carries no content and the next
+// read is right (section 7, "Error tracking", rule 4).
 internal sealed partial class LiveChannel(ILogger<LiveChannel> logger, ValkeyConnection? valkey) : ILiveChannel, IDisposable
 {
     // One channel of Valkey for every user: a process hears it once, however many streams it holds.
@@ -21,29 +23,42 @@ internal sealed partial class LiveChannel(ILogger<LiveChannel> logger, ValkeyCon
 
     private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Channel<LiveEvent>, byte>> _streams = new();
 
+    // The events this process has still to send to Valkey. When Valkey is slow, the oldest go first: each is a signal to read again.
+    private readonly Channel<Message> _outgoing =
+        System.Threading.Channels.Channel.CreateBounded<Message>(new BoundedChannelOptions(1024) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true });
+
+    private readonly CancellationTokenSource _stopping = new();
+
     private readonly SemaphoreSlim _subscribing = new(1, 1);
+
+    private int _sending;
 
     private bool _subscribed;
 
-    public void Dispose() => _subscribing.Dispose();
+    private bool _failing;
 
-    public async Task PublishAsync(Guid userId, LiveEvent liveEvent, CancellationToken cancellationToken)
+    public void Dispose()
+    {
+        _stopping.Cancel();
+        _stopping.Dispose();
+        _subscribing.Dispose();
+    }
+
+    public Task PublishAsync(Guid userId, LiveEvent liveEvent, CancellationToken cancellationToken)
     {
         if (valkey is null)
         {
             Deliver(userId, liveEvent);
-            return;
+            return Task.CompletedTask;
         }
 
-        try
+        _outgoing.Writer.TryWrite(new Message(userId, liveEvent.Name, liveEvent.Data));
+        if (Interlocked.Exchange(ref _sending, 1) == 0)
         {
-            var connection = await valkey.ConnectAsync();
-            await connection.GetSubscriber().PublishAsync(Channel, JsonSerializer.Serialize(new Message(userId, liveEvent.Name, liveEvent.Data)));
+            _ = Task.Run(() => SendAsync(valkey), CancellationToken.None);
         }
-        catch (Exception exception) when (exception is RedisException or TimeoutException or ObjectDisposedException)
-        {
-            LogPublishFailed(logger, exception, liveEvent.Name);
-        }
+
+        return Task.CompletedTask;
     }
 
     public async IAsyncEnumerable<LiveEvent> SubscribeAsync(Guid userId, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
@@ -82,11 +97,41 @@ internal sealed partial class LiveChannel(ILogger<LiveChannel> logger, ValkeyCon
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "A live event {Name} was not published, and is lost.")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A live event {Name} was not published, and is lost; the events after it are lost too until Valkey answers again.")]
     private static partial void LogPublishFailed(ILogger logger, Exception exception, string name);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The process could not subscribe to the live events of other processes; it tries again at the next stream.")]
     private static partial void LogSubscribeFailed(ILogger logger, Exception exception);
+
+    // The one loop of the process that sends the queued events to Valkey, each with the connection's time limit (C10).
+    private async Task SendAsync(ValkeyConnection connection)
+    {
+        try
+        {
+            await foreach (var message in _outgoing.Reader.ReadAllAsync(_stopping.Token))
+            {
+                try
+                {
+                    var valkeyConnection = await connection.ConnectAsync();
+                    await valkeyConnection.GetSubscriber().PublishAsync(Channel, JsonSerializer.Serialize(message));
+                    _failing = false;
+                }
+                catch (Exception exception) when (exception is RedisException or TimeoutException or ObjectDisposedException)
+                {
+                    if (!_failing)
+                    {
+                        LogPublishFailed(logger, exception, message.Name);
+                    }
+
+                    _failing = true;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The process stops.
+        }
+    }
 
     private void Deliver(Guid userId, LiveEvent liveEvent)
     {

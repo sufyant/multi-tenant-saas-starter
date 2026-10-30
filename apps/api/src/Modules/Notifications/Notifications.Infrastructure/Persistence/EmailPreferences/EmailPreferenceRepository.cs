@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Notifications.Application.EmailPreferences;
 using Notifications.Domain.EmailPreferences;
+using Notifications.Domain.Notifications;
 
 namespace Notifications.Infrastructure.Persistence.EmailPreferences;
 
@@ -16,6 +17,10 @@ public sealed class EmailPreferenceRepository(NotificationsDbContext notificatio
             .FromSql($"SELECT * FROM notifications.email_preferences WHERE user_id = {userId} FOR UPDATE")
             .SingleOrDefaultAsync(cancellationToken)
         ?? EmailPreference.DefaultFor(userId);
+
+    async Task<bool> IEmailPreferenceRepository.SendsEmailAsync(Guid userId, NotificationKind kind, CancellationToken cancellationToken) =>
+        (await notifications.EmailPreferences.AsNoTracking().SingleOrDefaultAsync(found => found.UserId == userId, cancellationToken)
+            ?? EmailPreference.DefaultFor(userId)).SendsEmail(kind);
 
     async Task IEmailPreferenceRepository.SaveAsync(EmailPreference preference, CancellationToken cancellationToken)
     {

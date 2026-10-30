@@ -32,7 +32,8 @@ public sealed class ListNotificationsTests(Database database) : IAsyncLifetime
         var member = await _testData.AddMemberAsync(tenant.Id);
         await _testData.AddMemberAsync(other.Id, member);
         var userId = await _testData.UserIdOfAsync(member);
-        var at = DateTimeOffset.UtcNow.AddMinutes(-10);
+        // PostgreSQL keeps a moment to the microsecond.
+        var at = new DateTimeOffset(DateTimeOffset.UtcNow.AddMinutes(-10).UtcTicks / 10 * 10, TimeSpan.Zero);
         var own = await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant", createdAt: at);
         var personal = await _rows.AddAsync(userId, "member.removed", null, "Personal", "Globex", at.AddMinutes(1));
         await _rows.AddAsync(userId, "tenant.plan_changed", other.Id, "Tenant", "Initech", at.AddMinutes(2));

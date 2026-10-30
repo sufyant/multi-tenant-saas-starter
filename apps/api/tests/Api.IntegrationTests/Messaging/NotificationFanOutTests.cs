@@ -6,7 +6,8 @@ using Wolverine;
 namespace Api.IntegrationTests.Messaging;
 
 // U3, U4: each of the seven types reaches exactly its recipients when its event arrives, one notification each, in the right bell, and
-// never the person who acted. The commands run through the API, so the events carry what ControlPlane publishes.
+// never the person who acted. The commands run through the API, so the events carry what ControlPlane publishes. Every system admin of the
+// shared database hears every platform event of every test, so a platform type is read only about the test's own tenant.
 public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -131,7 +132,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         var (owner, _) = await tenants.AcceptAsync(await tenants.LatestInvitationAsync(tenantId), email);
 
         var (adminId, otherId, ownerId) = (await _testData.UserIdOfAsync(admin), await _testData.UserIdOfAsync(other), await _testData.UserIdOfAsync(owner));
-        (await _rows.OfAsync(adminId, otherId, ownerId)).Order().ShouldBe(
+        (await _rows.AboutAsync(tenantId, adminId, otherId, ownerId)).Order().ShouldBe(
             new[]
             {
                 NotificationRows.Row(adminId, "tenant.owner_joined", tenantId, "Platform"),
@@ -149,7 +150,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor, secondFactor: true).SuspendTenantAsync(tenant.Id));
 
         var (actorId, otherId, memberId) = (await _testData.UserIdOfAsync(actor), await _testData.UserIdOfAsync(other), await _testData.UserIdOfAsync(member));
-        (await _rows.OfAsync(actorId, otherId, memberId)).ShouldBe([NotificationRows.Row(otherId, "tenant.status_changed", tenant.Id, "Platform")]);
+        (await _rows.AboutAsync(tenant.Id, actorId, otherId, memberId)).ShouldBe([NotificationRows.Row(otherId, "tenant.status_changed", tenant.Id, "Platform")]);
         (await _rows.ValuesOfAsync(otherId, "tenant.status_changed")).ShouldBe("""{"status": "suspended", "tenantName": "Acme Ltd"}""");
     }
 
@@ -162,7 +163,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         await PublishAsync(purged);
 
         var adminId = await _testData.UserIdOfAsync(admin);
-        (await _rows.OfAsync(adminId)).ShouldBe([NotificationRows.Row(adminId, "tenant.purged", purged.TenantId, "Platform")]);
+        (await _rows.AboutAsync(purged.TenantId, adminId)).ShouldBe([NotificationRows.Row(adminId, "tenant.purged", purged.TenantId, "Platform")]);
     }
 
     // O4: a copy of an event writes no second notification and sends no second email.
@@ -173,7 +174,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         var purged = new TenantPurgedEvent(Guid.CreateVersion7(), DateTimeOffset.UtcNow, Guid.CreateVersion7(), "Acme Ltd");
         await PublishAsync(purged, purged);
 
-        (await _rows.OfAsync(await _testData.UserIdOfAsync(admin))).Length.ShouldBe(1);
+        (await _rows.AboutAsync(purged.TenantId, await _testData.UserIdOfAsync(admin))).Length.ShouldBe(1);
     }
 
     // The events, as ControlPlane publishes them, and every message they cause.

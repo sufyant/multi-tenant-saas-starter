@@ -27,8 +27,7 @@ public static class DeliverNotificationHandler
         notifications.Add(Notification.Create(deliver.NotificationId, deliver.UserId, deliver.TenantId, deliver.Type, deliver.Values, deliver.OccurredAt));
         await notifications.SaveAsync(cancellationToken);
 
-        var preference = await preferences.FindEmailPreferenceForUpdateAsync(deliver.UserId, cancellationToken);
-        return deliver.Email is { } email && preference.SendsEmail(NotificationCatalog.Of(deliver.Type))
+        return deliver.Email is { } email && await preferences.SendsEmailAsync(deliver.UserId, NotificationCatalog.Of(deliver.Type), cancellationToken)
             ? [new SendNotificationEmailCommand(deliver.NotificationId, deliver.Type, deliver.Values, email, deliver.Language)]
             : [];
     }

@@ -32,7 +32,7 @@ Notifications hears an event that another module publishes and tells people. The
 1. ControlPlane commits a command and its event (O1).
 2. The handler of each type names the recipients, through ControlPlane's contracts, and the values the texts need, as they are at that moment. It never names a channel. It sends one `DeliverNotificationCommand` for each recipient (U3; Kleppmann, Chapter 1, fan-out on write). Someone who becomes a recipient later sees no older notification.
 3. The dispatcher declares the recipient, and writes the notification under an id that the event, the type and the recipient decide, so a copy of the event writes nothing more (O4). In-app cannot be turned off.
-4. The dispatcher reads the recipient's email preferences. The email goes when the type is required, or when the main switch is on and the category's switch is on, or, without a choice, when the catalog's default for the type is on (U4). Today every default is off.
+4. The dispatcher reads the recipient's email preferences as a value, without a lock. The email goes when the type is required, or when the main switch is on and the category's switch is on, or, without a choice, when the catalog's default for the type is on (U4). Today every default is off.
 5. The commit signals the recipient's bell on the live channel (U6). A failed signal is a warning; the next read is right.
 6. The email is the one generic notification email: the title and the body that the bell shows, in the recipient's language, and a button to the web app, or to the platform app for the platform's notifications (`Notifications:Links`). An email that fails is tried again and goes to the dead letter queue (W11); the notification stays.
 
@@ -60,7 +60,7 @@ A notification reaches an open bell within about one to two seconds of the commi
 4. Before each send, the stream asks again whether the user may read (A9, through the cache). A deleted or a suspended user's stream closes at its next send.
 5. The stream closes after `Notifications:LiveStream:Lifetime` (5 minutes), so the client opens a new one with a fresh token. Railway ends a request after 15 minutes, even while data flows.
 
-The live channel is `ILiveChannel` (U6). The worker writes the notification, and its commit publishes the signal on Valkey's channel `api:live`. Every web process that holds a stream of the user hears it, and writes it to that user's streams. Without a cache connection, the signal stays in the process, which is enough in the role `all`.
+The live channel is `ILiveChannel` (U6). The worker writes the notification, and its commit queues the signal, which one loop of the process publishes on Valkey's channel `api:live`; the commit never waits for Valkey. A web or a worker process without `ConnectionStrings:Cache` logs one warning at start. Every web process that holds a stream of the user hears it, and writes it to that user's streams. Without a cache connection, the signal stays in the process, which is enough in the role `all`.
 
 ## 5. Email preferences
 

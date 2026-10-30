@@ -53,7 +53,7 @@ internal static class ApiPipeline
 
         builder.AddObservability();
         builder.AddCaching();
-        builder.AddLiveChannel();
+        builder.AddLiveChannel(role);
         builder.AddAccess();
         builder.Services.AddErrorHandling();
         builder.AddMessaging(host, role, openApiBuild, handlerAssemblies);

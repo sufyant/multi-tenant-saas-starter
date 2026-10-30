@@ -17,6 +17,11 @@ internal sealed class NotificationRows(Database database)
         return rows?.Split('\n') ?? [];
     }
 
+    // The same, of the notifications about one tenant only. Every system admin of the shared database hears every platform event of every
+    // test (U3), so a test of a platform notification reads only those about its own tenant.
+    public async Task<string[]> AboutAsync(Guid tenantId, params Guid[] userIds) =>
+        [.. (await OfAsync(userIds)).Where(row => row.Split('|')[2] == tenantId.ToString())];
+
     // The values a notification of the user keeps, as stored.
     public Task<string?> ValuesOfAsync(Guid userId, string type) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT \"values\"::text FROM notifications.notifications WHERE user_id = '{userId}' AND type = '{type}'");

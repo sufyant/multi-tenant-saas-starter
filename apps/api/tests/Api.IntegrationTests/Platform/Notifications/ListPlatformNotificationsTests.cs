@@ -33,13 +33,18 @@ public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLi
         await _testData.AddMemberAsync(tenant.Id, admin);
         var userId = await _testData.UserIdOfAsync(admin);
         var platform = await _rows.AddAsync(userId, "tenant.purged", tenant.Id, "Platform");
-        await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant");
-        await _rows.AddAsync(userId, "member.removed", null, "Personal");
+        var ofTheTenant = await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant");
+        var personal = await _rows.AddAsync(userId, "member.removed", null, "Personal");
 
-        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications", Cancellation);
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?limit=100", Cancellation);
 
-        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([platform]);
-        page.GetProperty("items")[0].GetProperty("link").GetRawText().ShouldBe($$"""{"kind":"platform_tenant","tenantId":"{{tenant.Id}}"}""");
+        // Every system admin of the shared database hears the platform events of the other tests too, so the page may hold more.
+        var items = page.GetProperty("items").EnumerateArray().ToList();
+        items.Select(item => item.GetProperty("id").GetGuid()).ShouldContain(platform);
+        items.Select(item => item.GetProperty("id").GetGuid()).ShouldNotContain(ofTheTenant);
+        items.Select(item => item.GetProperty("id").GetGuid()).ShouldNotContain(personal);
+        items.Single(item => item.GetProperty("id").GetGuid() == platform).GetProperty("link").GetRawText()
+            .ShouldBe($$"""{"kind":"platform_tenant","tenantId":"{{tenant.Id}}"}""");
     }
 
     [Fact]
