@@ -1,6 +1,10 @@
 "use client";
 
-import { getListMyTenantsQueryOptions, schemas } from "@repo/api-client";
+import {
+  getListMyTenantsQueryOptions,
+  MyTenantResponseStatus,
+  schemas,
+} from "@repo/api-client";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -9,8 +13,9 @@ import { useEffect } from "react";
 
 /**
  * `/settings/notifications`, the address without an organisation (the maintainer's decision in step 33-frontend): the page of the
- * one organisation, or the start page, which offers the choice of organisations or says "No access yet". The preferences are the
- * person's, the same in every organisation, so any organisation's page shows them.
+ * first active organisation in ListMyTenants' order, or, with none, the start page, which says "No access yet" or shows the
+ * organisations that cannot open. The preferences are the person's, the same in every organisation, so any organisation's page
+ * shows them.
  */
 export function ManageNotifications() {
   const t = useTranslations("common");
@@ -20,13 +25,15 @@ export function ManageNotifications() {
       pageSize: schemas.listMyTenantsQueryPageSizeMax,
     }),
   );
-  const only = tenants.data?.total === 1 ? tenants.data.items[0] : undefined;
+  const first = tenants.data?.items.find(
+    (tenant) => tenant.status === MyTenantResponseStatus.Active,
+  );
   const settled = tenants.isSuccess || tenants.isError;
 
   useEffect(() => {
     if (!settled) return;
-    router.replace(only ? `/${only.slug}/settings/notifications` : "/");
-  }, [settled, only, router]);
+    router.replace(first ? `/${first.slug}/settings/notifications` : "/");
+  }, [settled, first, router]);
 
   return <Skeleton label={t("loading")} />;
 }
