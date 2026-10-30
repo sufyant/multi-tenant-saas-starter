@@ -68,14 +68,14 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 
 ## A new notification
 
-A notification type is a template (U1 to U4). A new one needs these things, and the module that raises the event does not change:
+A notification type is a template (U1 to U4). A type tells of one event, and has the name of that event's audit operation in `AuditOperations` (U9). Only where one event tells other people with other texts does a type keep a name of its own; it then goes into `NotificationCatalog.NamedApart` with its reason. A new one needs these things, and the module that raises the event changes only to add an optional field:
 
-1. One entry in `Notifications.Domain/NotificationCatalog.cs`: the type, its category, its bell, its link kind, its channels with their defaults, whether it is required, and the values its texts use.
-2. Its texts in `packages/emails/messages/{en,tr,ar}.json`, under `notifications`: a title and a body with the values as `{name}`, and the words of a closed list under `notificationWords`. Run `pnpm generate`.
+1. One entry in `Notifications.Domain/NotificationCatalog.cs`: the type, its category, its bell, its link kind, its channels with their defaults, whether it is required, and the values its texts use. A person is a `Person` value, which stores the user id; never store a person's name or address (K3, U2). A value that may be missing is optional.
+2. Its texts in `packages/emails/messages/{en,tr,ar}.json`, under `notifications`: a title and a body with the values as `{name}`, a text under `without` for each optional value, and the words of a closed list under `notificationWords`. Run `pnpm generate`.
 3. A migration of Notifications: the CHECK of the types reads the catalog (`dotnet ef migrations add`; `PendingModelChangesTests` asks for it). A new link kind also needs its value in `NotificationLinkResponseKind` and `Statuses/ResponseStatus.cs`.
-4. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.To(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
+4. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.ToAsync(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
 
-`NotificationCatalogTests` fails for a type without its texts in every language, without its handler or without a category of the catalog. "Which category?" is a plan question of every feature step (E7).
+`NotificationCatalogTests` fails for a type without its texts in every language, without a text for each optional value, without its handler, without a category of the catalog, or without the name of an audit operation or a reason to be named apart. "Which category?" is a plan question of every feature step (E7).
 
 ## How we design
 
