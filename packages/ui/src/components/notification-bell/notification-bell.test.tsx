@@ -1,0 +1,279 @@
+import { ErrorCode } from "@repo/api-client";
+import { act, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import axe from "axe-core";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "../../../messages/en.json";
+import {
+  type NotificationBellProps,
+  type NotificationEntry,
+  NotificationBell,
+} from "./notification-bell";
+
+// Each app holds the locale's format; the bell reads it as the app's pages do.
+const messages = { ...en, locale: { format: "en-IE" } };
+const now = "2026-10-16T13:32:00Z";
+
+const entry = (
+  id: string,
+  title: string,
+  readAt: string | null = null,
+): NotificationEntry => ({
+  id,
+  title,
+  body: `${title}: the body.`,
+  createdAt: "2026-10-16T13:29:00Z",
+  readAt,
+  href: `/northwind/${id}`,
+});
+
+const joined = entry("a", "Deniz Arslan joined Northwind Traders");
+const plan = entry("b", "Northwind Traders is now on Pro", now);
+const fresh = entry("c", "Your role in Northwind Traders changed");
+
+const loaded = (
+  items: NotificationEntry[],
+  more: Partial<{ hasMore: boolean; onLoadMore: () => void }> = {},
+): NotificationBellProps["list"] => ({
+  status: "success",
+  items,
+  hasMore: more.hasMore ?? false,
+  loadingMore: false,
+  onLoadMore: more.onLoadMore ?? vi.fn(),
+});
+
+function bell(props: Partial<NotificationBellProps> = {}) {
+  return (
+    <NextIntlClientProvider
+      locale="en"
+      messages={messages}
+      timeZone="Europe/Dublin"
+    >
+      <NotificationBell
+        unread={3}
+        open
+        onOpenChange={vi.fn()}
+        list={loaded([joined, plan])}
+        onOpenItem={vi.fn()}
+        onMarkAll={vi.fn()}
+        markingAll={false}
+        timeZone="Europe/Dublin"
+        now={now}
+        {...props}
+      />
+    </NextIntlClientProvider>
+  );
+}
+
+/** The badge's text, or null without a badge. */
+const countOf = (button: HTMLElement) =>
+  button.querySelector("[data-slot='bell-count']")?.textContent ?? null;
+
+const scrollOf = () =>
+  screen
+    .getByRole("list", { name: "Notifications" })
+    .closest("[data-slot='notification-scroll']") as HTMLElement;
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  document.documentElement.style.removeProperty("--bp-tablet");
+});
+
+describe("NotificationBell", () => {
+  it.each([
+    [0, "Notifications", null],
+    [3, "Notifications, 3 unread", "3"],
+    [99, "Notifications, 99 unread", "99"],
+    [100, "Notifications, 99+ unread", "99+"],
+  ])("NotificationBell_Unread%i_SaysTheCount", (unread, name, shown) => {
+    render(bell({ unread, open: false }));
+
+    expect(countOf(screen.getByRole("button", { name }))).toBe(shown);
+  });
+
+  it("NotificationBell_Closed_OpensOnPress", async () => {
+    const onOpenChange = vi.fn();
+    render(bell({ open: false, onOpenChange }));
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it("NotificationBell_Items_ShowTheTitleTheBodyAndTheRelativeTime", () => {
+    render(bell());
+
+    const item = screen.getByRole("link", { name: /Deniz Arslan joined/ });
+    const row = item.closest("li") as HTMLElement;
+    expect(item).toHaveAttribute("href", "/northwind/a");
+    expect(within(row).getByText(`${joined.title}: the body.`)).toBeVisible();
+    expect(within(row).getByText("3 minutes ago")).toBeVisible();
+  });
+
+  it("NotificationBell_UnreadItem_SaysUnreadBesideTheMark", () => {
+    render(bell());
+
+    const unread = screen
+      .getByRole("link", { name: /Deniz Arslan/ })
+      .closest("li");
+    const read = screen.getByRole("link", { name: /now on Pro/ }).closest("li");
+    expect(
+      within(unread as HTMLElement).getByText("Unread"),
+    ).toBeInTheDocument();
+    expect(within(read as HTMLElement).queryByText("Unread")).toBeNull();
+  });
+
+  it("NotificationBell_ItemPressed_OpensIt", async () => {
+    const onOpenItem = vi.fn();
+    render(bell({ onOpenItem }));
+
+    await userEvent.click(screen.getByRole("link", { name: /Deniz Arslan/ }));
+
+    expect(onOpenItem).toHaveBeenCalledWith(joined);
+  });
+
+  it("NotificationBell_MarkAll_MarksWhatTheBellShows", async () => {
+    const onMarkAll = vi.fn();
+    render(bell({ onMarkAll }));
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Mark all as read" }),
+    );
+
+    expect(onMarkAll).toHaveBeenCalledOnce();
+  });
+
+  it("NotificationBell_NothingUnread_HasNoMarkAll", () => {
+    render(bell({ unread: 0 }));
+
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
+  });
+
+  it("NotificationBell_MorePages_LoadsMore", async () => {
+    const onLoadMore = vi.fn();
+    render(bell({ list: loaded([joined], { hasMore: true, onLoadMore }) }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Load more" }));
+
+    expect(onLoadMore).toHaveBeenCalledOnce();
+    expect(screen.queryByText("No older notifications.")).toBeNull();
+  });
+
+  it("NotificationBell_LastPage_SaysThereIsNothingOlder", () => {
+    render(bell());
+
+    expect(screen.getByText("No older notifications.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  });
+
+  it("NotificationBell_Loading_SaysItLoads", () => {
+    render(bell({ list: { status: "pending" } }));
+
+    expect(
+      screen.getByRole("status", { name: "Loading notifications" }),
+    ).toBeInTheDocument();
+  });
+
+  it("NotificationBell_Empty_SaysThereAreNone", () => {
+    render(bell({ unread: 0, list: loaded([]) }));
+
+    expect(screen.getByText("No notifications")).toBeVisible();
+    expect(
+      screen.getByText("When something changes for you, it shows here."),
+    ).toBeVisible();
+  });
+
+  it("NotificationBell_Error_ShowsTheReferenceAndTryAgain", async () => {
+    const onRetry = vi.fn();
+    render(
+      bell({
+        list: {
+          status: "error",
+          problem: { code: ErrorCode.ServerError, reference: "4c19ab" },
+          at: Date.parse(now),
+          onRetry,
+        },
+      }),
+    );
+
+    expect(screen.getByText("Notifications didn’t load")).toBeVisible();
+    expect(screen.getByText("Ref 4c19ab · 13:32 UTC")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it("NotificationBell_Offline_KeepsTheListAndMarkAllWaits", () => {
+    vi.stubGlobal("navigator", { ...navigator, onLine: false });
+    render(bell());
+
+    expect(screen.getByText("You’re offline.")).toBeVisible();
+    expect(screen.getByRole("link", { name: /Deniz Arslan/ })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Mark all as read" }),
+    ).toBeDisabled();
+  });
+
+  it("NotificationBell_NewItemWhileScrolled_KeepsTheListStillAndOffersIt", async () => {
+    const { rerender } = render(bell());
+    act(() => {
+      scrollOf().scrollTop = 120;
+    });
+
+    rerender(bell({ list: loaded([fresh, joined, plan]) }));
+
+    expect(screen.queryByRole("link", { name: /Your role/ })).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("1 new notification");
+    await userEvent.click(screen.getByRole("button", { name: "1 new" }));
+    expect(screen.getByRole("link", { name: /Your role/ })).toBeVisible();
+    expect(scrollOf().scrollTop).toBe(0);
+  });
+
+  it("NotificationBell_NewItemAtTheTop_ComesInFirstHighlighted", () => {
+    const { rerender } = render(bell());
+
+    rerender(bell({ list: loaded([fresh, joined, plan]) }));
+
+    const links = screen.getAllByRole("link");
+    expect(links[0]).toHaveAccessibleName(/Your role/);
+    expect(links[0]?.closest("li")).toHaveAttribute("data-fresh");
+    expect(screen.getByRole("status")).toHaveTextContent("1 new notification");
+    expect(screen.queryByRole("button", { name: "1 new" })).toBeNull();
+  });
+
+  it("NotificationBell_OlderPageLoaded_AnnouncesNothing", () => {
+    const { rerender } = render(bell({ list: loaded([joined]) }));
+
+    rerender(bell({ list: loaded([joined, plan]) }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("NotificationBell_Phone_OpensAFullScreenWithCloseAtTheStart", async () => {
+    document.documentElement.style.setProperty("--bp-tablet", "768px");
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      ...window.matchMedia(query),
+      matches: false,
+    }));
+    const onOpenChange = vi.fn();
+    render(bell({ onOpenChange }));
+
+    const screenDialog = screen.getByRole("dialog", { name: "Notifications" });
+    const close = within(screenDialog).getByRole("button", { name: "Close" });
+    await userEvent.click(close);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("NotificationBell_Open_HasNoAccessibilityViolation", async () => {
+    render(bell());
+
+    const results = await axe.run(document.body, {
+      rules: { region: { enabled: false } },
+    });
+    expect(results.violations).toEqual([]);
+  });
+});

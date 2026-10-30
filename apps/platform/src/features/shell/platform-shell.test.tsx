@@ -58,6 +58,27 @@ afterEach(() => {
 afterAll(() => server.close());
 
 describe("PlatformShell", () => {
+  it("PlatformShell_TopBar_ShowsThePlatformsBell", async () => {
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      http.get("*/v1/platform/notifications/unread-count", () =>
+        HttpResponse.json({ unread: 5 }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell railExpanded={false}>Content</PlatformShell>,
+    );
+
+    expect(
+      await within(screen.getByRole("banner")).findByRole("button", {
+        name: "Notifications, 5 unread",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("PlatformShell_SystemAdmin_StartsTheTopBarWithPlatform", async () => {
     server.use(
       getGetMeMockHandler(

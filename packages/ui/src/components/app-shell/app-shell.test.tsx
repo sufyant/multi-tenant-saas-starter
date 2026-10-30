@@ -45,6 +45,25 @@ const props = {
 };
 
 describe("AppShell", () => {
+  it("AppShell_Bell_SitsBeforeTheUserMenuInTheTopBar", () => {
+    render(
+      <AppShell
+        {...props}
+        bell={<button type="button">Notifications</button>}
+        onNavigate={vi.fn()}
+      >
+        Content
+      </AppShell>,
+    );
+
+    const bar = screen.getByRole("banner");
+    const bell = within(bar).getByRole("button", { name: "Notifications" });
+    expect(
+      bell.compareDocumentPosition(within(bar).getByText("AY")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("AppShell_CurrentSection_IsThePageInTheRail", () => {
     render(
       <AppShell {...props} onNavigate={vi.fn()}>
