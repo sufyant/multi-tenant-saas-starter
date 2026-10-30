@@ -15,6 +15,7 @@ import {
   sdkImportRefusals,
   testFolders,
   testsBesideTheirFile,
+  unreservedTopLevelRoutes,
   userFacingLiterals,
 } from "@repo/ui/test/architecture-rules";
 import { describe, expect, it } from "vitest";
@@ -89,6 +90,16 @@ describe("architecture of apps/web", () => {
 
   it("F3_AppsWeb_WritesNoEnumValueAsALiteral", () => {
     expect(enumLiterals(src, contractEnumValues(generatedSchemas))).toEqual([]);
+  });
+
+  // A tenant's slug and the top-level routes share the first segment (F30), so a route ships only after the API reserves its name.
+  it("F58_AppsWebTopLevelRoutes_AreReservedSlugs", () => {
+    expect(
+      unreservedTopLevelRoutes(
+        join(src, "app"),
+        enumValues(generatedSchemas, "ReservedSlug"),
+      ),
+    ).toEqual([]);
   });
 
   it("F52_AppsWeb_UsesNoNativeCheckboxOrRadio", () => {
