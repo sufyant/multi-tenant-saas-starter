@@ -315,12 +315,13 @@ describe("architecture rules", () => {
     expect(nativeChoiceControls(root)).toEqual([]);
   });
 
-  it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsAndKinds", () => {
+  it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsKindsAndReservedSlugs", () => {
     const root = folder({
       "schemas.gen.ts": [
         "export const Language = {\n  en: 'en',\n  tr: 'tr',\n} as const;",
         "export const ListMembersSort = {\n  email: 'email',\n} as const;",
         "export const InviterNameResponseKind = {\n  user: 'user',\n} as const;",
+        "export const ReservedSlug = {\n  status: 'status',\n} as const;",
       ].join("\n"),
     });
 

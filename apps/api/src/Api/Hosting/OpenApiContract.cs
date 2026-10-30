@@ -52,6 +52,10 @@ internal static partial class OpenApiContract
 
     private const string NotificationCatalogClass = "NotificationCatalog";
 
+    private const string ReservedSlugSchema = "ReservedSlug";
+
+    private const string ReservedSlugsClass = "ReservedSlugs";
+
     private const string TypeMember = "type";
 
     private const string CategoryMember = "category";
@@ -118,6 +122,16 @@ internal static partial class OpenApiContract
 
     private static IReadOnlyList<string> DeclaredNotificationCategories { get; } = [.. NotificationCatalogValues("Categories").Cast<string>()];
 
+    // ControlPlane declares the slugs no tenant may take once, in ControlPlane.Domain's ReservedSlugs, which the host finds by its name, as
+    // it finds the notification catalog. OpenApiContractTests checks the enum.
+    private static IReadOnlyList<string> DeclaredReservedSlugs { get; } =
+    [
+        .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: ReservedSlugsClass })
+            .Select(type => (IEnumerable<string>)type.GetField("All", BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!)
+            .Single(),
+    ];
+
     private static IReadOnlyList<string> ListedPermissions { get; } =
     [
         .. typeof(Permissions).GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -153,6 +167,7 @@ internal static partial class OpenApiContract
                     .AddDocumentTransformer(DescribeDiscriminators)
                     .AddDocumentTransformer(DescribeAuditOperations)
                     .AddDocumentTransformer(DescribeNotificationCatalog)
+                    .AddDocumentTransformer(DescribeReservedSlugs)
                     .AddDocumentTransformer(NameEnumMembers);
             });
 
@@ -664,6 +679,18 @@ internal static partial class OpenApiContract
             {
                 schema.Properties[TypeMember] = new OpenApiSchemaReference(NotificationTypeSchema, document);
             }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // The tenant web's top-level routes share the path with tenant slugs, so the web checks its routes against the reserved slugs. They are
+    // one enum in the document, which no field refers to: a slug stays a string, and CreateTenant refuses a reserved one (slug_reserved).
+    private static Task DescribeReservedSlugs(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (document.Components?.Schemas is { } schemas)
+        {
+            schemas[ReservedSlugSchema] = EnumSchema(DeclaredReservedSlugs, "A slug that no tenant may take, because the tenant web has or may add a route of that name.");
         }
 
         return Task.CompletedTask;

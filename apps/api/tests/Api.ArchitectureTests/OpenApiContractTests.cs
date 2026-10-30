@@ -7,6 +7,7 @@ using Audit.Api.Tenant.AuditLogs;
 using Audit.Domain;
 using ControlPlane.Contracts;
 using ControlPlane.Contracts.Plans;
+using ControlPlane.Domain.Tenants;
 using FluentValidation;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Authorization;
@@ -234,6 +235,17 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         listed.ShouldNotBeEmpty();
         documented.ShouldBe(string.Join(", ", listed));
+    }
+
+    // N11i: the reserved slugs are the enum ReservedSlug, every slug of ControlPlane's list, so the web reads them from the generated
+    // client and can check each of its top-level routes against them.
+    [Fact]
+    public void BuildOpenApiDocument_ReservedSlugs_ListEverySlugOfTheList()
+    {
+        var documented = EnumOf(Schemas().Single(schema => schema.Name == "ReservedSlug").Value);
+
+        documented.ShouldContain("settings");
+        documented.ShouldBe(string.Join(", ", ReservedSlugs.All));
     }
 
     // N11i and K5: every request and response field that holds permission names is an array of the one schema Permission, so the web
@@ -673,7 +685,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     // Decision 1 of audit fix 09: a rule that the document cannot read is reported, never copied as a number. Each one is listed here, so
     // a new kind of rule, such as a range, fails the test until someone decides how the document shows it. A predicate (Must) has no
-    // form to read, and the time zone's regex has no pattern. A rule that needs a value is required in the document already: the
+    // form to read, and the time zone's regex has no pattern. The slug's predicate refuses a reserved slug, which the document lists as
+    // the enum ReservedSlug. A rule that needs a value is required in the document already: the
     // generator marks the field required from the request's constructor.
     [Fact]
     public void BuildOpenApiDocument_RuleTheDocumentCannotRead_IsAKnownOne()
@@ -683,6 +696,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             "AcceptInvitationRequest.firstName PredicateValidator",
             "AcceptInvitationRequest.lastName PredicateValidator",
             "ChangePreferencesRequest.timeZone RegularExpressionValidator",
+            "CreateTenantRequest.slug PredicateValidator",
             "RenameMeRequest.firstName PredicateValidator",
             "RenameMeRequest.lastName PredicateValidator",
             "RenameUserRequest.firstName PredicateValidator",

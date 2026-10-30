@@ -24,4 +24,7 @@ public enum FieldErrorCode
 
     [JsonStringEnumMemberName("slug_invalid")]
     SlugInvalid,
+
+    [JsonStringEnumMemberName("slug_reserved")]
+    SlugReserved,
 }

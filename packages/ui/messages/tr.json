@@ -146,6 +146,7 @@
       "not_found": "Bu kuruluş yok ya da üyesi değilsiniz.",
       "reopen_period_ended": "Bu kuruluşu yeniden açma süresi doldu.",
       "slug_invalid": "Küçük harf, rakam ve tek kısa çizgi kullanın.",
+      "slug_reserved": "Bu kısa ad ayrılmış. Başka bir ad seçin.",
       "slug_taken": "Bu kısa adı başka bir kuruluş kullanıyor. Başka bir ad seçin.",
       "suspended": "Bu kuruluş askıya alındı."
     },

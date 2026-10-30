@@ -292,6 +292,37 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await FieldCodesOfAsync(created, "slug")).ShouldBe(("request.validation_failed", "slug_invalid"));
     }
 
+    // A slug that is a top-level route of the web, today's or a common word a product adds later, is reserved: the route would hide the
+    // tenant's pages for good, because a slug never changes. One of each kind: a route of today, one of the proxy, a common word, and a
+    // route that the web's step 33-frontend names.
+    [Theory]
+    [InlineData("settings")]
+    [InlineData("sign-in")]
+    [InlineData("help")]
+    [InlineData("trpc")]
+    public async Task CreateTenant_ReservedSlug_IsAValidationProblemForTheSlug(string slug)
+    {
+        var admin = await SystemAdminAsync();
+
+        var created = await admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" });
+
+        created.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await FieldCodesOfAsync(created, "slug")).ShouldBe(("request.validation_failed", "slug_reserved"));
+        (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+    }
+
+    // Only the whole slug is reserved: a slug that contains a reserved word is no route of the web.
+    [Fact]
+    public async Task CreateTenant_SlugThatContainsAReservedWord_IsCreated()
+    {
+        var admin = await SystemAdminAsync();
+        var slug = $"acme-settings-{Guid.NewGuid():N}"[..24];
+
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
     [Fact]
     public async Task CreateTenant_WithoutAName_IsRejected()
     {

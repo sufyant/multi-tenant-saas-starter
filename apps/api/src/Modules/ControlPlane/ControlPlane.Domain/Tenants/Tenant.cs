@@ -26,6 +26,9 @@ internal sealed class Tenant
     private static readonly Error NameInvalid =
         Error.Validation(ControlPlaneErrorCodes.TenantNameInvalid, $"A name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
 
+    private static readonly Error SlugReserved =
+        Error.Validation(ControlPlaneErrorCodes.TenantSlugReserved, "The slug is reserved for a page of the web app.");
+
     private static readonly Error NotActive =
         Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed, closed or given a plan or an override.");
 
@@ -74,7 +77,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// A new tenant is active at once, on the plan its creation names (docs/flows/tenant-creation.md). The name is stored without the
-    /// spaces around it.
+    /// spaces around it. A reserved slug is refused (<see cref="ReservedSlugs"/>).
     /// </summary>
     public static Result<Tenant> Create(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt)
     {
@@ -84,11 +87,16 @@ internal sealed class Tenant
             return NameInvalid;
         }
 
-        return IsUrlSafe(slug)
-            ? new Tenant(id, trimmed, slug, planId, createdAt)
-            : Error.Validation(
+        if (!IsUrlSafe(slug))
+        {
+            return Error.Validation(
                 ControlPlaneErrorCodes.TenantSlugInvalid,
                 $"A slug is {SlugMinLength} to {SlugMaxLength} lowercase letters, digits and single hyphens, and starts and ends with a letter or digit.");
+        }
+
+        return ReservedSlugs.Contains(slug)
+            ? SlugReserved
+            : new Tenant(id, trimmed, slug, planId, createdAt);
     }
 
     /// <summary>

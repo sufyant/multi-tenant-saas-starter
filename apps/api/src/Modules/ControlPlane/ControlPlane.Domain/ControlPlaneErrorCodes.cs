@@ -101,6 +101,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantSlugInvalid = ErrorCode.Declare("tenant.slug_invalid");
 
+    public static readonly ErrorCode TenantSlugReserved = ErrorCode.Declare("tenant.slug_reserved");
+
     public static readonly ErrorCode TenantSlugTaken = ErrorCode.Declare("tenant.slug_taken");
 
     public static readonly ErrorCode TenantSuspended = ErrorCode.Declare("tenant.suspended");

@@ -116,6 +116,15 @@ public sealed class TenantTests
     }
 
     [Fact]
+    public void CreateTenant_ReservedSlug_IsRejected()
+    {
+        var tenant = Tenant.Create(Id, "Acme Ltd", "settings", PlanId, CreatedAt);
+
+        tenant.IsSuccess.ShouldBeFalse();
+        tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugReserved);
+    }
+
+    [Fact]
     public void CreateTenant_NameWithSpacesAround_IsKeptWithoutThem()
     {
         var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme", PlanId, CreatedAt);
