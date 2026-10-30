@@ -7,6 +7,6 @@ public static class GetNotificationReaderHandler
 {
     public static async Task<NotificationReader> HandleAsync(GetNotificationReaderQuery query, IUserDirectory users, CancellationToken cancellationToken) =>
         await users.FindContactAsync(query.ActorId, cancellationToken) is { } user
-            ? new NotificationReader(user.UserId, user.Language, (await users.ListSystemAdminIdsAsync(cancellationToken)).Contains(user.UserId))
+            ? new NotificationReader(user.UserId, user.Language, (await users.ListSystemAdminIdsAsync(cancellationToken)).Contains(user.UserId), user.TimeZone)
             : NotificationReader.Nobody;
 }

@@ -47,6 +47,26 @@ public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLi
             .ShouldBe($$"""{"kind":"platform_tenant","tenantId":"{{tenant.Id}}"}""");
     }
 
+    // U2: the deletion date is written in the reader's language and time zone: noon in UTC is the next day in Auckland.
+    [Fact]
+    public async Task ListPlatformNotifications_AClosedTenant_WritesTheDeletionDateInTheReadersLanguageAndTimeZone()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync(language: "tr", timeZone: "Pacific/Auckland");
+        var userId = await _testData.UserIdOfAsync(admin);
+        var closed = await _rows.AddAsync(
+            userId,
+            "tenant.closed",
+            tenant.Id,
+            "Platform",
+            values: $$"""{"tenantName": "Acme Ltd", "actorName": "{{Guid.NewGuid()}}", "reopenableUntil": "2026-11-29T12:00:00.0000000+00:00"}""");
+
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?limit=100", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == closed).GetProperty("body").GetString()
+            .ShouldBe("Silinmiş kullanıcı, Acme Ltd kuruluşunu kapattı. Verileri 30 Kas 2026 tarihinde silinir.");
+    }
+
     [Fact]
     public async Task ListPlatformNotifications_AMemberWhoIsNoSystemAdmin_IsForbidden()
     {

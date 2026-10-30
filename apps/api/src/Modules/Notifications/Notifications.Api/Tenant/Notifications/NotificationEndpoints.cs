@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Notifications.Api.Authentication;
 using Notifications.Api.Statuses;
 using Notifications.Application.Notifications;
+using Notifications.Application.Notifications.GetNotificationNames;
 using Notifications.Application.Notifications.GetNotificationReader;
 using Notifications.Application.Notifications.GetUnreadNotificationCount;
 using Notifications.Application.Notifications.ListNotifications;
@@ -56,9 +57,15 @@ public static class NotificationEndpoints
         }
 
         var reader = await ReaderAsync(http, bus, cancellationToken);
-        var found = await bus.InvokeForTenantAsync<Result<CursorPage<NotificationView>>>(
+        var found = await bus.InvokeForTenantAsync<Result<CursorPage<StoredNotification>>>(
             WithoutTenant, new ListNotificationsQuery(reader, inbox, page.Value), cancellationToken);
-        return found.Map(notifications => notifications.Map(ToResponse));
+        if (!found.IsSuccess)
+        {
+            return found.Error;
+        }
+
+        var named = await bus.InvokeForTenantAsync<CursorPage<NotificationView>>(WithoutTenant, new GetNotificationNamesQuery(found.Value, reader), cancellationToken);
+        return named.Map(ToResponse);
     }
 
     internal static async Task<Result<UnreadNotificationCountResponse>> CountAsync(HttpContext http, IMessageBus bus, Inbox inbox, CancellationToken cancellationToken)

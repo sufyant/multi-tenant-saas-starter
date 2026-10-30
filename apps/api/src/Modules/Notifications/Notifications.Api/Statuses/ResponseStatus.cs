@@ -11,6 +11,8 @@ internal static class ResponseStatus
         "Tenant" => NotificationLinkResponseKind.Tenant,
         "TenantMembers" => NotificationLinkResponseKind.TenantMembers,
         "TenantPlan" => NotificationLinkResponseKind.TenantPlan,
+        "TenantRoles" => NotificationLinkResponseKind.TenantRoles,
+        "TenantSettings" => NotificationLinkResponseKind.TenantSettings,
         "PlatformTenant" => NotificationLinkResponseKind.PlatformTenant,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "The response has no value for this kind of Notifications."),
     };
