@@ -128,8 +128,9 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
 
         await tenants.AcceptAsync(await tenants.LatestInvitationAsync(tenantId), email);
 
-        (await _rows.CountAboutAsync(tenantId, "member.joined"), await _rows.CountAboutAsync(tenantId, "tenant.owner_joined")).ShouldBe(
-            (0L, await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.system_admins")));
+        var adminId = await _testData.UserIdOfAsync(admin);
+        (await _rows.CountAboutAsync(tenantId, "member.joined")).ShouldBe(0);
+        (await _rows.AboutAsync(tenantId, adminId)).ShouldBe([NotificationRows.Row(adminId, "tenant.owner_joined", tenantId, "Platform")]);
     }
 
     // A role-based type: the Owners at that moment get it, the Admin does not, and a member who becomes an Owner later sees no older one.
@@ -222,7 +223,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
                 NotificationRows.Row(adminId, "tenant.owner_joined", tenantId, "Platform"),
                 NotificationRows.Row(otherId, "tenant.owner_joined", tenantId, "Platform"),
             }.Order());
-        (await _rows.ValueListOfAsync(otherId, "tenant.owner_joined")).ShouldEndWith($"ownerName={ownerId}, tenantName=Acme Ltd");
+        (await _rows.ValueListOfAsync(otherId, "tenant.owner_joined", tenantId)).ShouldEndWith($"ownerName={ownerId}, tenantName=Acme Ltd");
     }
 
     [Fact]
@@ -236,7 +237,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
 
         var (actorId, otherId, memberId) = (await _testData.UserIdOfAsync(actor), await _testData.UserIdOfAsync(other), await _testData.UserIdOfAsync(member));
         (await _rows.AboutAsync(tenant.Id, actorId, otherId, memberId)).ShouldBe([NotificationRows.Row(otherId, "tenant.suspended", tenant.Id, "Platform")]);
-        (await _rows.ValueListOfAsync(otherId, "tenant.suspended")).ShouldBe($"actorName={actorId}, tenantName=Acme Ltd");
+        (await _rows.ValueListOfAsync(otherId, "tenant.suspended", tenant.Id)).ShouldBe($"actorName={actorId}, tenantName=Acme Ltd");
     }
 
     [Fact]
@@ -249,7 +250,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
 
         var (actorId, otherId) = (await _testData.UserIdOfAsync(actor), await _testData.UserIdOfAsync(other));
         (await _rows.AboutAsync(tenant.Id, actorId, otherId)).ShouldBe([NotificationRows.Row(otherId, "tenant.reactivated", tenant.Id, "Platform")]);
-        (await _rows.ValueListOfAsync(otherId, "tenant.reactivated")).ShouldBe($"actorName={actorId}, tenantName=Acme Ltd");
+        (await _rows.ValueListOfAsync(otherId, "tenant.reactivated", tenant.Id)).ShouldBe($"actorName={actorId}, tenantName=Acme Ltd");
     }
 
     // The deletion date is the end of the reopen period: 30 days after the closure.
@@ -266,7 +267,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         // The table keeps the moment to the microsecond, the event to the tick: the two agree to the second.
         var reopenableUntil = await database.ScalarAsSuperuserAsync<string>(
             $"SELECT to_char((closed_at + interval '30 days') AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS') FROM control_plane.tenants WHERE id = '{tenant.Id}'");
-        var values = await _rows.ValueListOfAsync(otherId, "tenant.closed");
+        var values = await _rows.ValueListOfAsync(otherId, "tenant.closed", tenant.Id);
         values.ShouldStartWith($"actorName={actorId}, reopenableUntil={reopenableUntil}.");
         values.ShouldEndWith("+00:00, tenantName=Acme Ltd");
     }
@@ -281,7 +282,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
 
         var (actorId, otherId) = (await _testData.UserIdOfAsync(actor), await _testData.UserIdOfAsync(other));
         (await _rows.AboutAsync(tenant.Id, actorId, otherId)).ShouldBe([NotificationRows.Row(otherId, "tenant.reopened", tenant.Id, "Platform")]);
-        (await _rows.ValueListOfAsync(otherId, "tenant.reopened")).ShouldBe($"actorName={actorId}, tenantName=Acme Ltd");
+        (await _rows.ValueListOfAsync(otherId, "tenant.reopened", tenant.Id)).ShouldBe($"actorName={actorId}, tenantName=Acme Ltd");
     }
 
     [Fact]
@@ -294,7 +295,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
 
         var adminId = await _testData.UserIdOfAsync(admin);
         (await _rows.AboutAsync(purged.TenantId, adminId)).ShouldBe([NotificationRows.Row(adminId, "tenant.purged", purged.TenantId, "Platform")]);
-        (await _rows.ValueListOfAsync(adminId, "tenant.purged")).ShouldBe("tenantName=Acme Ltd");
+        (await _rows.ValueListOfAsync(adminId, "tenant.purged", purged.TenantId)).ShouldBe("tenantName=Acme Ltd");
     }
 
     // O4: a copy of an event writes no second notification and sends no second email.

@@ -27,12 +27,13 @@ internal sealed class NotificationRows(Database database)
         database.ScalarAsSuperuserAsync<string>($"SELECT \"values\"::text FROM notifications.notifications WHERE user_id = '{userId}' AND type = '{type}'");
 
     // The values a notification of the user keeps, as "name=value" in the order of the names: a person is stored by user id only (K3).
-    public async Task<string> ValueListOfAsync(Guid userId, string type) =>
+    // A system admin hears the platform events of every test, so a test of a platform type names its own tenant.
+    public async Task<string> ValueListOfAsync(Guid userId, string type, Guid? tenantId = null) =>
         await database.ScalarAsSuperuserAsync<string>(
             $"""
             SELECT string_agg(entry.key || '=' || entry.value, ', ' ORDER BY entry.key)
             FROM notifications.notifications, jsonb_each_text("values") AS entry
-            WHERE user_id = '{userId}' AND type = '{type}'
+            WHERE user_id = '{userId}' AND type = '{type}'{(tenantId is { } about ? $" AND tenant_id = '{about}'" : "")}
             """) ?? "";
 
     // How many notifications of the type are about the tenant, in anyone's list.
