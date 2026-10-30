@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantReactivatedEvent2087990229_NotifyTenantStatusChangedHandlerHandler875819701
+    // START: NotifyTenantEntitlementOverrideSetHandlerHandler1156277524
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantReactivatedEvent2087990229_NotifyTenantStatusChangedHandlerHandler875819701 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantEntitlementOverrideSetHandlerHandler1156277524 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public TenantReactivatedEvent2087990229_NotifyTenantStatusChangedHandlerHandler875819701(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantEntitlementOverrideSetHandlerHandler1156277524(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -25,8 +25,9 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
+            var memberDirectory = new ControlPlane.Infrastructure.Persistence.Members.MemberDirectory(controlPlaneDbContext);
             // The actual message body
-            var tenantReactivatedEvent = (ControlPlane.Contracts.Tenants.TenantReactivatedEvent)context.Envelope.Message;
+            var entitlementOverrideSetEvent = (ControlPlane.Contracts.Plans.EntitlementOverrideSetEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -40,11 +41,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler.HandleAsync(tenantReactivatedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler.HandleAsync(entitlementOverrideSetEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -67,7 +68,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantReactivatedEvent2087990229_NotifyTenantStatusChangedHandlerHandler875819701
+    // END: NotifyTenantEntitlementOverrideSetHandlerHandler1156277524
     
     
 }

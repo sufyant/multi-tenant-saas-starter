@@ -46,12 +46,12 @@ public sealed class UserDirectory(ControlPlaneDbContext controlPlane, ReadCache 
     {
         var users = await controlPlane.Users
             .Where(user => userIds.Contains(user.Id))
-            .Select(user => new { user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt, user.SuspendedAt })
+            .Select(user => new { user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt, user.SuspendedAt, user.TimeZone })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         return [.. users.Select(user => new UserContact(
-            user.Id, user.Email, DisplayName(user.FirstName, user.LastName), user.Language, user.DeletedAt is null && user.SuspendedAt is null))];
+            user.Id, user.Email, DisplayName(user.FirstName, user.LastName), user.Language, user.DeletedAt is null && user.SuspendedAt is null, user.TimeZone))];
     }
 
     public async Task<UserContact?> FindContactAsync(string externalUserId, CancellationToken cancellationToken)

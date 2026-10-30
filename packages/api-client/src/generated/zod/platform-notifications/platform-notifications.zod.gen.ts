@@ -20,13 +20,18 @@ export const ListPlatformNotificationsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.uuid().describe('The notification\'s id, which opening it names.'),
   "type": zod.enum({
-  InvitationAccepted: 'invitation.accepted',
+  MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  TenantClosed: 'tenant.closed',
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerJoined: 'tenant.owner_joined',
   TenantPlanChanged: 'tenant.plan_changed',
   TenantPurged: 'tenant.purged',
-  TenantStatusChanged: 'tenant.status_changed',
+  TenantReactivated: 'tenant.reactivated',
+  TenantReopened: 'tenant.reopened',
+  TenantSuspended: 'tenant.suspended',
 }).describe('The type of a notification, area.event.'),
   "category": zod.enum({
   Access: 'access',
@@ -38,10 +43,10 @@ export const ListPlatformNotificationsResponse = zod.object({
   "body": zod.string().describe('The body, in the reader\'s language.'),
   "link": zod.object({
   "kind": zod.enum({
-  None: 'none',
-  Tenant: 'tenant',
+  Start: 'start',
   TenantMembers: 'tenant_members',
-  TenantPlan: 'tenant_plan',
+  TenantRoles: 'tenant_roles',
+  TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',
 }).describe('Where a notification leads, which the web turns into a URL.'),
   "tenantId": zod.uuid().nullable()

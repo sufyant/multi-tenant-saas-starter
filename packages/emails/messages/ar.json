@@ -44,44 +44,102 @@
   "notificationEmail": {
     "button": "افتح {brandName}",
     "fallback": "إذا لم يعمل الزر، فانسخ هذا الرابط والصقه في متصفحك:",
-    "footer": "وصلك هذا البريد لأن أمرًا يخصك قد تغيّر. يمكنك من تفضيلاتك اختيار الإشعارات التي تصلك عبر البريد الإلكتروني أيضًا."
+    "footer": "وصلتك هذه الرسالة لأن إشعارات البريد الإلكتروني لفئة «{categoryName}» مفعّلة.",
+    "requiredFooter": "نرسل هذه الرسالة دائمًا عند إزالتك من مؤسسة، لتعرف أنه لم يعد لديك وصول إليها. لا يمكن إيقافها."
   },
   "notifications": {
     "member.role_changed": {
       "title": "تغيّر دورك في {tenantName}",
-      "body": "أصبح دورك الآن {role} في {tenantName}."
+      "body": "غُيّر دورك من {oldRoleName} إلى {newRoleName} بواسطة {actorName}.",
+      "without": {
+        "actorName": {
+          "body": "غيّرت المنصة دورك من {oldRoleName} إلى {newRoleName}."
+        }
+      }
     },
     "member.removed": {
       "title": "تمت إزالتك من {tenantName}",
-      "body": "لم يعد لديك وصول إلى {tenantName}."
+      "body": "أزالك {actorName} من {tenantName}. لم يعد بإمكانك فتحها أو رؤية إشعاراتها."
     },
-    "invitation.accepted": {
-      "title": "قبل {memberName} دعوتك",
-      "body": "انضم {memberName} إلى {tenantName}."
+    "member.joined": {
+      "title": "انضم {memberName} إلى {tenantName}",
+      "body": "قبِل {memberName} دعوتك وانضم بصفة {roleName}."
     },
     "tenant.plan_changed": {
-      "title": "تغيّرت خطة {tenantName}",
-      "body": "افتح الخطة لترى ما يمكن لـ {tenantName} استخدامه الآن."
+      "title": "أصبحت {tenantName} على خطة {newPlanName}",
+      "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة."
+    },
+    "tenant.entitlement_override_set": {
+      "title": "تغيّرت قيمة في خطة {tenantName}",
+      "body": "جعلت المنصة {keyName} لمؤسستك {value}. تعود قيمة خطتك للتطبيق في {expiresAt}.",
+      "without": {
+        "expiresAt": {
+          "body": "جعلت المنصة {keyName} لمؤسستك {value} دون تاريخ انتهاء."
+        }
+      }
+    },
+    "tenant.entitlement_override_removed": {
+      "title": "تغيّرت قيمة في خطة {tenantName}",
+      "body": "أزالت المنصة الاستثناء الخاص بـ{keyName}. تُطبَّق قيمة خطتك مجددًا: {value}."
     },
     "tenant.owner_joined": {
-      "title": "أصبح لـ {tenantName} أول مالك",
-      "body": "انضم {ownerName} إلى {tenantName} بصفته أول مالك."
+      "title": "انضم مالك {tenantName}",
+      "body": "قبِل {ownerName} دعوة المالك. أصبحت {tenantName} جاهزة للاستخدام."
     },
-    "tenant.status_changed": {
-      "title": "{tenantName}: {status}",
-      "body": "غيّر مسؤول النظام حالة {tenantName}: {status}."
+    "tenant.suspended": {
+      "title": "عُلّقت {tenantName}",
+      "body": "علّق {actorName} مؤسسة {tenantName}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها."
+    },
+    "tenant.reactivated": {
+      "title": "أُعيد تفعيل {tenantName}",
+      "body": "أعاد {actorName} تفعيل {tenantName}. يستطيع أعضاؤها فتحها مجددًا."
+    },
+    "tenant.closed": {
+      "title": "أُغلقت {tenantName}",
+      "body": "أغلق {actorName} مؤسسة {tenantName}. ستُحذف في {reopenableUntil} ما لم يُعِد أحد فتحها."
+    },
+    "tenant.reopened": {
+      "title": "أُعيد فتح {tenantName}",
+      "body": "أعاد {actorName} فتح {tenantName}. أصبحت نشطة مجددًا."
     },
     "tenant.purged": {
-      "title": "تم حذف {tenantName}",
-      "body": "اكتمل حذف {tenantName}. لم تعد بياناتها موجودة."
+      "title": "حُذفت {tenantName}",
+      "body": "أنهت المنصة حذف {tenantName} وبياناتها. يبقى اسمها ومعرّفها في القائمة."
     }
   },
   "notificationWords": {
-    "status": {
-      "suspended": "تم تعليقها",
-      "reactivated": "أعيد تفعيلها",
-      "closed": "تم إغلاقها",
-      "reopened": "أعيد فتحها"
+    "person": {
+      "deleted": "مستخدم محذوف",
+      "unnamed": "مستخدم بلا اسم"
+    },
+    "entitlementValue": {
+      "unlimited": "غير محدود",
+      "on": "مفعّل",
+      "off": "متوقف",
+      "not_set": "غير محدد"
+    },
+    "entitlementKey": {
+      "members.max": "حد الأعضاء",
+      "roles.custom": "الأدوار المخصصة",
+      "roles.custom.max": "حد الأدوار المخصصة"
+    }
+  },
+  "notificationCategories": {
+    "access": {
+      "name": "وصولك",
+      "description": "عندما يتغيّر دورك في مؤسسة."
+    },
+    "member_invitations": {
+      "name": "الأعضاء",
+      "description": "عندما يقبل أحدهم دعوة أرسلتها."
+    },
+    "tenant_plans": {
+      "name": "خطة المؤسسة",
+      "description": "عندما تغيّر المنصة خطة مؤسستك أو أحد حدودها أو ميزاتها."
+    },
+    "platform_tenants": {
+      "name": "المنصة",
+      "description": "عندما ينضم أول مالك لمؤسسة، أو تتغيّر حالتها، أو تُحذف."
     }
   }
 }

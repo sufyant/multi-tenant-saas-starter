@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: EntitlementOverrideRemovedEvent1027559479_NotifyTenantPlanChangedHandlerHandler1940733656
+    // START: NotifyTenantPlanChangedHandlerHandler1940733656
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class EntitlementOverrideRemovedEvent1027559479_NotifyTenantPlanChangedHandlerHandler1940733656 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantPlanChangedHandlerHandler1940733656 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public EntitlementOverrideRemovedEvent1027559479_NotifyTenantPlanChangedHandlerHandler1940733656(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantPlanChangedHandlerHandler1940733656(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -27,7 +27,7 @@ namespace Internal.Generated.WolverineHandlers
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             var memberDirectory = new ControlPlane.Infrastructure.Persistence.Members.MemberDirectory(controlPlaneDbContext);
             // The actual message body
-            var entitlementOverrideRemovedEvent = (ControlPlane.Contracts.Plans.EntitlementOverrideRemovedEvent)context.Envelope.Message;
+            var tenantPlanChangedEvent = (ControlPlane.Contracts.Plans.TenantPlanChangedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -45,7 +45,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler.HandleAsync(entitlementOverrideRemovedEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler.HandleAsync(tenantPlanChangedEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -68,7 +68,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: EntitlementOverrideRemovedEvent1027559479_NotifyTenantPlanChangedHandlerHandler1940733656
+    // END: NotifyTenantPlanChangedHandlerHandler1940733656
     
     
 }

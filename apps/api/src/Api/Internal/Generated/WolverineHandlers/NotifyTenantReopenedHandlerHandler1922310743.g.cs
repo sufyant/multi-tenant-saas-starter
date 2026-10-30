@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantClosedEvent692446805_NotifyTenantStatusChangedHandlerHandler875819701
+    // START: NotifyTenantReopenedHandlerHandler1922310743
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantClosedEvent692446805_NotifyTenantStatusChangedHandlerHandler875819701 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantReopenedHandlerHandler1922310743 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public TenantClosedEvent692446805_NotifyTenantStatusChangedHandlerHandler875819701(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantReopenedHandlerHandler1922310743(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -26,7 +26,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             // The actual message body
-            var tenantClosedEvent = (ControlPlane.Contracts.Tenants.TenantClosedEvent)context.Envelope.Message;
+            var tenantReopenedEvent = (ControlPlane.Contracts.Tenants.TenantReopenedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -40,11 +40,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantReopened.NotifyTenantReopenedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantReopened.NotifyTenantReopenedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler.HandleAsync(tenantClosedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantReopened.NotifyTenantReopenedHandler.HandleAsync(tenantReopenedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantClosedEvent692446805_NotifyTenantStatusChangedHandlerHandler875819701
+    // END: NotifyTenantReopenedHandlerHandler1922310743
     
     
 }

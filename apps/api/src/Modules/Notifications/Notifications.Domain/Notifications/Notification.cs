@@ -3,8 +3,8 @@ using SharedKernel;
 namespace Notifications.Domain.Notifications;
 
 /// <summary>
-/// One notification of one user (U3): its type, the tenant it is about or none, the values its texts need, as they were at that moment,
-/// when it came and when the user opened it. The texts are not stored: the read renders them in the reader's language (U2).
+/// One notification of one user (U3): its type, the tenant it is about or none, the values its texts need, when it came and when the user
+/// opened it. A value keeps a person by user id only, and the read names them (U2); any other value is kept as it was at that moment. The texts are not stored: the read renders them in the reader's language (U2).
 /// </summary>
 internal sealed class Notification
 {
@@ -38,7 +38,7 @@ internal sealed class Notification
     public DateTimeOffset? ReadAt { get; private set; }
 
     /// <summary>
-    /// The notification of a type of the catalog, with exactly the values its texts use. A tenant notification is about a tenant, and a
+    /// The notification of a type of the catalog, with exactly the values its texts use; an optional value may be missing. A tenant notification is about a tenant, and a
     /// personal one about none: anything else is a mistake of ours.
     /// </summary>
     public static Notification Create(
@@ -50,7 +50,11 @@ internal sealed class Notification
         DateTimeOffset createdAt)
     {
         var kind = NotificationCatalog.Of(type);
-        var expected = kind.Values.SelectMany(NamesOf).Order(StringComparer.Ordinal);
+        var expected = kind.Values
+            .Where(value => !value.Optional || values.ContainsKey(value.Name))
+            .SelectMany(NamesOf)
+            .Order(StringComparer.Ordinal)
+            .ToList();
         if (!expected.SequenceEqual(values.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
         {
             throw new InvalidOperationException($"A notification of type {type} needs exactly the values {string.Join(", ", expected)}.");

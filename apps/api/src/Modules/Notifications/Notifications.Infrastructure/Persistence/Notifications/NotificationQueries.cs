@@ -16,7 +16,7 @@ public sealed class NotificationQueries(NotificationsDbContext notifications) : 
 
     // Newest first, by the moment and then the id. The cursor's place is compared as one row value, which the index on the user, the
     // moment and the id serves (K5).
-    async Task<IReadOnlyList<NotificationView>> INotificationQueries.ListAsync(Inbox inbox, CursorRequest page, Language language, CancellationToken cancellationToken)
+    async Task<IReadOnlyList<StoredNotification>> INotificationQueries.ListAsync(Inbox inbox, CursorRequest page, CancellationToken cancellationToken)
     {
         var bell = notifications.Notifications.Where(Shows(inbox));
         var after = page.After is { } place
@@ -29,7 +29,7 @@ public sealed class NotificationQueries(NotificationsDbContext notifications) : 
             .Take(page.Limit + 1)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
-        return [.. rows.Select(n => ViewOf(n, language))];
+        return [.. rows.Select(n => new StoredNotification(n.Id, n.Type, n.Values, n.TenantId, n.CreatedAt, n.ReadAt))];
     }
 
     Task<int> INotificationQueries.CountUnreadAsync(Inbox inbox, CancellationToken cancellationToken) =>
@@ -42,13 +42,4 @@ public sealed class NotificationQueries(NotificationsDbContext notifications) : 
         NotificationBell.Personal => n => n.Bell == NotificationBell.Personal,
         _ => n => n.Bell == NotificationBell.Platform,
     };
-
-    // The texts are rendered at the read, in the reader's language, from the type and the stored values (U2).
-    private static NotificationView ViewOf(Notification notification, Language language)
-    {
-        var kind = NotificationCatalog.Of(notification.Type);
-        var text = NotificationText.Render(notification.Type, notification.Values, language);
-        return new(
-            notification.Id, notification.Type, kind.Category, text.Title, text.Body, kind.Link.ToString(), notification.TenantId, notification.CreatedAt, notification.ReadAt);
-    }
 }

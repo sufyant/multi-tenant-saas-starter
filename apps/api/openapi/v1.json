@@ -9963,19 +9963,19 @@
       },
       "NotificationLinkResponseKind": {
         "enum": [
-          "none",
-          "tenant",
+          "start",
           "tenant_members",
-          "tenant_plan",
+          "tenant_roles",
+          "tenant_settings",
           "platform_tenant"
         ],
         "type": "string",
         "description": "Where a notification leads, which the web turns into a URL.",
         "x-enumNames": [
-          "None",
-          "Tenant",
+          "Start",
           "TenantMembers",
-          "TenantPlan",
+          "TenantRoles",
+          "TenantSettings",
           "PlatformTenant"
         ]
       },
@@ -10033,24 +10033,34 @@
       },
       "NotificationType": {
         "enum": [
-          "invitation.accepted",
+          "member.joined",
           "member.removed",
           "member.role_changed",
+          "tenant.closed",
+          "tenant.entitlement_override_removed",
+          "tenant.entitlement_override_set",
           "tenant.owner_joined",
           "tenant.plan_changed",
           "tenant.purged",
-          "tenant.status_changed"
+          "tenant.reactivated",
+          "tenant.reopened",
+          "tenant.suspended"
         ],
         "type": "string",
         "description": "The type of a notification, area.event.",
         "x-enumNames": [
-          "InvitationAccepted",
+          "MemberJoined",
           "MemberRemoved",
           "MemberRoleChanged",
+          "TenantClosed",
+          "TenantEntitlementOverrideRemoved",
+          "TenantEntitlementOverrideSet",
           "TenantOwnerJoined",
           "TenantPlanChanged",
           "TenantPurged",
-          "TenantStatusChanged"
+          "TenantReactivated",
+          "TenantReopened",
+          "TenantSuspended"
         ]
       },
       "OwnerInvitationResponse": {

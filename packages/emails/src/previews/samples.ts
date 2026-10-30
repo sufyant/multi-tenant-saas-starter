@@ -68,8 +68,10 @@ export const deletionWarning = {
 export const notification = {
   en: {
     language: Language.En,
-    title: "Your role changed in Northwind Traders",
-    body: "You are now Admin in Northwind Traders.",
+    title: "Your role in Northwind Traders changed",
+    body: "Grace Hopper changed your role from Member to Admin.",
     link: "https://app.example/",
+    footer:
+      "You got this email because email notifications for “Your access” are on.",
   },
 } satisfies Record<string, NotificationProps>;

@@ -39,7 +39,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler");
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler");
-                await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Notifications.Application.Notifications.NotificationView>, Notifications.Infrastructure.Persistence.NotificationsDbContext>.BeforeAsync(context.Envelope, notificationsDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Notifications.Application.Notifications.StoredNotification>, Notifications.Infrastructure.Persistence.NotificationsDbContext>.BeforeAsync(context.Envelope, notificationsDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler.HandleAsync(listNotificationsQuery, notificationQueries, cancellation).ConfigureAwait(false);
@@ -48,7 +48,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
 
-                await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Notifications.Application.Notifications.NotificationView>, Notifications.Infrastructure.Persistence.NotificationsDbContext>.AfterAsync(outgoing1, context.Envelope, notificationsDbContext, cancellation).ConfigureAwait(false);
+                await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Notifications.Application.Notifications.StoredNotification>, Notifications.Infrastructure.Persistence.NotificationsDbContext>.AfterAsync(outgoing1, context.Envelope, notificationsDbContext, cancellation).ConfigureAwait(false);
                 
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await notificationsDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);

@@ -26,13 +26,34 @@ internal sealed class NotificationRows(Database database)
     public Task<string?> ValuesOfAsync(Guid userId, string type) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT \"values\"::text FROM notifications.notifications WHERE user_id = '{userId}' AND type = '{type}'");
 
-    // A notification of the user, written as the dispatcher writes one, in the user's own transaction; returns its id.
-    public async Task<Guid> AddAsync(Guid userId, string type, Guid? tenantId, string bell, string tenantName = "Acme Ltd", DateTimeOffset? createdAt = null)
+    // The values a notification of the user keeps, as "name=value" in the order of the names: a person is stored by user id only (K3).
+    // A system admin hears the platform events of every test, so a test of a platform type names its own tenant.
+    public async Task<string> ValueListOfAsync(Guid userId, string type, Guid? tenantId = null) =>
+        await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(entry.key || '=' || entry.value, ', ' ORDER BY entry.key)
+            FROM notifications.notifications, jsonb_each_text("values") AS entry
+            WHERE user_id = '{userId}' AND type = '{type}'{(tenantId is { } about ? $" AND tenant_id = '{about}'" : "")}
+            """) ?? "";
+
+    // How many notifications of the type are about the tenant, in anyone's list.
+    public Task<long> CountAboutAsync(Guid tenantId, string type) =>
+        database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = '{type}'");
+
+    // A notification of the user, written as the dispatcher writes one, in the user's own transaction; returns its id. Without values, the
+    // values of its type with the tenant's name: a role change by the platform, a plan change from Free to Pro, and a removal by a person
+    // nobody knows, who reads as deleted.
+    public async Task<Guid> AddAsync(
+        Guid userId, string type, Guid? tenantId, string bell, string tenantName = "Acme Ltd", DateTimeOffset? createdAt = null, string? values = null)
     {
         var id = Guid.CreateVersion7();
-        var values = type == "member.role_changed"
-            ? $$"""{"tenantName": "{{tenantName}}", "role": "admin", "roleBuiltIn": "true"}"""
-            : $$"""{"tenantName": "{{tenantName}}"}""";
+        values ??= type switch
+        {
+            "member.role_changed" => $$"""{"tenantName": "{{tenantName}}", "oldRoleName": "member", "oldRoleNameBuiltIn": "true", "newRoleName": "admin", "newRoleNameBuiltIn": "true"}""",
+            "member.removed" => $$"""{"tenantName": "{{tenantName}}", "actorName": "{{Guid.NewGuid()}}"}""",
+            "tenant.plan_changed" => $$"""{"tenantName": "{{tenantName}}", "oldPlanName": "Free", "newPlanName": "Pro"}""",
+            _ => $$"""{"tenantName": "{{tenantName}}"}""",
+        };
         var tenant = tenantId is { } about ? $"'{about}'" : "NULL";
         await database.ExecuteAsUserAsync(
             userId,

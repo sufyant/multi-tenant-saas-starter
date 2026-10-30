@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantReopenedEvent1448166845_NotifyTenantStatusChangedHandlerHandler875819701
+    // START: NotifyMemberJoinedHandlerHandler962831243
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantReopenedEvent1448166845_NotifyTenantStatusChangedHandlerHandler875819701 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyMemberJoinedHandlerHandler962831243 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public TenantReopenedEvent1448166845_NotifyTenantStatusChangedHandlerHandler875819701(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyMemberJoinedHandlerHandler962831243(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -26,7 +26,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             // The actual message body
-            var tenantReopenedEvent = (ControlPlane.Contracts.Tenants.TenantReopenedEvent)context.Envelope.Message;
+            var memberJoinedEvent = (ControlPlane.Contracts.Members.MemberJoinedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -40,15 +40,15 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Members.NotifyMemberJoined.NotifyMemberJoinedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Members.NotifyMemberJoined.NotifyMemberJoinedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler.HandleAsync(tenantReopenedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing2 = await Notifications.Application.Members.NotifyMemberJoined.NotifyMemberJoinedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
+                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantReopenedEvent1448166845_NotifyTenantStatusChangedHandlerHandler875819701
+    // END: NotifyMemberJoinedHandlerHandler962831243
     
     
 }

@@ -6,21 +6,21 @@ namespace Notifications.Api.Tenant.Notifications;
 [JsonConverter(typeof(JsonStringEnumConverter<NotificationLinkResponseKind>))]
 public enum NotificationLinkResponseKind
 {
-    /// <summary>Nowhere: the reader cannot enter what it is about.</summary>
-    [JsonStringEnumMemberName("none")]
-    None,
-
-    /// <summary>The tenant's home in the tenant web.</summary>
-    [JsonStringEnumMemberName("tenant")]
-    Tenant,
+    /// <summary>The start page of the tenant web, which opens the reader's one tenant or lets them choose one, without a tenant.</summary>
+    [JsonStringEnumMemberName("start")]
+    Start,
 
     /// <summary>The tenant's members.</summary>
     [JsonStringEnumMemberName("tenant_members")]
     TenantMembers,
 
-    /// <summary>The tenant's plan.</summary>
-    [JsonStringEnumMemberName("tenant_plan")]
-    TenantPlan,
+    /// <summary>The tenant's roles.</summary>
+    [JsonStringEnumMemberName("tenant_roles")]
+    TenantRoles,
+
+    /// <summary>The tenant's general settings.</summary>
+    [JsonStringEnumMemberName("tenant_settings")]
+    TenantSettings,
 
     /// <summary>The tenant's page in the platform.</summary>
     [JsonStringEnumMemberName("platform_tenant")]

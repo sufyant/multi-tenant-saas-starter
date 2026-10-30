@@ -622,13 +622,18 @@ export type NotificationType = typeof NotificationType[keyof typeof Notification
 
 
 export const NotificationType = {
-  InvitationAccepted: 'invitation.accepted',
+  MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  TenantClosed: 'tenant.closed',
+  TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
+  TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerJoined: 'tenant.owner_joined',
   TenantPlanChanged: 'tenant.plan_changed',
   TenantPurged: 'tenant.purged',
-  TenantStatusChanged: 'tenant.status_changed',
+  TenantReactivated: 'tenant.reactivated',
+  TenantReopened: 'tenant.reopened',
+  TenantSuspended: 'tenant.suspended',
 } as const;
 
 /**
@@ -638,10 +643,10 @@ export type NotificationLinkResponseKind = typeof NotificationLinkResponseKind[k
 
 
 export const NotificationLinkResponseKind = {
-  None: 'none',
-  Tenant: 'tenant',
+  Start: 'start',
   TenantMembers: 'tenant_members',
-  TenantPlan: 'tenant_plan',
+  TenantRoles: 'tenant_roles',
+  TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',
 } as const;
 

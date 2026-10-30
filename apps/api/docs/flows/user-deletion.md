@@ -27,4 +27,4 @@ A deleted user is never a member and never an Owner (`ARCHITECTURE.md`, section 
 
 Source: Kleppmann, Chapter 7, "Write Skew and Phantoms". Vernon, "Effective Aggregate Design". GDPR, Article 17.
 
-- Notifications. `UserDeletedEvent` also deletes the user's notifications, in every bell, and their email preferences, in a transaction of Notifications that declares the user (R4, U8; `notifications.md`, section 6). A copy deletes nothing more. A deleted user is told of nothing (U3).
+- Notifications. `UserDeletedEvent` also deletes the user's notifications, in every bell, and their email preferences, in a transaction of Notifications that declares the user (R4, U8; `notifications.md`, section 6). A copy deletes nothing more. A deleted user is told of nothing (U3). Another person's notification keeps the user by id only, so it needs no change: its read names them "Deleted user" in the reader's language (U2). The user's deletion removes their memberships without `MemberRemovedEvent`, so it sends no `member.removed`.

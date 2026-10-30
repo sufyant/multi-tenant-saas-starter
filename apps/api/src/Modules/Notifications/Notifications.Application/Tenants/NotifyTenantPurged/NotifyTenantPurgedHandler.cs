@@ -13,12 +13,14 @@ public static class NotifyTenantPurgedHandler
     public const string Type = NotificationCatalog.TenantPurged;
 
     public static async Task<OutgoingMessages> HandleAsync(TenantPurgedEvent purged, IUserDirectory users, CancellationToken cancellationToken) =>
-        NotificationFanOut.To(
+        await NotificationFanOut.ToAsync(
             Type,
             purged.EventId,
             purged.OccurredAt,
             purged.TenantId,
             new Dictionary<string, string> { ["tenantName"] = purged.TenantName },
             await users.FindContactsAsync(await users.ListSystemAdminIdsAsync(cancellationToken), cancellationToken),
-            actorId: null);
+            actorId: null,
+            users,
+            cancellationToken);
 }

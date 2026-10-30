@@ -3,7 +3,8 @@
 // (`<email>.<lang>.subject.txt`), each with a placeholder such as {{tenantName}} for every value the API fills. It also writes what the
 // API needs to fill them without ICU (`languages.json`: each language's built-in role names, month names and date patterns), the texts of
 // every notification type (`notifications.json`) and the brand (`brand.json`). The folder holds only this script's output, so the script empties it first.
-import { mkdir, rm, writeFile } from "node:fs/promises";
+// Last, it writes the notification categories' names into the shared messages of `packages/ui`.
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { pretty, render } from "@react-email/render";
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
@@ -60,7 +61,7 @@ const deletionWarning = (language: Language): DeletionWarningProps => ({
 
 const notification = (language: Language): NotificationProps => ({
   language,
-  ...placeholders("title", "body", "link"),
+  ...placeholders("title", "body", "link", "footer"),
 });
 
 const emails: Email[] = [
@@ -87,6 +88,27 @@ const emails: Email[] = [
 // A notification's texts name a value as {name}; the API fills {{name}}, as in every email.
 const apiPlaceholders = (text: string) =>
   text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
+
+// A type's title and body, and its texts without each optional value, which may keep the main title (U2).
+type NotificationTexts = {
+  title?: string;
+  body: string;
+  without?: Record<string, NotificationTexts>;
+};
+const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
+  ...(texts.title === undefined ? {} : { title: apiPlaceholders(texts.title) }),
+  body: apiPlaceholders(texts.body),
+  ...(texts.without === undefined
+    ? {}
+    : {
+        without: Object.fromEntries(
+          Object.entries(texts.without).map(([value, without]) => [
+            value,
+            apiTexts(without),
+          ]),
+        ),
+      }),
+});
 
 const write = (file: string, content: string) =>
   writeFile(new URL(file, output), content, "utf8");
@@ -121,7 +143,9 @@ await write(
     2,
   )}\n`,
 );
-// Each language's title and body of every notification type, and the words of a value of a closed list, such as a tenant's new status.
+// Each language's title and body of every notification type, its texts without an optional value, and the words of each closed list:
+// an entitlement key, an entitlement's value and a person the read cannot name; each category's name and description; and the two footers
+// of the generic email: a category's, with its name, and a required type's.
 // The API renders a notification from them in the reader's language, in the bell and in the generic email (U2).
 await write(
   "notifications.json",
@@ -132,16 +156,17 @@ await write(
         {
           types: Object.fromEntries(
             Object.entries(messages[language].notifications).map(
-              ([type, texts]) => [
-                type,
-                {
-                  title: apiPlaceholders(texts.title),
-                  body: apiPlaceholders(texts.body),
-                },
-              ],
+              ([type, texts]) => [type, apiTexts(texts)],
             ),
           ),
           words: messages[language].notificationWords,
+          categories: messages[language].notificationCategories,
+          footers: {
+            category: apiPlaceholders(
+              messages[language].notificationEmail.footer,
+            ),
+            required: messages[language].notificationEmail.requiredFooter,
+          },
         },
       ]),
     ),
@@ -150,3 +175,13 @@ await write(
   )}\n`,
 );
 await write("brand.json", `${JSON.stringify(brand, null, 2)}\n`);
+
+// The name and the description of each notification category, which the preferences form of packages/ui lists: this script writes them
+// under `notificationCategories` in the shared messages of packages/ui (F14), so they are written once, here (D1). Every other key of
+// those files stays as it is.
+for (const language of languages) {
+  const file = new URL(`../../ui/messages/${language}.json`, import.meta.url);
+  const shared = JSON.parse(await readFile(file, "utf8"));
+  shared.notificationCategories = messages[language].notificationCategories;
+  await writeFile(file, `${JSON.stringify(shared, null, 2)}\n`, "utf8");
+}

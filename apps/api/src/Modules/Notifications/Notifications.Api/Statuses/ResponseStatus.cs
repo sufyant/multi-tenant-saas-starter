@@ -7,10 +7,10 @@ internal static class ResponseStatus
 {
     public static NotificationLinkResponseKind OfLink(string kind) => kind switch
     {
-        "None" => NotificationLinkResponseKind.None,
-        "Tenant" => NotificationLinkResponseKind.Tenant,
+        "Start" => NotificationLinkResponseKind.Start,
         "TenantMembers" => NotificationLinkResponseKind.TenantMembers,
-        "TenantPlan" => NotificationLinkResponseKind.TenantPlan,
+        "TenantRoles" => NotificationLinkResponseKind.TenantRoles,
+        "TenantSettings" => NotificationLinkResponseKind.TenantSettings,
         "PlatformTenant" => NotificationLinkResponseKind.PlatformTenant,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "The response has no value for this kind of Notifications."),
     };

@@ -287,8 +287,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name)
             VALUES ('{Guid.CreateVersion7(ClosedAt)}', '{ClosedAt:O}', 'User', gen_random_uuid(), 'Command', 'tenant.closed', 'Tenant', '{tenant.Id}', '{name}');
             INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
-            VALUES (gen_random_uuid(), gen_random_uuid(), '{tenant.Id}', 'tenant.plan_changed', 'Tenant', jsonb_build_object('tenantName', '{name}'), '{ClosedAt:O}'),
-                (gen_random_uuid(), '{admin}', '{tenant.Id}', 'tenant.status_changed', 'Platform', jsonb_build_object('tenantName', '{name}', 'status', 'closed'), '{ClosedAt:O}');
+            VALUES (gen_random_uuid(), gen_random_uuid(), '{tenant.Id}', 'tenant.plan_changed', 'Tenant', jsonb_build_object('tenantName', '{name}', 'oldPlanName', 'Free', 'newPlanName', 'Pro'), '{ClosedAt:O}'),
+                (gen_random_uuid(), '{admin}', '{tenant.Id}', 'tenant.closed', 'Platform', jsonb_build_object('tenantName', '{name}', 'actorName', '{admin}', 'reopenableUntil', '{ClosedAt.AddDays(30):O}'), '{ClosedAt:O}');
             """,
             _databaseName);
         return tenant;

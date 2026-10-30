@@ -83,16 +83,17 @@ public static class AcceptInvitationHandler
 
         var membership = accepted.Value;
         var roles = await tenants.FindRolesAsync(cancellationToken);
+        var role = roles.Of(membership.RoleId);
 
         // Read before the membership is added: a tenant without an Owner gets its first one (A1). The platform invited when the inviter is
         // no member of the tenant.
-        var firstOwner = roles.Of(membership.RoleId).Holds(PermissionPools.TenantOwnersManage)
+        var firstOwner = role.Holds(PermissionPools.TenantOwnersManage)
             && (await tenants.FindOwnerAddressesAsync(cancellationToken)).Count == 0;
         var invitedBy = await tenants.FindMembershipAsync(invitation.InvitedBy, cancellationToken) is null ? (Guid?)null : invitation.InvitedBy;
         await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
         return (
-            MyTenantView.Of(tenant, roles.Of(membership.RoleId)),
-            [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id, tenant.Name, invitedBy, firstOwner)]);
+            MyTenantView.Of(tenant, role),
+            [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id, tenant.Name, invitedBy, firstOwner, role.Name, role.BuiltIn is not null)]);
     }
 
     private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>

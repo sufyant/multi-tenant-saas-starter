@@ -13,6 +13,9 @@ namespace ControlPlane.Contracts.Members;
 /// <param name="InvitedBy">The user id of the member who invited them; none when the platform invited, and in an event of the version
 /// before step 33.</param>
 /// <param name="FirstOwner">Whether they joined as an Owner of a tenant that had none: a new tenant's first Owner.</param>
+/// <param name="Role">The name of the role they joined as, for a notification: <c>owner</c>, <c>admin</c>, <c>member</c> or a custom role's.
+/// None in an event of the version before step 33-backend-2.</param>
+/// <param name="RoleBuiltIn">Whether that role is built in.</param>
 [MessageName("member-joined")]
 public sealed record MemberJoinedEvent(
     Guid EventId,
@@ -21,4 +24,6 @@ public sealed record MemberJoinedEvent(
     Guid UserId,
     string? TenantName = null,
     Guid? InvitedBy = null,
-    bool FirstOwner = false);
+    bool FirstOwner = false,
+    string? Role = null,
+    bool RoleBuiltIn = false);

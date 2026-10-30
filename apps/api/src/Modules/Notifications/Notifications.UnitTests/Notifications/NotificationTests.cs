@@ -25,7 +25,7 @@ public sealed class NotificationTests
             Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), NotificationCatalog.MemberRoleChanged,
             new Dictionary<string, string> { ["tenantName"] = "Acme" }, Now);
 
-        create.ShouldThrow<InvalidOperationException>().Message.ShouldContain("role, roleBuiltIn, tenantName");
+        create.ShouldThrow<InvalidOperationException>().Message.ShouldContain("newRoleName, newRoleNameBuiltIn, oldRoleName, oldRoleNameBuiltIn, tenantName");
     }
 
     [Fact]
@@ -36,6 +36,18 @@ public sealed class NotificationTests
         create.ShouldThrow<InvalidOperationException>().Message.ShouldContain("tenant.renamed");
     }
 
+    // An optional value may be missing: a role change by the platform names no actor.
+    [Fact]
+    public void Create_AnOptionalValueMissing_IsAccepted()
+    {
+        var values = RoleValues();
+        values.Remove("actorName");
+
+        var notification = Notification.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), NotificationCatalog.MemberRoleChanged, values, Now);
+
+        notification.Values.Keys.ShouldNotContain("actorName");
+    }
+
     [Theory]
     [InlineData(NotificationCatalog.TenantPlanChanged, false)]
     [InlineData(NotificationCatalog.MemberRemoved, true)]
@@ -44,8 +56,7 @@ public sealed class NotificationTests
         Guid?[] tenants = [null, Guid.CreateVersion7()];
 
         var create = () => Notification.Create(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), tenants[Convert.ToInt32(aboutATenant)], type,
-            new Dictionary<string, string> { ["tenantName"] = "Acme" }, Now);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), tenants[Convert.ToInt32(aboutATenant)], type, NotificationTextTests.SampleValues(type), Now);
 
         create.ShouldThrow<InvalidOperationException>().Message.ShouldContain("wrong tenant");
     }
@@ -62,6 +73,13 @@ public sealed class NotificationTests
         (first, second, notification.ReadAt).ShouldBe((StateChange.Changed, StateChange.Unchanged, Now.AddMinutes(1)));
     }
 
-    private static Dictionary<string, string> RoleValues() =>
-        new() { ["tenantName"] = "Acme", ["role"] = "admin", ["roleBuiltIn"] = "true" };
+    private static Dictionary<string, string> RoleValues() => new()
+    {
+        ["tenantName"] = "Acme",
+        ["actorName"] = Guid.CreateVersion7().ToString(),
+        ["oldRoleName"] = "member",
+        ["oldRoleNameBuiltIn"] = "true",
+        ["newRoleName"] = "admin",
+        ["newRoleNameBuiltIn"] = "true",
+    };
 }

@@ -25,6 +25,7 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userRepository = new ControlPlane.Infrastructure.Persistence.Users.UserRepository(controlPlaneDbContext);
+            var tenantQueries = new ControlPlane.Infrastructure.Persistence.Tenants.TenantQueries(controlPlaneDbContext);
             var tenantRepository = new ControlPlane.Infrastructure.Persistence.Tenants.TenantRepository(controlPlaneDbContext);
             // The actual message body
             var removeEntitlementOverrideCommand = (ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideCommand)context.Envelope.Message;
@@ -45,7 +46,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler.HandleAsync(removeEntitlementOverrideCommand, tenantRepository, userRepository, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler.HandleAsync(removeEntitlementOverrideCommand, tenantRepository, tenantQueries, userRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

@@ -110,7 +110,7 @@ namespace Notifications.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_notifications_tenant", "(bell <> 'Tenant' OR tenant_id IS NOT NULL) AND (bell <> 'Personal' OR tenant_id IS NULL)");
 
-                            t.HasCheckConstraint("ck_notifications_type", "type IN ('invitation.accepted', 'member.removed', 'member.role_changed', 'tenant.owner_joined', 'tenant.plan_changed', 'tenant.purged', 'tenant.status_changed')");
+                            t.HasCheckConstraint("ck_notifications_type", "type IN ('member.joined', 'member.removed', 'member.role_changed', 'tenant.closed', 'tenant.entitlement_override_removed', 'tenant.entitlement_override_set', 'tenant.owner_joined', 'tenant.plan_changed', 'tenant.purged', 'tenant.reactivated', 'tenant.reopened', 'tenant.suspended')");
 
                             t.HasCheckConstraint("ck_notifications_values", "jsonb_typeof(\"values\") = 'object'");
                         });
