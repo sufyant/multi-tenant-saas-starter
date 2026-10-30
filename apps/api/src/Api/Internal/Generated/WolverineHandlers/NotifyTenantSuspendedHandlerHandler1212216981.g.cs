@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantPlanChangedEvent1267474263_NotifyTenantPlanChangedHandlerHandler1940733656
+    // START: NotifyTenantSuspendedHandlerHandler1212216981
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantPlanChangedEvent1267474263_NotifyTenantPlanChangedHandlerHandler1940733656 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantSuspendedHandlerHandler1212216981 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public TenantPlanChangedEvent1267474263_NotifyTenantPlanChangedHandlerHandler1940733656(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantSuspendedHandlerHandler1212216981(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -25,9 +25,8 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
-            var memberDirectory = new ControlPlane.Infrastructure.Persistence.Members.MemberDirectory(controlPlaneDbContext);
             // The actual message body
-            var tenantPlanChangedEvent = (ControlPlane.Contracts.Plans.TenantPlanChangedEvent)context.Envelope.Message;
+            var tenantSuspendedEvent = (ControlPlane.Contracts.Tenants.TenantSuspendedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -41,11 +40,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantSuspended.NotifyTenantSuspendedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantSuspended.NotifyTenantSuspendedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler.HandleAsync(tenantPlanChangedEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantSuspended.NotifyTenantSuspendedHandler.HandleAsync(tenantSuspendedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -68,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantPlanChangedEvent1267474263_NotifyTenantPlanChangedHandlerHandler1940733656
+    // END: NotifyTenantSuspendedHandlerHandler1212216981
     
     
 }

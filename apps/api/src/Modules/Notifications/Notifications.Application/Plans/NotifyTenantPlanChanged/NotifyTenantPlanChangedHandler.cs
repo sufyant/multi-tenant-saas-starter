@@ -7,37 +7,22 @@ using Wolverine;
 
 namespace Notifications.Application.Plans.NotifyTenantPlanChanged;
 
-// "The organisation's plan changed", to the tenant's Owners at that moment, in the tenant's bell: the platform put the tenant on another
-// plan, or set or removed one of its overrides. The Owners are read in the tenant's transaction, which the event's envelope declares, so a
-// member who becomes an Owner later sees no older one. A plan's edit tells nobody: the platform's audit log records it.
+// "The organisation's plan changed", with the old plan and the new one, to the tenant's Owners at that moment, in the tenant's bell. The
+// Owners are read in the tenant's transaction, which the event's envelope declares, so a member who becomes an Owner later sees no older
+// one. A plan's edit tells nobody: the platform's audit log records it.
 public static class NotifyTenantPlanChangedHandler
 {
     public const string Type = NotificationCatalog.TenantPlanChanged;
 
-    public static Task<OutgoingMessages> HandleAsync(TenantPlanChangedEvent changed, IMemberDirectory members, IUserDirectory users, CancellationToken cancellationToken) =>
-        NotifyOwnersAsync(changed.EventId, changed.OccurredAt, changed.TenantId, changed.TenantName, changed.ChangedBy, members, users, cancellationToken);
-
-    public static Task<OutgoingMessages> HandleAsync(EntitlementOverrideSetEvent set, IMemberDirectory members, IUserDirectory users, CancellationToken cancellationToken) =>
-        NotifyOwnersAsync(set.EventId, set.OccurredAt, set.TenantId, set.TenantName, set.SetBy, members, users, cancellationToken);
-
-    public static Task<OutgoingMessages> HandleAsync(EntitlementOverrideRemovedEvent removed, IMemberDirectory members, IUserDirectory users, CancellationToken cancellationToken) =>
-        NotifyOwnersAsync(removed.EventId, removed.OccurredAt, removed.TenantId, removed.TenantName, removed.RemovedBy, members, users, cancellationToken);
-
-    private static async Task<OutgoingMessages> NotifyOwnersAsync(
-        Guid eventId,
-        DateTimeOffset occurredAt,
-        Guid tenantId,
-        string tenantName,
-        Guid actorId,
-        IMemberDirectory members,
-        IUserDirectory users,
-        CancellationToken cancellationToken) =>
-        NotificationFanOut.To(
+    public static async Task<OutgoingMessages> HandleAsync(TenantPlanChangedEvent changed, IMemberDirectory members, IUserDirectory users, CancellationToken cancellationToken) =>
+        await NotificationFanOut.ToAsync(
             Type,
-            eventId,
-            occurredAt,
-            tenantId,
-            new Dictionary<string, string> { ["tenantName"] = tenantName },
+            changed.EventId,
+            changed.OccurredAt,
+            changed.TenantId,
+            new Dictionary<string, string> { ["tenantName"] = changed.TenantName, ["oldPlanName"] = changed.OldPlanName, ["newPlanName"] = changed.NewPlanName },
             await users.FindContactsAsync(await members.ListOwnerIdsAsync(cancellationToken), cancellationToken),
-            actorId);
+            changed.ChangedBy,
+            users,
+            cancellationToken);
 }

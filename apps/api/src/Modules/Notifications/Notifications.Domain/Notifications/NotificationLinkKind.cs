@@ -18,6 +18,12 @@ public enum NotificationLinkKind
     /// <summary>The tenant's plan.</summary>
     TenantPlan,
 
+    /// <summary>The tenant's roles.</summary>
+    TenantRoles,
+
+    /// <summary>The tenant's general settings.</summary>
+    TenantSettings,
+
     /// <summary>The tenant's page in the platform.</summary>
     PlatformTenant,
 }

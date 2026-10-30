@@ -236,6 +236,34 @@ public sealed class MigrationStepTests(Database database)
             before)).ShouldBe("2:2030-01-02 03:04:05+00");
     }
 
+    // Step 33-backend-2: one type for each event, and a person kept by user id. The migration deletes every notification, of any user, as
+    // the maintainer decided: no production holds one. A row of an old type is then refused.
+    [Fact]
+    public async Task Migrate_OneNotificationTypePerEvent_DeletesEveryNotificationAndRefusesAnOldType()
+    {
+        var before = await database.CreateDatabaseBeforeNotificationsMigrationAsync("OneNotificationTypePerEvent");
+        await database.ScalarAsSuperuserAsync<object>(
+            $$"""
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at) VALUES
+            ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', 'tenant.status_changed', 'Platform', '{"tenantName": "Acme", "status": "closed"}', now()),
+            ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', 'invitation.accepted', 'Tenant', '{"tenantName": "Acme", "memberName": "Ada"}', now()),
+            ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', NULL, 'member.removed', 'Personal', '{"tenantName": "Acme"}', now())
+            """,
+            before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.notifications", before)).ShouldBe(0);
+        var refused = await Should.ThrowAsync<PostgresException>(() => database.ScalarAsSuperuserAsync<object>(
+            $$"""
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', 'tenant.status_changed', 'Platform', '{}', now())
+            """,
+            before));
+        (refused.SqlState, refused.ConstraintName).ShouldBe((PostgresErrorCodes.CheckViolation, "ck_notifications_type"));
+    }
+
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
     // default mark (R15).
     [Fact]

@@ -42,7 +42,7 @@ public static class CloseTenantHandler
         return (
             TenantView.Of(tenant),
             [
-                new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name),
+                new TenantClosedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, now + settings.ReopenPeriod),
                 .. WithdrawSignUpCommand.For(closed.Value.Cancelled),
                 new WarnTenantPurgeCommand(tenant.Id, now).ScheduledAt(now + settings.ReopenPeriod - settings.PurgeWarningLead),
                 new StartTenantPurgeCommand(tenant.Id, now).ScheduledAt(now + settings.ReopenPeriod),

@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Infrastructure;
+using Notifications.Infrastructure.Persistence;
 using Npgsql;
 using Tenancy;
 using Testcontainers.PostgreSql;
@@ -187,6 +188,21 @@ public sealed class Database : IAsyncLifetime
         var migrations = audit.Database.GetMigrations().ToList();
         var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
         await audit.GetService<IMigrator>().MigrateAsync(before);
+
+        return name;
+    }
+
+    // The same for Notifications: a database set up the way a deployment is, then with Notifications taken back to the migration before
+    // the named one.
+    public async Task<string> CreateDatabaseBeforeNotificationsMigrationAsync(string migration)
+    {
+        var name = await CreateMigratedDatabaseAsync();
+        await using var notifications = new NotificationsDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<NotificationsDbContext>(
+                NotificationsDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        var migrations = notifications.Database.GetMigrations().ToList();
+        var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
+        await notifications.GetService<IMigrator>().MigrateAsync(before);
 
         return name;
     }

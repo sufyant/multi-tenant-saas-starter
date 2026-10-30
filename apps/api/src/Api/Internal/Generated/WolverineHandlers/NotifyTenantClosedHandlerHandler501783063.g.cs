@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: NotifyInvitationAcceptedHandlerHandler995219457
+    // START: NotifyTenantClosedHandlerHandler501783063
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class NotifyInvitationAcceptedHandlerHandler995219457 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantClosedHandlerHandler501783063 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public NotifyInvitationAcceptedHandlerHandler995219457(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantClosedHandlerHandler501783063(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -26,7 +26,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             // The actual message body
-            var memberJoinedEvent = (ControlPlane.Contracts.Members.MemberJoinedEvent)context.Envelope.Message;
+            var tenantClosedEvent = (ControlPlane.Contracts.Tenants.TenantClosedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -40,15 +40,15 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Members.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Members.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler");
                 
                 // The actual message execution
-                var outgoing2 = await Notifications.Application.Members.NotifyInvitationAccepted.NotifyInvitationAcceptedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler.HandleAsync(tenantClosedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
+                await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: NotifyInvitationAcceptedHandlerHandler995219457
+    // END: NotifyTenantClosedHandlerHandler501783063
     
     
 }

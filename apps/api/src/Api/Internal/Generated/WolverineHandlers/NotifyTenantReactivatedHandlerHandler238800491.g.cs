@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantSuspendedEvent1447906750_NotifyTenantStatusChangedHandlerHandler875819701
+    // START: NotifyTenantReactivatedHandlerHandler238800491
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantSuspendedEvent1447906750_NotifyTenantStatusChangedHandlerHandler875819701 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class NotifyTenantReactivatedHandlerHandler238800491 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public TenantSuspendedEvent1447906750_NotifyTenantStatusChangedHandlerHandler875819701(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public NotifyTenantReactivatedHandlerHandler238800491(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -26,7 +26,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             // The actual message body
-            var tenantSuspendedEvent = (ControlPlane.Contracts.Tenants.TenantSuspendedEvent)context.Envelope.Message;
+            var tenantReactivatedEvent = (ControlPlane.Contracts.Tenants.TenantReactivatedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -40,11 +40,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantReactivated.NotifyTenantReactivatedHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantReactivated.NotifyTenantReactivatedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantStatusChanged.NotifyTenantStatusChangedHandler.HandleAsync(tenantSuspendedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantReactivated.NotifyTenantReactivatedHandler.HandleAsync(tenantReactivatedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantSuspendedEvent1447906750_NotifyTenantStatusChangedHandlerHandler875819701
+    // END: NotifyTenantReactivatedHandlerHandler238800491
     
     
 }
