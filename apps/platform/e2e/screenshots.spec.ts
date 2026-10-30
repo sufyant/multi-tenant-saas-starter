@@ -2,7 +2,13 @@ import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
-import { mockPlatform, organisations, plans, users } from "./api";
+import {
+  mockNotifications,
+  mockPlatform,
+  organisations,
+  plans,
+  users,
+} from "./api";
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/platform/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
@@ -100,3 +106,35 @@ for (const { language, scheme, size, name } of menus)
       path: `${folder}/user-menu-${language}-${scheme}-${size}.png`,
     });
   });
+
+// The platform's bell and its list (the Notifications boards), and Settings › Notifications in Arabic.
+test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockPlatform(page);
+  await mockNotifications(page);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Notifications, 1 unread" }).click();
+  await page.getByRole("link", { name: /was suspended/ }).waitFor();
+
+  await page.screenshot({
+    path: `${folder}/notifications-en-light-desktop.png`,
+  });
+});
+
+test("Screenshot_NotificationSettings_ArabicDarkDesktop", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockPlatform(page, Language.Ar);
+  await mockNotifications(page);
+
+  await page.goto("/settings/notifications");
+  await page.getByRole("switch", { name: "المنصة" }).waitFor();
+
+  await page.screenshot({
+    path: `${folder}/notification-settings-ar-dark-desktop.png`,
+  });
+});
