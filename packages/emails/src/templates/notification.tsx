@@ -8,7 +8,8 @@ import { format, messages } from "../texts";
 /**
  * The values of the one generic notification email (apps/api/docs/ARCHITECTURE.md, U2). The API renders a notification's title and body
  * in the recipient's language from the texts of `messages/*.json` (`notifications`), and fills them here with the link of its button and
- * the footer: the category's footer with its name, or the footer of a required type (`notificationEmail`).
+ * the footer: the category's footer with its name and a link to the notifications page, or the footer of a required type, which cannot
+ * be turned off and so has no link (`notificationEmail`).
  */
 export type NotificationProps = {
   language: Language;
@@ -18,6 +19,8 @@ export type NotificationProps = {
   link: string;
   /** Why the recipient got it, which the API writes in the language. */
   footer: string;
+  /** The notifications page of the web app or the platform app; none for a required type. */
+  preferencesLink?: string;
 };
 
 const textsOf = ({ language }: NotificationProps) => {
@@ -25,6 +28,7 @@ const textsOf = ({ language }: NotificationProps) => {
   return {
     button: format(texts.button, { brandName: brand.name }),
     fallback: texts.fallback,
+    manage: texts.manage,
   };
 };
 
@@ -32,7 +36,10 @@ const textsOf = ({ language }: NotificationProps) => {
 export const notificationSubject = (props: NotificationProps): string =>
   props.title;
 
-/** The plain-text part: the brand, the title, the body, the button as its label, a colon and the link, and the footer. */
+/**
+ * The plain-text part: the brand, the title, the body, the button as its label, a colon and the link, the footer, and the link to the
+ * notifications page in the same shape.
+ */
 export function notificationText(props: NotificationProps): string {
   const texts = textsOf(props);
   return [
@@ -41,6 +48,9 @@ export function notificationText(props: NotificationProps): string {
     props.body,
     `${texts.button}:\n${props.link}`,
     props.footer,
+    ...(props.preferencesLink === undefined
+      ? []
+      : [`${texts.manage}:\n${props.preferencesLink}`]),
   ].join("\n\n");
 }
 
@@ -52,7 +62,26 @@ export function Notification(props: NotificationProps) {
     <Layout
       language={props.language}
       preheader={props.body}
-      footer={props.footer}
+      footer={
+        <>
+          {props.footer}
+          {props.preferencesLink === undefined ? null : (
+            <>
+              <br />
+              <Link
+                href={props.preferencesLink}
+                className="e-link"
+                style={{
+                  color: colours.primary.light,
+                  textDecoration: "underline",
+                }}
+              >
+                {texts.manage}
+              </Link>
+            </>
+          )}
+        </>
+      }
     >
       <Heading
         as="h1"

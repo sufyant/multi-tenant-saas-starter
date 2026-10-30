@@ -45,6 +45,7 @@
     "button": "{brandName} uygulamasını aç",
     "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
     "footer": "Bu e-postayı, “{categoryName}” için e-posta bildirimleri açık olduğu için aldınız.",
+    "manage": "E-posta bildirimlerini yönet",
     "requiredFooter": "Bir kuruluştan çıkarıldığınızda, artık erişiminiz olmadığını bilmeniz için bu e-postayı her zaman göndeririz. Bu e-posta kapatılamaz."
   },
   "notifications": {

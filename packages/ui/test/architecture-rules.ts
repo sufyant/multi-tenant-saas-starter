@@ -489,14 +489,20 @@ export function enumLiterals(
 
 /**
  * The enums whose values no screen writes by hand (F3): every const object of the generated client but the sort orders
- * (`...Sort`) and the kinds (`...Kind`). Their values are common words of code and HTML (`email`, `name`, `user`, `platform`), so a
- * check would refuse `type="email"`. A screen still writes them through the const object: `ListMembersSort.Email`.
+ * (`...Sort`), the kinds (`...Kind`) and the reserved slugs (`ReservedSlug`). Their values are common words of code and HTML
+ * (`email`, `name`, `user`, `platform`, `status`), so a check would refuse `type="email"` or `role="status"`. A screen still writes
+ * them through the const object: `ListMembersSort.Email`.
  */
 export function contractEnumNames(generatedSchemasFile: string): string[] {
   const text = readFileSync(generatedSchemasFile, "utf8");
   return [...text.matchAll(/^export const (\w+) = \{/gm)]
     .map((match) => match[1] ?? "")
-    .filter((name) => !name.endsWith("Sort") && !name.endsWith("Kind"));
+    .filter(
+      (name) =>
+        !name.endsWith("Sort") &&
+        !name.endsWith("Kind") &&
+        name !== "ReservedSlug",
+    );
 }
 
 /** Every value of the contract enums, read from the generated client. */

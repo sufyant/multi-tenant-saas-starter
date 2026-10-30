@@ -8,3 +8,6 @@ Starter
 {{link}}
 
 {{footer}}
+
+إدارة إشعارات البريد الإلكتروني:
+{{preferencesLink}}

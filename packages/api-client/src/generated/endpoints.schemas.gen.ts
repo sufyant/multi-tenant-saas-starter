@@ -826,6 +826,7 @@ export const ErrorCode = {
   TenantNotFound: 'tenant.not_found',
   TenantReopenPeriodEnded: 'tenant.reopen_period_ended',
   TenantSlugInvalid: 'tenant.slug_invalid',
+  TenantSlugReserved: 'tenant.slug_reserved',
   TenantSlugTaken: 'tenant.slug_taken',
   TenantSuspended: 'tenant.suspended',
   UserDeleted: 'user.deleted',
@@ -869,6 +870,7 @@ export const FieldErrorCode = {
   TooLong: 'too_long',
   TimeZoneInvalid: 'time_zone_invalid',
   SlugInvalid: 'slug_invalid',
+  SlugReserved: 'slug_reserved',
 } as const;
 
 /**
@@ -1374,6 +1376,59 @@ export interface RenameUserRequest {
   /** @maxLength 100 */
   lastName: string;
 }
+
+/**
+ * A slug that no tenant may take, because the tenant web has or may add a route of that name.
+ */
+export type ReservedSlug = typeof ReservedSlug[keyof typeof ReservedSlug];
+
+
+export const ReservedSlug = {
+  About: 'about',
+  Account: 'account',
+  Admin: 'admin',
+  Api: 'api',
+  App: 'app',
+  AppleIcon: 'apple-icon',
+  Apps: 'apps',
+  Assets: 'assets',
+  Auth: 'auth',
+  Billing: 'billing',
+  Blog: 'blog',
+  Contact: 'contact',
+  Dashboard: 'dashboard',
+  Dev: 'dev',
+  Docs: 'docs',
+  Health: 'health',
+  Help: 'help',
+  Home: 'home',
+  Icon: 'icon',
+  Invitations: 'invitations',
+  Legal: 'legal',
+  Login: 'login',
+  Logout: 'logout',
+  New: 'new',
+  Notifications: 'notifications',
+  Onboarding: 'onboarding',
+  OpengraphImage: 'opengraph-image',
+  Platform: 'platform',
+  Pricing: 'pricing',
+  Privacy: 'privacy',
+  Public: 'public',
+  Security: 'security',
+  Settings: 'settings',
+  SignIn: 'sign-in',
+  SignOut: 'sign-out',
+  SignUp: 'sign-up',
+  Sitemap: 'sitemap',
+  SsoCallback: 'sso-callback',
+  Static: 'static',
+  Status: 'status',
+  Support: 'support',
+  Terms: 'terms',
+  TwitterImage: 'twitter-image',
+  Www: 'www',
+} as const;
 
 /**
  * The tenant's value of the key in the route, over its plan's value; its expiry, after now, or null for one that never expires; and the

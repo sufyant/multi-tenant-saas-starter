@@ -8,3 +8,6 @@ Starter uygulamasını aç:
 {{link}}
 
 {{footer}}
+
+E-posta bildirimlerini yönet:
+{{preferencesLink}}

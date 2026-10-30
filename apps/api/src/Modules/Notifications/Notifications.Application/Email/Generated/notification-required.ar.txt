@@ -1,0 +1,10 @@
+Starter
+
+{{title}}
+
+{{body}}
+
+افتح Starter:
+{{link}}
+
+{{footer}}

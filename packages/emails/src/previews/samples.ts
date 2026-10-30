@@ -73,5 +73,6 @@ export const notification = {
     link: "https://app.example/",
     footer:
       "You got this email because email notifications for “Your access” are on.",
+    preferencesLink: "https://app.example/settings/notifications",
   },
 } satisfies Record<string, NotificationProps>;

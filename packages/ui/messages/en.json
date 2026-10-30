@@ -146,6 +146,7 @@
       "not_found": "This organisation does not exist, or you are not a member of it.",
       "reopen_period_ended": "The time to reopen this organisation has ended.",
       "slug_invalid": "Use lowercase letters, digits and single hyphens.",
+      "slug_reserved": "This slug is reserved. Choose another one.",
       "slug_taken": "Another organisation uses this slug. Choose another one.",
       "suspended": "This organisation is suspended."
     },

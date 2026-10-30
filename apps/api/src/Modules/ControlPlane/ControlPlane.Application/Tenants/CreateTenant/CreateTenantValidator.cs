@@ -12,7 +12,8 @@ public sealed partial class CreateTenantValidator : AbstractValidator<CreateTena
     public CreateTenantValidator()
     {
         // The rules state the name's longest length and the slug's lengths and shape, so the OpenAPI document holds them; the tenant
-        // still checks both itself (Evans, Chapter 6). The tenant keeps the name without the spaces around it, so its length is counted
+        // still checks both itself (Evans, Chapter 6). A reserved slug is refused with a code of its own, so a form can say why; the
+        // document lists the reserved slugs as an enum of their own. The tenant keeps the name without the spaces around it, so its length is counted
         // without them.
         RuleFor(command => command.Name)
             .Cascade(CascadeMode.Stop)
@@ -22,7 +23,8 @@ public sealed partial class CreateTenantValidator : AbstractValidator<CreateTena
             .Cascade(CascadeMode.Stop)
             .NotNull().WithErrorCode(nameof(FieldErrorCode.Required))
             .Length(Tenant.SlugMinLength, Tenant.SlugMaxLength).WithErrorCode(nameof(FieldErrorCode.SlugInvalid))
-            .Matches(Slug()).WithErrorCode(nameof(FieldErrorCode.SlugInvalid));
+            .Matches(Slug()).WithErrorCode(nameof(FieldErrorCode.SlugInvalid))
+            .Must(slug => !ReservedSlugs.Contains(slug)).WithErrorCode(nameof(FieldErrorCode.SlugReserved));
         RuleFor(command => command.OwnerEmail)
             .NotEmpty().WithErrorCode(nameof(FieldErrorCode.Required))
             .EmailAddress().WithErrorCode(nameof(FieldErrorCode.EmailInvalid))
