@@ -228,5 +228,23 @@
     "save": "حفظ التفضيلات",
     "saved": "تم حفظ التفضيلات",
     "notSaved": "لم يتم حفظ التفضيلات"
+  },
+  "notificationCategories": {
+    "access": {
+      "name": "وصولك",
+      "description": "عندما يتغيّر دورك أو تُزال من مؤسسة."
+    },
+    "member_invitations": {
+      "name": "الدعوات التي أرسلتها",
+      "description": "عندما ينضم شخص دعوته."
+    },
+    "tenant_plans": {
+      "name": "خطة مؤسستك",
+      "description": "عندما تتغيّر خطة مؤسسة تملكها أو أحد حدودها."
+    },
+    "platform_tenants": {
+      "name": "المؤسسات",
+      "description": "عندما تحصل مؤسسة على أول مالك أو تتغيّر حالتها أو تُحذف."
+    }
   }
 }

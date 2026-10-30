@@ -44,32 +44,63 @@
   "notificationEmail": {
     "button": "Open {brandName}",
     "fallback": "If the button doesn’t work, copy this link into your browser:",
-    "footer": "You received this because something changed that concerns you. You choose which notifications also come by email in your preferences."
+    "footer": "You received this because emails for “{categoryName}” are on. You can turn them off in your preferences.",
+    "requiredFooter": "You always receive this email, because it concerns your access."
   },
   "notifications": {
     "member.role_changed": {
       "title": "Your role changed in {tenantName}",
-      "body": "You are now {role} in {tenantName}."
+      "body": "{actorName} changed your role from {oldRoleName} to {newRoleName}.",
+      "without": {
+        "actorName": {
+          "body": "The platform changed your role from {oldRoleName} to {newRoleName}."
+        }
+      }
     },
     "member.removed": {
       "title": "You were removed from {tenantName}",
-      "body": "You no longer have access to {tenantName}."
+      "body": "{actorName} removed you from {tenantName}. You no longer have access to it."
     },
-    "invitation.accepted": {
-      "title": "{memberName} accepted your invitation",
-      "body": "{memberName} joined {tenantName}."
+    "member.joined": {
+      "title": "{memberName} joined {tenantName}",
+      "body": "{memberName} accepted your invitation and joined as {roleName}."
     },
     "tenant.plan_changed": {
       "title": "The plan of {tenantName} changed",
-      "body": "Open the plan to see what {tenantName} can use now."
+      "body": "Your organisation moved from {oldPlanName} to {newPlanName}."
+    },
+    "tenant.entitlement_override_set": {
+      "title": "{keyName} changed for {tenantName}",
+      "body": "The platform set {keyName} to {value} for your organisation. Your plan's value applies again on {expiresAt}.",
+      "without": {
+        "expiresAt": {
+          "body": "The platform set {keyName} to {value} for your organisation."
+        }
+      }
+    },
+    "tenant.entitlement_override_removed": {
+      "title": "{keyName} follows the plan again in {tenantName}",
+      "body": "The platform removed the override of {keyName}. Your plan's value applies again: {value}."
     },
     "tenant.owner_joined": {
       "title": "{tenantName} has its first Owner",
       "body": "{ownerName} joined {tenantName} as its first Owner."
     },
-    "tenant.status_changed": {
-      "title": "{tenantName} was {status}",
-      "body": "A system admin {status} {tenantName}."
+    "tenant.suspended": {
+      "title": "{tenantName} was suspended",
+      "body": "{actorName} suspended {tenantName}."
+    },
+    "tenant.reactivated": {
+      "title": "{tenantName} was reactivated",
+      "body": "{actorName} reactivated {tenantName}."
+    },
+    "tenant.closed": {
+      "title": "{tenantName} was closed",
+      "body": "{actorName} closed {tenantName}. Its data is deleted on {reopenableUntil}."
+    },
+    "tenant.reopened": {
+      "title": "{tenantName} was reopened",
+      "body": "{actorName} reopened {tenantName}."
     },
     "tenant.purged": {
       "title": "{tenantName} was deleted",
@@ -77,11 +108,38 @@
     }
   },
   "notificationWords": {
-    "status": {
-      "suspended": "suspended",
-      "reactivated": "reactivated",
-      "closed": "closed",
-      "reopened": "reopened"
+    "person": {
+      "deleted": "Deleted user",
+      "unnamed": "Unnamed user"
+    },
+    "entitlementValue": {
+      "unlimited": "unlimited",
+      "on": "on",
+      "off": "off",
+      "not_set": "not set"
+    },
+    "entitlementKey": {
+      "members.max": "Members limit",
+      "roles.custom": "Custom roles",
+      "roles.custom.max": "Custom roles limit"
+    }
+  },
+  "notificationCategories": {
+    "access": {
+      "name": "Your access",
+      "description": "When your role changes or you are removed from an organisation."
+    },
+    "member_invitations": {
+      "name": "Invitations you sent",
+      "description": "When a person you invited joins."
+    },
+    "tenant_plans": {
+      "name": "Your organisation's plan",
+      "description": "When the plan or a limit of an organisation you own changes."
+    },
+    "platform_tenants": {
+      "name": "Organisations",
+      "description": "When an organisation gets its first Owner, changes its status or is deleted."
     }
   }
 }

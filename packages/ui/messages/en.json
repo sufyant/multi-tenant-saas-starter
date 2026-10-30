@@ -228,5 +228,23 @@
     "save": "Save preferences",
     "saved": "Preferences saved",
     "notSaved": "Preferences not saved"
+  },
+  "notificationCategories": {
+    "access": {
+      "name": "Your access",
+      "description": "When your role changes or you are removed from an organisation."
+    },
+    "member_invitations": {
+      "name": "Invitations you sent",
+      "description": "When a person you invited joins."
+    },
+    "tenant_plans": {
+      "name": "Your organisation's plan",
+      "description": "When the plan or a limit of an organisation you own changes."
+    },
+    "platform_tenants": {
+      "name": "Organisations",
+      "description": "When an organisation gets its first Owner, changes its status or is deleted."
+    }
   }
 }

@@ -44,32 +44,63 @@
   "notificationEmail": {
     "button": "{brandName} uygulamasını aç",
     "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
-    "footer": "Bu e-postayı sizi ilgilendiren bir değişiklik olduğu için aldınız. Hangi bildirimlerin e-postayla da geleceğini tercihlerinizden seçersiniz."
+    "footer": "Bu e-postayı “{categoryName}” e-postaları açık olduğu için aldınız. Tercihlerinizden kapatabilirsiniz.",
+    "requiredFooter": "Bu e-postayı her zaman alırsınız, çünkü erişiminizle ilgilidir."
   },
   "notifications": {
     "member.role_changed": {
       "title": "{tenantName} kuruluşundaki rolünüz değişti",
-      "body": "{tenantName} kuruluşunda artık {role} rolündesiniz."
+      "body": "{actorName}, rolünüzü {oldRoleName} rolünden {newRoleName} rolüne değiştirdi.",
+      "without": {
+        "actorName": {
+          "body": "Platform, rolünüzü {oldRoleName} rolünden {newRoleName} rolüne değiştirdi."
+        }
+      }
     },
     "member.removed": {
       "title": "{tenantName} kuruluşundan çıkarıldınız",
-      "body": "Artık {tenantName} kuruluşuna erişiminiz yok."
+      "body": "{actorName} sizi {tenantName} kuruluşundan çıkardı. Artık erişiminiz yok."
     },
-    "invitation.accepted": {
-      "title": "{memberName} davetinizi kabul etti",
-      "body": "{memberName}, {tenantName} kuruluşuna katıldı."
+    "member.joined": {
+      "title": "{memberName}, {tenantName} kuruluşuna katıldı",
+      "body": "{memberName} davetinizi kabul etti ve {roleName} olarak katıldı."
     },
     "tenant.plan_changed": {
       "title": "{tenantName} kuruluşunun planı değişti",
-      "body": "{tenantName} kuruluşunun artık neleri kullanabildiğini görmek için planı açın."
+      "body": "Kuruluşunuz {oldPlanName} planından {newPlanName} planına geçti."
+    },
+    "tenant.entitlement_override_set": {
+      "title": "{tenantName} için {keyName} değişti",
+      "body": "Platform, kuruluşunuz için {keyName} değerini {value} yaptı. Planınızın değeri {expiresAt} tarihinde yeniden geçerli olur.",
+      "without": {
+        "expiresAt": {
+          "body": "Platform, kuruluşunuz için {keyName} değerini {value} yaptı."
+        }
+      }
+    },
+    "tenant.entitlement_override_removed": {
+      "title": "{tenantName} için {keyName} yeniden planı izliyor",
+      "body": "Platform, {keyName} için tanımlanan istisnayı kaldırdı. Planınızın değeri yeniden geçerli: {value}."
     },
     "tenant.owner_joined": {
       "title": "{tenantName} ilk Sahibine kavuştu",
       "body": "{ownerName}, {tenantName} kuruluşuna ilk Sahip olarak katıldı."
     },
-    "tenant.status_changed": {
-      "title": "{tenantName} {status}",
-      "body": "Bir sistem yöneticisi {tenantName} kuruluşunun durumunu değiştirdi: {status}."
+    "tenant.suspended": {
+      "title": "{tenantName} askıya alındı",
+      "body": "{actorName}, {tenantName} kuruluşunu askıya aldı."
+    },
+    "tenant.reactivated": {
+      "title": "{tenantName} yeniden etkinleştirildi",
+      "body": "{actorName}, {tenantName} kuruluşunu yeniden etkinleştirdi."
+    },
+    "tenant.closed": {
+      "title": "{tenantName} kapatıldı",
+      "body": "{actorName}, {tenantName} kuruluşunu kapattı. Verileri {reopenableUntil} tarihinde silinir."
+    },
+    "tenant.reopened": {
+      "title": "{tenantName} yeniden açıldı",
+      "body": "{actorName}, {tenantName} kuruluşunu yeniden açtı."
     },
     "tenant.purged": {
       "title": "{tenantName} silindi",
@@ -77,11 +108,38 @@
     }
   },
   "notificationWords": {
-    "status": {
-      "suspended": "askıya alındı",
-      "reactivated": "yeniden etkinleştirildi",
-      "closed": "kapatıldı",
-      "reopened": "yeniden açıldı"
+    "person": {
+      "deleted": "Silinmiş kullanıcı",
+      "unnamed": "Adsız kullanıcı"
+    },
+    "entitlementValue": {
+      "unlimited": "sınırsız",
+      "on": "açık",
+      "off": "kapalı",
+      "not_set": "ayarlanmadı"
+    },
+    "entitlementKey": {
+      "members.max": "Üye sınırı",
+      "roles.custom": "Özel roller",
+      "roles.custom.max": "Özel rol sınırı"
+    }
+  },
+  "notificationCategories": {
+    "access": {
+      "name": "Erişiminiz",
+      "description": "Rolünüz değiştiğinde veya bir kuruluştan çıkarıldığınızda."
+    },
+    "member_invitations": {
+      "name": "Gönderdiğiniz davetler",
+      "description": "Davet ettiğiniz biri katıldığında."
+    },
+    "tenant_plans": {
+      "name": "Kuruluşunuzun planı",
+      "description": "Sahibi olduğunuz bir kuruluşun planı veya bir sınırı değiştiğinde."
+    },
+    "platform_tenants": {
+      "name": "Kuruluşlar",
+      "description": "Bir kuruluş ilk Sahibine kavuştuğunda, durumu değiştiğinde veya silindiğinde."
     }
   }
 }

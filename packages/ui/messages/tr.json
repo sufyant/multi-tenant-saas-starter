@@ -228,5 +228,23 @@
     "save": "Tercihleri kaydet",
     "saved": "Tercihler kaydedildi",
     "notSaved": "Tercihler kaydedilmedi"
+  },
+  "notificationCategories": {
+    "access": {
+      "name": "Erişiminiz",
+      "description": "Rolünüz değiştiğinde veya bir kuruluştan çıkarıldığınızda."
+    },
+    "member_invitations": {
+      "name": "Gönderdiğiniz davetler",
+      "description": "Davet ettiğiniz biri katıldığında."
+    },
+    "tenant_plans": {
+      "name": "Kuruluşunuzun planı",
+      "description": "Sahibi olduğunuz bir kuruluşun planı veya bir sınırı değiştiğinde."
+    },
+    "platform_tenants": {
+      "name": "Kuruluşlar",
+      "description": "Bir kuruluş ilk Sahibine kavuştuğunda, durumu değiştiğinde veya silindiğinde."
+    }
   }
 }

@@ -3,27 +3,57 @@
     "types": {
       "member.role_changed": {
         "title": "Your role changed in {{tenantName}}",
-        "body": "You are now {{role}} in {{tenantName}}."
+        "body": "{{actorName}} changed your role from {{oldRoleName}} to {{newRoleName}}.",
+        "without": {
+          "actorName": {
+            "body": "The platform changed your role from {{oldRoleName}} to {{newRoleName}}."
+          }
+        }
       },
       "member.removed": {
         "title": "You were removed from {{tenantName}}",
-        "body": "You no longer have access to {{tenantName}}."
+        "body": "{{actorName}} removed you from {{tenantName}}. You no longer have access to it."
       },
-      "invitation.accepted": {
-        "title": "{{memberName}} accepted your invitation",
-        "body": "{{memberName}} joined {{tenantName}}."
+      "member.joined": {
+        "title": "{{memberName}} joined {{tenantName}}",
+        "body": "{{memberName}} accepted your invitation and joined as {{roleName}}."
       },
       "tenant.plan_changed": {
         "title": "The plan of {{tenantName}} changed",
-        "body": "Open the plan to see what {{tenantName}} can use now."
+        "body": "Your organisation moved from {{oldPlanName}} to {{newPlanName}}."
+      },
+      "tenant.entitlement_override_set": {
+        "title": "{{keyName}} changed for {{tenantName}}",
+        "body": "The platform set {{keyName}} to {{value}} for your organisation. Your plan's value applies again on {{expiresAt}}.",
+        "without": {
+          "expiresAt": {
+            "body": "The platform set {{keyName}} to {{value}} for your organisation."
+          }
+        }
+      },
+      "tenant.entitlement_override_removed": {
+        "title": "{{keyName}} follows the plan again in {{tenantName}}",
+        "body": "The platform removed the override of {{keyName}}. Your plan's value applies again: {{value}}."
       },
       "tenant.owner_joined": {
         "title": "{{tenantName}} has its first Owner",
         "body": "{{ownerName}} joined {{tenantName}} as its first Owner."
       },
-      "tenant.status_changed": {
-        "title": "{{tenantName}} was {{status}}",
-        "body": "A system admin {{status}} {{tenantName}}."
+      "tenant.suspended": {
+        "title": "{{tenantName}} was suspended",
+        "body": "{{actorName}} suspended {{tenantName}}."
+      },
+      "tenant.reactivated": {
+        "title": "{{tenantName}} was reactivated",
+        "body": "{{actorName}} reactivated {{tenantName}}."
+      },
+      "tenant.closed": {
+        "title": "{{tenantName}} was closed",
+        "body": "{{actorName}} closed {{tenantName}}. Its data is deleted on {{reopenableUntil}}."
+      },
+      "tenant.reopened": {
+        "title": "{{tenantName}} was reopened",
+        "body": "{{actorName}} reopened {{tenantName}}."
       },
       "tenant.purged": {
         "title": "{{tenantName}} was deleted",
@@ -31,39 +61,100 @@
       }
     },
     "words": {
-      "status": {
-        "suspended": "suspended",
-        "reactivated": "reactivated",
-        "closed": "closed",
-        "reopened": "reopened"
+      "person": {
+        "deleted": "Deleted user",
+        "unnamed": "Unnamed user"
+      },
+      "entitlementValue": {
+        "unlimited": "unlimited",
+        "on": "on",
+        "off": "off",
+        "not_set": "not set"
+      },
+      "entitlementKey": {
+        "members.max": "Members limit",
+        "roles.custom": "Custom roles",
+        "roles.custom.max": "Custom roles limit"
       }
+    },
+    "categories": {
+      "access": {
+        "name": "Your access",
+        "description": "When your role changes or you are removed from an organisation."
+      },
+      "member_invitations": {
+        "name": "Invitations you sent",
+        "description": "When a person you invited joins."
+      },
+      "tenant_plans": {
+        "name": "Your organisation's plan",
+        "description": "When the plan or a limit of an organisation you own changes."
+      },
+      "platform_tenants": {
+        "name": "Organisations",
+        "description": "When an organisation gets its first Owner, changes its status or is deleted."
+      }
+    },
+    "footers": {
+      "category": "You received this because emails for “{{categoryName}}” are on. You can turn them off in your preferences.",
+      "required": "You always receive this email, because it concerns your access."
     }
   },
   "tr": {
     "types": {
       "member.role_changed": {
         "title": "{{tenantName}} kuruluşundaki rolünüz değişti",
-        "body": "{{tenantName}} kuruluşunda artık {{role}} rolündesiniz."
+        "body": "{{actorName}}, rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi.",
+        "without": {
+          "actorName": {
+            "body": "Platform, rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi."
+          }
+        }
       },
       "member.removed": {
         "title": "{{tenantName}} kuruluşundan çıkarıldınız",
-        "body": "Artık {{tenantName}} kuruluşuna erişiminiz yok."
+        "body": "{{actorName}} sizi {{tenantName}} kuruluşundan çıkardı. Artık erişiminiz yok."
       },
-      "invitation.accepted": {
-        "title": "{{memberName}} davetinizi kabul etti",
-        "body": "{{memberName}}, {{tenantName}} kuruluşuna katıldı."
+      "member.joined": {
+        "title": "{{memberName}}, {{tenantName}} kuruluşuna katıldı",
+        "body": "{{memberName}} davetinizi kabul etti ve {{roleName}} olarak katıldı."
       },
       "tenant.plan_changed": {
         "title": "{{tenantName}} kuruluşunun planı değişti",
-        "body": "{{tenantName}} kuruluşunun artık neleri kullanabildiğini görmek için planı açın."
+        "body": "Kuruluşunuz {{oldPlanName}} planından {{newPlanName}} planına geçti."
+      },
+      "tenant.entitlement_override_set": {
+        "title": "{{tenantName}} için {{keyName}} değişti",
+        "body": "Platform, kuruluşunuz için {{keyName}} değerini {{value}} yaptı. Planınızın değeri {{expiresAt}} tarihinde yeniden geçerli olur.",
+        "without": {
+          "expiresAt": {
+            "body": "Platform, kuruluşunuz için {{keyName}} değerini {{value}} yaptı."
+          }
+        }
+      },
+      "tenant.entitlement_override_removed": {
+        "title": "{{tenantName}} için {{keyName}} yeniden planı izliyor",
+        "body": "Platform, {{keyName}} için tanımlanan istisnayı kaldırdı. Planınızın değeri yeniden geçerli: {{value}}."
       },
       "tenant.owner_joined": {
         "title": "{{tenantName}} ilk Sahibine kavuştu",
         "body": "{{ownerName}}, {{tenantName}} kuruluşuna ilk Sahip olarak katıldı."
       },
-      "tenant.status_changed": {
-        "title": "{{tenantName}} {{status}}",
-        "body": "Bir sistem yöneticisi {{tenantName}} kuruluşunun durumunu değiştirdi: {{status}}."
+      "tenant.suspended": {
+        "title": "{{tenantName}} askıya alındı",
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu askıya aldı."
+      },
+      "tenant.reactivated": {
+        "title": "{{tenantName}} yeniden etkinleştirildi",
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden etkinleştirdi."
+      },
+      "tenant.closed": {
+        "title": "{{tenantName}} kapatıldı",
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu kapattı. Verileri {{reopenableUntil}} tarihinde silinir."
+      },
+      "tenant.reopened": {
+        "title": "{{tenantName}} yeniden açıldı",
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden açtı."
       },
       "tenant.purged": {
         "title": "{{tenantName}} silindi",
@@ -71,52 +162,144 @@
       }
     },
     "words": {
-      "status": {
-        "suspended": "askıya alındı",
-        "reactivated": "yeniden etkinleştirildi",
-        "closed": "kapatıldı",
-        "reopened": "yeniden açıldı"
+      "person": {
+        "deleted": "Silinmiş kullanıcı",
+        "unnamed": "Adsız kullanıcı"
+      },
+      "entitlementValue": {
+        "unlimited": "sınırsız",
+        "on": "açık",
+        "off": "kapalı",
+        "not_set": "ayarlanmadı"
+      },
+      "entitlementKey": {
+        "members.max": "Üye sınırı",
+        "roles.custom": "Özel roller",
+        "roles.custom.max": "Özel rol sınırı"
       }
+    },
+    "categories": {
+      "access": {
+        "name": "Erişiminiz",
+        "description": "Rolünüz değiştiğinde veya bir kuruluştan çıkarıldığınızda."
+      },
+      "member_invitations": {
+        "name": "Gönderdiğiniz davetler",
+        "description": "Davet ettiğiniz biri katıldığında."
+      },
+      "tenant_plans": {
+        "name": "Kuruluşunuzun planı",
+        "description": "Sahibi olduğunuz bir kuruluşun planı veya bir sınırı değiştiğinde."
+      },
+      "platform_tenants": {
+        "name": "Kuruluşlar",
+        "description": "Bir kuruluş ilk Sahibine kavuştuğunda, durumu değiştiğinde veya silindiğinde."
+      }
+    },
+    "footers": {
+      "category": "Bu e-postayı “{{categoryName}}” e-postaları açık olduğu için aldınız. Tercihlerinizden kapatabilirsiniz.",
+      "required": "Bu e-postayı her zaman alırsınız, çünkü erişiminizle ilgilidir."
     }
   },
   "ar": {
     "types": {
       "member.role_changed": {
         "title": "تغيّر دورك في {{tenantName}}",
-        "body": "أصبح دورك الآن {{role}} في {{tenantName}}."
+        "body": "غيّر {{actorName}} دورك من {{oldRoleName}} إلى {{newRoleName}}.",
+        "without": {
+          "actorName": {
+            "body": "غيّرت المنصة دورك من {{oldRoleName}} إلى {{newRoleName}}."
+          }
+        }
       },
       "member.removed": {
-        "title": "تمت إزالتك من {{tenantName}}",
-        "body": "لم يعد لديك وصول إلى {{tenantName}}."
+        "title": "أُزلت من {{tenantName}}",
+        "body": "أزالك {{actorName}} من {{tenantName}}. لم يعد لديك وصول إليها."
       },
-      "invitation.accepted": {
-        "title": "قبل {{memberName}} دعوتك",
-        "body": "انضم {{memberName}} إلى {{tenantName}}."
+      "member.joined": {
+        "title": "انضم {{memberName}} إلى {{tenantName}}",
+        "body": "قبل {{memberName}} دعوتك وانضم بدور {{roleName}}."
       },
       "tenant.plan_changed": {
         "title": "تغيّرت خطة {{tenantName}}",
-        "body": "افتح الخطة لترى ما يمكن لـ {{tenantName}} استخدامه الآن."
+        "body": "انتقلت مؤسستك من {{oldPlanName}} إلى {{newPlanName}}."
+      },
+      "tenant.entitlement_override_set": {
+        "title": "تغيّر {{keyName}} في {{tenantName}}",
+        "body": "جعلت المنصة {{keyName}} لمؤسستك {{value}}. تعود قيمة خطتك للتطبيق في {{expiresAt}}.",
+        "without": {
+          "expiresAt": {
+            "body": "جعلت المنصة {{keyName}} لمؤسستك {{value}}."
+          }
+        }
+      },
+      "tenant.entitlement_override_removed": {
+        "title": "يتبع {{keyName}} الخطة من جديد في {{tenantName}}",
+        "body": "أزالت المنصة الاستثناء من {{keyName}}. تعود قيمة خطتك للتطبيق: {{value}}."
       },
       "tenant.owner_joined": {
-        "title": "أصبح لـ {{tenantName}} أول مالك",
+        "title": "لدى {{tenantName}} أول مالك",
         "body": "انضم {{ownerName}} إلى {{tenantName}} بصفته أول مالك."
       },
-      "tenant.status_changed": {
-        "title": "{{tenantName}}: {{status}}",
-        "body": "غيّر مسؤول النظام حالة {{tenantName}}: {{status}}."
+      "tenant.suspended": {
+        "title": "عُلّقت {{tenantName}}",
+        "body": "علّق {{actorName}} {{tenantName}}."
+      },
+      "tenant.reactivated": {
+        "title": "أُعيد تفعيل {{tenantName}}",
+        "body": "أعاد {{actorName}} تفعيل {{tenantName}}."
+      },
+      "tenant.closed": {
+        "title": "أُغلقت {{tenantName}}",
+        "body": "أغلق {{actorName}} {{tenantName}}. تُحذف بياناتها في {{reopenableUntil}}."
+      },
+      "tenant.reopened": {
+        "title": "أُعيد فتح {{tenantName}}",
+        "body": "أعاد {{actorName}} فتح {{tenantName}}."
       },
       "tenant.purged": {
-        "title": "تم حذف {{tenantName}}",
-        "body": "اكتمل حذف {{tenantName}}. لم تعد بياناتها موجودة."
+        "title": "حُذفت {{tenantName}}",
+        "body": "اكتمل حذف {{tenantName}}. بياناتها لم تعد موجودة."
       }
     },
     "words": {
-      "status": {
-        "suspended": "تم تعليقها",
-        "reactivated": "أعيد تفعيلها",
-        "closed": "تم إغلاقها",
-        "reopened": "أعيد فتحها"
+      "person": {
+        "deleted": "مستخدم محذوف",
+        "unnamed": "مستخدم بلا اسم"
+      },
+      "entitlementValue": {
+        "unlimited": "غير محدود",
+        "on": "مفعّل",
+        "off": "متوقف",
+        "not_set": "غير محدد"
+      },
+      "entitlementKey": {
+        "members.max": "حد الأعضاء",
+        "roles.custom": "الأدوار المخصصة",
+        "roles.custom.max": "حد الأدوار المخصصة"
       }
+    },
+    "categories": {
+      "access": {
+        "name": "وصولك",
+        "description": "عندما يتغيّر دورك أو تُزال من مؤسسة."
+      },
+      "member_invitations": {
+        "name": "الدعوات التي أرسلتها",
+        "description": "عندما ينضم شخص دعوته."
+      },
+      "tenant_plans": {
+        "name": "خطة مؤسستك",
+        "description": "عندما تتغيّر خطة مؤسسة تملكها أو أحد حدودها."
+      },
+      "platform_tenants": {
+        "name": "المؤسسات",
+        "description": "عندما تحصل مؤسسة على أول مالك أو تتغيّر حالتها أو تُحذف."
+      }
+    },
+    "footers": {
+      "category": "تلقيت هذه الرسالة لأن رسائل «{{categoryName}}» مفعّلة. يمكنك إيقافها من تفضيلاتك.",
+      "required": "تتلقى هذه الرسالة دائمًا لأنها تخص وصولك."
     }
   }
 }
