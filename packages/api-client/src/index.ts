@@ -6,10 +6,21 @@ export {
   type ApiClientOptions,
   type ApiFetchInit,
   apiFetch,
+  apiUrl,
   configureApiClient,
   type ErrorType,
   ProblemDetailsError,
 } from "./mutator";
+export {
+  type Bell,
+  type BellSignal,
+  bellKeysOf,
+  bellOf,
+  everyBellKey,
+  personalBell,
+  platformBell,
+  tenantBell,
+} from "./notifications";
 export {
   declaredResponseHeaders,
   findOperation,

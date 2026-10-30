@@ -99,7 +99,7 @@ public sealed class NotificationTextTests
     }
 
     [Theory]
-    [InlineData(Language.En, "The platform set Members limit to 50 for your organisation. Your plan's value applies again on 1 Jan 2027.")]
+    [InlineData(Language.En, "The platform set Members limit to 50 for your organisation. Your plan’s value applies again on 1 Jan 2027.")]
     [InlineData(Language.Tr, "Platform, kuruluşunuz için Üye sınırı değerini 50 yaptı. Planınızın değeri 1 Oca 2027 tarihinde yeniden geçerli olur.")]
     public void Render_AnOverrideWithAnEnd_WritesTheKeyTheValueAndTheEnd(Language language, string body)
     {

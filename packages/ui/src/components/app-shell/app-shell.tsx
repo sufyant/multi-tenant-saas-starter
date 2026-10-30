@@ -76,6 +76,8 @@ export type AppShellProps = {
   orgMenu?: ReactNode;
   /** The platform app's ink label. It starts the top bar on every page. */
   platformLabel?: string;
+  /** The notification bell: it sits before the avatar on every signed-in page (the Notifications boards). */
+  bell?: ReactNode;
   userMenu: ReactNode;
   labels: AppShellLabels;
   /** The link element: Next.js's Link in the apps. */
@@ -104,7 +106,7 @@ const flipRail = (open: boolean) => {
 
 /**
  * The frame of every signed-in page (the AppShell README): an icon rail at the start edge, a top bar with the breadcrumb, search
- * (⌘K) and the user's avatar, and the content. From bp-desktop the rail expands to show its labels: the toggle at its foot or ⌘B,
+ * (⌘K), the notification bell and the user's avatar, and the content. From bp-desktop the rail expands to show its labels: the toggle at its foot or ⌘B,
  * saved in a cookie (F49). On a tablet it stays the icon rail; under bp-tablet it becomes a drawer from the start edge. The whole
  * shell mirrors in right-to-left.
  */
@@ -117,6 +119,7 @@ export function AppShell({
   crumbs,
   orgMenu,
   platformLabel,
+  bell,
   userMenu,
   labels,
   linkComponent: Link = "a",
@@ -336,6 +339,7 @@ export function AppShell({
             icon={<Icon icon={SearchIcon} />}
             onClick={() => setPalette(true)}
           />
+          {bell}
           {userMenu}
         </header>
         <main className="mx-auto w-full max-w-content-max flex-1 px-4 py-6 tablet:px-6">

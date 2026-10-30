@@ -37,6 +37,15 @@ export default defineConfig({
           ListPlatformAuditEntries: {
             query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
           },
+          ListNotifications: {
+            query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
+          },
+          ListMyNotifications: {
+            query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
+          },
+          ListPlatformNotifications: {
+            query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
+          },
         },
       },
     },

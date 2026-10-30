@@ -14,6 +14,7 @@ import {
   mockApi,
   mockAuditLog,
   mockMembers,
+  mockNotifications,
   mockTenantStatus,
   northwind,
   type Plan,
@@ -556,3 +557,50 @@ for (const { language, scheme, size } of reviewVariants)
         fullPage: true,
       });
     });
+
+// The bell and its list (the Notifications boards): the popover on a desktop, the full screen on a phone in Arabic, and
+// Settings › Notifications on a tablet in Turkish.
+test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockApi(page);
+  await mockNotifications(page);
+
+  await page.goto(`/${northwind.slug}`);
+  await page.getByRole("button", { name: "Notifications, 1 unread" }).click();
+  await page.getByRole("link", { name: /Your role/ }).waitFor();
+
+  await page.screenshot({
+    path: `${folder}/notifications-en-light-desktop.png`,
+  });
+});
+
+test("Screenshot_Notifications_ArabicDarkPhone", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApi(page, Language.Ar);
+  await mockNotifications(page);
+
+  await page.goto(`/${northwind.slug}`);
+  await page.getByRole("button", { name: /الإشعارات/ }).click();
+  await page.getByRole("dialog").waitFor();
+
+  await page.screenshot({ path: `${folder}/notifications-ar-dark-phone.png` });
+});
+
+test("Screenshot_NotificationSettings_TurkishLightTablet", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await mockApi(page, Language.Tr);
+  await mockNotifications(page);
+
+  await page.goto(`/${northwind.slug}/settings/notifications`);
+  await page.getByRole("switch", { name: "Erişiminiz" }).waitFor();
+
+  await page.screenshot({
+    path: `${folder}/notification-settings-tr-light-tablet.png`,
+  });
+});

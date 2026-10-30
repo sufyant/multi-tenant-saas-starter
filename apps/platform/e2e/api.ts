@@ -5,6 +5,7 @@ import {
   AuditOperation,
   AuditTargetResponseKind,
   BuiltInRole,
+  type ChangeEmailPreferencesRequest,
   type CreateTenantRequest,
   type CursorPageOfAuditEntryResponse,
   EntitlementOverrideResponseState,
@@ -16,6 +17,10 @@ import {
   LimitKey,
   type MakeOwnerRequest,
   type MeResponse,
+  NotificationCategory,
+  NotificationLinkResponseKind,
+  type NotificationResponse,
+  NotificationType,
   type PlanResponse,
   type RenameMeRequest,
   type RoleResponse,
@@ -695,4 +700,85 @@ export async function mockOverride(
       return route.fulfill({ json: tenantPlan(tenantId) });
     },
   );
+}
+
+export const shannonSuspended: NotificationResponse = {
+  id: "0198f0a2-0000-7000-8000-0000000000b1",
+  type: NotificationType.TenantSuspended,
+  category: NotificationCategory.PlatformTenants,
+  title: "Shannon Studio was suspended",
+  body: "Ciara Byrne suspended Shannon Studio. Its members can’t open it until it is reactivated.",
+  link: {
+    kind: NotificationLinkResponseKind.PlatformTenant,
+    tenantId: organisations.shannon.id,
+  },
+  createdAt: "2026-10-16T13:29:00Z",
+  readAt: null,
+};
+
+/** What the notification answers recorded: the notifications opened, the bell marked read and the preferences saved. */
+export type NotificationCalls = {
+  opened: string[];
+  markedAll: number;
+  saved: ChangeEmailPreferencesRequest[];
+};
+
+/**
+ * The platform's bell, its live stream and the email preferences. The stream holds its answer until the test calls `arrive`, then
+ * sends one `notifications` event for the platform's bell and ends, with a long retry so the browser does not open it again.
+ */
+export async function mockNotifications(page: Page) {
+  const unread = { count: 1 };
+  const calls: NotificationCalls = { opened: [], markedAll: 0, saved: [] };
+  let signal = () => {};
+  const sent = new Promise<void>((resolve) => {
+    signal = resolve;
+  });
+  await page.route("**/api/v1/platform/notifications/unread-count", (route) =>
+    route.fulfill({ json: { unread: unread.count } }),
+  );
+  await page.route("**/api/v1/platform/notifications", (route) =>
+    route.fulfill({ json: { items: [shannonSuspended], nextCursor: null } }),
+  );
+  await page.route("**/api/v1/platform/notifications/read", (route) => {
+    calls.markedAll += 1;
+    unread.count = 0;
+    return route.fulfill({ status: 204 });
+  });
+  await page.route("**/api/v1/me/notifications/*/read", (route) => {
+    calls.opened.push(route.request().url());
+    return route.fulfill({ status: 204 });
+  });
+  await page.route("**/api/v1/me/notifications/stream", async (route) => {
+    await sent;
+    await route.fulfill({
+      headers: { "Content-Type": "text/event-stream" },
+      body: 'retry: 600000\nevent: notifications\ndata: {"scope":"platform"}\n\n',
+    });
+  });
+  await page.route("**/api/v1/me/email-preferences", (route) => {
+    if (route.request().method() === "PUT") {
+      const body = route
+        .request()
+        .postDataJSON() as ChangeEmailPreferencesRequest;
+      calls.saved.push(body);
+      return route.fulfill({ json: body });
+    }
+    return route.fulfill({
+      json: {
+        enabled: true,
+        categories: [
+          { category: NotificationCategory.PlatformTenants, enabled: false },
+        ],
+      },
+    });
+  });
+  return {
+    calls,
+    /** One new notification: the count goes up and the stream says so. */
+    arrive: () => {
+      unread.count += 1;
+      signal();
+    },
+  };
 }

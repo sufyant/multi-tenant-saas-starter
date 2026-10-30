@@ -229,6 +229,34 @@
     "saved": "Preferences saved",
     "notSaved": "Preferences not saved"
   },
+  "notifications": {
+    "bell": "Notifications",
+    "bellUnread": "Notifications, {count} unread",
+    "title": "Notifications",
+    "markAll": "Mark all as read",
+    "markAllFailed": "Notifications not marked as read",
+    "unread": "Unread",
+    "newCount": "{count, plural, one {# new} other {# new}}",
+    "announce": "{count, plural, one {# new notification} other {# new notifications}}",
+    "more": "Load more",
+    "end": "No older notifications.",
+    "loading": "Loading notifications",
+    "emptyTitle": "No notifications",
+    "emptyText": "When something changes for you, it shows here.",
+    "errorTitle": "Notifications didn’t load",
+    "offlineTitle": "You’re offline.",
+    "offlineText": "New notifications show when you’re back online."
+  },
+  "notificationPreferences": {
+    "email": "Email",
+    "main": "Email notifications",
+    "mainText": "Send me an email for the categories I turn on.",
+    "removedNote": "We always email you if you are removed from an organisation.",
+    "offHint": "Turn on email notifications to choose categories.",
+    "save": "Save",
+    "saved": "Notification settings saved.",
+    "notSaved": "Notification settings not saved"
+  },
   "notificationCategories": {
     "access": {
       "name": "Your access",

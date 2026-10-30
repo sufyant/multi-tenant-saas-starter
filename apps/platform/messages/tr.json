@@ -27,7 +27,8 @@
     "platform": "Platform",
     "systemAdmins": "Sistem yöneticileri",
     "activity": "Etkinlik",
-    "plans": "Planlar"
+    "plans": "Planlar",
+    "notifications": "Bildirimler"
   },
   "preferences": {
     "title": "Tercihler",
@@ -517,5 +518,9 @@
     "overrideApplies": "{key}: istisnası ({value}) geçerli kalır.",
     "changed": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planına geçti",
     "notChanged": "Plan değiştirilmedi"
+  },
+  "notificationSettings": {
+    "title": "Bildirimler",
+    "text": "Bildirimleri uygulamada her zaman görürsünüz. Hangilerinin e-postayla da gönderileceğini seçin. Bu ayarlar size aittir; platformda ve her kuruluşta aynıdır."
   }
 }

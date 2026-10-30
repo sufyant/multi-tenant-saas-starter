@@ -54,6 +54,9 @@ const tenantsOf = (total: number) =>
 
 const answers = (total: number) => [
   tenantsOf(total),
+  http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () =>
+    HttpResponse.json({ unread: 4 }),
+  ),
   getGetMyTenantMockHandler(
     getGetMyTenantResponseMock({
       ...northwind,
@@ -79,6 +82,18 @@ const shell = () => (
 );
 
 describe("TenantShell", () => {
+  it("TenantShell_TopBar_ShowsTheOrganisationsBell", async () => {
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    // The pending shell's top bar gives way to the shell's, so the test finds the bell first.
+    const bell = await screen.findByRole("button", {
+      name: "Notifications, 4 unread",
+    });
+    expect(screen.getByRole("banner")).toContainElement(bell);
+  });
+
   it("TenantShell_RailSettings_OpensGeneral", async () => {
     server.use(...answers(1));
 
