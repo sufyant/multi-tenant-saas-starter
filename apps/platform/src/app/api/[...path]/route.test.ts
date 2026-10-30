@@ -226,10 +226,8 @@ describe("BFF stream", () => {
   /** The API's stream: its first event, then nothing until the test ends it. */
   function upstream() {
     let end = () => {};
-    let seen: Request | undefined;
     server.use(
-      http.get(`${api}/v1/me/notifications/stream`, ({ request }) => {
-        seen = request;
+      http.get(`${api}/v1/me/notifications/stream`, () => {
         const body = new ReadableStream<Uint8Array>({
           start(controller) {
             controller.enqueue(encoder.encode(event));
@@ -244,7 +242,7 @@ describe("BFF stream", () => {
         });
       }),
     );
-    return { end: () => end(), request: () => seen };
+    return { end: () => end() };
   }
 
   it("StreamNotifications_FirstEvent_ReachesTheClientBeforeTheStreamEnds", async () => {
@@ -274,6 +272,8 @@ describe("BFF stream", () => {
 
   it("StreamNotifications_BrowserCloses_AbortsTheUpstreamRequest", async () => {
     const stream = upstream();
+    // MSW does not hand an aborted call's signal to its handler, so the test reads the signal that the BFF gave fetch.
+    const send = vi.spyOn(globalThis, "fetch");
     const browser = new AbortController();
 
     await GET(
@@ -283,7 +283,9 @@ describe("BFF stream", () => {
     );
     browser.abort();
 
-    expect(stream.request()?.signal.aborted).toBe(true);
+    expect(send.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    send.mockRestore();
+    stream.end();
   });
 
   it("GetMe_JsonAnswer_AddsNoStreamHeader", async () => {

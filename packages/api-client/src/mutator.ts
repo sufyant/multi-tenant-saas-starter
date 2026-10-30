@@ -39,6 +39,13 @@ export function configureApiClient(options: ApiClientOptions): void {
   configured = options;
 }
 
+/** The address of an API path through the base: `/api/v1/...` in the apps. The live stream's `EventSource` opens it (F6). */
+export function apiUrl(path: string): string {
+  if (!configured)
+    throw new Error("configureApiClient() must run before the first API call.");
+  return `${configured.baseUrl}${path}`;
+}
+
 /**
  * The one place in this package that calls `fetch`. It sends the request, returns the parsed body on success and throws a
  * ProblemDetailsError on an error status. No retry, no cache, no token: the BFF adds the token.
@@ -47,14 +54,13 @@ export const apiFetch = async <T>(
   path: string,
   { onResponseHeaders, ...init }: ApiFetchInit = {},
 ): Promise<T> => {
-  if (!configured)
-    throw new Error("configureApiClient() must run before the first API call.");
-  const headers = new Headers(configured.headers);
+  const url = apiUrl(path);
+  const headers = new Headers(configured?.headers);
   new Headers(init.headers).forEach((value, name) => {
     headers.set(name, value);
   });
 
-  const response = await fetch(`${configured.baseUrl}${path}`, {
+  const response = await fetch(url, {
     ...init,
     headers,
   });

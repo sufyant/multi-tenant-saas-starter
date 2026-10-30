@@ -16,6 +16,10 @@ const hopByHop =
 // A separator or a dot written in percent-encoding could leave /v1 once the API decodes it.
 const encodedSeparator = /%2f|%5c|%2e/i;
 const prefix = "/api";
+// A live stream (HTML Living Standard, "Server-sent events") passes as it comes: its cache rule, with no-transform so no proxy and
+// not Next.js's compression changes or holds it (RFC 9111, section 5.2.2.6), and no buffering in a proxy that reads X-Accel-Buffering.
+const eventStream = "text/event-stream";
+const streamHeaders = { "X-Accel-Buffering": "no" };
 
 function problem(status: number, code: ErrorCode): Response {
   return Response.json(
@@ -66,6 +70,8 @@ export function createBff({
         headers,
         body: hasBody ? await request.arrayBuffer() : undefined,
         redirect: "manual",
+        // A browser that leaves, such as a closed stream, ends the call to the API too.
+        signal: request.signal,
       });
     } catch {
       // The API did not answer: down, unreachable or timed out. The browser gets Problem Details, as for any error (F4).
@@ -79,6 +85,15 @@ export function createBff({
     ]) {
       const value = answer.headers.get(name);
       if (value !== null && !hopByHop.test(name)) passed.set(name, value);
+    }
+    if (passed.get("Content-Type")?.startsWith(eventStream)) {
+      const cache = answer.headers.get("Cache-Control");
+      passed.set(
+        "Cache-Control",
+        cache ? `${cache}, no-transform` : "no-cache, no-transform",
+      );
+      for (const [name, value] of Object.entries(streamHeaders))
+        passed.set(name, value);
     }
     const location = passed.get("Location");
     if (location?.startsWith("/v1/"))
