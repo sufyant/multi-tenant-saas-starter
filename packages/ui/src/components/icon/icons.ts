@@ -1,6 +1,7 @@
 // The one place that imports lucide-react (F22). A component takes an icon from here and draws it through Icon; the shadcn
 // primitives in ../ui take theirs from here too.
 export {
+  BellIcon,
   Building2 as BuildingIcon,
   CheckIcon,
   ChevronDownIcon,
