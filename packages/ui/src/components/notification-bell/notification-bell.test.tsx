@@ -142,9 +142,10 @@ describe("NotificationBell", () => {
     const onOpenItem = vi.fn();
     render(bell({ onOpenItem }));
 
-    await userEvent.keyboard("{Control>}");
-    await userEvent.click(screen.getByRole("link", { name: /Deniz Arslan/ }));
-    await userEvent.keyboard("{/Control}");
+    // One user-event session keeps Control held for the click.
+    const user = userEvent.setup();
+    await user.keyboard("{Control>}");
+    await user.click(screen.getByRole("link", { name: /Deniz Arslan/ }));
 
     expect(onOpenItem).toHaveBeenCalledWith(joined, { follow: false });
   });

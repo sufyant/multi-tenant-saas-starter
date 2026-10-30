@@ -234,6 +234,7 @@
     "bellUnread": "Bildirimler, {count} okunmamış",
     "title": "Bildirimler",
     "markAll": "Tümünü okundu olarak işaretle",
+    "markAllFailed": "Bildirimler okundu olarak işaretlenmedi",
     "unread": "Okunmadı",
     "newCount": "{count, plural, one {# yeni} other {# yeni}}",
     "announce": "{count, plural, one {# yeni bildirim} other {# yeni bildirim}}",

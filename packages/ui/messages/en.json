@@ -234,6 +234,7 @@
     "bellUnread": "Notifications, {count} unread",
     "title": "Notifications",
     "markAll": "Mark all as read",
+    "markAllFailed": "Notifications not marked as read",
     "unread": "Unread",
     "newCount": "{count, plural, one {# new} other {# new}}",
     "announce": "{count, plural, one {# new notification} other {# new notifications}}",

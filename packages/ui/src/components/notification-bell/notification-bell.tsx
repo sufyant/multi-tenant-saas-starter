@@ -57,8 +57,11 @@ export type NotificationBellProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   list: NotificationListState;
-  /** The reader opened an item: mark it read and follow its link at once. */
-  onOpenItem: (entry: NotificationEntry) => void;
+  /**
+   * The reader opened an item: mark it read, and with `follow` close the bell and follow its link at once. A modified click opens
+   * the link in a new tab, as a link does, so `follow` is false and this tab stays.
+   */
+  onOpenItem: (entry: NotificationEntry, open: { follow: boolean }) => void;
   /** Marks read what this bell shows. */
   onMarkAll: () => void;
   markingAll: boolean;
@@ -294,7 +297,7 @@ function NotificationPanel({
   );
 }
 
-/** A click that opens the link in this tab. A modified click opens a new tab, as a link does, and still marks the item read. */
+/** A click that opens the link in this tab. A modified click opens a new tab, as a link does. */
 const plainClick = (event: MouseEvent) =>
   event.button === 0 &&
   !event.metaKey &&
@@ -312,7 +315,7 @@ function Item({
 }: {
   entry: NotificationEntry;
   fresh: boolean;
-  onOpen: (entry: NotificationEntry) => void;
+  onOpen: NotificationBellProps["onOpenItem"];
   timeZone?: string | null;
   linkComponent: ElementType;
   now?: Instant;
@@ -336,8 +339,9 @@ function Item({
         <Link
           href={entry.href}
           onClick={(event: MouseEvent) => {
-            if (plainClick(event)) event.preventDefault();
-            onOpen(entry);
+            const follow = plainClick(event);
+            if (follow) event.preventDefault();
+            onOpen(entry, { follow });
           }}
           className={cn(
             "text-body [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",

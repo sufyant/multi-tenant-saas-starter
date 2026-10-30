@@ -22,7 +22,7 @@ import { SettingsNav } from "@/shared/settings-nav";
 
 /**
  * Settings › You › Notifications (the NotificationPrefs boards): the person's email preferences, the same in every organisation.
- * The form is shared with the platform; the calls are here. The email's footer names this page.
+ * Both apps share the form; the calls are here. The email's footer names this page.
  */
 export function NotificationsPage() {
   const t = useTranslations();

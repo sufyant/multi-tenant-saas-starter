@@ -234,6 +234,7 @@
     "bellUnread": "الإشعارات، {count} غير مقروءة",
     "title": "الإشعارات",
     "markAll": "تحديد الكل كمقروء",
+    "markAllFailed": "لم تُحدَّد الإشعارات كمقروءة",
     "unread": "غير مقروء",
     "newCount": "{count, plural, one {إشعار جديد} other {إشعارات جديدة: #}}",
     "announce": "{count, plural, one {وصل إشعار جديد} other {وصلت إشعارات جديدة: #}}",

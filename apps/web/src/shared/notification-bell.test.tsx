@@ -170,9 +170,10 @@ describe("TenantBell failures", () => {
     );
     const item = await screen.findByRole("link", { name: /Deniz Arslan/ });
 
-    await userEvent.keyboard("{Control>}");
-    await userEvent.click(item);
-    await userEvent.keyboard("{/Control}");
+    // One user-event session keeps Control held for the click.
+    const user = userEvent.setup();
+    await user.keyboard("{Control>}");
+    await user.click(item);
 
     await vi.waitFor(() => expect(marked).toEqual([joined.id]));
     expect(push).not.toHaveBeenCalled();
