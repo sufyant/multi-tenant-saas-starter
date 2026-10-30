@@ -1424,7 +1424,6 @@ export const ReservedSlug = {
   Status: 'status',
   Support: 'support',
   Terms: 'terms',
-  Trpc: 'trpc',
   Www: 'www',
 } as const;
 

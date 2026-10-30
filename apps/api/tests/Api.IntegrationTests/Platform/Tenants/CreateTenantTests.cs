@@ -299,7 +299,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     [InlineData("settings")]
     [InlineData("sign-in")]
     [InlineData("help")]
-    [InlineData("trpc")]
+    [InlineData("sitemap")]
     public async Task CreateTenant_ReservedSlug_IsAValidationProblemForTheSlug(string slug)
     {
         var admin = await SystemAdminAsync();
@@ -311,12 +311,15 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
     }
 
-    // Only the whole slug is reserved: a slug that contains a reserved word is no route of the web.
-    [Fact]
-    public async Task CreateTenant_SlugThatContainsAReservedWord_IsCreated()
+    // A reserved slug is matched exactly: a slug that contains or starts with a reserved word is no route of the web, whose open routes
+    // match whole segments. trpc is no route of the web (step 33-frontend's review).
+    [Theory]
+    [InlineData("acme-settings")]
+    [InlineData("sign-inn")]
+    [InlineData("trpc")]
+    public async Task CreateTenant_SlugThatIsNoReservedSlugExactly_IsCreated(string slug)
     {
         var admin = await SystemAdminAsync();
-        var slug = $"acme-settings-{Guid.NewGuid():N}"[..24];
 
         var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = "ali@acme.com" }));
 

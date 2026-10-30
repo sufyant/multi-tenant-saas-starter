@@ -10528,7 +10528,6 @@
           "status",
           "support",
           "terms",
-          "trpc",
           "www"
         ],
         "type": "string",
@@ -10574,7 +10573,6 @@
           "Status",
           "Support",
           "Terms",
-          "Trpc",
           "Www"
         ]
       },
