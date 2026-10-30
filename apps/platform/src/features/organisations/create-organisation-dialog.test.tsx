@@ -263,7 +263,7 @@ describe("CreateOrganisationDialog", () => {
         [own.name, "Liffey Design"],
         [own.slug, "liffey-design"],
         [own.ownerEmail, "niamh@liffeydesign.example"],
-      ]) {
+      ] as const) {
         await userEvent.type(
           dialog.getByRole("textbox", { name: label }),
           value,

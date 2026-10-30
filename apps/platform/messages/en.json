@@ -123,6 +123,7 @@
     "nameTooLong": "Use 1 to {max} characters.",
     "slugInvalid": "Use lower-case letters, digits and single hyphens. Start and end with a letter or digit.",
     "slugTaken": "This slug is taken. Try another.",
+    "slugReserved": "This slug is reserved.",
     "emailInvalid": "Enter an email address like name@company.example.",
     "notCreated": "The organisation was not created.",
     "overview": "Overview",

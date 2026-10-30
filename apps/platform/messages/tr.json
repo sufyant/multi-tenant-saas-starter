@@ -123,6 +123,7 @@
     "nameTooLong": "1 ile {max} karakter arasında yazın.",
     "slugInvalid": "Küçük harf, rakam ve tek tire kullanın. Bir harf ya da rakamla başlayıp bitirin.",
     "slugTaken": "Bu kısa ad alınmış. Başka bir tane deneyin.",
+    "slugReserved": "Bu kısa ad ayrılmış.",
     "emailInvalid": "name@company.example gibi bir e-posta adresi girin.",
     "notCreated": "Kuruluş oluşturulmadı.",
     "overview": "Genel bakış",
