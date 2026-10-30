@@ -45,6 +45,7 @@
     "button": "Open {brandName}",
     "fallback": "If the button doesn’t work, copy this link into your browser:",
     "footer": "You got this email because email notifications for “{categoryName}” are on.",
+    "manage": "Manage email notifications",
     "requiredFooter": "We always send this email when you are removed from an organisation, so you know you no longer have access. It can’t be turned off."
   },
   "notifications": {

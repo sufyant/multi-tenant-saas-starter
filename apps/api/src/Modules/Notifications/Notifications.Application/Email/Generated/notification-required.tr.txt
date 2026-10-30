@@ -1,0 +1,10 @@
+Starter
+
+{{title}}
+
+{{body}}
+
+Starter uygulamasını aç:
+{{link}}
+
+{{footer}}

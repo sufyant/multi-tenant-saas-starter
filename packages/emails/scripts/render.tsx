@@ -61,6 +61,12 @@ const deletionWarning = (language: Language): DeletionWarningProps => ({
 
 const notification = (language: Language): NotificationProps => ({
   language,
+  ...placeholders("title", "body", "link", "footer", "preferencesLink"),
+});
+
+// A required type cannot be turned off, so its email has no link to the notifications page (U4).
+const requiredNotification = (language: Language): NotificationProps => ({
+  language,
   ...placeholders("title", "body", "link", "footer"),
 });
 
@@ -82,6 +88,12 @@ const emails: Email[] = [
     html: (language) => <Notification {...notification(language)} />,
     text: (language) => notificationText(notification(language)),
     subject: (language) => notificationSubject(notification(language)),
+  },
+  {
+    name: "notification-required",
+    html: (language) => <Notification {...requiredNotification(language)} />,
+    text: (language) => notificationText(requiredNotification(language)),
+    subject: (language) => notificationSubject(requiredNotification(language)),
   },
 ];
 

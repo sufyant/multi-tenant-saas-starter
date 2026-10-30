@@ -50,7 +50,7 @@ type LayoutProps = {
   language: Language;
   /** The line an inbox shows after the subject. */
   preheader: string;
-  footer: string;
+  footer: ReactNode;
   children: ReactNode;
 };
 

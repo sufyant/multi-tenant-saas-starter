@@ -7,6 +7,9 @@ public sealed class NotificationLinkOptions
 {
     public const string Section = "Notifications:Links";
 
+    // The page of the email preferences, the same path in both apps (U2).
+    public const string PreferencesPath = "/settings/notifications";
+
     public Uri? WebUrl { get; set; }
 
     public Uri? PlatformUrl { get; set; }
