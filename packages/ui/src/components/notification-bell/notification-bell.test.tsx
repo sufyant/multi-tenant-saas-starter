@@ -1,5 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
@@ -75,6 +75,17 @@ const scrollOf = () =>
   screen
     .getByRole("list", { name: "Notifications" })
     .closest("[data-slot='notification-scroll']") as HTMLElement;
+
+/** A screen under bp-tablet: the bell opens its full screen. */
+const asAPhone = () => {
+  document.documentElement.style.setProperty("--bp-tablet", "768px");
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -271,13 +282,7 @@ describe("NotificationBell", () => {
   });
 
   it("NotificationBell_Phone_OpensAFullScreenWithCloseAtTheStart", async () => {
-    document.documentElement.style.setProperty("--bp-tablet", "768px");
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: false,
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }));
+    asAPhone();
     const onOpenChange = vi.fn();
     render(bell({ onOpenChange }));
 
@@ -285,6 +290,30 @@ describe("NotificationBell", () => {
     const close = within(screenDialog).getByRole("button", { name: "Close" });
     await userEvent.click(close);
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  // The full screen is Base UI's Dialog, which has no swipe to dismiss (Base UI's Drawer has one). A drag down the list scrolls it.
+  it("NotificationBell_PhoneListDraggedDown_StaysOpen", () => {
+    asAPhone();
+    const onOpenChange = vi.fn();
+    render(bell({ onOpenChange }));
+    const list = scrollOf();
+
+    fireEvent.pointerDown(list, { pointerType: "touch", clientY: 100 });
+    fireEvent.touchStart(list, { touches: [{ clientX: 50, clientY: 100 }] });
+    fireEvent.pointerMove(list, { pointerType: "touch", clientY: 600 });
+    fireEvent.touchMove(list, { touches: [{ clientX: 50, clientY: 600 }] });
+    list.scrollTop = 300;
+    fireEvent.scroll(list);
+    fireEvent.touchEnd(list, {
+      changedTouches: [{ clientX: 50, clientY: 600 }],
+    });
+    fireEvent.pointerUp(list, { pointerType: "touch", clientY: 600 });
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("dialog", { name: "Notifications" }),
+    ).toBeInTheDocument();
   });
 
   it("NotificationBell_Open_HasNoAccessibilityViolation", async () => {
