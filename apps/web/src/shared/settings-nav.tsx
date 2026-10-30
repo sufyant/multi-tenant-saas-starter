@@ -6,16 +6,17 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCan, useTenant } from "./tenant-context";
 
-/** The settings pages of the SubNav. Each organisation page needs its read permission, and Preferences none (F5). */
+/** The settings pages of the SubNav. Each organisation page needs its read permission, and the pages of You none (F5). */
 export type SettingsPage =
   | "general"
   | "members"
   | "roles"
   | "activity"
-  | "preferences";
+  | "preferences"
+  | "notifications";
 
 /**
- * The SubNav of Settings (the Settings boards): Organisation (General, Members, Roles, Activity) and You (Preferences). An item shows
+ * The SubNav of Settings (the Settings boards): Organisation (General, Members, Roles, Activity) and You (Preferences, Notifications). An item shows
  * only with its read permission (F5), and a group without items does not show.
  */
 export function SettingsNav({ current }: { current: SettingsPage }) {
@@ -59,6 +60,11 @@ export function SettingsNav({ current }: { current: SettingsPage }) {
           id: "preferences",
           label: t("shell.preferences"),
           href: `${base}/preferences`,
+        },
+        {
+          id: "notifications",
+          label: t("shell.notifications"),
+          href: `${base}/notifications`,
         },
       ],
     },

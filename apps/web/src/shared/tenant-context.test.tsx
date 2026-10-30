@@ -29,6 +29,10 @@ import { renderWithProviders } from "../../test/render";
 import { problem, roleOf } from "../../test/tenant";
 import { TenantProvider, useCan, useTenant } from "./tenant-context";
 
+// "No access yet" holds the personal bell, whose items follow their links with the router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ signOut: vi.fn() }),
   useUser: () => ({

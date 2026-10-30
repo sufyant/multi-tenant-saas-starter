@@ -27,7 +27,8 @@
     "platform": "Platform",
     "systemAdmins": "مسؤولو النظام",
     "activity": "النشاط",
-    "plans": "الخطط"
+    "plans": "الخطط",
+    "notifications": "الإشعارات"
   },
   "preferences": {
     "title": "التفضيلات",
@@ -517,5 +518,9 @@
     "overrideApplies": "{key}: يبقى استثناؤها ({value}) ساريًا.",
     "changed": "نُقلت <bdi>{name}</bdi> إلى <bdi>{plan}</bdi>",
     "notChanged": "لم تتغيّر الخطة"
+  },
+  "notificationSettings": {
+    "title": "الإشعارات",
+    "text": "ترى الإشعارات دائمًا داخل التطبيق. اختر ما نرسله إليك أيضًا بالبريد الإلكتروني. هذه الإعدادات خاصة بك، وهي واحدة في المنصة وفي كل مؤسسة."
   }
 }

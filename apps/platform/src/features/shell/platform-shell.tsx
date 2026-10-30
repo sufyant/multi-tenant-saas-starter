@@ -27,6 +27,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { userNameOf } from "@/shared/name-of";
 import { NoAccess } from "@/shared/no-access";
+import { PlatformBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
 
 /** The tenant of an organisation's page, `/organisations/<id>`, or null on any other page. */
@@ -173,6 +174,7 @@ export function PlatformShell({
         logoHref="/"
         platformLabel={t("shell.platform")}
         crumbs={crumbs}
+        bell={admin && <PlatformBell />}
         userMenu={
           admin && (
             <UserMenu

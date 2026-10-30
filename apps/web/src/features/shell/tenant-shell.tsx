@@ -14,13 +14,14 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
+import { TenantBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useTenant } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
 
 /**
  * The tenant web's AppShell (F28, F30): Overview and Settings in the rail, the breadcrumb that starts with the organisation, the
- * OrgMenu when the user has more than one organisation, the UserMenu from GetMe, and ⌘K.
+ * OrgMenu when the user has more than one organisation, the organisation's notification bell, the UserMenu from GetMe, and ⌘K.
  */
 export function TenantShell({
   railExpanded,
@@ -91,6 +92,7 @@ function TenantFrame({
     roles: "settings.roles",
     activity: "settings.activity",
     preferences: "shell.preferences",
+    notifications: "shell.notifications",
   } as const;
   const crumbs = [
     { label: known?.tenant.name ?? "" },
@@ -145,6 +147,7 @@ function TenantFrame({
             />
           ) : undefined
         }
+        bell={known && <TenantBell tenantId={known.tenant.id} />}
         userMenu={
           me.data && (
             <UserMenu

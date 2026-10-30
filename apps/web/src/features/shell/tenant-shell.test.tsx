@@ -87,11 +87,11 @@ describe("TenantShell", () => {
 
     renderWithProviders(shell());
 
-    expect(
-      await within(screen.getByRole("banner")).findByRole("button", {
-        name: "Notifications, 4 unread",
-      }),
-    ).toBeInTheDocument();
+    // The pending shell's top bar gives way to the shell's, so the test finds the bell first.
+    const bell = await screen.findByRole("button", {
+      name: "Notifications, 4 unread",
+    });
+    expect(screen.getByRole("banner")).toContainElement(bell);
   });
 
   it("TenantShell_RailSettings_OpensGeneral", async () => {
