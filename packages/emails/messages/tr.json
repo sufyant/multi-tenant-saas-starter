@@ -40,5 +40,48 @@
     "moment": "{date}, saat {time} {zone}",
     "zone": "{city} ({offset})",
     "utc": "UTC"
+  },
+  "notificationEmail": {
+    "button": "{brandName} uygulamasını aç",
+    "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
+    "footer": "Bu e-postayı sizi ilgilendiren bir değişiklik olduğu için aldınız. Hangi bildirimlerin e-postayla da geleceğini tercihlerinizden seçersiniz."
+  },
+  "notifications": {
+    "member.role_changed": {
+      "title": "{tenantName} kuruluşundaki rolünüz değişti",
+      "body": "{tenantName} kuruluşunda artık {role} rolündesiniz."
+    },
+    "member.removed": {
+      "title": "{tenantName} kuruluşundan çıkarıldınız",
+      "body": "Artık {tenantName} kuruluşuna erişiminiz yok."
+    },
+    "invitation.accepted": {
+      "title": "{memberName} davetinizi kabul etti",
+      "body": "{memberName}, {tenantName} kuruluşuna katıldı."
+    },
+    "tenant.plan_changed": {
+      "title": "{tenantName} kuruluşunun planı değişti",
+      "body": "{tenantName} kuruluşunun artık neleri kullanabildiğini görmek için planı açın."
+    },
+    "tenant.owner_joined": {
+      "title": "{tenantName} ilk Sahibine kavuştu",
+      "body": "{ownerName}, {tenantName} kuruluşuna ilk Sahip olarak katıldı."
+    },
+    "tenant.status_changed": {
+      "title": "{tenantName} {status}",
+      "body": "Bir sistem yöneticisi {tenantName} kuruluşunun durumunu değiştirdi: {status}."
+    },
+    "tenant.purged": {
+      "title": "{tenantName} silindi",
+      "body": "{tenantName} kuruluşunun silinmesi tamamlandı. Verileri artık yok."
+    }
+  },
+  "notificationWords": {
+    "status": {
+      "suspended": "askıya alındı",
+      "reactivated": "yeniden etkinleştirildi",
+      "closed": "kapatıldı",
+      "reopened": "yeniden açıldı"
+    }
   }
 }

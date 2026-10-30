@@ -45,8 +45,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 
         await PurgeAsync(tenant.Id, ClosedAt);
 
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, entries 0");
-        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 4, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, entries 0, notifications 0");
+        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 4, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2");
         (await TombstoneOfAsync(tenant.Id)).ShouldBe($"Gone Ltd|{tenant.Slug}|Purged|-|-|t|2026-08-01");
         (await PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.closed|User, tenant.purged|Platform|-|Tenant|{tenant.Id}|Gone Ltd");
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
@@ -108,7 +108,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await PurgeAsync(tenant.Id, ClosedAt - TimeSpan.FromDays(3));
 
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 4, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 4, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2");
         (await SagaOfAsync(tenant.Id)).ShouldBeNull();
     }
 
@@ -267,7 +267,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         });
 
     // A closed tenant with one of each kind of data: two members, a custom role with two permissions, a cancelled invitation, an override,
-    // an entry of its own log and one of the platform's.
+    // an entry of its own log and one of the platform's, and two notifications about it, of two users in two bells (U8).
     private async Task<(Guid Id, string Slug)> ClosedTenantWithDataAsync(string name)
     {
         var tenant = await _testData.AddTenantAsync(status: "Closed", name: name, closedAt: ClosedAt, createdAt: new DateTimeOffset(2026, 8, 1, 8, 0, 0, TimeSpan.Zero));
@@ -286,6 +286,9 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             VALUES (gen_random_uuid(), '{tenant.Id}', '{ClosedAt:O}', 'Platform', 'Command', 'tenant.closed', 'Tenant', '{tenant.Id}', '{name}');
             INSERT INTO audit.platform_entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, target_name)
             VALUES ('{Guid.CreateVersion7(ClosedAt)}', '{ClosedAt:O}', 'User', gen_random_uuid(), 'Command', 'tenant.closed', 'Tenant', '{tenant.Id}', '{name}');
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES (gen_random_uuid(), gen_random_uuid(), '{tenant.Id}', 'tenant.plan_changed', 'Tenant', jsonb_build_object('tenantName', '{name}'), '{ClosedAt:O}'),
+                (gen_random_uuid(), '{admin}', '{tenant.Id}', 'tenant.status_changed', 'Platform', jsonb_build_object('tenantName', '{name}', 'status', 'closed'), '{ClosedAt:O}');
             """,
             _databaseName);
         return tenant;
@@ -302,7 +305,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
                 'role_permissions ' || (SELECT count(*) FROM control_plane.role_permissions WHERE tenant_id = '{tenantId}'),
                 'tenant_summaries ' || (SELECT count(*) FROM control_plane.tenant_summaries WHERE tenant_id = '{tenantId}'),
                 'entitlement_overrides ' || (SELECT count(*) FROM control_plane.entitlement_overrides WHERE tenant_id = '{tenantId}'),
-                'entries ' || (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}'))
+                'entries ' || (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}'),
+                'notifications ' || (SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}'))
             """,
             _databaseName);
 

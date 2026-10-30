@@ -51,6 +51,9 @@
       "forbidden": "You do not have permission to do this.",
       "unauthenticated": "Your session has ended. Sign in again."
     },
+    "email_preferences": {
+      "not_found": "This page does not exist."
+    },
     "idempotency": {
       "key_in_progress": "This request is still running. Wait a moment, then check the result.",
       "key_invalid": "The request could not be sent. Reload the page and try again.",
@@ -73,6 +76,9 @@
       "last_owner": "An organisation needs at least one Owner.",
       "not_found": "This member is no longer in the organisation.",
       "owner_requires_owner": "Only an Owner can change or remove an Owner."
+    },
+    "notification": {
+      "not_found": "This page does not exist."
     },
     "paging": {
       "cursor_invalid": "The list could not continue. Reload the page.",

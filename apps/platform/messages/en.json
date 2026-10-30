@@ -371,6 +371,7 @@
         "reactivated": "<actor></actor> reactivated the user <target></target>.",
         "renamed": "{self, select, yes {<actor></actor> changed their name.} other {<actor></actor> renamed the user <target></target>.}}",
         "deleted": "{actorKind, select, platform {A user was deleted.} other {<actor></actor> deleted a user.}}",
+        "email_preferences_changed": "<actor></actor> changed their preferences.",
         "preferences_changed": "<actor></actor> changed their preferences."
       },
       "system_admin": {

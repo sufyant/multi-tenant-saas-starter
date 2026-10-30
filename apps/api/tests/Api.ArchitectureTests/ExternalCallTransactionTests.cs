@@ -7,6 +7,7 @@ using ControlPlane.Contracts.Tenants;
 using JasperFx;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Email;
+using Notifications.Application.Notifications.SendNotificationEmail;
 using Wolverine.Runtime.Handlers;
 
 namespace Api.ArchitectureTests;
@@ -42,6 +43,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(OpenSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand),
                 typeof(InvitationReadyEvent),
                 typeof(TenantPurgeWarningReadyEvent),
+                typeof(SendNotificationEmailCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

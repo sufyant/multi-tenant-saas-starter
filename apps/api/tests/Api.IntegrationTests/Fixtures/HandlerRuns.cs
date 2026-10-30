@@ -22,6 +22,13 @@ public sealed class HandlerRuns
 
     public IEnumerable<HandlerRun> In(string host) => _runs.Where(run => run.Host == host).Select(run => run.Run);
 
+    // The runs of a host without the notifications that an event fans out (U3) and the deletion of a deleted user's notifications (U8),
+    // which run in the worker beside each flow's own handlers, and of which a test of another flow waits for none.
+    public IEnumerable<HandlerRun> WithoutNotificationsIn(string host) =>
+        In(host).Where(run => !run.Handler.Name.StartsWith("Notify", StringComparison.Ordinal)
+            && run.Handler.Name != "DeleteUserNotificationsHandler"
+            && run.Message.Name is not ("DeliverNotificationCommand" or "SendNotificationEmailCommand"));
+
     internal void Record(string host, HandlerRun run) => _runs.Enqueue((host, run));
 }
 

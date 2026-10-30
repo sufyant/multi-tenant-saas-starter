@@ -65,7 +65,8 @@ public static class ChangeMemberRoleHandler
                     oldRole.Id,
                     oldRole.BuiltIn is not null,
                     role.Id,
-                    role.BuiltIn is not null),
+                    role.BuiltIn is not null,
+                    tenant.Name),
             ]);
     }
 }

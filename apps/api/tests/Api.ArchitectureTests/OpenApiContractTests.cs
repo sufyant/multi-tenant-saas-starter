@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
+using Notifications.Domain;
 using SharedKernel;
 
 namespace Api.ArchitectureTests;
@@ -43,7 +44,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string EnumNames = "x-enumNames";
 
     // The enums the host adds to fields that are strings in C# (N11i, N11j): the permissions and the audit operations.
-    private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema];
+    private const string NotificationTypeSchema = "#/components/schemas/NotificationType";
+
+    private const string NotificationCategorySchema = "#/components/schemas/NotificationCategory";
+
+    private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema, NotificationTypeSchema, NotificationCategorySchema];
 
     private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
 
@@ -291,6 +296,31 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         declared.ShouldNotBeEmpty();
         documented.ShouldBe(string.Join(", ", declared));
+    }
+
+    // U1: the notification types and categories are the two schemas NotificationType and NotificationCategory, with every value of the
+    // catalog, and every field named category, and the type beside it, refers to them.
+    [Fact]
+    public void BuildOpenApiDocument_NotificationTypesAndCategories_ListTheCatalogAndAreReferredToByTheirFields()
+    {
+        var types = EnumOf(Schemas().Single(schema => schema.Name == "NotificationType").Value);
+        var categories = EnumOf(Schemas().Single(schema => schema.Name == "NotificationCategory").Value);
+        var referring = Schemas()
+            .Where(schema => schema.Value.TryGetProperty("properties", out _))
+            .SelectMany(schema => schema.Value.GetProperty("properties").EnumerateObject()
+                .Where(property => ReferencesIn(property.Value).Any(reference => reference is NotificationTypeSchema or NotificationCategorySchema))
+                .Select(property => $"{schema.Name}.{property.Name}"));
+
+        types.ShouldBe(string.Join(", ", NotificationCatalog.Kinds.Keys.Order(StringComparer.Ordinal)));
+        categories.ShouldBe(string.Join(", ", NotificationCatalog.Categories));
+        referring.ShouldBe(
+            [
+                "CategoryEmailPreferenceRequest.category",
+                "CategoryEmailPreferenceResponse.category",
+                "NotificationResponse.type",
+                "NotificationResponse.category",
+            ],
+            ignoreOrder: true);
     }
 
     // N11j and K3: the operation of an entry of either audit log is the one schema AuditOperation. A field is found by its name, as the

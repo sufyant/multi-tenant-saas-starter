@@ -40,5 +40,48 @@
     "moment": "{date} الساعة {time} {zone}",
     "zone": "بتوقيت {city} ({offset})",
     "utc": "بالتوقيت العالمي (UTC)"
+  },
+  "notificationEmail": {
+    "button": "افتح {brandName}",
+    "fallback": "إذا لم يعمل الزر، فانسخ هذا الرابط والصقه في متصفحك:",
+    "footer": "وصلك هذا البريد لأن أمرًا يخصك قد تغيّر. يمكنك من تفضيلاتك اختيار الإشعارات التي تصلك عبر البريد الإلكتروني أيضًا."
+  },
+  "notifications": {
+    "member.role_changed": {
+      "title": "تغيّر دورك في {tenantName}",
+      "body": "أصبح دورك الآن {role} في {tenantName}."
+    },
+    "member.removed": {
+      "title": "تمت إزالتك من {tenantName}",
+      "body": "لم يعد لديك وصول إلى {tenantName}."
+    },
+    "invitation.accepted": {
+      "title": "قبل {memberName} دعوتك",
+      "body": "انضم {memberName} إلى {tenantName}."
+    },
+    "tenant.plan_changed": {
+      "title": "تغيّرت خطة {tenantName}",
+      "body": "افتح الخطة لترى ما يمكن لـ {tenantName} استخدامه الآن."
+    },
+    "tenant.owner_joined": {
+      "title": "أصبح لـ {tenantName} أول مالك",
+      "body": "انضم {ownerName} إلى {tenantName} بصفته أول مالك."
+    },
+    "tenant.status_changed": {
+      "title": "{tenantName}: {status}",
+      "body": "غيّر مسؤول النظام حالة {tenantName}: {status}."
+    },
+    "tenant.purged": {
+      "title": "تم حذف {tenantName}",
+      "body": "اكتمل حذف {tenantName}. لم تعد بياناتها موجودة."
+    }
+  },
+  "notificationWords": {
+    "status": {
+      "suspended": "تم تعليقها",
+      "reactivated": "أعيد تفعيلها",
+      "closed": "تم إغلاقها",
+      "reopened": "أعيد فتحها"
+    }
   }
 }

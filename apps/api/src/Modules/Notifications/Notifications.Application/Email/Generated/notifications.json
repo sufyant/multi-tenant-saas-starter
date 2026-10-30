@@ -1,0 +1,122 @@
+{
+  "en": {
+    "types": {
+      "member.role_changed": {
+        "title": "Your role changed in {{tenantName}}",
+        "body": "You are now {{role}} in {{tenantName}}."
+      },
+      "member.removed": {
+        "title": "You were removed from {{tenantName}}",
+        "body": "You no longer have access to {{tenantName}}."
+      },
+      "invitation.accepted": {
+        "title": "{{memberName}} accepted your invitation",
+        "body": "{{memberName}} joined {{tenantName}}."
+      },
+      "tenant.plan_changed": {
+        "title": "The plan of {{tenantName}} changed",
+        "body": "Open the plan to see what {{tenantName}} can use now."
+      },
+      "tenant.owner_joined": {
+        "title": "{{tenantName}} has its first Owner",
+        "body": "{{ownerName}} joined {{tenantName}} as its first Owner."
+      },
+      "tenant.status_changed": {
+        "title": "{{tenantName}} was {{status}}",
+        "body": "A system admin {{status}} {{tenantName}}."
+      },
+      "tenant.purged": {
+        "title": "{{tenantName}} was deleted",
+        "body": "The deletion of {{tenantName}} finished. Its data is gone."
+      }
+    },
+    "words": {
+      "status": {
+        "suspended": "suspended",
+        "reactivated": "reactivated",
+        "closed": "closed",
+        "reopened": "reopened"
+      }
+    }
+  },
+  "tr": {
+    "types": {
+      "member.role_changed": {
+        "title": "{{tenantName}} kuruluşundaki rolünüz değişti",
+        "body": "{{tenantName}} kuruluşunda artık {{role}} rolündesiniz."
+      },
+      "member.removed": {
+        "title": "{{tenantName}} kuruluşundan çıkarıldınız",
+        "body": "Artık {{tenantName}} kuruluşuna erişiminiz yok."
+      },
+      "invitation.accepted": {
+        "title": "{{memberName}} davetinizi kabul etti",
+        "body": "{{memberName}}, {{tenantName}} kuruluşuna katıldı."
+      },
+      "tenant.plan_changed": {
+        "title": "{{tenantName}} kuruluşunun planı değişti",
+        "body": "{{tenantName}} kuruluşunun artık neleri kullanabildiğini görmek için planı açın."
+      },
+      "tenant.owner_joined": {
+        "title": "{{tenantName}} ilk Sahibine kavuştu",
+        "body": "{{ownerName}}, {{tenantName}} kuruluşuna ilk Sahip olarak katıldı."
+      },
+      "tenant.status_changed": {
+        "title": "{{tenantName}} {{status}}",
+        "body": "Bir sistem yöneticisi {{tenantName}} kuruluşunun durumunu değiştirdi: {{status}}."
+      },
+      "tenant.purged": {
+        "title": "{{tenantName}} silindi",
+        "body": "{{tenantName}} kuruluşunun silinmesi tamamlandı. Verileri artık yok."
+      }
+    },
+    "words": {
+      "status": {
+        "suspended": "askıya alındı",
+        "reactivated": "yeniden etkinleştirildi",
+        "closed": "kapatıldı",
+        "reopened": "yeniden açıldı"
+      }
+    }
+  },
+  "ar": {
+    "types": {
+      "member.role_changed": {
+        "title": "تغيّر دورك في {{tenantName}}",
+        "body": "أصبح دورك الآن {{role}} في {{tenantName}}."
+      },
+      "member.removed": {
+        "title": "تمت إزالتك من {{tenantName}}",
+        "body": "لم يعد لديك وصول إلى {{tenantName}}."
+      },
+      "invitation.accepted": {
+        "title": "قبل {{memberName}} دعوتك",
+        "body": "انضم {{memberName}} إلى {{tenantName}}."
+      },
+      "tenant.plan_changed": {
+        "title": "تغيّرت خطة {{tenantName}}",
+        "body": "افتح الخطة لترى ما يمكن لـ {{tenantName}} استخدامه الآن."
+      },
+      "tenant.owner_joined": {
+        "title": "أصبح لـ {{tenantName}} أول مالك",
+        "body": "انضم {{ownerName}} إلى {{tenantName}} بصفته أول مالك."
+      },
+      "tenant.status_changed": {
+        "title": "{{tenantName}}: {{status}}",
+        "body": "غيّر مسؤول النظام حالة {{tenantName}}: {{status}}."
+      },
+      "tenant.purged": {
+        "title": "تم حذف {{tenantName}}",
+        "body": "اكتمل حذف {{tenantName}}. لم تعد بياناتها موجودة."
+      }
+    },
+    "words": {
+      "status": {
+        "suspended": "تم تعليقها",
+        "reactivated": "أعيد تفعيلها",
+        "closed": "تم إغلاقها",
+        "reopened": "أعيد فتحها"
+      }
+    }
+  }
+}

@@ -47,6 +47,8 @@ public sealed class FailedStartTests
         ["Host__Authentication__Issuer"] = TestTokens.Issuer,
         ["ControlPlane__Clerk__SecretKey"] = "sk_test_unused",
         ["ControlPlane__Invitations__AcceptUrl"] = ApiFactory.AcceptUrl,
+        ["Notifications__Links__WebUrl"] = ApiFactory.WebUrl,
+        ["Notifications__Links__PlatformUrl"] = ApiFactory.PlatformUrl,
         ["ControlPlane__SystemAdmins__RootEmails__0"] = ApiFactory.RootEmail,
         ["ASPNETCORE_URLS"] = $"http://127.0.0.1:{ports.Public}",
         ["Host__ManagementPort"] = ports.Management.ToString(CultureInfo.InvariantCulture),

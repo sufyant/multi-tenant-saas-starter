@@ -286,6 +286,7 @@
       },
       "user": {
         "deleted": "<actor></actor> deleted the account of <target></target>.",
+        "email_preferences_changed": "<actor></actor> changed their preferences.",
         "preferences_changed": "<actor></actor> changed their preferences.",
         "reactivated": "<actor></actor> reactivated the account of <target></target>.",
         "renamed": "<actor></actor> changed the name of <target></target>.",

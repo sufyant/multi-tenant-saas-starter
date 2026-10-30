@@ -468,6 +468,6 @@ public sealed partial class NamesAndPlacesTests
     [GeneratedRegex(@"^(public|internal)( (sealed|static|abstract|partial))* (class|record|struct|interface|enum) (?<name>\w+)", RegexOptions.Multiline)]
     private static partial Regex TopLevelType();
 
-    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|Permissions\.g|AuditOperations|\w+Module|\w+Infrastructure)\.cs$")]
+    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|Permissions\.g|AuditOperations|NotificationCatalog|\w+Module|\w+Infrastructure)\.cs$")]
     private static partial Regex SharedByTheModule();
 }

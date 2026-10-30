@@ -58,6 +58,8 @@ public static class AuditOperations
 
     public const string UserDeleted = "user.deleted";
 
+    public const string UserEmailPreferencesChanged = "user.email_preferences_changed";
+
     public const string UserPreferencesChanged = "user.preferences_changed";
 
     public const string UserReactivated = "user.reactivated";

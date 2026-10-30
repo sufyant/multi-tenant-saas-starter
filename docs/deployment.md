@@ -599,7 +599,7 @@ These shared variables exist already. Their values change to the custom domains.
 | Shared variable | Value | Why |
 | --- | --- | --- |
 | `Host__Authentication__AuthorizedParties__0` | `https://<web domain>` | The API accepts a token only from an origin that this list names (the token's `azp`) |
-| `Host__Authentication__AuthorizedParties__1` | `https://<platform domain>` | The same, for the platform app, which runs on an origin of its own |
+| `Host__Authentication__AuthorizedParties__1` | `https://<platform domain>` | The same, for the platform app, which runs on an origin of its own. `.railway/railway.ts` also gives `__0` and `__1` to the API services as `Notifications__Links__WebUrl` and `Notifications__Links__PlatformUrl`, the targets of a notification email's button (step 33), so no shared variable is added for them |
 | `ControlPlane__Invitations__AcceptUrl` | `https://<web domain>/invitations/accept` | The invitation email links to the web app's accept page (F44 in `docs/frontend/ARCHITECTURE.md`) |
 
 One shared variable is new:

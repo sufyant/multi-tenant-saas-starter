@@ -3,6 +3,7 @@ using Audit.Api;
 using ControlPlane.Api;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.Users;
+using Notifications.Api;
 
 namespace Api.ArchitectureTests;
 
@@ -14,6 +15,9 @@ public sealed class DomainNameMapTests
     private static readonly Type ResponseStatus = typeof(ControlPlaneModule).Assembly.GetType("ControlPlane.Api.Statuses.ResponseStatus", throwOnError: true)!;
 
     private static readonly Type AuditResponseStatus = typeof(AuditModule).Assembly.GetType("Audit.Api.Statuses.ResponseStatus", throwOnError: true)!;
+
+    private static readonly Type NotificationsResponseStatus =
+        typeof(NotificationsModule).Assembly.GetType("Notifications.Api.Statuses.ResponseStatus", throwOnError: true)!;
 
     private static readonly string[] TenantStatusNames = NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.TenantStatus");
 
@@ -35,6 +39,8 @@ public sealed class DomainNameMapTests
     public static TheoryData<UserResponseStatus> UserFilters => [.. Enum.GetValues<UserResponseStatus>()];
 
     public static TheoryData<string> AuditActorKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditActorKind")];
+
+    public static TheoryData<string> NotificationLinkKinds => [.. NamesOf("Notifications.Domain", "Notifications.Domain.Notifications.NotificationLinkKind")];
 
     public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditTargetKind")];
 
@@ -115,6 +121,11 @@ public sealed class DomainNameMapTests
     {
         AuditMap("OfTarget", kind).ShouldNotBeNull();
     }
+
+    [Theory]
+    [MemberData(nameof(NotificationLinkKinds))]
+    public void MapNotificationLinkKind_EveryNameOfNotifications_HasAResponseValue(string kind) =>
+        NotificationsResponseStatus.GetMethod("OfLink", [typeof(string)])!.Invoke(null, [kind]).ShouldNotBeNull();
 
     private static object? Map(string method, string name) => ResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
 

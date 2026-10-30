@@ -15,6 +15,7 @@ namespace ControlPlane.Contracts.Members;
 /// <param name="OldRoleBuiltIn">Whether the role the member had is built in.</param>
 /// <param name="NewRoleId">The id of the role the member has now.</param>
 /// <param name="NewRoleBuiltIn">Whether the role the member has now is built in.</param>
+/// <param name="TenantName">The tenant's name at that moment, for a notification. None in an event of the version before step 33.</param>
 [MessageName("member-role-changed")]
 public sealed record MemberRoleChangedEvent(
     Guid EventId,
@@ -27,4 +28,5 @@ public sealed record MemberRoleChangedEvent(
     Guid OldRoleId,
     bool OldRoleBuiltIn,
     Guid NewRoleId,
-    bool NewRoleBuiltIn);
+    bool NewRoleBuiltIn,
+    string? TenantName = null);

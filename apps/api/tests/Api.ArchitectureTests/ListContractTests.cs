@@ -16,7 +16,9 @@ public sealed class ListContractTests : IAsyncLifetime
 
     private static readonly string[] CursorParameters = ["cursor", "limit"];
 
-    private static readonly string[] CursorLists = ["ListAuditEntries", "ListPlatformAuditEntries"];
+    // K5: the audit logs and the bells (U7) read newest first by a cursor.
+    private static readonly string[] CursorLists =
+        ["ListAuditEntries", "ListPlatformAuditEntries", "ListNotifications", "ListMyNotifications", "ListPlatformNotifications"];
 
     // Step r13: the System admins "Add" dialog finds a person by the whole address. An email filter is plain equality on the address in
     // its one form, never a search; q searches.
@@ -102,7 +104,7 @@ public sealed class ListContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public void BuildOpenApiDocument_ListsWithACursor_AreTheAuditLogsOnly()
+    public void BuildOpenApiDocument_ListsWithACursor_AreTheAuditLogsAndTheBellsOnly()
     {
         var withACursor = CursorListsOf().Select(list => list.Id);
 
@@ -115,7 +117,15 @@ public sealed class ListContractTests : IAsyncLifetime
     {
         var parameters = CursorListsOf().Select(list => $"{list.Id}: {string.Join(", ", QueryParametersOf(list.Operation).Select(parameter => parameter.Name).Order(StringComparer.Ordinal))}");
 
-        parameters.ShouldBe(["ListAuditEntries: cursor, limit", "ListPlatformAuditEntries: cursor, limit, tenantId"], ignoreOrder: true);
+        parameters.ShouldBe(
+            [
+                "ListAuditEntries: cursor, limit",
+                "ListPlatformAuditEntries: cursor, limit, tenantId",
+                "ListNotifications: cursor, limit",
+                "ListMyNotifications: cursor, limit",
+                "ListPlatformNotifications: cursor, limit",
+            ],
+            ignoreOrder: true);
     }
 
     [Fact]

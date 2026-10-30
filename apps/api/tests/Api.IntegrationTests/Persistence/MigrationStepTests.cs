@@ -77,10 +77,12 @@ public sealed class MigrationStepTests(Database database)
         first.ExitCode.ShouldBe(0, first.Output);
         first.Output.ShouldContain("Migrated the control_plane schema:");
         first.Output.ShouldContain("Migrated the audit schema:");
+        first.Output.ShouldContain("Migrated the notifications schema:");
         first.Output.ShouldContain("Migrated the api schema:");
-        first.Output.ShouldContain("Migration finished: the schemas api, control_plane, audit and the message storage in wolverine are up to date");
+        first.Output.ShouldContain("Migration finished: the schemas api, control_plane, notifications, audit and the message storage in wolverine are up to date");
         again.Output.ShouldContain("Migrated the control_plane schema: 0 migrations applied");
         again.Output.ShouldContain("Migrated the audit schema: 0 migrations applied");
+        again.Output.ShouldContain("Migrated the notifications schema: 0 migrations applied");
         again.Output.ShouldContain("Migrated the api schema: 0 migrations applied");
     }
 

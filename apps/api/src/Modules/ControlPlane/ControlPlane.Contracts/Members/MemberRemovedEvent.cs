@@ -12,6 +12,7 @@ namespace ControlPlane.Contracts.Members;
 /// <param name="Role">The name of the role the member had: <c>owner</c>, <c>admin</c>, <c>member</c> or a custom role's.</param>
 /// <param name="RoleId">The id of that role.</param>
 /// <param name="RoleBuiltIn">Whether that role is built in.</param>
+/// <param name="TenantName">The tenant's name at that moment, for a notification. None in an event of the version before step 33.</param>
 [MessageName("member-removed")]
 public sealed record MemberRemovedEvent(
     Guid EventId,
@@ -21,4 +22,5 @@ public sealed record MemberRemovedEvent(
     Guid RemovedBy,
     string Role,
     Guid RoleId,
-    bool RoleBuiltIn);
+    bool RoleBuiltIn,
+    string? TenantName = null);

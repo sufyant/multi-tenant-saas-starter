@@ -42,6 +42,41 @@ public sealed class UserDirectory(ControlPlaneDbContext controlPlane, ReadCache 
             user => new UserName(DisplayName(user.FirstName, user.LastName), user.DeletedAt is not null));
     }
 
+    public async Task<IReadOnlyList<UserContact>> FindContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken)
+    {
+        var users = await controlPlane.Users
+            .Where(user => userIds.Contains(user.Id))
+            .Select(user => new { user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt, user.SuspendedAt })
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return [.. users.Select(user => new UserContact(
+            user.Id, user.Email, DisplayName(user.FirstName, user.LastName), user.Language, user.DeletedAt is null && user.SuspendedAt is null))];
+    }
+
+    public async Task<UserContact?> FindContactAsync(string externalUserId, CancellationToken cancellationToken)
+    {
+        var userId = await controlPlane.Users
+            .Where(user => user.ExternalId == externalUserId)
+            .Select(user => (Guid?)user.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+        return userId is { } id ? (await ((IUserDirectory)this).FindContactsAsync([id], cancellationToken)).SingleOrDefault() : null;
+    }
+
+    public async Task<IReadOnlyList<Guid>> ListSystemAdminIdsAsync(CancellationToken cancellationToken) =>
+        await controlPlane.SystemAdmins.Select(admin => admin.UserId).Order().ToListAsync(cancellationToken);
+
+    // R11: the user's own memberships, in the caller's transaction, which this read declares the user in.
+    public async Task<IReadOnlyList<Guid>> ListTenantIdsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        return await controlPlane.Memberships
+            .Where(membership => membership.UserId == userId)
+            .Select(membership => membership.TenantId)
+            .Order()
+            .ToListAsync(cancellationToken);
+    }
+
     // The full name, else none: the identity provider may hold a user without a name, and the email address is not a name. A deleted
     // user's name is erased (A8).
     private static string? DisplayName(string? firstName, string? lastName) =>

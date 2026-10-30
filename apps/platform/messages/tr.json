@@ -371,6 +371,7 @@
         "reactivated": "<actor></actor>, <target></target> kullanıcısını yeniden etkinleştirdi.",
         "renamed": "{self, select, yes {<actor></actor> adını değiştirdi.} other {<actor></actor>, <target></target> kullanıcısını yeniden adlandırdı.}}",
         "deleted": "{actorKind, select, platform {Bir kullanıcı silindi.} other {<actor></actor> bir kullanıcıyı sildi.}}",
+        "email_preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "preferences_changed": "<actor></actor> tercihlerini değiştirdi."
       },
       "system_admin": {

@@ -35,6 +35,8 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.role_permissions: forced
             control_plane.roles: forced
             control_plane.tenant_purge_sagas: forced
+            notifications.email_preferences: forced
+            notifications.notifications: forced
             """);
     }
 
@@ -67,10 +69,14 @@ public sealed class MigratedSchemaTests(Database database)
               WHERE ((memberships.tenant_id = roles.tenant_id) AND (memberships.role_id = roles.id) AND (memberships.user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)))) WITH CHECK -
             control_plane.roles tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.tenant_purge_sagas tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            notifications.email_preferences own_email_preferences: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
+            notifications.notifications own_notifications: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
+            notifications.notifications owner_delete: PERMISSIVE DELETE {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
+            notifications.notifications owner_read: PERMISSIVE SELECT {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
             """);
     }
 
-    // R2, R7, R14, K3: every privilege that the application role holds, on schemas, tables, functions and the tables to come. It holds
+    // R2, R7, R14, K3, U8: every privilege that the application role holds, on schemas, tables, functions and the tables to come. It holds
     // SELECT and INSERT only on both audit logs, and may only execute the purge function there. The message storage grants the role every
     // table and sequence of its schema, whichever tables a version of Wolverine has, so its tables are not listed one by one; a host on a
     // migrated database proves that the role uses them (StartApplication_OnAMigratedDatabase_IsReady).
@@ -108,10 +114,14 @@ public sealed class MigratedSchemaTests(Database database)
             default for tables in api: DELETE, INSERT, SELECT, UPDATE
             default for tables in audit: INSERT, SELECT
             default for tables in control_plane: DELETE, INSERT, SELECT, UPDATE
+            default for tables in notifications: DELETE, INSERT, SELECT, UPDATE
             function audit.purge_tenant_entries(): EXECUTE
+            function notifications.delete_expired_notifications(timestamp with time zone,integer): EXECUTE
+            function notifications.purge_tenant_notifications(): EXECUTE
             schema api: USAGE
             schema audit: USAGE
             schema control_plane: USAGE
+            schema notifications: USAGE
             schema wolverine: USAGE
             table api.__ef_migrations_history: SELECT
             table api.idempotency_keys: DELETE, INSERT, SELECT, UPDATE
@@ -132,6 +142,9 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.tenant_summaries: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenants: DELETE, INSERT, SELECT, UPDATE
             table control_plane.users: DELETE, INSERT, SELECT, UPDATE
+            table notifications.__ef_migrations_history: SELECT
+            table notifications.email_preferences: DELETE, INSERT, SELECT, UPDATE
+            table notifications.notifications: DELETE, INSERT, SELECT, UPDATE
             """);
     }
 
@@ -264,6 +277,46 @@ public sealed class MigratedSchemaTests(Database database)
             "ck_platform_entries_actor_kind",
             "ck_platform_entries_kind",
             "ck_platform_entries_target_kind",
+        ]);
+    }
+
+    // R15, U1, U5: the same for Notifications. A notification of each bell and a preference are stored, and the database refuses a type, a
+    // bell or a category the catalog does not know, a tenant notification about no tenant, a personal one about a tenant, and a preference
+    // that is all defaults.
+    [Fact]
+    public async Task WriteRow_BreakingANotificationsCheck_IsRefusedByThatCheck()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var (tenantNotification, personalNotification, user) = (Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES ('{tenantNotification}', '{user}', gen_random_uuid(), 'tenant.plan_changed', 'Tenant', jsonb_build_object('tenantName', 'Acme'), now()),
+                ('{personalNotification}', '{user}', NULL, 'member.removed', 'Personal', jsonb_build_object('tenantName', 'Acme'), now());
+            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{user}', true, jsonb_build_object('tenant_plans', true));
+            """,
+            migrated);
+
+        var refusals = await RefusingAsync(
+            migrated,
+            PostgresErrorCodes.CheckViolation,
+            $"UPDATE notifications.notifications SET type = 'tenant.renamed' WHERE id = '{tenantNotification}'",
+            $"UPDATE notifications.notifications SET bell = 'Email' WHERE id = '{tenantNotification}'",
+            $"UPDATE notifications.notifications SET tenant_id = NULL WHERE id = '{tenantNotification}'",
+            $"UPDATE notifications.notifications SET tenant_id = gen_random_uuid() WHERE id = '{personalNotification}'",
+            $"UPDATE notifications.notifications SET \"values\" = '[]' WHERE id = '{tenantNotification}'",
+            $"UPDATE notifications.email_preferences SET categories = '{{\"billing\": true}}' WHERE user_id = '{user}'",
+            $"UPDATE notifications.email_preferences SET categories = '{{}}' WHERE user_id = '{user}'");
+
+        refusals.ShouldBe(
+        [
+            "ck_notifications_type",
+            "ck_notifications_bell",
+            "ck_notifications_tenant",
+            "ck_notifications_tenant",
+            "ck_notifications_values",
+            "ck_email_preferences_categories",
+            "ck_email_preferences_not_default",
         ]);
     }
 

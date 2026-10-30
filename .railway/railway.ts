@@ -150,6 +150,12 @@ export default defineRailway((ctx) => {
         ...Object.fromEntries(
           sharedVariables.map((name) => [name, ctx.shared[name]]),
         ),
+        // The button of a notification email leads to the web app or the platform app: their origins, which the API already
+        // trusts as the token's authorized parties, so each origin has one source (apps/api/docs/ARCHITECTURE.md, U2).
+        Notifications__Links__WebUrl:
+          ctx.shared.Host__Authentication__AuthorizedParties__0,
+        Notifications__Links__PlatformUrl:
+          ctx.shared.Host__Authentication__AuthorizedParties__1,
         ...own,
       },
     });

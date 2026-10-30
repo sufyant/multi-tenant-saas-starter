@@ -1,8 +1,8 @@
 // Renders every email in every language of the contract into the API's Notifications module, as `pnpm generate` runs it: for each
 // email and language an HTML part (`<email>.<lang>.html`), a plain-text part (`<email>.<lang>.txt`) and a subject
 // (`<email>.<lang>.subject.txt`), each with a placeholder such as {{tenantName}} for every value the API fills. It also writes what the
-// API needs to fill them without ICU (`languages.json`: each language's built-in role names, month names and date patterns) and the
-// brand (`brand.json`). The folder holds only this script's output, so the script empties it first.
+// API needs to fill them without ICU (`languages.json`: each language's built-in role names, month names and date patterns), the texts of
+// every notification type (`notifications.json`) and the brand (`brand.json`). The folder holds only this script's output, so the script empties it first.
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { pretty, render } from "@react-email/render";
 import type { Language } from "@repo/api-client";
@@ -20,6 +20,12 @@ import {
   invitationSubject,
   invitationText,
 } from "../src/templates/invitation";
+import {
+  Notification,
+  type NotificationProps,
+  notificationSubject,
+  notificationText,
+} from "../src/templates/notification";
 import { languages, messages } from "../src/texts";
 
 const output = new URL(
@@ -52,6 +58,11 @@ const deletionWarning = (language: Language): DeletionWarningProps => ({
   ...placeholders("tenantName", "purgesOn", "purgesAt", "supportUrl"),
 });
 
+const notification = (language: Language): NotificationProps => ({
+  language,
+  ...placeholders("title", "body", "link"),
+});
+
 const emails: Email[] = [
   {
     name: "invitation",
@@ -65,7 +76,17 @@ const emails: Email[] = [
     text: (language) => deletionWarningText(deletionWarning(language)),
     subject: (language) => deletionWarningSubject(deletionWarning(language)),
   },
+  {
+    name: "notification",
+    html: (language) => <Notification {...notification(language)} />,
+    text: (language) => notificationText(notification(language)),
+    subject: (language) => notificationSubject(notification(language)),
+  },
 ];
+
+// A notification's texts name a value as {name}; the API fills {{name}}, as in every email.
+const apiPlaceholders = (text: string) =>
+  text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
 
 const write = (file: string, content: string) =>
   writeFile(new URL(file, output), content, "utf8");
@@ -94,6 +115,34 @@ await write(
       languages.map((language) => [
         language,
         { roles: messages[language].roles, dates: messages[language].dates },
+      ]),
+    ),
+    null,
+    2,
+  )}\n`,
+);
+// Each language's title and body of every notification type, and the words of a value of a closed list, such as a tenant's new status.
+// The API renders a notification from them in the reader's language, in the bell and in the generic email (U2).
+await write(
+  "notifications.json",
+  `${JSON.stringify(
+    Object.fromEntries(
+      languages.map((language) => [
+        language,
+        {
+          types: Object.fromEntries(
+            Object.entries(messages[language].notifications).map(
+              ([type, texts]) => [
+                type,
+                {
+                  title: apiPlaceholders(texts.title),
+                  body: apiPlaceholders(texts.body),
+                },
+              ],
+            ),
+          ),
+          words: messages[language].notificationWords,
+        },
       ]),
     ),
     null,

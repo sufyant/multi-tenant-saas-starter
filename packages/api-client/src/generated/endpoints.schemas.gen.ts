@@ -425,6 +425,7 @@ export const AuditOperation = {
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
   UserDeleted: 'user.deleted',
+  UserEmailPreferencesChanged: 'user.email_preferences_changed',
   UserPreferencesChanged: 'user.preferences_changed',
   UserReactivated: 'user.reactivated',
   UserRenamed: 'user.renamed',
@@ -470,6 +471,46 @@ export interface AuditEntryResponse {
   details: null | AuditDetailsResponse;
   actor: AuditActorResponse;
   target: AuditTargetResponse;
+}
+
+/**
+ * The category of a notification, which the email preferences name.
+ */
+export type NotificationCategory = typeof NotificationCategory[keyof typeof NotificationCategory];
+
+
+export const NotificationCategory = {
+  Access: 'access',
+  MemberInvitations: 'member_invitations',
+  TenantPlans: 'tenant_plans',
+  PlatformTenants: 'platform_tenants',
+} as const;
+
+/**
+ * One category's new email switch.
+ */
+export interface CategoryEmailPreferenceRequest {
+  category: NotificationCategory;
+  /** Whether a notification of the category goes by email too. */
+  enabled: boolean;
+}
+
+/**
+ * One category's email switch.
+ */
+export interface CategoryEmailPreferenceResponse {
+  category: NotificationCategory;
+  /** Whether a notification of the category goes by email too. */
+  enabled: boolean;
+}
+
+/**
+ * The new email preferences: the main switch, and a choice for some categories. A category that cannot reach the user is not kept, and a
+ * category left out keeps its choice.
+ */
+export interface ChangeEmailPreferencesRequest {
+  enabled: boolean;
+  categories: CategoryEmailPreferenceRequest[];
 }
 
 /**
@@ -575,6 +616,84 @@ export interface CursorPageOfAuditEntryResponse {
 }
 
 /**
+ * The type of a notification, area.event.
+ */
+export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
+
+
+export const NotificationType = {
+  InvitationAccepted: 'invitation.accepted',
+  MemberRemoved: 'member.removed',
+  MemberRoleChanged: 'member.role_changed',
+  TenantOwnerJoined: 'tenant.owner_joined',
+  TenantPlanChanged: 'tenant.plan_changed',
+  TenantPurged: 'tenant.purged',
+  TenantStatusChanged: 'tenant.status_changed',
+} as const;
+
+/**
+ * Where a notification leads, which the web turns into a URL.
+ */
+export type NotificationLinkResponseKind = typeof NotificationLinkResponseKind[keyof typeof NotificationLinkResponseKind];
+
+
+export const NotificationLinkResponseKind = {
+  None: 'none',
+  Tenant: 'tenant',
+  TenantMembers: 'tenant_members',
+  TenantPlan: 'tenant_plan',
+  PlatformTenant: 'platform_tenant',
+} as const;
+
+/**
+ * Where a notification leads: a kind, and the tenant it is about, none for a personal notification.
+ */
+export interface NotificationLinkResponse {
+  kind: NotificationLinkResponseKind;
+  /** @nullable */
+  tenantId: string | null;
+}
+
+/**
+ * A notification as a bell shows it (U7). Its title and body are rendered in the reader's language (U2). The link names where it leads, as a
+ * kind and the tenant it is about: the web builds the URL.
+ */
+export interface NotificationResponse {
+  /** The notification's id, which opening it names. */
+  id: string;
+  type: NotificationType;
+  category: NotificationCategory;
+  /** The title, in the reader's language. */
+  title: string;
+  /** The body, in the reader's language. */
+  body: string;
+  /** Where it leads. */
+  link: NotificationLinkResponse;
+  /** When the event it tells of happened. */
+  createdAt: string;
+  /**
+     * When the reader opened it; none while it is unread.
+     * @nullable
+     */
+  readAt: string | null;
+}
+
+export interface CursorPageOfNotificationResponse {
+  items: NotificationResponse[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+/**
+ * The signed-in user's email preferences for notifications (U5): the main switch, and the switch of each category that can reach them. In-app
+ * notifications cannot be turned off, and a required type is not listed: it always sends its email.
+ */
+export interface EmailPreferencesResponse {
+  enabled: boolean;
+  categories: CategoryEmailPreferenceResponse[];
+}
+
+/**
  * One key's value: a feature's state in `enabled`, or a limit's number in `maximum`, or an unlimited limit with
  * `unlimited` true. The fields of the other kind are null.
  */
@@ -634,6 +753,7 @@ export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
 export const ErrorCode = {
   AuthForbidden: 'auth.forbidden',
   AuthUnauthenticated: 'auth.unauthenticated',
+  EmailPreferencesNotFound: 'email_preferences.not_found',
   IdempotencyKeyInProgress: 'idempotency.key_in_progress',
   IdempotencyKeyInvalid: 'idempotency.key_invalid',
   IdempotencyKeyReused: 'idempotency.key_reused',
@@ -651,6 +771,7 @@ export const ErrorCode = {
   MemberLastOwner: 'member.last_owner',
   MemberNotFound: 'member.not_found',
   MemberOwnerRequiresOwner: 'member.owner_requires_owner',
+  NotificationNotFound: 'notification.not_found',
   PagingCursorInvalid: 'paging.cursor_invalid',
   PagingFilterInvalid: 'paging.filter_invalid',
   PagingLimitInvalid: 'paging.limit_invalid',
@@ -1360,6 +1481,13 @@ export interface TenantResponse {
   purgedAt: string | null;
 }
 
+/**
+ * How many notifications of a bell the reader has not opened.
+ */
+export interface UnreadNotificationCountResponse {
+  unread: number;
+}
+
 export type UpdatePlanRequestEntitlements = {[key: string]: EntitlementValueRequest};
 
 /**
@@ -1587,6 +1715,15 @@ export type GrantSystemAdminHeaders = {
 'Idempotency-Key': string;
 };
 
+export type ListPlatformNotificationsParams = {
+cursor?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
 export type ListPlatformAuditEntriesParams = {
 cursor?: string;
 /**
@@ -1701,6 +1838,15 @@ export type CreateRoleHeaders = {
 'Idempotency-Key': string;
 };
 
+export type ListNotificationsParams = {
+cursor?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
 export type ListAuditEntriesParams = {
 cursor?: string;
 /**
@@ -1735,4 +1881,13 @@ export const ListMyTenantsSort = {
   Name: 'name',
   NameDescending: '-name',
 } as const;
+
+export type ListMyNotificationsParams = {
+cursor?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 

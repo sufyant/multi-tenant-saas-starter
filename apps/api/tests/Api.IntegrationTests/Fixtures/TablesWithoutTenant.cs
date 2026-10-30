@@ -9,7 +9,8 @@ internal static class TablesWithoutTenant
 
     // ControlPlane's data above tenants (the roles belong to a tenant, A2), the tenants' summaries and entitlement overrides, which the
     // platform reads across tenants as it reads the tenants (R12), the plans, their values and the default mark, the platform's audit log,
-    // and the host's idempotency keys.
+    // and the host's idempotency keys. Notifications belong to a user, as the email preferences do (U3): their own policies keep each
+    // user to their rows (ExtraPolicies).
     public static readonly IReadOnlySet<string> Tables = new HashSet<string>(StringComparer.Ordinal)
     {
         "control_plane.tenants",
@@ -22,6 +23,8 @@ internal static class TablesWithoutTenant
         "control_plane.system_admins",
         "api.idempotency_keys",
         "audit.platform_entries",
+        "notifications.notifications",
+        "notifications.email_preferences",
     };
 
     // Every table in these schemas: Wolverine's message storage.

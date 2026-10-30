@@ -6,6 +6,7 @@ using Api.Routing;
 using Api.Persistence;
 using Audit.Api;
 using ControlPlane.Api;
+using Notifications.Api;
 using JasperFx;
 
 // Main returns the exit code. An exception that left it would end the process through the runtime's abort, which never ends a
@@ -53,7 +54,9 @@ try
     {
         var v1 = app.MapV1();
         var (platform, tenant) = (v1.MapPlatform(), v1.MapTenant());
-        ControlPlaneModule.MapEndpoints(platform, v1.MapMe(), tenant);
+        var me = v1.MapMe();
+        ControlPlaneModule.MapEndpoints(platform, me, tenant);
+        NotificationsModule.MapEndpoints(platform, me, tenant);
         AuditModule.MapEndpoints(platform, tenant);
         app.MapApiDocuments();
     }

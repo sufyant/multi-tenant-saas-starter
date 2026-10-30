@@ -30,6 +30,8 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
         builder.UseSetting("Host:Role", role);
         builder.UseSetting("ConnectionStrings:Database", database.ApplicationConnectionString);
         builder.UseSetting("ControlPlane:Invitations:AcceptUrl", "https://app.test/invitations/accept");
+        builder.UseSetting("Notifications:Links:WebUrl", "https://app.test/");
+        builder.UseSetting("Notifications:Links:PlatformUrl", "https://platform.test/");
         builder.UseSetting("ControlPlane:Clerk:SecretKey", "sk_test_unused");
         builder.UseSetting("ControlPlane:SystemAdmins:RootEmails:0", RootEmail);
         builder.UseSetting("Host:Authentication:Issuer", TestTokens.Issuer);

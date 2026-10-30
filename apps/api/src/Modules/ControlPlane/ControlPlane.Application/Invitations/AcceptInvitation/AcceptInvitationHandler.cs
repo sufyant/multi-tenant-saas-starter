@@ -1,6 +1,7 @@
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
+using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
@@ -81,11 +82,17 @@ public static class AcceptInvitationHandler
         }
 
         var membership = accepted.Value;
-        await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
         var roles = await tenants.FindRolesAsync(cancellationToken);
+
+        // Read before the membership is added: a tenant without an Owner gets its first one (A1). The platform invited when the inviter is
+        // no member of the tenant.
+        var firstOwner = roles.Of(membership.RoleId).Holds(PermissionPools.TenantOwnersManage)
+            && (await tenants.FindOwnerAddressesAsync(cancellationToken)).Count == 0;
+        var invitedBy = await tenants.FindMembershipAsync(invitation.InvitedBy, cancellationToken) is null ? (Guid?)null : invitation.InvitedBy;
+        await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
         return (
             MyTenantView.Of(tenant, roles.Of(membership.RoleId)),
-            [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id)]);
+            [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id, tenant.Name, invitedBy, firstOwner)]);
     }
 
     private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>
