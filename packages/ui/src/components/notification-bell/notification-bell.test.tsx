@@ -135,7 +135,18 @@ describe("NotificationBell", () => {
 
     await userEvent.click(screen.getByRole("link", { name: /Deniz Arslan/ }));
 
-    expect(onOpenItem).toHaveBeenCalledWith(joined);
+    expect(onOpenItem).toHaveBeenCalledWith(joined, { follow: true });
+  });
+
+  it("NotificationBell_ItemPressedWithCtrl_LeavesTheTabWhereItIs", async () => {
+    const onOpenItem = vi.fn();
+    render(bell({ onOpenItem }));
+
+    await userEvent.keyboard("{Control>}");
+    await userEvent.click(screen.getByRole("link", { name: /Deniz Arslan/ }));
+    await userEvent.keyboard("{/Control}");
+
+    expect(onOpenItem).toHaveBeenCalledWith(joined, { follow: false });
   });
 
   it("NotificationBell_MarkAll_MarksWhatTheBellShows", async () => {

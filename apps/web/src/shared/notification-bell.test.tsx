@@ -1,10 +1,12 @@
 import {
   BuiltInRole,
+  ErrorCode,
   NotificationCategory,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
 } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -148,6 +150,60 @@ describe("TenantBell", () => {
 
     await vi.waitFor(() => expect(reads.count).toBe(2));
     expect(marked).toEqual([northwind.id]);
+  });
+});
+
+describe("TenantBell failures", () => {
+  it("TenantBell_ItemOpenedInANewTab_MarksItReadAndStays", async () => {
+    const marked: string[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      ...tenantBell(),
+      http.post("*/v1/me/notifications/:id/read", ({ params }) => {
+        marked.push(String(params.id));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+    const item = await screen.findByRole("link", { name: /Deniz Arslan/ });
+
+    await userEvent.keyboard("{Control>}");
+    await userEvent.click(item);
+    await userEvent.keyboard("{/Control}");
+
+    await vi.waitFor(() => expect(marked).toEqual([joined.id]));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("TenantBell_MarkAllFails_SaysSoWithTheReason", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      ...tenantBell(),
+      http.post("*/v1/tenants/:tenantId/notifications/read", () =>
+        HttpResponse.json(
+          {
+            status: 500,
+            title: "Error",
+            code: ErrorCode.ServerError,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 500 },
+        ),
+      ),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Mark all as read" }),
+    );
+
+    await expectVisibleToast("Notifications not marked as read");
   });
 });
 
