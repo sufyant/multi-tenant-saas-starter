@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -79,11 +84,81 @@ export const listPlatformNotifications = async (params?: ListPlatformNotificatio
 
 
 
+export const getListPlatformNotificationsInfiniteQueryKey = (params?: ListPlatformNotificationsParams,) => {
+    return [
+    'infinite', "listPlatformNotifications", ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListPlatformNotificationsQueryKey = (params?: ListPlatformNotificationsParams,) => {
     return [
     "listPlatformNotifications", ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListPlatformNotificationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listPlatformNotifications>>, ListPlatformNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlatformNotificationsInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlatformNotifications>>, QueryKey, ListPlatformNotificationsParams['cursor']> = ({ signal, pageParam }) => listPlatformNotifications({...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPlatformNotificationsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listPlatformNotifications>>>
+export type ListPlatformNotificationsInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListPlatformNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformNotifications>>, ListPlatformNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params: undefined |  ListPlatformNotificationsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformNotifications>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformNotifications>>, ListPlatformNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformNotifications>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformNotifications>>, ListPlatformNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPlatformNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformNotifications>>, ListPlatformNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPlatformNotificationsInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListPlatformNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listPlatformNotifications>>, TError = ErrorType<ProblemDetails>>(params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}

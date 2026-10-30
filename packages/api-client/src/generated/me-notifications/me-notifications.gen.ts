@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -79,11 +84,81 @@ export const listMyNotifications = async (params?: ListMyNotificationsParams, op
 
 
 
+export const getListMyNotificationsInfiniteQueryKey = (params?: ListMyNotificationsParams,) => {
+    return [
+    'infinite', "listMyNotifications", ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListMyNotificationsQueryKey = (params?: ListMyNotificationsParams,) => {
     return [
     "listMyNotifications", ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListMyNotificationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listMyNotifications>>, ListMyNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(params?: ListMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyNotificationsInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyNotifications>>, QueryKey, ListMyNotificationsParams['cursor']> = ({ signal, pageParam }) => listMyNotifications({...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMyNotificationsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listMyNotifications>>>
+export type ListMyNotificationsInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMyNotifications>>, ListMyNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params: undefined |  ListMyNotificationsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof listMyNotifications>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMyNotifications>>, ListMyNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMyNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof listMyNotifications>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMyNotifications>>, ListMyNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMyNotifications>>, ListMyNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMyNotificationsInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListMyNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyNotifications>>, TError = ErrorType<ProblemDetails>>(params?: ListMyNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
