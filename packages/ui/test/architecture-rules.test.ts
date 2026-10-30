@@ -337,15 +337,17 @@ describe("architecture rules", () => {
       "(public)/sign-in/page.tsx": "",
       "(app)/billing/page.tsx": "",
       "health/route.ts": "",
+      "@modal/login/page.tsx": "",
     });
 
     expect(unreservedTopLevelRoutes(root, ["sign-in"])).toEqual([
       "(app)/billing: the top-level route billing is no reserved slug; reserve it in the API first",
+      "@modal/login: the top-level route login is no reserved slug; reserve it in the API first",
       "health: the top-level route health is no reserved slug; reserve it in the API first",
     ]);
   });
 
-  it("UnreservedTopLevelRoutes_GroupsSlugPrivateAndNestedSegments_AreNoFinding", () => {
+  it("UnreservedTopLevelRoutes_GroupsSlugPrivateInterceptingAndNestedSegments_AreNoFinding", () => {
     const root = folder({
       "layout.tsx": "",
       "(app)/[tenantSlug]/members/page.tsx": "",
@@ -353,6 +355,7 @@ describe("architecture rules", () => {
       "(public)/invitations/accept/page.tsx": "",
       "_parts/a.tsx": "",
       "@modal/default.tsx": "",
+      "@modal/(.)photo/page.tsx": "",
       "api/[...path]/route.ts": "",
     });
 

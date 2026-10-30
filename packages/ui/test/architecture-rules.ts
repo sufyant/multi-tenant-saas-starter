@@ -632,8 +632,8 @@ const choiceTypes = new Set(["checkbox", "radio"]);
 
 /**
  * Rule F58: every top-level static segment of an app folder is a reserved slug, because a tenant's slug is the first segment too
- * (F30). A route group `(app)`, a dynamic segment `[tenantSlug]`, a private folder `_parts` and a slot `@modal` are no segment of
- * their own; a group's folders are read as top-level ones.
+ * (F30). A route group `(app)`, a slot `@modal`, a dynamic segment `[tenantSlug]`, a private folder `_parts` and an intercepting
+ * route `(.)photo` are no segment of their own; the folders of a group and of a slot are read as top-level ones.
  */
 export function unreservedTopLevelRoutes(
   appFolder: string,
@@ -644,8 +644,8 @@ export function unreservedTopLevelRoutes(
       .sort()
       .filter((name) => statSync(join(folder, name)).isDirectory())
       .flatMap((name) => {
-        if (/^\(.*\)$/.test(name)) return segments(join(folder, name));
-        if (/^[[_@]/.test(name)) return [];
+        if (/^(\(.*\)|@.*)$/.test(name)) return segments(join(folder, name));
+        if (/^[[_(]/.test(name)) return [];
         return [join(folder, name)];
       });
   return segments(appFolder)

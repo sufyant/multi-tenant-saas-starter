@@ -89,11 +89,12 @@ const openCreate = async () => {
 const fill = async (
   dialog: ReturnType<typeof within>,
   values: { name?: string; slug?: string; email?: string },
+  labels = messages.en.organisations,
 ) => {
   const fields = [
-    ["Name", values.name ?? "Liffey Design"],
-    ["Slug", values.slug ?? "liffey-design"],
-    ["Owner’s email", values.email ?? "niamh@liffeydesign.example"],
+    [labels.name, values.name ?? "Liffey Design"],
+    [labels.slug, values.slug ?? "liffey-design"],
+    [labels.ownerEmail, values.email ?? "niamh@liffeydesign.example"],
   ] as const;
   for (const [label, value] of fields) {
     const field = dialog.getByRole("textbox", { name: label });
@@ -259,16 +260,7 @@ describe("CreateOrganisationDialog", () => {
       const dialog = within(
         await screen.findByRole("alertdialog", { name: own.create }),
       );
-      for (const [label, value] of [
-        [own.name, "Liffey Design"],
-        [own.slug, "liffey-design"],
-        [own.ownerEmail, "niamh@liffeydesign.example"],
-      ] as const) {
-        await userEvent.type(
-          dialog.getByRole("textbox", { name: label }),
-          value,
-        );
-      }
+      await fill(dialog, {}, own);
       await userEvent.click(
         dialog.getByRole("button", { name: own.createAction }),
       );
