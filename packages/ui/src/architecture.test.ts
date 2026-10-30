@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -97,5 +98,16 @@ describe("architecture of packages/ui", () => {
         join(packages, "../apps/platform/src/error-tracking"),
       ),
     ).toEqual([]);
+  });
+
+  // Each app holds the same live stream and the same Settings › Notifications page, because both read the generated client
+  // (F57, and the deviations table).
+  it.each([
+    "src/shared/notification-stream.tsx",
+    "src/features/notifications/notifications-page.tsx",
+  ])("F57_%s_IsTheSameInBothApps", (file) => {
+    expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
+      readFileSync(join(packages, "../apps/platform", file), "utf8"),
+    );
   });
 });

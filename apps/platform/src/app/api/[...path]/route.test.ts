@@ -217,3 +217,85 @@ describe("BFF", () => {
     expect(requests).toEqual([]);
   });
 });
+
+describe("BFF stream", () => {
+  const event = 'event: notifications\ndata: {"scope":"personal"}\n\n';
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  /** The API's stream: its first event, then nothing until the test ends it. */
+  function upstream() {
+    let end = () => {};
+    server.use(
+      http.get(`${api}/v1/me/notifications/stream`, () => {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(encoder.encode(event));
+            end = () => controller.close();
+          },
+        });
+        return new HttpResponse(body, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+          },
+        });
+      }),
+    );
+    return { end: () => end() };
+  }
+
+  it("StreamNotifications_FirstEvent_ReachesTheClientBeforeTheStreamEnds", async () => {
+    const stream = upstream();
+
+    const answer = await GET(
+      new Request(`${web}/api/v1/me/notifications/stream`),
+    );
+    const first = await answer.body?.getReader().read();
+
+    expect(decoder.decode(first?.value)).toBe(event);
+    stream.end();
+  });
+
+  it("StreamNotifications_Answer_PassesTheStreamsHeadersAndTurnsOffBuffering", async () => {
+    const stream = upstream();
+
+    const answer = await GET(
+      new Request(`${web}/api/v1/me/notifications/stream`),
+    );
+
+    expect(answer.headers.get("Content-Type")).toBe("text/event-stream");
+    expect(answer.headers.get("Cache-Control")).toBe("no-cache, no-transform");
+    expect(answer.headers.get("X-Accel-Buffering")).toBe("no");
+    stream.end();
+  });
+
+  it("StreamNotifications_BrowserCloses_AbortsTheUpstreamRequest", async () => {
+    const stream = upstream();
+    // MSW does not hand an aborted call's signal to its handler, so the test reads the signal that the BFF gave fetch.
+    const send = vi.spyOn(globalThis, "fetch");
+    const browser = new AbortController();
+
+    await GET(
+      new Request(`${web}/api/v1/me/notifications/stream`, {
+        signal: browser.signal,
+      }),
+    );
+    browser.abort();
+
+    expect(send.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    send.mockRestore();
+    stream.end();
+  });
+
+  it("GetMe_JsonAnswer_AddsNoStreamHeader", async () => {
+    server.use(
+      http.get(`${api}/v1/me`, () => HttpResponse.json({ id: tenantId })),
+    );
+
+    const answer = await GET(new Request(`${web}/api/v1/me`));
+
+    expect(answer.headers.has("X-Accel-Buffering")).toBe(false);
+    expect(answer.headers.has("Cache-Control")).toBe(false);
+  });
+});

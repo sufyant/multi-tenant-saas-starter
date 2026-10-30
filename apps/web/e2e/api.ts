@@ -5,6 +5,7 @@ import {
   AuditOperation,
   AuditTargetResponseKind,
   BuiltInRole,
+  type ChangeEmailPreferencesRequest,
   type ChangeMemberRoleRequest,
   type ChangePreferencesRequest,
   type CursorPageOfAuditEntryResponse,
@@ -20,6 +21,10 @@ import {
   type MyTenantDetailResponse,
   type MyTenantResponse,
   type MyTenantResponseStatus,
+  NotificationCategory,
+  NotificationLinkResponseKind,
+  type NotificationResponse,
+  NotificationType,
   Permission,
   type RenameMeRequest,
   type RoleDetailResponse,
@@ -574,4 +579,97 @@ export async function mockRename(
     }
     return route.fulfill({ json: person });
   });
+}
+
+export const roleChanged: NotificationResponse = {
+  id: "0198f0a2-0000-7000-8000-0000000000a1",
+  type: NotificationType.MemberRoleChanged,
+  category: NotificationCategory.Access,
+  title: "Your role in Northwind Traders changed",
+  body: "Mehmet Kaya changed your role from Member to Admin.",
+  link: {
+    kind: NotificationLinkResponseKind.TenantSettings,
+    tenantId: northwind.id,
+  },
+  createdAt: "2026-10-16T13:29:00Z",
+  readAt: null,
+};
+
+/** What the notification answers recorded: the notifications opened, the bells marked read and the preferences saved. */
+export type NotificationCalls = {
+  opened: string[];
+  markedAll: number;
+  saved: ChangeEmailPreferencesRequest[];
+};
+
+/**
+ * Northwind's bell, its live stream and the email preferences. The count answers `unread.count`; the stream holds its answer until
+ * the test calls `signal`, then sends one `notifications` event for Northwind's bell and ends, with a long retry so the browser
+ * does not open it again during the test.
+ */
+export async function mockNotifications(page: Page) {
+  const unread = { count: 1 };
+  const calls: NotificationCalls = { opened: [], markedAll: 0, saved: [] };
+  let signal = () => {};
+  const sent = new Promise<void>((resolve) => {
+    signal = resolve;
+  });
+  await page.route(
+    `**/api/v1/tenants/${northwind.id}/notifications/unread-count`,
+    (route) => route.fulfill({ json: { unread: unread.count } }),
+  );
+  await page.route(
+    `**/api/v1/tenants/${northwind.id}/notifications?*`,
+    (route) =>
+      route.fulfill({ json: { items: [roleChanged], nextCursor: null } }),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}/notifications`, (route) =>
+    route.fulfill({ json: { items: [roleChanged], nextCursor: null } }),
+  );
+  await page.route(
+    `**/api/v1/tenants/${northwind.id}/notifications/read`,
+    (route) => {
+      calls.markedAll += 1;
+      unread.count = 0;
+      return route.fulfill({ status: 204 });
+    },
+  );
+  await page.route("**/api/v1/me/notifications/*/read", (route) => {
+    calls.opened.push(route.request().url());
+    return route.fulfill({ status: 204 });
+  });
+  await page.route("**/api/v1/me/notifications/stream", async (route) => {
+    await sent;
+    await route.fulfill({
+      headers: { "Content-Type": "text/event-stream" },
+      body: `retry: 600000\nevent: notifications\ndata: {"scope":"tenant","tenantId":"${northwind.id}"}\n\n`,
+    });
+  });
+  await page.route("**/api/v1/me/email-preferences", (route) => {
+    if (route.request().method() === "PUT") {
+      const body = route
+        .request()
+        .postDataJSON() as ChangeEmailPreferencesRequest;
+      calls.saved.push(body);
+      return route.fulfill({ json: body });
+    }
+    return route.fulfill({
+      json: {
+        enabled: true,
+        categories: [
+          { category: NotificationCategory.Access, enabled: false },
+          { category: NotificationCategory.MemberInvitations, enabled: false },
+          { category: NotificationCategory.TenantPlans, enabled: false },
+        ],
+      },
+    });
+  });
+  return {
+    calls,
+    /** One new notification: the count goes up and the stream says so. */
+    arrive: () => {
+      unread.count += 1;
+      signal();
+    },
+  };
 }

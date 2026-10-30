@@ -27,7 +27,8 @@
     "platform": "Platform",
     "systemAdmins": "System admins",
     "activity": "Activity",
-    "plans": "Plans"
+    "plans": "Plans",
+    "notifications": "Notifications"
   },
   "preferences": {
     "title": "Preferences",
@@ -517,5 +518,9 @@
     "overrideApplies": "{key}: its override ({value}) still applies.",
     "changed": "<bdi>{name}</bdi> moved to <bdi>{plan}</bdi>",
     "notChanged": "Plan not changed"
+  },
+  "notificationSettings": {
+    "title": "Notifications",
+    "text": "You always see notifications in the app. Choose which ones we also send by email. These settings are yours, the same on the platform and in every organisation."
   }
 }

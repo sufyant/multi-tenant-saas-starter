@@ -29,7 +29,8 @@
       "owner": "Sahip",
       "admin": "Yönetici",
       "member": "Üye"
-    }
+    },
+    "notifications": "Bildirimler"
   },
   "organisations": {
     "chooseTitle": "Bir kuruluş seçin",
@@ -444,5 +445,9 @@
       "off": "kapalı",
       "unlimited": "sınırsız"
     }
+  },
+  "notificationSettings": {
+    "title": "Bildirimler",
+    "text": "Bildirimleri uygulamada her zaman görürsünüz. Hangilerinin e-postayla da gönderileceğini seçin. Bu ayarlar her kuruluşta aynıdır."
   }
 }

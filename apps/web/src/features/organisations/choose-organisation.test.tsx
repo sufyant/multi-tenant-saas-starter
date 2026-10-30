@@ -56,7 +56,45 @@ const page = (items: MyTenantResponse[]) =>
 const line = (text: string) => (_: string, element: Element | null) =>
   element?.tagName === "SPAN" && element.textContent === text;
 
+const personalCount = http.get("*/v1/me/notifications/unread-count", () =>
+  HttpResponse.json({ unread: 1 }),
+);
+
 describe("ChooseOrganisation", () => {
+  it("ChooseOrganisation_ManyOrganisations_ShowsThePersonalBell", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([
+        tenant("Northwind Traders", "northwind"),
+        tenant("Atlas Logistics", "atlas"),
+      ]),
+      personalCount,
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByRole("button", { name: "Notifications, 1 unread" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_NoOrganisation_ShowsThePersonalBellOnNoAccessYet", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      page([]),
+      personalCount,
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByRole("heading", { name: "No access yet" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Notifications, 1 unread" }),
+    ).toBeInTheDocument();
+  });
+
   it("ChooseOrganisation_ManyOrganisations_ListsEachOne", async () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
