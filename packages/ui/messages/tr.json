@@ -232,19 +232,19 @@
   "notificationCategories": {
     "access": {
       "name": "Erişiminiz",
-      "description": "Rolünüz değiştiğinde veya bir kuruluştan çıkarıldığınızda."
+      "description": "Bir kuruluştaki rolünüz değiştiğinde."
     },
     "member_invitations": {
-      "name": "Gönderdiğiniz davetler",
-      "description": "Davet ettiğiniz biri katıldığında."
+      "name": "Üyeler",
+      "description": "Gönderdiğiniz bir daveti biri kabul ettiğinde."
     },
     "tenant_plans": {
-      "name": "Kuruluşunuzun planı",
-      "description": "Sahibi olduğunuz bir kuruluşun planı veya bir sınırı değiştiğinde."
+      "name": "Kuruluş planı",
+      "description": "Platform, kuruluşunuzun planını ya da planın bir sınırını veya özelliğini değiştirdiğinde."
     },
     "platform_tenants": {
-      "name": "Kuruluşlar",
-      "description": "Bir kuruluş ilk Sahibine kavuştuğunda, durumu değiştiğinde veya silindiğinde."
+      "name": "Platform",
+      "description": "Bir kuruluşun ilk Sahibi katıldığında, kuruluşun durumu değiştiğinde ya da kuruluş silindiğinde."
     }
   }
 }

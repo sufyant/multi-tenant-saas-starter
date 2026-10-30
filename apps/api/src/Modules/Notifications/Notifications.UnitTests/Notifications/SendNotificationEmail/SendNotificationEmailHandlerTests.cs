@@ -36,8 +36,8 @@ public sealed class SendNotificationEmailHandlerTests
         var email = _channel.Sent.ShouldHaveSingleItem();
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@example.com", "You were removed from Acme", $"notification/{notificationId}"));
         email.Text.ShouldBe(
-            "Starter\n\nYou were removed from Acme\n\nAda Lovelace removed you from Acme. You no longer have access to it.\n\nOpen Starter:\nhttps://app.example/\n\n"
-            + "You always receive this email, because it concerns your access.");
+            "Starter\n\nYou were removed from Acme\n\nAda Lovelace removed you from Acme. You can no longer open it or see its notifications.\n\nOpen Starter:\nhttps://app.example/\n\n"
+            + "We always send this email when you are removed from an organisation, so you know you no longer have access. It can’t be turned off.");
         email.Html.ShouldContain("href=\"https://app.example/\"");
     }
 
@@ -82,7 +82,7 @@ public sealed class SendNotificationEmailHandlerTests
             TestContext.Current.CancellationToken);
 
         _channel.Sent.ShouldHaveSingleItem().Text.ShouldEndWith(
-            "You received this because emails for “Organisations” are on. You can turn them off in your preferences.");
+            "You got this email because email notifications for “Platform” are on.");
     }
 
     // The email writes a date in the recipient's time zone: noon in UTC on 29 November is 30 November in Auckland.
@@ -102,7 +102,7 @@ public sealed class SendNotificationEmailHandlerTests
             Links,
             TestContext.Current.CancellationToken);
 
-        _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain("Ada Lovelace closed Acme. Its data is deleted on 30 Nov 2026.");
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain("Ada Lovelace closed Acme. It will be deleted on 30 Nov 2026 unless someone reopens it.");
     }
 
     // A message of the version before carries no names, so the email names the person "Deleted user": it never shows an id.

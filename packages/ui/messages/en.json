@@ -232,19 +232,19 @@
   "notificationCategories": {
     "access": {
       "name": "Your access",
-      "description": "When your role changes or you are removed from an organisation."
+      "description": "When your role in an organisation changes."
     },
     "member_invitations": {
-      "name": "Invitations you sent",
-      "description": "When a person you invited joins."
+      "name": "Members",
+      "description": "When someone accepts an invitation you sent."
     },
     "tenant_plans": {
-      "name": "Your organisation's plan",
-      "description": "When the plan or a limit of an organisation you own changes."
+      "name": "Organisation plan",
+      "description": "When the platform changes your organisation’s plan, or one of its limits or features."
     },
     "platform_tenants": {
-      "name": "Organisations",
-      "description": "When an organisation gets its first Owner, changes its status or is deleted."
+      "name": "Platform",
+      "description": "When an organisation gets its first Owner, changes status or is deleted."
     }
   }
 }

@@ -9963,10 +9963,8 @@
       },
       "NotificationLinkResponseKind": {
         "enum": [
-          "none",
-          "tenant",
+          "start",
           "tenant_members",
-          "tenant_plan",
           "tenant_roles",
           "tenant_settings",
           "platform_tenant"
@@ -9974,10 +9972,8 @@
         "type": "string",
         "description": "Where a notification leads, which the web turns into a URL.",
         "x-enumNames": [
-          "None",
-          "Tenant",
+          "Start",
           "TenantMembers",
-          "TenantPlan",
           "TenantRoles",
           "TenantSettings",
           "PlatformTenant"

@@ -58,23 +58,25 @@ public static class NotificationCatalog
     /// <summary>Every type, by its name.</summary>
     public static readonly IReadOnlyDictionary<string, NotificationKind> Kinds = new NotificationKind[]
     {
-        // The platform's Make Owner names no person, as the tenant's Activity says "the platform": the actor is missing then.
+        // The platform's Make Owner names no person, as the tenant's Activity says "the platform": the actor is missing then. It leads to
+        // the general settings, which show "Your role" to every role.
         new(
             MemberRoleChanged,
             AccessCategory,
             NotificationBell.Tenant,
-            NotificationLinkKind.Tenant,
+            NotificationLinkKind.TenantSettings,
             InAppAndEmailOff(),
             Required: false,
             [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")]),
 
         // The removed person may have no other tenant and so never see a bell: the email always goes, and the type is not in the
-        // preferences (U4). Only a member removes a member: the platform does so only in the user's own deletion, which tells nobody.
+        // preferences (U4). Only a member removes a member: the platform does so only in the user's own deletion, which tells nobody. It
+        // leads to the start page, which opens what the person can still enter.
         new(
             MemberRemoved,
             AccessCategory,
             NotificationBell.Personal,
-            NotificationLinkKind.None,
+            NotificationLinkKind.Start,
             InAppAndEmailOff(),
             Required: true,
             [Tenant(), Person("actorName")]),
@@ -90,7 +92,7 @@ public static class NotificationCatalog
             TenantPlanChanged,
             PlanCategory,
             NotificationBell.Tenant,
-            NotificationLinkKind.TenantPlan,
+            NotificationLinkKind.TenantSettings,
             InAppAndEmailOff(),
             Required: false,
             [Tenant(), new("oldPlanName", NotificationValueKind.Text), new("newPlanName", NotificationValueKind.Text)]),

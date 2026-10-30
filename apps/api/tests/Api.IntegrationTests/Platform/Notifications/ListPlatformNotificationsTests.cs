@@ -64,7 +64,7 @@ public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLi
         var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?limit=100", Cancellation);
 
         page.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == closed).GetProperty("body").GetString()
-            .ShouldBe("Silinmiş kullanıcı, Acme Ltd kuruluşunu kapattı. Verileri 30 Kas 2026 tarihinde silinir.");
+            .ShouldBe("Silinmiş kullanıcı, Acme Ltd kuruluşunu kapattı. Biri yeniden açmazsa 30 Kas 2026 tarihinde silinecek.");
     }
 
     [Fact]

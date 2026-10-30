@@ -47,10 +47,8 @@ export const ListNotificationsResponse = zod.object({
   "body": zod.string().describe('The body, in the reader\'s language.'),
   "link": zod.object({
   "kind": zod.enum({
-  None: 'none',
-  Tenant: 'tenant',
+  Start: 'start',
   TenantMembers: 'tenant_members',
-  TenantPlan: 'tenant_plan',
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',

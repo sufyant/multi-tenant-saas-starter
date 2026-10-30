@@ -6,17 +6,11 @@ namespace Notifications.Domain.Notifications;
 /// </summary>
 public enum NotificationLinkKind
 {
-    /// <summary>Nowhere: the person cannot enter what it is about.</summary>
-    None,
-
-    /// <summary>The tenant's home in the tenant web.</summary>
-    Tenant,
+    /// <summary>The start page of the tenant web, which opens the reader's one tenant or lets them choose one, without a tenant.</summary>
+    Start,
 
     /// <summary>The tenant's members.</summary>
     TenantMembers,
-
-    /// <summary>The tenant's plan.</summary>
-    TenantPlan,
 
     /// <summary>The tenant's roles.</summary>
     TenantRoles,

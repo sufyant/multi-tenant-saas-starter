@@ -44,12 +44,12 @@
   "notificationEmail": {
     "button": "Open {brandName}",
     "fallback": "If the button doesn’t work, copy this link into your browser:",
-    "footer": "You received this because emails for “{categoryName}” are on. You can turn them off in your preferences.",
-    "requiredFooter": "You always receive this email, because it concerns your access."
+    "footer": "You got this email because email notifications for “{categoryName}” are on.",
+    "requiredFooter": "We always send this email when you are removed from an organisation, so you know you no longer have access. It can’t be turned off."
   },
   "notifications": {
     "member.role_changed": {
-      "title": "Your role changed in {tenantName}",
+      "title": "Your role in {tenantName} changed",
       "body": "{actorName} changed your role from {oldRoleName} to {newRoleName}.",
       "without": {
         "actorName": {
@@ -59,52 +59,52 @@
     },
     "member.removed": {
       "title": "You were removed from {tenantName}",
-      "body": "{actorName} removed you from {tenantName}. You no longer have access to it."
+      "body": "{actorName} removed you from {tenantName}. You can no longer open it or see its notifications."
     },
     "member.joined": {
       "title": "{memberName} joined {tenantName}",
       "body": "{memberName} accepted your invitation and joined as {roleName}."
     },
     "tenant.plan_changed": {
-      "title": "The plan of {tenantName} changed",
-      "body": "Your organisation moved from {oldPlanName} to {newPlanName}."
+      "title": "{tenantName} is now on {newPlanName}",
+      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan."
     },
     "tenant.entitlement_override_set": {
-      "title": "{keyName} changed for {tenantName}",
+      "title": "A plan value changed for {tenantName}",
       "body": "The platform set {keyName} to {value} for your organisation. Your plan's value applies again on {expiresAt}.",
       "without": {
         "expiresAt": {
-          "body": "The platform set {keyName} to {value} for your organisation."
+          "body": "The platform set {keyName} to {value} for your organisation, with no end date."
         }
       }
     },
     "tenant.entitlement_override_removed": {
-      "title": "{keyName} follows the plan again in {tenantName}",
-      "body": "The platform removed the override of {keyName}. Your plan's value applies again: {value}."
+      "title": "A plan value changed for {tenantName}",
+      "body": "The platform removed the exception for {keyName}. Your plan’s value applies again: {value}."
     },
     "tenant.owner_joined": {
-      "title": "{tenantName} has its first Owner",
-      "body": "{ownerName} joined {tenantName} as its first Owner."
+      "title": "{tenantName} has its Owner",
+      "body": "{ownerName} accepted the Owner invitation. {tenantName} is ready to use."
     },
     "tenant.suspended": {
       "title": "{tenantName} was suspended",
-      "body": "{actorName} suspended {tenantName}."
+      "body": "{actorName} suspended {tenantName}. Its members can’t open it until it is reactivated."
     },
     "tenant.reactivated": {
       "title": "{tenantName} was reactivated",
-      "body": "{actorName} reactivated {tenantName}."
+      "body": "{actorName} reactivated {tenantName}. Its members can open it again."
     },
     "tenant.closed": {
       "title": "{tenantName} was closed",
-      "body": "{actorName} closed {tenantName}. Its data is deleted on {reopenableUntil}."
+      "body": "{actorName} closed {tenantName}. It will be deleted on {reopenableUntil} unless someone reopens it."
     },
     "tenant.reopened": {
       "title": "{tenantName} was reopened",
-      "body": "{actorName} reopened {tenantName}."
+      "body": "{actorName} reopened {tenantName}. It is active again."
     },
     "tenant.purged": {
       "title": "{tenantName} was deleted",
-      "body": "The deletion of {tenantName} finished. Its data is gone."
+      "body": "The platform finished deleting {tenantName} and its data. Its name and slug stay in the list."
     }
   },
   "notificationWords": {
@@ -127,19 +127,19 @@
   "notificationCategories": {
     "access": {
       "name": "Your access",
-      "description": "When your role changes or you are removed from an organisation."
+      "description": "When your role in an organisation changes."
     },
     "member_invitations": {
-      "name": "Invitations you sent",
-      "description": "When a person you invited joins."
+      "name": "Members",
+      "description": "When someone accepts an invitation you sent."
     },
     "tenant_plans": {
-      "name": "Your organisation's plan",
-      "description": "When the plan or a limit of an organisation you own changes."
+      "name": "Organisation plan",
+      "description": "When the platform changes your organisation’s plan, or one of its limits or features."
     },
     "platform_tenants": {
-      "name": "Organisations",
-      "description": "When an organisation gets its first Owner, changes its status or is deleted."
+      "name": "Platform",
+      "description": "When an organisation gets its first Owner, changes status or is deleted."
     }
   }
 }

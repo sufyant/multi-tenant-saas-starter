@@ -42,7 +42,7 @@ public sealed class ChangeEmailPreferencesTests(Database database) : IAsyncLifet
         (await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("categories").EnumerateArray()
             .Select(category => (category.GetProperty("category").GetString(), category.GetProperty("enabled").GetBoolean()))
             .ShouldBe([("access", false), ("member_invitations", false), ("tenant_plans", true)]);
-        _api.Email.Sent.Where(sent => sent.To == on || sent.To == off).Select(sent => (sent.To, sent.Subject)).ShouldBe([(on, "The plan of Acme Ltd changed")]);
+        _api.Email.Sent.Where(sent => sent.To == on || sent.To == off).Select(sent => (sent.To, sent.Subject.StartsWith("Acme Ltd is now on ", StringComparison.Ordinal))).ShouldBe([(on, true)]);
         (await _audit.PlatformLogAsync(await _testData.UserIdOfAsync(choosing))).ShouldNotBeNull().ShouldContain("user.email_preferences_changed");
     }
 

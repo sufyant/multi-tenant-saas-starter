@@ -30,7 +30,7 @@ public sealed class NotificationCatalogTests
             "tenant.renamed",
             "billing",
             NotificationBell.Tenant,
-            NotificationLinkKind.Tenant,
+            NotificationLinkKind.TenantSettings,
             new Dictionary<NotificationChannel, bool>(),
             Required: false,
             [new("status", NotificationValueKind.Word, ["archived"]), new("actorName", NotificationValueKind.Person, Optional: true)]);

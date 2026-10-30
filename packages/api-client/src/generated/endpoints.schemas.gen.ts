@@ -643,10 +643,8 @@ export type NotificationLinkResponseKind = typeof NotificationLinkResponseKind[k
 
 
 export const NotificationLinkResponseKind = {
-  None: 'none',
-  Tenant: 'tenant',
+  Start: 'start',
   TenantMembers: 'tenant_members',
-  TenantPlan: 'tenant_plan',
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',

@@ -28,9 +28,9 @@ public sealed class NotificationTextTests
     }
 
     [Theory]
-    [InlineData(Language.En, "Your role changed in Acme", "Ada Lovelace changed your role from Member to Admin.")]
-    [InlineData(Language.Tr, "Acme kuruluşundaki rolünüz değişti", "Ada Lovelace, rolünüzü Üye rolünden Yönetici rolüne değiştirdi.")]
-    [InlineData(Language.Ar, "تغيّر دورك في Acme", "غيّر Ada Lovelace دورك من عضو إلى مشرف.")]
+    [InlineData(Language.En, "Your role in Acme changed", "Ada Lovelace changed your role from Member to Admin.")]
+    [InlineData(Language.Tr, "Acme kuruluşundaki rolünüz değişti", "Ada Lovelace rolünüzü Üye rolünden Yönetici rolüne değiştirdi.")]
+    [InlineData(Language.Ar, "تغيّر دورك في Acme", "غُيّر دورك من عضو إلى مشرف بواسطة Ada Lovelace.")]
     public void Render_ARoleChangeByAMember_NamesThemAndBothRolesInTheLanguage(Language language, string title, string body)
     {
         var text = NotificationText.Render(NotificationCatalog.MemberRoleChanged, SampleValues(NotificationCatalog.MemberRoleChanged), People, language, null);
@@ -85,7 +85,7 @@ public sealed class NotificationTextTests
     {
         var text = NotificationText.Render(NotificationCatalog.TenantSuspended, SampleValues(NotificationCatalog.TenantSuspended), new Dictionary<Guid, UserName>(), Language.En, null);
 
-        text.Body.ShouldBe("Deleted user suspended Acme.");
+        text.Body.ShouldBe("Deleted user suspended Acme. Its members can’t open it until it is reactivated.");
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class NotificationTextTests
 
         var text = NotificationText.Render(NotificationCatalog.TenantSuspended, SampleValues(NotificationCatalog.TenantSuspended), unnamed, Language.Tr, null);
 
-        text.Body.ShouldBe("Adsız kullanıcı, Acme kuruluşunu askıya aldı.");
+        text.Body.ShouldBe("Adsız kullanıcı, Acme kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.");
     }
 
     [Theory]
@@ -115,8 +115,8 @@ public sealed class NotificationTextTests
     }
 
     [Theory]
-    [InlineData("on", "The platform set Custom roles to on for your organisation.")]
-    [InlineData("unlimited", "The platform set Custom roles to unlimited for your organisation.")]
+    [InlineData("on", "The platform set Custom roles to on for your organisation, with no end date.")]
+    [InlineData("unlimited", "The platform set Custom roles to unlimited for your organisation, with no end date.")]
     public void Render_AnOverrideWithoutAnEnd_TakesTheTextWithoutTheEnd(string value, string body)
     {
         var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["keyName"] = "roles.custom", ["value"] = value };
@@ -125,9 +125,9 @@ public sealed class NotificationTextTests
     }
 
     [Theory]
-    [InlineData(Language.En, "The platform removed the override of Members limit. Your plan's value applies again: not set.")]
-    [InlineData(Language.Tr, "Platform, Üye sınırı için tanımlanan istisnayı kaldırdı. Planınızın değeri yeniden geçerli: ayarlanmadı.")]
-    [InlineData(Language.Ar, "أزالت المنصة الاستثناء من حد الأعضاء. تعود قيمة خطتك للتطبيق: غير محدد.")]
+    [InlineData(Language.En, "The platform removed the exception for Members limit. Your plan’s value applies again: not set.")]
+    [InlineData(Language.Tr, "Platform, Üye sınırı için tanınan istisnayı kaldırdı. Planınızın değeri yeniden geçerli: ayarlanmadı.")]
+    [InlineData(Language.Ar, "أزالت المنصة الاستثناء الخاص بـحد الأعضاء. تُطبَّق قيمة خطتك مجددًا: غير محدد.")]
     public void Render_ARemovedOverrideOfAKeyThePlanHasNoValueOf_WritesNotSet(Language language, string body)
     {
         var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["keyName"] = "members.max", ["value"] = "not_set" };
@@ -137,8 +137,8 @@ public sealed class NotificationTextTests
 
     // Noon in UTC on 29 November is already 30 November in Auckland (UTC+13).
     [Theory]
-    [InlineData(null, "Ada Lovelace closed Acme. Its data is deleted on 29 Nov 2026.")]
-    [InlineData("Pacific/Auckland", "Ada Lovelace closed Acme. Its data is deleted on 30 Nov 2026.")]
+    [InlineData(null, "Ada Lovelace closed Acme. It will be deleted on 29 Nov 2026 unless someone reopens it.")]
+    [InlineData("Pacific/Auckland", "Ada Lovelace closed Acme. It will be deleted on 30 Nov 2026 unless someone reopens it.")]
     public void Render_AClosedTenant_WritesTheDeletionDateInTheReadersTimeZone(string? timeZone, string body)
     {
         var values = SampleValues(NotificationCatalog.TenantClosed);
