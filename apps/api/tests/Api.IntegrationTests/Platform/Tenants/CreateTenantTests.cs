@@ -293,13 +293,14 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     }
 
     // A slug that is a top-level route of the web, today's or a common word a product adds later, is reserved: the route would hide the
-    // tenant's pages for good, because a slug never changes. One of each kind: a route of today, one of the proxy, a common word, and a
-    // route that the web's step 33-frontend names.
+    // tenant's pages for good, because a slug never changes. One of each kind: a route of today, one of the proxy, a common word, a
+    // route that the web's step 33-frontend names, and a metadata route of Next.js without an extension (a root icon.tsx serves /icon).
     [Theory]
     [InlineData("settings")]
     [InlineData("sign-in")]
     [InlineData("help")]
     [InlineData("sitemap")]
+    [InlineData("icon")]
     public async Task CreateTenant_ReservedSlug_IsAValidationProblemForTheSlug(string slug)
     {
         var admin = await SystemAdminAsync();
@@ -312,11 +313,12 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
     }
 
     // A reserved slug is matched exactly: a slug that contains or starts with a reserved word is no route of the web, whose open routes
-    // match whole segments. trpc is no route of the web (step 33-frontend's review).
+    // match whole segments. trpc is no route of the web (step 33-frontend's review), and /robots.txt never meets a slug, which has no dot.
     [Theory]
     [InlineData("acme-settings")]
     [InlineData("sign-inn")]
     [InlineData("trpc")]
+    [InlineData("robots-txt")]
     public async Task CreateTenant_SlugThatIsNoReservedSlugExactly_IsCreated(string slug)
     {
         var admin = await SystemAdminAsync();
