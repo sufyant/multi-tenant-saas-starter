@@ -2,6 +2,7 @@ import {
   ErrorCode,
   FieldErrorCode,
   Language,
+  ReservedSlug,
   TenantResponseStatus,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
@@ -19,6 +20,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { messages } from "@/i18n/messages";
 import {
   listAnswer,
   meAnswer,
@@ -87,11 +89,12 @@ const openCreate = async () => {
 const fill = async (
   dialog: ReturnType<typeof within>,
   values: { name?: string; slug?: string; email?: string },
+  labels = messages.en.organisations,
 ) => {
   const fields = [
-    ["Name", values.name ?? "Liffey Design"],
-    ["Slug", values.slug ?? "liffey-design"],
-    ["Owner’s email", values.email ?? "niamh@liffeydesign.example"],
+    [labels.name, values.name ?? "Liffey Design"],
+    [labels.slug, values.slug ?? "liffey-design"],
+    [labels.ownerEmail, values.email ?? "niamh@liffeydesign.example"],
   ] as const;
   for (const [label, value] of fields) {
     const field = dialog.getByRole("textbox", { name: label });
@@ -227,6 +230,64 @@ describe("CreateOrganisationDialog", () => {
 
     expect(await dialog.findByText(text)).toBeVisible();
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  // The API refuses a reserved slug with the field code `slug_reserved` (the enum `ReservedSlug`). The texts are written here, not
+  // read from the message files, so a wrong or missing text fails.
+  it.each([
+    ["en", "This slug is reserved."],
+    ["tr", "Bu kısa ad ayrılmış."],
+    ["ar", "هذا المعرّف محجوز."],
+  ] as const)(
+    "Create_SlugReservedIn_%s_ShowsItsTextUnderTheSlug",
+    async (locale, text) => {
+      const own = messages[locale].organisations;
+      server.use(
+        meAnswer(),
+        listAnswer(pageOf([northwind])),
+        createAnswer([
+          () =>
+            problem(400, ErrorCode.RequestValidationFailed, {
+              slug: [FieldErrorCode.SlugReserved],
+            }),
+        ]),
+      );
+
+      renderWithProviders(<OrganisationsPage />, locale);
+      await userEvent.click(
+        await screen.findByRole("button", { name: own.create }),
+      );
+      const dialog = within(
+        await screen.findByRole("alertdialog", { name: own.create }),
+      );
+      await fill(dialog, {}, own);
+      await userEvent.click(
+        dialog.getByRole("button", { name: own.createAction }),
+      );
+
+      expect(await dialog.findByText(text)).toBeVisible();
+      expect(
+        dialog.getByRole("textbox", { name: own.slug }),
+      ).toHaveAccessibleDescription(expect.stringContaining(text));
+    },
+  );
+
+  // The form knows the reserved list from the generated client and says so before any request; the API still decides.
+  it("Create_ReservedSlug_SaysSoAndSendsNothing", async () => {
+    const calls: Call[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(pageOf([northwind])),
+      createAnswer([created], calls),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    const dialog = await openCreate();
+    await fill(dialog, { slug: ReservedSlug.Settings });
+    await send(dialog);
+
+    expect(await dialog.findByText("This slug is reserved.")).toBeVisible();
+    expect(calls).toEqual([]);
   });
 
   it("Create_SuspendedUser_ReadsGetMeAgain", async () => {

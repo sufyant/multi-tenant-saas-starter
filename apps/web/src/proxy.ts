@@ -5,12 +5,13 @@ import { env } from "@/env";
 // session itself and answers 401 without one (F6), so a screen can send the user to sign-in (F4); Clerk's protect() would answer
 // such a call with 404. The accept page signs a new person up with Clerk's ticket, or sends a signed-out person to sign-in and
 // back (F44).
+// Each open route matches its whole first segments: `/sign-in` and `/sign-in/...`, never `/sign-inn`, which may be a tenant's slug (F58).
 const isOpen = createRouteMatcher([
-  "/sign-in(.*)",
-  "/sso-callback(.*)",
-  "/invitations/accept(.*)",
+  "/sign-in(/.*)?",
+  "/sso-callback(/.*)?",
+  "/invitations/accept(/.*)?",
   "/health",
-  "/api/(.*)",
+  "/api(/.*)?",
 ]);
 
 // The publishable key comes from the server at run time, and the sign-in page is the same in every environment (F7).
@@ -27,6 +28,7 @@ export default clerkMiddleware(
 export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    // The BFF's auth() needs the proxy, so every /api path runs it, one with a file extension too.
+    "/api(.*)",
   ],
 };

@@ -21,6 +21,7 @@ import {
   sdkImportRefusals,
   testFolders,
   testsBesideTheirFile,
+  unreservedTopLevelRoutes,
   userFacingLiterals,
 } from "./architecture-rules";
 
@@ -329,6 +330,38 @@ describe("architecture rules", () => {
       "en",
       "tr",
     ]);
+  });
+
+  it("UnreservedTopLevelRoutes_SegmentNotReserved_IsAFinding", () => {
+    const root = folder({
+      "(public)/sign-in/page.tsx": "",
+      "(app)/billing/page.tsx": "",
+      "health/route.ts": "",
+      "@modal/login/page.tsx": "",
+    });
+
+    expect(unreservedTopLevelRoutes(root, ["sign-in"])).toEqual([
+      "(app)/billing: the top-level route billing is no reserved slug; reserve it in the API first",
+      "@modal/login: the top-level route login is no reserved slug; reserve it in the API first",
+      "health: the top-level route health is no reserved slug; reserve it in the API first",
+    ]);
+  });
+
+  it("UnreservedTopLevelRoutes_GroupsSlugPrivateInterceptingAndNestedSegments_AreNoFinding", () => {
+    const root = folder({
+      "layout.tsx": "",
+      "(app)/[tenantSlug]/members/page.tsx": "",
+      "(app)/(shell)/settings/notifications/page.tsx": "",
+      "(public)/invitations/accept/page.tsx": "",
+      "_parts/a.tsx": "",
+      "@modal/default.tsx": "",
+      "@modal/(.)photo/page.tsx": "",
+      "api/[...path]/route.ts": "",
+    });
+
+    expect(
+      unreservedTopLevelRoutes(root, ["settings", "invitations", "api"]),
+    ).toEqual([]);
   });
 
   it("DuplicateRuleIds_TwoRowsWithOneId_IsAFinding", () => {
