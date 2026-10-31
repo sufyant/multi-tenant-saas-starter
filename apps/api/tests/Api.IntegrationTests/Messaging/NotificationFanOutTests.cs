@@ -1,5 +1,9 @@
+using System.Net.Http.Json;
 using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
+using Notifications.Application.Notifications.DeliverNotification;
+using Notifications.Domain;
+using SharedKernel;
 using Tenancy;
 using Wolverine;
 
@@ -309,6 +313,34 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         (await _rows.AboutAsync(purged.TenantId, await _testData.UserIdOfAsync(admin))).Length.ShouldBe(1);
     }
 
+    // O4, U4: with the web off no row is written, so a copy of a delivery finds nothing; the email's key, the notification's id, still
+    // keeps it to one email.
+    [Fact]
+    public async Task DeliverNotification_TwiceWithTheWebOff_WritesNoRowAndSendsOneEmail()
+    {
+        var email = PlatformTenants.Email();
+        var owner = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, await _testData.AddUserAsync(email: email), role: "Owner");
+        var ownerId = await _testData.UserIdOfAsync(owner);
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).PutAsJsonAsync(
+            "/v1/me/notification-preferences",
+            new { channels = new[] { new { channel = "web", enabled = false } }, categories = new[] { new { category = "tenant_plans", channel = "email", enabled = true } } },
+            Cancellation));
+        var deliver = new DeliverNotificationCommand(
+            Guid.CreateVersion7(),
+            NotificationCatalog.TenantPlanChanged,
+            ownerId,
+            Guid.CreateVersion7(),
+            new Dictionary<string, string> { ["tenantName"] = "Acme Ltd", ["oldPlanName"] = "Free", ["newPlanName"] = "Pro" },
+            DateTimeOffset.UtcNow,
+            email,
+            Language.En);
+
+        await SendAsync(deliver, deliver);
+
+        (await _rows.OfAsync(ownerId)).ShouldBeEmpty();
+        _api.Email.Sent.Where(sent => sent.To == email).Select(sent => sent.Subject).ShouldBe(["Acme Ltd is now on Pro"]);
+    }
+
     // The events, as ControlPlane publishes them, and every message they cause.
     private Task<int> PublishAsync(params object[] events) =>
         _api.WaitingForMessagesAsync(async () =>
@@ -321,5 +353,19 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
             }
 
             return events.Length;
+        });
+
+    // The messages, as a fan-out sends them, and every message they cause.
+    private Task<int> SendAsync(params object[] messages) =>
+        _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+            foreach (var message in messages)
+            {
+                await bus.SendAsync(message);
+            }
+
+            return messages.Length;
         });
 }

@@ -10,6 +10,8 @@ namespace Notifications.Domain;
 /// </summary>
 public static class NotificationCatalog
 {
+    public const string AccountSecurityCategory = "account_security";
+
     public const string AccessCategory = "access";
 
     public const string MembersCategory = "member_invitations";
@@ -52,8 +54,23 @@ public static class NotificationCatalog
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
     };
 
-    /// <summary>The categories in the order a screen lists them.</summary>
-    public static readonly IReadOnlyList<string> Categories = [AccessCategory, MembersCategory, PlanCategory, PlatformCategory];
+    /// <summary>
+    /// Every category, in the order a screen lists them, each with who it can reach, whether it is required, and each channel's default
+    /// (U1, U5). Today every category but the required one has the web on and the email off.
+    /// </summary>
+    public static readonly IReadOnlyList<NotificationCategoryKind> CategoryKinds =
+    [
+        // A person who turned a channel off still hears what they must know, on every channel: the screen shows it locked, with its
+        // description as its reason.
+        new(AccountSecurityCategory, NotificationAudience.Everyone, Required: true, EveryChannelOn()),
+        new(AccessCategory, NotificationAudience.Everyone, Required: false, WebOnEmailOff()),
+        new(MembersCategory, NotificationAudience.TenantInviters, Required: false, WebOnEmailOff()),
+        new(PlanCategory, NotificationAudience.TenantOwnerManagers, Required: false, WebOnEmailOff()),
+        new(PlatformCategory, NotificationAudience.SystemAdmins, Required: false, WebOnEmailOff()),
+    ];
+
+    /// <summary>The categories' names in the order a screen lists them.</summary>
+    public static readonly IReadOnlyList<string> Categories = [.. CategoryKinds.Select(category => category.Name)];
 
     /// <summary>Every type, by its name.</summary>
     public static readonly IReadOnlyDictionary<string, NotificationKind> Kinds = new NotificationKind[]
@@ -65,19 +82,17 @@ public static class NotificationCatalog
             AccessCategory,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")]),
 
-        // The removed person may have no other tenant and so never see a bell: the email always goes, and the type is not in the
-        // preferences (U4). Only a member removes a member: the platform does so only in the user's own deletion, which tells nobody. It
-        // leads to the start page, which opens what the person can still enter.
+        // The removed person may have no other tenant and so never see a bell: it is required, so every channel goes (U4). Only a member
+        // removes a member: the platform does so only in the user's own deletion, which tells nobody. It leads to the start page, which
+        // opens what the person can still enter.
         new(
             MemberRemoved,
-            AccessCategory,
+            AccountSecurityCategory,
             NotificationBell.Personal,
             NotificationLinkKind.Start,
-            InAppAndEmailOff(),
             Required: true,
             [Tenant(), Person("actorName")]),
         new(
@@ -85,7 +100,6 @@ public static class NotificationCatalog
             MembersCategory,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantMembers,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant(), Person("memberName"), Role("roleName")]),
         new(
@@ -93,7 +107,6 @@ public static class NotificationCatalog
             PlanCategory,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant(), new("oldPlanName", NotificationValueKind.Text), new("newPlanName", NotificationValueKind.Text)]),
 
@@ -103,7 +116,6 @@ public static class NotificationCatalog
             PlanCategory,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant(), Key(), new("value", NotificationValueKind.Entitlement), new("expiresAt", NotificationValueKind.Date, Optional: true)],
             LinkByKey: true),
@@ -114,7 +126,6 @@ public static class NotificationCatalog
             PlanCategory,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant(), Key(), new("value", NotificationValueKind.Entitlement)],
             LinkByKey: true),
@@ -123,7 +134,6 @@ public static class NotificationCatalog
             PlatformCategory,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant(), Person("ownerName")]),
         Status(TenantSuspended),
@@ -135,7 +145,6 @@ public static class NotificationCatalog
             PlatformCategory,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
-            InAppAndEmailOff(),
             Required: false,
             [Tenant()]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
@@ -144,13 +153,17 @@ public static class NotificationCatalog
     public static NotificationKind Of(string type) =>
         Kinds.TryGetValue(type, out var kind) ? kind : throw new InvalidOperationException($"The notification catalog has no type {type}.");
 
+    /// <summary>The entry of a category. A category the catalog does not know is a mistake of ours.</summary>
+    public static NotificationCategoryKind CategoryOf(string category) =>
+        CategoryKinds.SingleOrDefault(kind => kind.Name == category)
+        ?? throw new InvalidOperationException($"The notification catalog has no category {category}.");
+
     // A change of a tenant's status, to every system admin but the one who did it, in the platform's bell.
     private static NotificationKind Status(string type, params NotificationValue[] more) => new(
         type,
         PlatformCategory,
         NotificationBell.Platform,
         NotificationLinkKind.PlatformTenant,
-        InAppAndEmailOff(),
         Required: false,
         [Tenant(), Person("actorName"), .. more]);
 
@@ -162,7 +175,10 @@ public static class NotificationCatalog
 
     private static NotificationValue Key() => new(NotificationKind.KeyValue, NotificationValueKind.EntitlementKey);
 
-    // Every category's email is off by default today; turning a type's email on is one change here.
-    private static Dictionary<NotificationChannel, bool> InAppAndEmailOff() =>
-        new() { [NotificationChannel.InApp] = true, [NotificationChannel.Email] = false };
+    // A category's defaults name every channel; turning a category's email on by default is one change here.
+    private static Dictionary<NotificationChannel, bool> WebOnEmailOff() =>
+        new() { [NotificationChannel.Web] = true, [NotificationChannel.Email] = false };
+
+    private static Dictionary<NotificationChannel, bool> EveryChannelOn() =>
+        Enum.GetValues<NotificationChannel>().ToDictionary(channel => channel, _ => true);
 }

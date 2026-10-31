@@ -1,3 +1,4 @@
+using Notifications.Api.Me.NotificationPreferences;
 using Notifications.Api.Tenant.Notifications;
 
 namespace Notifications.Api.Statuses;
@@ -13,5 +14,12 @@ internal static class ResponseStatus
         "TenantSettings" => NotificationLinkResponseKind.TenantSettings,
         "PlatformTenant" => NotificationLinkResponseKind.PlatformTenant,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "The response has no value for this kind of Notifications."),
+    };
+
+    public static NotificationChannelKind OfChannel(string channel) => channel switch
+    {
+        "Web" => NotificationChannelKind.Web,
+        "Email" => NotificationChannelKind.Email,
+        _ => throw new ArgumentOutOfRangeException(nameof(channel), channel, "The response has no value for this channel of Notifications."),
     };
 }

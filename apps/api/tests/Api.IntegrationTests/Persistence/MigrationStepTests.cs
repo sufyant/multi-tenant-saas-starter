@@ -264,6 +264,37 @@ public sealed class MigrationStepTests(Database database)
         (refused.SqlState, refused.ConstraintName).ShouldBe((PostgresErrorCodes.CheckViolation, "ck_notifications_type"));
     }
 
+    // Step 33-backend-4: the preferences become a table of categories and channels. The migration copies each stored email choice into the
+    // new table: the email's main switch off, and each category whose email is on. The table of the version before keeps its rows, because
+    // that version still serves during the deploy (docs/deployment.md, section 8); a later release drops it.
+    [Fact]
+    public async Task Migrate_NotificationPreferencesPerChannel_KeepsTodaysEmailChoicesAndTheOldRows()
+    {
+        var before = await database.CreateDatabaseBeforeNotificationsMigrationAsync("NotificationPreferencesPerChannel");
+        var (off, chosen, both) = (new Guid("00000000-0000-7000-8000-000000000001"), new Guid("00000000-0000-7000-8000-000000000002"), new Guid("00000000-0000-7000-8000-000000000003"));
+        await database.ScalarAsSuperuserAsync<object>(
+            $$"""
+            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES
+            ('{{off}}', false, '{}'),
+            ('{{chosen}}', true, '{"access": true, "tenant_plans": true}'),
+            ('{{both}}', false, '{"member_invitations": true}')
+            """,
+            before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>(
+            "SELECT string_agg(concat_ws(' ', user_id, channels, categories), E'\n' ORDER BY user_id) FROM notifications.notification_preferences",
+            before)).ShouldBe(
+            $$$"""
+            {{{off}}} {"Email": false} {}
+            {{{chosen}}} {} {"access": {"Email": true}, "tenant_plans": {"Email": true}}
+            {{{both}}} {"Email": false} {"member_invitations": {"Email": true}}
+            """);
+        (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.email_preferences", before)).ShouldBe(3);
+    }
+
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
     // default mark (R15).
     [Fact]

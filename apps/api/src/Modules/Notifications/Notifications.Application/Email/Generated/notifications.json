@@ -2,6 +2,7 @@
   "en": {
     "types": {
       "member.role_changed": {
+        "name": "Your role changed",
         "title": "Your role in {{tenantName}} changed",
         "body": "{{actorName}} changed your role from {{oldRoleName}} to {{newRoleName}}.",
         "without": {
@@ -11,18 +12,22 @@
         }
       },
       "member.removed": {
+        "name": "You were removed from an organisation",
         "title": "You were removed from {{tenantName}}",
         "body": "{{actorName}} removed you from {{tenantName}}. You can no longer open it or see its notifications."
       },
       "member.joined": {
+        "name": "A member joined",
         "title": "{{memberName}} joined {{tenantName}}",
         "body": "{{memberName}} accepted your invitation and joined as {{roleName}}."
       },
       "tenant.plan_changed": {
+        "name": "Plan changed",
         "title": "{{tenantName}} is now on {{newPlanName}}",
         "body": "The platform moved your organisation from {{oldPlanName}} to {{newPlanName}}. Its features and limits follow the new plan."
       },
       "tenant.entitlement_override_set": {
+        "name": "Plan value changed",
         "title": "A plan value changed for {{tenantName}}",
         "body": "The platform set {{keyName}} to {{value}} for your organisation. Your plan’s value applies again on {{expiresAt}}.",
         "without": {
@@ -32,30 +37,37 @@
         }
       },
       "tenant.entitlement_override_removed": {
+        "name": "Plan value reset",
         "title": "A plan value changed for {{tenantName}}",
         "body": "The platform removed the exception for {{keyName}}. Your plan’s value applies again: {{value}}."
       },
       "tenant.owner_joined": {
+        "name": "Owner joined",
         "title": "{{tenantName}} has its Owner",
         "body": "{{ownerName}} accepted the Owner invitation. {{tenantName}} is ready to use."
       },
       "tenant.suspended": {
+        "name": "Organisation suspended",
         "title": "{{tenantName}} was suspended",
         "body": "{{actorName}} suspended {{tenantName}}. Its members can’t open it until it is reactivated."
       },
       "tenant.reactivated": {
+        "name": "Organisation reactivated",
         "title": "{{tenantName}} was reactivated",
         "body": "{{actorName}} reactivated {{tenantName}}. Its members can open it again."
       },
       "tenant.closed": {
+        "name": "Organisation closed",
         "title": "{{tenantName}} was closed",
         "body": "{{actorName}} closed {{tenantName}}. It will be deleted on {{reopenableUntil}} unless someone reopens it."
       },
       "tenant.reopened": {
+        "name": "Organisation reopened",
         "title": "{{tenantName}} was reopened",
         "body": "{{actorName}} reopened {{tenantName}}. It is active again."
       },
       "tenant.purged": {
+        "name": "Organisation deleted",
         "title": "{{tenantName}} was deleted",
         "body": "The platform finished deleting {{tenantName}} and its data. Its name and slug stay in the list."
       }
@@ -78,6 +90,10 @@
       }
     },
     "categories": {
+      "account_security": {
+        "name": "Account and security",
+        "description": "When something happens to your account or your access to an organisation that you must know about."
+      },
       "access": {
         "name": "Your access",
         "description": "When your role in an organisation changes."
@@ -103,6 +119,7 @@
   "tr": {
     "types": {
       "member.role_changed": {
+        "name": "Rolünüz değişti",
         "title": "{{tenantName}} kuruluşundaki rolünüz değişti",
         "body": "{{actorName}} rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi.",
         "without": {
@@ -112,18 +129,22 @@
         }
       },
       "member.removed": {
+        "name": "Bir kuruluştan çıkarıldınız",
         "title": "{{tenantName}} kuruluşundan çıkarıldınız",
         "body": "{{actorName}} sizi {{tenantName}} kuruluşundan çıkardı. Artık bu kuruluşu açamaz ve bildirimlerini göremezsiniz."
       },
       "member.joined": {
+        "name": "Bir üye katıldı",
         "title": "{{memberName}}, {{tenantName}} kuruluşuna katıldı",
         "body": "{{memberName}} davetinizi kabul etti ve {{roleName}} rolüyle katıldı."
       },
       "tenant.plan_changed": {
+        "name": "Plan değişti",
         "title": "{{tenantName}} artık {{newPlanName}} planında",
         "body": "Platform, kuruluşunuzu {{oldPlanName}} planından {{newPlanName}} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
       },
       "tenant.entitlement_override_set": {
+        "name": "Bir plan değeri değişti",
         "title": "{{tenantName}} için bir plan değeri değişti",
         "body": "Platform, kuruluşunuz için {{keyName}} değerini {{value}} yaptı. Planınızın değeri {{expiresAt}} tarihinde yeniden geçerli olur.",
         "without": {
@@ -133,30 +154,37 @@
         }
       },
       "tenant.entitlement_override_removed": {
+        "name": "Bir plan değeri sıfırlandı",
         "title": "{{tenantName}} için bir plan değeri değişti",
         "body": "Platform, {{keyName}} için tanınan istisnayı kaldırdı. Planınızın değeri yeniden geçerli: {{value}}."
       },
       "tenant.owner_joined": {
+        "name": "Sahip katıldı",
         "title": "{{tenantName}} kuruluşunun Sahibi katıldı",
         "body": "{{ownerName}}, Sahip davetini kabul etti. {{tenantName}} kullanıma hazır."
       },
       "tenant.suspended": {
+        "name": "Kuruluş askıya alındı",
         "title": "{{tenantName}} askıya alındı",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz."
       },
       "tenant.reactivated": {
+        "name": "Kuruluş yeniden etkinleştirildi",
         "title": "{{tenantName}} yeniden etkinleştirildi",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir."
       },
       "tenant.closed": {
+        "name": "Kuruluş kapatıldı",
         "title": "{{tenantName}} kapatıldı",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu kapattı. Biri yeniden açmazsa {{reopenableUntil}} tarihinde silinecek."
       },
       "tenant.reopened": {
+        "name": "Kuruluş yeniden açıldı",
         "title": "{{tenantName}} yeniden açıldı",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden açtı. Kuruluş yeniden etkin."
       },
       "tenant.purged": {
+        "name": "Kuruluş silindi",
         "title": "{{tenantName}} silindi",
         "body": "Platform, {{tenantName}} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır."
       }
@@ -179,6 +207,10 @@
       }
     },
     "categories": {
+      "account_security": {
+        "name": "Hesap ve güvenlik",
+        "description": "Hesabınızda ya da bir kuruluşa erişiminizde bilmeniz gereken bir şey olduğunda."
+      },
       "access": {
         "name": "Erişiminiz",
         "description": "Bir kuruluştaki rolünüz değiştiğinde."
@@ -204,6 +236,7 @@
   "ar": {
     "types": {
       "member.role_changed": {
+        "name": "تغيّر دورك",
         "title": "تغيّر دورك في {{tenantName}}",
         "body": "غُيّر دورك من {{oldRoleName}} إلى {{newRoleName}} بواسطة {{actorName}}.",
         "without": {
@@ -213,18 +246,22 @@
         }
       },
       "member.removed": {
+        "name": "تمت إزالتك من مؤسسة",
         "title": "تمت إزالتك من {{tenantName}}",
         "body": "أزالك {{actorName}} من {{tenantName}}. لم يعد بإمكانك فتحها أو رؤية إشعاراتها."
       },
       "member.joined": {
+        "name": "انضم عضو",
         "title": "انضم {{memberName}} إلى {{tenantName}}",
         "body": "قبِل {{memberName}} دعوتك وانضم بصفة {{roleName}}."
       },
       "tenant.plan_changed": {
+        "name": "تغيّرت الخطة",
         "title": "أصبحت {{tenantName}} على خطة {{newPlanName}}",
         "body": "نقلت المنصة مؤسستك من خطة {{oldPlanName}} إلى خطة {{newPlanName}}. تتبع الميزات والحدود الخطة الجديدة."
       },
       "tenant.entitlement_override_set": {
+        "name": "تغيّرت قيمة في الخطة",
         "title": "تغيّرت قيمة في خطة {{tenantName}}",
         "body": "جعلت المنصة {{keyName}} لمؤسستك {{value}}. تعود قيمة خطتك للتطبيق في {{expiresAt}}.",
         "without": {
@@ -234,30 +271,37 @@
         }
       },
       "tenant.entitlement_override_removed": {
+        "name": "أُعيد ضبط قيمة في الخطة",
         "title": "تغيّرت قيمة في خطة {{tenantName}}",
         "body": "أزالت المنصة الاستثناء الخاص بـ{{keyName}}. تُطبَّق قيمة خطتك مجددًا: {{value}}."
       },
       "tenant.owner_joined": {
+        "name": "انضم المالك",
         "title": "انضم مالك {{tenantName}}",
         "body": "قبِل {{ownerName}} دعوة المالك. أصبحت {{tenantName}} جاهزة للاستخدام."
       },
       "tenant.suspended": {
+        "name": "عُلّقت مؤسسة",
         "title": "عُلّقت {{tenantName}}",
         "body": "علّق {{actorName}} مؤسسة {{tenantName}}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها."
       },
       "tenant.reactivated": {
+        "name": "أُعيد تفعيل مؤسسة",
         "title": "أُعيد تفعيل {{tenantName}}",
         "body": "أعاد {{actorName}} تفعيل {{tenantName}}. يستطيع أعضاؤها فتحها مجددًا."
       },
       "tenant.closed": {
+        "name": "أُغلقت مؤسسة",
         "title": "أُغلقت {{tenantName}}",
         "body": "أغلق {{actorName}} مؤسسة {{tenantName}}. ستُحذف في {{reopenableUntil}} ما لم يُعِد أحد فتحها."
       },
       "tenant.reopened": {
+        "name": "أُعيد فتح مؤسسة",
         "title": "أُعيد فتح {{tenantName}}",
         "body": "أعاد {{actorName}} فتح {{tenantName}}. أصبحت نشطة مجددًا."
       },
       "tenant.purged": {
+        "name": "حُذفت مؤسسة",
         "title": "حُذفت {{tenantName}}",
         "body": "أنهت المنصة حذف {{tenantName}} وبياناتها. يبقى اسمها ومعرّفها في القائمة."
       }
@@ -280,6 +324,10 @@
       }
     },
     "categories": {
+      "account_security": {
+        "name": "الحساب والأمان",
+        "description": "عندما يحدث في حسابك أو في وصولك إلى مؤسسة أمر يجب أن تعرفه."
+      },
       "access": {
         "name": "وصولك",
         "description": "عندما يتغيّر دورك في مؤسسة."

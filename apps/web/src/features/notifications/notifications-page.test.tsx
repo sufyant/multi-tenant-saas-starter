@@ -1,7 +1,8 @@
 import {
   BuiltInRole,
-  type ChangeEmailPreferencesRequest,
+  type ChangeNotificationPreferencesRequest,
   NotificationCategory,
+  NotificationChannelKind,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
@@ -17,26 +18,47 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-/** GetEmailPreferences, which counts its reads, and ChangeEmailPreferences, which records each body and answers it back. */
+/** A row of the table with its web on and its email as given. */
+const row = (
+  category: NotificationCategory,
+  email: boolean,
+  required = false,
+) => ({
+  category,
+  required,
+  types: [],
+  channels: [
+    { channel: NotificationChannelKind.Web, enabled: true },
+    { channel: NotificationChannelKind.Email, enabled: email },
+  ],
+});
+
+/** The table of an Owner: the column's main switches and the rows that reach them, the required one first. */
+const ownersTable = {
+  channels: [
+    { channel: NotificationChannelKind.Web, enabled: true },
+    { channel: NotificationChannelKind.Email, enabled: true },
+  ],
+  categories: [
+    row(NotificationCategory.AccountSecurity, true, true),
+    row(NotificationCategory.Access, false),
+    row(NotificationCategory.TenantPlans, false),
+  ],
+};
+
+/** GetNotificationPreferences, which counts its reads, and ChangeNotificationPreferences, which records each body. */
 function preferencesAnswers(
-  sent: ChangeEmailPreferencesRequest[],
+  sent: ChangeNotificationPreferencesRequest[],
   reads = { count: 0 },
 ) {
   return [
-    http.get("*/v1/me/email-preferences", () => {
+    http.get("*/v1/me/notification-preferences", () => {
       reads.count += 1;
-      return HttpResponse.json({
-        enabled: true,
-        categories: [
-          { category: NotificationCategory.Access, enabled: false },
-          { category: NotificationCategory.TenantPlans, enabled: false },
-        ],
-      });
+      return HttpResponse.json(ownersTable);
     }),
-    http.put("*/v1/me/email-preferences", async ({ request }) => {
-      const body = (await request.json()) as ChangeEmailPreferencesRequest;
-      sent.push(body);
-      return HttpResponse.json(body);
+    http.put("*/v1/me/notification-preferences", async ({ request }) => {
+      sent.push((await request.json()) as ChangeNotificationPreferencesRequest);
+      return HttpResponse.json(ownersTable);
     }),
   ];
 }
@@ -65,7 +87,7 @@ describe("NotificationsPage", () => {
   });
 
   it("NotificationsPage_Save_SendsTheChoiceConfirmsAndReadsAgain", async () => {
-    const sent: ChangeEmailPreferencesRequest[] = [];
+    const sent: ChangeNotificationPreferencesRequest[] = [];
     const reads = { count: 0 };
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
@@ -81,10 +103,18 @@ describe("NotificationsPage", () => {
     await expectVisibleToast("Notification settings saved.");
     expect(sent).toEqual([
       {
-        enabled: true,
+        channels: [{ channel: NotificationChannelKind.Email, enabled: true }],
         categories: [
-          { category: NotificationCategory.Access, enabled: true },
-          { category: NotificationCategory.TenantPlans, enabled: false },
+          {
+            category: NotificationCategory.Access,
+            channel: NotificationChannelKind.Email,
+            enabled: true,
+          },
+          {
+            category: NotificationCategory.TenantPlans,
+            channel: NotificationChannelKind.Email,
+            enabled: false,
+          },
         ],
       },
     ]);

@@ -7975,19 +7975,19 @@
         }
       }
     },
-    "/v1/me/email-preferences": {
+    "/v1/me/notification-preferences": {
       "get": {
         "tags": [
-          "Me/EmailPreferences"
+          "Me/NotificationPreferences"
         ],
-        "operationId": "GetEmailPreferences",
+        "operationId": "GetNotificationPreferences",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmailPreferencesResponse"
+                  "$ref": "#/components/schemas/NotificationPreferencesResponse"
                 }
               }
             }
@@ -8085,14 +8085,14 @@
       },
       "put": {
         "tags": [
-          "Me/EmailPreferences"
+          "Me/NotificationPreferences"
         ],
-        "operationId": "ChangeEmailPreferences",
+        "operationId": "ChangeNotificationPreferences",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangeEmailPreferencesRequest"
+                "$ref": "#/components/schemas/ChangeNotificationPreferencesRequest"
               }
             }
           },
@@ -8104,7 +8104,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmailPreferencesResponse"
+                  "$ref": "#/components/schemas/NotificationPreferencesResponse"
                 }
               }
             }
@@ -8579,9 +8579,10 @@
           "Plan"
         ]
       },
-      "CategoryEmailPreferenceRequest": {
+      "CategoryPreferenceRequest": {
         "required": [
           "category",
+          "channel",
           "enabled"
         ],
         "type": "object",
@@ -8589,48 +8590,49 @@
           "category": {
             "$ref": "#/components/schemas/NotificationCategory"
           },
+          "channel": {
+            "description": "The channel of the switch.",
+            "$ref": "#/components/schemas/NotificationChannelKind"
+          },
           "enabled": {
             "type": "boolean",
-            "description": "Whether a notification of the category goes by email too."
+            "description": "Whether a notification of the category goes on the channel."
           }
         },
-        "description": "One category's new email switch."
+        "description": "A category's new switch in one channel."
       },
-      "CategoryEmailPreferenceResponse": {
+      "CategoryPreferenceResponse": {
         "required": [
           "category",
-          "enabled"
+          "required",
+          "types",
+          "channels"
         ],
         "type": "object",
         "properties": {
           "category": {
             "$ref": "#/components/schemas/NotificationCategory"
           },
-          "enabled": {
+          "required": {
             "type": "boolean",
-            "description": "Whether a notification of the category goes by email too."
-          }
-        },
-        "description": "One category's email switch."
-      },
-      "ChangeEmailPreferencesRequest": {
-        "required": [
-          "enabled",
-          "categories"
-        ],
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean"
+            "description": "Whether the category is required: on in every channel and locked, whatever the main switches say."
           },
-          "categories": {
+          "types": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CategoryEmailPreferenceRequest"
-            }
+              "$ref": "#/components/schemas/NotificationTypeNameResponse"
+            },
+            "description": "The types of the category; they cannot be chosen one by one."
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelPreferenceResponse"
+            },
+            "description": "The category's switch in each channel, in the order of the columns."
           }
         },
-        "description": "The new email preferences: the main switch, and a choice for some categories. A category that cannot reach the user is not kept, and a\ncategory left out keeps its choice."
+        "description": "A category's row."
       },
       "ChangeMemberRoleRequest": {
         "required": [
@@ -8644,6 +8646,28 @@
           }
         },
         "description": "The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to\nan empty id."
+      },
+      "ChangeNotificationPreferencesRequest": {
+        "required": [
+          "channels",
+          "categories"
+        ],
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelPreferenceRequest"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryPreferenceRequest"
+            }
+          }
+        },
+        "description": "The new notification preferences: some main switches, and some categories in some channels. A switch left out keeps its value, a\ncategory that cannot reach the user is not kept, and a required category is refused (`notification_preferences.category_required`)."
       },
       "ChangePreferencesRequest": {
         "required": [
@@ -8677,6 +8701,40 @@
           }
         },
         "description": "The plan the tenant is put on, or, in a preview, would be."
+      },
+      "ChannelPreferenceRequest": {
+        "required": [
+          "channel",
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "channel": {
+            "description": "The channel, a column of the screen.",
+            "$ref": "#/components/schemas/NotificationChannelKind"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether any category that is not required goes on the channel."
+          }
+        },
+        "description": "A channel's new main switch, \"All\"."
+      },
+      "ChannelPreferenceResponse": {
+        "required": [
+          "channel",
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/NotificationChannelKind"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "A channel's switch: the main switch of a column, or a category's switch in it."
       },
       "CreatePlanRequest": {
         "required": [
@@ -8807,25 +8865,6 @@
           }
         }
       },
-      "EmailPreferencesResponse": {
-        "required": [
-          "enabled",
-          "categories"
-        ],
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean"
-          },
-          "categories": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CategoryEmailPreferenceResponse"
-            }
-          }
-        },
-        "description": "The signed-in user's email preferences for notifications (U5): the main switch, and the switch of each category that can reach them. In-app\nnotifications cannot be turned off, and a required type is not listed: it always sends its email."
-      },
       "EntitlementOverrideResponse": {
         "required": [
           "value",
@@ -8934,7 +8973,6 @@
         "enum": [
           "auth.forbidden",
           "auth.unauthenticated",
-          "email_preferences.not_found",
           "idempotency.key_in_progress",
           "idempotency.key_invalid",
           "idempotency.key_reused",
@@ -8953,6 +8991,8 @@
           "member.not_found",
           "member.owner_requires_owner",
           "notification.not_found",
+          "notification_preferences.category_required",
+          "notification_preferences.not_found",
           "paging.cursor_invalid",
           "paging.filter_invalid",
           "paging.limit_invalid",
@@ -9017,7 +9057,6 @@
         "x-enumNames": [
           "AuthForbidden",
           "AuthUnauthenticated",
-          "EmailPreferencesNotFound",
           "IdempotencyKeyInProgress",
           "IdempotencyKeyInvalid",
           "IdempotencyKeyReused",
@@ -9036,6 +9075,8 @@
           "MemberNotFound",
           "MemberOwnerRequiresOwner",
           "NotificationNotFound",
+          "NotificationPreferencesCategoryRequired",
+          "NotificationPreferencesNotFound",
           "PagingCursorInvalid",
           "PagingFilterInvalid",
           "PagingLimitInvalid",
@@ -9931,6 +9972,7 @@
       },
       "NotificationCategory": {
         "enum": [
+          "account_security",
           "access",
           "member_invitations",
           "tenant_plans",
@@ -9939,10 +9981,23 @@
         "type": "string",
         "description": "The category of a notification, which the email preferences name.",
         "x-enumNames": [
+          "AccountSecurity",
           "Access",
           "MemberInvitations",
           "TenantPlans",
           "PlatformTenants"
+        ]
+      },
+      "NotificationChannelKind": {
+        "enum": [
+          "web",
+          "email"
+        ],
+        "type": "string",
+        "description": "A channel of the notification preferences, a column of the screen. Push joins as a third in step 48.",
+        "x-enumNames": [
+          "Web",
+          "Email"
         ]
       },
       "NotificationLinkResponse": {
@@ -9982,6 +10037,28 @@
           "TenantSettings",
           "PlatformTenant"
         ]
+      },
+      "NotificationPreferencesResponse": {
+        "required": [
+          "channels",
+          "categories"
+        ],
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelPreferenceResponse"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryPreferenceResponse"
+            }
+          }
+        },
+        "description": "The signed-in user's notification preferences (U5): a table whose columns are the channels, each with its main switch, and whose rows\nare the categories that can reach the user, each with its types and its switch in each channel. The required category is listed,\nlocked."
       },
       "NotificationResponse": {
         "required": [
@@ -10066,6 +10143,24 @@
           "TenantReopened",
           "TenantSuspended"
         ]
+      },
+      "NotificationTypeNameResponse": {
+        "required": [
+          "type",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type, from the enum NotificationType."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its short name in the reader's language."
+          }
+        },
+        "description": "A type of a category, which the screen lists under its row, read only."
       },
       "OwnerInvitationResponse": {
         "required": [
@@ -11745,10 +11840,10 @@
   ],
   "tags": [
     {
-      "name": "Me/EmailPreferences"
+      "name": "Me/Invitations"
     },
     {
-      "name": "Me/Invitations"
+      "name": "Me/NotificationPreferences"
     },
     {
       "name": "Me/Notifications"

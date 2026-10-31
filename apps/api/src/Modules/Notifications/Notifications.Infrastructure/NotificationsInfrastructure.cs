@@ -2,12 +2,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Notifications.Application.Email;
-using Notifications.Application.EmailPreferences;
+using Notifications.Application.NotificationPreferences;
 using Notifications.Application.Invitations;
 using Notifications.Application.Notifications;
 using Notifications.Infrastructure.Email;
 using Notifications.Infrastructure.Persistence;
-using Notifications.Infrastructure.Persistence.EmailPreferences;
+using Notifications.Infrastructure.Persistence.NotificationPreferences;
 using Notifications.Infrastructure.Persistence.Notifications;
 using Notifications.Infrastructure.Retention;
 using SharedKernel;
@@ -38,8 +38,8 @@ public static class NotificationsInfrastructure
         // Registered by type, so Wolverine builds them in its generated code on the handler's own DbContext (W1).
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationQueries, NotificationQueries>();
-        services.AddScoped<IEmailPreferenceRepository, EmailPreferenceRepository>();
-        services.AddScoped<IEmailPreferenceQueries, EmailPreferenceQueries>();
+        services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();
+        services.AddScoped<INotificationPreferenceQueries, NotificationPreferenceQueries>();
 
         // Outside Development email goes only through Resend. Without its settings no email could leave, invitations included, so the
         // application does not start.

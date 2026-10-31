@@ -327,8 +327,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         categories.ShouldBe(string.Join(", ", NotificationCatalog.Categories));
         referring.ShouldBe(
             [
-                "CategoryEmailPreferenceRequest.category",
-                "CategoryEmailPreferenceResponse.category",
+                "CategoryPreferenceRequest.category",
+                "CategoryPreferenceResponse.category",
                 "NotificationResponse.type",
                 "NotificationResponse.category",
             ],

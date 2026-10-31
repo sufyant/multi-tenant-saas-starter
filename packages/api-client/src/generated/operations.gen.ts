@@ -13,20 +13,20 @@ export const operations = [
     ]
   },
   {
-    "operationId": "ChangeEmailPreferences",
-    "method": "PUT",
-    "path": "/v1/me/email-preferences",
-    "tag": "Me/EmailPreferences",
+    "operationId": "ChangeMemberRole",
+    "method": "PATCH",
+    "path": "/v1/tenants/{tenantId}/members/{userId}",
+    "tag": "Tenant/Members",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
     ]
   },
   {
-    "operationId": "ChangeMemberRole",
-    "method": "PATCH",
-    "path": "/v1/tenants/{tenantId}/members/{userId}",
-    "tag": "Tenant/Members",
+    "operationId": "ChangeNotificationPreferences",
+    "method": "PUT",
+    "path": "/v1/me/notification-preferences",
+    "tag": "Me/NotificationPreferences",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -124,16 +124,6 @@ export const operations = [
     ]
   },
   {
-    "operationId": "GetEmailPreferences",
-    "method": "GET",
-    "path": "/v1/me/email-preferences",
-    "tag": "Me/EmailPreferences",
-    "requestHeaders": [],
-    "responseHeaders": [
-      "Retry-After"
-    ]
-  },
-  {
     "operationId": "GetInvitationPreview",
     "method": "POST",
     "path": "/v1/me/invitations/preview",
@@ -168,6 +158,16 @@ export const operations = [
     "method": "GET",
     "path": "/v1/me/notifications/unread-count",
     "tag": "Me/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetNotificationPreferences",
+    "method": "GET",
+    "path": "/v1/me/notification-preferences",
+    "tag": "Me/NotificationPreferences",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

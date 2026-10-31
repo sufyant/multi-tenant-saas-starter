@@ -21,7 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var notificationsDbContext = new Notifications.Infrastructure.Persistence.NotificationsDbContext(_dbContextOptionsOfNotificationsDbContext, context);
-            var emailPreferenceRepository = new Notifications.Infrastructure.Persistence.EmailPreferences.EmailPreferenceRepository(notificationsDbContext);
+            var notificationPreferenceRepository = new Notifications.Infrastructure.Persistence.NotificationPreferences.NotificationPreferenceRepository(notificationsDbContext);
             var notificationRepository = new Notifications.Infrastructure.Persistence.Notifications.NotificationRepository(notificationsDbContext);
             // The actual message body
             var deliverNotificationCommand = (Notifications.Application.Notifications.DeliverNotification.DeliverNotificationCommand)context.Envelope.Message;
@@ -42,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler.HandleAsync(deliverNotificationCommand, notificationRepository, emailPreferenceRepository, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler.HandleAsync(deliverNotificationCommand, notificationRepository, notificationPreferenceRepository, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

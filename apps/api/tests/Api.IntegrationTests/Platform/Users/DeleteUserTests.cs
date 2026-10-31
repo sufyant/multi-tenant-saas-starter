@@ -61,7 +61,8 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(second.Id);
     }
 
-    // U8: a user's deletion deletes their notifications and their email preferences, in every bell, and leaves another user's.
+    // U8: a user's deletion deletes their notifications and their notification preferences, in every bell, and leaves another user's.
+    // Their email preferences of the version before go too, until a later release drops that table.
     [Fact]
     public async Task DeleteUser_WithNotificationsAndPreferences_DeletesThemAndKeepsAnotherUsers()
     {
@@ -73,12 +74,15 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await rows.AddAsync(id, "tenant.plan_changed", tenant.Id, "Tenant");
         await rows.AddAsync(id, "member.removed", null, "Personal");
         await rows.AddAsync(other, "tenant.plan_changed", tenant.Id, "Tenant");
+        await database.ExecuteAsUserAsync(id, $"INSERT INTO notifications.notification_preferences (user_id, channels, categories) VALUES ('{id}', '{{\"Email\": false}}', '{{}}')");
         await database.ExecuteAsUserAsync(id, $"INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{id}', false, '{{}}')");
 
         await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
 
         (await rows.OfAsync(id, other)).ShouldBe([NotificationRows.Row(other, "tenant.plan_changed", tenant.Id, "Tenant")]);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.email_preferences WHERE user_id = '{id}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT (SELECT count(*) FROM notifications.notification_preferences WHERE user_id = '{id}') + (SELECT count(*) FROM notifications.email_preferences WHERE user_id = '{id}')"))
+            .ShouldBe(0);
     }
 
     // Only the grant and the revocation of a system admin ask for a fresh second factor (decision A of 2026-10-23): a deletion takes a

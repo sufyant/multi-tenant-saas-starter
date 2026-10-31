@@ -5,8 +5,8 @@ import {
   AuditOperation,
   AuditTargetResponseKind,
   BuiltInRole,
-  type ChangeEmailPreferencesRequest,
   type ChangeMemberRoleRequest,
+  type ChangeNotificationPreferencesRequest,
   type ChangePreferencesRequest,
   type CursorPageOfAuditEntryResponse,
   ErrorCode,
@@ -22,6 +22,7 @@ import {
   type MyTenantResponse,
   type MyTenantResponseStatus,
   NotificationCategory,
+  NotificationChannelKind,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
@@ -595,11 +596,36 @@ export const roleChanged: NotificationResponse = {
   readAt: null,
 };
 
+/** A table of the notification preferences: the required row, then each category with its web on and its email off. */
+function preferencesTable(categories: NotificationCategory[]) {
+  const channels = (email: boolean) => [
+    { channel: NotificationChannelKind.Web, enabled: true },
+    { channel: NotificationChannelKind.Email, enabled: email },
+  ];
+  return {
+    channels: channels(true),
+    categories: [
+      {
+        category: NotificationCategory.AccountSecurity,
+        required: true,
+        types: [],
+        channels: channels(true),
+      },
+      ...categories.map((category) => ({
+        category,
+        required: false,
+        types: [],
+        channels: channels(false),
+      })),
+    ],
+  };
+}
+
 /** What the notification answers recorded: the notifications opened, the bells marked read and the preferences saved. */
 export type NotificationCalls = {
   opened: string[];
   markedAll: number;
-  saved: ChangeEmailPreferencesRequest[];
+  saved: ChangeNotificationPreferencesRequest[];
 };
 
 /**
@@ -645,24 +671,17 @@ export async function mockNotifications(page: Page) {
       body: `retry: 600000\nevent: notifications\ndata: {"scope":"tenant","tenantId":"${northwind.id}"}\n\n`,
     });
   });
-  await page.route("**/api/v1/me/email-preferences", (route) => {
-    if (route.request().method() === "PUT") {
-      const body = route
-        .request()
-        .postDataJSON() as ChangeEmailPreferencesRequest;
-      calls.saved.push(body);
-      return route.fulfill({ json: body });
-    }
-    return route.fulfill({
-      json: {
-        enabled: true,
-        categories: [
-          { category: NotificationCategory.Access, enabled: false },
-          { category: NotificationCategory.MemberInvitations, enabled: false },
-          { category: NotificationCategory.TenantPlans, enabled: false },
-        ],
-      },
-    });
+  const table = preferencesTable([
+    NotificationCategory.Access,
+    NotificationCategory.MemberInvitations,
+    NotificationCategory.TenantPlans,
+  ]);
+  await page.route("**/api/v1/me/notification-preferences", (route) => {
+    if (route.request().method() === "PUT")
+      calls.saved.push(
+        route.request().postDataJSON() as ChangeNotificationPreferencesRequest,
+      );
+    return route.fulfill({ json: table });
   });
   return {
     calls,

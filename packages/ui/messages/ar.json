@@ -51,9 +51,6 @@
       "forbidden": "ليس لديك إذن للقيام بهذا.",
       "unauthenticated": "انتهت جلستك. سجّل الدخول مرة أخرى."
     },
-    "email_preferences": {
-      "not_found": "هذه الصفحة غير موجودة."
-    },
     "idempotency": {
       "key_in_progress": "هذا الطلب لا يزال قيد التنفيذ. انتظر قليلًا ثم تحقّق من النتيجة.",
       "key_invalid": "تعذّر إرسال الطلب. أعد تحميل الصفحة وحاول مرة أخرى.",
@@ -78,6 +75,10 @@
       "owner_requires_owner": "لا يغيّر المالك أو يزيله إلا مالك."
     },
     "notification": {
+      "not_found": "هذه الصفحة غير موجودة."
+    },
+    "notification_preferences": {
+      "category_required": "هذه الفئة إلزامية. تصلك دائمًا، لذا لا يمكن إيقافها.",
       "not_found": "هذه الصفحة غير موجودة."
     },
     "paging": {
@@ -259,6 +260,10 @@
     "notSaved": "لم تُحفظ إعدادات الإشعارات"
   },
   "notificationCategories": {
+    "account_security": {
+      "name": "الحساب والأمان",
+      "description": "عندما يحدث في حسابك أو في وصولك إلى مؤسسة أمر يجب أن تعرفه."
+    },
     "access": {
       "name": "وصولك",
       "description": "عندما يتغيّر دورك في مؤسسة."

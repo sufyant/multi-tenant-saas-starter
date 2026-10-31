@@ -1,6 +1,9 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { NotificationCategory } from "@repo/api-client";
+import {
+  NotificationCategory,
+  NotificationChannelKind,
+} from "@repo/api-client";
 import { mockNotifications, mockPlatform, organisations } from "./api";
 import { expectAccessible } from "./axe";
 
@@ -71,9 +74,13 @@ test("NotificationSettings_Save_SendsTheChoice", async ({ page }) => {
   await expect(page.getByText("Notification settings saved.")).toBeVisible();
   expect(calls.saved).toEqual([
     {
-      enabled: true,
+      channels: [{ channel: NotificationChannelKind.Email, enabled: true }],
       categories: [
-        { category: NotificationCategory.PlatformTenants, enabled: true },
+        {
+          category: NotificationCategory.PlatformTenants,
+          channel: NotificationChannelKind.Email,
+          enabled: true,
+        },
       ],
     },
   ]);
