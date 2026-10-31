@@ -5,12 +5,14 @@ import {
   actionFor,
   createTenant,
   ErrorCode,
+  FieldErrorCode,
   getGetMeQueryOptions,
   getListPlansQueryOptions,
   getListTenantsQueryKey,
   Language,
   ProblemDetailsError,
   problemOf,
+  ReservedSlug,
   schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
@@ -34,9 +36,15 @@ import { LanguageChoice } from "./language-choice";
 import { afterRefusal } from "./organisation";
 
 // The generated schema of CreateTenant (F11). The API trims the name and needs 1 to 100 characters; the generated schema has the
-// limit only, so the form adds the trim and the minimum.
+// limit only, so the form adds the trim and the minimum. A slug of the generated `ReservedSlug` list is refused before the request,
+// with the API's field code; the API still decides (F58).
+const reservedSlugs: readonly string[] = Object.values(ReservedSlug);
 const creation = schemas.CreateTenantBody.extend({
   name: z.string().trim().min(1).max(schemas.createTenantBodyNameMax),
+  slug: schemas.CreateTenantBody.shape.slug.refine(
+    (slug) => !reservedSlugs.includes(slug),
+    FieldErrorCode.SlugReserved,
+  ),
 });
 type Creation = z.infer<typeof creation>;
 
