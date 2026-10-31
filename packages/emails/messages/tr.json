@@ -50,6 +50,7 @@
   },
   "notifications": {
     "member.role_changed": {
+      "name": "Rolünüz değişti",
       "title": "{tenantName} kuruluşundaki rolünüz değişti",
       "body": "{actorName} rolünüzü {oldRoleName} rolünden {newRoleName} rolüne değiştirdi.",
       "without": {
@@ -59,18 +60,22 @@
       }
     },
     "member.removed": {
+      "name": "Bir kuruluştan çıkarıldınız",
       "title": "{tenantName} kuruluşundan çıkarıldınız",
       "body": "{actorName} sizi {tenantName} kuruluşundan çıkardı. Artık bu kuruluşu açamaz ve bildirimlerini göremezsiniz."
     },
     "member.joined": {
+      "name": "Bir üye katıldı",
       "title": "{memberName}, {tenantName} kuruluşuna katıldı",
       "body": "{memberName} davetinizi kabul etti ve {roleName} rolüyle katıldı."
     },
     "tenant.plan_changed": {
+      "name": "Plan değişti",
       "title": "{tenantName} artık {newPlanName} planında",
       "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
     },
     "tenant.entitlement_override_set": {
+      "name": "Bir plan değeri değişti",
       "title": "{tenantName} için bir plan değeri değişti",
       "body": "Platform, kuruluşunuz için {keyName} değerini {value} yaptı. Planınızın değeri {expiresAt} tarihinde yeniden geçerli olur.",
       "without": {
@@ -80,30 +85,37 @@
       }
     },
     "tenant.entitlement_override_removed": {
+      "name": "Bir plan değeri sıfırlandı",
       "title": "{tenantName} için bir plan değeri değişti",
       "body": "Platform, {keyName} için tanınan istisnayı kaldırdı. Planınızın değeri yeniden geçerli: {value}."
     },
     "tenant.owner_joined": {
+      "name": "Sahip katıldı",
       "title": "{tenantName} kuruluşunun Sahibi katıldı",
       "body": "{ownerName}, Sahip davetini kabul etti. {tenantName} kullanıma hazır."
     },
     "tenant.suspended": {
+      "name": "Kuruluş askıya alındı",
       "title": "{tenantName} askıya alındı",
       "body": "{actorName}, {tenantName} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz."
     },
     "tenant.reactivated": {
+      "name": "Kuruluş yeniden etkinleştirildi",
       "title": "{tenantName} yeniden etkinleştirildi",
       "body": "{actorName}, {tenantName} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir."
     },
     "tenant.closed": {
+      "name": "Kuruluş kapatıldı",
       "title": "{tenantName} kapatıldı",
       "body": "{actorName}, {tenantName} kuruluşunu kapattı. Biri yeniden açmazsa {reopenableUntil} tarihinde silinecek."
     },
     "tenant.reopened": {
+      "name": "Kuruluş yeniden açıldı",
       "title": "{tenantName} yeniden açıldı",
       "body": "{actorName}, {tenantName} kuruluşunu yeniden açtı. Kuruluş yeniden etkin."
     },
     "tenant.purged": {
+      "name": "Kuruluş silindi",
       "title": "{tenantName} silindi",
       "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır."
     }
@@ -126,6 +138,10 @@
     }
   },
   "notificationCategories": {
+    "account_security": {
+      "name": "Hesap ve güvenlik",
+      "description": "Hesabınızda ya da bir kuruluşa erişiminizde bilmeniz gereken bir şey olduğunda."
+    },
     "access": {
       "name": "Erişiminiz",
       "description": "Bir kuruluştaki rolünüz değiştiğinde."

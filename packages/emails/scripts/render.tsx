@@ -101,13 +101,16 @@ const emails: Email[] = [
 const apiPlaceholders = (text: string) =>
   text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
 
-// A type's title and body, and its texts without each optional value, which may keep the main title (U2).
+// A type's short name, its title and body, and its texts without each optional value, which may keep the main title (U2). The
+// preferences list a category's types by their short names (U5).
 type NotificationTexts = {
+  name?: string;
   title?: string;
   body: string;
   without?: Record<string, NotificationTexts>;
 };
 const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
+  ...(texts.name === undefined ? {} : { name: texts.name }),
   ...(texts.title === undefined ? {} : { title: apiPlaceholders(texts.title) }),
   body: apiPlaceholders(texts.body),
   ...(texts.without === undefined
@@ -155,7 +158,7 @@ await write(
     2,
   )}\n`,
 );
-// Each language's title and body of every notification type, its texts without an optional value, and the words of each closed list:
+// Each language's short name, title and body of every notification type, its texts without an optional value, and the words of each closed list:
 // an entitlement key, an entitlement's value and a person the read cannot name; each category's name and description; and the two footers
 // of the generic email: a category's, with its name, and a required type's.
 // The API renders a notification from them in the reader's language, in the bell and in the generic email (U2).

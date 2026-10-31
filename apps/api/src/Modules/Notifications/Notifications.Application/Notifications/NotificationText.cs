@@ -38,6 +38,9 @@ public sealed partial record NotificationText(string Title, string Body)
     public static IReadOnlyCollection<string> WordsOf(Language language, string list) =>
         ByLanguage[language].Words.TryGetValue(list, out var words) ? words.Keys : [];
 
+    /// <summary>The short name of a type in the language, which the preferences list under its category; none when the texts lack it (U5).</summary>
+    public static string? NameOf(Language language, string type) => ByLanguage[language].Types.GetValueOrDefault(type)?.Name;
+
     /// <summary>The name and the description of a category in the language; none when the texts lack it (U5).</summary>
     public static (string Name, string Description)? CategoryOf(Language language, string category) =>
         ByLanguage[language].Categories.TryGetValue(category, out var texts) ? (texts.Name, texts.Description) : null;
@@ -84,7 +87,7 @@ public sealed partial record NotificationText(string Title, string Body)
         {
             var without = text.Without?.GetValueOrDefault(missing.Name)
                 ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no text of {type} without {missing.Name}.");
-            text = new TypeTexts(without.Title ?? text.Title, without.Body, null);
+            text = new TypeTexts(text.Name, without.Title ?? text.Title, without.Body, null);
         }
 
         var written = kind.Values
@@ -149,6 +152,6 @@ public sealed partial record NotificationText(string Title, string Body)
 
     private sealed record FooterTexts(string Category, string Required);
 
-    // A type's texts, and its texts without each optional value, which may keep the main title.
-    private sealed record TypeTexts(string? Title, string Body, Dictionary<string, TypeTexts>? Without);
+    // A type's short name and texts, and its texts without each optional value, which may keep the main title.
+    private sealed record TypeTexts(string? Name, string? Title, string Body, Dictionary<string, TypeTexts>? Without);
 }

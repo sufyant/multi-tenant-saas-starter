@@ -31,7 +31,6 @@ public sealed class NotificationCatalogTests
             "billing",
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            new Dictionary<NotificationChannel, bool>(),
             Required: false,
             [new("status", NotificationValueKind.Word, ["archived"]), new("actorName", NotificationValueKind.Person, Optional: true)]);
 
@@ -95,6 +94,76 @@ public sealed class NotificationCatalogTests
         missing.ShouldBeEmpty();
     }
 
+    // U4: a required type is in a required category, and a required category holds only required types, so a person's choice never
+    // silences what they must know, and a locked row never holds a type they could have turned off.
+    [Fact]
+    public void DeclareNotificationCategories_TheCatalog_KeepsRequiredTypesInRequiredCategoriesOnly()
+    {
+        var gaps = RequiredGaps(NotificationCatalog.Kinds.Values, NotificationCatalog.CategoryKinds);
+
+        NotificationCatalog.CategoryKinds.Where(category => category.Required).ShouldNotBeEmpty();
+        gaps.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void DeclareNotificationCategories_ARequiredTypeElsewhereAndAnOptionalTypeInTheRequiredCategory_IsFound()
+    {
+        var required = NotificationCatalog.Of(NotificationCatalog.TenantPurged) with { Required = true };
+        var optional = NotificationCatalog.Of(NotificationCatalog.MemberRoleChanged) with { Category = NotificationCatalog.AccountSecurityCategory };
+
+        var gaps = RequiredGaps([required, optional], NotificationCatalog.CategoryKinds);
+
+        gaps.ShouldBe(
+        [
+            "tenant.purged: required, in platform_tenants, which is not required",
+            "member.role_changed: not required, in account_security, which is required",
+        ]);
+    }
+
+    // U1, U5: every category declares its reach and a default for every channel, so a new category or a new channel cannot be forgotten
+    // in a second place (D1). A required category is on in every channel.
+    [Fact]
+    public void DeclareNotificationCategories_EveryCategory_DeclaresItsReachAndADefaultForEveryChannel()
+    {
+        var gaps = NotificationCatalog.CategoryKinds
+            .Where(category => !Enum.IsDefined(category.Audience)
+                || !category.Defaults.Keys.Order().SequenceEqual(Enum.GetValues<NotificationChannel>())
+                || (category.Required && category.Defaults.Values.Any(on => !on)))
+            .Select(category => category.Name);
+
+        gaps.ShouldBeEmpty();
+    }
+
+    // The maintainer's decision of 2026-10-30: the web on and the email off by default, and the required category on everywhere.
+    [Fact]
+    public void DeclareNotificationCategories_TodaysDefaults_AreTheWebOnAndTheEmailOffButForTheRequiredCategory()
+    {
+        var defaults = NotificationCatalog.CategoryKinds.Select(category =>
+            $"{category.Name} {category.Audience} required={category.Required} web={category.DefaultOf(NotificationChannel.Web)} email={category.DefaultOf(NotificationChannel.Email)}");
+
+        defaults.ShouldBe(
+        [
+            "account_security Everyone required=True web=True email=True",
+            "access Everyone required=False web=True email=False",
+            "member_invitations TenantInviters required=False web=True email=False",
+            "tenant_plans TenantOwnerManagers required=False web=True email=False",
+            "platform_tenants SystemAdmins required=False web=True email=False",
+        ]);
+        NotificationCatalog.Of(NotificationCatalog.MemberRemoved).Category.ShouldBe(NotificationCatalog.AccountSecurityCategory);
+    }
+
+    // U5: the preferences list a category's types by their short names, so each type has one in every language.
+    [Fact]
+    public void NameNotificationTypes_EveryType_HasAShortNameInEveryLanguage()
+    {
+        var missing = NotificationCatalog.Kinds.Keys
+            .SelectMany(type => Enum.GetValues<Language>().Select(language => (type, language, name: NotificationText.NameOf(language, type))))
+            .Where(found => found.name is not { Length: > 0 })
+            .Select(found => $"{found.type} in {JsonEnum<Language>.NameOf(found.language)}");
+
+        missing.ShouldBeEmpty();
+    }
+
     // U9: the same event writes an audit entry and a notification, with one label. A type of another name says why.
     [Fact]
     public void NameNotificationTypes_EveryType_HasTheNameOfAnAuditOperationOrIsNamedApart()
@@ -109,6 +178,15 @@ public sealed class NotificationCatalogTests
         NotificationCatalog.NamedApart.Keys.Where(operations.Contains).ShouldBeEmpty();
         NotificationCatalog.NamedApart.Values.ShouldAllBe(reason => reason.Length > 0);
     }
+
+    // Each type whose required flag differs from its category's.
+    private static IEnumerable<string> RequiredGaps(IEnumerable<NotificationKind> kinds, IReadOnlyList<NotificationCategoryKind> categories) =>
+        kinds
+            .Select(kind => (kind, category: categories.Single(category => category.Name == kind.Category)))
+            .Where(found => found.kind.Required != found.category.Required)
+            .Select(found => found.kind.Required
+                ? $"{found.kind.Type}: required, in {found.category.Name}, which is not required"
+                : $"{found.kind.Type}: not required, in {found.category.Name}, which is required");
 
     // The values of a class's string constants.
     private static HashSet<string> OperationsOf(Type type) =>

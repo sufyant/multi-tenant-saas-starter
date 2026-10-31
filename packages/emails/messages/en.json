@@ -50,6 +50,7 @@
   },
   "notifications": {
     "member.role_changed": {
+      "name": "Your role changed",
       "title": "Your role in {tenantName} changed",
       "body": "{actorName} changed your role from {oldRoleName} to {newRoleName}.",
       "without": {
@@ -59,18 +60,22 @@
       }
     },
     "member.removed": {
+      "name": "You were removed from an organisation",
       "title": "You were removed from {tenantName}",
       "body": "{actorName} removed you from {tenantName}. You can no longer open it or see its notifications."
     },
     "member.joined": {
+      "name": "A member joined",
       "title": "{memberName} joined {tenantName}",
       "body": "{memberName} accepted your invitation and joined as {roleName}."
     },
     "tenant.plan_changed": {
+      "name": "Plan changed",
       "title": "{tenantName} is now on {newPlanName}",
       "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan."
     },
     "tenant.entitlement_override_set": {
+      "name": "Plan value changed",
       "title": "A plan value changed for {tenantName}",
       "body": "The platform set {keyName} to {value} for your organisation. Your plan’s value applies again on {expiresAt}.",
       "without": {
@@ -80,30 +85,37 @@
       }
     },
     "tenant.entitlement_override_removed": {
+      "name": "Plan value reset",
       "title": "A plan value changed for {tenantName}",
       "body": "The platform removed the exception for {keyName}. Your plan’s value applies again: {value}."
     },
     "tenant.owner_joined": {
+      "name": "Owner joined",
       "title": "{tenantName} has its Owner",
       "body": "{ownerName} accepted the Owner invitation. {tenantName} is ready to use."
     },
     "tenant.suspended": {
+      "name": "Organisation suspended",
       "title": "{tenantName} was suspended",
       "body": "{actorName} suspended {tenantName}. Its members can’t open it until it is reactivated."
     },
     "tenant.reactivated": {
+      "name": "Organisation reactivated",
       "title": "{tenantName} was reactivated",
       "body": "{actorName} reactivated {tenantName}. Its members can open it again."
     },
     "tenant.closed": {
+      "name": "Organisation closed",
       "title": "{tenantName} was closed",
       "body": "{actorName} closed {tenantName}. It will be deleted on {reopenableUntil} unless someone reopens it."
     },
     "tenant.reopened": {
+      "name": "Organisation reopened",
       "title": "{tenantName} was reopened",
       "body": "{actorName} reopened {tenantName}. It is active again."
     },
     "tenant.purged": {
+      "name": "Organisation deleted",
       "title": "{tenantName} was deleted",
       "body": "The platform finished deleting {tenantName} and its data. Its name and slug stay in the list."
     }
@@ -126,6 +138,10 @@
     }
   },
   "notificationCategories": {
+    "account_security": {
+      "name": "Account and security",
+      "description": "When something happens to your account or your access to an organisation that you must know about."
+    },
     "access": {
       "name": "Your access",
       "description": "When your role in an organisation changes."

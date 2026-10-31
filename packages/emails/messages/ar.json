@@ -50,6 +50,7 @@
   },
   "notifications": {
     "member.role_changed": {
+      "name": "تغيّر دورك",
       "title": "تغيّر دورك في {tenantName}",
       "body": "غُيّر دورك من {oldRoleName} إلى {newRoleName} بواسطة {actorName}.",
       "without": {
@@ -59,18 +60,22 @@
       }
     },
     "member.removed": {
+      "name": "تمت إزالتك من مؤسسة",
       "title": "تمت إزالتك من {tenantName}",
       "body": "أزالك {actorName} من {tenantName}. لم يعد بإمكانك فتحها أو رؤية إشعاراتها."
     },
     "member.joined": {
+      "name": "انضم عضو",
       "title": "انضم {memberName} إلى {tenantName}",
       "body": "قبِل {memberName} دعوتك وانضم بصفة {roleName}."
     },
     "tenant.plan_changed": {
+      "name": "تغيّرت الخطة",
       "title": "أصبحت {tenantName} على خطة {newPlanName}",
       "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة."
     },
     "tenant.entitlement_override_set": {
+      "name": "تغيّرت قيمة في الخطة",
       "title": "تغيّرت قيمة في خطة {tenantName}",
       "body": "جعلت المنصة {keyName} لمؤسستك {value}. تعود قيمة خطتك للتطبيق في {expiresAt}.",
       "without": {
@@ -80,30 +85,37 @@
       }
     },
     "tenant.entitlement_override_removed": {
+      "name": "أُعيد ضبط قيمة في الخطة",
       "title": "تغيّرت قيمة في خطة {tenantName}",
       "body": "أزالت المنصة الاستثناء الخاص بـ{keyName}. تُطبَّق قيمة خطتك مجددًا: {value}."
     },
     "tenant.owner_joined": {
+      "name": "انضم المالك",
       "title": "انضم مالك {tenantName}",
       "body": "قبِل {ownerName} دعوة المالك. أصبحت {tenantName} جاهزة للاستخدام."
     },
     "tenant.suspended": {
+      "name": "عُلّقت مؤسسة",
       "title": "عُلّقت {tenantName}",
       "body": "علّق {actorName} مؤسسة {tenantName}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها."
     },
     "tenant.reactivated": {
+      "name": "أُعيد تفعيل مؤسسة",
       "title": "أُعيد تفعيل {tenantName}",
       "body": "أعاد {actorName} تفعيل {tenantName}. يستطيع أعضاؤها فتحها مجددًا."
     },
     "tenant.closed": {
+      "name": "أُغلقت مؤسسة",
       "title": "أُغلقت {tenantName}",
       "body": "أغلق {actorName} مؤسسة {tenantName}. ستُحذف في {reopenableUntil} ما لم يُعِد أحد فتحها."
     },
     "tenant.reopened": {
+      "name": "أُعيد فتح مؤسسة",
       "title": "أُعيد فتح {tenantName}",
       "body": "أعاد {actorName} فتح {tenantName}. أصبحت نشطة مجددًا."
     },
     "tenant.purged": {
+      "name": "حُذفت مؤسسة",
       "title": "حُذفت {tenantName}",
       "body": "أنهت المنصة حذف {tenantName} وبياناتها. يبقى اسمها ومعرّفها في القائمة."
     }
@@ -126,6 +138,10 @@
     }
   },
   "notificationCategories": {
+    "account_security": {
+      "name": "الحساب والأمان",
+      "description": "عندما يحدث في حسابك أو في وصولك إلى مؤسسة أمر يجب أن تعرفه."
+    },
     "access": {
       "name": "وصولك",
       "description": "عندما يتغيّر دورك في مؤسسة."
