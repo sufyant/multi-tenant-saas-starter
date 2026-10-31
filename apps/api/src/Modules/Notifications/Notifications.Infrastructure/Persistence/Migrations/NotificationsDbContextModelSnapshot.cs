@@ -23,7 +23,7 @@ namespace Notifications.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Notifications.Domain.EmailPreferences.EmailPreference", b =>
+            modelBuilder.Entity("Notifications.Domain.NotificationPreferences.NotificationPreference", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -34,18 +34,21 @@ namespace Notifications.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("categories");
 
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("enabled");
+                    b.Property<string>("Channels")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("channels");
 
                     b.HasKey("UserId")
-                        .HasName("pk_email_preferences");
+                        .HasName("pk_notification_preferences");
 
-                    b.ToTable("email_preferences", "notifications", t =>
+                    b.ToTable("notification_preferences", "notifications", t =>
                         {
-                            t.HasCheckConstraint("ck_email_preferences_categories", "jsonb_typeof(categories) = 'object' AND (categories - ARRAY['access', 'member_invitations', 'tenant_plans', 'platform_tenants']::text[]) = '{}'::jsonb");
+                            t.HasCheckConstraint("ck_notification_preferences_categories", "jsonb_typeof(categories) = 'object' AND (categories - ARRAY['access', 'member_invitations', 'tenant_plans', 'platform_tenants']::text[]) = '{}'::jsonb");
 
-                            t.HasCheckConstraint("ck_email_preferences_not_default", "NOT (enabled AND categories = '{}'::jsonb)");
+                            t.HasCheckConstraint("ck_notification_preferences_channels", "jsonb_typeof(channels) = 'object' AND (channels - ARRAY['Web', 'Email']::text[]) = '{}'::jsonb");
+
+                            t.HasCheckConstraint("ck_notification_preferences_not_default", "NOT (channels = '{}'::jsonb AND categories = '{}'::jsonb)");
                         });
                 });
 

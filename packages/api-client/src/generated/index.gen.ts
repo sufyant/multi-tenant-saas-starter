@@ -1,5 +1,5 @@
-export * from './me-emailpreferences/me-emailpreferences.gen';
 export * from './me-invitations/me-invitations.gen';
+export * from './me-notificationpreferences/me-notificationpreferences.gen';
 export * from './me-notifications/me-notifications.gen';
 export * from './me-tenants/me-tenants.gen';
 export * from './me-users/me-users.gen';

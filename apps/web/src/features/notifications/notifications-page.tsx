@@ -2,16 +2,21 @@
 
 import {
   actionFor,
-  type ChangeEmailPreferencesRequest,
-  changeEmailPreferences,
-  getGetEmailPreferencesQueryKey,
-  getGetEmailPreferencesQueryOptions,
+  type ChannelPreferenceResponse,
+  changeNotificationPreferences,
   getGetMeQueryKey,
+  getGetNotificationPreferencesQueryKey,
+  getGetNotificationPreferencesQueryOptions,
   NotificationCategory,
+  NotificationChannelKind,
+  type NotificationPreferencesResponse,
   ProblemDetailsError,
   problemOf,
 } from "@repo/api-client";
-import { NotificationPreferences } from "@repo/ui/components/notification-preferences";
+import {
+  type EmailPreferences,
+  NotificationPreferences,
+} from "@repo/ui/components/notification-preferences";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
@@ -26,7 +31,7 @@ import { SettingsNav } from "@/shared/settings-nav";
  */
 export function NotificationsPage() {
   const t = useTranslations();
-  const preferences = useQuery(getGetEmailPreferencesQueryOptions());
+  const preferences = useQuery(getGetNotificationPreferencesQueryOptions());
   if (preferences.error) return <ProblemScreen error={preferences.error} />;
   return (
     <div className="flex flex-col gap-6 tablet:flex-row">
@@ -39,7 +44,7 @@ export function NotificationsPage() {
           </p>
         </div>
         {preferences.data ? (
-          <Form values={preferences.data} />
+          <Form preferences={preferences.data} />
         ) : (
           <Skeleton label={t("common.loading")} />
         )}
@@ -48,14 +53,46 @@ export function NotificationsPage() {
   );
 }
 
-/** The call of the form: ChangeEmailPreferences, then GetEmailPreferences again (F47). */
-function Form({ values }: { values: ChangeEmailPreferencesRequest }) {
+/** The email switch of a row or of the column's main switch. */
+const emailOf = (channels: ChannelPreferenceResponse[]) =>
+  channels.some(
+    ({ channel, enabled }) =>
+      channel === NotificationChannelKind.Email && enabled,
+  );
+
+/**
+ * The call of the form: ChangeNotificationPreferences, then GetNotificationPreferences again (F47). The form holds the email column
+ * only, without the required row, until a later frontend step replaces this page with the table.
+ */
+function Form({
+  preferences,
+}: {
+  preferences: NotificationPreferencesResponse;
+}) {
   const t = useTranslations();
+  const values: EmailPreferences = {
+    enabled: emailOf(preferences.channels),
+    categories: preferences.categories
+      .filter(({ required }) => !required)
+      .map(({ category, channels }) => ({
+        category,
+        enabled: emailOf(channels),
+      })),
+  };
   const queryClient = useQueryClient();
   const failureText = useFailureText();
   const change = useMutation({
-    mutationFn: (choice: ChangeEmailPreferencesRequest) =>
-      changeEmailPreferences(choice),
+    mutationFn: (choice: EmailPreferences) =>
+      changeNotificationPreferences({
+        channels: [
+          { channel: NotificationChannelKind.Email, enabled: choice.enabled },
+        ],
+        categories: choice.categories.map(({ category, enabled }) => ({
+          category,
+          channel: NotificationChannelKind.Email,
+          enabled,
+        })),
+      }),
   });
   return (
     <NotificationPreferences
@@ -66,7 +103,7 @@ function Form({ values }: { values: ChangeEmailPreferencesRequest }) {
       save={change.mutateAsync}
       onSaved={() =>
         queryClient.invalidateQueries({
-          queryKey: getGetEmailPreferencesQueryKey(),
+          queryKey: getGetNotificationPreferencesQueryKey(),
         })
       }
       onFailed={(error) => {

@@ -12,6 +12,7 @@ internal static class ExtraPolicies
         ("control_plane.memberships", "own_memberships", "SELECT"),
         ("control_plane.roles", "own_roles", "SELECT"),
         ("notifications.email_preferences", "own_email_preferences", "ALL"),
+        ("notifications.notification_preferences", "own_notification_preferences", "ALL"),
         ("notifications.notifications", "own_notifications", "ALL"),
         ("notifications.notifications", "owner_delete", "DELETE"),
         ("notifications.notifications", "owner_read", "SELECT"),

@@ -1,6 +1,7 @@
 import {
-  type ChangeEmailPreferencesRequest,
+  type ChangeNotificationPreferencesRequest,
   NotificationCategory,
+  NotificationChannelKind,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
@@ -16,21 +17,42 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-/** GetEmailPreferences of a system admin who belongs to no organisation, and ChangeEmailPreferences, which records each body. */
-function preferencesAnswers(sent: ChangeEmailPreferencesRequest[]) {
+/** A row of the table with its web on and its email as given. */
+const row = (
+  category: NotificationCategory,
+  email: boolean,
+  required = false,
+) => ({
+  category,
+  required,
+  types: [],
+  channels: [
+    { channel: NotificationChannelKind.Web, enabled: true },
+    { channel: NotificationChannelKind.Email, enabled: email },
+  ],
+});
+
+/** The table of a system admin who belongs to no organisation: the required row, then the platform's. */
+const adminsTable = {
+  channels: [
+    { channel: NotificationChannelKind.Web, enabled: true },
+    { channel: NotificationChannelKind.Email, enabled: true },
+  ],
+  categories: [
+    row(NotificationCategory.AccountSecurity, true, true),
+    row(NotificationCategory.PlatformTenants, false),
+  ],
+};
+
+/** GetNotificationPreferences of that system admin, and ChangeNotificationPreferences, which records each body. */
+function preferencesAnswers(sent: ChangeNotificationPreferencesRequest[]) {
   return [
-    http.get("*/v1/me/email-preferences", () =>
-      HttpResponse.json({
-        enabled: true,
-        categories: [
-          { category: NotificationCategory.PlatformTenants, enabled: false },
-        ],
-      }),
+    http.get("*/v1/me/notification-preferences", () =>
+      HttpResponse.json(adminsTable),
     ),
-    http.put("*/v1/me/email-preferences", async ({ request }) => {
-      const body = (await request.json()) as ChangeEmailPreferencesRequest;
-      sent.push(body);
-      return HttpResponse.json(body);
+    http.put("*/v1/me/notification-preferences", async ({ request }) => {
+      sent.push((await request.json()) as ChangeNotificationPreferencesRequest);
+      return HttpResponse.json(adminsTable);
     }),
   ];
 }
@@ -63,7 +85,7 @@ describe("NotificationsPage", () => {
   });
 
   it("NotificationsPage_Save_SendsTheChoiceAndConfirms", async () => {
-    const sent: ChangeEmailPreferencesRequest[] = [];
+    const sent: ChangeNotificationPreferencesRequest[] = [];
     server.use(...preferencesAnswers(sent));
     renderWithProviders(<NotificationsPage />);
 
@@ -75,9 +97,13 @@ describe("NotificationsPage", () => {
     await expectVisibleToast("Notification settings saved.");
     expect(sent).toEqual([
       {
-        enabled: true,
+        channels: [{ channel: NotificationChannelKind.Email, enabled: true }],
         categories: [
-          { category: NotificationCategory.PlatformTenants, enabled: true },
+          {
+            category: NotificationCategory.PlatformTenants,
+            channel: NotificationChannelKind.Email,
+            enabled: true,
+          },
         ],
       },
     ]);

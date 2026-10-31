@@ -480,6 +480,7 @@ export type NotificationCategory = typeof NotificationCategory[keyof typeof Noti
 
 
 export const NotificationCategory = {
+  AccountSecurity: 'account_security',
   Access: 'access',
   MemberInvitations: 'member_invitations',
   TenantPlans: 'tenant_plans',
@@ -487,30 +488,56 @@ export const NotificationCategory = {
 } as const;
 
 /**
- * One category's new email switch.
+ * A channel of the notification preferences, a column of the screen. Push joins as a third in step 48.
  */
-export interface CategoryEmailPreferenceRequest {
+export type NotificationChannelKind = typeof NotificationChannelKind[keyof typeof NotificationChannelKind];
+
+
+export const NotificationChannelKind = {
+  Web: 'web',
+  Email: 'email',
+} as const;
+
+/**
+ * A category's new switch in one channel.
+ */
+export interface CategoryPreferenceRequest {
   category: NotificationCategory;
-  /** Whether a notification of the category goes by email too. */
+  /** The channel of the switch. */
+  channel: NotificationChannelKind;
+  /** Whether a notification of the category goes on the channel. */
   enabled: boolean;
 }
 
 /**
- * One category's email switch.
+ * A type of a category, which the screen lists under its row, read only.
  */
-export interface CategoryEmailPreferenceResponse {
-  category: NotificationCategory;
-  /** Whether a notification of the category goes by email too. */
+export interface NotificationTypeNameResponse {
+  /** The type, from the enum NotificationType. */
+  type: string;
+  /** Its short name in the reader's language. */
+  name: string;
+}
+
+/**
+ * A channel's switch: the main switch of a column, or a category's switch in it.
+ */
+export interface ChannelPreferenceResponse {
+  channel: NotificationChannelKind;
   enabled: boolean;
 }
 
 /**
- * The new email preferences: the main switch, and a choice for some categories. A category that cannot reach the user is not kept, and a
- * category left out keeps its choice.
+ * A category's row.
  */
-export interface ChangeEmailPreferencesRequest {
-  enabled: boolean;
-  categories: CategoryEmailPreferenceRequest[];
+export interface CategoryPreferenceResponse {
+  category: NotificationCategory;
+  /** Whether the category is required: on in every channel and locked, whatever the main switches say. */
+  required: boolean;
+  /** The types of the category; they cannot be chosen one by one. */
+  types: NotificationTypeNameResponse[];
+  /** The category's switch in each channel, in the order of the columns. */
+  channels: ChannelPreferenceResponse[];
 }
 
 /**
@@ -519,6 +546,25 @@ export interface ChangeEmailPreferencesRequest {
  */
 export interface ChangeMemberRoleRequest {
   roleId: string;
+}
+
+/**
+ * A channel's new main switch, "All".
+ */
+export interface ChannelPreferenceRequest {
+  /** The channel, a column of the screen. */
+  channel: NotificationChannelKind;
+  /** Whether any category that is not required goes on the channel. */
+  enabled: boolean;
+}
+
+/**
+ * The new notification preferences: some main switches, and some categories in some channels. A switch left out keeps its value, a
+ * category that cannot reach the user is not kept, and a required category is refused (`notification_preferences.category_required`).
+ */
+export interface ChangeNotificationPreferencesRequest {
+  channels: ChannelPreferenceRequest[];
+  categories: CategoryPreferenceRequest[];
 }
 
 /**
@@ -690,15 +736,6 @@ export interface CursorPageOfNotificationResponse {
 }
 
 /**
- * The signed-in user's email preferences for notifications (U5): the main switch, and the switch of each category that can reach them. In-app
- * notifications cannot be turned off, and a required type is not listed: it always sends its email.
- */
-export interface EmailPreferencesResponse {
-  enabled: boolean;
-  categories: CategoryEmailPreferenceResponse[];
-}
-
-/**
  * One key's value: a feature's state in `enabled`, or a limit's number in `maximum`, or an unlimited limit with
  * `unlimited` true. The fields of the other kind are null.
  */
@@ -758,7 +795,6 @@ export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
 export const ErrorCode = {
   AuthForbidden: 'auth.forbidden',
   AuthUnauthenticated: 'auth.unauthenticated',
-  EmailPreferencesNotFound: 'email_preferences.not_found',
   IdempotencyKeyInProgress: 'idempotency.key_in_progress',
   IdempotencyKeyInvalid: 'idempotency.key_invalid',
   IdempotencyKeyReused: 'idempotency.key_reused',
@@ -777,6 +813,8 @@ export const ErrorCode = {
   MemberNotFound: 'member.not_found',
   MemberOwnerRequiresOwner: 'member.owner_requires_owner',
   NotificationNotFound: 'notification.not_found',
+  NotificationPreferencesCategoryRequired: 'notification_preferences.category_required',
+  NotificationPreferencesNotFound: 'notification_preferences.not_found',
   PagingCursorInvalid: 'paging.cursor_invalid',
   PagingFilterInvalid: 'paging.filter_invalid',
   PagingLimitInvalid: 'paging.limit_invalid',
@@ -1277,6 +1315,16 @@ export interface MyTenantDetailResponse {
   planName: string;
   entitlements: MyTenantDetailResponseEntitlements;
   usage: MyTenantDetailResponseUsage;
+}
+
+/**
+ * The signed-in user's notification preferences (U5): a table whose columns are the channels, each with its main switch, and whose rows
+ * are the categories that can reach the user, each with its types and its switch in each channel. The required category is listed,
+ * locked.
+ */
+export interface NotificationPreferencesResponse {
+  channels: ChannelPreferenceResponse[];
+  categories: CategoryPreferenceResponse[];
 }
 
 /**

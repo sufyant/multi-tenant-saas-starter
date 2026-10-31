@@ -36,6 +36,7 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.roles: forced
             control_plane.tenant_purge_sagas: forced
             notifications.email_preferences: forced
+            notifications.notification_preferences: forced
             notifications.notifications: forced
             """);
     }
@@ -70,6 +71,7 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.roles tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.tenant_purge_sagas tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             notifications.email_preferences own_email_preferences: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
+            notifications.notification_preferences own_notification_preferences: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications own_notifications: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications owner_delete: PERMISSIVE DELETE {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
             notifications.notifications owner_read: PERMISSIVE SELECT {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
@@ -144,6 +146,7 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.users: DELETE, INSERT, SELECT, UPDATE
             table notifications.__ef_migrations_history: SELECT
             table notifications.email_preferences: DELETE, INSERT, SELECT, UPDATE
+            table notifications.notification_preferences: DELETE, INSERT, SELECT, UPDATE
             table notifications.notifications: DELETE, INSERT, SELECT, UPDATE
             """);
     }
@@ -281,8 +284,8 @@ public sealed class MigratedSchemaTests(Database database)
     }
 
     // R15, U1, U5: the same for Notifications. A notification of each bell and a preference are stored, and the database refuses a type, a
-    // bell or a category the catalog does not know, a tenant notification about no tenant, a personal one about a tenant, and a preference
-    // that is all defaults.
+    // bell, a channel or a category the catalog does not know, a choice of the required category, a tenant notification about no tenant, a
+    // personal one about a tenant, and a preference that is all defaults.
     [Fact]
     public async Task WriteRow_BreakingANotificationsCheck_IsRefusedByThatCheck()
     {
@@ -293,7 +296,8 @@ public sealed class MigratedSchemaTests(Database database)
             INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
             VALUES ('{tenantNotification}', '{user}', gen_random_uuid(), 'tenant.plan_changed', 'Tenant', jsonb_build_object('tenantName', 'Acme'), now()),
                 ('{personalNotification}', '{user}', NULL, 'member.removed', 'Personal', jsonb_build_object('tenantName', 'Acme'), now());
-            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{user}', true, jsonb_build_object('tenant_plans', true));
+            INSERT INTO notifications.notification_preferences (user_id, channels, categories)
+            VALUES ('{user}', jsonb_build_object(), jsonb_build_object('tenant_plans', jsonb_build_object('Email', true)));
             """,
             migrated);
 
@@ -305,8 +309,10 @@ public sealed class MigratedSchemaTests(Database database)
             $"UPDATE notifications.notifications SET tenant_id = NULL WHERE id = '{tenantNotification}'",
             $"UPDATE notifications.notifications SET tenant_id = gen_random_uuid() WHERE id = '{personalNotification}'",
             $"UPDATE notifications.notifications SET \"values\" = '[]' WHERE id = '{tenantNotification}'",
-            $"UPDATE notifications.email_preferences SET categories = '{{\"billing\": true}}' WHERE user_id = '{user}'",
-            $"UPDATE notifications.email_preferences SET categories = '{{}}' WHERE user_id = '{user}'");
+            $"UPDATE notifications.notification_preferences SET channels = '{{\"Push\": false}}' WHERE user_id = '{user}'",
+            $"UPDATE notifications.notification_preferences SET categories = '{{\"billing\": {{\"Email\": true}}}}' WHERE user_id = '{user}'",
+            $"UPDATE notifications.notification_preferences SET categories = '{{\"account_security\": {{\"Email\": false}}}}' WHERE user_id = '{user}'",
+            $"UPDATE notifications.notification_preferences SET categories = '{{}}' WHERE user_id = '{user}'");
 
         refusals.ShouldBe(
         [
@@ -315,8 +321,10 @@ public sealed class MigratedSchemaTests(Database database)
             "ck_notifications_tenant",
             "ck_notifications_tenant",
             "ck_notifications_values",
-            "ck_email_preferences_categories",
-            "ck_email_preferences_not_default",
+            "ck_notification_preferences_channels",
+            "ck_notification_preferences_categories",
+            "ck_notification_preferences_categories",
+            "ck_notification_preferences_not_default",
         ]);
     }
 

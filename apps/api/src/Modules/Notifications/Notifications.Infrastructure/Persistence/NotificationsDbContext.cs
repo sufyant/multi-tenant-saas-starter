@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Notifications.Application.Notifications;
-using Notifications.Domain.EmailPreferences;
+using Notifications.Domain.NotificationPreferences;
 using Notifications.Domain.Notifications;
-using Notifications.Infrastructure.Persistence.EmailPreferences;
+using Notifications.Infrastructure.Persistence.NotificationPreferences;
 using Notifications.Infrastructure.Persistence.Notifications;
 using Tenancy;
 using Wolverine;
@@ -28,7 +28,7 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
 
     internal DbSet<Notification> Notifications => Set<Notification>();
 
-    internal DbSet<EmailPreference> EmailPreferences => Set<EmailPreference>();
+    internal DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -65,6 +65,6 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfiguration(new NotificationConfiguration());
-        modelBuilder.ApplyConfiguration(new EmailPreferenceConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationPreferenceConfiguration());
     }
 }

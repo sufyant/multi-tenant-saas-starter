@@ -51,9 +51,6 @@
       "forbidden": "Bu işlem için yetkiniz yok.",
       "unauthenticated": "Oturumunuz sona erdi. Yeniden giriş yapın."
     },
-    "email_preferences": {
-      "not_found": "Bu sayfa yok."
-    },
     "idempotency": {
       "key_in_progress": "Bu istek hâlâ sürüyor. Biraz bekleyin, sonra sonucu kontrol edin.",
       "key_invalid": "İstek gönderilemedi. Sayfayı yenileyip yeniden deneyin.",
@@ -78,6 +75,10 @@
       "owner_requires_owner": "Bir Sahibi yalnızca bir Sahip değiştirebilir ya da çıkarabilir."
     },
     "notification": {
+      "not_found": "Bu sayfa yok."
+    },
+    "notification_preferences": {
+      "category_required": "Bu kategori zorunlu. Size her zaman ulaşır, bu yüzden kapatılamaz.",
       "not_found": "Bu sayfa yok."
     },
     "paging": {
@@ -259,6 +260,10 @@
     "notSaved": "Bildirim ayarları kaydedilmedi"
   },
   "notificationCategories": {
+    "account_security": {
+      "name": "Hesap ve güvenlik",
+      "description": "Hesabınızda ya da bir kuruluşa erişiminizde bilmeniz gereken bir şey olduğunda."
+    },
     "access": {
       "name": "Erişiminiz",
       "description": "Bir kuruluştaki rolünüz değiştiğinde."

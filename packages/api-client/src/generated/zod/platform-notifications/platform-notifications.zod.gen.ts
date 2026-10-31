@@ -34,6 +34,7 @@ export const ListPlatformNotificationsResponse = zod.object({
   TenantSuspended: 'tenant.suspended',
 }).describe('The type of a notification, area.event.'),
   "category": zod.enum({
+  AccountSecurity: 'account_security',
   Access: 'access',
   MemberInvitations: 'member_invitations',
   TenantPlans: 'tenant_plans',

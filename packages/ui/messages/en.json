@@ -51,9 +51,6 @@
       "forbidden": "You do not have permission to do this.",
       "unauthenticated": "Your session has ended. Sign in again."
     },
-    "email_preferences": {
-      "not_found": "This page does not exist."
-    },
     "idempotency": {
       "key_in_progress": "This request is still running. Wait a moment, then check the result.",
       "key_invalid": "The request could not be sent. Reload the page and try again.",
@@ -78,6 +75,10 @@
       "owner_requires_owner": "Only an Owner can change or remove an Owner."
     },
     "notification": {
+      "not_found": "This page does not exist."
+    },
+    "notification_preferences": {
+      "category_required": "This category is required. It always reaches you, so it can’t be turned off.",
       "not_found": "This page does not exist."
     },
     "paging": {
@@ -259,6 +260,10 @@
     "notSaved": "Notification settings not saved"
   },
   "notificationCategories": {
+    "account_security": {
+      "name": "Account and security",
+      "description": "When something happens to your account or your access to an organisation that you must know about."
+    },
     "access": {
       "name": "Your access",
       "description": "When your role in an organisation changes."

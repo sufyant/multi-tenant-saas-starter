@@ -42,6 +42,8 @@ public sealed class DomainNameMapTests
 
     public static TheoryData<string> NotificationLinkKinds => [.. NamesOf("Notifications.Domain", "Notifications.Domain.Notifications.NotificationLinkKind")];
 
+    public static TheoryData<string> NotificationChannels => [.. NamesOf("Notifications.Domain", "Notifications.Domain.Notifications.NotificationChannel")];
+
     public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditTargetKind")];
 
     [Theory]
@@ -126,6 +128,12 @@ public sealed class DomainNameMapTests
     [MemberData(nameof(NotificationLinkKinds))]
     public void MapNotificationLinkKind_EveryNameOfNotifications_HasAResponseValue(string kind) =>
         NotificationsResponseStatus.GetMethod("OfLink", [typeof(string)])!.Invoke(null, [kind]).ShouldNotBeNull();
+
+    // The preferences answer a column for each channel of the catalog (U5), so a new channel, such as push, fails here before it answers 500.
+    [Theory]
+    [MemberData(nameof(NotificationChannels))]
+    public void MapNotificationChannel_EveryChannelOfNotifications_HasAResponseValue(string channel) =>
+        NotificationsResponseStatus.GetMethod("OfChannel", [typeof(string)])!.Invoke(null, [channel]).ShouldNotBeNull();
 
     private static object? Map(string method, string name) => ResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
 

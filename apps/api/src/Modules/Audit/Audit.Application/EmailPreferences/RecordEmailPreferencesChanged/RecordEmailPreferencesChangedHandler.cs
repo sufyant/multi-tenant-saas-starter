@@ -1,7 +1,7 @@
 using Audit.Application.AuditLogs;
 using Audit.Domain;
 using Audit.Domain.AuditEntries;
-using Notifications.Contracts.EmailPreferences;
+using Notifications.Contracts.NotificationPreferences;
 
 namespace Audit.Application.EmailPreferences.RecordEmailPreferencesChanged;
 
