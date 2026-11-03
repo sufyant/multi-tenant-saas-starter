@@ -9,7 +9,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 const layoutOf = (tenantSlug: string) =>
-  TenantLayout({ children: null, params: Promise.resolve({ tenantSlug }) });
+  TenantLayout({
+    children: "the page",
+    params: Promise.resolve({ tenantSlug }),
+  });
 
 describe("TenantLayout", () => {
   // A reserved slug is a top-level route's name (F58): /sign-in/missing is "Page not found" outside the shell.
@@ -20,7 +23,7 @@ describe("TenantLayout", () => {
     },
   );
 
-  it("TenantLayout_OrganisationsSlug_RendersTheShell", async () => {
-    await expect(layoutOf("northwind")).resolves.toBeTruthy();
+  it("TenantLayout_OrganisationsSlug_RendersItsPage", async () => {
+    await expect(layoutOf("northwind")).resolves.toBe("the page");
   });
 });

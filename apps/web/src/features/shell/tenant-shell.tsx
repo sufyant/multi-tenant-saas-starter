@@ -40,7 +40,7 @@ import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
-import { useTenant } from "@/shared/tenant-context";
+import { TenantProvider, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
 
@@ -98,6 +98,24 @@ export function TenantShell({ children }: { children: ReactNode }) {
       )}
       {children}
     </TenantFrame>
+  );
+}
+
+/**
+ * An organisation's page in its shell: the tenant layout's (shell) group, and "Page not found" of an address under the
+ * organisation that no page has, which stays outside that group so its 404 is decided on the server (F59).
+ */
+export function OrganisationShell({
+  slug,
+  children,
+}: {
+  slug: string;
+  children: ReactNode;
+}) {
+  return (
+    <TenantProvider slug={slug} pending={<PendingTenantShell slug={slug} />}>
+      <TenantShell>{children}</TenantShell>
+    </TenantProvider>
   );
 }
 

@@ -58,7 +58,7 @@ const open = async (
     })),
   );
   await mockMembers(page, { language });
-  await page.goto(path);
+  return page.goto(path);
 };
 
 for (const size of Object.keys(sizes) as Size[])
@@ -89,6 +89,23 @@ test("Shell_EnvironmentStrip_PushesTheLayoutDown", async ({ page }) => {
   const menuBox = await menu.boundingBox();
   expect(stripBox).toMatchObject({ y: 0, height: 24 });
   expect(menuBox?.y).toBeGreaterThanOrEqual(24);
+});
+
+// An address that no page has: a real 404 from the server (Next.js documentation, "Streaming", "Status codes"), and "Page not
+// found" inside the shell, so the menu stays (the Page not found screens, F59).
+test("Shell_MissingPage_IsNotFoundInsideTheShell", async ({ page }) => {
+  const response = await open(page, {
+    path: `/${northwind.slug}/no-such-page`,
+  });
+
+  expect(response?.status()).toBe(404);
+  await expect(
+    page.getByRole("heading", { name: "Page not found" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Main menu" }),
+  ).toBeVisible();
+  await expectAccessible(page);
 });
 
 test("Shell_TabTitle_StartsWithTheEnvironment", async ({ page }) => {
