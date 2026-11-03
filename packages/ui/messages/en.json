@@ -18,7 +18,8 @@
     "label": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "hint": "Saved on this device."
   },
   "languages": {
     "en": "English",

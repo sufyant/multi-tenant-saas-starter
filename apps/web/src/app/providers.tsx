@@ -1,6 +1,7 @@
 "use client";
 
 import { configureApiClient, retryUnlessClientError } from "@repo/api-client";
+import { type AppFrame, AppFrameProvider } from "@repo/ui/components/app-frame";
 import { Toaster } from "@repo/ui/components/toast";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 import type { Direction } from "@repo/ui/lib/locale";
@@ -24,12 +25,15 @@ export const newQueryClient = () =>
     },
   });
 
-/** The client providers of the root layout: theme, server data, URL state, tooltips and toasts (F8, F9, F23, F24). */
+/** The client providers of the root layout: the frame, theme, server data, URL state, tooltips and toasts (F8, F9, F23, F24). */
 export function Providers({
   dir,
+  frame,
   children,
 }: {
   dir: Direction;
+  /** The environment and the version, which the server read at start. */
+  frame: AppFrame;
   children: ReactNode;
 }) {
   const t = useTranslations("common");
@@ -45,7 +49,9 @@ export function Providers({
     >
       <QueryClientProvider client={queryClient}>
         <NuqsAdapter>
-          <TooltipProvider delay={300}>{children}</TooltipProvider>
+          <AppFrameProvider value={frame}>
+            <TooltipProvider delay={300}>{children}</TooltipProvider>
+          </AppFrameProvider>
           <Toaster
             dir={dir}
             closeLabel={t("close")}

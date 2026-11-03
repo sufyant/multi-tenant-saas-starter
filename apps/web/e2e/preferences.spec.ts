@@ -12,7 +12,7 @@ test("Preferences_English_IsLeftToRight", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
 
-  await page.goto(`/${northwind.slug}/settings/preferences`);
+  await page.goto(`/${northwind.slug}/settings/profile`);
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Preferences" }),
@@ -25,7 +25,7 @@ test("Preferences_Arabic_IsRightToLeft", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.Ar);
 
-  await page.goto(`/${northwind.slug}/settings/preferences`);
+  await page.goto(`/${northwind.slug}/settings/profile`);
 
   await expect(
     page.getByRole("heading", { level: 1, name: "التفضيلات" }),
@@ -39,7 +39,7 @@ test("Preferences_ArabicForm_SavesTheTimeZone", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockPreferences(page, Language.Ar, bodies);
 
-  await page.goto(`/${northwind.slug}/settings/preferences`);
+  await page.goto(`/${northwind.slug}/settings/profile`);
   const language = page.getByRole("combobox", { name: "اللغة" });
   await expect(language).toHaveText("العربية");
   await expectAccessible(page);
@@ -60,7 +60,7 @@ test("Preferences_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockRename(page, Language.En, bodies);
 
-  await page.goto(`/${northwind.slug}/settings/preferences`);
+  await page.goto(`/${northwind.slug}/settings/profile`);
   await expect(page.getByRole("button", { name: "AY Account" })).toBeVisible();
   await page.getByRole("textbox", { name: "First name" }).fill("Ayla");
   await page.getByRole("textbox", { name: "Last name" }).fill("Kaya");

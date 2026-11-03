@@ -26,7 +26,7 @@ describe("SettingsNav", () => {
       ["Members", "/northwind/settings/members"],
       ["Roles", "/northwind/settings/roles"],
       ["Activity", "/northwind/settings/activity"],
-      ["Preferences", "/northwind/settings/preferences"],
+      ["Preferences", "/northwind/settings/profile"],
     ]);
   });
 
@@ -59,7 +59,7 @@ describe("SettingsNav", () => {
     expect(await links()).toEqual([
       ["General", "/northwind/settings/general"],
       ["Members", "/northwind/settings/members"],
-      ["Preferences", "/northwind/settings/preferences"],
+      ["Preferences", "/northwind/settings/profile"],
     ]);
   });
 
@@ -69,7 +69,7 @@ describe("SettingsNav", () => {
     renderInTenant(<SettingsNav current="preferences" />);
 
     expect(await links()).toEqual([
-      ["Preferences", "/northwind/settings/preferences"],
+      ["Preferences", "/northwind/settings/profile"],
     ]);
     expect(screen.queryByText("Organisation")).not.toBeInTheDocument();
   });
@@ -83,7 +83,7 @@ describe("SettingsNav", () => {
 
     expect(await links()).toEqual([
       ["General", "/northwind/settings/general"],
-      ["Preferences", "/northwind/settings/preferences"],
+      ["Preferences", "/northwind/settings/profile"],
     ]);
   });
 });

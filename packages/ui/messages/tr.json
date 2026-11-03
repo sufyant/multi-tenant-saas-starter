@@ -18,7 +18,8 @@
     "label": "Tema",
     "light": "Açık",
     "dark": "Koyu",
-    "system": "Sistem"
+    "system": "Sistem",
+    "hint": "Bu cihazda saklanır."
   },
   "languages": {
     "en": "English",

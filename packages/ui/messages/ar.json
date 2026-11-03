@@ -18,7 +18,8 @@
     "label": "المظهر",
     "light": "فاتح",
     "dark": "داكن",
-    "system": "النظام"
+    "system": "النظام",
+    "hint": "يُحفظ على هذا الجهاز."
   },
   "languages": {
     "en": "English",

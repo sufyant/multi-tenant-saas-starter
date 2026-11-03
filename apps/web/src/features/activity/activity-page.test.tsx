@@ -395,7 +395,11 @@ describe("ActivityPage", () => {
       await screen.findByRole("button", { name: "Show older activity" }),
     );
 
-    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/sign-in"));
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/sign-in\?reason=session-ended&redirect_url=/),
+      ),
+    );
     vi.unstubAllGlobals();
   });
 });

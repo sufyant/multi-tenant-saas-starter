@@ -1,3 +1,4 @@
+import { environmentPattern } from "@repo/ui/lib/environment";
 import { z } from "zod";
 
 // Every environment variable of the app, read once through one schema (F7). `env()` runs at server start
@@ -5,7 +6,10 @@ import { z } from "zod";
 // NEXT_PUBLIC_ name, so the browser never sees it. CLERK_PUBLISHABLE_KEY has no NEXT_PUBLIC_ name either, because a build would
 // write such a value into the image: the server reads it at run time and gives it to ClerkProvider and clerkMiddleware, so one
 // image serves every environment. Error tracking starts only with ERROR_TRACKING_DSN, which then needs its environment; the root
-// layout gives both to the browser at run time (F55). An empty value counts as missing, as Railway gives it for a missing shared one.
+// layout gives both to the browser at run time (F55). APP_ENVIRONMENT names the environment for the environment strip and the tab
+// title: production, staging, local or preview-<pull request>. SOURCE_REVISION is the image's commit, which the Dockerfile writes
+// into the image, the same in every environment; the account menu shows its first seven characters, and a run without it shows
+// none. An empty value counts as missing, as Railway gives it for a missing shared one.
 const optional = <T extends z.ZodType>(type: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), type.optional());
 
@@ -16,6 +20,8 @@ const schema = z
     CLERK_SECRET_KEY: z.string().min(1),
     ERROR_TRACKING_DSN: optional(z.url()),
     ERROR_TRACKING_ENVIRONMENT: optional(z.enum(["staging", "production"])),
+    APP_ENVIRONMENT: z.string().regex(environmentPattern),
+    SOURCE_REVISION: optional(z.string().min(1)),
   })
   .refine(
     (variables) =>

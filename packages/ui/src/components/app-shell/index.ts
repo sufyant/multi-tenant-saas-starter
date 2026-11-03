@@ -8,3 +8,4 @@ export {
   type NavItem,
   type Place,
 } from "./app-shell";
+export { useTabTitleText } from "./use-tab-title-text";

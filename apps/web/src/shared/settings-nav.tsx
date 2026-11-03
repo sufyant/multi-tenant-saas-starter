@@ -58,7 +58,7 @@ export function SettingsNav({ current }: { current: SettingsPage }) {
         {
           id: "preferences",
           label: t("shell.preferences"),
-          href: `${base}/preferences`,
+          href: `${base}/profile`,
         },
       ],
     },

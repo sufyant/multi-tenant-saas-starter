@@ -7,7 +7,7 @@ import {
   type RenameMeRequest,
 } from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -23,7 +23,7 @@ import {
 } from "vitest";
 import { setLocale } from "@/i18n/set-locale";
 import { problem, renderInTenant, tenantAnswers } from "../../../test/tenant";
-import { PreferencesPage } from "./preferences-page";
+import { ProfilePage } from "./profile-page";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -37,7 +37,7 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const url = "/northwind/settings/preferences";
+const url = "/northwind/settings/profile";
 
 const me = getGetMeResponseMock({
   firstName: "Ayşe",
@@ -127,11 +127,11 @@ const save = async () =>
     await screen.findByRole("button", { name: "Save preferences" }),
   );
 
-describe("PreferencesPage", () => {
-  it("PreferencesPage_GetMe_ShowsTheNameTheLanguageAndTheTimeZone", async () => {
+describe("ProfilePage", () => {
+  it("ProfilePage_GetMe_ShowsTheNameTheLanguageAndTheTimeZone", async () => {
     server.use(...preferencesAnswers(me));
 
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     expect(await textbox("First name")).toHaveValue("Ayşe");
     expect(await textbox("Last name")).toHaveValue("Yılmaz");
@@ -147,19 +147,23 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("PreferencesPage_Theme_IsNotOnThisPage", async () => {
+  // The theme is saved on this device, not by the API (F24).
+  it("ProfilePage_Theme_OffersSystemLightAndDark", async () => {
     server.use(...preferencesAnswers(me));
 
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
-    await field("Language");
-    expect(screen.queryByText("Theme")).not.toBeInTheDocument();
-    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    const theme = await screen.findByRole("group", { name: "Theme" });
+    expect(
+      within(theme)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["System", "Light", "Dark"]);
   });
 
-  it("PreferencesPage_LanguageOptions_AreEachInTheirOwnScriptAndDirection", async () => {
+  it("ProfilePage_LanguageOptions_AreEachInTheirOwnScriptAndDirection", async () => {
     server.use(...preferencesAnswers(me));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await userEvent.click(await field("Language"));
 
@@ -171,9 +175,9 @@ describe("PreferencesPage", () => {
     ).toHaveAttribute("lang", "tr");
   });
 
-  it("PreferencesPage_TimeZoneOption_ShowsItsOffsetAndItsTime", async () => {
+  it("ProfilePage_TimeZoneOption_ShowsItsOffsetAndItsTime", async () => {
     server.use(...preferencesAnswers(me));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await userEvent.click(await field("Time zone"));
     await userEvent.type(
@@ -188,10 +192,10 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("PreferencesPage_NameChanged_SendsRenameMeOnlyReadsGetMeAgainAndSaysSaved", async () => {
+  it("ProfilePage_NameChanged_SendsRenameMeOnlyReadsGetMeAgainAndSaysSaved", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await retype("First name", "  Ayla ");
     await save();
@@ -202,10 +206,10 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
-  it("PreferencesPage_TimeZoneChanged_SendsChangePreferencesOnlyAndSaysSaved", async () => {
+  it("ProfilePage_TimeZoneChanged_SendsChangePreferencesOnlyAndSaysSaved", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
@@ -219,10 +223,10 @@ describe("PreferencesPage", () => {
     expect(setLocale).not.toHaveBeenCalled();
   });
 
-  it("PreferencesPage_NameAndTimeZoneChanged_SendsBothAndSaysSavedOnce", async () => {
+  it("ProfilePage_NameAndTimeZoneChanged_SendsBothAndSaysSavedOnce", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await retype("Last name", "Kaya");
     await pick("Time zone", "Riyadh", /^Riyadh/);
@@ -236,10 +240,10 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
-  it("PreferencesPage_NothingChanged_SendsNothing", async () => {
+  it("ProfilePage_NothingChanged_SendsNothing", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers({ ...me, timeZone: null }, sent));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     expect(await field("Time zone")).toHaveTextContent(/\(this device\)$/);
     await retype("First name", " Ayşe ");
@@ -251,10 +255,10 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_LanguageChanged_SetsTheLocaleCookieAndRefreshes", async () => {
+  it("ProfilePage_LanguageChanged_SetsTheLocaleCookieAndRefreshes", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await pick("Language", "Türk", /Türkçe/);
     await save();
@@ -270,11 +274,11 @@ describe("PreferencesPage", () => {
     ["firstName", "First name", "Enter your first name."],
     ["lastName", "Last name", "Enter your last name."],
   ])(
-    "PreferencesPage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
+    "ProfilePage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
     async (_json, name, message) => {
       const sent = nothingSent();
       server.use(...preferencesAnswers(me, sent));
-      renderInTenant(<PreferencesPage />, { url });
+      renderInTenant(<ProfilePage />, { url });
 
       await retype(name, "   ");
       await save();
@@ -292,10 +296,10 @@ describe("PreferencesPage", () => {
     ["firstName", "too_long", "First name", "Use 1 to 100 characters."],
     ["lastName", "too_long", "Last name", "Use 1 to 100 characters."],
   ])(
-    "PreferencesPage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
+    "ProfilePage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
     async (json, code, name, message) => {
       server.use(renameRefuses({ [json]: [code] }), ...preferencesAnswers(me));
-      renderInTenant(<PreferencesPage />, { url });
+      renderInTenant(<ProfilePage />, { url });
 
       await retype(name, "Kaya");
       await save();
@@ -306,10 +310,10 @@ describe("PreferencesPage", () => {
     },
   );
 
-  it("PreferencesPage_NameTooLong_SaysUse1To100CharactersAndSendsNothing", async () => {
+  it("ProfilePage_NameTooLong_SaysUse1To100CharactersAndSendsNothing", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     const box = await textbox("Last name");
     await userEvent.clear(box);
@@ -323,13 +327,13 @@ describe("PreferencesPage", () => {
     expect(sent.names).toEqual([]);
   });
 
-  it("PreferencesPage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
+  it("ProfilePage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
     const sent = nothingSent();
     server.use(
       renameRefuses({ lastName: ["too_long"] }),
       ...preferencesAnswers(me, sent),
     );
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await retype("Last name", "Kaya");
     await pick("Time zone", "Riyadh", /^Riyadh/);
@@ -346,13 +350,13 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
+  it("ProfilePage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
     const sent = nothingSent();
     server.use(
       changeRefuses({ timeZone: ["time_zone_invalid"] }),
       ...preferencesAnswers(me, sent),
     );
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await retype("First name", "Ayla");
     await pick("Time zone", "Riyadh", /^Riyadh/);
@@ -370,25 +374,25 @@ describe("PreferencesPage", () => {
     expect(await textbox("First name")).not.toHaveAttribute("aria-invalid");
   });
 
-  it("PreferencesPage_InArabic_ShowsArabicTexts", async () => {
+  it("ProfilePage_InArabic_ShowsArabicTexts", async () => {
     server.use(...preferencesAnswers({ ...me, language: Language.Ar }));
 
-    renderInTenant(<PreferencesPage />, { url, locale: "ar" });
+    renderInTenant(<ProfilePage />, { url, locale: "ar" });
 
     expect(
-      await screen.findByRole("heading", { name: "التفضيلات" }),
+      await screen.findByRole("heading", { name: "الملف الشخصي" }),
     ).toBeInTheDocument();
     expect(await field("اللغة")).toHaveTextContent("العربية");
     expect(await textbox("الاسم الأول")).toHaveValue("Ayşe");
   });
 
-  it("PreferencesPage_UserSuspended_ReadsGetMeAgain", async () => {
+  it("ProfilePage_UserSuspended_ReadsGetMeAgain", async () => {
     const sent = nothingSent();
     server.use(
       refuses(403, ErrorCode.UserSuspended),
       ...preferencesAnswers(me, sent),
     );
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
@@ -396,13 +400,13 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
-  it("PreferencesPage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
+  it("ProfilePage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
     const sent = nothingSent();
     server.use(
       refuses(403, ErrorCode.UserDeleted),
       ...preferencesAnswers(me, sent),
     );
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
@@ -411,9 +415,9 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_ServerError_SaysNotSavedWithTheReference", async () => {
+  it("ProfilePage_ServerError_SaysNotSavedWithTheReference", async () => {
     server.use(refuses(500, ErrorCode.ServerError), ...preferencesAnswers(me));
-    renderInTenant(<PreferencesPage />, { url });
+    renderInTenant(<ProfilePage />, { url });
 
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();

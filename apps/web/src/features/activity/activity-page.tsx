@@ -13,6 +13,7 @@ import { ActivityLog } from "@repo/ui/components/activity-log";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { Freshness } from "@repo/ui/components/freshness";
 import { ListError } from "@repo/ui/components/list-error";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
@@ -25,7 +26,6 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { leaveOf } from "@/shared/problem-screen";
-import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { ActivitySentence } from "./activity-sentence";
 
@@ -76,7 +76,8 @@ export function ActivityPage() {
       result.error instanceof ProblemDetailsError
         ? actionFor(result.error.status, result.error.problem).kind
         : null;
-    if (action === "sign-in") return window.location.assign("/sign-in");
+    if (action === "sign-in")
+      return window.location.assign(signInAgainUrl(window.location));
     if (action === "tenant-blocked") return;
     if (problemOf(result.error)?.code === ErrorCode.PagingCursorInvalid) {
       showToast({ title: t("activity.restarted"), tone: "info" });
@@ -151,12 +152,5 @@ export function ActivityPage() {
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="activity" />
-      <section className="flex min-w-0 flex-1 flex-col gap-4">
-        {children}
-      </section>
-    </div>
-  );
+  return <section className="flex min-w-0 flex-col gap-4">{children}</section>;
 }

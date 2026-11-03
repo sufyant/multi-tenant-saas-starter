@@ -171,6 +171,7 @@ export default defineRailway((ctx) => {
   //   WEB_ERROR_TRACKING_DSN or PLATFORM_ERROR_TRACKING_DSN. Without it the app sends no error (F55).
   // - ERROR_TRACKING_ENVIRONMENT: the environment tag of each error event, the API's ASP.NET Core name in lower case, so the
   //   three services tag their events alike.
+  // - APP_ENVIRONMENT: the Railway environment's name, staging or production, for the environment strip and the tab title.
   const app = (settings: typeof web) =>
     service(settings.service, {
       replicas: { [region]: 1 },
@@ -183,6 +184,7 @@ export default defineRailway((ctx) => {
         ERROR_TRACKING_DSN:
           ctx.shared[`${settings.service.toUpperCase()}_ERROR_TRACKING_DSN`],
         ERROR_TRACKING_ENVIRONMENT: aspNetEnvironment.toLowerCase(),
+        APP_ENVIRONMENT: aspNetEnvironment.toLowerCase(),
       },
     });
 

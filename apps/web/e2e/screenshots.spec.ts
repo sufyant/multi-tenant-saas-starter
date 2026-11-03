@@ -66,7 +66,7 @@ test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
   await page.setViewportSize({ width: 834, height: 1112 });
   await mockApi(page, Language.Tr);
 
-  await page.goto(`/${northwind.slug}/settings/preferences`);
+  await page.goto(`/${northwind.slug}/settings/profile`);
   await page.getByRole("heading", { level: 1, name: "Tercihler" }).waitFor();
 
   await page.screenshot({ path: `${folder}/preferences-tr-light-tablet.png` });

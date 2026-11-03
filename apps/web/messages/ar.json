@@ -7,30 +7,30 @@
     "format": "ar-SA"
   },
   "shell": {
-    "navigation": "القائمة الرئيسية",
-    "menu": "فتح القائمة",
-    "search": "بحث",
-    "searchShortcut": "⌘K",
-    "railToggle": "تسميات القائمة",
-    "railShortcut": "⌘B",
-    "breadcrumb": "المسار",
-    "commandTitle": "انتقال إلى",
-    "commandPlaceholder": "ابحث عن صفحة",
-    "commandEmpty": "لم يتم العثور على صفحة",
     "home": "الرئيسية",
-    "overview": "نظرة عامة",
     "settings": "الإعدادات",
-    "preferences": "التفضيلات",
+    "yourOrganisations": "مؤسساتك",
+    "backTo": "العودة إلى {organisation}",
+    "myAccount": "حسابي",
+    "organisation": "المؤسسة",
+    "general": "عام",
     "members": "الأعضاء",
-    "you": "أنت",
+    "roles": "الأدوار",
+    "activityLog": "سجل النشاط",
+    "settingsMyAccount": "الإعدادات · حسابي",
+    "settingsOrganisation": "الإعدادات · المؤسسة",
+    "inviteMember": "دعوة عضو",
     "switchOrganisation": "تبديل المؤسسة",
-    "language": "اللغة",
-    "roles": {
+    "suspended": "معلّقة",
+    "closed": "مغلقة",
+    "you": "أنت",
+    "preferences": "التفضيلات",
+    "notifications": "الإشعارات",
+    "roleNames": {
       "owner": "مالك",
       "admin": "مشرف",
       "member": "عضو"
-    },
-    "notifications": "الإشعارات"
+    }
   },
   "organisations": {
     "chooseTitle": "اختر مؤسسة",
@@ -47,8 +47,8 @@
     "organisation": "المؤسسة",
     "text": "تظهر أقسام المنتج في القائمة عند إضافتها. لا يوجد شيء آخر لتفعله هنا الآن."
   },
-  "preferences": {
-    "title": "التفضيلات",
+  "profile": {
+    "title": "الملف الشخصي",
     "text": "تتبعك هذه الإعدادات في كل مؤسسة وعلى كل جهاز.",
     "nameNote": "يظهر اسمك لأعضاء كل مؤسسة تنتمي إليها."
   },

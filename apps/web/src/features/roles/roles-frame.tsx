@@ -1,14 +1,6 @@
 import type { ReactNode } from "react";
-import { SettingsNav } from "@/shared/settings-nav";
 
-/** The Settings frame of the three roles pages: the SubNav with Roles current, and the page. */
+/** The frame of the three roles pages: the settings menu of the sidebar marks Roles. */
 export function RolesFrame({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="roles" />
-      <section className="flex min-w-0 flex-1 flex-col gap-4">
-        {children}
-      </section>
-    </div>
-  );
+  return <section className="flex min-w-0 flex-col gap-4">{children}</section>;
 }
