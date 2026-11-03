@@ -7,7 +7,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | Step | Name | Status |
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
-| 35 | Cleanup, the shell and the menu | in progress |
+| 35 | Cleanup, the shell and the menu | done |
 | 36 | Personal pages | todo |
 | 37 | Organisation pages | todo |
 | 38 | Terms of use | todo |
@@ -32,7 +32,7 @@ Status: done, but the handoff package is todo.
 
 ## 3. Step 35: Cleanup, the shell and the menu
 
-Status: in progress.
+Status: done.
 
 35-backend:
 
@@ -71,6 +71,7 @@ Status: todo.
 - HTML emails in three languages, from "Starter <no-reply@starter.example>".
 - The words: "Address" (never "slug"), "Seats", "Activity log" and "See the activity log".
 - The organisation's Owners also receive tenant.suspended, tenant.reactivated, tenant.closed, tenant.reopened and tenant.purged, by bell and email, with their own texts in three languages.
+- The pages move to Pill and Label, and Status and Tag are deleted.
 
 ## 6. Step 38: Terms of use
 
