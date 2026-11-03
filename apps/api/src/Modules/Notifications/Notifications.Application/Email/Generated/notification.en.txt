@@ -7,4 +7,4 @@ Starter
 Open Starter:
 {{link}}
 
-You got this email because it is about your account or your access.
+{{footer}}

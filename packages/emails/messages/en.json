@@ -43,8 +43,7 @@
   },
   "notificationEmail": {
     "button": "Open {brandName}",
-    "fallback": "If the button doesn’t work, copy this link into your browser:",
-    "footer": "You got this email because it is about your account or your access."
+    "fallback": "If the button doesn’t work, copy this link into your browser:"
   },
   "notifications": {
     "member.role_changed": {
@@ -54,11 +53,13 @@
         "actorName": {
           "body": "The platform changed your role from {oldRoleName} to {newRoleName}."
         }
-      }
+      },
+      "footer": "You got this email because your access to an organisation changed."
     },
     "member.removed": {
       "title": "You were removed from {tenantName}",
-      "body": "{actorName} removed you from {tenantName}. You can no longer open it or see its notifications."
+      "body": "{actorName} removed you from {tenantName}. You can no longer open it or see its notifications.",
+      "footer": "You got this email because your access to an organisation changed."
     },
     "member.joined": {
       "title": "{memberName} joined {tenantName}",
@@ -66,7 +67,8 @@
     },
     "tenant.plan_changed": {
       "title": "{tenantName} is now on {newPlanName}",
-      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan."
+      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan.",
+      "footer": "You got this email because you are an Owner of this organisation."
     },
     "tenant.entitlement_override_set": {
       "title": "A plan value changed for {tenantName}",
@@ -87,23 +89,28 @@
     },
     "tenant.suspended": {
       "title": "{tenantName} was suspended",
-      "body": "{actorName} suspended {tenantName}. Its members can’t open it until it is reactivated."
+      "body": "{actorName} suspended {tenantName}. Its members can’t open it until it is reactivated.",
+      "footer": "You got this email because you are a system admin and an organisation's status changed."
     },
     "tenant.reactivated": {
       "title": "{tenantName} was reactivated",
-      "body": "{actorName} reactivated {tenantName}. Its members can open it again."
+      "body": "{actorName} reactivated {tenantName}. Its members can open it again.",
+      "footer": "You got this email because you are a system admin and an organisation's status changed."
     },
     "tenant.closed": {
       "title": "{tenantName} was closed",
-      "body": "{actorName} closed {tenantName}. It will be deleted on {reopenableUntil} unless someone reopens it."
+      "body": "{actorName} closed {tenantName}. It will be deleted on {reopenableUntil} unless someone reopens it.",
+      "footer": "You got this email because you are a system admin and an organisation's status changed."
     },
     "tenant.reopened": {
       "title": "{tenantName} was reopened",
-      "body": "{actorName} reopened {tenantName}. It is active again."
+      "body": "{actorName} reopened {tenantName}. It is active again.",
+      "footer": "You got this email because you are a system admin and an organisation's status changed."
     },
     "tenant.purged": {
       "title": "{tenantName} was deleted",
-      "body": "The platform finished deleting {tenantName} and its data. Its name and slug stay in the list."
+      "body": "The platform finished deleting {tenantName} and its data. Its name and slug stay in the list.",
+      "footer": "You got this email because you are a system admin and an organisation's status changed."
     }
   },
   "notificationWords": {

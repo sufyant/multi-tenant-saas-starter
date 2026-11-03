@@ -7,4 +7,4 @@ Starter
 Starter uygulamasını aç:
 {{link}}
 
-Bu e-postayı hesabınızla ya da erişiminizle ilgili olduğu için aldınız.
+{{footer}}

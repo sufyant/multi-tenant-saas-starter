@@ -60,7 +60,7 @@ const deletionWarning = (language: Language): DeletionWarningProps => ({
 
 const notification = (language: Language): NotificationProps => ({
   language,
-  ...placeholders("title", "body", "link"),
+  ...placeholders("title", "body", "link", "footer"),
 });
 
 const emails: Email[] = [
@@ -88,15 +88,17 @@ const emails: Email[] = [
 const apiPlaceholders = (text: string) =>
   text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
 
-// A type's title and body, and its texts without each optional value, which may keep the main title (U2).
+// A type's title and body, its texts without each optional value, which may keep the main title (U2), and the footer of its email (U5).
 type NotificationTexts = {
   title?: string;
   body: string;
   without?: Record<string, NotificationTexts>;
+  footer?: string;
 };
 const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
   ...(texts.title === undefined ? {} : { title: apiPlaceholders(texts.title) }),
   body: apiPlaceholders(texts.body),
+  ...(texts.footer === undefined ? {} : { footer: texts.footer }),
   ...(texts.without === undefined
     ? {}
     : {
@@ -142,7 +144,8 @@ await write(
     2,
   )}\n`,
 );
-// Each language's title and body of every notification type, its texts without an optional value, and the words of each closed list:
+// Each language's title and body of every notification type, its texts without an optional value, the footer of a type of the email, and
+// the words of each closed list:
 // an entitlement key, an entitlement's value and a person the read cannot name.
 // The API renders a notification from them in the reader's language, in the bell and in the generic email (U2).
 await write(

@@ -330,7 +330,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
             {
                 ["tenantName"] = "Acme Ltd",
                 ["memberName"] = Guid.CreateVersion7().ToString(),
-                ["roleName"] = "Member",
+                ["roleName"] = "member",
                 ["roleNameBuiltIn"] = "true",
             },
             DateTimeOffset.UtcNow,
@@ -359,9 +359,9 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
             new Dictionary<string, string>
             {
                 ["tenantName"] = "Acme Ltd",
-                ["oldRoleName"] = "Member",
+                ["oldRoleName"] = "member",
                 ["oldRoleNameBuiltIn"] = "true",
-                ["newRoleName"] = "Admin",
+                ["newRoleName"] = "admin",
                 ["newRoleNameBuiltIn"] = "true",
             },
             DateTimeOffset.UtcNow,

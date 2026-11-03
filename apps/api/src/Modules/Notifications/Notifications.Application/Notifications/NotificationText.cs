@@ -34,6 +34,16 @@ public sealed partial record NotificationText(string Title, string Body)
     /// <summary>The types the texts of the language have, for the architecture test of the catalog (U1).</summary>
     public static IReadOnlyCollection<string> TypesOf(Language language) => ByLanguage[language].Types.Keys;
 
+    /// <summary>Whether the type has the footer of its email in the language, for the architecture test of the catalog (U5).</summary>
+    public static bool HasFooter(Language language, string type) => ByLanguage[language].Types[type].Footer is not null;
+
+    /// <summary>
+    /// The footer of a type's email in the language: why the email came (U5). A type of the email without one is a mistake of ours.
+    /// </summary>
+    public static string FooterOf(Language language, string type) =>
+        ByLanguage[language].Types.GetValueOrDefault(type)?.Footer
+            ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no footer of {type}.");
+
     /// <summary>The words of a closed list in the language, for the architecture test of the catalog (U1).</summary>
     public static IReadOnlyCollection<string> WordsOf(Language language, string list) =>
         ByLanguage[language].Words.TryGetValue(list, out var words) ? words.Keys : [];
@@ -67,7 +77,7 @@ public sealed partial record NotificationText(string Title, string Body)
         {
             var without = text.Without?.GetValueOrDefault(missing.Name)
                 ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no text of {type} without {missing.Name}.");
-            text = new TypeTexts(without.Title ?? text.Title, without.Body, null);
+            text = new TypeTexts(without.Title ?? text.Title, without.Body, null, null);
         }
 
         var written = kind.Values
@@ -124,6 +134,6 @@ public sealed partial record NotificationText(string Title, string Body)
 
     private sealed record Texts(Dictionary<string, TypeTexts> Types, Dictionary<string, Dictionary<string, string>> Words);
 
-    // A type's texts, and its texts without each optional value, which may keep the main title.
-    private sealed record TypeTexts(string? Title, string Body, Dictionary<string, TypeTexts>? Without);
+    // A type's texts, its texts without each optional value, which may keep the main title, and the footer of its email.
+    private sealed record TypeTexts(string? Title, string Body, Dictionary<string, TypeTexts>? Without, string? Footer);
 }

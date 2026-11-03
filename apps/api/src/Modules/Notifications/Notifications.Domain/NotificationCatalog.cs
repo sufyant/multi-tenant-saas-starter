@@ -5,7 +5,7 @@ namespace Notifications.Domain;
 /// <summary>
 /// Every notification type, each declared once (U1). A type is a template: its entry here, its texts in <c>packages/emails</c> (U2) and
 /// one handler that hears its event. A type has the name of its event's audit operation (U9), and the channels the product fixes for it
-/// (U4). The OpenAPI document reads the types into the enum NotificationType, so a client knows every one. A notification keeps its type
+/// (U4, U5). The OpenAPI document reads the types into the enum NotificationType, so a client knows every one. A notification keeps its type
 /// as text, and a stored name never changes.
 /// </summary>
 public static class NotificationCatalog
@@ -48,15 +48,15 @@ public static class NotificationCatalog
     public static readonly IReadOnlyDictionary<string, NotificationKind> Kinds = new NotificationKind[]
     {
         // The platform's Make Owner names no person, as the tenant's Activity says "the platform": the actor is missing then. It leads to
-        // the general settings, which show "Your role" to every role.
+        // the general settings, which show "Your role" to every role. A role is the member's access, so the email tells them too (U5).
         new(
             MemberRoleChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            WebOnly(),
+            WebAndEmail(),
             [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")]),
 
-        // The removed person may have no other tenant and so never see a bell, so the email tells them too (U4). Only a member
+        // The removed person may have no other tenant and so never see a bell, so the email tells them too (U5). Only a member
         // removes a member: the platform does so only in the user's own deletion, which tells nobody. It leads to the start page, which
         // opens what the person can still enter.
         new(
@@ -71,11 +71,12 @@ public static class NotificationCatalog
             NotificationLinkKind.TenantMembers,
             WebOnly(),
             [Tenant(), Person("memberName"), Role("roleName")]),
+        // The plan sets what the organisation may do, so the email tells its Owners too (U5).
         new(
             TenantPlanChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
-            WebOnly(),
+            WebAndEmail(),
             [Tenant(), new("oldPlanName", NotificationValueKind.Text), new("newPlanName", NotificationValueKind.Text)]),
 
         // An override without an end has no expiry. An override leads to the page of its key (NotificationLinks).
@@ -109,7 +110,7 @@ public static class NotificationCatalog
             TenantPurged,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
-            WebOnly(),
+            WebAndEmail(),
             [Tenant()]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
@@ -117,12 +118,12 @@ public static class NotificationCatalog
     public static NotificationKind Of(string type) =>
         Kinds.TryGetValue(type, out var kind) ? kind : throw new InvalidOperationException($"The notification catalog has no type {type}.");
 
-    // A change of a tenant's status, to every system admin but the one who did it, in the platform's bell.
+    // A change of a tenant's status, to every system admin but the one who did it, in the platform's bell and by email (U5).
     private static NotificationKind Status(string type, params NotificationValue[] more) => new(
         type,
         NotificationBell.Platform,
         NotificationLinkKind.PlatformTenant,
-        WebOnly(),
+        WebAndEmail(),
         [Tenant(), Person("actorName"), .. more]);
 
     private static NotificationValue Tenant() => new("tenantName", NotificationValueKind.Text);
@@ -133,7 +134,8 @@ public static class NotificationCatalog
 
     private static NotificationValue Key() => new(NotificationKind.KeyValue, NotificationValueKind.EntitlementKey);
 
-    // Every type of the template is about the person's account or access, so the product chooses its channels (U4).
+    // Every type of the template is transactional, so the product chooses its channels (U4). A change of a person's access or of an
+    // organisation's status also goes by email; team news goes to the bell only (U5).
     private static NotificationChannel[] WebOnly() => [NotificationChannel.Web];
 
     private static NotificationChannel[] WebAndEmail() => [NotificationChannel.Web, NotificationChannel.Email];

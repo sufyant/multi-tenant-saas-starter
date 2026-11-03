@@ -43,8 +43,7 @@
   },
   "notificationEmail": {
     "button": "{brandName} uygulamasını aç",
-    "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
-    "footer": "Bu e-postayı hesabınızla ya da erişiminizle ilgili olduğu için aldınız."
+    "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:"
   },
   "notifications": {
     "member.role_changed": {
@@ -54,11 +53,13 @@
         "actorName": {
           "body": "Platform, rolünüzü {oldRoleName} rolünden {newRoleName} rolüne değiştirdi."
         }
-      }
+      },
+      "footer": "Bu e-postayı, bir kuruluştaki erişiminiz değiştiği için aldınız."
     },
     "member.removed": {
       "title": "{tenantName} kuruluşundan çıkarıldınız",
-      "body": "{actorName} sizi {tenantName} kuruluşundan çıkardı. Artık bu kuruluşu açamaz ve bildirimlerini göremezsiniz."
+      "body": "{actorName} sizi {tenantName} kuruluşundan çıkardı. Artık bu kuruluşu açamaz ve bildirimlerini göremezsiniz.",
+      "footer": "Bu e-postayı, bir kuruluştaki erişiminiz değiştiği için aldınız."
     },
     "member.joined": {
       "title": "{memberName}, {tenantName} kuruluşuna katıldı",
@@ -66,7 +67,8 @@
     },
     "tenant.plan_changed": {
       "title": "{tenantName} artık {newPlanName} planında",
-      "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
+      "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır.",
+      "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz için aldınız."
     },
     "tenant.entitlement_override_set": {
       "title": "{tenantName} için bir plan değeri değişti",
@@ -87,23 +89,28 @@
     },
     "tenant.suspended": {
       "title": "{tenantName} askıya alındı",
-      "body": "{actorName}, {tenantName} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz."
+      "body": "{actorName}, {tenantName} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.",
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
     },
     "tenant.reactivated": {
       "title": "{tenantName} yeniden etkinleştirildi",
-      "body": "{actorName}, {tenantName} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir."
+      "body": "{actorName}, {tenantName} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir.",
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
     },
     "tenant.closed": {
       "title": "{tenantName} kapatıldı",
-      "body": "{actorName}, {tenantName} kuruluşunu kapattı. Biri yeniden açmazsa {reopenableUntil} tarihinde silinecek."
+      "body": "{actorName}, {tenantName} kuruluşunu kapattı. Biri yeniden açmazsa {reopenableUntil} tarihinde silinecek.",
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
     },
     "tenant.reopened": {
       "title": "{tenantName} yeniden açıldı",
-      "body": "{actorName}, {tenantName} kuruluşunu yeniden açtı. Kuruluş yeniden etkin."
+      "body": "{actorName}, {tenantName} kuruluşunu yeniden açtı. Kuruluş yeniden etkin.",
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
     },
     "tenant.purged": {
       "title": "{tenantName} silindi",
-      "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır."
+      "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
     }
   },
   "notificationWords": {

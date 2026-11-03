@@ -4,6 +4,7 @@
       "member.role_changed": {
         "title": "Your role in {{tenantName}} changed",
         "body": "{{actorName}} changed your role from {{oldRoleName}} to {{newRoleName}}.",
+        "footer": "You got this email because your access to an organisation changed.",
         "without": {
           "actorName": {
             "body": "The platform changed your role from {{oldRoleName}} to {{newRoleName}}."
@@ -12,7 +13,8 @@
       },
       "member.removed": {
         "title": "You were removed from {{tenantName}}",
-        "body": "{{actorName}} removed you from {{tenantName}}. You can no longer open it or see its notifications."
+        "body": "{{actorName}} removed you from {{tenantName}}. You can no longer open it or see its notifications.",
+        "footer": "You got this email because your access to an organisation changed."
       },
       "member.joined": {
         "title": "{{memberName}} joined {{tenantName}}",
@@ -20,7 +22,8 @@
       },
       "tenant.plan_changed": {
         "title": "{{tenantName}} is now on {{newPlanName}}",
-        "body": "The platform moved your organisation from {{oldPlanName}} to {{newPlanName}}. Its features and limits follow the new plan."
+        "body": "The platform moved your organisation from {{oldPlanName}} to {{newPlanName}}. Its features and limits follow the new plan.",
+        "footer": "You got this email because you are an Owner of this organisation."
       },
       "tenant.entitlement_override_set": {
         "title": "A plan value changed for {{tenantName}}",
@@ -41,23 +44,28 @@
       },
       "tenant.suspended": {
         "title": "{{tenantName}} was suspended",
-        "body": "{{actorName}} suspended {{tenantName}}. Its members can’t open it until it is reactivated."
+        "body": "{{actorName}} suspended {{tenantName}}. Its members can’t open it until it is reactivated.",
+        "footer": "You got this email because you are a system admin and an organisation's status changed."
       },
       "tenant.reactivated": {
         "title": "{{tenantName}} was reactivated",
-        "body": "{{actorName}} reactivated {{tenantName}}. Its members can open it again."
+        "body": "{{actorName}} reactivated {{tenantName}}. Its members can open it again.",
+        "footer": "You got this email because you are a system admin and an organisation's status changed."
       },
       "tenant.closed": {
         "title": "{{tenantName}} was closed",
-        "body": "{{actorName}} closed {{tenantName}}. It will be deleted on {{reopenableUntil}} unless someone reopens it."
+        "body": "{{actorName}} closed {{tenantName}}. It will be deleted on {{reopenableUntil}} unless someone reopens it.",
+        "footer": "You got this email because you are a system admin and an organisation's status changed."
       },
       "tenant.reopened": {
         "title": "{{tenantName}} was reopened",
-        "body": "{{actorName}} reopened {{tenantName}}. It is active again."
+        "body": "{{actorName}} reopened {{tenantName}}. It is active again.",
+        "footer": "You got this email because you are a system admin and an organisation's status changed."
       },
       "tenant.purged": {
         "title": "{{tenantName}} was deleted",
-        "body": "The platform finished deleting {{tenantName}} and its data. Its name and slug stay in the list."
+        "body": "The platform finished deleting {{tenantName}} and its data. Its name and slug stay in the list.",
+        "footer": "You got this email because you are a system admin and an organisation's status changed."
       }
     },
     "words": {
@@ -83,6 +91,7 @@
       "member.role_changed": {
         "title": "{{tenantName}} kuruluşundaki rolünüz değişti",
         "body": "{{actorName}} rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi.",
+        "footer": "Bu e-postayı, bir kuruluştaki erişiminiz değiştiği için aldınız.",
         "without": {
           "actorName": {
             "body": "Platform, rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi."
@@ -91,7 +100,8 @@
       },
       "member.removed": {
         "title": "{{tenantName}} kuruluşundan çıkarıldınız",
-        "body": "{{actorName}} sizi {{tenantName}} kuruluşundan çıkardı. Artık bu kuruluşu açamaz ve bildirimlerini göremezsiniz."
+        "body": "{{actorName}} sizi {{tenantName}} kuruluşundan çıkardı. Artık bu kuruluşu açamaz ve bildirimlerini göremezsiniz.",
+        "footer": "Bu e-postayı, bir kuruluştaki erişiminiz değiştiği için aldınız."
       },
       "member.joined": {
         "title": "{{memberName}}, {{tenantName}} kuruluşuna katıldı",
@@ -99,7 +109,8 @@
       },
       "tenant.plan_changed": {
         "title": "{{tenantName}} artık {{newPlanName}} planında",
-        "body": "Platform, kuruluşunuzu {{oldPlanName}} planından {{newPlanName}} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
+        "body": "Platform, kuruluşunuzu {{oldPlanName}} planından {{newPlanName}} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz için aldınız."
       },
       "tenant.entitlement_override_set": {
         "title": "{{tenantName}} için bir plan değeri değişti",
@@ -120,23 +131,28 @@
       },
       "tenant.suspended": {
         "title": "{{tenantName}} askıya alındı",
-        "body": "{{actorName}}, {{tenantName}} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz."
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.",
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
       },
       "tenant.reactivated": {
         "title": "{{tenantName}} yeniden etkinleştirildi",
-        "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir."
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir.",
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
       },
       "tenant.closed": {
         "title": "{{tenantName}} kapatıldı",
-        "body": "{{actorName}}, {{tenantName}} kuruluşunu kapattı. Biri yeniden açmazsa {{reopenableUntil}} tarihinde silinecek."
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu kapattı. Biri yeniden açmazsa {{reopenableUntil}} tarihinde silinecek.",
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
       },
       "tenant.reopened": {
         "title": "{{tenantName}} yeniden açıldı",
-        "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden açtı. Kuruluş yeniden etkin."
+        "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden açtı. Kuruluş yeniden etkin.",
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
       },
       "tenant.purged": {
         "title": "{{tenantName}} silindi",
-        "body": "Platform, {{tenantName}} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır."
+        "body": "Platform, {{tenantName}} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
       }
     },
     "words": {
@@ -162,6 +178,7 @@
       "member.role_changed": {
         "title": "تغيّر دورك في {{tenantName}}",
         "body": "غُيّر دورك من {{oldRoleName}} إلى {{newRoleName}} بواسطة {{actorName}}.",
+        "footer": "وصلتك هذه الرسالة لأن صلاحية وصولك إلى مؤسسة تغيّرت.",
         "without": {
           "actorName": {
             "body": "غيّرت المنصة دورك من {{oldRoleName}} إلى {{newRoleName}}."
@@ -170,7 +187,8 @@
       },
       "member.removed": {
         "title": "تمت إزالتك من {{tenantName}}",
-        "body": "أزالك {{actorName}} من {{tenantName}}. لم يعد بإمكانك فتحها أو رؤية إشعاراتها."
+        "body": "أزالك {{actorName}} من {{tenantName}}. لم يعد بإمكانك فتحها أو رؤية إشعاراتها.",
+        "footer": "وصلتك هذه الرسالة لأن صلاحية وصولك إلى مؤسسة تغيّرت."
       },
       "member.joined": {
         "title": "انضم {{memberName}} إلى {{tenantName}}",
@@ -178,7 +196,8 @@
       },
       "tenant.plan_changed": {
         "title": "أصبحت {{tenantName}} على خطة {{newPlanName}}",
-        "body": "نقلت المنصة مؤسستك من خطة {{oldPlanName}} إلى خطة {{newPlanName}}. تتبع الميزات والحدود الخطة الجديدة."
+        "body": "نقلت المنصة مؤسستك من خطة {{oldPlanName}} إلى خطة {{newPlanName}}. تتبع الميزات والحدود الخطة الجديدة.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة."
       },
       "tenant.entitlement_override_set": {
         "title": "تغيّرت قيمة في خطة {{tenantName}}",
@@ -199,23 +218,28 @@
       },
       "tenant.suspended": {
         "title": "عُلّقت {{tenantName}}",
-        "body": "علّق {{actorName}} مؤسسة {{tenantName}}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها."
+        "body": "علّق {{actorName}} مؤسسة {{tenantName}}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها.",
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
       },
       "tenant.reactivated": {
         "title": "أُعيد تفعيل {{tenantName}}",
-        "body": "أعاد {{actorName}} تفعيل {{tenantName}}. يستطيع أعضاؤها فتحها مجددًا."
+        "body": "أعاد {{actorName}} تفعيل {{tenantName}}. يستطيع أعضاؤها فتحها مجددًا.",
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
       },
       "tenant.closed": {
         "title": "أُغلقت {{tenantName}}",
-        "body": "أغلق {{actorName}} مؤسسة {{tenantName}}. ستُحذف في {{reopenableUntil}} ما لم يُعِد أحد فتحها."
+        "body": "أغلق {{actorName}} مؤسسة {{tenantName}}. ستُحذف في {{reopenableUntil}} ما لم يُعِد أحد فتحها.",
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
       },
       "tenant.reopened": {
         "title": "أُعيد فتح {{tenantName}}",
-        "body": "أعاد {{actorName}} فتح {{tenantName}}. أصبحت نشطة مجددًا."
+        "body": "أعاد {{actorName}} فتح {{tenantName}}. أصبحت نشطة مجددًا.",
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
       },
       "tenant.purged": {
         "title": "حُذفت {{tenantName}}",
-        "body": "أنهت المنصة حذف {{tenantName}} وبياناتها. يبقى اسمها ومعرّفها في القائمة."
+        "body": "أنهت المنصة حذف {{tenantName}} وبياناتها. يبقى اسمها ومعرّفها في القائمة.",
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
       }
     },
     "words": {

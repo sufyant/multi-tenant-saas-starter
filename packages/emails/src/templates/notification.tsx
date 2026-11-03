@@ -7,8 +7,8 @@ import { format, messages } from "../texts";
 
 /**
  * The values of the one generic notification email (apps/api/docs/ARCHITECTURE.md, U2). The API renders a notification's title and body
- * in the recipient's language from the texts of `messages/*.json` (`notifications`), and fills them here with the link of its button. The
- * footer says only why the email came: every type is about the person's account or access, so nobody chooses it (U4).
+ * in the recipient's language from the texts of `messages/*.json` (`notifications`), and fills them here with the link of its button and
+ * the footer of its type, which says only why the email came (U5). Nobody chooses a type's channels (U4).
  */
 export type NotificationProps = {
   language: Language;
@@ -16,6 +16,8 @@ export type NotificationProps = {
   body: string;
   /** Where the button leads: the web app or the platform app. */
   link: string;
+  /** Why the email came: the footer of the notification's type. */
+  footer: string;
 };
 
 const textsOf = ({ language }: NotificationProps) => {
@@ -23,7 +25,6 @@ const textsOf = ({ language }: NotificationProps) => {
   return {
     button: format(texts.button, { brandName: brand.name }),
     fallback: texts.fallback,
-    footer: texts.footer,
   };
 };
 
@@ -39,7 +40,7 @@ export function notificationText(props: NotificationProps): string {
     props.title,
     props.body,
     `${texts.button}:\n${props.link}`,
-    texts.footer,
+    props.footer,
   ].join("\n\n");
 }
 
@@ -51,7 +52,7 @@ export function Notification(props: NotificationProps) {
     <Layout
       language={props.language}
       preheader={props.body}
-      footer={texts.footer}
+      footer={props.footer}
     >
       <Heading
         as="h1"
