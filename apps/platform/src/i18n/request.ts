@@ -16,8 +16,7 @@ export default getRequestConfig(async () => {
     Object.values(Language),
     Language.En,
   );
-  const pseudo =
-    process.env.E2E_PSEUDO_LOCALE === "1" && jar.has(pseudoCookie);
+  const pseudo = process.env.E2E_PSEUDO_LOCALE === "1" && jar.has(pseudoCookie);
   return {
     locale,
     messages: pseudo ? pseudoMessages(messages[locale]) : messages[locale],

@@ -22,7 +22,7 @@ import { Tabs } from "@repo/ui/components/tabs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { parseAsBoolean, useQueryState } from "nuqs";
-import { type ReactNode, useCallback, useId, useState } from "react";
+import { type ReactNode, useCallback, useId } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";

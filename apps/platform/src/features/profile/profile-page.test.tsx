@@ -6,7 +6,7 @@ import {
   type RenameMeRequest,
 } from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
