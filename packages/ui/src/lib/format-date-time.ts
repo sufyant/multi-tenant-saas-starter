@@ -207,7 +207,8 @@ const units: [Intl.RelativeTimeFormatUnit, number][] = [
 ];
 
 /**
- * The time since an instant: `12 minutes ago`. Under a minute it is the language's word for now; after 30 days it is the date.
+ * The time since an instant: `12 minutes ago`. Under a minute it is the language's word for now; after 7 days it is the date
+ * (the Relative time pattern).
  */
 export function formatRelative(
   at: Instant,
@@ -215,7 +216,7 @@ export function formatRelative(
 ): string {
   const elapsed =
     toDate(options.now ?? new Date()).getTime() - toDate(at).getTime();
-  if (Math.abs(elapsed) > 30 * day) return formatDate(at, options);
+  if (Math.abs(elapsed) > 7 * day) return formatDate(at, options);
   const relative = new Intl.RelativeTimeFormat(`${options.locale}-u-nu-latn`, {
     numeric: "auto",
   });

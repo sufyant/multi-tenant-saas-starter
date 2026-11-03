@@ -117,7 +117,7 @@ describe("format-date-time", () => {
     ).toBe("şimdi");
   });
 
-  it("FormatRelative_MoreThanThirtyDays_ShowsTheDate", () => {
+  it("FormatRelative_MoreThanSevenDays_ShowsTheDate", () => {
     expect(formatRelative(at, { ...dublin, now: "2026-12-16T13:32:00Z" })).toBe(
       "16 Oct 2026",
     );
@@ -129,14 +129,14 @@ describe("format-date-time", () => {
     );
   });
 
-  // F18 at its edges: under a minute the language's word for now, from a minute to 30 days the largest whole unit, then the date.
+  // F18 at its edges: under a minute the language's word for now, from a minute to 7 days the largest whole unit, then the date.
   it.each([
     ["59Seconds", "now", "2026-10-16T13:32:59Z"],
     ["1Minute", "1 minute ago", "2026-10-16T13:33:00Z"],
     ["59Minutes", "59 minutes ago", "2026-10-16T14:31:00Z"],
     ["1Hour", "1 hour ago", "2026-10-16T14:32:00Z"],
-    ["30Days", "30 days ago", "2026-11-15T13:32:00Z"],
-    ["31Days", "16 Oct 2026", "2026-11-16T13:32:00Z"],
+    ["7Days", "7 days ago", "2026-10-23T13:32:00Z"],
+    ["8Days", "16 Oct 2026", "2026-10-24T13:32:00Z"],
   ])("FormatRelative_%sLaterInEnIe_Says %s", (_, expected, now) => {
     expect(formatRelative(at, { ...dublin, now })).toBe(expected);
   });
@@ -146,8 +146,8 @@ describe("format-date-time", () => {
     ["1Minute", "قبل دقيقة واحدة", "2026-10-16T13:33:00Z"],
     ["59Minutes", "قبل 59 دقيقة", "2026-10-16T14:31:00Z"],
     ["1Hour", "قبل ساعة واحدة", "2026-10-16T14:32:00Z"],
-    ["30Days", "قبل 30 يومًا", "2026-11-15T13:32:00Z"],
-    ["31Days", "16 أكتوبر 2026", "2026-11-16T13:32:00Z"],
+    ["7Days", "قبل 7 أيام", "2026-10-23T13:32:00Z"],
+    ["8Days", "16 أكتوبر 2026", "2026-10-24T13:32:00Z"],
   ])("FormatRelative_%sLaterInArSa_Says %s", (_, expected, now) => {
     expect(formatRelative(at, { ...riyadh, now })).toBe(expected);
   });
