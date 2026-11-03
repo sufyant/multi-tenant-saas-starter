@@ -264,20 +264,19 @@ public sealed class MigrationStepTests(Database database)
         (refused.SqlState, refused.ConstraintName).ShouldBe((PostgresErrorCodes.CheckViolation, "ck_notifications_type"));
     }
 
-    // Step 33-backend-4: the preferences become a table of categories and channels. The migration copies each stored email choice into the
-    // new table: the email's main switch off, and each category whose email is on. The table of the version before keeps its rows, because
-    // that version still serves during the deploy (docs/deployment.md, section 8); a later release drops it.
+    // Step 35: every notification type is about the person's account or access, so nobody chooses its channels (U4). The migration drops
+    // both preference tables with their rows, and keeps every notification.
     [Fact]
-    public async Task Migrate_NotificationPreferencesPerChannel_KeepsTodaysEmailChoicesAndTheOldRows()
+    public async Task Migrate_RemoveNotificationPreferences_DropsBothPreferenceTablesAndKeepsTheNotifications()
     {
-        var before = await database.CreateDatabaseBeforeNotificationsMigrationAsync("NotificationPreferencesPerChannel");
-        var (off, chosen, both) = (new Guid("00000000-0000-7000-8000-000000000001"), new Guid("00000000-0000-7000-8000-000000000002"), new Guid("00000000-0000-7000-8000-000000000003"));
+        var before = await database.CreateDatabaseBeforeNotificationsMigrationAsync("RemoveNotificationPreferences");
+        var user = Guid.CreateVersion7();
         await database.ScalarAsSuperuserAsync<object>(
             $$"""
-            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES
-            ('{{off}}', false, '{}'),
-            ('{{chosen}}', true, '{"access": true, "tenant_plans": true}'),
-            ('{{both}}', false, '{"member_invitations": true}')
+            INSERT INTO notifications.email_preferences (user_id, enabled, categories) VALUES ('{{user}}', false, '{}');
+            INSERT INTO notifications.notification_preferences (user_id, channels, categories) VALUES ('{{user}}', '{"Email": false}', '{}');
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES (gen_random_uuid(), '{{user}}', NULL, 'member.removed', 'Personal', jsonb_build_object('tenantName', 'Acme'), now());
             """,
             before);
 
@@ -285,14 +284,9 @@ public sealed class MigrationStepTests(Database database)
 
         exitCode.ShouldBe(0, output);
         (await database.ScalarAsSuperuserAsync<string>(
-            "SELECT string_agg(concat_ws(' ', user_id, channels, categories), E'\n' ORDER BY user_id) FROM notifications.notification_preferences",
-            before)).ShouldBe(
-            $$$"""
-            {{{off}}} {"Email": false} {}
-            {{{chosen}}} {} {"access": {"Email": true}, "tenant_plans": {"Email": true}}
-            {{{both}}} {"Email": false} {"member_invitations": {"Email": true}}
-            """);
-        (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.email_preferences", before)).ShouldBe(3);
+            "SELECT concat_ws(' ', to_regclass('notifications.email_preferences'), to_regclass('notifications.notification_preferences'), 'gone')",
+            before)).ShouldBe("gone");
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE user_id = '{user}'", before)).ShouldBe(1);
     }
 
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one

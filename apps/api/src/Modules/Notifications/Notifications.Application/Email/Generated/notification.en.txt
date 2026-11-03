@@ -7,7 +7,4 @@ Starter
 Open Starter:
 {{link}}
 
-{{footer}}
-
-Manage email notifications:
-{{preferencesLink}}
+You got this email because it is about your account or your access.

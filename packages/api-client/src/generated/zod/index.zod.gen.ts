@@ -1,5 +1,4 @@
 export * from './me-invitations/me-invitations.zod.gen';
-export * from './me-notificationpreferences/me-notificationpreferences.zod.gen';
 export * from './me-notifications/me-notifications.zod.gen';
 export * from './me-tenants/me-tenants.zod.gen';
 export * from './me-users/me-users.zod.gen';

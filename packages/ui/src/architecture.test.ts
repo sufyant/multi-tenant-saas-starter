@@ -100,14 +100,13 @@ describe("architecture of packages/ui", () => {
     ).toEqual([]);
   });
 
-  // Each app holds the same live stream and the same Settings › Notifications page, because both read the generated client
-  // (F57, and the deviations table).
-  it.each([
-    "src/shared/notification-stream.tsx",
-    "src/features/notifications/notifications-page.tsx",
-  ])("F57_%s_IsTheSameInBothApps", (file) => {
-    expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
-      readFileSync(join(packages, "../apps/platform", file), "utf8"),
-    );
-  });
+  // Each app holds the same live stream, because both read the generated client (F57, and the deviations table).
+  it.each(["src/shared/notification-stream.tsx"])(
+    "F57_%s_IsTheSameInBothApps",
+    (file) => {
+      expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
+        readFileSync(join(packages, "../apps/platform", file), "utf8"),
+      );
+    },
+  );
 });

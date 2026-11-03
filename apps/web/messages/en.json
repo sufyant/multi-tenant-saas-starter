@@ -445,9 +445,5 @@
       "off": "off",
       "unlimited": "unlimited"
     }
-  },
-  "notificationSettings": {
-    "title": "Notifications",
-    "text": "You always see notifications in the app. Choose which ones we also send by email. These settings are the same in every organisation."
   }
 }

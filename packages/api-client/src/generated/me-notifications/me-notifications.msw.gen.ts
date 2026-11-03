@@ -17,7 +17,6 @@ import type {
 } from 'msw';
 
 import {
-  NotificationCategory,
   NotificationLinkResponseKind,
   NotificationType
 } from '../endpoints.schemas.gen';
@@ -27,7 +26,7 @@ import type {
 } from '../endpoints.schemas.gen';
 
 
-export const getListMyNotificationsResponseMock = (overrideResponse: Partial<Extract<CursorPageOfNotificationResponse, object>> = {}): CursorPageOfNotificationResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), type: faker.helpers.arrayElement(Object.values(NotificationType)), category: faker.helpers.arrayElement(Object.values(NotificationCategory)), title: faker.string.alpha({length: {min: 10, max: 20}}), body: faker.string.alpha({length: {min: 10, max: 20}}), link: {kind: faker.helpers.arrayElement(Object.values(NotificationLinkResponseKind)), tenantId: faker.helpers.arrayElement([faker.string.uuid(), null])}, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', readAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+export const getListMyNotificationsResponseMock = (overrideResponse: Partial<Extract<CursorPageOfNotificationResponse, object>> = {}): CursorPageOfNotificationResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), type: faker.helpers.arrayElement(Object.values(NotificationType)), title: faker.string.alpha({length: {min: 10, max: 20}}), body: faker.string.alpha({length: {min: 10, max: 20}}), link: {kind: faker.helpers.arrayElement(Object.values(NotificationLinkResponseKind)), tenantId: faker.helpers.arrayElement([faker.string.uuid(), null])}, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', readAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 export const getGetMyUnreadNotificationCountResponseMock = (overrideResponse: Partial<Extract<UnreadNotificationCountResponse, object>> = {}): UnreadNotificationCountResponse => ({unread: faker.number.int(), ...overrideResponse})
 

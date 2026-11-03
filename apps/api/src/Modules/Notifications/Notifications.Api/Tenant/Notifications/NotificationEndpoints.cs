@@ -39,7 +39,6 @@ public static class NotificationEndpoints
     internal static NotificationResponse ToResponse(NotificationView notification) => new(
         notification.Id,
         notification.Type,
-        notification.Category,
         notification.Title,
         notification.Body,
         new NotificationLinkResponse(ResponseStatus.OfLink(notification.Link), notification.TenantId),

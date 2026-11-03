@@ -16,7 +16,7 @@ const links = async () =>
     .map((link) => [link.textContent, link.getAttribute("href")]);
 
 describe("SettingsNav", () => {
-  it("SettingsNav_Owner_ShowsGeneralMembersRolesActivityPreferencesAndNotifications", async () => {
+  it("SettingsNav_Owner_ShowsGeneralMembersRolesActivityAndPreferences", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<SettingsNav current="general" />);
@@ -27,7 +27,6 @@ describe("SettingsNav", () => {
       ["Roles", "/northwind/settings/roles"],
       ["Activity", "/northwind/settings/activity"],
       ["Preferences", "/northwind/settings/preferences"],
-      ["Notifications", "/northwind/settings/notifications"],
     ]);
   });
 
@@ -61,7 +60,6 @@ describe("SettingsNav", () => {
       ["General", "/northwind/settings/general"],
       ["Members", "/northwind/settings/members"],
       ["Preferences", "/northwind/settings/preferences"],
-      ["Notifications", "/northwind/settings/notifications"],
     ]);
   });
 
@@ -72,7 +70,6 @@ describe("SettingsNav", () => {
 
     expect(await links()).toEqual([
       ["Preferences", "/northwind/settings/preferences"],
-      ["Notifications", "/northwind/settings/notifications"],
     ]);
     expect(screen.queryByText("Organisation")).not.toBeInTheDocument();
   });
@@ -87,7 +84,6 @@ describe("SettingsNav", () => {
     expect(await links()).toEqual([
       ["General", "/northwind/settings/general"],
       ["Preferences", "/northwind/settings/preferences"],
-      ["Notifications", "/northwind/settings/notifications"],
     ]);
   });
 });

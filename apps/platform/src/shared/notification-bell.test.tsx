@@ -1,5 +1,4 @@
 import {
-  NotificationCategory,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
@@ -36,7 +35,6 @@ const tenantId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f";
 const suspended: NotificationResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000b1",
   type: NotificationType.TenantSuspended,
-  category: NotificationCategory.PlatformTenants,
   title: "Northwind Traders was suspended",
   body: "Ciara Byrne suspended Northwind Traders.",
   link: { kind: NotificationLinkResponseKind.PlatformTenant, tenantId },

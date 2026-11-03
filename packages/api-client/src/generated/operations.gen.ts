@@ -23,16 +23,6 @@ export const operations = [
     ]
   },
   {
-    "operationId": "ChangeNotificationPreferences",
-    "method": "PUT",
-    "path": "/v1/me/notification-preferences",
-    "tag": "Me/NotificationPreferences",
-    "requestHeaders": [],
-    "responseHeaders": [
-      "Retry-After"
-    ]
-  },
-  {
     "operationId": "ChangePreferences",
     "method": "PATCH",
     "path": "/v1/me/preferences",
@@ -158,16 +148,6 @@ export const operations = [
     "method": "GET",
     "path": "/v1/me/notifications/unread-count",
     "tag": "Me/Notifications",
-    "requestHeaders": [],
-    "responseHeaders": [
-      "Retry-After"
-    ]
-  },
-  {
-    "operationId": "GetNotificationPreferences",
-    "method": "GET",
-    "path": "/v1/me/notification-preferences",
-    "tag": "Me/NotificationPreferences",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

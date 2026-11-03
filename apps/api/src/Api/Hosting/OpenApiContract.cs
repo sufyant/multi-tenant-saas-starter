@@ -48,7 +48,7 @@ internal static partial class OpenApiContract
 
     private const string NotificationTypeSchema = "NotificationType";
 
-    private const string NotificationCategorySchema = "NotificationCategory";
+    private const string NotificationResponseSchema = "NotificationResponse";
 
     private const string NotificationCatalogClass = "NotificationCatalog";
 
@@ -57,8 +57,6 @@ internal static partial class OpenApiContract
     private const string ReservedSlugsClass = "ReservedSlugs";
 
     private const string TypeMember = "type";
-
-    private const string CategoryMember = "category";
 
     private const string EnumNamesExtension = "x-enumNames";
 
@@ -115,12 +113,10 @@ internal static partial class OpenApiContract
             .Order(StringComparer.Ordinal),
     ];
 
-    // U1: Notifications declares every notification type and category once, in Notifications.Domain's NotificationCatalog, which the host
-    // finds by its name, as it finds the audit operations. Its Kinds hold the types, and its Categories the categories.
+    // U1: Notifications declares every notification type once, in Notifications.Domain's NotificationCatalog, which the host finds by its
+    // name, as it finds the audit operations. Its Kinds hold the types.
     private static IReadOnlyList<string> DeclaredNotificationTypes { get; } =
         [.. NotificationCatalogValues("Kinds").Cast<object>().Select(kind => (string)kind.GetType().GetProperty("Key")!.GetValue(kind)!).Order(StringComparer.Ordinal)];
-
-    private static IReadOnlyList<string> DeclaredNotificationCategories { get; } = [.. NotificationCatalogValues("Categories").Cast<string>()];
 
     // ControlPlane declares the slugs no tenant may take once, in ControlPlane.Domain's ReservedSlugs, which the host finds by its name, as
     // it finds the notification catalog. OpenApiContractTests checks the enum.
@@ -660,9 +656,8 @@ internal static partial class OpenApiContract
         return Task.CompletedTask;
     }
 
-    // The notification types and categories are two enums in the document (U1), so a client has a type for each and hears of a new one. A
-    // response and a request keep them as strings, so each field named category refers to the categories, and the field type of a schema
-    // that has a category to the types (NotificationResponse.type). OpenApiContractTests checks both.
+    // The notification types are one enum in the document (U1), so a client has a type for each and hears of a new one. A response keeps
+    // its type as a string, so the field type of NotificationResponse refers to the enum. OpenApiContractTests checks it.
     private static Task DescribeNotificationCatalog(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         if (document.Components?.Schemas is not { } schemas)
@@ -671,14 +666,9 @@ internal static partial class OpenApiContract
         }
 
         schemas[NotificationTypeSchema] = EnumSchema(DeclaredNotificationTypes, "The type of a notification, area.event.");
-        schemas[NotificationCategorySchema] = EnumSchema(DeclaredNotificationCategories, "The category of a notification, which the email preferences name.");
-        foreach (var schema in schemas.Values.OfType<OpenApiSchema>().Where(schema => schema.Properties?.ContainsKey(CategoryMember) == true))
+        if (schemas.TryGetValue(NotificationResponseSchema, out var response) && response is OpenApiSchema { Properties: { } properties } && properties.ContainsKey(TypeMember))
         {
-            schema.Properties![CategoryMember] = new OpenApiSchemaReference(NotificationCategorySchema, document);
-            if (schema.Properties.ContainsKey(TypeMember))
-            {
-                schema.Properties[TypeMember] = new OpenApiSchemaReference(NotificationTypeSchema, document);
-            }
+            properties[TypeMember] = new OpenApiSchemaReference(NotificationTypeSchema, document);
         }
 
         return Task.CompletedTask;

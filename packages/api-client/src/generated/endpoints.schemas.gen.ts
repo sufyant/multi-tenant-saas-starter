@@ -474,97 +474,11 @@ export interface AuditEntryResponse {
 }
 
 /**
- * The category of a notification, which the email preferences name.
- */
-export type NotificationCategory = typeof NotificationCategory[keyof typeof NotificationCategory];
-
-
-export const NotificationCategory = {
-  AccountSecurity: 'account_security',
-  Access: 'access',
-  MemberInvitations: 'member_invitations',
-  TenantPlans: 'tenant_plans',
-  PlatformTenants: 'platform_tenants',
-} as const;
-
-/**
- * A channel of the notification preferences, a column of the screen. Push joins as a third in step 48.
- */
-export type NotificationChannelKind = typeof NotificationChannelKind[keyof typeof NotificationChannelKind];
-
-
-export const NotificationChannelKind = {
-  Web: 'web',
-  Email: 'email',
-} as const;
-
-/**
- * A category's new switch in one channel.
- */
-export interface CategoryPreferenceRequest {
-  category: NotificationCategory;
-  /** The channel of the switch. */
-  channel: NotificationChannelKind;
-  /** Whether a notification of the category goes on the channel. */
-  enabled: boolean;
-}
-
-/**
- * A type of a category, which the screen lists under its row, read only.
- */
-export interface NotificationTypeNameResponse {
-  /** The type, from the enum NotificationType. */
-  type: string;
-  /** Its short name in the reader's language. */
-  name: string;
-}
-
-/**
- * A channel's switch: the main switch of a column, or a category's switch in it.
- */
-export interface ChannelPreferenceResponse {
-  channel: NotificationChannelKind;
-  enabled: boolean;
-}
-
-/**
- * A category's row.
- */
-export interface CategoryPreferenceResponse {
-  category: NotificationCategory;
-  /** Whether the category is required: on in every channel and locked, whatever the main switches say. */
-  required: boolean;
-  /** The types of the category; they cannot be chosen one by one. */
-  types: NotificationTypeNameResponse[];
-  /** The category's switch in each channel, in the order of the columns. */
-  channels: ChannelPreferenceResponse[];
-}
-
-/**
  * The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to
  * an empty id.
  */
 export interface ChangeMemberRoleRequest {
   roleId: string;
-}
-
-/**
- * A channel's new main switch, "All".
- */
-export interface ChannelPreferenceRequest {
-  /** The channel, a column of the screen. */
-  channel: NotificationChannelKind;
-  /** Whether any category that is not required goes on the channel. */
-  enabled: boolean;
-}
-
-/**
- * The new notification preferences: some main switches, and some categories in some channels. A switch left out keeps its value, a
- * category that cannot reach the user is not kept, and a required category is refused (`notification_preferences.category_required`).
- */
-export interface ChangeNotificationPreferencesRequest {
-  channels: ChannelPreferenceRequest[];
-  categories: CategoryPreferenceRequest[];
 }
 
 /**
@@ -713,7 +627,6 @@ export interface NotificationResponse {
   /** The notification's id, which opening it names. */
   id: string;
   type: NotificationType;
-  category: NotificationCategory;
   /** The title, in the reader's language. */
   title: string;
   /** The body, in the reader's language. */
@@ -813,8 +726,6 @@ export const ErrorCode = {
   MemberNotFound: 'member.not_found',
   MemberOwnerRequiresOwner: 'member.owner_requires_owner',
   NotificationNotFound: 'notification.not_found',
-  NotificationPreferencesCategoryRequired: 'notification_preferences.category_required',
-  NotificationPreferencesNotFound: 'notification_preferences.not_found',
   PagingCursorInvalid: 'paging.cursor_invalid',
   PagingFilterInvalid: 'paging.filter_invalid',
   PagingLimitInvalid: 'paging.limit_invalid',
@@ -1315,16 +1226,6 @@ export interface MyTenantDetailResponse {
   planName: string;
   entitlements: MyTenantDetailResponseEntitlements;
   usage: MyTenantDetailResponseUsage;
-}
-
-/**
- * The signed-in user's notification preferences (U5): a table whose columns are the channels, each with its main switch, and whose rows
- * are the categories that can reach the user, each with its types and its switch in each channel. The required category is listed,
- * locked.
- */
-export interface NotificationPreferencesResponse {
-  channels: ChannelPreferenceResponse[];
-  categories: CategoryPreferenceResponse[];
 }
 
 /**

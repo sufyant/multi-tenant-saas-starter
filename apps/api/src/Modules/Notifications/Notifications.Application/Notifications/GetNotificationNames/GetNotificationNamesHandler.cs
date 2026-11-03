@@ -23,7 +23,6 @@ public static class GetNotificationNamesHandler
         return new(
             notification.Id,
             notification.Type,
-            kind.Category,
             text.Title,
             text.Body,
             NotificationLinks.Of(kind, notification.Values).ToString(),

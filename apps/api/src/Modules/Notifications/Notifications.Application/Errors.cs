@@ -7,10 +7,4 @@ namespace Notifications.Application;
 public static class Errors
 {
     public static readonly Error NotificationNotFound = Error.NotFound(NotificationsErrorCodes.NotificationNotFound, "No such notification.");
-
-    public static readonly Error NotificationPreferencesNotFound =
-        Error.NotFound(NotificationsErrorCodes.NotificationPreferencesNotFound, "You are not a user yet.");
-
-    public static readonly Error NotificationCategoryRequired =
-        Error.Unprocessable(NotificationsErrorCodes.NotificationCategoryRequired, "This category is required: it cannot be turned off.");
 }

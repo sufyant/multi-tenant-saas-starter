@@ -7,7 +7,4 @@ Starter
 Starter uygulamasını aç:
 {{link}}
 
-{{footer}}
-
-E-posta bildirimlerini yönet:
-{{preferencesLink}}
+Bu e-postayı hesabınızla ya da erişiminizle ilgili olduğu için aldınız.

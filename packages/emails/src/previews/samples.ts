@@ -71,8 +71,5 @@ export const notification = {
     title: "Your role in Northwind Traders changed",
     body: "Grace Hopper changed your role from Member to Admin.",
     link: "https://app.example/",
-    footer:
-      "You got this email because email notifications for “Your access” are on.",
-    preferencesLink: "https://app.example/settings/notifications",
   },
 } satisfies Record<string, NotificationProps>;

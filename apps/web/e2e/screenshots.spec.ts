@@ -589,18 +589,3 @@ test("Screenshot_Notifications_ArabicDarkPhone", async ({ page }) => {
 
   await page.screenshot({ path: `${folder}/notifications-ar-dark-phone.png` });
 });
-
-test("Screenshot_NotificationSettings_TurkishLightTablet", async ({ page }) => {
-  await setupClerkTestingToken({ page });
-  await page.emulateMedia({ colorScheme: "light" });
-  await page.setViewportSize({ width: 834, height: 1112 });
-  await mockApi(page, Language.Tr);
-  await mockNotifications(page);
-
-  await page.goto(`/${northwind.slug}/settings/notifications`);
-  await page.getByRole("switch", { name: "Erişiminiz" }).waitFor();
-
-  await page.screenshot({
-    path: `${folder}/notification-settings-tr-light-tablet.png`,
-  });
-});

@@ -1,9 +1,5 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import {
-  NotificationCategory,
-  NotificationChannelKind,
-} from "@repo/api-client";
 import { mockNotifications, mockPlatform, organisations } from "./api";
 import { expectAccessible } from "./axe";
 
@@ -59,29 +55,4 @@ test("Bell_LiveSignal_ChangesTheCountWithoutAReload", async ({ page }) => {
   notifications.arrive();
 
   await expect(bell(page, 2)).toBeVisible();
-});
-
-test("NotificationSettings_Save_SendsTheChoice", async ({ page }) => {
-  const { calls } = await open(page, "/settings/notifications");
-
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Notifications" }),
-  ).toBeVisible();
-  await expectAccessible(page);
-  await page.getByRole("switch", { name: "Platform" }).click();
-  await page.getByRole("button", { name: "Save" }).click();
-
-  await expect(page.getByText("Notification settings saved.")).toBeVisible();
-  expect(calls.saved).toEqual([
-    {
-      channels: [{ channel: NotificationChannelKind.Email, enabled: true }],
-      categories: [
-        {
-          category: NotificationCategory.PlatformTenants,
-          channel: NotificationChannelKind.Email,
-          enabled: true,
-        },
-      ],
-    },
-  ]);
 });

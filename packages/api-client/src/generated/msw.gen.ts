@@ -2,7 +2,6 @@
 // Run `pnpm generate` at the repository root.
 
 export * from "./me-invitations/me-invitations.msw.gen";
-export * from "./me-notificationpreferences/me-notificationpreferences.msw.gen";
 export * from "./me-notifications/me-notifications.msw.gen";
 export * from "./me-tenants/me-tenants.msw.gen";
 export * from "./me-users/me-users.msw.gen";

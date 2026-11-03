@@ -1,6 +1,5 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Routing;
-using Notifications.Api.Me.NotificationPreferences;
 using Notifications.Api.Me.Notifications;
 using Notifications.Api.Platform.Notifications;
 using Notifications.Api.Tenant.Notifications;
@@ -23,7 +22,6 @@ public static class NotificationsModule
     {
         NotificationEndpoints.Map(tenant);
         MyNotificationEndpoints.Map(me);
-        NotificationPreferenceEndpoints.Map(me);
         PlatformNotificationEndpoints.Map(platform);
     }
 }

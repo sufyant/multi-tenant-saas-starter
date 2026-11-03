@@ -3,8 +3,7 @@
 // (`<email>.<lang>.subject.txt`), each with a placeholder such as {{tenantName}} for every value the API fills. It also writes what the
 // API needs to fill them without ICU (`languages.json`: each language's built-in role names, month names and date patterns), the texts of
 // every notification type (`notifications.json`) and the brand (`brand.json`). The folder holds only this script's output, so the script empties it first.
-// Last, it writes the notification categories' names into the shared messages of `packages/ui`.
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { pretty, render } from "@react-email/render";
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
@@ -61,13 +60,7 @@ const deletionWarning = (language: Language): DeletionWarningProps => ({
 
 const notification = (language: Language): NotificationProps => ({
   language,
-  ...placeholders("title", "body", "link", "footer", "preferencesLink"),
-});
-
-// A required type cannot be turned off, so its email has no link to the notifications page (U4).
-const requiredNotification = (language: Language): NotificationProps => ({
-  language,
-  ...placeholders("title", "body", "link", "footer"),
+  ...placeholders("title", "body", "link"),
 });
 
 const emails: Email[] = [
@@ -89,28 +82,19 @@ const emails: Email[] = [
     text: (language) => notificationText(notification(language)),
     subject: (language) => notificationSubject(notification(language)),
   },
-  {
-    name: "notification-required",
-    html: (language) => <Notification {...requiredNotification(language)} />,
-    text: (language) => notificationText(requiredNotification(language)),
-    subject: (language) => notificationSubject(requiredNotification(language)),
-  },
 ];
 
 // A notification's texts name a value as {name}; the API fills {{name}}, as in every email.
 const apiPlaceholders = (text: string) =>
   text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
 
-// A type's short name, its title and body, and its texts without each optional value, which may keep the main title (U2). The
-// preferences list a category's types by their short names (U5).
+// A type's title and body, and its texts without each optional value, which may keep the main title (U2).
 type NotificationTexts = {
-  name?: string;
   title?: string;
   body: string;
   without?: Record<string, NotificationTexts>;
 };
 const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
-  ...(texts.name === undefined ? {} : { name: texts.name }),
   ...(texts.title === undefined ? {} : { title: apiPlaceholders(texts.title) }),
   body: apiPlaceholders(texts.body),
   ...(texts.without === undefined
@@ -158,9 +142,8 @@ await write(
     2,
   )}\n`,
 );
-// Each language's short name, title and body of every notification type, its texts without an optional value, and the words of each closed list:
-// an entitlement key, an entitlement's value and a person the read cannot name; each category's name and description; and the two footers
-// of the generic email: a category's, with its name, and a required type's.
+// Each language's title and body of every notification type, its texts without an optional value, and the words of each closed list:
+// an entitlement key, an entitlement's value and a person the read cannot name.
 // The API renders a notification from them in the reader's language, in the bell and in the generic email (U2).
 await write(
   "notifications.json",
@@ -175,13 +158,6 @@ await write(
             ),
           ),
           words: messages[language].notificationWords,
-          categories: messages[language].notificationCategories,
-          footers: {
-            category: apiPlaceholders(
-              messages[language].notificationEmail.footer,
-            ),
-            required: messages[language].notificationEmail.requiredFooter,
-          },
         },
       ]),
     ),
@@ -190,13 +166,3 @@ await write(
   )}\n`,
 );
 await write("brand.json", `${JSON.stringify(brand, null, 2)}\n`);
-
-// The name and the description of each notification category, which the preferences form of packages/ui lists: this script writes them
-// under `notificationCategories` in the shared messages of packages/ui (F14), so they are written once, here (D1). Every other key of
-// those files stays as it is.
-for (const language of languages) {
-  const file = new URL(`../../ui/messages/${language}.json`, import.meta.url);
-  const shared = JSON.parse(await readFile(file, "utf8"));
-  shared.notificationCategories = messages[language].notificationCategories;
-  await writeFile(file, `${JSON.stringify(shared, null, 2)}\n`, "utf8");
-}

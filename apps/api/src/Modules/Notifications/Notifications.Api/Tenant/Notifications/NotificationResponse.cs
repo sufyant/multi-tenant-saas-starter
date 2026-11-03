@@ -6,7 +6,6 @@ namespace Notifications.Api.Tenant.Notifications;
 /// </summary>
 /// <param name="Id">The notification's id, which opening it names.</param>
 /// <param name="Type">The notification's type, from the enum NotificationType.</param>
-/// <param name="Category">The category the email preferences name, from the enum NotificationCategory.</param>
 /// <param name="Title">The title, in the reader's language.</param>
 /// <param name="Body">The body, in the reader's language.</param>
 /// <param name="Link">Where it leads.</param>
@@ -15,7 +14,6 @@ namespace Notifications.Api.Tenant.Notifications;
 public sealed record NotificationResponse(
     Guid Id,
     string Type,
-    string Category,
     string Title,
     string Body,
     NotificationLinkResponse Link,

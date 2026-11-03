@@ -12,11 +12,10 @@ export type SettingsPage =
   | "members"
   | "roles"
   | "activity"
-  | "preferences"
-  | "notifications";
+  | "preferences";
 
 /**
- * The SubNav of Settings (the Settings boards): Organisation (General, Members, Roles, Activity) and You (Preferences, Notifications). An item shows
+ * The SubNav of Settings (the Settings boards): Organisation (General, Members, Roles, Activity) and You (Preferences). An item shows
  * only with its read permission (F5), and a group without items does not show.
  */
 export function SettingsNav({ current }: { current: SettingsPage }) {
@@ -60,11 +59,6 @@ export function SettingsNav({ current }: { current: SettingsPage }) {
           id: "preferences",
           label: t("shell.preferences"),
           href: `${base}/preferences`,
-        },
-        {
-          id: "notifications",
-          label: t("shell.notifications"),
-          href: `${base}/notifications`,
         },
       ],
     },
