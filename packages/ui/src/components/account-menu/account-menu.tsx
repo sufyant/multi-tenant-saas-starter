@@ -36,7 +36,7 @@ export type AccountMenuProps = {
   version?: string;
   /** The link element: Next.js's Link in the apps. */
   linkComponent?: ElementType;
-  /** rail: the avatar alone, as on a tablet's icon rail; row: the avatar and the name. */
+  /** rail: the sidebar's place, the avatar alone on a tablet's icon rail and the avatar and the name from bp-desktop; row: always both. */
   variant?: "row" | "rail";
   /** Previews only: render the menu open. */
   open?: boolean;
@@ -67,6 +67,7 @@ export function AccountMenu({
     const timer = setTimeout(() => setCopied(false), copiedMs);
     return () => clearTimeout(timer);
   }, [copied]);
+  const rail = variant === "rail";
   const item = "min-h-9 gap-2.5 px-2 text-body max-tablet:min-h-touch-target";
   return (
     <>
@@ -78,22 +79,31 @@ export function AccountMenu({
         <DropdownMenuTrigger
           className={cn(
             "flex h-control-md min-w-0 items-center gap-2.5 rounded-md text-small font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent max-tablet:h-touch-target",
-            variant === "row" ? "w-full ps-1.5 pe-2" : "size-10 justify-center",
+            "w-full ps-1.5 pe-2",
+            rail &&
+              "max-desktop:size-10 max-desktop:justify-center max-desktop:p-0",
           )}
         >
           <Avatar person={person} className="size-5.5 shrink-0" />
-          {/* WCAG 2.5.3: the visible name stays in the accessible name; on the rail the initials and "Account" give it. */}
-          {variant === "row" ? (
-            <>
-              <bdi className="min-w-0 flex-1 truncate text-start">{name}</bdi>
-              <Icon
-                icon={ChevronsUpDownIcon}
-                size={14}
-                className="text-muted-foreground"
-              />
-            </>
-          ) : (
-            <span className="sr-only">
+          {/* WCAG 2.5.3: the visible name stays in the accessible name; on the icon rail the initials and "Account" give it. */}
+          <bdi
+            className={cn(
+              "min-w-0 flex-1 truncate text-start",
+              rail && "max-desktop:hidden",
+            )}
+          >
+            {name}
+          </bdi>
+          <Icon
+            icon={ChevronsUpDownIcon}
+            size={14}
+            className={cn(
+              "text-muted-foreground",
+              rail && "max-desktop:hidden",
+            )}
+          />
+          {rail && (
+            <span className="sr-only desktop:hidden">
               {initialsOf(person)} {t("common.account")}
             </span>
           )}

@@ -44,6 +44,19 @@ describe("AccountMenu", () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 
+  // The sidebar is an icon rail under bp-desktop and open from it, so the rail keeps the name for the open sidebar (the Sidebar's
+  // description); the classes hide it under bp-desktop, which jsdom does not draw.
+  it("AccountMenu_Rail_KeepsTheNameForTheOpenSidebar", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <AccountMenu {...props} onSignOut={vi.fn()} variant="rail" />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText("Ayşe Demir")).toHaveClass("max-desktop:hidden");
+    expect(screen.getByText("AD Account")).toHaveClass("desktop:hidden");
+  });
+
   it("AccountMenu_Open_ShowsProfileSignOutAndTheVersionInThisOrder", async () => {
     const { menu } = await openMenu();
 
