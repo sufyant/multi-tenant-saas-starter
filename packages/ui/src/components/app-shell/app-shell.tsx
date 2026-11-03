@@ -335,7 +335,13 @@ export function AppShell({
                   {crumbs.map((crumb, index) => {
                     const last = index === crumbs.length - 1;
                     return (
-                      <Fragment key={`${index}-${crumb.label}`}>
+                      <Fragment
+                        // The labels up to this crumb: two crumbs of the same name stay apart.
+                        key={crumbs
+                          .slice(0, index + 1)
+                          .map((each) => each.label)
+                          .join("/")}
+                      >
                         {index > 0 && (
                           <li
                             aria-hidden="true"
