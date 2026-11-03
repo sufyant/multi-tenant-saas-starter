@@ -8,9 +8,9 @@ using SharedKernel;
 
 namespace Api.ArchitectureTests;
 
-// U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email (U5), its texts in every language with exactly
-// the values it declares, a text without each optional value, every word of a closed list in every language, and one handler that names it
-// (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
+// U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email
+// (U5), its texts in every language with exactly the values it declares, a text without each optional value, every word of a closed
+// list in every language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
 // shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. U9: a type has the name of its event's audit operation, or is named apart with its reason.
 public sealed class NotificationCatalogTests
 {

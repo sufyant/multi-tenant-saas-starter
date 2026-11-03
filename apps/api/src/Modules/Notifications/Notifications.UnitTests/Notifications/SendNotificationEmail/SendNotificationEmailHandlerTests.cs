@@ -83,7 +83,7 @@ public sealed class SendNotificationEmailHandlerTests
             TestContext.Current.CancellationToken);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Text.EndsWith("https://platform.example/\n\nYou got this email because you are a system admin and an organisation's status changed.", StringComparison.Ordinal),
+        (email.Text.EndsWith("https://platform.example/\n\nYou got this email because you are a system admin and an organisation’s status changed.", StringComparison.Ordinal),
             email.Html.Contains("settings", StringComparison.Ordinal)).ShouldBe((true, false));
     }
 

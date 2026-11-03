@@ -76,7 +76,7 @@ A notification type is a template (U1 to U5). A type tells of one event, and has
 4. A migration of Notifications: the CHECK of the types reads the catalog (`dotnet ef migrations add`; `PendingModelChangesTests` asks for it). A new link kind also needs its value in `NotificationLinkResponseKind` and `Statuses/ResponseStatus.cs`.
 5. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.ToAsync(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
 
-`NotificationCatalogTests` fails for a type without its texts in every language with exactly its values, without a text for each optional value, without every word of a closed list, without its handler, without at least one channel, or without the name of an audit operation or a reason to be named apart. "Transactional or activity?" is a plan question of every feature step (E7).
+`NotificationCatalogTests` fails for a type without its texts in every language with exactly its values, without a text for each optional value, without every word of a closed list, without its handler, without at least one channel, without a footer in every language when it goes by email, or without the name of an audit operation or a reason to be named apart. "Transactional or activity?" is a plan question of every feature step (E7).
 
 ## How we design
 
